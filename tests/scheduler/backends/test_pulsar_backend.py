@@ -313,6 +313,7 @@ def test_bad_driver_vers():
         error = "Backend requires Pulsar Dummy to have driver version {}, found l.o.l. installed.".format(version)
         with pytest.raises(ValueError, match=error):
             _check_driver_version(device, version)
+        device.close()
 
     subtest(pulsar_qcm_dummy('qcm_bad_vers'), QCM_DRIVER_VER)
     subtest(pulsar_qrm_dummy('qrm_bad_vers'), QRM_DRIVER_VER)
