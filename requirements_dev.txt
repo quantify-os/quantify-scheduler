@@ -16,4 +16,5 @@ twine==1.14.0
 pytest
 pytest-runner
 pytest-cov
+pytest-mpl
 flake8-html
