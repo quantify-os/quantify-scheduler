@@ -5,6 +5,7 @@ from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.compilation import qcompile
 import json
 import pytest
+import matplotlib.pyplot as plt
 
 
 import pathlib
@@ -13,7 +14,7 @@ with open(cfg_f, 'r') as f:
     DEVICE_TEST_CFG = json.load(f)
 
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi': 300})
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_circuit_diagram_matplotlib():
     sched = Schedule('Test experiment')
 
@@ -30,6 +31,7 @@ def test_circuit_diagram_matplotlib():
     sched.add(Measure(q0, q1), label='M0')
 
     f, ax = circuit_diagram_matplotlib(sched)
+    #plt.show()
     return f
 
 

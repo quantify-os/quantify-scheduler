@@ -104,3 +104,14 @@ Before you submit a merge request, check that it meets these guidelines:
 
 Congratulations! Community members will now review your work and suggest any necessary changes. Thank you very much
 for your hard work in improving quantify.
+
+Visualization Considerations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We use the `mpl <https://github.com/matplotlib/pytest-mpl>`_ extension for pytest to perform some basic verification of visualization output. Please see their documentation for details on usage,
+as well as using existing tests for inspiration.
+
+.. note::
+
+    In particular, please ensure any mpl tests have the `style` set to "default"
+

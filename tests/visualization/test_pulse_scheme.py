@@ -4,20 +4,16 @@ import numpy as np
 import pytest
 
 
-# Simple example of how to use the pulse_scheme module
-# This does not generate any output, but it should run without error.
-
 cm = 1 / 2.54  # inch to cm conversion
 
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi': 300})
-def test_plot_pulses():
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+def test_plot_pulses_single_q():
     fig, ax = pls.new_pulse_fig((7*cm, 3*cm))
 
     # Plot pulses
     p1 = pls.mwPulse(ax, 0, width=1.5, label='$X_{\\pi/2}$')
     p2 = pls.ramZPulse(ax, p1, width=2.5, sep=1.5)
-    p3 = pls.mwPulse(ax, p2 + 0.5, width=1.5, phase=np.pi/2, label='$Y_{\\pi/2}$')
 
     # Add some arrows and labeling
     pls.interval(ax, p1, p1 + 1.5, height=1.7, label='$T_\\mathsf{p}$')
@@ -25,11 +21,13 @@ def test_plot_pulses():
 
     # Adjust plot range to fit the whole figure
     ax.set_ylim(-1.2, 2.5)
+    return fig
 
+
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+def test_plot_pulses_n_q():
     # Two-qubit pulse scheme (Grover's algorithm)
-
     fig = plt.figure(figsize=(9*cm, 5*cm))
-
     labHeight = 1.25
 
     ax1 = pls.new_pulse_subplot(fig, 211)
@@ -49,4 +47,5 @@ def test_plot_pulses():
     ax2.text(-.5, 0, '$Q_1$', va='center', ha='right')
 
     fig.subplots_adjust(left=.07, top=.9, hspace=.1)
+    plt.show()
     return fig
