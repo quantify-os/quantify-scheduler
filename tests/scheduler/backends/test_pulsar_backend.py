@@ -100,13 +100,13 @@ def test_overflowing_instruction_times():
         }
     }
     program_str = build_q1asm(pulse_timings, pulse_data, len(real), set())
-    with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_plays_q1asm'), 'rb') as f:
-        assert program_str.encode('utf-8') == f.read()
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_plays_q1asm'), 'r') as f:
+        assert program_str == f.read()
 
     pulse_timings.append((229380 + pow(2, 16), 'square_ID', None))
     program_str = build_q1asm(pulse_timings, pulse_data, 524296, set())
-    with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_waits_q1asm'), 'rb') as f:
-        assert program_str.encode('utf-8') == f.read()
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_waits_q1asm'), 'r') as f:
+        assert program_str == f.read()
 
 
 def test_build_q1asm():
@@ -129,12 +129,12 @@ def test_build_q1asm():
     }
 
     program_str = build_q1asm(pulse_timings, pulse_data, 20, set())
-    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm'), 'rb') as f:
-        assert program_str.encode('utf-8') == f.read()
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm'), 'r') as f:
+        assert program_str == f.read()
 
     program_str_sync = build_q1asm(pulse_timings, pulse_data, 30, set())
-    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_sync'), 'rb') as f:
-        assert program_str_sync.encode('utf-8') == f.read()
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_sync'), 'r') as f:
+        assert program_str_sync == f.read()
 
     err = r"Provided sequence_duration.*4.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
