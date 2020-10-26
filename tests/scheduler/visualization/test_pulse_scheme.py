@@ -47,5 +47,4 @@ def test_plot_pulses_n_q():
     ax2.text(-.5, 0, '$Q_1$', va='center', ha='right')
 
     fig.subplots_adjust(left=.07, top=.9, hspace=.1)
-    plt.show()
     return fig
