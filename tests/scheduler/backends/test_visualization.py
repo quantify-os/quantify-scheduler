@@ -3,8 +3,10 @@ from quantify.scheduler import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CZ, CNOT, Rxy
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.compilation import qcompile
-import matplotlib.pyplot as plt
 import json
+import pytest
+import matplotlib.pyplot as plt
+
 
 import pathlib
 cfg_f = pathlib.Path(__file__).parent.parent.parent.absolute() / 'test_data' / 'transmon_test_config.json'
@@ -12,6 +14,7 @@ with open(cfg_f, 'r') as f:
     DEVICE_TEST_CFG = json.load(f)
 
 
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_circuit_diagram_matplotlib():
     sched = Schedule('Test experiment')
 
@@ -28,6 +31,8 @@ def test_circuit_diagram_matplotlib():
     sched.add(Measure(q0, q1), label='M0')
 
     f, ax = circuit_diagram_matplotlib(sched)
+    #plt.show()
+    return f
 
 
 def test_pulse_diagram_plotly():
