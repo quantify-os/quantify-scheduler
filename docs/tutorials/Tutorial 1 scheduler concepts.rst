@@ -28,7 +28,7 @@ A final compilation step translates the :class:`~quantify.scheduler.Schedule` in
 
 The following diagram provides an overview of how to interact with the :class:`~quantify.scheduler.Schedule` class.
 The user can create a new schedule using the quantify API, or load a schedule based on one of the supported :mod:`~quantify.scheduler.frontends` for QASM-like formats such as qiskit QASM or OpenQL cQASM (todo).
-One or multiple compilation steps modify the :class:`~quantify.scheduler.Schedule` until it contains the information required for the :mod:`~quantify.scheduler.backends.visualization` used for visualization, simulation or compilation onto the hardware or back into a common QASM-like format.
+One or multiple compilation steps modify the :class:`~quantify.scheduler.Schedule` until it contains the information required for the :mod:`~quantify.scheduler.visualization` used for visualization, simulation or compilation onto the hardware or back into a common QASM-like format.
 
 .. blockdiag::
 
@@ -224,8 +224,8 @@ And we can use this to create a default visualizaton:
 
   %matplotlib inline
 
-  from quantify.scheduler.backends import visualization as viz
-  f, ax = viz.circuit_diagram_matplotlib(sched)
+  from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+  f, ax = circuit_diagram_matplotlib(sched)
   # all gates are plotted, but it doesn't all fit in a matplotlib figure
   ax.set_xlim(-.5, 9.5)
 
@@ -319,11 +319,11 @@ The compiler also provides pulse schedule visualization, which can be useful for
 
 .. jupyter-execute::
 
-  from quantify.scheduler.backends.visualization import pulse_diagram_plotly
+  from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
   fig = pulse_diagram_plotly(sched, ch_list=['qcm0.s0', 'qcm1.s0', 'qrm0.s0', 'qrm0.r0'])
   fig.show()
 
-By default :func:`quantify.scheduler.backends.visualization.pulse_diagram_plotly` shows the first 8 channels encountered in in a schedule, but by specifying a list of channels, a more compact visualization can be created.
+By default :func:`quantify.scheduler.visualization.pulse_scheme.pulse_diagram_plotly` shows the first 8 channels encountered in in a schedule, but by specifying a list of channels, a more compact visualization can be created.
 
 Connecting to Hardware
 ----------------------
@@ -382,15 +382,6 @@ acquisitions over the driver so we can do some processing in Python:
         qrm0.stop_sequencer()
         qrm0.store_acquisition(seq_idx, "meas_0", 4800)
         acq = qrm0.get_acquisitions(seq_idx)
-
-.. note::
-
-  This is it for now! Let's discuss.
-
-Ex: Mixing pulse and gate-level descriptions, the Chevron experiment
------------------------------------------------------------------------------------------
-
-In this example, we want to perform a Chevron experiment
 
 
 

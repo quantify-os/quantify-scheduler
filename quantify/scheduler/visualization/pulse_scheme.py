@@ -3,9 +3,16 @@
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
+import logging
+import inspect
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches
+from plotly.subplots import make_subplots
+import plotly.express as px
+import plotly.graph_objects as go
+from quantify.scheduler.waveforms import modulate_wave
+from quantify.utilities.general import import_func_from_string
 
 
 def new_pulse_fig(figsize=None):
@@ -152,3 +159,126 @@ def box_text(ax, x0, y0, text='', w=1.1, h=.8, color='black', fillcolor=None, te
     ax.add_patch(p1)
 
     ax.text(x0, y0, text, ha='center', va='center', zorder=6, size=fontsize, color=textcolor).set_clip_on(True)
+
+
+def pulse_diagram_plotly(schedule,
+                         ch_list: list = None,
+                         fig_ch_height: float = 150,
+                         fig_width: float = 1000,
+                         modulation: bool = True,
+                         sampling_rate: float = 1e9
+                         ):
+    """
+    Produce a plotly visualization of the pulses used in the schedule.
+
+    Parameters
+    ------------
+    schedule : :class:`~quantify.scheduler.types.Schedule`
+        the schedule to render
+    ch_list : list
+        A list of channels to show. if set to `None` will use the first
+        8 channels it encounters in the sequence.
+    fig_ch_height: float
+        height for each channel subplot in px
+    fig_width: float
+        width for the figure in px
+    modulation: bool
+        determines if modulation is included in the visualization
+    sampling_rate : float
+        the time resolution used in the visualization.
+    Returns
+    -------
+    :class:`plotly.graph_objects.Figure`
+        the plot
+    """
+
+    if ch_list is None:  # determine the channel list automatically.
+        auto_map = True
+        offset_idx = 0
+        nr_rows = 8
+        ch_map = {}
+    else:
+        auto_map = False
+        nr_rows = len(ch_list)
+        ch_map = dict(zip(ch_list, range(len(ch_list))))
+        print(ch_map)
+
+    fig = make_subplots(rows=nr_rows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+    fig.update_layout(height=fig_ch_height*nr_rows, width=fig_width, title=schedule.data['name'], showlegend=False)
+
+    colors = px.colors.qualitative.Plotly
+    col_idx = 0
+
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+        op = schedule.operations[t_constr['operation_hash']]
+
+        for p in op['pulse_info']:
+
+            # iterate through the colors in the color map
+            col_idx = (col_idx+1) % len(colors)
+
+            # times at which to evaluate waveform
+            t0 = t_constr['abs_time']+p['t0']
+            t = np.arange(t0, t0+p['duration'], 1/sampling_rate)
+
+            # function to generate waveform
+            if p['wf_func'] is not None:
+                wf_func = import_func_from_string(p['wf_func'])
+
+                # select the arguments for the waveform function that are present in pulse info
+                par_map = inspect.signature(wf_func).parameters
+                wf_kwargs = {}
+                for kw in par_map.keys():
+                    if kw in p.keys():
+                        wf_kwargs[kw] = p[kw]
+                # Calculate the numerical waveform using the wf_func
+                wf = wf_func(t=t, **wf_kwargs)
+
+                # optionally adds some modulation
+                if modulation and 'freq_mod' in p.keys():
+                    # apply modulation to the waveforms
+                    wf = modulate_wave(t, wf, p['freq_mod'])
+
+                ch = p['channel']
+                # If channel does not exist yet and using auto map, add it.
+                if ch not in ch_map.keys() and auto_map:
+                    ch_map[ch] = offset_idx
+                    offset_idx += 1
+
+                    # once all channels are used, don't add new channels anymore.
+                    if offset_idx > nr_rows:
+                        auto_map = False
+
+                if ch in ch_map.keys():
+                    # FIXME properly deal with complex waveforms.
+                    for i in range(2):
+                        showlegend = (i == 0)
+                        label = op['name']
+                        fig.add_trace(go.Scatter(x=t, y=wf.imag, mode='lines', name=label, legendgroup=pls_idx,
+                                                 showlegend=showlegend,
+                                                 line_color='lightgrey'),
+                                      row=ch_map[ch]+1, col=1)
+                        fig.add_trace(go.Scatter(x=t, y=wf.real, mode='lines', name=label, legendgroup=pls_idx,
+                                                 showlegend=showlegend,
+                                                 line_color=colors[col_idx]),
+                                      row=ch_map[ch]+1, col=1)
+
+    for r in range(nr_rows):
+        title = ''
+        if r+1 == nr_rows:
+            title = 'Time'
+            fig.update_xaxes(row=r+1, col=1, tickformat=".2s",
+                             hoverformat='.3s', ticksuffix='s', title=title,
+                             rangeslider=dict(visible=True, thickness=0.05))
+
+        # FIXME: units are hardcoded
+        else:
+            fig.update_xaxes(row=r+1, col=1, tickformat=".2s",
+                             hoverformat='.3s', ticksuffix='s', title=title)
+        try:
+            fig.update_yaxes(row=r+1, col=1, tickformat=".2s", hoverformat='.3s',
+                             ticksuffix='V', title=list(ch_map.keys())[r], range=[-1.1, 1.1])
+        except Exception:
+            logging.warning("{} not enough channels".format(r))
+
+    return fig
