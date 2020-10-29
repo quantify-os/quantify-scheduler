@@ -187,11 +187,6 @@ class Operation(UserDict):
         super().__init__()
 
         # ensure keys exist
-        self.data['gate_info'] = {
-            'unitary': None,
-            'tex': '',
-            'plot_func': None,
-            'qubits': []}
         self.data['pulse_info'] = []  # A list of pulses
         self.data['logic_info'] = {}
         self.modulations = None
