@@ -61,8 +61,8 @@ def test_schedule_add_timing_constraints():
 
 
 def test_valid_resources():
-    s0 = Pulsar_QCM_sequencer(name='s0', instrument_name='qcm1', seq_idx=0)
-    s1 = Pulsar_QCM_sequencer(name='s1', instrument_name='qcm1', seq_idx=1)
+    s0 = Pulsar_QCM_sequencer(address='qcm1.s0', seq_idx=0)
+    s1 = Pulsar_QCM_sequencer(address='qcm1.s1', seq_idx=1)
     assert Resource.is_valid(s0)
     assert Resource.is_valid(s1)
 

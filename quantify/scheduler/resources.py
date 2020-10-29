@@ -54,9 +54,6 @@ class Pulsar_QCM_sequencer(Resource):
     a channel capable of outputting complex valued signals (I, and Q).
     """
 
-    # registry for instruments to sequencer indices, checks against accidental reuse
-    instrument_indices = {}
-
     def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
         A channel composed of multiple sub-channels.
@@ -75,15 +72,11 @@ class Pulsar_QCM_sequencer(Resource):
         super().__init__()
 
         instrument_name, name = address.split(".")
-        if instrument_name in self.instrument_indices:
-            if seq_idx in self.instrument_indices[instrument_name]:
-                raise ValueError("Sequencer index '{}' already in use for instrument '{}' with name '{}'"
-                                 .format(seq_idx, instrument_name, name))
 
         self._timing_tuples = []
         self._pulse_dict = {}
 
-        self.data = {'name': name,
+        self.data = {'name': address,
                      'type': str(self.__class__.__name__),
                      'instrument_name': instrument_name,
                      'seq_idx': seq_idx,
@@ -106,8 +99,8 @@ class Pulsar_QCM_sequencer(Resource):
 
 class Pulsar_QRM_sequencer(Resource):
 
-    # registry for instruments to sequencer indices, checks against accidental reuse
-    instrument_indices = {}
+    def __del__(self):
+        self.instrument_indices[self.data['instrument_name']].remove(self.data['seq_idx'])
 
     def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
@@ -127,15 +120,11 @@ class Pulsar_QRM_sequencer(Resource):
         super().__init__()
 
         instrument_name, name = address.split(".")
-        if instrument_name in self.instrument_indices:
-            if seq_idx in self.instrument_indices[instrument_name]:
-                raise ValueError("Sequencer index '{}' already in use for instrument '{}' with name '{}'"
-                                 .format(seq_idx, instrument_name, name))
 
         self._timing_tuples = []
         self._pulse_dict = {}
 
-        self.data = {'name': name,
+        self.data = {'name': address,
                      'type': str(self.__class__.__name__),
                      'instrument_name': instrument_name,
                      'seq_idx': seq_idx,
