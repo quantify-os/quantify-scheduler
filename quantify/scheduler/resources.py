@@ -99,9 +99,6 @@ class Pulsar_QCM_sequencer(Resource):
 
 class Pulsar_QRM_sequencer(Resource):
 
-    def __del__(self):
-        self.instrument_indices[self.data['instrument_name']].remove(self.data['seq_idx'])
-
     def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
         A channel composed of multiple sub-channels.
