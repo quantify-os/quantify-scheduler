@@ -51,19 +51,20 @@ class Pulsar_QCM_sequencer(Resource):
     A single sequencer unit contained in a Pulsar_QCM module.
 
     For pulse-sequencing purposes, the Pulsar_QCM_sequencer can be considered
-    a channel capabable of outputting complex valued signals (I, and Q).
+    a channel capable of outputting complex valued signals (I, and Q).
     """
 
-    def __init__(self, name: str, instrument_name: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+    # registry for instruments to sequencer indices, checks against accidental reuse
+    instrument_indices = {}
+
+    def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
         A channel composed of multiple sub-channels.
 
         Parameters
         -------------
-        name : str
-            the name of this resource.
-        instrument_name: str
-            name of the Pulsar_QCM instrument.
+        address : str
+            the address of this resource, of the form "instrument_name.sequencer_name".
         seq_idx: int
             index of the sequencer unit to use.
         nco_freq: float
@@ -73,6 +74,12 @@ class Pulsar_QCM_sequencer(Resource):
         """
         super().__init__()
 
+        instrument_name, name = address.split(".")
+        if instrument_name in self.instrument_indices:
+            if seq_idx in self.instrument_indices[instrument_name]:
+                raise ValueError("Sequencer index '{}' already in use for instrument '{}' with name '{}'"
+                                 .format(seq_idx, instrument_name, name))
+
         self._timing_tuples = []
         self._pulse_dict = {}
 
@@ -81,7 +88,7 @@ class Pulsar_QCM_sequencer(Resource):
                      'instrument_name': instrument_name,
                      'seq_idx': seq_idx,
                      'nco_freq': nco_freq,
-                     'nco_phase': nco_freq,
+                     'nco_phase': nco_phase,
                      'sampling_rate': 1e9
                      }
 
@@ -98,16 +105,18 @@ class Pulsar_QCM_sequencer(Resource):
 
 
 class Pulsar_QRM_sequencer(Resource):
-    def __init__(self, name: str, instrument_name: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+
+    # registry for instruments to sequencer indices, checks against accidental reuse
+    instrument_indices = {}
+
+    def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
         A channel composed of multiple sub-channels.
 
         Parameters
         -------------
-        name : str
-            the name of this resource.
-        instrument_name: str
-            name of the Pulsar_QCM instrument.
+        address : str
+            the address of this resource, of the form "instrument_name.sequencer_name".
         seq_idx: int
             index of the sequencer unit to use.
         nco_freq: float
@@ -117,6 +126,12 @@ class Pulsar_QRM_sequencer(Resource):
         """
         super().__init__()
 
+        instrument_name, name = address.split(".")
+        if instrument_name in self.instrument_indices:
+            if seq_idx in self.instrument_indices[instrument_name]:
+                raise ValueError("Sequencer index '{}' already in use for instrument '{}' with name '{}'"
+                                 .format(seq_idx, instrument_name, name))
+
         self._timing_tuples = []
         self._pulse_dict = {}
 
@@ -125,7 +140,7 @@ class Pulsar_QRM_sequencer(Resource):
                      'instrument_name': instrument_name,
                      'seq_idx': seq_idx,
                      'nco_freq': nco_freq,
-                     'nco_phase': nco_freq,
+                     'nco_phase': nco_phase,
                      'sampling_rate': 1e9
                      }
 
