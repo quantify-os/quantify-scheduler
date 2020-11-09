@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from quantify.scheduler import Schedule, Operation, Resource
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, X, X90, Y, Y90, CZ
+from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer
 
 
@@ -95,3 +96,17 @@ def test_gates_valid():
     assert Operation.is_valid(cz)
     assert Operation.is_valid(cnot)
     assert Operation.is_valid(measure)
+
+
+def test_type_properties():
+    op = Operation('blank op')
+    assert not op.valid_gate
+    assert not op.valid_pulse
+
+    gate = X('q0')
+    assert gate.valid_gate
+    assert not gate.valid_pulse
+
+    pulse = SquarePulse(1.0, 20e-9, 'q0')
+    assert not pulse.valid_gate
+    assert pulse.valid_pulse
