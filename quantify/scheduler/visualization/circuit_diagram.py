@@ -51,8 +51,8 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
 
-    For this visualization backend to work, the schedule must contain `gate_info` for each operation in the
-    `operation_dict` as well as a value for `abs_time` for each element in the timing_constraints.
+    For this visualization backend to work, the schedule must contain a value for `abs_time` for each element in the
+    timing_constraints.
 
     Parameters
     ----------
