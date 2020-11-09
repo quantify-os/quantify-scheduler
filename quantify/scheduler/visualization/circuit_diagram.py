@@ -101,12 +101,20 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
             plot_func(ax, time=time, qubit_idxs=idxs, tex=op['gate_info']['tex'])
         elif op.valid_pulse:
             plot_func = import_func_from_string('quantify.scheduler.visualization.circuit_diagram.gate_box')
-            qubits = [p['channel'] for p in op['pulse_info']]
-            idxs = [qubit_map[q] for q in qubits]
+            idxs = []
+            for pulse in op['pulse_info']:
+                resolved = False
+                for sub_addr in pulse['channel'].split(":"):
+                    if sub_addr in qubit_map:
+                        idxs.append(qubit_map[sub_addr])
+                        resolved = True
+                if not resolved:
+                    raise ValueError("Could not resolve the address of pulse {} on channel {}"
+                                     .format(op.name, op['channel']))
             time = t_constr['abs_time']
             plot_func(ax, time=time, qubit_idxs=idxs, tex='Pulse')
         else:
-            raise RuntimeError("Unknown operation")
+            raise ValueError("Unknown operation")
 
     ax.set_xlim(-1, total_duration + 1)
     return f, ax
