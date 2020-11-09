@@ -110,3 +110,11 @@ def test_type_properties():
     pulse = SquarePulse(1.0, 20e-9, 'q0')
     assert not pulse.valid_gate
     assert pulse.valid_pulse
+
+    pulse.add_gate_info(X('q0'))
+    assert pulse.valid_gate
+    assert pulse.valid_pulse
+
+    gate.add_pulse(SquarePulse(1.0, 20e-9, 'q0'))
+    assert gate.valid_gate
+    assert gate.valid_pulse
