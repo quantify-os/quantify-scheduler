@@ -173,11 +173,6 @@ class Operation(UserDict):
     .. jsonschema:: schemas/operation.json
 
 
-        .. warning::
-
-            The instruction/logical information level is not clearly defined yet.
-
-
     .. note::
 
         Two different Operations containing the same information generate the same hash and are considered identical.
