@@ -187,11 +187,7 @@ class Operation(UserDict):
         super().__init__()
 
         # ensure keys exist
-        self.data['gate_info'] = {
-            'unitary': None,
-            'tex': '',
-            'plot_func': None,
-            'qubits': []}
+        self.data['gate_info'] = {}
         self.data['pulse_info'] = []  # A list of pulses
         self.data['logic_info'] = {}
         self.modulations = None
@@ -256,6 +252,18 @@ class Operation(UserDict):
         scheme = load_json_schema(__file__, 'operation.json')
         jsonschema.validate(operation.data, scheme)
         return True  # if not exception was raised during validation
+
+    @property
+    def valid_gate(self):
+        if self.data['gate_info']:
+            return True
+        return False
+
+    @property
+    def valid_pulse(self):
+        if self.data['pulse_info']:
+            return True
+        return False
 
 
 class Resource(UserDict):

@@ -144,8 +144,7 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
     validate_config(device_cfg, scheme_fn='transmon_cfg.json')
 
     for op in schedule.operations.values():
-        if 'operation_type' not in op['gate_info'] and len(op['pulse_info']) > 0:
-            # this is a pulse operation, make sure the address is resolved
+        if op.valid_pulse:
             for pulse in op.data['pulse_info']:
                 pulse['channel'] = _walk_address(device_cfg, pulse['channel'])
             continue
