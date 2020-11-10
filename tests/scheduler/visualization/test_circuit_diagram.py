@@ -3,6 +3,7 @@ from quantify.scheduler import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CZ, CNOT, Rxy
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+import matplotlib.pyplot as plt
 
 
 @pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
@@ -20,4 +21,5 @@ def test_circuit_diagram_matplotlib():
     sched.add(Measure(q0, q1), label='M0')
 
     f, ax = circuit_diagram_matplotlib(sched)
+    plt.show()
     return f

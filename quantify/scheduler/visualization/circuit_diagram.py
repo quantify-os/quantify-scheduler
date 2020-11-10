@@ -16,6 +16,11 @@ def gate_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
         ps.box_text(ax, x0=time, y0=qubit_idx, text=tex, fillcolor='C0', w=.8, h=.5, **kw)
 
 
+def pulse_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
+    for qubit_idx in qubit_idxs:
+        ps.box_text(ax, x0=time, y0=qubit_idx, text=tex, fillcolor='w', w=.66, h=.4, **kw)
+
+
 def meter(ax, time: float, qubit_idxs: list, tex: str, **kw):
     """
     A simple meter to depict a measurement.
@@ -45,6 +50,16 @@ def reset(ax, time: float, qubit_idxs: list, tex: str, **kw):
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(ax, x0=time, y0=qubit_idx, text=tex, color='white', fillcolor='white', w=.4, h=.5, **kw)
+
+
+def _locate_qubit_in_address(qubit_map, address):
+    """
+    Returns the name of a qubit in  a pulse address.
+    """
+    for sub_addr in address.split(":"):
+        if sub_addr in qubit_map:
+            return sub_addr
+    raise ValueError("Could not resolve address '{}'".format(address))
 
 
 def circuit_diagram_matplotlib(schedule, figsize=None):
@@ -100,19 +115,8 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
             idxs = [qubit_map[q] for q in op['gate_info']['qubits']]
             plot_func(ax, time=time, qubit_idxs=idxs, tex=op['gate_info']['tex'])
         elif op.valid_pulse:
-            plot_func = import_func_from_string('quantify.scheduler.visualization.circuit_diagram.gate_box')
-            idxs = []
-            for pulse in op['pulse_info']:
-                resolved = False
-                for sub_addr in pulse['channel'].split(":"):
-                    if sub_addr in qubit_map:
-                        idxs.append(qubit_map[sub_addr])
-                        resolved = True
-                if not resolved:
-                    raise ValueError("Could not resolve the address of pulse {} on channel {}"
-                                     .format(op.name, op['channel']))
-            time = t_constr['abs_time']
-            plot_func(ax, time=time, qubit_idxs=idxs, tex='Pulse')
+            idxs = [qubit_map[_locate_qubit_in_address(qubit_map, pulse['channel'])] for pulse in op['pulse_info']]
+            pulse_box(ax, time=time, qubit_idxs=idxs, tex=op.name)
         else:
             raise ValueError("Unknown operation")
 
