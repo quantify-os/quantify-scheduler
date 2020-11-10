@@ -18,7 +18,8 @@ def gate_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
 
 def pulse_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
     for qubit_idx in qubit_idxs:
-        ps.box_text(ax, x0=time, y0=qubit_idx, text=tex, fillcolor='w', w=.66, h=.4, **kw)
+        ps.box_text(ax, x0=time, y0=qubit_idx, fillcolor='w', w=.66, h=.3, **kw)
+        ax.text(time, qubit_idx+0.3, tex, ha='center', va='center', zorder=6)
 
 
 def meter(ax, time: float, qubit_idxs: list, tex: str, **kw):

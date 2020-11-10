@@ -21,5 +21,4 @@ def test_circuit_diagram_matplotlib():
     sched.add(Measure(q0, q1), label='M0')
 
     f, ax = circuit_diagram_matplotlib(sched)
-    plt.show()
     return f
