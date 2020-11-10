@@ -233,17 +233,17 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     # Add the resources for the pulsar qcm channels
     qcm0 = CompositeResource('qcm0', ['qcm0.s0', 'qcm0.s1'])
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', instrument_name='qcm0', seq_idx=0)
-    qcm0_s1 = Pulsar_QCM_sequencer('qcm0.s1', instrument_name='qcm0', seq_idx=1)
+    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
+    qcm0_s1 = Pulsar_QCM_sequencer('qcm0.s1', seq_idx=1)
 
     qcm1 = CompositeResource('qcm1', ['qcm1.s0', 'qcm1.s1'])
-    qcm1_s0 = Pulsar_QCM_sequencer('qcm1.s0', instrument_name='qcm1', seq_idx=0)
-    qcm1_s1 = Pulsar_QCM_sequencer('qcm1.s1', instrument_name='qcm1', seq_idx=1)
+    qcm1_s0 = Pulsar_QCM_sequencer('qcm1.s0', seq_idx=0)
+    qcm1_s1 = Pulsar_QCM_sequencer('qcm1.s1', seq_idx=1)
 
     qrm0 = CompositeResource('qrm0', ['qrm0.s0', 'qrm0.s1'])
     # Currently mocking a readout module using an acquisition module
-    qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', instrument_name='qrm0', seq_idx=0)
-    qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', instrument_name='qrm0', seq_idx=1)
+    qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', seq_idx=0)
+    qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', seq_idx=1)
 
     sched.add_resources([qcm0, qcm0_s0, qcm0_s1, qcm1, qcm1_s0, qcm1_s1, qrm0, qrm0_s0, qrm0_s1])
 
@@ -281,7 +281,7 @@ def test_mismatched_mod_freq():
     q0, q1 = ('q0', 'q1')
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Rxy(theta=90, phi=0, qubit=q1))
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', instrument_name='qcm0', seq_idx=0)
+    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
     sched.add_resource(qcm0_s0)
     with pytest.raises(ValueError, match=r'pulse.*\d+ on channel qcm0.s0 has an inconsistent modulation frequency: '
                                          r'expected 50000000 but was 70000000'):
@@ -290,7 +290,7 @@ def test_mismatched_mod_freq():
 
 def test_gate_and_pulse():
     sched = Schedule("Chevron Experiment")
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', instrument_name='qcm0', seq_idx=0)
+    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
 
     sched.add(X('q0'))
     sched.add(SquarePulse(0.8, 20e-9, 'q0:mw_ch'))

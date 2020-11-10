@@ -51,19 +51,17 @@ class Pulsar_QCM_sequencer(Resource):
     A single sequencer unit contained in a Pulsar_QCM module.
 
     For pulse-sequencing purposes, the Pulsar_QCM_sequencer can be considered
-    a channel capabable of outputting complex valued signals (I, and Q).
+    a channel capable of outputting complex valued signals (I, and Q).
     """
 
-    def __init__(self, name: str, instrument_name: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+    def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
         A channel composed of multiple sub-channels.
 
         Parameters
         -------------
-        name : str
-            the name of this resource.
-        instrument_name: str
-            name of the Pulsar_QCM instrument.
+        address : str
+            the address of this resource, of the form "instrument_name.sequencer_name".
         seq_idx: int
             index of the sequencer unit to use.
         nco_freq: float
@@ -73,15 +71,17 @@ class Pulsar_QCM_sequencer(Resource):
         """
         super().__init__()
 
+        instrument_name, name = address.split(".")
+
         self._timing_tuples = []
         self._pulse_dict = {}
 
-        self.data = {'name': name,
+        self.data = {'name': address,
                      'type': str(self.__class__.__name__),
                      'instrument_name': instrument_name,
                      'seq_idx': seq_idx,
                      'nco_freq': nco_freq,
-                     'nco_phase': nco_freq,
+                     'nco_phase': nco_phase,
                      'sampling_rate': 1e9
                      }
 
@@ -98,16 +98,15 @@ class Pulsar_QCM_sequencer(Resource):
 
 
 class Pulsar_QRM_sequencer(Resource):
-    def __init__(self, name: str, instrument_name: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+
+    def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
         """
         A channel composed of multiple sub-channels.
 
         Parameters
         -------------
-        name : str
-            the name of this resource.
-        instrument_name: str
-            name of the Pulsar_QCM instrument.
+        address : str
+            the address of this resource, of the form "instrument_name.sequencer_name".
         seq_idx: int
             index of the sequencer unit to use.
         nco_freq: float
@@ -117,15 +116,17 @@ class Pulsar_QRM_sequencer(Resource):
         """
         super().__init__()
 
+        instrument_name, name = address.split(".")
+
         self._timing_tuples = []
         self._pulse_dict = {}
 
-        self.data = {'name': name,
+        self.data = {'name': address,
                      'type': str(self.__class__.__name__),
                      'instrument_name': instrument_name,
                      'seq_idx': seq_idx,
                      'nco_freq': nco_freq,
-                     'nco_phase': nco_freq,
+                     'nco_phase': nco_phase,
                      'sampling_rate': 1e9
                      }
 
