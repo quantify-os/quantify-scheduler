@@ -282,17 +282,17 @@ which represent a collection of Resources and a single Core on the Pulsar QCM:
 
     from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
     qcm0 = CompositeResource('qcm0', ['qcm0.s0', 'qcm0.s1'])
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', instrument_name='qcm0', seq_idx=0)
-    qcm0_s1 = Pulsar_QCM_sequencer('qcm0.s1', instrument_name='qcm0', seq_idx=1)
+    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
+    qcm0_s1 = Pulsar_QCM_sequencer('qcm0.s1', seq_idx=1)
 
     qcm1 = CompositeResource('qcm1', ['qcm1.s0', 'qcm1.s1'])
-    qcm1_s0 = Pulsar_QCM_sequencer('qcm1.s0', instrument_name='qcm1', seq_idx=0)
-    qcm1_s1 = Pulsar_QCM_sequencer('qcm1.s1', instrument_name='qcm1', seq_idx=1)
+    qcm1_s0 = Pulsar_QCM_sequencer('qcm1.s0', seq_idx=0)
+    qcm1_s1 = Pulsar_QCM_sequencer('qcm1.s1', seq_idx=1)
 
     qrm0 = CompositeResource('qrm0', ['qrm0.s0', 'qrm0.s1'])
     # Currently mocking a readout module using an acquisition module
-    qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', instrument_name='qrm0', seq_idx=0)
-    qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', instrument_name='qrm0', seq_idx=1)
+    qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', seq_idx=0)
+    qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', seq_idx=1)
 
     sched.add_resources([qcm0, qcm0_s0, qcm0_s1, qcm1, qcm1_s0, qcm1_s1, qrm0, qrm0_s0, qrm0_s1])
 
