@@ -7,11 +7,12 @@ import logging
 import jsonschema
 from typing import Callable
 from quantify.scheduler.types import Schedule
+from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.pulse_library import ModSquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
 from quantify.utilities.general import load_json_schema
 
 
-def _determine_absolute_timing(schedule, clock_unit='physical'):
+def _determine_absolute_timing(schedule, time_unit='physical'):
     """
     Determines the absolute timing of a schedule based on the timing constraints.
 
@@ -19,11 +20,11 @@ def _determine_absolute_timing(schedule, clock_unit='physical'):
     ----------
     schedule : :class:`~quantify.scheduler.Schedule`
         The schedule for which to determine timings.
-    clock_unit : str
+    time_unit : str
         Must be ('physical', 'ideal') : whether to use physical units to determine the
         absolute time or ideal time.
-        When clock_unit == "physical" the duration attribute is used.
-        When clock_unit == "ideal" the duration attribute is ignored and treated as if it is 1.
+        When time_unit == "physical" the duration attribute is used.
+        When time_unit == "ideal" the duration attribute is ignored and treated as if it is 1.
 
 
     Returns
@@ -61,7 +62,7 @@ def _determine_absolute_timing(schedule, clock_unit='physical'):
             ref_op = schedule.operations[ref_constr['operation_hash']]
 
         # duration = 1 is useful when e.g., drawing a circuit diagram.
-        duration_ref_op = ref_op.duration if clock_unit == 'physical' else 1
+        duration_ref_op = ref_op.duration if time_unit == 'physical' else 1
 
         # determine
         if t_constr['ref_pt'] == 'start':
@@ -73,7 +74,7 @@ def _determine_absolute_timing(schedule, clock_unit='physical'):
         else:
             raise NotImplementedError('Timing "{}" not supported by backend'.format(ref_constr['abs_time']))
 
-        duration_new_op = curr_op.duration if clock_unit == 'physical' else 1
+        duration_new_op = curr_op.duration if time_unit == 'physical' else 1
 
         if t_constr['ref_pt_new'] == 'start':
             t_constr['abs_time'] = t0 + t_constr['rel_time']
@@ -98,12 +99,12 @@ def _find_edge(device_cfg, q0, q1, op_name):
     return edge_cfg
 
 
-def _walk_address(device_cfg, address):
-    paths = address.split(':')
-    curr_level = device_cfg['qubits']  # todo, make this work with more than just qubits
-    for path in paths:
-        curr_level = curr_level[path]
-    return curr_level
+# def _walk_address(device_cfg, address):
+#     paths = address.split(':')
+#     curr_level = device_cfg['qubits']  # todo, make this work with more than just qubits
+#     for path in paths:
+#         curr_level = curr_level[path]
+#     return curr_level
 
 
 def _add_pulse_information_transmon(schedule, device_cfg: dict):
@@ -144,41 +145,50 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
     validate_config(device_cfg, scheme_fn='transmon_cfg.json')
 
     for op in schedule.operations.values():
-        if op.valid_pulse:
-            for pulse in op.data['pulse_info']:
-                pulse['channel'] = _walk_address(device_cfg, pulse['channel'])
-            continue
+        # if op.valid_pulse:
+        #     for pulse in op.data['pulse_info']:
+        #         pulse['channel'] = _walk_address(device_cfg, pulse['channel'])
+        #     continue
 
         if op['gate_info']['operation_type'] == 'measure':
             for q in op['gate_info']['qubits']:
                 q_cfg = _walk_address(device_cfg, q)
                 # readout pulse
-                if q_cfg['ro_pulse_type'] == 'square':
-                    op.add_pulse(ModSquarePulse(amp=q_cfg['ro_pulse_amp'],
-                                                duration=q_cfg['ro_pulse_duration'],
-                                                ch=q_cfg['ro_ch'],
-                                                freq_mod=q_cfg['ro_pulse_modulation_freq'],
+                if q_cfg['params']['ro_pulse_type'] == 'square':
+                    op.add_pulse(ModSquarePulse(amp=q_cfg['params']['ro_pulse_amp'],
+                                                duration=q_cfg['params']['ro_pulse_duration'],
+                                                port=q_cfg['resource_map']['port_ro'],
+                                                clock=q_cfg['resource_map']['clock_ro'],
                                                 t0=0))
                     # acquisition integration window
                     op.add_pulse(ModSquarePulse(amp=1,
-                                                duration=q_cfg['ro_acq_integration_time'],
-                                                ch="{}_READOUT".format(q_cfg['ro_ch']),
-                                                freq_mod=-q_cfg['ro_pulse_modulation_freq'],
-                                                t0=q_cfg['ro_acq_delay']))
+                                                duration=q_cfg['params']['ro_acq_integration_time'],
+                                                port="{}_READOUT".format(q_cfg['resource_map']['port_ro']),
+                                                clock=q_cfg['resource_map']['clock_ro'],
+                                                t0=q_cfg['params']['ro_acq_delay']))
+                    # add clock to resources
+                    if q_cfg['resource_map']['clock_ro'] not in schedule.resources.keys():
+                        schedule.add_resources([ClockResource(q_cfg['resource_map']['clock_ro'], freq = q_cfg['params']['ro_freq'])])
 
         elif op['gate_info']['operation_type'] == 'Rxy':
             q = op['gate_info']['qubits'][0]
             # read info from config
             q_cfg = device_cfg['qubits'][q]
 
-            G_amp = q_cfg['mw_amp180']*op['gate_info']['theta'] / 180
-            D_amp = G_amp * q_cfg['mw_motzoi']
+            G_amp = q_cfg['params']['mw_amp180']*op['gate_info']['theta'] / 180
+            D_amp = G_amp * q_cfg['params']['mw_motzoi']
 
             pulse = DRAGPulse(
-                G_amp=G_amp, D_amp=D_amp, phase=op['gate_info']['phi'],
-                ch=q_cfg['mw_ch'],  duration=q_cfg['mw_duration'],
-                freq_mod=q_cfg['mw_modulation_freq'])
+                G_amp=G_amp, D_amp=D_amp, 
+                phase=op['gate_info']['phi'],
+                port=q_cfg['resource_map']['port_mw'], 
+                duration=q_cfg['params']['mw_duration'],
+                clock=q_cfg['resource_map']['clock_01'])
             op.add_pulse(pulse)
+
+            # add clock to resources
+            if q_cfg['resource_map']['clock_01'] not in schedule.resources.keys():
+                schedule.add_resources([ClockResource(q_cfg['resource_map']['clock_01'], freq = q_cfg['params']['mw_freq'])])
 
         elif op['gate_info']['operation_type'] == 'CNOT':
             # These methods don't raise exceptions as they will be implemented shortly
@@ -200,14 +210,14 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
                     raise
 
             amp = edge_cfg['flux_amp_control']
-            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['flux_duration'], ch=edge_cfg['flux_ch_control'])
+            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['flux_duration'], port=edge_cfg['flux_ch_control'])
             op.add_pulse(pulse)
         elif op['gate_info']['operation_type'] == 'reset':
             # Initialization through relaxation
             qubits = op['gate_info']['qubits']
             init_times = []
             for q in qubits:
-                init_times.append(device_cfg['qubits'][q]['init_duration'])
+                init_times.append(device_cfg['qubits'][q]['params']['init_duration'])
             op.add_pulse(IdlePulse(max(init_times)))
 
         else:

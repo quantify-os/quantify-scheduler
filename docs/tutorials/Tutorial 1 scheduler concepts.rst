@@ -134,7 +134,7 @@ Under the hood, the :class:`~quantify.scheduler.Schedule` is based on a dictiona
 
   sched.data
 
-We also need to define the resources. For now these are just strings because I have not implemented them properly yet.
+We also need to define the resources. For now these are just strings.
 
 .. jupyter-execute::
 

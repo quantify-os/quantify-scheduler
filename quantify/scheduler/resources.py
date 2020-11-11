@@ -5,138 +5,190 @@
 # -----------------------------------------------------------------------------
 from .types import Resource
 
-
-class CompositeResource(Resource):
+class PortResource(Resource):
     """
-    A channel composed of multiple resources.
-
-    The compiler backend is responsible for using this resource to map
-    operations to the relevant sub-channels.
+    A port resource to which pulses can be scheduled.
 
     .. tip::
 
-        A relevant use-case of this class is when making use of sequencer units in
-        the Pulsar_QCM. The user can make specify this composite channel to
-        play pulses, while the backend compiler ensures the pulses get distributed
-        to the relevant sequencer resources.
+        asdf
 
     """
 
-    def __init__(self, name: str, resource_names: list):
+    def __init__(self, name: str):
         """
-        A channel composed of multiple sub-channels.
+        A port resource to which pulses can be scheduled.
 
         Parameters
         -------------
         name : str
             the name of this resource
-        resource_names : list
-            a list of the resources referenced within this composite
 
 
         """
-        super().__init__()
-        for rn in resource_names:
-            if not isinstance(rn, str):
-                raise TypeError(
-                    'resource_names "{}"must be strings'.format(resource_names))
-
         self.data = {'name': name,
-                     'type': str(self.__class__.__name__),
-                     'resources': resource_names}
+                     'type': str(self.__class__.__name__)}
 
-
-class Pulsar_QCM_sequencer(Resource):
+class ClockResource(Resource):
     """
-    A single sequencer unit contained in a Pulsar_QCM module.
+    A clock resource that can used to modulate pulses.
 
-    For pulse-sequencing purposes, the Pulsar_QCM_sequencer can be considered
-    a channel capable of outputting complex valued signals (I, and Q).
+    .. tip::
+
+        asdf
+
     """
 
-    def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+    def __init__(self, name: str, freq: float, phase: float = 0):
         """
-        A channel composed of multiple sub-channels.
+        A clock resource that can used to modulate pulses.
 
         Parameters
         -------------
-        address : str
-            the address of this resource, of the form "instrument_name.sequencer_name".
-        seq_idx: int
-            index of the sequencer unit to use.
-        nco_freq: float
-            modulation frequency.
-        nco_phase: float
-            modulation phase.
+        name : str
+            the name of this resource
+        freq : float
+            the frequency of the clock
+
         """
-        super().__init__()
 
-        instrument_name, name = address.split(".")
+        self.data = {'name' : name,
+                     'type' : str(self.__class__.__name__),
+                     'freq' : freq,
+                     'phase': phase
+                    }
 
-        self._timing_tuples = []
-        self._pulse_dict = {}
+# class CompositeResource(Resource):
+#     """
+#     A channel composed of multiple resources.
 
-        self.data = {'name': address,
-                     'type': str(self.__class__.__name__),
-                     'instrument_name': instrument_name,
-                     'seq_idx': seq_idx,
-                     'nco_freq': nco_freq,
-                     'nco_phase': nco_phase,
-                     'sampling_rate': 1e9
-                     }
+#     The compiler backend is responsible for using this resource to map
+#     operations to the relevant sub-channels.
 
-    @property
-    def timing_tuples(self):
-        """
-        A list of timing tuples con
-        """
-        return self._timing_tuples
+#     .. tip::
 
-    @property
-    def pulse_dict(self):
-        return self._pulse_dict
+#         A relevant use-case of this class is when making use of sequencer units in
+#         the Pulsar_QCM. The user can make specify this composite channel to
+#         play pulses, while the backend compiler ensures the pulses get distributed
+#         to the relevant sequencer resources.
+
+#     """
+
+#     def __init__(self, name: str, resource_names: list):
+#         """
+#         A channel composed of multiple sub-channels.
+
+#         Parameters
+#         -------------
+#         name : str
+#             the name of this resource
+#         resource_names : list
+#             a list of the resources referenced within this composite
 
 
-class Pulsar_QRM_sequencer(Resource):
+#         """
+#         super().__init__()
+#         for rn in resource_names:
+#             if not isinstance(rn, str):
+#                 raise TypeError(
+#                     'resource_names "{}"must be strings'.format(resource_names))
 
-    def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
-        """
-        A channel composed of multiple sub-channels.
+#         self.data = {'name': name,
+#                      'type': str(self.__class__.__name__),
+#                      'resources': resource_names}
 
-        Parameters
-        -------------
-        address : str
-            the address of this resource, of the form "instrument_name.sequencer_name".
-        seq_idx: int
-            index of the sequencer unit to use.
-        nco_freq: float
-            modulation frequency.
-        nco_phase: float
-            modulation phase.
-        """
-        super().__init__()
 
-        instrument_name, name = address.split(".")
+# class Pulsar_QCM_sequencer(Resource):
+#     """
+#     A single sequencer unit contained in a Pulsar_QCM module.
 
-        self._timing_tuples = []
-        self._pulse_dict = {}
+#     For pulse-sequencing purposes, the Pulsar_QCM_sequencer can be considered
+#     a channel capable of outputting complex valued signals (I, and Q).
+#     """
 
-        self.data = {'name': address,
-                     'type': str(self.__class__.__name__),
-                     'instrument_name': instrument_name,
-                     'seq_idx': seq_idx,
-                     'nco_freq': nco_freq,
-                     'nco_phase': nco_phase,
-                     'sampling_rate': 1e9
-                     }
+#     def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+#         """
+#         A channel composed of multiple sub-channels.
 
-    @property
-    def timing_tuples(self):
-        """
-        A list of timing tuples con
-        """
-        return self._timing_tuples
+#         Parameters
+#         -------------
+#         address : str
+#             the address of this resource, of the form "instrument_name.sequencer_name".
+#         seq_idx: int
+#             index of the sequencer unit to use.
+#         nco_freq: float
+#             modulation frequency.
+#         nco_phase: float
+#             modulation phase.
+#         """
+#         super().__init__()
 
-    @property
-    def pulse_dict(self):
-        return self._pulse_dict
+#         instrument_name, name = address.split(".")
+
+#         self._timing_tuples = []
+#         self._pulse_dict = {}
+
+#         self.data = {'name': address,
+#                      'type': str(self.__class__.__name__),
+#                      'instrument_name': instrument_name,
+#                      'seq_idx': seq_idx,
+#                      'nco_freq': nco_freq,
+#                      'nco_phase': nco_phase,
+#                      'sampling_rate': 1e9
+#                      }
+
+#     @property
+#     def timing_tuples(self):
+#         """
+#         A list of timing tuples con
+#         """
+#         return self._timing_tuples
+
+#     @property
+#     def pulse_dict(self):
+#         return self._pulse_dict
+
+
+# class Pulsar_QRM_sequencer(Resource):
+
+#     def __init__(self, address: str, seq_idx: int, nco_freq: float = 0, nco_phase: float = 0):
+#         """
+#         A channel composed of multiple sub-channels.
+
+#         Parameters
+#         -------------
+#         address : str
+#             the address of this resource, of the form "instrument_name.sequencer_name".
+#         seq_idx: int
+#             index of the sequencer unit to use.
+#         nco_freq: float
+#             modulation frequency.
+#         nco_phase: float
+#             modulation phase.
+#         """
+#         super().__init__()
+
+#         instrument_name, name = address.split(".")
+
+#         self._timing_tuples = []
+#         self._pulse_dict = {}
+
+#         self.data = {'name': address,
+#                      'type': str(self.__class__.__name__),
+#                      'instrument_name': instrument_name,
+#                      'seq_idx': seq_idx,
+#                      'nco_freq': nco_freq,
+#                      'nco_phase': nco_phase,
+#                      'sampling_rate': 1e9
+#                      }
+
+#     @property
+#     def timing_tuples(self):
+#         """
+#         A list of timing tuples con
+#         """
+#         return self._timing_tuples
+
+#     @property
+#     def pulse_dict(self):
+#         return self._pulse_dict

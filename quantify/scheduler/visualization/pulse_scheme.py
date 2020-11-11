@@ -162,9 +162,10 @@ def box_text(ax, x0, y0, text='', w=1.1, h=.8, color='black', fillcolor=None, te
 
 
 def pulse_diagram_plotly(schedule,
-                         ch_list: list = None,
+                         port_list: list = None,
                          fig_ch_height: float = 150,
                          fig_width: float = 1000,
+                         modulation_if: float = 0,
                          modulation: bool = True,
                          sampling_rate: float = 1e9
                          ):
@@ -174,34 +175,36 @@ def pulse_diagram_plotly(schedule,
     Parameters
     ------------
     schedule : :class:`~quantify.scheduler.types.Schedule`
-        the schedule to render
-    ch_list : list
-        A list of channels to show. if set to `None` will use the first
-        8 channels it encounters in the sequence.
+        The schedule to render.
+    port_list : list
+        A list of ports to show. if set to `None` will use the first
+        8 ports it encounters in the sequence.
     fig_ch_height: float
-        height for each channel subplot in px
+        Height for each channel subplot in px.
     fig_width: float
-        width for the figure in px
+        Width for the figure in px.
     modulation: bool
-        determines if modulation is included in the visualization
+        Determines if modulation is included in the visualization.
+    modulation_if: bool
+        Determines if intermediate frequency is used for the modulation in the visualization.
     sampling_rate : float
-        the time resolution used in the visualization.
+        The time resolution used in the visualization.
     Returns
     -------
     :class:`plotly.graph_objects.Figure`
         the plot
     """
 
-    if ch_list is None:  # determine the channel list automatically.
+    if port_list is None:  # determine the channel list automatically.
         auto_map = True
         offset_idx = 0
         nr_rows = 8
-        ch_map = {}
+        port_map = {}
     else:
         auto_map = False
-        nr_rows = len(ch_list)
-        ch_map = dict(zip(ch_list, range(len(ch_list))))
-        print(ch_map)
+        nr_rows = len(port_list)
+        port_map = dict(zip(port_list, range(len(port_list))))
+        print(port_map)
 
     fig = make_subplots(rows=nr_rows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
     fig.update_layout(height=fig_ch_height*nr_rows, width=fig_width, title=schedule.data['name'], showlegend=False)
@@ -235,21 +238,25 @@ def pulse_diagram_plotly(schedule,
                 wf = wf_func(t=t, **wf_kwargs)
 
                 # optionally adds some modulation
-                if modulation and 'freq_mod' in p.keys():
+                if modulation and modulation_if == 0.0 and 'clock' in p.keys():
                     # apply modulation to the waveforms
-                    wf = modulate_wave(t, wf, p['freq_mod'])
+                    wf = modulate_wave(t, wf, schedule.resources[p['clock']]['freq'])
 
-                ch = p['channel']
-                # If channel does not exist yet and using auto map, add it.
-                if ch not in ch_map.keys() and auto_map:
-                    ch_map[ch] = offset_idx
+                if modulation and modulation_if > 0 and 'clock' in p.keys():
+                    # apply modulation to the waveforms
+                    wf = modulate_wave(t, wf, modulation_if)
+
+                port = p['port']
+                # If port_list does not exist yet and using auto map, add it.
+                if port not in port_map.keys() and auto_map:
+                    port_map[port] = offset_idx
                     offset_idx += 1
 
-                    # once all channels are used, don't add new channels anymore.
+                    # once all ports are used, don't add new ports anymore.
                     if offset_idx > nr_rows:
                         auto_map = False
 
-                if ch in ch_map.keys():
+                if port in port_map.keys():
                     # FIXME properly deal with complex waveforms.
                     for i in range(2):
                         showlegend = (i == 0)
@@ -257,11 +264,11 @@ def pulse_diagram_plotly(schedule,
                         fig.add_trace(go.Scatter(x=t, y=wf.imag, mode='lines', name=label, legendgroup=pls_idx,
                                                  showlegend=showlegend,
                                                  line_color='lightgrey'),
-                                      row=ch_map[ch]+1, col=1)
+                                      row=port_map[port]+1, col=1)
                         fig.add_trace(go.Scatter(x=t, y=wf.real, mode='lines', name=label, legendgroup=pls_idx,
                                                  showlegend=showlegend,
                                                  line_color=colors[col_idx]),
-                                      row=ch_map[ch]+1, col=1)
+                                      row=port_map[port]+1, col=1)
 
     for r in range(nr_rows):
         title = ''
