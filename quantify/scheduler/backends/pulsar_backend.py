@@ -12,15 +12,106 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
+from pulsar_qcm.pulsar_qcm import pulsar_qcm, pulsar_qcm_dummy
+from quantify.scheduler.types import Resource
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
 
 
-PulsarModulations = namedtuple('PulsarModulations', ['gain', 'gain_Q', 'offset', 'phase', 'phase_delta'],
+PulsarModulations = namedtuple('PulsarModulations', ['gain_I', 'gain_Q', 'offset', 'phase', 'phase_delta'],
                                defaults=[None, None, None, None, None])
 
 QCM_DRIVER_VER = '0.1.2'
 QRM_DRIVER_VER = '0.1.2'
+
+
+class QCM_sequencer(Resource):
+    """
+    A single sequencer unit contained in a Pulsar_QCM module.
+
+    For pulse-sequencing purposes, the Pulsar_QCM_sequencer can be considered
+    a channel capabable of outputting complex valued signals (I, and Q).
+    """
+
+    def __init__(self, name: str, clock: str = 'None', nco_freq: float = 0, nco_phase: float = 0):
+        """
+        A QCM sequencer.
+
+        Parameters
+        -------------
+        name : str
+            the name of this resource.
+        clock: str
+            Clock that is tracked by the NCO
+        nco_freq: float
+            Frequency of NCO.
+        nco_phase: float
+            Phase of NCO.
+        """
+        super().__init__()
+
+        self._timing_tuples = []
+        self._pulse_dict = {}
+
+        self.data = {'name': name,
+                     'type': str(self.__class__.__name__),
+                     'clock': clock,
+                     'nco_freq': nco_freq,
+                     'nco_phase': nco_phase,
+                     'sampling_rate': 1e9
+                     }
+
+    @property
+    def timing_tuples(self):
+        """
+        A list of timing tuples con
+        """
+        return self._timing_tuples
+
+    @property
+    def pulse_dict(self):
+        return self._pulse_dict
+
+
+class QRM_sequencer(Resource):
+    def __init__(self, name: str, clock: str = 'None', nco_freq: float = 0, nco_phase: float = 0):
+        """
+        A QRM sequencer.
+
+        Parameters
+        -------------
+        name : str
+            the name of this resource.
+        clock: str
+            Clock that is tracked by the NCO
+        nco_freq: float
+            Frequency of NCO.
+        nco_phase: float
+            Phase of NCO.
+        """
+        super().__init__()
+
+        self._timing_tuples = []
+        self._pulse_dict = {}
+
+        self.data = {'name': name,
+                     'type': str(self.__class__.__name__),
+                     'clock': clock,
+                     'nco_freq': nco_freq,
+                     'nco_phase': nco_phase,
+                     'sampling_rate': 1e9
+                     }
+
+    @property
+    def timing_tuples(self):
+        """
+        A list of timing tuples con
+        """
+        return self._timing_tuples
+
+    @property
+    def pulse_dict(self):
+        return self._pulse_dict
 
 
 class Q1ASMBuilder:
@@ -89,14 +180,14 @@ class Q1ASMBuilder:
     def update_parameters(self, modulations: PulsarModulations, device):
         if not modulations:
             return
-        if modulations.gain is not None:
-            normalised = modulations.gain/self.AWG_OUTPUT_VOLT
-            gain_val = self._expand_from_normalised_range(normalised, "Gain")
-            gain_Q_val = gain_val
+        if modulations.gain_I is not None:
+            normalised = modulations.gain_I/self.AWG_OUTPUT_VOLT
+            gain_I_val = self._expand_from_normalised_range(normalised, "Gain")
+            gain_Q_val = gain_I_val
             if modulations.gain_Q is not None:
                 normalised = modulations.gain_Q / self.AWG_OUTPUT_VOLT
                 gain_Q_val = self._expand_from_normalised_range(normalised, "Gain")
-            self.rows.append(['', 'set_{}_gain'.format(device), "{},{}".format(gain_val, gain_Q_val), '#Set gain'])
+            self.rows.append(['', 'set_{}_gain'.format(device), "{},{}".format(gain_I_val, gain_Q_val), '#Set gain'])
         if modulations.offset is not None:
             offset_val = self._expand_from_normalised_range(modulations.offset, "Offset")
             self.rows.append(['', 'set_{}_offs'.format(device), "{0},{0}".format(offset_val), ""])
@@ -144,7 +235,7 @@ class Q1ASMBuilder:
 
 
 # todo this doesnt work for custom waveform functions - use visitors?
-def _prepare_pulse(description):
+def _prepare_pulse(description, gain = 0.0):
     def dummy_load_params(param_list):
         for param, default in param_list:
             description[param] = default
@@ -152,18 +243,96 @@ def _prepare_pulse(description):
 
     wf_func = description['wf_func']
     if wf_func == 'quantify.scheduler.waveforms.square' or wf_func == 'quantify.scheduler.waveforms.soft_square':
-        params = PulsarModulations(gain=description['amp'])
+        params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
     elif wf_func == 'quantify.scheduler.waveforms.drag':
-        params = PulsarModulations(gain=description['G_amp'], gain_Q=description['D_amp'], phase=description['phase'])
-        return params, dummy_load_params([('G_amp', 1.0), ('D_amp', 1.0), ('phase', 0)])
+        params = PulsarModulations(gain_I=description['G_amp']/10**(gain/20), gain_Q=description['G_amp']/10**(gain/20), phase=description['phase'])
+        return params, dummy_load_params([('G_amp', 1.0), ('D_amp', description['D_amp']/description['G_amp']), ('phase', 0)])
     elif wf_func is None:
         return None, description
     else:
         raise ValueError("Unknown wave {}".format(wf_func))
 
 
-def pulsar_assembler_backend(schedule, tuid=None, configure_hardware=False, debug=False):
+def _extract_gain_from_mapping(nested_dictionary, port: str):
+    for key, value in nested_dictionary.items():
+        if type(value) is dict:
+            gain = _extract_gain_from_mapping(value, port)
+            if gain != None:
+                return gain
+        else:
+            if type(value) is list:
+                if port in value:
+                    gain = nested_dictionary['gain']
+                    return gain
+            elif port == value:
+                gain = nested_dictionary['gain']
+                return gain
+
+
+def _extract_nco_freq_from_mapping(nested_dictionary, port: str, clock_freq: float):
+    for key, value in nested_dictionary.items():
+        if type(value) is dict:
+            nco_freq = _extract_nco_freq_from_mapping(value, port, clock_freq)
+            if nco_freq != None:
+                return nco_freq
+        else:
+            if type(value) is list:
+                if port in value:
+                    for key2, value2 in nested_dictionary.items():
+                        if 'nco_freq' == key2:
+                            nco_freq = value2
+                            return nco_freq
+                        elif 'lo_freq' == key2:
+                            nco_freq = clock_freq - value2
+                            return nco_freq
+            elif port == value:
+                for key3, value3 in nested_dictionary.items():
+                    if 'nco_freq' == key3:
+                        nco_freq = value3
+                        return nco_freq
+                    elif 'lo_freq' == key3:
+                        nco_freq = clock_freq - value3
+                        return nco_freq
+
+
+def _extract_io_from_mapping(nested_dictionary, port: str):
+    def containts_port(nested_dictionary, port: str):
+        for key, value in nested_dictionary.items():
+            if type(value) is list:
+                if port in value:
+                    return True
+            elif port == value:
+                return True
+    
+    for key, value in nested_dictionary.items():
+        if type(value) is dict:
+            output = _extract_io_from_mapping(value, port)
+            if output != None:
+                return output
+            if containts_port(value, port):
+                return key
+
+
+def _extract_config_from_mapping(nested_dictionary, port: str):
+    def containts_port(nested_dictionary, port: str):
+        for key, value in nested_dictionary.items():
+            if type(value) is list:
+                if port in value:
+                    return True
+            elif port == value:
+                return True
+    
+    for key, value in nested_dictionary.items():
+        if type(value) is dict:
+            output = _extract_config_from_mapping(value, port)
+            if output != None:
+                return output
+            if containts_port(value, port):
+                return nested_dictionary
+
+
+def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configure_hardware=False, debug=False):
     """
     Create sequencer configuration files for multiple Qblox pulsar modules.
 
@@ -178,6 +347,9 @@ def pulsar_assembler_backend(schedule, tuid=None, configure_hardware=False, debu
     ------------
     schedule : :class:`~quantify.scheduler.types.Schedule` :
         The schedule to convert into assembly.
+
+    mapping : :class:`~quantify.scheduler.types.mapping` :
+        The mapping that describes how the Pulsars are connected to the ports.
 
     tuid : :class:`~quantify.data.types.TUID` :
         a tuid of the experiment the schedule belongs to. If set to None, a new TUID will be generated to store
@@ -216,38 +388,47 @@ def pulsar_assembler_backend(schedule, tuid=None, configure_hardware=False, debu
             if 'abs_time' not in t_constr:
                 raise ValueError("Absolute timing has not been determined for the schedule '{}'".format(schedule.name))
 
-            # prepare pulse will modify, copy to avoid changing the reference operation in the master schedule list
-            params, p = _prepare_pulse(p_ref.copy())
+            # copy to avoid changing the reference operation in the master schedule list
+            p = p_ref.copy()
             t0 = t_constr['abs_time']+p['t0']
             pulse_id = make_hash(without(p, ['t0']))
 
-            if p['channel'] is None:
-                continue  # pulses with None channel will be ignored by this backend
+            if p['port'] is None:
+                continue  # pulses with None port will be ignored by this backend
 
-            # if the compiler has marked this pulse as being on a readout channel, mark it in the acquisitions set
-            if p['channel'][-8:] == '_READOUT':
+            # if the compiler has marked this pulse as being on a readout port, mark it in the acquisitions set
+            if p['port'][-8:] == '_READOUT':
                 acquisitions.add(pulse_id)
-                p['channel'] = p['channel'][:-8]
+                p['port'] = p['port'][:-8]
 
-            # Assumes the channel exists in the resources available to the schedule
-            if p['channel'] not in schedule.resources.keys():
-                raise KeyError('Resource "{}" not available in "{}"'.format(p['channel'], schedule))
+            # assumes the sequencer exists in the resources available to the schedule
+            if p['port'] not in schedule.resources.keys():
+                if 'clock' in p.keys():   
+                    nco_freq = _extract_nco_freq_from_mapping(mapping, p['port'], schedule.resources[p['clock']]['freq'])
+                    schedule.add_resources([QCM_sequencer(p['port'], clock = p['clock'], nco_freq = nco_freq)])
+                else:
+                    schedule.add_resources([QCM_sequencer(p['port'])])
+                
+            # extract pulse parameters
+            gain = _extract_gain_from_mapping(mapping, p['port'])
+            params, p = _prepare_pulse(p, gain)
 
-            ch = schedule.resources[p['channel']]
-            ch.timing_tuples.append((round(t0*ch['sampling_rate']), pulse_id, params))
+            seq = schedule.resources[p['port']]
+            seq.timing_tuples.append((round(t0*seq['sampling_rate']), pulse_id, params))
 
             # determine waveform
-            if pulse_id not in ch.pulse_dict.keys():
-                if 'freq_mod' in p:
-                    if ch['type'] == 'Pulsar_QCM_sequencer' and ch['nco_freq'] != 0 and p['freq_mod'] != ch['nco_freq']:
-                        raise ValueError('pulse {} on channel {} has an inconsistent modulation frequency: expected {} '
-                                         'but was {}'
-                                         .format(pulse_id, ch['name'], int(ch['nco_freq']), int(p['freq_mod'])))
-                    if ch['nco_freq'] == 0:
-                        ch['nco_freq'] = p['freq_mod']
+            if pulse_id not in seq.pulse_dict.keys():
+
+                if 'clock' not in p.keys() and seq['clock'] != 'None':
+                    raise ValueError('pulse {} on sequencer {} has an inconsistent clock frequency: expected {} but was None'
+                        .format(pulse_id, seq['name'], seq['clock']))
+                
+                if 'clock' in p.keys() and p['clock'] != seq['clock']:
+                    raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
+                        .format(pulse_id, seq['name'], seq['clock'], p['clock']))
 
                 # the pulsar backend makes use of real-time pulse modulation
-                t = np.arange(0, 0+p['duration'], 1/ch['sampling_rate'])
+                t = np.arange(0, 0+p['duration'], 1/seq['sampling_rate'])
                 wf_func = import_func_from_string(p['wf_func'])
 
                 # select the arguments for the waveform function that are present in pulse info
@@ -258,9 +439,9 @@ def pulsar_assembler_backend(schedule, tuid=None, configure_hardware=False, debu
                         wf_kwargs[kw] = p[kw]
                 # Calculate the numerical waveform using the wf_func
                 wf = wf_func(t=t, **wf_kwargs)
-                ch.pulse_dict[pulse_id] = wf
+                seq.pulse_dict[pulse_id] = wf
 
-            seq_duration = ch.timing_tuples[-1][0] + len(ch.pulse_dict[pulse_id])
+            seq_duration = seq.timing_tuples[-1][0] + len(seq.pulse_dict[pulse_id])
             max_seq_duration = max_seq_duration if max_seq_duration > seq_duration else seq_duration
 
     # Creating the files
@@ -293,10 +474,11 @@ def pulsar_assembler_backend(schedule, tuid=None, configure_hardware=False, debu
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
 
+    instr = None
     if configure_hardware:
-        configure_pulsar_sequencers(config_dict)
+        instr = configure_pulsars(config_dict, mapping)
 
-    return schedule, config_dict
+    return schedule, config_dict, instr
 
 
 def _check_driver_version(instr, ver):
@@ -308,7 +490,7 @@ def _check_driver_version(instr, ver):
         ))
 
 
-def configure_pulsar_sequencers(config_dict: dict):
+def configure_pulsars(config: dict, mapping: dict, configure_hardware = False, run = False):
     """
     Configures multiple pulsar modules based on a configuration dictionary.
 
@@ -317,21 +499,43 @@ def configure_pulsar_sequencers(config_dict: dict):
     config_dict: dict
         Dictionary with resource_names as keys and filenames of sequencer config json files as values.
     """
-    for resource, config_fn in config_dict.items():
+
+    pulsars = {}
+
+    for resource, config_fn in config.items():
         with open(config_fn) as seq_config:
             data = json.load(seq_config)
             instr_cfg = data['instr_cfg']
-            pulsar = Instrument.find_instrument(instr_cfg['instrument_name'])
-            is_qrm = instr_cfg['type'] == "Pulsar_QRM_sequencer"
-            if is_qrm:
-                _check_driver_version(pulsar, QRM_DRIVER_VER)
-            else:
-                _check_driver_version(pulsar, QCM_DRIVER_VER)
+            pulsar_dict = _extract_config_from_mapping(mapping, instr_cfg['name'])
+            io = _extract_io_from_mapping(mapping, instr_cfg['name'])
+
+            # check if pulsar is found in mapping file
+            if not pulsar_dict:
+                raise ValueError('Port {} not found in mapping file.' .format(instr_cfg['name']))
 
             # configure settings
-            seq_idx = instr_cfg['seq_idx']
-            if seq_idx > 0:
-                continue  # multiple sequencers not supported yet
+            if io == "complex_output_0":
+                seq_idx = 0
+            elif io == "complex_output_1":
+                seq_idx = 1
+            else:
+                raise ValueError('Real outputs not yet supported.')
+
+            if pulsar_dict['name'] not in pulsars:
+                pulsar = pulsar_qcm(pulsar_dict['name'], pulsar_dict['IP address'], debug=1)
+                pulsars[pulsar_dict['name']] = pulsar
+                # if pulsar_dict['ref'] == 'int':
+                #     pulsar._set_reference_source(True)
+                if pulsar_dict['ref'] == 'ext':
+                    pulsar._set_reference_source(False)
+            else:
+                pulsar = pulsars[pulsar_dict['name']]
+
+            is_qrm = instr_cfg['type'] == "QRM_sequencer"
+            # if is_qrm:
+            #     _check_driver_version(pulsar, QRM_DRIVER_VER)
+            # else:
+            #     _check_driver_version(pulsar, QCM_DRIVER_VER)
 
             pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
             pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
@@ -353,6 +557,8 @@ def configure_pulsar_sequencers(config_dict: dict):
 
             # configure sequencer
             pulsar.set('sequencer{}_waveforms_and_program'.format(seq_idx), config_fn)
+
+    return pulsars
 
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
