@@ -7,20 +7,6 @@ import numpy as np
 from .types import Operation
 
 
-class Gate(Operation):
-
-    def __init__(self, name):
-        data = {
-            'gate_info': {
-                'unitary': None,
-                'tex': '',
-                'plot_func': None,
-                'qubits': []}
-        }
-
-        super().__init__(name, data)
-
-
 class Rxy(Operation):
     """
     A single qubit rotation around an axis in the equator of the Bloch sphere.
