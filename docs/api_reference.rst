@@ -65,22 +65,9 @@ pulsar_backend
 
 
 visualization
-~~~~~~~~~~~~~~
-
-.. automodule:: quantify.scheduler.backends.visualization
-    :members:
-
-
-visualization
 ---------------
 
 .. automodule:: quantify.scheduler.visualization
-    :members:
-
-circuit_diagram
-~~~~~~~~~~~~~~~~~
-
-.. automodule:: quantify.scheduler.visualization.pulse_scheme
     :members:
 
 circuit_diagram
