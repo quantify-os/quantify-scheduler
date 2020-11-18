@@ -5,16 +5,31 @@ Tutorial 1. Scheduler concepts
   :id: Tutorial 1. Scheduler concepts
 
 In this tutorial we explore how to program a basic experiment using the :mod:`quantify.scheduler`.
-We will give an overview of the sequncer module and show different visualization backends as well as compilation onto a hardware backend.
+The :mod:`quantify.scheduler` can be used to schedule operations on the control hardware.
+The :mod:`quantify.scheduler` is designed to provide access to hardware functionality at a high-level interface.
+We will give an overview of the scheduler module and show different visualization backends as well as compilation onto a hardware backend.
 
 
 Concepts
 ----------------
+To understand how the scheduler works it is important to understand the basic concepts.
+The basic idea is to specify when what :class:`~quantify.scheduler.Operation` is applied where.
+To this end, :class:`~quantify.scheduler.Operation`s are added to a :class:`~quantify.scheduler.Schedule`.
 
-The :mod:`quantify.scheduler` can be used to schedule operations on the control hardware.
-The :mod:`quantify.scheduler` is designed to provide access to hardware functionality at a high-level interface.
 
-The :mod:`quantify.scheduler` is built around the :class:`~quantify.scheduler.Schedule`, a JSON-based data structure containing :attr:`~quantify.scheduler.Schedule.operations` , :attr:`~quantify.scheduler.Schedule.timing_constraints` , and :attr:`~quantify.scheduler.Schedule.resources` .
+The :class:`~quantify.scheduler.Schedule` is a JSON-based data structure containing :attr:`~quantify.scheduler.Schedule.operations`  and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+
+
+
+
+- Operations are added to a schedule
+- Operations can have a representation on the gate and/or on the pulse level.
+- Gates act on qubits.
+- Pulses act on ports and clocks.
+-
+
+
+
 Take a look at the :class:`quantify.scheduler.Schedule` documentation for more details.
 
 An :class:`~quantify.scheduler.Operation` contains information on how to *represent* the operation at different levels of abstraction, such as the quantum-circuit (gate) level or the pulse level.
