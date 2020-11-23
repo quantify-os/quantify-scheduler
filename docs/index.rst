@@ -1,6 +1,6 @@
 Welcome to Quantify's documentation!
 ======================================
-
+..
 .. include:: readme.rst
 
 .. toctree::
@@ -11,7 +11,7 @@ Welcome to Quantify's documentation!
    installation
    usage
    .. concepts
-   toolchain
+   .. toolchain
    contributing
    authors
    changelog
