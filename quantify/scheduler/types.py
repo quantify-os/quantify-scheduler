@@ -54,7 +54,10 @@ class Schedule(UserDict):
     @property
     def operations(self):
         """
-        Operation dictionary, keys are the has of operations values are instances of :class:`Operation`.
+        A dictionary of all unique operations used in the schedule.
+        This specifies information on *what* operation to apply *where*.
+
+        The keys correspond to the :meth:`~Operation.hash` and values are instances of :class:`Operation`.
         """
         return self.data['operation_dict']
 
@@ -62,9 +65,16 @@ class Schedule(UserDict):
     def timing_constraints(self):
         """
         A list of dictionaries describing timing constraints between operations.
+
+        Each item in the list is a dictionary with the following keys:
+            [label, rel_time, ref_op, ref_pt_new, ref_pt, operation_hash]
+
+        The label is used as a unique identifier that can be used as a reference for other operations
+        the operation_hash refers to the hash of a unique operation in :meth:`~Schedule.operations`.
         """
         return self.data['timing_constraints']
 
+    #   TODO check if this property is deprecated.
     @property
     def resources(self):
         """
