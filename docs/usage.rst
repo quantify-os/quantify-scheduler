@@ -194,13 +194,31 @@ Compilation
 
 
 Device configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Used to compile from the idealized gate-level to the device specific pulse-level description.
+
+* Resources vs params
+* Amplitudes represent amplitudes at port!
+
+Add example config file here and discuss it.
 
 
 Hardware mapping file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Used to compile from the device-specific pulse-level description to control-hardware-specific instructions.
+
+* JSON files that contains all instruments that can be handled by the scheduler backend
+* Contains instrument settings
+* Contains gain between port and instrument output
+* Multiple “ports” can be linked to a single (complex) output.
+
+Add example mapping file here and discuss it.
 
 
+OLD OUTDATED STUFF
+------------------------
 
 
 
