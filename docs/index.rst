@@ -10,7 +10,7 @@ Welcome to Quantify's documentation!
 
    installation
    usage
-   concepts
+   .. concepts
    toolchain
    contributing
    authors
@@ -24,7 +24,7 @@ Tutorials
    :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/Tutorial 1 scheduler concepts.rst
+   tutorials/Tutorial 1. basic experiment.rst
 
 API Reference
 ===================

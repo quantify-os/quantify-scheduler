@@ -8,7 +8,7 @@ User guide
 
 Introduction
 ----------------
-Quantify-scheduler is module for writing quantum programs.
+Quantify-scheduler is a module for writing quantum programs.
 It is designed for experimentalists to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
 
 The :mod:`quantify.scheduler` can be used to schedule operations on the control hardware.
@@ -19,11 +19,65 @@ We will give an overview of the scheduler module and show different visualizatio
 Concepts
 ----------------
 To understand how the scheduler works it is important to understand the basic concepts.
-The basic idea is to specify when what :class:`~quantify.scheduler.Operation` is applied where.
-To this end, :class:`~quantify.scheduler.Operation`s are added to a :class:`~quantify.scheduler.Schedule`.
+In the Quantify-scheduler, :class:`~quantify.scheduler.Operation`s are added to a :class:`~quantify.scheduler.Schedule` which is then compiled for execution on a backend.
+
+Schedule
+~~~~~~~~~~~
+
+The :class:`~quantify.scheduler.Schedule` is a data structure that is at the core of the Quantify-scheduler.
+The :class:`~quantify.scheduler.Schedule` contains information on *when* and *where* *what* operation should be performed.
+
+The :class:`~quantify.scheduler.Operation` object is a datastructure that describes the operation that should be performed.
+An operation can be represented at different levels of abstraction such as the (quantum) :ref:`Gate-level description` and the :ref:`Pulse-level description`.
+The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_library` and the :mod:`quantify.scheduler.pulse_library` , both containing common operations.
 
 
 The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~quantify.scheduler.Schedule.operations`  and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+:attr:`~quantify.scheduler.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
+:attr:`~quantify.scheduler.Schedule.timing_constraints`
+
+
+When adding an :class:`~quantify.scheduler.Operation` to a :class:`~quantify.scheduler.Schedule` using the :meth:`~quantify.scheduler.Schedule.add` method, it is possible to specify
+
+
+is it is not required to specify how to represent this :class:`~quantify.scheduler.Operation` on all different levels.
+
+
+
+
+
+When an :class:`~quantify.scheduler.Operation` is added to a :class:`~quantify.scheduler.Schedule`, it is possible for the information on how to represent an operation at
+
+the user is not expected to provide all information at once.
+Only when specific information is required by a backend such as a simulator or a hardware backend does the information need to be provided.
+
+
+
+
+
+
+
+
+Gate-level description
+~~~~~~~~~~~~~~~~~~~~~~~~~
+what : unitaries
+where: qubits
+
+
+Pulse-level description
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Compilation steps
+~~~~~~~~~~~~~~~~~~~~
+
+
+
+Take a look at the :class:`quantify.scheduler.Schedule` documentation for more details.
+
+An :class:`~quantify.scheduler.Operation` contains information on how to *represent* the operation at different levels of abstraction, such as the quantum-circuit (gate) level or the pulse level.
+The :mod:`quantify.scheduler` comes with a  :mod:`~quantify.scheduler.gate_library` and a :mod:`~quantify.scheduler.pulse_library` , both containing common operations.
+
+
 
 
 
@@ -59,12 +113,6 @@ A pulse is bla
 
 
 
-Take a look at the :class:`quantify.scheduler.Schedule` documentation for more details.
-
-An :class:`~quantify.scheduler.Operation` contains information on how to *represent* the operation at different levels of abstraction, such as the quantum-circuit (gate) level or the pulse level.
-The :mod:`quantify.scheduler` comes with a  :mod:`~quantify.scheduler.gate_library` and a :mod:`~quantify.scheduler.pulse_library` , both containing common operations.
-When adding an :class:`~quantify.scheduler.Operation` to a :class:`~quantify.scheduler.Schedule`, the user is not expected to provide all information at once.
-Only when specific information is required by a backend such as a simulator or a hardware backend does the information need to be provided.
 
 A compilation step is a transformation of the :class:`~quantify.scheduler.Schedule` and results in a new :class:`~quantify.scheduler.Schedule`.
 A compilation step can be used to e.g., add pulse information to operations containing only a gate-level representation or to determine the absolute timing based on timing constraints.
