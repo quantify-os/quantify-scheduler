@@ -1,12 +1,18 @@
-Tutorial 1. Scheduler concepts
+User guide
 ================================
 
 .. jupyter-kernel::
   :id: Tutorial 1. Scheduler concepts
 
-In this tutorial we explore how to program a basic experiment using the :mod:`quantify.scheduler`.
+
+
+Introduction
+----------------
+Quantify-scheduler is module for writing quantum programs.
+It is designed for experimentalists to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
+
 The :mod:`quantify.scheduler` can be used to schedule operations on the control hardware.
-The :mod:`quantify.scheduler` is designed to provide access to hardware functionality at a high-level interface.
+The :mod:`quantify.scheduler` is designed to provide access to hardware functionality at a high-level (hardware agnostic) interface.
 We will give an overview of the scheduler module and show different visualization backends as well as compilation onto a hardware backend.
 
 
@@ -17,7 +23,30 @@ The basic idea is to specify when what :class:`~quantify.scheduler.Operation` is
 To this end, :class:`~quantify.scheduler.Operation`s are added to a :class:`~quantify.scheduler.Schedule`.
 
 
-The :class:`~quantify.scheduler.Schedule` is a JSON-based data structure containing :attr:`~quantify.scheduler.Schedule.operations`  and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~quantify.scheduler.Schedule.operations`  and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+
+
+
+              Gates   Pulses              hardware backend
+What         - Unitaries - waveforms
+Where (phys) - qubit     - port
+Where (freq) - implied   - clock
+When
+
+
+Device config -> Adds pulse representation to operations only having a gate representation.
+Mapping file -> Provides the translation of pulses to control electronics.
+
+Mapping file -> Currently 1 to 1 mapping.
+
+
+clock can also be baseband -> would allow specifying DC or slowly ramping "pulses".
+
+
+Operations can be represented at both the gate and the pulse level.
+A gate is bla
+A pulse is bla
+
 
 
 

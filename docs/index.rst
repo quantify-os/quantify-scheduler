@@ -9,6 +9,7 @@ Welcome to Quantify's documentation!
    :glob:
 
    installation
+   usage
    concepts
    toolchain
    contributing
