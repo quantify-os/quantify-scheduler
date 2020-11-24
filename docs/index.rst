@@ -1,6 +1,6 @@
 Welcome to Quantify's documentation!
 ======================================
-
+..
 .. include:: readme.rst
 
 .. toctree::
@@ -9,8 +9,9 @@ Welcome to Quantify's documentation!
    :glob:
 
    installation
-   concepts
-   toolchain
+   usage
+   .. concepts
+   .. toolchain
    contributing
    authors
    changelog
@@ -23,7 +24,7 @@ Tutorials
    :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/Tutorial 1 scheduler concepts.rst
+   tutorials/Tutorial 1. basic experiment.rst
 
 API Reference
 ===================
