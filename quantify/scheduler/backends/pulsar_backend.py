@@ -193,10 +193,11 @@ class Q1ASMBuilder:
             self.rows.append(['', 'set_{}_offs'.format(device), "{0},{0}".format(offset_val), ""])
         if modulations.phase is not None:
             coarse, fine, ufine = self._calculate_phase_params(modulations.phase)
-            self.rows.append(['', 'set_ph', '{},{},{}'.format(coarse, fine, ufine), ''])
+            #switched 'set_ph_delta' and 'delta' to workaround bug in firmware. Should be reverted in new release.
+            self.rows.append(['', 'set_ph_delta', '{},{},{}'.format(coarse, fine, ufine), ''])
         if modulations.phase_delta is not None:
             coarse, fine, ufine = self._calculate_phase_params(modulations.phase_delta)
-            self.rows.append(['', 'set_ph_delta', '{},{},{}'.format(coarse, fine, ufine), ''])
+            self.rows.append(['', 'set_ph', '{},{},{}'.format(coarse, fine, ufine), ''])
 
     def line_break(self):
         self.rows.append(['', '', '', ''])

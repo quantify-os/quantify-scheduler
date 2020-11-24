@@ -145,10 +145,10 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
     validate_config(device_cfg, scheme_fn='transmon_cfg.json')
 
     for op in schedule.operations.values():
-        # if op.valid_pulse:
+        if op.valid_pulse:
         #     for pulse in op.data['pulse_info']:
-        #         pulse['channel'] = _walk_address(device_cfg, pulse['channel'])
-        #     continue
+        #         pulse['port'] = _walk_address(device_cfg, pulse['port'])
+            continue
 
         if op['gate_info']['operation_type'] == 'measure':
             for q in op['gate_info']['qubits']:
