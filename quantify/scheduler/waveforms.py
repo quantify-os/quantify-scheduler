@@ -16,6 +16,11 @@ def square(t, amp):
     """
     return amp*np.ones(len(t))
 
+def ramp(t, amp):
+    """
+    A square pulse.
+    """
+    return np.linspace(0,amp,len(t))
 
 def soft_square(t, amp):
     sq = square(t, amp)

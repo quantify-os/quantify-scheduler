@@ -24,7 +24,6 @@ class IdlePulse(Operation):
             'wf_func': None,
             't0': 0,
             'duration': duration,
-            # 'freq_mod': 0,
             'port': None}]}
         super().__init__(name=data['name'], data=data)
 
@@ -35,6 +34,29 @@ class NumericPulse(Operation):
 
     def __init__(self, t0):
         raise NotImplementedError
+
+class RampPulse(Operation):
+
+    def __init__(self, amp: float, duration: float, port: str, t0: float = 0):
+        """
+        A single-channel square pulse.
+
+        Parameters
+        ------------
+        amp : float
+            Amplitude of the Gaussian envelope.
+        duration : float
+            Duration of the pulse in seconds.
+        port : str
+            Port of the pulse.
+        """
+
+        data = {'name': 'RampPulse', 'pulse_info': [{
+            'wf_func': 'quantify.scheduler.waveforms.ramp',
+            'amp': amp, 'duration': duration,
+            't0': t0,
+            'port': port}]}
+        super().__init__(name=data['name'], data=data)
 
 
 class SquarePulse(Operation):

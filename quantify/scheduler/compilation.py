@@ -157,18 +157,18 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
                 if q_cfg['params']['ro_pulse_type'] == 'square':
                     op.add_pulse(ModSquarePulse(amp=q_cfg['params']['ro_pulse_amp'],
                                                 duration=q_cfg['params']['ro_pulse_duration'],
-                                                port=q_cfg['resource_map']['port_ro'],
-                                                clock=q_cfg['resource_map']['clock_ro'],
+                                                port=q_cfg['resources']['port_ro'],
+                                                clock=q_cfg['resources']['clock_ro'],
                                                 t0=0))
                     # acquisition integration window
                     op.add_pulse(ModSquarePulse(amp=1,
                                                 duration=q_cfg['params']['ro_acq_integration_time'],
-                                                port="{}_READOUT".format(q_cfg['resource_map']['port_ro']),
-                                                clock=q_cfg['resource_map']['clock_ro'],
+                                                port="{}_READOUT".format(q_cfg['resources']['port_ro']),
+                                                clock=q_cfg['resources']['clock_ro'],
                                                 t0=q_cfg['params']['ro_acq_delay']))
                     # add clock to resources
-                    if q_cfg['resource_map']['clock_ro'] not in schedule.resources.keys():
-                        schedule.add_resources([ClockResource(q_cfg['resource_map']['clock_ro'], freq = q_cfg['params']['ro_freq'])])
+                    if q_cfg['resources']['clock_ro'] not in schedule.resources.keys():
+                        schedule.add_resources([ClockResource(q_cfg['resources']['clock_ro'], freq = q_cfg['params']['ro_freq'])])
 
         elif op['gate_info']['operation_type'] == 'Rxy':
             q = op['gate_info']['qubits'][0]
@@ -181,14 +181,14 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
             pulse = DRAGPulse(
                 G_amp=G_amp, D_amp=D_amp, 
                 phase=op['gate_info']['phi'],
-                port=q_cfg['resource_map']['port_mw'], 
+                port=q_cfg['resources']['port_mw'], 
                 duration=q_cfg['params']['mw_duration'],
-                clock=q_cfg['resource_map']['clock_01'])
+                clock=q_cfg['resources']['clock_01'])
             op.add_pulse(pulse)
 
             # add clock to resources
-            if q_cfg['resource_map']['clock_01'] not in schedule.resources.keys():
-                schedule.add_resources([ClockResource(q_cfg['resource_map']['clock_01'], freq = q_cfg['params']['mw_freq'])])
+            if q_cfg['resources']['clock_01'] not in schedule.resources.keys():
+                schedule.add_resources([ClockResource(q_cfg['resources']['clock_01'], freq = q_cfg['params']['mw_freq'])])
 
         elif op['gate_info']['operation_type'] == 'CNOT':
             # These methods don't raise exceptions as they will be implemented shortly

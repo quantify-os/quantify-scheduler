@@ -246,6 +246,9 @@ def _prepare_pulse(description, gain = 0.0):
     if wf_func == 'quantify.scheduler.waveforms.square' or wf_func == 'quantify.scheduler.waveforms.soft_square':
         params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
+    if wf_func == 'quantify.scheduler.waveforms.ramp':
+        params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
+        return params, dummy_load_params([('amp', 1.0)])
     elif wf_func == 'quantify.scheduler.waveforms.drag':
         params = PulsarModulations(gain_I=description['G_amp']/10**(gain/20), gain_Q=description['G_amp']/10**(gain/20), phase=description['phase'])
         return params, dummy_load_params([('G_amp', 1.0), ('D_amp', description['D_amp']/description['G_amp']), ('phase', 0)])
@@ -540,7 +543,7 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware = False, r
 
             pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
             pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
-            pulsar.set('sequencer{}_nco_phase'.format(seq_idx), instr_cfg['nco_phase'])
+            pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
             mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
             pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
             for path in (0, 1):
