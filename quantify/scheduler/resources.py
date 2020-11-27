@@ -3,6 +3,12 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
+
+'''
+This module should be merged into types
+'''
+
+
 from .types import Resource
 
 class PortResource(Resource):

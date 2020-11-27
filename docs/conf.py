@@ -171,3 +171,6 @@ texinfo_documents = [
 
 
 blockdiag_html_image_format = 'SVG'
+
+
+numfig = True

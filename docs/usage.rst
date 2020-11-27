@@ -144,8 +144,19 @@ To summarize:
 Resources: Qubits, Ports and Clocks
 --------------------------------------
 
+:mod:`quantify.scheduler.resources` denote where an opartion should be applied.
+Here we explain these concept using a simple cQED device shown in :numref:`resources_fig` .
+However, these concepts should be easy to generalize to other devices and systems.
 
-
+At the gate-level description, operations are applied to (abstract) qubits.
+For many systems, it is possible to associate a qubit with an element or location on a device.
+However, qubits typically have many different ports that signals can be applied to.
+A :class:`~quantify.scheduler.resources.PortResource` is used to indicate a location on a device that a signal can be applied to.
+It can be associated with a qubit by including the qubit name in the name of the port.
+This information can be used when visualizing a schedule and can be convenient to keep configuration files readable.
+Besides the physical location on a device, a pulse is typically applied at a certain frequency.
+A :class:`~quantify.scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
+If the frequency of a clock is set to 0, the pulse is applied at baseband and is assumed to be real-valued.
 
 
 .. list-table:: Operations and resources on different levels of abstraction
@@ -166,15 +177,21 @@ Resources: Qubits, Ports and Clocks
      - Clocks
 
 
-.. figure:: /images/Device_ports.svg
+.. figure:: /images/Device_ports_clocks.svg
   :width: 800
+  :name: resources_fig
+
+  Resources are used to indicate *where* operations are applied.
+  (a) Ports (purple) indicate a location on a device.
+  By prefixing the name of a qubit in a port name a port can be associated with a qubit, but this is not required.
+  (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition. This can correspond to a qubit, but is not required.
+  Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
 
 
 
 
 Compilation
---------------------------------
-
+-------------
 
 .. blockdiag::
 
