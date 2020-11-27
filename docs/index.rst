@@ -10,8 +10,6 @@ Welcome to Quantify's documentation!
 
    installation
    usage
-   .. concepts
-   .. toolchain
    contributing
    authors
    changelog

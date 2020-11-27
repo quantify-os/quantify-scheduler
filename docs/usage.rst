@@ -16,8 +16,33 @@ The :mod:`quantify.scheduler` is designed to provide access to hardware function
 
 
 To understand how the scheduler works it is important to understand the basic concepts.
-In the Quantify-scheduler, :class:`~quantify.scheduler.Operation`s are added to a :class:`~quantify.scheduler.Schedule` which is then compiled for execution on a backend.
-The :class:`~quantify.scheduler.Operation` is responsible for specifying *what* is done *where* while the :class:`~quantify.scheduler.Schedule` is responsible for scheduling *when* these operations are performed.
+In the quantify scheduler, multiple :class:`~quantify.scheduler.types.Operation` s acting on :class:`~quantify.scheduler.Resource` s are added to a :class:`~quantify.scheduler.Schedule` which is then compiled for execution on a backend.
+The :class:`~quantify.scheduler.Schedule` is responsible for scheduling *when* operations are applied, the :class:`~quantify.scheduler.types.Operation` is responsible for specifying *what* is applied, while the :class:`~quantify.scheduler.Resource` is responsible for *where* it is applied.
+
+To schedule operations on control hardware different compilation steps take the schedule and compile it for a hardware backend.
+These compilation steps depend on configuration files that describe how to translate gates into pulses, and pulses onto the control hardware. This is described in detail in :ref:`the section on compilation<Compilation>`.
+
+
+.. list-table:: Overview of concepts and their representation at different levels of abstraction
+   :widths: 25 25 25 25
+   :header-rows: 0
+
+   * -
+     - Concept
+     - Gate-level description
+     - Pulse-level description
+   * - When
+     - :class:`~quantify.scheduler.Schedule`
+     - --
+     - --
+   * - What
+     - :class:`~quantify.scheduler.types.Operation`
+     - unitaries and POVMs
+     - parameterized waveforms
+   * - Where
+     - :class:`~quantify.scheduler.Resource`
+     - qubits
+     - ports & clocks
 
 
 Schedules and Operations
@@ -26,7 +51,7 @@ Schedules and Operations
 The :class:`~quantify.scheduler.Schedule` is a data structure that is at the core of the Quantify-scheduler.
 The :class:`~quantify.scheduler.Schedule` contains information on *when* *what* operations should be performed.
 
-The :class:`~quantify.scheduler.Operation` object is a datastructure that describes the operation that should be performed, it also contains information on *where* it should be applied.
+The :class:`~quantify.scheduler.types.Operation` object is a datastructure that describes the operation that should be performed, it also contains information on *where* it should be applied.
 An operation can be represented at different levels of abstraction such as the (quantum) :ref:`Gate-level description` and the :ref:`Pulse-level description`.
 The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_library` and the :mod:`quantify.scheduler.pulse_library` , both containing common operations.
 
@@ -36,26 +61,31 @@ The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~qu
 :attr:`~quantify.scheduler.Schedule.timing_constraints`
 
 
-When adding an :class:`~quantify.scheduler.Operation` to a :class:`~quantify.scheduler.Schedule` using the :meth:`~quantify.scheduler.Schedule.add` method, it is possible to specify precisely *when* to perform this operation.
-However, at this point it is not required to specify how to respresent this :class:`~quantify.scheduler.Operation` on all (both gate and pulse) abstraction levels.
+When adding an :class:`~quantify.scheduler.types.Operation` to a :class:`~quantify.scheduler.Schedule` using the :meth:`~quantify.scheduler.Schedule.add` method, it is possible to specify precisely *when* to perform this operation.
+However, at this point it is not required to specify how to respresent this :class:`~quantify.scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many calibration experiments.
 An example of such an experiment is shown in :ref:`Tutorial 1. basic experiment`.
 
 
 Gate- and Pulse-level description
---------------------------------
+-----------------------------------
 A core feature of the :mod:`quantify.scheduler` is that it is possible to use both operations that are described at the gate level and operations that are described at the pulse level.
-This is possible because the schedule describes *when* operations should be performed while the operations describe *what* should be done *where*.
-This description of *what* and *where* is different for the gate- and pulse-level descriptions.
+This is possible because the schedule describes *when* operations should be performed while the operations describe *what* should be done using what resources. The resources describe *where* the opartion is applied.
+The description of *what* and *where* is different for the gate- and pulse-level descriptions.
 
 
 Gate-level description
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-The (quantum) gate-level description is an idealized mathematical description.
+The (quantum) gate-level description is an idealized mathematical description of the operations.
 In this describtion operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
 Operations can be represented by (idealized) unitaries acting on qubits which are represented here as strings (e.g., "q0", "q1", "qubit_left", etc.).
+Qubits are a valid :class:`~quantify.scheduler.Resource`.
 The :mod:`~quantify.scheduler.gate_library` contains common gates (including the measurement operation).
+
+
+..
+  TODO: qubit should be a valid resource. this needs to be correct and have an associated test.
 
 .. note::
   Stricly speaking a measurement is not a gate as it cannot be described by a unitary. However, as it is a fundamental building block of circuit diagrams, we include it as this level of abstraction.
@@ -90,6 +120,7 @@ To summarize:
 
 - Gates are described by unitaries.
 - Gates are applied to qubits.
+- Qubit resources are represented by strings.
 
 
 
@@ -97,35 +128,27 @@ Pulse-level description
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 The pulse-level description describes waveforms applied to a sample.
 These waveforms can be used to implement the unitaries of the gate-level description, in which case there is a one-to-one correspondence, but this is not required.
+The pulse-level description typically contain parameterisation information, such as amplitudes, durations and so forth required to synthesise the waveform on control hardware.
+The :mod:`~quantify.scheduler.pulse_library` contains a collection of commonly used pulses.
+To specify *where* an operation is applied, the pulse-level description needs to specify both the location in physical space as well as in frequency space.
+The location on chip is denoted by a *port* while the frequency is set using a *clock*, both are represented as strings.
+These resources are described in detail in :ref:`the next section<Resources: Qubits, Ports and Clocks>`.
 
-The :mod:`~quantify.scheduler.pulse_library` contains commonly used pulses.
+To summarize:
 
-When describing a schedule on the pulse-level,
+- Pulses are described as parameterized waveforms.
+- Pulses are applied to *ports* at a frequency specified by a *clock*.
+- Ports and clocks are represented by strings.
 
 
-
-
-Ports
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Clocks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-clock can also be baseband -> would allow specifying DC or slowly ramping "pulses".
-
-- Pulses act on ports and clocks.
-
-Pulse diagram visualization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Resources: Qubits, Ports and Clocks
+--------------------------------------
 
 
 
 
 
-
-
-
-
-.. list-table:: Resources on different levels of abstraction
+.. list-table:: Operations and resources on different levels of abstraction
    :widths: 25 25 50
    :header-rows: 1
 
@@ -133,7 +156,7 @@ Pulse diagram visualization
      - Gate-level description
      - Pulse-level description
    * - What
-     - PTMs and POVMs
+     - Unitaries and POVMs
      - Waveforms
    * - Where (space)
      - Qubits
