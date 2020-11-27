@@ -260,12 +260,20 @@ class Operation(UserDict):
 
     @property
     def valid_gate(self):
+        """
+        An operation is a valid gate if it contains information on how
+        to represent the operation on the gate level.
+        """
         if self.data['gate_info']:
             return True
         return False
 
     @property
     def valid_pulse(self):
+        """
+        An operation is a valid pulse if it contains information on how
+        to represent the operation on the pulse level.
+        """
         if self.data['pulse_info']:
             return True
         return False

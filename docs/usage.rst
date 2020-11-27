@@ -84,11 +84,11 @@ Qubits are a valid :class:`~quantify.scheduler.Resource`.
 The :mod:`~quantify.scheduler.gate_library` contains common gates (including the measurement operation).
 
 
-..
-  TODO: qubit should be a valid resource. this needs to be correct and have an associated test.
+.. todo::
+  qubit should be a valid resource. this needs to be correct and have an associated test.
 
 .. note::
-  Stricly speaking a measurement is not a gate as it cannot be described by a unitary. However, as it is a fundamental building block of circuit diagrams, we include it as this level of abstraction.
+  Stricly speaking a measurement is not a gate as it cannot be described by a unitary. However, as it is a fundamental building block of circuit diagrams, we include it at this level of abstraction.
 
 ..
   This explanation is correct and very common, but possibly very confusing to the non-expert. Please help me make this a clearer explanation. - MAR
@@ -133,6 +133,15 @@ The :mod:`~quantify.scheduler.pulse_library` contains a collection of commonly u
 To specify *where* an operation is applied, the pulse-level description needs to specify both the location in physical space as well as in frequency space.
 The location on chip is denoted by a *port* while the frequency is set using a *clock*, both are represented as strings.
 These resources are described in detail in :ref:`the next section<Resources: Qubits, Ports and Clocks>`.
+
+A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a pulsediagram using :func:`quantify.scheduler.visualization.circuit_diagram.pulse_diagram_plotly`.
+An example of such a visualization is shown below.
+
+.. todo::
+
+  Add plotly visualization of basic example schedule.
+
+
 
 To summarize:
 
@@ -195,8 +204,15 @@ If the frequency of a clock is set to 0, the pulse is applied at baseband and is
 Compilation
 -------------
 
+Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on physical hardware. The scheduler currently supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
 
+In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify.scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`configuration file<Device configuration file>`.
 
+A second compilation step takes the schedule at the pulse level and translates this for use on a hardware backend.
+This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`mapping file<Hardware mapping file>`.
+
+The block diagram below shows an overview of the different compilation steps.
+The :mod:`quantify.scheduler.compilation` contains the main compilation functions.
 
 .. blockdiag::
 
@@ -243,6 +259,11 @@ Device configuration file
 
 Used to compile from the idealized gate-level to the device specific pulse-level description.
 
+.. todo::
+
+  import code snippet from the test device config used in the
+  examples + add test.
+
 * Resources vs params
 * Amplitudes represent amplitudes at port!
 
@@ -262,55 +283,7 @@ Used to compile from the device-specific pulse-level description to control-hard
 Add example mapping file here and discuss it.
 
 
-OLD OUTDATED STUFF
-------------------------
+.. todo::
 
-
-
-A compilation step is a transformation of the :class:`~quantify.scheduler.Schedule` and results in a new :class:`~quantify.scheduler.Schedule`.
-A compilation step can be used to e.g., add pulse information to operations containing only a gate-level representation or to determine the absolute timing based on timing constraints.
-A final compilation step translates the :class:`~quantify.scheduler.Schedule` into a format compatible with the desired backend.
-
-The following diagram provides an overview of how to interact with the :class:`~quantify.scheduler.Schedule` class.
-The user can create a new schedule using the quantify API, or load a schedule based on one of the supported :mod:`~quantify.scheduler.frontends` for QASM-like formats such as qiskit QASM or OpenQL cQASM (todo).
-One or multiple compilation steps modify the :class:`~quantify.scheduler.Schedule` until it contains the information required for the :mod:`~quantify.scheduler.visualization` used for visualization, simulation or compilation onto the hardware or back into a common QASM-like format.
-
-.. blockdiag::
-
-    blockdiag scheduler {
-
-      qf_input [label="quantify API"];
-      ext_input [label="Q A S M-like\nformats", stacked];
-      vis_bck [label="Visualization \nbackends", stacked];
-      hw_bck [label="Hardware\nbackends", stacked];
-      sim_bck [label="Simulator\nbackends", stacked];
-      ext_fmts [label="Q A S M-like\n formats", stacked];
-
-      qf_input, ext_input -> Schedule;
-      Schedule -> Schedule [label="Compile"];
-      Schedule -> vis_bck;
-      Schedule -> hw_bck;
-      Schedule -> sim_bck ;
-      Schedule -> ext_fmts;
-
-      group {
-        label= "Input formats";
-        qf_input
-        ext_input
-        color="#90EE90"
-        }
-
-      group {
-
-        Schedule
-        color=red
-        label="Compilation"
-        }
-
-      group {
-        label = "Backends";
-        color = orange;
-        vis_bck, hw_bck, sim_bck, ext_fmts
-        }
-    }
-
+  import code snippet from the test mapping file used in the
+  examples + add test.

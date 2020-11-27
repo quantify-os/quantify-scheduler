@@ -39,6 +39,7 @@ extensions = ['sphinx.ext.autodoc',  # auto document docstrings
               'sphinx-jsonschema',
               'sphinx_rtd_theme',
               'sphinx.ext.mathjax',
+              'sphinx.ext.todo',
               'nbsphinx',
               'sphinx-jsonschema',
               'jupyter_sphinx',
@@ -174,3 +175,4 @@ blockdiag_html_image_format = 'SVG'
 
 
 numfig = True
+todo_include_todos = True  # set False by default, enable for debugging
