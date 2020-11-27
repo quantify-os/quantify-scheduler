@@ -154,10 +154,12 @@ However, qubits typically have many different ports that signals can be applied 
 A :class:`~quantify.scheduler.resources.PortResource` is used to indicate a location on a device that a signal can be applied to.
 It can be associated with a qubit by including the qubit name in the name of the port.
 This information can be used when visualizing a schedule and can be convenient to keep configuration files readable.
+Associating a port with a single qubit is not required so as not to complicate matters when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
+
 Besides the physical location on a device, a pulse is typically applied at a certain frequency.
 A :class:`~quantify.scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
+Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
 If the frequency of a clock is set to 0, the pulse is applied at baseband and is assumed to be real-valued.
-
 
 .. list-table:: Operations and resources on different levels of abstraction
    :widths: 25 25 50
@@ -192,6 +194,9 @@ If the frequency of a clock is set to 0, the pulse is applied at baseband and is
 
 Compilation
 -------------
+
+
+
 
 .. blockdiag::
 
