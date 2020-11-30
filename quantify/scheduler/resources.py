@@ -11,6 +11,7 @@ This module should be merged into types
 
 from .types import Resource
 
+
 class PortResource(Resource):
     """
     A port resource to which pulses can be scheduled.
@@ -35,6 +36,7 @@ class PortResource(Resource):
         self.data = {'name': name,
                      'type': str(self.__class__.__name__)}
 
+
 class ClockResource(Resource):
     """
     A clock resource that can used to modulate pulses.
@@ -58,11 +60,11 @@ class ClockResource(Resource):
 
         """
 
-        self.data = {'name' : name,
-                     'type' : str(self.__class__.__name__),
-                     'freq' : freq,
+        self.data = {'name': name,
+                     'type': str(self.__class__.__name__),
+                     'freq': freq,
                      'phase': phase
-                    }
+                     }
 
 # class CompositeResource(Resource):
 #     """

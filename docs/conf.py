@@ -86,7 +86,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = True
 
 
 # -- Options for HTML output -------------------------------------------
@@ -175,4 +175,3 @@ blockdiag_html_image_format = 'SVG'
 
 
 numfig = True
-todo_include_todos = True  # set False by default, enable for debugging
