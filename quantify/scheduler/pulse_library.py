@@ -4,6 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
 from .types import Operation
+from .resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
@@ -24,6 +25,7 @@ class IdlePulse(Operation):
             'wf_func': None,
             't0': 0,
             'duration': duration,
+            'clock': BasebandClockResource('baseband'),
             'port': None}]}
         super().__init__(name=data['name'], data=data)
 
@@ -55,6 +57,7 @@ class RampPulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.ramp',
             'amp': amp, 'duration': duration,
             't0': t0,
+            'clock': BasebandClockResource('baseband'),
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 
@@ -79,6 +82,7 @@ class SquarePulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.square',
             'amp': amp, 'duration': duration,
             't0': t0,
+            'clock': BasebandClockResource('baseband'),
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 
@@ -105,6 +109,11 @@ class ModSquarePulse(Operation):
 
         """
 
+        if phase != 0:
+            # Because of how clock interfaces were changed.
+            # FIXME: need to be able to add phases to the waveform separate from the clock.
+            raise NotImplementedError
+
         data = {'name': 'ModSquarePulse', 'pulse_info': [{
             'wf_func': 'quantify.scheduler.waveforms.square',
             'amp': amp, 'duration': duration,
@@ -124,7 +133,7 @@ class SoftSquarePulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.soft_square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            # 'freq_mod': 0,  # flux pulses cannot have a modulation frequency
+            'clock': BasebandClockResource('baseband'),
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 

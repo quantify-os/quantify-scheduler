@@ -16,9 +16,9 @@ class PortResource(Resource):
     """
     A port resource to which pulses can be scheduled.
 
-    .. tip::
+    .. todo::
 
-        asdf
+        Write docstring
 
     """
 
@@ -41,9 +41,9 @@ class ClockResource(Resource):
     """
     A clock resource that can used to modulate pulses.
 
-    .. tip::
+    .. todo::
 
-        asdf
+        Write docstring
 
     """
 
@@ -65,6 +65,30 @@ class ClockResource(Resource):
                      'freq': freq,
                      'phase': phase
                      }
+
+
+class BasebandClockResource(Resource):
+
+    def __init__(self, name: str):
+        """
+        A clock resource for pulses that operate at baseband.
+
+        Parameters
+        -------------
+        name : str
+            the name of this resource
+        freq : float
+            the frequency of the clock
+
+        Baseband signals are assumed to be real-valued and will not be modulated.
+        """
+
+        self.data = {'name': name,
+                     'type': str(self.__class__.__name__),
+                     'freq': 0,
+                     'phase': 0
+                     }
+
 
 # class CompositeResource(Resource):
 #     """
