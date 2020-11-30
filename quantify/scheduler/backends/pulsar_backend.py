@@ -236,7 +236,7 @@ class Q1ASMBuilder:
 
 
 # todo this doesnt work for custom waveform functions - use visitors?
-def _prepare_pulse(description, gain = 0.0):
+def _prepare_pulse(description, gain=0.0):
     def dummy_load_params(param_list):
         for param, default in param_list:
             description[param] = default
