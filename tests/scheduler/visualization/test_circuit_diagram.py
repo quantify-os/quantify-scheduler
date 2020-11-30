@@ -14,6 +14,23 @@ def test_circuit_diagram_matplotlib():
 
     sched.add(Reset(q0, q1))
     sched.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
+    sched.add(operation=CNOT(qC=q0, qT=q1))
+    sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Measure(q0, q1), label='M0')
+
+    f, ax = circuit_diagram_matplotlib(sched)
+    return f
+
+
+@pytest.mark.skip()
+def test_hybrid_circuit_diagram_matplotlib():
+    sched = Schedule('Test experiment')
+
+    q0, q1 = ('q0', 'q1')
+    ref_label_1 = 'my_label'
+
+    sched.add(Reset(q0, q1))
+    sched.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
     sched.add(SquarePulse(0.8, 20e-9, ch='q0'))  # will change with API update
     sched.add(operation=CNOT(qC=q0, qT=q1))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
