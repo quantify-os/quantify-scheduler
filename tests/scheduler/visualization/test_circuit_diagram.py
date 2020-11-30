@@ -1,6 +1,6 @@
 import pytest
 from quantify.scheduler import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, CZ, CNOT, Rxy
+from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 

@@ -13,15 +13,6 @@ from .types import Resource
 
 
 class PortResource(Resource):
-    """
-    A port resource to which pulses can be scheduled.
-
-    .. todo::
-
-        Write docstring
-
-    """
-
     def __init__(self, name: str):
         """
         A port resource to which pulses can be scheduled.
@@ -29,8 +20,7 @@ class PortResource(Resource):
         Parameters
         -------------
         name : str
-            the name of this resource
-
+            the name of this port
 
         """
         self.data = {'name': name,
@@ -38,25 +28,19 @@ class PortResource(Resource):
 
 
 class ClockResource(Resource):
-    """
-    A clock resource that can used to modulate pulses.
-
-    .. todo::
-
-        Write docstring
-
-    """
 
     def __init__(self, name: str, freq: float, phase: float = 0):
         """
-        A clock resource that can used to modulate pulses.
+        A clock resource used to modulate pulses.
 
         Parameters
         -------------
         name : str
-            the name of this resource
+            the name of this clock
         freq : float
-            the frequency of the clock
+            the frequency of the clock in Hz
+        phase : float
+            the starting phase of the clock in deg
 
         """
 
@@ -76,9 +60,7 @@ class BasebandClockResource(Resource):
         Parameters
         -------------
         name : str
-            the name of this resource
-        freq : float
-            the frequency of the clock
+            the name of this clock
 
         Baseband signals are assumed to be real-valued and will not be modulated.
         """
