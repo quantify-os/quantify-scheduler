@@ -18,7 +18,6 @@ def test_operation_duration_single_pulse():
     assert idle.duration == pytest.approx(50e-9)
 
 
-
 def test_operation_duration_single_pulse_delayed():
     dgp = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3,
                     duration=10e-9, clock=cl01, port=p01, t0=3.4e-9)
@@ -38,7 +37,6 @@ def test_operation_add_pulse():
                     duration=20e-9, clock=cl01, port=p01, t0=0)
     x90.add_pulse(dgp)
     assert len(x90['pulse_info']) == 1
-
 
 
 def test_operation_duration_composite_pulse():
