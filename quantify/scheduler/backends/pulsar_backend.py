@@ -236,7 +236,7 @@ class Q1ASMBuilder:
 
 
 # todo this doesnt work for custom waveform functions - use visitors?
-def _prepare_pulse(description, gain = 0.0):
+def _prepare_pulse(description, gain=0.0):
     def dummy_load_params(param_list):
         for param, default in param_list:
             description[param] = default
@@ -412,7 +412,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                     schedule.add_resources([QCM_sequencer(p['port'], clock = p['clock'], nco_freq = nco_freq)])
                 else:
                     schedule.add_resources([QCM_sequencer(p['port'])])
-                
+
             # extract pulse parameters
             gain = _extract_gain_from_mapping(mapping, p['port'])
             params, p = _prepare_pulse(p, gain)

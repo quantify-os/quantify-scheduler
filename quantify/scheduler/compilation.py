@@ -146,13 +146,12 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
 
     for op in schedule.operations.values():
         if op.valid_pulse:
-        #     for pulse in op.data['pulse_info']:
-        #         pulse['port'] = _walk_address(device_cfg, pulse['port'])
+            # todo, some way of adding clocks to resources here (frequency information no longer available?)
             continue
 
         if op['gate_info']['operation_type'] == 'measure':
             for q in op['gate_info']['qubits']:
-                q_cfg = device_cfg[q]
+                q_cfg = device_cfg["qubits"][q]
                 # readout pulse
                 if q_cfg['params']['ro_pulse_type'] == 'square':
                     op.add_pulse(ModSquarePulse(amp=q_cfg['params']['ro_pulse_amp'],
@@ -168,7 +167,7 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
                                                 t0=q_cfg['params']['ro_acq_delay']))
                     # add clock to resources
                     if q_cfg['resources']['clock_ro'] not in schedule.resources.keys():
-                        schedule.add_resources([ClockResource(q_cfg['resources']['clock_ro'], freq = q_cfg['params']['ro_freq'])])
+                        schedule.add_resources([ClockResource(q_cfg['resources']['clock_ro'], freq=q_cfg['params']['ro_freq'])])
 
         elif op['gate_info']['operation_type'] == 'Rxy':
             q = op['gate_info']['qubits'][0]
@@ -188,7 +187,7 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
 
             # add clock to resources
             if q_cfg['resources']['clock_01'] not in schedule.resources.keys():
-                schedule.add_resources([ClockResource(q_cfg['resources']['clock_01'], freq = q_cfg['params']['mw_freq'])])
+                schedule.add_resources([ClockResource(q_cfg['resources']['clock_01'], freq=q_cfg['params']['mw_freq'])])
 
         elif op['gate_info']['operation_type'] == 'CNOT':
             # These methods don't raise exceptions as they will be implemented shortly
@@ -274,7 +273,7 @@ def qcompile(schedule: Schedule, device_cfg: dict, backend: Callable = None, **k
     .. jsonschema:: schemas/transmon_cfg.json
     """
     schedule = _add_pulse_information_transmon(schedule=schedule, device_cfg=device_cfg)
-    schedule = _determine_absolute_timing(schedule=schedule, clock_unit='physical')
+    schedule = _determine_absolute_timing(schedule=schedule, time_unit='physical')
     if backend:
         return backend(schedule, **kwargs)
     else:
