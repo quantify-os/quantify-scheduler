@@ -21,8 +21,8 @@ from quantify.utilities.general import make_hash, without, import_func_from_stri
 PulsarModulations = namedtuple('PulsarModulations', ['gain_I', 'gain_Q', 'offset', 'phase', 'phase_delta'],
                                defaults=[None, None, None, None, None])
 
-QCM_DRIVER_VER = '0.1.2'
-QRM_DRIVER_VER = '0.1.2'
+QCM_DRIVER_VER = '0.2.0'
+QRM_DRIVER_VER = '0.2.0'
 
 
 class QCM_sequencer(Resource):
@@ -308,7 +308,7 @@ def _extract_io_from_mapping(nested_dictionary, port: str):
                     return True
             elif port == value:
                 return True
-    
+
     for key, value in nested_dictionary.items():
         if type(value) is dict:
             output = _extract_io_from_mapping(value, port)
@@ -326,7 +326,7 @@ def _extract_config_from_mapping(nested_dictionary, port: str):
                     return True
             elif port == value:
                 return True
-    
+
     for key, value in nested_dictionary.items():
         if type(value) is dict:
             output = _extract_config_from_mapping(value, port)
@@ -407,12 +407,12 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 
             # assumes the sequencer exists in the resources available to the schedule
             if p['port'] not in schedule.resources.keys():
-                if 'clock' in p.keys():   
+                if 'clock' in p.keys():
                     nco_freq = _extract_nco_freq_from_mapping(mapping, p['port'], schedule.resources[p['clock']]['freq'])
                     schedule.add_resources([QCM_sequencer(p['port'], clock = p['clock'], nco_freq = nco_freq)])
                 else:
                     schedule.add_resources([QCM_sequencer(p['port'])])
-                
+
             # extract pulse parameters
             gain = _extract_gain_from_mapping(mapping, p['port'])
             params, p = _prepare_pulse(p, gain)
@@ -426,7 +426,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 if 'clock' not in p.keys() and seq['clock'] != 'None':
                     raise ValueError('pulse {} on sequencer {} has an inconsistent clock frequency: expected {} but was None'
                         .format(pulse_id, seq['name'], seq['clock']))
-                
+
                 if 'clock' in p.keys() and p['clock'] != seq['clock']:
                     raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
                         .format(pulse_id, seq['name'], seq['clock'], p['clock']))
