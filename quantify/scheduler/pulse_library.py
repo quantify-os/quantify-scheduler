@@ -85,7 +85,8 @@ class SquarePulse(Operation):
 
 class ModSquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str, phase: float = 0, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str,
+                 clock: str, phase: float = 0, t0: float = 0):
         """
         A two-channel square pulse.
 

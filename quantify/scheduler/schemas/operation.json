@@ -39,7 +39,8 @@
     "type":"object",
     "description": "Info to generate an individual pulse.",
     "required": [
-      "channel",
+      "port",
+      "clock",
       "wf_func",
       "t0",
       "duration"
