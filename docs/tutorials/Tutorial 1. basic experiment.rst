@@ -1,4 +1,4 @@
-Tutorial 1. Basic experiment
+Tutorial 1. Basic experiments
 ================================
 
 .. jupyter-kernel::
@@ -12,52 +12,39 @@ The benefit of allowing the user to mix the high-level gate description of a cir
 Below we first give an example of basic usage using `Bell violations`.
 We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.Schedule`.
 
-Ex: A basic quantum circuit:  the Bell experiment
------------------------------------------------------------------------------------------
+The Bell experiment
+-----------------------------
 
 As the first example, we want to perform the `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ .
-In this example, we will go quite deep into the internals of the schedule to show how the data structures work.
+The goal of the Bell experiment is to create a Bell state :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` followed by a measurement.
+By rotating the measurement basis, or equavalently one of the qubits, it is possible to observe violations of the CSHS inequality.
+If everything is done properly, one should observe the following oscillation:
 
-The goal of the Bell experiment is to create a Bell state :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` followed by a measurement and observe violations of the CSHS inequality.
+.. jupyter-execute::
+  :hide-code:
 
-By changing the basis in which one of the detectors measures, we can observe an oscillation which should result in a violation of Bell's inequality.
-If everything is done properly, one should observe this oscillation:
+  import plotly.graph_objects as go
+  import numpy as np
 
-.. figure:: https://upload.wikimedia.org/wikipedia/commons/e/e2/Bell.svg
-  :figwidth: 50%
+  x = np.linspace(0, 360, 361)
+  y = np.cos(np.deg2rad(x-180))
+  yc = np.minimum(x/90-1, -x/90+3)
+
+
+  fig = go.Figure()
+  fig.add_trace(go.Scatter(x=x,y=y, name='Quantum'))
+  fig.add_trace(go.Scatter(x=x,y=yc, name='Classical'))
+
+  fig.update_layout(title='Bell experiment',
+                     xaxis_title='Angle between detectors (deg)',
+                     yaxis_title='CSHS Correlation')
+  fig.show()
+
 
 Bell circuit
 ~~~~~~~~~~~~~~~~
-Below is the QASM code used to perform this experiment in `Quantum Inspire <https://www.quantum-inspire.com/>`_ as well as a circuit diagram representation.
-We will be creating this same experiment using the quantify.scheduler.
+We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
 
-.. code-block:: python
-
-    version 1.0
-
-    # Bell experiment
-
-    qubits 2
-
-    .init
-    prep_z q[0:1]
-
-    .Entangle
-    X90 q[0]
-    cz q[0],q[1]
-
-    .Rotate
-    # change the value to change the basis of the detector
-    Rx q[0], 0.15
-
-    .Measurement
-    Measure_all
-
-.. figure:: /images/bell_circuit_QI.png
-  :figwidth: 50%
-
-Creating a schedule
-~~~~~~~~~~~~~~~~~~~~
 
 We start by initializing an empty :class:`~quantify.scheduler.Schedule`
 
@@ -73,13 +60,14 @@ Under the hood, the :class:`~quantify.scheduler.Schedule` is based on a dictiona
 
   sched.data
 
-We also need to define the resources. For now these are just strings.
+We also need to define the qubits.
 
 .. jupyter-execute::
 
-  # define the resources
-  # q0, q1 = Qubits(n=2) # assumes all to all connectivity
-  q0, q1 = ('q0', 'q1') # we use strings because Resources have not been implemented yet
+  q0, q1 = ('q0', 'q1') # we use strings because qubit resrouces have not been implemented yet.
+
+Creating the circuit
+^^^^^^^^^^^^^^^^^^^^^^
 
 We will now add some operations to the schedule.
 Because this experiment is most conveniently described on the gate level, we use operations defined in the :mod:`quantify.scheduler.gate_library` .
@@ -87,34 +75,44 @@ Because this experiment is most conveniently described on the gate level, we use
 .. jupyter-execute::
 
     from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
+    import numpy as np
 
-    # Define the operations, these will be added to the circuit
-    init_all = Reset(q0, q1)
-    x90_q0 = Rxy(theta=90, phi=0, qubit=q0)
-    cz = CZ(qC=q0, qT=q1)
-    Rxy_theta = Rxy(theta=23, phi=0, qubit=q0) # will be not be used in the experiment loop.
-    meass_all = Measure(q0, q1)
+    # we use a regular for loop as we have to unroll the changing theta variable here
+    for theta in np.linspace(0, 360, 21):
+        sched.add(Reset(q0, q1))
+        sched.add(X90(q0))
+        sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
+        sched.add(CZ(q0, q1))
+        sched.add(Rxy(theta=theta, phi=0, qubit=q0))
+        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
+
+
+Visualizing the circuit
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+And we can use this to create a default visualizaton:
+
+.. jupyter-execute::
+
+  %matplotlib inline
+
+  from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+  f, ax = circuit_diagram_matplotlib(sched)
+  # all gates are plotted, but it doesn't all fit in a matplotlib figure
+  ax.set_xlim(-.5, 9.5)
+
+
+Datastructure internals
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also based on dicts.
 
 .. jupyter-execute::
 
-    # Rxy_theta  # produces the same output
-    Rxy_theta.data
+    rxy_theta = Rxy(theta=theta, phi=0, qubit=q0)
+    rxy_theta.data
 
-Now we create the Bell experiment, including observing the oscillation in a simple for loop.
 
-.. jupyter-execute::
-
-    import numpy as np
-
-    # we use a regular for loop as we have to unroll the changing theta variable here
-    for theta in np.linspace(0, 360, 21):
-        sched.add(init_all)
-        sched.add(x90_q0)
-        sched.add(operation=cz)
-        sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
 
 Let's take a look at the internals of the :class:`~quantify.scheduler.Schedule`.
 
@@ -143,34 +141,16 @@ The timing constraints are stored as a list of pulses.
 
   sched.data['timing_constraints'][:6]
 
-Visualization using a circuit diagram
+Compilation of a circuit diagram into pulses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-So far we have only defined timing constraints but the duration of pulses is not known.
 
-For this purpose we do our first compilation step:
+Compilation of pulses onto physical hardware
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. jupyter-execute::
 
-  from quantify.scheduler.compilation import _determine_absolute_timing
-  # We modify the schedule in place adding timing information
-  # setting clock_unit='ideal' ignores the duration of operations and sets it to 1.
 
-  # Commented out because of refactor
-  # _determine_absolute_timing(sched, clock_unit='ideal')
-
-And we can use this to create a default visualizaton:
-
-.. jupyter-execute::
-
-  %matplotlib inline
-
-  from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-  f, ax = circuit_diagram_matplotlib(sched)
-  # all gates are plotted, but it doesn't all fit in a matplotlib figure
-  ax.set_xlim(-.5, 9.5)
-
-Compilation onto a Transmon backend
+The Chevron experiment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Of course different Qubits are driven with different techniques which must be defined. Here we have a pair of Transmon qubits,
