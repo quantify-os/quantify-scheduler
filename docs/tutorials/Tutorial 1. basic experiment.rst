@@ -12,7 +12,7 @@ The benefit of allowing the user to mix the high-level gate description of a cir
 Below we first give an example of basic usage using `Bell violations`.
 We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.Schedule`.
 
-The Bell experiment
+Basics: The Bell experiment
 -----------------------------
 
 As the first example, we want to perform the `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ .
@@ -37,7 +37,7 @@ If everything is done properly, one should observe the following oscillation:
 
   fig.update_layout(title='Bell experiment',
                      xaxis_title='Angle between detectors (deg)',
-                     yaxis_title='CSHS Correlation')
+                     yaxis_title='Correlation')
   fig.show()
 
 
@@ -149,9 +149,23 @@ Compilation of pulses onto physical hardware
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+Precise timing control: The Ramsey experiment
+------------------------------------------------
 
-The Chevron experiment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. todo::
+
+  This tutorial should showcase in detail the timing options possible in the
+  schedule.
+
+
+
+A hybrid experiment: The Chevron
+------------------------------------------------
+
+.. todo::
+
+  This tutorial should showcase hybridg schedules that mix pulse and gate level
+  descriptions.
 
 Of course different Qubits are driven with different techniques which must be defined. Here we have a pair of Transmon qubits,
 which respond to microwave pulses:

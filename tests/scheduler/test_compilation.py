@@ -11,7 +11,11 @@ from quantify.scheduler.types import Operation, Resource
 import pathlib
 cfg_f = pathlib.Path(__file__).parent.parent.absolute() / 'test_data' / 'transmon_test_config.json'
 with open(cfg_f, 'r') as f:
-    DEVICE_TEST_CFG = json.load(f)
+    DEVICE_CFG = json.load(f)
+
+map_f = pathlib.Path(__file__).parent.parent.absolute() / 'test_data' / 'qblox_test_mapping.json'
+with open(map_f, 'r') as f:
+    HARDWARE_MAPPING = json.load(f)
 
 
 def test__determine_absolute_timing_ideal_clock():
@@ -82,7 +86,7 @@ def test_missing_ref_op():
 
 
 def test_config_spec():
-    validate_config(DEVICE_TEST_CFG, scheme_fn='transmon_cfg.json')
+    validate_config(DEVICE_CFG, scheme_fn='transmon_cfg.json')
 
 @pytest.mark.xfail()
 def test_compile_transmon_program():
@@ -97,13 +101,13 @@ def test_compile_transmon_program():
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label='M0')
     # pulse information is added
-    sched = _add_pulse_information_transmon(sched, device_cfg=DEVICE_TEST_CFG)
+    sched = _add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
     sched = _determine_absolute_timing(sched, time_unit='physical')
 
 
 def test_missing_edge():
     sched = Schedule('Bad edge')
-    bad_cfg = DEVICE_TEST_CFG.copy()
+    bad_cfg = DEVICE_CFG.copy()
     del bad_cfg['edges']['q0-q1']
 
     q0, q1 = ('q0', 'q1')
@@ -155,6 +159,6 @@ def test_resource_resolution():
     sched.add(SquarePulse(0.4, 20e-9, 'q0:ro_ch'))
 
     sched.add_resources([qcm0_s0, qrm0_s0])
-    sched = qcompile(sched, DEVICE_TEST_CFG)
+    sched = qcompile(sched, DEVICE_CFG)
 
     print(sched)
