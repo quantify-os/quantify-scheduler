@@ -38,7 +38,7 @@
                 "mw_freq": 5.02e9,
                 "mw_amp180": 0.8e-0,
                 "mw_motzoi": 0.25,
-                "mw_duration": 40e-9,
+                "mw_duration": 20e-9,
                 "mw_ef_amp180": 0.67,
 
                 "ro_freq": 6.9e9,

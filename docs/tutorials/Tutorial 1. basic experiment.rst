@@ -147,10 +147,20 @@ The compilation from the gate-level to the pulse-level description is done using
 Here we will use a configuration file for a transmon based system that is part of the quantify-scheduler test suite.
 
 .. jupyter-execute::
+  :hide-code:
 
   import os
+  import inspect
+  import quantify.scheduler as qs
+  qsp = inspect.getfile(qs)
+  test_dir = os.path.abspath(os.path.join(qsp,'..', '..', '..','tests'))
+
+
+
+.. jupyter-execute::
+
   import json
-  cfg_f = os.path.join('tests','test_data','transmon_test_config.json')
+  cfg_f = os.path.join(test_dir,'test_data', 'transmon_test_config.json')
   with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 
