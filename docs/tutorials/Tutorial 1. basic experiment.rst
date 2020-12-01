@@ -67,7 +67,7 @@ We also need to define the qubits.
   q0, q1 = ('q0', 'q1') # we use strings because qubit resrouces have not been implemented yet.
 
 Creating the circuit
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We will now add some operations to the schedule.
 Because this experiment is most conveniently described on the gate level, we use operations defined in the :mod:`quantify.scheduler.gate_library` .
@@ -88,7 +88,7 @@ Because this experiment is most conveniently described on the gate level, we use
 
 
 Visualizing the circuit
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 And we can use this to create a default visualizaton:
 
@@ -103,17 +103,7 @@ And we can use this to create a default visualizaton:
 
 
 Datastructure internals
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also based on dicts.
-
-.. jupyter-execute::
-
-    rxy_theta = Rxy(theta=theta, phi=0, qubit=q0)
-    rxy_theta.data
-
-
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Let's take a look at the internals of the :class:`~quantify.scheduler.Schedule`.
 
 .. jupyter-execute::
@@ -141,12 +131,53 @@ The timing constraints are stored as a list of pulses.
 
   sched.data['timing_constraints'][:6]
 
+
+Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also based on dicts.
+
+.. jupyter-execute::
+
+    rxy_theta = Rxy(theta=theta, phi=0, qubit=q0)
+    rxy_theta.data
+
+
 Compilation of a circuit diagram into pulses
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The compilation from the gate-level to the pulse-level description is done using the :ref:`device configuration file<Device configuration file>`.
+
+Here we will use a configuration file for a transmon based system that is part of the quantify-scheduler test suite.
+
+.. jupyter-execute::
+
+  import os
+  import json
+  cfg_f = os.path.join('tests','test_data','transmon_test_config.json')
+  with open(cfg_f, 'r') as f:
+      transmon_test_config = json.load(f)
+
+  transmon_test_config
+
+
+.. jupyter-execute::
+
+  from quantify.scheduler.compilation import _add_pulse_information_transmon, _determine_absolute_timing
+
+  # FIXME should be a public method
+  _add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+  # FIXME should be included in the above method
+  _determine_absolute_timing(schedule=sched)
+
+
+.. jupyter-execute::
+
+  from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
+
+  pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e11)
+
+
 
 
 Compilation of pulses onto physical hardware
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Precise timing control: The Ramsey experiment

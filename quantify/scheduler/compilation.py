@@ -178,9 +178,9 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
             D_amp = G_amp * q_cfg['params']['mw_motzoi']
 
             pulse = DRAGPulse(
-                G_amp=G_amp, D_amp=D_amp, 
+                G_amp=G_amp, D_amp=D_amp,
                 phase=op['gate_info']['phi'],
-                port=q_cfg['resources']['port_mw'], 
+                port=q_cfg['resources']['port_mw'],
                 duration=q_cfg['params']['mw_duration'],
                 clock=q_cfg['resources']['clock_01'])
             op.add_pulse(pulse)
@@ -208,8 +208,12 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
                 except ValueError:
                     raise
 
-            amp = edge_cfg['flux_amp_control']
-            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['flux_duration'], port=edge_cfg['flux_ch_control'])
+            amp = edge_cfg['params']['flux_amp_control']
+
+            # FIXME: placeholder. currently puts a soft square pulse on the designated port of both qubits
+            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['params']['flux_duration'], port=edge_cfg['resource_map'][q0])
+            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['params']['flux_duration'], port=edge_cfg['resource_map'][q1])
+
             op.add_pulse(pulse)
         elif op['gate_info']['operation_type'] == 'reset':
             # Initialization through relaxation

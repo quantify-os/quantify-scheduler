@@ -88,7 +88,7 @@ def test_missing_ref_op():
 def test_config_spec():
     validate_config(DEVICE_CFG, scheme_fn='transmon_cfg.json')
 
-@pytest.mark.xfail()
+
 def test_compile_transmon_program():
     sched = Schedule('Test schedule')
 

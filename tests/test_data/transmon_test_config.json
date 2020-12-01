@@ -2,9 +2,9 @@
    "qubits":{
         "q0": {
             "resources": {
-                "port_mw": "q0.mw",
-                "port_ro": "q0.res",
-                "port_flux": "q0.fl",
+                "port_mw": "q0:mw",
+                "port_ro": "q0:res",
+                "port_flux": "q0:fl",
                 "clock_01": "q0.01",
                 "clock_ro": "q0.ro"
                 },
@@ -20,7 +20,7 @@
                 "ro_pulse_type": "square",
                 "ro_pulse_duration": 150e-9,
                 "ro_acq_delay": 120e-9,
-                "ro_acq_integration_time": 2500e-9,
+                "ro_acq_integration_time": 300e-9,
                 "ro_acq_weigth_type": "SSB",
 
                 "init_duration": 10e-6
@@ -28,9 +28,9 @@
               },
         "q1": {
             "resources": {
-                "port_mw": "q1.mw",
-                "port_ro": "q1.res",
-                "port_flux": "q1.fl",
+                "port_mw": "q1:mw",
+                "port_ro": "q1:res",
+                "port_flux": "q1:fl",
                 "clock_01": "q1.01",
                 "clock_ro": "q1.ro"
                 },
@@ -46,7 +46,7 @@
                 "ro_pulse_type": "square",
                 "ro_pulse_duration": 150e-9,
                 "ro_acq_delay": 120e-9,
-                "ro_acq_integration_time": 2500e-9,
+                "ro_acq_integration_time": 300e-9,
                 "ro_acq_weigth_type": "SSB",
 
                 "init_duration": 10e-6
@@ -57,11 +57,10 @@
         "q0-q1": {
             "resource_map": {
                 "q0": "q0:fl",
-                "p1": "q1:fl"
+                "q1": "q1:fl"
                 },
             "params": {
                 "flux_duration": 40e-9,
-                "flux_ch_control": "qcm0.s1", "flux_ch_target": "qcm1.s1",
                 "flux_amp_control": 0.5,  "flux_amp_target": 0,
                 "phase_correction_control": 0,
                 "phase_correction_target": 0}
