@@ -179,7 +179,7 @@ Here we will use a configuration file for a transmon based system that is part o
 
   from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
 
-  pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e11)
+  pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e9)
 
 
 
