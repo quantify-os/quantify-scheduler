@@ -149,18 +149,16 @@ Here we will use a configuration file for a transmon based system that is part o
 .. jupyter-execute::
   :hide-code:
 
+  import json
+
   import os
   import inspect
-  import quantify.scheduler as qs
-  qsp = inspect.getfile(qs)
-  test_dir = os.path.abspath(os.path.join(qsp,'..', '..', '..','tests'))
+  import quantify.scheduler.schemas.examples as es
+
+  esp = inspect.getfile(es)
+  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
 
 
-
-.. jupyter-execute::
-
-  import json
-  cfg_f = os.path.join(test_dir,'test_data', 'transmon_test_config.json')
   with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 

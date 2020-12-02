@@ -7,13 +7,17 @@ from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.compilation import _determine_absolute_timing, validate_config, _add_pulse_information_transmon, qcompile
 from quantify.scheduler.types import Operation, Resource
 
+import inspect
+import os
+import quantify.scheduler.schemas.examples as es
 
-import pathlib
-cfg_f = pathlib.Path(__file__).parent.parent.absolute() / 'test_data' / 'transmon_test_config.json'
+esp = inspect.getfile(es)
+
+cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
 with open(cfg_f, 'r') as f:
     DEVICE_CFG = json.load(f)
 
-map_f = pathlib.Path(__file__).parent.parent.absolute() / 'test_data' / 'qblox_test_mapping.json'
+map_f = os.path.abspath(os.path.join(esp, '..','qblox_test_mapping.json'))
 with open(map_f, 'r') as f:
     HARDWARE_MAPPING = json.load(f)
 
