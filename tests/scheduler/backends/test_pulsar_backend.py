@@ -224,23 +224,42 @@ def dummy_pulsars():
             pass
 
 
-
-
 def test_pulsar_assembler_backend_pulses_only():
+    """
+    This is a minimal example for working with the pulsar backend.
+    """
     sched = Schedule('pulse_only_experiment')
     # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
     sched.add(DRAGPulse(
-                G_amp=.7, D_amp=-.2,
-                phase=90,
-                port='q0:mw',
-                duration=20e-9,
-                clock='q0.01'))
+        G_amp=.7, D_amp=-.2,
+        phase=90,
+        port='q0:mw',
+        duration=20e-9,
+        clock='q0.01'))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource('q0.01', freq=5e9)])
 
     _determine_absolute_timing(sched)
 
     sched, config, instr, = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
+
+
+def test_pulsar_assembler_backend_pulses_only_qcompile():
+    """
+    This is a minimal example for working with the pulsar backend.
+    """
+    sched = Schedule('pulse_only_experiment')
+    # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
+    sched.add(DRAGPulse(
+        G_amp=.7, D_amp=-.2,
+        phase=90,
+        port='q0:mw',
+        duration=20e-9,
+        clock='q0.01'))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource('q0.01', freq=5e9)])
+
+    qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_pulsar_assembler_backend(dummy_pulsars):
@@ -267,6 +286,7 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         sched.add(Rxy(theta=90, phi=0, qubit=q1))
         sched.add(Measure(q0, "q1"), label='M {:.2f} deg'.format(theta))
 
+    sched.add_resources([ClockResource('cl0:baseband', freq=0)])
     sched, cfgs = qcompile(
         sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
         configure_hardware=PULSAR_ASSEMBLER)

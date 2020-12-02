@@ -305,6 +305,7 @@ def qcompile(schedule: Schedule, device_cfg: dict,
         (mod, cls) = (bck_name.rsplit(".", 1))
         backend = getattr(importlib.import_module(mod), cls)
         # compile using the appropriate backend
-        return backend(schedule, **kwargs)
+        # FIXME: still contains a hardcoded argument
+        return backend(schedule, mapping=hardware_mapping, **kwargs)
     else:
         return schedule

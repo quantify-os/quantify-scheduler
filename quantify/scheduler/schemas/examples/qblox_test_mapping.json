@@ -7,8 +7,20 @@
                 "ref" : "int",
                 "IP address": "192.168.0.2",
                 "complex_output_0": {"port": "q0:mw", "gain": 0, "nco_freq": 0.5},
-                "complex_output_1": {"port": "q1:mw", "gain": 6, "nco_freq": 0}
+                "complex_output_1": {"port": "q1:mw", "gain": 0, "nco_freq": 0}
                 },
+        "qrm0": {
+                "name": "qrm0",
+                "type": "Pulsar_QRM",
+                "mode": "complex",
+                "ref" : "int",
+                "IP address": "192.168.0.6",
+                "complex_output_0": {"port": "q0:res", "gain": 0, "nco_freq": 0.5},
+                "complex_input_0": {"port": "q0:res", "gain": 0, "nco_freq": 0},
+                "complex_output_1": {"port": "q1:res", "gain": 0, "nco_freq": 0.5},
+                "complex_input_1": {"port": "q1:res", "gain": 0, "nco_freq": 0}
+                },
+
         "qcm1": {
                 "name": "qcm1",
                 "type": "Pulsar_QCM",

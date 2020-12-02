@@ -259,8 +259,12 @@ def _prepare_pulse(description, gain=0.0):
     # FIXME: there is magic going on to hack specific function in terms of the modulation used...
     wf_func = description['wf_func']
     if wf_func == 'quantify.scheduler.waveforms.square' or wf_func == 'quantify.scheduler.waveforms.soft_square':
+
+        # FIXME: Why is a square pulse modulated? What does PulsarModulations do?
+        # FIXME: I see this is a module wide defined variable?!? that makes zero sense.
         params = PulsarModulations(
-            gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
+            gain_I=description['amp']/10**(gain/20),
+            gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
     if wf_func == 'quantify.scheduler.waveforms.ramp':
         params = PulsarModulations(
