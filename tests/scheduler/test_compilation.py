@@ -17,7 +17,7 @@ cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
 with open(cfg_f, 'r') as f:
     DEVICE_CFG = json.load(f)
 
-map_f = os.path.abspath(os.path.join(esp, '..','qblox_test_mapping.json'))
+map_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
 with open(map_f, 'r') as f:
     HARDWARE_MAPPING = json.load(f)
 
@@ -125,7 +125,7 @@ def test_empty_sched():
     with pytest.raises(ValueError, match="schedule 'empty' contains no operations"):
         _determine_absolute_timing(sched)
 
-@pytest.mark.xfail
+
 def test_bad_gate():
     class NotAGate(Operation):
         def __init__(self, q):
@@ -139,20 +139,13 @@ def test_bad_gate():
                                   'operation_type': 'bad'}}
             super().__init__('bad ({})'.format(q), data=data)
 
-    min_config = {
-        "qubits": {
-            "q0": {"init_duration": 250e-6}
-        },
-        "edges": {}
-    }
-
     sched = Schedule('Bell experiment')
     sched.add(Reset('q0'))
     sched.add(NotAGate('q0'))
     with pytest.raises(NotImplementedError, match='Operation type "bad" not supported by backend'):
-        _add_pulse_information_transmon(sched, min_config)
+        _add_pulse_information_transmon(sched, DEVICE_CFG)
 
-@pytest.mark.xfail
+
 def test_resource_resolution():
     sched = Schedule('resource_resolution')
     qcm0_s0 = Resource({'name': 'qcm0.s0', 'type': 'qcm'})

@@ -20,6 +20,7 @@
      "description": "A unitary matrix describing the operation."
     },
     "qubits": {
+     "description": "A list of strings indicating the qubits the gate acts on.",
      "type": "array"
     },
     "tex": {
@@ -46,9 +47,13 @@
       "duration"
     ],
     "properties": {
-      "channel": {
-        "description": "A string specifying the channel used by the pulse.",
+      "port": {
+        "description": "A string specifying the port used by the pulse.",
         "type": ["string","null"]
+      },
+      "clock": {
+        "description": "A string specifying the clock used to modulate the pulse.",
+        "type": ["string"]
       },
       "wf_func": {
         "description": "reference to a function to generate the pulse of this operation. ",

@@ -99,9 +99,9 @@ class Schedule(UserDict):
             len(self.data['operation_dict']), len(self.data['timing_constraints']))
 
     @classmethod
-    def is_valid(cls, operation):
+    def is_valid(cls, schedule):
         scheme = load_json_schema(__file__, 'schedule.json')
-        jsonschema.validate(operation.data, scheme)
+        jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 
     def add(self, operation, rel_time: float = 0,
@@ -256,6 +256,7 @@ class Operation(UserDict):
     def is_valid(cls, operation):
         scheme = load_json_schema(__file__, 'operation.json')
         jsonschema.validate(operation.data, scheme)
+        operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
 
     @property

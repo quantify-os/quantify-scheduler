@@ -98,6 +98,12 @@ def test_gates_valid():
     assert Operation.is_valid(measure)
 
 
+def test_pulses_valid():
+    sqp = SquarePulse(0.35, duration=12e-9, port='q0:fl')
+    assert Operation.is_valid(sqp)
+    sqp.hash
+
+
 def test_type_properties():
     op = Operation('blank op')
     assert not op.valid_gate

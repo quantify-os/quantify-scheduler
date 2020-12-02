@@ -11,6 +11,7 @@ from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, buil
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER
 # from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
 from quantify.scheduler.compilation import qcompile
+import pathlib
 
 import inspect
 import os
@@ -22,7 +23,7 @@ cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
 with open(cfg_f, 'r') as f:
     DEVICE_CFG = json.load(f)
 
-map_f = os.path.abspath(os.path.join(esp, '..','qblox_test_mapping.json'))
+map_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
 with open(map_f, 'r') as f:
     HARDWARE_MAPPING = json.load(f)
 
@@ -33,10 +34,6 @@ try:
     PULSAR_ASSEMBLER = True
 except ImportError:
     PULSAR_ASSEMBLER = False
-
-
-import pathlib
-
 
 
 def test_build_waveform_dict():
@@ -89,7 +86,8 @@ def test_bad_pulse_timings():
 
     with pytest.raises(ValueError, match="Generated wait for '0':'drag_ID' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_pulse_timings, dummy_pulse_data, short_pulse_timings[-1][0] + 4, set())
+        build_q1asm(short_pulse_timings, dummy_pulse_data,
+                    short_pulse_timings[-1][0] + 4, set())
 
     with pytest.raises(ValueError, match="Generated wait for '0':'square_id' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
@@ -178,12 +176,17 @@ def test_generate_sequencer_cfg():
         np.testing.assert_array_equal(exp_data, entry['data'])
 
     sequence_cfg = generate_sequencer_cfg(pulse_data, pulse_timings, 20, set())
-    check_waveform(sequence_cfg['waveforms']["awg"]["square_1_I"], [0.0, 1.0, 0.0, 0.0], 0)
-    check_waveform(sequence_cfg['waveforms']["awg"]["square_1_Q"], np.zeros(4), 1)
-    check_waveform(sequence_cfg['waveforms']["awg"]["drag_1_I"], complex_vals.real, 2)
-    check_waveform(sequence_cfg['waveforms']["awg"]["drag_1_Q"], complex_vals.imag, 3)
+    check_waveform(sequence_cfg['waveforms']["awg"]
+                   ["square_1_I"], [0.0, 1.0, 0.0, 0.0], 0)
+    check_waveform(sequence_cfg['waveforms']["awg"]
+                   ["square_1_Q"], np.zeros(4), 1)
+    check_waveform(sequence_cfg['waveforms']["awg"]
+                   ["drag_1_I"], complex_vals.real, 2)
+    check_waveform(sequence_cfg['waveforms']["awg"]
+                   ["drag_1_Q"], complex_vals.imag, 3)
     check_waveform(sequence_cfg['waveforms']["awg"]["square_2_I"], real, 4)
-    check_waveform(sequence_cfg['waveforms']["awg"]["square_2_Q"], np.zeros(4), 5)
+    check_waveform(sequence_cfg['waveforms']["awg"]
+                   ["square_2_Q"], np.zeros(4), 5)
     assert len(sequence_cfg['program'])
 
     if PULSAR_ASSEMBLER:
@@ -217,6 +220,7 @@ def dummy_pulsars():
             inst.close()
         except KeyError:
             pass
+
 
 @pytest.mark.xfail
 def test_pulsar_assembler_backend(dummy_pulsars):
@@ -257,9 +261,11 @@ def test_pulsar_assembler_backend(dummy_pulsars):
     qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', seq_idx=0)
     qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', seq_idx=1)
 
-    sched.add_resources([qcm0, qcm0_s0, qcm0_s1, qcm1, qcm1_s0, qcm1_s1, qrm0, qrm0_s0, qrm0_s1])
+    sched.add_resources([qcm0, qcm0_s0, qcm0_s1, qcm1,
+                         qcm1_s0, qcm1_s1, qrm0, qrm0_s0, qrm0_s1])
 
-    sched, cfgs = qcompile(sched, DEVICE_TEST_CFG, backend=pulsar_assembler_backend, configure_hardware=PULSAR_ASSEMBLER)
+    sched, cfgs = qcompile(
+        sched, DEVICE_TEST_CFG, backend=pulsar_assembler_backend, configure_hardware=PULSAR_ASSEMBLER)
 
     assert len(sched.resources['qcm0.s0'].timing_tuples) == int(21*2)
     assert len(sched.resources['qcm0.s1'].timing_tuples) == int(21*1)
@@ -275,6 +281,7 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     if PULSAR_ASSEMBLER:
         assert dummy_pulsars[0].get('sequencer0_mod_en_awg')
+
 
 @pytest.mark.xfail
 def test_mismatched_mod_freq():
@@ -299,6 +306,7 @@ def test_mismatched_mod_freq():
                                          r'expected 50000000 but was 70000000'):
         qcompile(sched, bad_config, backend=pulsar_assembler_backend)
 
+
 @pytest.mark.xfail
 def test_gate_and_pulse():
     sched = Schedule("Chevron Experiment")
@@ -310,7 +318,8 @@ def test_gate_and_pulse():
     sched.add(SquarePulse(0.4, 20e-9, 'q0:mw_ch'))
 
     sched.add_resources([qcm0_s0])
-    sched, cfgs = qcompile(sched, DEVICE_TEST_CFG, backend=pulsar_assembler_backend)
+    sched, cfgs = qcompile(sched, DEVICE_TEST_CFG,
+                           backend=pulsar_assembler_backend)
     with open(cfgs["qcm0.s0"], 'rb') as cfg:
         prog = json.load(cfg)
         assert len(prog['waveforms']['awg']) == 4
@@ -322,7 +331,8 @@ def test_bad_driver_vers():
         _check_driver_version(device, version)
         # sad path
         device._build = {'version': 'l.o.l.'}
-        error = "Backend requires Pulsar Dummy to have driver version {}, found l.o.l. installed.".format(version)
+        error = "Backend requires Pulsar Dummy to have driver version {}, found l.o.l. installed.".format(
+            version)
         with pytest.raises(ValueError, match=error):
             _check_driver_version(device, version)
         device.close()
