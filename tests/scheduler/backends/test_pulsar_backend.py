@@ -6,11 +6,13 @@ from qcodes.instrument.base import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
-from quantify.scheduler.pulse_library import SquarePulse
+from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse
+
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER
 # from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
-from quantify.scheduler.compilation import qcompile
+from quantify.scheduler.resources import ClockResource
+from quantify.scheduler.compilation import qcompile, _determine_absolute_timing
 import pathlib
 
 import inspect
@@ -222,7 +224,25 @@ def dummy_pulsars():
             pass
 
 
-@pytest.mark.xfail
+
+
+def test_pulsar_assembler_backend_pulses_only():
+    sched = Schedule('pulse_only_experiment')
+    # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
+    sched.add(DRAGPulse(
+                G_amp=.7, D_amp=-.2,
+                phase=90,
+                port='q0:mw',
+                duration=20e-9,
+                clock='q0.01'))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource('q0.01', freq=5e9)])
+
+    _determine_absolute_timing(sched)
+
+    sched, config, instr, = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
+
+
 def test_pulsar_assembler_backend(dummy_pulsars):
     """
     This test uses a full example of compilation for a simple Bell experiment.
@@ -247,25 +267,9 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         sched.add(Rxy(theta=90, phi=0, qubit=q1))
         sched.add(Measure(q0, "q1"), label='M {:.2f} deg'.format(theta))
 
-    # Add the resources for the pulsar qcm channels
-    qcm0 = CompositeResource('qcm0', ['qcm0.s0', 'qcm0.s1'])
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
-    qcm0_s1 = Pulsar_QCM_sequencer('qcm0.s1', seq_idx=1)
-
-    qcm1 = CompositeResource('qcm1', ['qcm1.s0', 'qcm1.s1'])
-    qcm1_s0 = Pulsar_QCM_sequencer('qcm1.s0', seq_idx=0)
-    qcm1_s1 = Pulsar_QCM_sequencer('qcm1.s1', seq_idx=1)
-
-    qrm0 = CompositeResource('qrm0', ['qrm0.s0', 'qrm0.s1'])
-    # Currently mocking a readout module using an acquisition module
-    qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', seq_idx=0)
-    qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', seq_idx=1)
-
-    sched.add_resources([qcm0, qcm0_s0, qcm0_s1, qcm1,
-                         qcm1_s0, qcm1_s1, qrm0, qrm0_s0, qrm0_s1])
-
     sched, cfgs = qcompile(
-        sched, DEVICE_TEST_CFG, backend=pulsar_assembler_backend, configure_hardware=PULSAR_ASSEMBLER)
+        sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
+        configure_hardware=PULSAR_ASSEMBLER)
 
     assert len(sched.resources['qcm0.s0'].timing_tuples) == int(21*2)
     assert len(sched.resources['qcm0.s1'].timing_tuples) == int(21*1)
@@ -310,14 +314,12 @@ def test_mismatched_mod_freq():
 @pytest.mark.xfail
 def test_gate_and_pulse():
     sched = Schedule("Chevron Experiment")
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
 
     sched.add(X('q0'))
     sched.add(SquarePulse(0.8, 20e-9, 'q0:mw_ch'))
     sched.add(Rxy(90, 90, 'q0'))
     sched.add(SquarePulse(0.4, 20e-9, 'q0:mw_ch'))
 
-    sched.add_resources([qcm0_s0])
     sched, cfgs = qcompile(sched, DEVICE_TEST_CFG,
                            backend=pulsar_assembler_backend)
     with open(cfgs["qcm0.s0"], 'rb') as cfg:

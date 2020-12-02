@@ -1,31 +1,32 @@
 {
-"qcm0": {
-        "name": "qcm0",
-        "type": "Pulsar_QCM",
-        "mode": "complex",
-        "ref" : "int",
-        "IP address": "192.168.0.2",
-        "complex_output_0": {"port": "q0.mw", "gain": 0, "nco_freq": 0.5},
-        "complex_output_1": {"port": "q1.mw", "gain": 6, "nco_freq": 0}
-        },
-"qcm1": {
-        "name": "qcm1",
-        "type": "Pulsar_QCM",
-        "mode": "complex",
-        "ref" : "ext",
-        "IP address": "192.168.0.3",
-        "complex_output_0": {"port": "q2.mw", "gain": 0, "nco_freq": 0.5},
-        "complex_output_1": {"port": "q3.mw", "gain": 0, "nco_freq": 0}
-        },
-"qcm2": {
-        "name": "qcm2",
-        "type": "Pulsar_QCM",
-        "mode": "real",
-        "ref" : "ext",
-        "IP address": "192.168.0.4",
-        "real_output_0": {"port": "q0.fl", "gain": -60.0},
-        "real_output_1": {"port": "q1.fl", "gain": -60.0},
-        "real_output_2": {"port": "q2.fl", "gain": -60.0},
-        "real_output_3": {"port": "q3.fl", "gain": -60.0}
-        }
+        "backend":"quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0": {
+                "name": "qcm0",
+                "type": "Pulsar_QCM",
+                "mode": "complex",
+                "ref" : "int",
+                "IP address": "192.168.0.2",
+                "complex_output_0": {"port": "q0:mw", "gain": 0, "nco_freq": 0.5},
+                "complex_output_1": {"port": "q1:mw", "gain": 6, "nco_freq": 0}
+                },
+        "qcm1": {
+                "name": "qcm1",
+                "type": "Pulsar_QCM",
+                "mode": "complex",
+                "ref" : "ext",
+                "IP address": "192.168.0.3",
+                "complex_output_0": {"port": "q2:mw", "gain": 0, "nco_freq": 0.5},
+                "complex_output_1": {"port": "q3:mw", "gain": 0, "nco_freq": 0}
+                },
+        "qcm2": {
+                "name": "qcm2",
+                "type": "Pulsar_QCM",
+                "mode": "real",
+                "ref" : "ext",
+                "IP address": "192.168.0.4",
+                "real_output_0": {"port": "q0:fl", "gain": -60.0},
+                "real_output_1": {"port": "q1:fl", "gain": -60.0},
+                "real_output_2": {"port": "q2:fl", "gain": -60.0},
+                "real_output_3": {"port": "q3:fl", "gain": -60.0}
+                }
 }

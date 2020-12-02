@@ -6,6 +6,7 @@
                 "port_ro": "q0:res",
                 "port_flux": "q0:fl",
                 "clock_01": "q0.01",
+                "clock_12": "q0.12",
                 "clock_ro": "q0.ro"
                 },
            "params": {
@@ -32,6 +33,7 @@
                 "port_ro": "q1:res",
                 "port_flux": "q1:fl",
                 "clock_01": "q1.01",
+                "clock_12": "q1.12",
                 "clock_ro": "q1.ro"
                 },
            "params": {

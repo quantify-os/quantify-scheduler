@@ -188,6 +188,35 @@ Compilation of pulses onto physical hardware
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file<Hardware mapping file>`.
+
+Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend` made for the Qblox pulsar series hardware.
+
+.. jupyter-execute::
+
+  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+
+
+  with open(cfg_f, 'r') as f:
+      qblox_test_mapping = json.load(f)
+
+  qblox_test_mapping
+
+
+  from quantify.scheduler.backends.pulsar_backend import pulsar_assembler_backend, configure_pulsars
+  from pulsar_qcm.pulsar_qcm import pulsar_qcm
+  from qcodes import Instrument
+
+  sched, config, instr, = pulsar_assembler_backend(sched, qblox_test_mapping)
+
+The compiled schedule can be uploaded to the hardware using the following command.
+
+.. jupyter-execute::
+
+  instr = configure_pulsars(config, qblox_test_mapping)
+
+
+
 Precise timing control: The Ramsey experiment
 ------------------------------------------------
 
