@@ -12,6 +12,20 @@ from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, buil
 # from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
 from quantify.scheduler.compilation import qcompile
 
+import inspect
+import os
+import quantify.scheduler.schemas.examples as es
+
+esp = inspect.getfile(es)
+
+cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+with open(cfg_f, 'r') as f:
+    DEVICE_CFG = json.load(f)
+
+map_f = os.path.abspath(os.path.join(esp, '..','qblox_test_mapping.json'))
+with open(map_f, 'r') as f:
+    HARDWARE_MAPPING = json.load(f)
+
 
 try:
     from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
@@ -22,9 +36,7 @@ except ImportError:
 
 
 import pathlib
-cfg_f = pathlib.Path(__file__).parent.parent.parent.absolute() / 'test_data' / 'transmon_test_config.json'
-with open(cfg_f, 'r') as f:
-    DEVICE_TEST_CFG = json.load(f)
+
 
 
 def test_build_waveform_dict():
