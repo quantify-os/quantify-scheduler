@@ -150,9 +150,7 @@ Here we will use a configuration file for a transmon based system that is part o
 
   import json
   import pprint
-
   import os, inspect
-  import inspect
   import quantify.scheduler.schemas.examples as es
 
   esp = inspect.getfile(es)
@@ -188,6 +186,21 @@ Compilation of pulses onto physical hardware
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+.. jupyter-execute::
+    :hide-code:
+
+    sched = Schedule('Bell experiment')
+    for theta in np.linspace(0, 360, 21):
+        sched.add(Reset(q0, q1))
+        sched.add(X90(q0))
+        sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
+        # sched.add(CZ(q0, q1)) # FIXME Commented out because of not implemented error
+        sched.add(Rxy(theta=theta, phi=0, qubit=q0))
+        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
+
+    _add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+    _determine_absolute_timing(schedule=sched)
+
 The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file<Hardware mapping file>`.
 
 Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend` made for the Qblox pulsar series hardware.
@@ -204,20 +217,47 @@ Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_
   pprint.pprint(qblox_test_mapping)
 
 
+The Pulsar QCM provides a QCodes based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will
+also use for demonstration purposes as part of this tutorial:
 
+
+.. jupyter-execute::
+
+  from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
+  from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
+
+  qcm0 = pulsar_qcm_dummy('qcm0')
+  qcm1 = pulsar_qcm_dummy('qcm1')
+  qrm0 = pulsar_qrm_dummy('qrm0')
+
+
+.. jupyter-execute::
 
   from quantify.scheduler.backends.pulsar_backend import pulsar_assembler_backend, configure_pulsars
   from pulsar_qcm.pulsar_qcm import pulsar_qcm
   from qcodes import Instrument
 
-  # sched, config, instr, = pulsar_assembler_backend(sched, qblox_test_mapping)
+  sched, config, instr, = pulsar_assembler_backend(sched, qblox_test_mapping)
 
 The compiled schedule can be uploaded to the hardware using the following command.
 
 .. jupyter-execute::
 
-  print("hello")
-  # instr = configure_pulsars(config, qblox_test_mapping)
+  instr = configure_pulsars(config, qblox_test_mapping)
+
+
+At this point, the assembler on the device will load the waveforms into memory and verify the program can be executed. We must next arm and then start the device:
+
+
+.. jupyter-execute::
+
+     qcm0.arm_sequencer()
+     qcm1.arm_sequencer()
+     qrm0.arm_sequencer()
+
+     qcm0.start_sequencer()
+     qcm1.start_sequencer()
+     qrm0.start_sequencer()
 
 
 
@@ -238,158 +278,6 @@ A hybrid experiment: The Chevron
 
   This tutorial should showcase hybridg schedules that mix pulse and gate level
   descriptions.
-
-Of course different Qubits are driven with different techniques which must be defined. Here we have a pair of Transmon qubits,
-which respond to microwave pulses:
-
-.. jupyter-execute::
-
-    #  q0 ro_pulse_modulation_freq should be 80e6, requires issue38 resolution
-    device_test_cfg = {
-          "qubits":
-          {
-              "q0": {"mw_amp180": 0.5, "mw_motzoi": -0.25, "mw_duration": 20e-9,
-                     "mw_modulation_freq": 50e6, "mw_ef_amp180": 0.87, "mw_ch": "qcm0.s0",
-                     "ro_ch": "qrm0.s0", "ro_pulse_amp": 0.5, "ro_pulse_modulation_freq": 80e6,
-                     "ro_pulse_type": "square", "ro_pulse_duration": 150e-9,
-                     "ro_acq_delay": 120e-9, "ro_acq_integration_time": 700e-9,
-                     "ro_acq_weigth_type": "SSB",
-                     "init_duration": 250e-6
-                     },
-              "q1": {"mw_amp180": 0.45, "mw_motzoi": -0.15, "mw_duration": 20e-9,
-                     "mw_modulation_freq": 80e6, "mw_ef_amp180": 0.27, "mw_ch": "qcm1.s0",
-                     "ro_ch": "qrm0.s1", "ro_pulse_amp": 0.5, "ro_pulse_modulation_freq": -23e6,
-                     "ro_pulse_type": "square", "ro_pulse_duration": 100e-9,
-                     "ro_acq_delay": 120e-9, "ro_acq_integration_time": 700e-9,
-                     "ro_acq_weigth_type": "SSB",
-                     "init_duration": 250e-6 }
-          },
-          "edges":
-          {
-              "q0-q1": {
-                  "flux_duration": 40e-9,
-                  "flux_ch_control": "qcm0.s1", "flux_ch_target": "qcm1.s1",
-                  "flux_amp_control": 0.5,  "flux_amp_target": 0,
-                  "phase_correction_control": 0,
-                  "phase_correction_target": 0}
-          }
-      }
-
-
-With this information, the compiler can now generate the waveforms required.
-
-Resources
-----------
-
-Our gates and timings are now defined but we still need to describe how the various devices in our experiments are connected; Quantify uses the :class:`quantify.scheduler.types.Resource` to represent this.
-FIXME: CompositeResource no longer exists, use port resource.
-Of particular interest to us are the :class:`quantify.scheduler.resources.CompositeResource` and the :class:`quantify.scheduler.resources.Pulsar_QCM_sequencer`,
-which represent a collection of Resources and a single Core on the Pulsar QCM:
-
-.. jupyter-execute::
-
-    # from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
-    # qcm0 = CompositeResource('qcm0', ['qcm0.s0', 'qcm0.s1'])
-    # qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
-    # qcm0_s1 = Pulsar_QCM_sequencer('qcm0.s1', seq_idx=1)
-
-    # qcm1 = CompositeResource('qcm1', ['qcm1.s0', 'qcm1.s1'])
-    # qcm1_s0 = Pulsar_QCM_sequencer('qcm1.s0', seq_idx=0)
-    # qcm1_s1 = Pulsar_QCM_sequencer('qcm1.s1', seq_idx=1)
-
-    # qrm0 = CompositeResource('qrm0', ['qrm0.s0', 'qrm0.s1'])
-    # # Currently mocking a readout module using an acquisition module
-    # qrm0_s0 = Pulsar_QRM_sequencer('qrm0.s0', seq_idx=0)
-    # qrm0_s1 = Pulsar_QRM_sequencer('qrm0.s1', seq_idx=1)
-
-    # sched.add_resources([qcm0, qcm0_s0, qcm0_s1, qcm1, qcm1_s0, qcm1_s1, qrm0, qrm0_s0, qrm0_s1])
-
-With this information added, we can now compile the full program with an appropriate backend:
-
-.. jupyter-execute::
-
-  # from quantify.scheduler.compilation import qcompile
-  # import quantify.scheduler.backends.pulsar_backend as pb
-  # sched, config_dict = qcompile(sched, device_test_cfg, backend=pb.pulsar_assembler_backend)
-
-Let's take a look at what our finished configuration looks like:
-
-.. jupyter-execute::
-
-    # config_dict
-
-It contains a list of JSON files representing the configuration for each device. Now we are ready to deploy to hardware.
-
-Visualization using a pulse diagram
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The compiler also provides pulse schedule visualization, which can be useful for a quick verification that your schedule is as expected:
-
-.. jupyter-execute::
-
-  # from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
-  # fig = pulse_diagram_plotly(sched, ch_list=['qcm0.s0', 'qcm1.s0', 'qrm0.s0', 'qrm0.r0'])
-  # fig.show()
-
-By default :func:`quantify.scheduler.visualization.pulse_scheme.pulse_diagram_plotly` shows the first 8 channels encountered in in a schedule, but by specifying a list of channels, a more compact visualization can be created.
-
-Connecting to Hardware
-----------------------
-
-The Pulsar QCM provides a QCodes based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will
-also use for demonstration purposes as part of this tutorial:
-
-.. jupyter-execute::
-
-    # # todo install from pypi when released
-    # try:
-    #     from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-    #     from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
-    #     PULSAR_ASSEMBLER = True
-    # except ImportError:
-    #     PULSAR_ASSEMBLER = False
-
-The Pulsar QCM backend provides a method for deploying our complete configuration to all our devices at once:
-
-.. jupyter-execute::
-    :raises:
-
-    # if PULSAR_ASSEMBLER:
-    #     _pulsars = []
-    #     # first we need to create some Instruments representing the other devices in our configuration
-    #     for qcm_name in ['qcm0', 'qcm1']:
-    #         _pulsars.append(pulsar_qcm_dummy(qcm_name))
-    #     for qrm_name in ['qrm0', 'qrm1']:
-    #         _pulsars.append(pulsar_qrm_dummy(qrm_name))
-    #     pb.configure_pulsar_sequencers(config_dict)
-
-At this point, the assembler on the device will load the waveforms into memory and verify the program can be executed. We must next arm and then start the device:
-
-.. jupyter-execute::
-    :raises:
-
-    # if PULSAR_ASSEMBLER:
-    #     qcm0 = _pulsars[0]
-    #     qrm0 = _pulsars[2]
-
-    #     qcm0.arm_sequencer()
-    #     qrm0.arm_sequencer()
-    #     qcm0.start_sequencer()
-    #     qrm0.start_sequencer()
-
-Provided we have synchronized our Pulsars properly using the sync-line, our experiment will now run. Once it's complete,
-it is necessary to stop the QRMs before we read any data they have acquired. We first instruct the QRM to move it's
-acquisition to disk memory with a named identifier and number of samples. We then request the QRM to return these
-acquisitions over the driver so we can do some processing in Python:
-
-.. jupyter-execute::
-    :raises:
-
-    # if PULSAR_ASSEMBLER:
-    #     seq_idx = 0
-    #     qrm0.stop_sequencer()
-    #     qrm0.store_acquisition(seq_idx, "meas_0", 4800)
-    #     acq = qrm0.get_acquisitions(seq_idx)
 
 
 
