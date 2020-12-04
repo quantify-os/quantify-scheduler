@@ -218,17 +218,6 @@ def test_get_portclock_path():
             HARDWARE_MAPPING, port='q0:mw', clock='q0.asdf')
 
 
-# def test_getpath():
-#     try:
-#         from quantify.utilities.general import getpath as gpt
-
-#         raise Exception("getpath has been merged into quantify-core, remove from here")
-#     except ImportError:
-#         pass
-#     path = getpath(HARDWARE_MAPPING, 'q0:mw')
-#     assert path == ('qcm0', 'complex_output_0', 'port')
-
-
 def test_extract_nco_freq_from_mapping():
     nco_freq = _extract_nco_freq_from_mapping(
         HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
@@ -285,13 +274,12 @@ def test_extract_nco_freq_from_mapping():
             invalid_mapping, port='q1:mw', clock='q1.01',
             clock_freq=RF)
 
+
 def test_extract_gain_from_mapping():
     nco_freq = _extract_nco_freq_from_mapping(
         HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
         clock_freq=5.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
-
-
 
 
 @pytest.fixture

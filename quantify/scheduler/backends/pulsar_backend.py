@@ -428,19 +428,12 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = '{}_{}'.format(port, clock_id)
             if portclock not in schedule.resources.keys():
-
-                # Why is the clock taken here as an option?
-                if 'clock' in p.keys():
-                    nco_freq = _extract_nco_freq_from_mapping(
-                        mapping, port,
-                        clock=clock_id,
-                        clock_freq=schedule.resources[clock_id]['freq'])
-                    schedule.add_resources(
-                        [QCM_sequencer(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
-                else:
-                    # FIXME: I think this should raise an exception.
-                    logging.warning('No Clock specified for {}'.format(p))
-                    schedule.add_resources([QCM_sequencer(portclock)])
+                nco_freq = _extract_nco_freq_from_mapping(
+                    mapping, port,
+                    clock=clock_id,
+                    clock_freq=schedule.resources[clock_id]['freq'])
+                schedule.add_resources(
+                    [QCM_sequencer(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
 
             # extract pulse parameters
             gain = _extract_gain_from_mapping(mapping, port, clock_id)
@@ -452,12 +445,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
 
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
-
-                if 'clock' not in p.keys() and seq['clock'] != 'None':
-                    raise ValueError('pulse {} on sequencer {} has an inconsistent clock frequency: expected {} but was None'
-                                     .format(pulse_id, seq['name'], seq['clock']))
-
-                if 'clock' in p.keys() and clock_id != seq['clock']:
+                if clock_id != seq['clock']:
+                    # Fixme define a test where this edge case is triggered
                     raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
                                      .format(pulse_id, seq['name'], seq['clock'], p['clock']))
 
@@ -795,35 +784,3 @@ def get_portclock_path(hardware_mapping: dict, port: str, clock: str, prepath=()
     if prepath == ():
         raise ValueError(
             'Could not find the combination of port "{}" and clock "{}" in the hardware mapping.'.format(port, clock))
-
-
-# FIXME: can probably be removed
-# def getpath(nested_dict: dict, value, prepath: tuple=()) -> list:
-#     """
-#     Searches a dictionary for a specific value and returns the path of the first
-#     occurence of this value
-
-#     Parameters
-#     ---------------
-#     nested_dict
-#         the dictionary to search in
-#     value
-#         the value to search for
-#     prepath
-#         the path to which to append, used because this function is recursive
-
-#     Returns
-#     -------
-#         path
-#             a tuple of strings indicating the path of the value in the dict.
-
-#     # FIXME: belongs in quantify-core but here until it is merged
-#     """
-#     for k, v in nested_dict.items():
-#         path = prepath + (k,)
-#         if v == value:  # found value
-#             return path
-#         elif hasattr(v, 'items'):  # v is a dict
-#             p = getpath(v, value, path)  # recursive call
-#             if p is not None:
-#                 return p
