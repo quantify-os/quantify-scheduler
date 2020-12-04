@@ -167,6 +167,8 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
                     # acquisition integration window
                     op.add_pulse(ModSquarePulse(amp=1,
                                                 duration=q_cfg['params']['ro_acq_integration_time'],
+                                                # FIXME this is a bit of a hack,
+                                                # we need to properly define how acquisition "pulses" work
                                                 port="{}_READOUT".format(
                                                     q_cfg['resources']['port_ro']),
                                                 clock=q_cfg['resources']['clock_ro'],
