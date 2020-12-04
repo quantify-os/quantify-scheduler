@@ -249,7 +249,7 @@ def test_extract_nco_freq_from_mapping():
     assert nco_freq == RF-LO
 
     RF = 8.52e9
-    LO = 8.1e9  # lo_freq set in config for output connected to the feedline
+    LO = 7.2e9  # lo_freq set in config for output connected to the feedline
     nco_freq = _extract_nco_freq_from_mapping(
         HARDWARE_MAPPING, port='q1:res', clock='q1.ro',
         clock_freq=RF)
@@ -383,21 +383,22 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     sched.add_resources([ClockResource('cl0:baseband', freq=0)])
 
-    sched, cfgs = qcompile(
+    sched, cfgs, instrs = qcompile(
         sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
         configure_hardware=PULSAR_ASSEMBLER)
+    import logging
+    logging.warning(sched.resources.keys())
+    assert len(sched.resources['q0:mw_q0.01'].timing_tuples) == int(21*2)
+    assert len(sched.resources['q1:mw_q1.01'].timing_tuples) == int(21*1)
+    # flux pulses FIXME real-valued pulses not allowed yet.
+    # because resources that are not used, these keys are missing
+    # assert len(sched.resources['q0:fl_cl0.baseband'].timing_tuples) ==  int(21*1)
+    # assert len(sched.resources['q1:fl_cl0.baseband'].timing_tuples) ==  int(21*1)
 
-    assert len(sched.resources['qcm0.s0'].timing_tuples) == int(21*2)
-    assert len(sched.resources['qcm0.s1'].timing_tuples) == int(21*1)
-    assert len(qcm0_s0.timing_tuples) == int(21*2)
-    assert len(qcm0_s1.timing_tuples) == 21
-    assert len(qcm1_s0.timing_tuples) == 21
-    assert len(qcm1_s1.timing_tuples) == 0
-
-    assert sched.resources['qcm0.s0']['nco_freq'] == DEVICE_TEST_CFG["qubits"]["q0"]["mw_modulation_freq"]
-    assert sched.resources['qrm0.s0']['nco_freq'] == DEVICE_TEST_CFG["qubits"]["q0"]["ro_pulse_modulation_freq"]
-    assert sched.resources['qcm1.s0']['nco_freq'] == DEVICE_TEST_CFG["qubits"]["q1"]["mw_modulation_freq"]
-    assert sched.resources['qrm0.s1']['nco_freq'] == DEVICE_TEST_CFG["qubits"]["q1"]["ro_pulse_modulation_freq"]
+    assert sched.resources['q0:mw_q0.01']['nco_freq'] == HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
+    lo_freq = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_freq"]
+    rf_freq = DEVICE_CFG['qubits']["q1"]["params"]["mw_freq"]
+    assert sched.resources['q1:mw_q1.01']['nco_freq'] == rf_freq - lo_freq
 
     if PULSAR_ASSEMBLER:
         assert dummy_pulsars[0].get('sequencer0_mod_en_awg')

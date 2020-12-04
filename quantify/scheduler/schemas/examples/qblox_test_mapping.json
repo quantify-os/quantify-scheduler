@@ -29,7 +29,7 @@
                 "ref" : "ext",
                 "IP address": "192.168.0.6",
                 "complex_output_0": {
-                        "gain": 0, "lo_freq": 8.1e9,
+                        "gain": 0, "lo_freq": 7.2e9,
                         "seq0":{"port": "q0:res", "clock":"q0.ro", "nco_freq": null},
                         "seq1":{"port": "q1:res", "clock":"q1.ro", "nco_freq": null},
                         "seq2":{"port": "q2:res", "clock":"q2.ro", "nco_freq": null},

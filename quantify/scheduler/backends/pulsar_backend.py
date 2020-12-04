@@ -79,7 +79,7 @@ class QCM_sequencer(Resource):
 
 
 class QRM_sequencer(Resource):
-    def __init__(self, name: str, port:str, clock: str,
+    def __init__(self, name: str, port: str, clock: str,
                  nco_freq: float = 0, nco_phase: float = 0):
         """
         A QRM sequencer.
@@ -328,6 +328,7 @@ def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, cloc
     # Fixme, maybe we always want to return all three.
     return nco_freq
 
+
 def _extract_io_from_mapping(hardware_mapping, port: str, clock: str):
     """
     Identifies which io unit is used for a paricular port clock pair.
@@ -341,22 +342,10 @@ def _extract_io_from_mapping(hardware_mapping, port: str, clock: str):
     return io
 
 
-def _extract_config_from_mapping(nested_dictionary, port: str, clock: str):
-    def containts_port(nested_dictionary, port: str):
-        for key, value in nested_dictionary.items():
-            if type(value) is list:
-                if port in value:
-                    return True
-            elif port == value:
-                return True
-
-    for key, value in nested_dictionary.items():
-        if type(value) is dict:
-            output = _extract_config_from_mapping(value, port)
-            if output != None:
-                return output
-            if containts_port(value, port):
-                return nested_dictionary
+def _extract_config_from_mapping(hardware_mapping, port: str, clock: str):
+    # FIXME I'm not sure what config is supposed to be returned here.
+    path = get_portclock_path(hardware_mapping, port, clock)
+    return hardware_mapping[path[0]]
 
 
 def pulsar_assembler_backend(schedule, mapping: dict = None,
@@ -503,7 +492,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
     # the config_dict is a dict with resrouce names as keys and sequencer filenames as values.
     for resource in schedule.resources.values():
         # only selects the resource objects here that are valid sequencer units.
-        logging.warning(resource)
         if hasattr(resource, 'timing_tuples'):
             seq_cfg = generate_sequencer_cfg(
                 pulse_info=resource.pulse_dict,
@@ -524,7 +512,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
             with open(seq_fn, 'w') as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
-            logging.warning(config_dict[resource.name])
 
     instr = None
     if configure_hardware:
@@ -560,15 +547,10 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
             data = json.load(seq_config)
             instr_cfg = data['instr_cfg']  # all info is in the config
             pulsar_dict = _extract_config_from_mapping(
-                mapping, instr_cfg['name'])
-            io = _extract_io_from_mapping(
                 mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
 
-
-            # check if pulsar is found in mapping file
-            if not pulsar_dict:
-                raise ValueError(
-                    'Port {} not found in mapping file.' .format(instr_cfg['port']))
+            io = _extract_io_from_mapping(
+                mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
 
             # configure settings
             if io == "complex_output_0":
@@ -576,8 +558,6 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
             elif io == "complex_output_1":
                 seq_idx = 1
             else:
-                logging.warning(io)
-                logging.warning(instr_cfg)
                 # real outputs are not yet supported
                 raise ValueError('Output {} not supported.'.format(io))
 
@@ -602,11 +582,11 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
 
             is_qrm = instr_cfg['type'] == "QRM_sequencer"
 
-            # FIXME: this is commented out, doesn't make sense.
-            # if is_qrm:
-            #     _check_driver_version(pulsar, QRM_DRIVER_VER)
-            # else:
-            #     _check_driver_version(pulsar, QCM_DRIVER_VER)
+            if is_qrm:
+                _check_driver_version(pulsar, QRM_DRIVER_VER)
+            else:
+                _check_driver_version(pulsar, QCM_DRIVER_VER)
+
             pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
             pulsar.set('sequencer{}_nco_freq'.format(
                 seq_idx), instr_cfg['nco_freq'])
@@ -805,14 +785,16 @@ def get_portclock_path(hardware_mapping: dict, port: str, clock: str, prepath=()
                     return path
             else:
                 # keep searching
-                p = get_portclock_path(v, port=port, clock=clock, prepath=path)  # recursive call
+                p = get_portclock_path(
+                    v, port=port, clock=clock, prepath=path)  # recursive call
                 if p is not None:
                     return p
 
     # if we reach this point in the outermost call of this nested function
     # we have not found the entry. This is indicated by the prepath being an empty tuple.
     if prepath == ():
-        raise ValueError('Could not find the combination of port "{}" and clock "{}" in the hardware mapping.'.format(port, clock))
+        raise ValueError(
+            'Could not find the combination of port "{}" and clock "{}" in the hardware mapping.'.format(port, clock))
 
 
 # FIXME: can probably be removed
