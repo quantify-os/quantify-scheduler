@@ -18,7 +18,7 @@
                         "gain": 0, "lo_freq": 4.8e9,
                         "seq0":{"port": "q1:mw", "clock":"q1.01", "nco_freq": null},
                         "seq1":{"port": "q1:mw", "clock":"q1.12", "nco_freq": null}
-                },
+                }
         },
 
         "qrm0":
@@ -59,4 +59,5 @@
                         "gain": 0,
                         "seq0":{"port": "c0:fl", "clock": "cl0.baseband"}
                 }
+        }
 }
