@@ -6,6 +6,7 @@
 import os
 import inspect
 import json
+import logging
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
@@ -280,22 +281,10 @@ def _prepare_pulse(description, gain=0.0):
         raise ValueError("Unknown wave {}".format(wf_func))
 
 
-def _extract_gain_from_mapping(nested_dictionary, port: str):
-    # This function tries to iteratu over a dictionary until it finds the key "port"
-    # this deals with the problem of not kowing where in the nested dict the port is located.
-    for key, value in nested_dictionary.items():
-        if type(value) is dict:
-            gain = _extract_gain_from_mapping(value, port)
-            if gain is not None:
-                return gain
-        else:
-            if type(value) is list:
-                if port in value:
-                    gain = nested_dictionary['gain']
-                    return gain
-            elif port == value:
-                gain = nested_dictionary['gain']
-                return gain
+def _extract_gain_from_mapping(hardware_mapping, port: str, clock: str):
+    path = get_portclock_path(hardware_mapping, port, clock)
+    gain = hardware_mapping[path[0]][path[1]]['gain']
+    return gain
 
 
 def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, clock_freq: float):
@@ -430,33 +419,41 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
 
             # copy to avoid changing the reference operation in the master schedule list
             p = p_ref.copy()
+
+            port = p['port']
+            clock_id = p['clock']
+
             t0 = t_constr['abs_time']+p['t0']
             pulse_id = make_hash(without(p, ['t0']))
 
-            if p['port'] is None:
+            if port is None:
+                logging.warning('Pulse {} is being ingored by backend.'.format(p['name']))
                 continue  # pulses with None port will be ignored by this backend
 
             # if the compiler has marked this pulse as being on a readout port, mark it in the acquisitions set
+            # FIXME: this seems deprecated.
             if p['port'][-8:] == '_READOUT':
                 acquisitions.add(pulse_id)
                 p['port'] = p['port'][:-8]
 
             # assumes the sequencer exists in the resources available to the schedule
-            if p['port'] not in schedule.resources.keys():
+            if port not in schedule.resources.keys():
+                # FIXME: a port seems to be the wrong object to add, it should be a sequencer.
                 if 'clock' in p.keys():
                     nco_freq = _extract_nco_freq_from_mapping(
-                        mapping, p['port'], clock=schedule.resources[p['clock']['name']],
-                        clock_freq=schedule.resources[p['clock']]['freq'])
+                        mapping, port,
+                        clock=clock_id,
+                        clock_freq=schedule.resources[clock_id]['freq'])
                     schedule.add_resources(
-                        [QCM_sequencer(p['port'], clock=p['clock'], nco_freq=nco_freq)])
+                        [QCM_sequencer(port, clock=clock_id, nco_freq=nco_freq)])
                 else:
-                    schedule.add_resources([QCM_sequencer(p['port'])])
+                    schedule.add_resources([QCM_sequencer(port)])
 
             # extract pulse parameters
-            gain = _extract_gain_from_mapping(mapping, p['port'])
+            gain = _extract_gain_from_mapping(mapping, port, clock_id)
             params, p = _prepare_pulse(p, gain)
 
-            seq = schedule.resources[p['port']]
+            seq = schedule.resources[port]
             seq.timing_tuples.append(
                 (round(t0*seq['sampling_rate']), pulse_id, params))
 
@@ -467,7 +464,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
                     raise ValueError('pulse {} on sequencer {} has an inconsistent clock frequency: expected {} but was None'
                                      .format(pulse_id, seq['name'], seq['clock']))
 
-                if 'clock' in p.keys() and p['clock'] != seq['clock']:
+                if 'clock' in p.keys() and clock_id != seq['clock']:
                     raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
                                      .format(pulse_id, seq['name'], seq['clock'], p['clock']))
 

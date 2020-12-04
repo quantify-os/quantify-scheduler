@@ -200,6 +200,7 @@ def test_generate_sequencer_cfg():
         assert 'assembler finished successfully' in qcm.get_assembler_log()
         pathlib.Path('tmp.json').unlink()
 
+
 def test_get_portclock_path():
     path = get_portclock_path(HARDWARE_MAPPING, port='q0:mw', clock='q0.01')
 
@@ -213,7 +214,8 @@ def test_get_portclock_path():
 
     # Combination doesn't exist should raise a clear exception
     with pytest.raises(ValueError):
-        path = get_portclock_path(HARDWARE_MAPPING, port='q0:mw', clock='q0.asdf')
+        path = get_portclock_path(
+            HARDWARE_MAPPING, port='q0:mw', clock='q0.asdf')
 
 
 # def test_getpath():
@@ -229,36 +231,66 @@ def test_get_portclock_path():
 
 def test_extract_nco_freq_from_mapping():
     nco_freq = _extract_nco_freq_from_mapping(
-                        HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
-                        clock_freq=5.32e9)
+        HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
+        clock_freq=5.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
 
     nco_freq = _extract_nco_freq_from_mapping(
-                        HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
-                        clock_freq=1.32e9)
+        HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
+        clock_freq=1.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
-
 
     RF = 4.52e9
     LO = 4.8e9  # lo_freq set in config for output connected to q1:mw
     nco_freq = _extract_nco_freq_from_mapping(
-                        HARDWARE_MAPPING, port='q1:mw', clock='q1.01', clock_freq=RF)
+        HARDWARE_MAPPING, port='q1:mw', clock='q1.01', clock_freq=RF)
 
     # RF = LO + IF
-    #
     assert nco_freq == RF-LO
 
     RF = 8.52e9
     LO = 8.1e9  # lo_freq set in config for output connected to the feedline
     nco_freq = _extract_nco_freq_from_mapping(
-                        HARDWARE_MAPPING, port='q1:res', clock='q1.ro',
-                        clock_freq=RF)
-    #
+        HARDWARE_MAPPING, port='q1:res', clock='q1.ro',
+        clock_freq=RF)
     assert nco_freq == RF-LO
 
+    invalid_mapping = {
+        "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0":
+        {
+            "name": "qcm0",
+            "type": "Pulsar_QCM",
+            "mode": "complex",
+            "ref": "int",
+            "IP address": "192.168.0.2",
+            "complex_output_0": {
+                    "gain": 0, "lo_freq": 6.4e9,
+                    "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+            },
+            "complex_output_1": {
+                "gain": 0, "lo_freq": None,
+                "seq0": {"port": "q1:mw", "clock": "q1.01", "nco_freq": None},
+                "seq1": {"port": "q1:mw", "clock": "q1.12", "nco_freq": None}
+            }
+        }}
+    with pytest.raises(ValueError):
+        # overconstrained example
+        _extract_nco_freq_from_mapping(
+            invalid_mapping, port='q0:mw', clock='q0.01',
+            clock_freq=RF)
+    with pytest.raises(ValueError):
+        # underconstrained example
+        _extract_nco_freq_from_mapping(
+            invalid_mapping, port='q1:mw', clock='q1.01',
+            clock_freq=RF)
 
-    # nco_freq = _extract_nco_freq_from_mapping(
-    #                     HARDWARE_MAPPING, p['port'], schedule.resources[p['clock']]['freq'])
+def test_extract_gain_from_mapping():
+    nco_freq = _extract_nco_freq_from_mapping(
+        HARDWARE_MAPPING, port='q0:mw', clock='q0.01',
+        clock_freq=5.32e9)
+    assert nco_freq == -50e6  # Hardcoded in config
+
 
 
 
@@ -370,8 +402,10 @@ def test_pulsar_assembler_backend(dummy_pulsars):
     if PULSAR_ASSEMBLER:
         assert dummy_pulsars[0].get('sequencer0_mod_en_awg')
 
+
 def test_configure_pulsars():
     pass
+
 
 def test_configure_pulsars_instrument_not_found():
     pass
