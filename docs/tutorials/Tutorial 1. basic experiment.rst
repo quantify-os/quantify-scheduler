@@ -147,11 +147,11 @@ The compilation from the gate-level to the pulse-level description is done using
 Here we will use a configuration file for a transmon based system that is part of the quantify-scheduler test suite.
 
 .. jupyter-execute::
-  :hide-code:
 
   import json
+  import pprint
 
-  import os
+  import os, inspect
   import inspect
   import quantify.scheduler.schemas.examples as es
 
@@ -162,7 +162,7 @@ Here we will use a configuration file for a transmon based system that is part o
   with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 
-  transmon_test_config
+  pprint.pprint(transmon_test_config)
 
 
 .. jupyter-execute::
@@ -194,26 +194,30 @@ Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_
 
 .. jupyter-execute::
 
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+  import pprint
 
+  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
 
   with open(cfg_f, 'r') as f:
       qblox_test_mapping = json.load(f)
 
-  qblox_test_mapping
+  pprint.pprint(qblox_test_mapping)
+
+
 
 
   from quantify.scheduler.backends.pulsar_backend import pulsar_assembler_backend, configure_pulsars
   from pulsar_qcm.pulsar_qcm import pulsar_qcm
   from qcodes import Instrument
 
-  sched, config, instr, = pulsar_assembler_backend(sched, qblox_test_mapping)
+  # sched, config, instr, = pulsar_assembler_backend(sched, qblox_test_mapping)
 
 The compiled schedule can be uploaded to the hardware using the following command.
 
 .. jupyter-execute::
 
-  instr = configure_pulsars(config, qblox_test_mapping)
+  print("hello")
+  # instr = configure_pulsars(config, qblox_test_mapping)
 
 
 
