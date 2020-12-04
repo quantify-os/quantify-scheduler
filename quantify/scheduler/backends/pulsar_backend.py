@@ -298,42 +298,40 @@ def _extract_gain_from_mapping(nested_dictionary, port: str):
                 return gain
 
 
-def _extract_nco_freq_from_mapping(nested_dictionary, port: str, clock_freq: float):
+def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, clock_freq: float):
     """
-    Iterates over the mapping config until it finds the requested port.
-    Returns the nco setting corrsponding to that port.
+    Determines the lo and nco frequencies based on the targetted clock frequency and the hardware mapping.
 
-    FIXMEs
-    Note that this implementation implies a 1 to 1 correspondence between ports and clocks
-    clock_freq argument is ignored.
+    In the mapping file it is possible to specify either the LO frequency or the IF frequency.
+    The clock determines the target or RF frequency.
+
+    The following relation should hold
+        LO + IF = RF
+
     """
-    for key, value in nested_dictionary.items():
-        if type(value) is dict:
-            # FIXME: nesting of undocumented function. Not clear how this works/should work
-            nco_freq = _extract_nco_freq_from_mapping(value, port, clock_freq)
-            if nco_freq is not None:
-                return nco_freq
-        else:
-            if type(value) is list:
-                import logging
+    path = get_portclock_path(hardware_mapping, port, clock)
 
-                logging.warning(value)
-                if port in value:
-                    for key2, value2 in nested_dictionary.items():
-                        if 'nco_freq' == key2:
-                            nco_freq = value2
-                            return nco_freq
-                        elif 'lo_freq' == key2:
-                            nco_freq = clock_freq - value2
-                            return nco_freq
-            elif port == value:
-                for key3, value3 in nested_dictionary.items():
-                    if 'nco_freq' == key3:
-                        nco_freq = value3
-                        return nco_freq
-                    elif 'lo_freq' == key3:
-                        nco_freq = clock_freq - value3
-                        return nco_freq
+    # This slicing works because the data structure of the mapping is fixed
+    lo_freq = hardware_mapping[path[0]][path[1]]['lo_freq']
+    nco_freq = hardware_mapping[path[0]][path[1]][path[2]]['nco_freq']
+
+    if lo_freq is None and nco_freq is None:
+        raise ValueError("frequency under constrained, specify either the"
+                         " lo_freq or nco_freq in the hardware mapping")
+    elif lo_freq is None and nco_freq is not None:
+        # LO = RF - IF
+        lo_freq = clock_freq - nco_freq
+    elif nco_freq is None and lo_freq is not None:
+        # RF - LO = IF
+        nco_freq = clock_freq - lo_freq
+
+    elif lo_freq is not None and nco_freq is not None:
+        raise ValueError("frequency over constrained, do not specify both "
+                         "the lo_freq and nco_freq in the hardware mapping.")
+
+    # Fixme, maybe we always want to return all three.
+    return nco_freq
+
 
 
 def _extract_io_from_mapping(nested_dictionary, port: str):
@@ -447,7 +445,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
             if p['port'] not in schedule.resources.keys():
                 if 'clock' in p.keys():
                     nco_freq = _extract_nco_freq_from_mapping(
-                        mapping, p['port'], schedule.resources[p['clock']]['freq'])
+                        mapping, p['port'], clock=schedule.resources[p['clock']['name']],
+                        clock_freq=schedule.resources[p['clock']]['freq'])
                     schedule.add_resources(
                         [QCM_sequencer(p['port'], clock=p['clock'], nco_freq=nco_freq)])
                 else:
@@ -799,36 +798,40 @@ def get_portclock_path(hardware_mapping: dict, port: str, clock: str, prepath=()
                 p = get_portclock_path(v, port=port, clock=clock, prepath=path)  # recursive call
                 if p is not None:
                     return p
-    # if we reach this point, does it mean we haven't found it?
-    # if so, we should raise an exception.
-    # raise ValueError('Could not find the combination of port "{}" and clock "{}" in the hardware mapping'.format(port, clock))
 
-def getpath(nested_dict: dict, value, prepath: tuple=()) -> list:
-    """
-    Searches a dictionary for a specific value and returns the path of the first
-    occurence of this value
+    # if we reach this point in the outermost call of this nested function
+    # we have not found the entry. This is indicated by the prepath being an empty tuple.
+    if prepath == ():
+        raise ValueError('Could not find the combination of port "{}" and clock "{}" in the hardware mapping.'.format(port, clock))
 
-    Parameters
-    ---------------
-    nested_dict
-        the dictionary to search in
-    value
-        the value to search for
-    prepath
-        the path to which to append, used because this function is recursive
 
-    Returns
-    -------
-        path
-            a tuple of strings indicating the path of the value in the dict.
+# FIXME: can probably be removed
+# def getpath(nested_dict: dict, value, prepath: tuple=()) -> list:
+#     """
+#     Searches a dictionary for a specific value and returns the path of the first
+#     occurence of this value
 
-    # FIXME: belongs in quantify-core but here until it is merged
-    """
-    for k, v in nested_dict.items():
-        path = prepath + (k,)
-        if v == value:  # found value
-            return path
-        elif hasattr(v, 'items'):  # v is a dict
-            p = getpath(v, value, path)  # recursive call
-            if p is not None:
-                return p
+#     Parameters
+#     ---------------
+#     nested_dict
+#         the dictionary to search in
+#     value
+#         the value to search for
+#     prepath
+#         the path to which to append, used because this function is recursive
+
+#     Returns
+#     -------
+#         path
+#             a tuple of strings indicating the path of the value in the dict.
+
+#     # FIXME: belongs in quantify-core but here until it is merged
+#     """
+#     for k, v in nested_dict.items():
+#         path = prepath + (k,)
+#         if v == value:  # found value
+#             return path
+#         elif hasattr(v, 'items'):  # v is a dict
+#             p = getpath(v, value, path)  # recursive call
+#             if p is not None:
+#                 return p
