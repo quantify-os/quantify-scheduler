@@ -9,7 +9,8 @@ from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse
 
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
-    pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER
+    pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq_from_mapping, \
+    getpath, get_portclock_path
 # from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, _determine_absolute_timing
@@ -199,6 +200,53 @@ def test_generate_sequencer_cfg():
         assert 'assembler finished successfully' in qcm.get_assembler_log()
         pathlib.Path('tmp.json').unlink()
 
+def test_get_portclock_path():
+    path = get_portclock_path(HARDWARE_MAPPING, port='q0:mw', clock='q0.01')
+
+    import logging
+    logging.warning('TEST')
+    logging.warning(path)
+    assert path == ('qcm0', 'complex_output_0', 'seq0')
+    # Combination doesn't exist should raise a clear exception
+    with pytest.raises(ValueError):
+        path = get_portclock_path(HARDWARE_MAPPING, port='q0:mw', clock='q0.asdf')
+
+    port = get_portclock_path(HARDWARE_MAPPING, 'q0:fl', 'cl0.baseband')
+    assert path == ('qcm1', 'real_output_0', 'seq0')
+
+# def test_getpath():
+#     try:
+#         from quantify.utilities.general import getpath as gpt
+
+#         raise Exception("getpath has been merged into quantify-core, remove from here")
+#     except ImportError:
+#         pass
+#     path = getpath(HARDWARE_MAPPING, 'q0:mw')
+#     assert path == ('qcm0', 'complex_output_0', 'port')
+
+
+def test_extract_nco_freq_from_mapping():
+    nco_freq = _extract_nco_freq_from_mapping(
+                        HARDWARE_MAPPING, port='q0:mw', clock_freq=5.32e9)
+    assert nco_freq == 0.5  # Hardcoded in config
+
+    nco_freq = _extract_nco_freq_from_mapping(
+                        HARDWARE_MAPPING, port='q0:mw', clock_freq=1.32e9)
+    assert nco_freq == 0.5  # Hardcoded in config
+
+    nco_freq = _extract_nco_freq_from_mapping(
+                        HARDWARE_MAPPING, port='q1:mw', clock_freq=1.32e9)
+    assert nco_freq == 0.0  # Hardcoded in config
+
+    nco_freq = _extract_nco_freq_from_mapping(
+                        HARDWARE_MAPPING, port='q1:res', clock_freq=1.32e9)
+    assert nco_freq == 23e6  # Hardcoded in config
+
+
+    # nco_freq = _extract_nco_freq_from_mapping(
+    #                     HARDWARE_MAPPING, p['port'], schedule.resources[p['clock']]['freq'])
+
+
 
 @pytest.fixture
 def dummy_pulsars():
@@ -281,12 +329,14 @@ def test_pulsar_assembler_backend(dummy_pulsars):
     for theta in np.linspace(0, 360, 21):
         sched.add(init_all)
         sched.add(x90_q0)
-        sched.add(operation=CZ(qC=q0, qT="q1"))
+        # FIXME real-valued outputs are not yet supported in the pulsar backend.
+        # sched.add(operation=CZ(qC=q0, qT="q1"))
         sched.add(Rxy(theta=theta, phi=0, qubit="q0"))
         sched.add(Rxy(theta=90, phi=0, qubit=q1))
         sched.add(Measure(q0, "q1"), label='M {:.2f} deg'.format(theta))
 
     sched.add_resources([ClockResource('cl0:baseband', freq=0)])
+
     sched, cfgs = qcompile(
         sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
         configure_hardware=PULSAR_ASSEMBLER)
@@ -305,6 +355,12 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     if PULSAR_ASSEMBLER:
         assert dummy_pulsars[0].get('sequencer0_mod_en_awg')
+
+def test_configure_pulsars():
+    pass
+
+def test_configure_pulsars_instrument_not_found():
+    pass
 
 
 @pytest.mark.xfail

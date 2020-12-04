@@ -25,7 +25,7 @@ class IdlePulse(Operation):
             'wf_func': None,
             't0': 0,
             'duration': duration,
-            'clock': 'cl0:baseband',
+            'clock': 'cl0.baseband',
             'port': None}]}
         super().__init__(name=data['name'], data=data)
 
@@ -57,7 +57,7 @@ class RampPulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.ramp',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'clock': 'cl0:baseband',
+            'clock': 'cl0.baseband',
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 
@@ -82,7 +82,7 @@ class SquarePulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'clock': 'cl0:baseband',
+            'clock': 'cl0.baseband',
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 
@@ -133,7 +133,7 @@ class SoftSquarePulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.soft_square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'clock': 'cl0:baseband',
+            'clock': 'cl0.baseband',
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 

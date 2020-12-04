@@ -21,8 +21,8 @@ from quantify.utilities.general import make_hash, without, import_func_from_stri
 PulsarModulations = namedtuple('PulsarModulations', ['gain_I', 'gain_Q', 'offset', 'phase', 'phase_delta'],
                                defaults=[None, None, None, None, None])
 
-QCM_DRIVER_VER = '0.2.0'
-QRM_DRIVER_VER = '0.2.0'
+QCM_DRIVER_VER = '0.2.1'
+QRM_DRIVER_VER = '0.2.1'
 
 
 class QCM_sequencer(Resource):
@@ -281,6 +281,8 @@ def _prepare_pulse(description, gain=0.0):
 
 
 def _extract_gain_from_mapping(nested_dictionary, port: str):
+    # This function tries to iteratu over a dictionary until it finds the key "port"
+    # this deals with the problem of not kowing where in the nested dict the port is located.
     for key, value in nested_dictionary.items():
         if type(value) is dict:
             gain = _extract_gain_from_mapping(value, port)
@@ -297,7 +299,14 @@ def _extract_gain_from_mapping(nested_dictionary, port: str):
 
 
 def _extract_nco_freq_from_mapping(nested_dictionary, port: str, clock_freq: float):
-    # FIXME: undocumented function. Not clear how this works/should work
+    """
+    Iterates over the mapping config until it finds the requested port.
+    Returns the nco setting corrsponding to that port.
+
+    FIXMEs
+    Note that this implementation implies a 1 to 1 correspondence between ports and clocks
+    clock_freq argument is ignored.
+    """
     for key, value in nested_dictionary.items():
         if type(value) is dict:
             # FIXME: nesting of undocumented function. Not clear how this works/should work
@@ -306,6 +315,9 @@ def _extract_nco_freq_from_mapping(nested_dictionary, port: str, clock_freq: flo
                 return nco_freq
         else:
             if type(value) is list:
+                import logging
+
+                logging.warning(value)
                 if port in value:
                     for key2, value2 in nested_dictionary.items():
                         if 'nco_freq' == key2:
@@ -560,22 +572,33 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
                 raise ValueError('Real outputs not yet supported.')
 
             if pulsar_dict['name'] not in pulsars:
-                pulsar = pulsar_qcm(
-                    pulsar_dict['name'], pulsar_dict['IP address'], debug=1)
+                # Find the instrument
+                try:
+                    pulsar = Instrument.find_instrument(pulsar_dict['name'])
+                except KeyError as e:
+                    # raise a friendlier error message if it can't find it.
+                    raise KeyError('Could not find instrument '+str(e))
+
                 pulsars[pulsar_dict['name']] = pulsar
-                # if pulsar_dict['ref'] == 'int':
-                #     pulsar._set_reference_source(True)
-                if pulsar_dict['ref'] == 'ext':
+
+                # FIXME: it seems these arguments are switched around. double check this.
+                # also, why is this a private argument?
+                if pulsar_dict['ref'] == 'int':
+                    pulsar._set_reference_source(True)
+                elif pulsar_dict['ref'] == 'ext':
                     pulsar._set_reference_source(False)
             else:
                 pulsar = pulsars[pulsar_dict['name']]
 
             is_qrm = instr_cfg['type'] == "QRM_sequencer"
+
+            # FIXME: this is commented out, doesn't make sense.
             # if is_qrm:
             #     _check_driver_version(pulsar, QRM_DRIVER_VER)
             # else:
             #     _check_driver_version(pulsar, QCM_DRIVER_VER)
-
+            import logging
+            logging.warning(pulsar)
             pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
             pulsar.set('sequencer{}_nco_freq'.format(
                 seq_idx), instr_cfg['nco_freq'])
@@ -740,3 +763,72 @@ def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, ac
     cfg['program'] = build_q1asm(
         timing_tuples, cfg['waveforms'], sequence_duration, acquisitions)
     return cfg
+
+
+def get_portclock_path(hardware_mapping: dict, port: str, clock: str, prepath=()) -> list:
+    """
+    Searches a hardware_mapping for a specific port clock combination and returns
+    the path within the hardware mapping.
+
+    Parameters
+    ---------------
+    hardware_mapping
+        the dictionary to search
+    port
+        the port to search for
+    clock
+        the port to search for
+    prepath
+        the path to which to append, used because this function is recursive
+
+    Returns
+    -------
+        path
+            a tuple of strings indicating the path of the port clock combination in the dict.
+    """
+    for k, v in hardware_mapping.items():
+        path = prepath + (k,)
+
+        if hasattr(v, 'items'):
+            if 'port' in v.keys() and 'clock' in v.keys():
+                if v['port'] == port and v['clock'] == clock:
+                    # the portclock combination has been found
+                    return path
+            else:
+                # keep searching
+                p = get_portclock_path(v, port=port, clock=clock, prepath=path)  # recursive call
+                if p is not None:
+                    return p
+    # if we reach this point, does it mean we haven't found it?
+    # if so, we should raise an exception.
+    # raise ValueError('Could not find the combination of port "{}" and clock "{}" in the hardware mapping'.format(port, clock))
+
+def getpath(nested_dict: dict, value, prepath: tuple=()) -> list:
+    """
+    Searches a dictionary for a specific value and returns the path of the first
+    occurence of this value
+
+    Parameters
+    ---------------
+    nested_dict
+        the dictionary to search in
+    value
+        the value to search for
+    prepath
+        the path to which to append, used because this function is recursive
+
+    Returns
+    -------
+        path
+            a tuple of strings indicating the path of the value in the dict.
+
+    # FIXME: belongs in quantify-core but here until it is merged
+    """
+    for k, v in nested_dict.items():
+        path = prepath + (k,)
+        if v == value:  # found value
+            return path
+        elif hasattr(v, 'items'):  # v is a dict
+            p = getpath(v, value, path)  # recursive call
+            if p is not None:
+                return p
