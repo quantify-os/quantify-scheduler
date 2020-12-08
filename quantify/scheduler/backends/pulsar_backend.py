@@ -349,8 +349,8 @@ def _extract_config_from_mapping(hardware_mapping, port: str, clock: str):
 
 
 def _extract_pulsar_type_from_mapping(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
-    pulsar_name = hw_mapping_inverted[_portclock(port, clock)]
-    return hardware_mapping[pulsar_name]['type']
+    qcm, output = hw_mapping_inverted[_portclock(port, clock)]
+    return hardware_mapping[qcm]['type']
 
 
 def _portclock(port: str, clock: str):
@@ -389,7 +389,7 @@ def _build_portclock_reference(hardware_mapping):
                     continue
                 if portclock in portclock_reference:
                     raise ValueError("")
-                portclock_reference[portclock] = device_name
+                portclock_reference[portclock] = (device_name, output)
     return portclock_reference
 
 

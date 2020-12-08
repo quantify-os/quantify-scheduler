@@ -10,7 +10,7 @@ from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse
 
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq_from_mapping, \
-    get_portclock_path
+    get_portclock_path, _build_portclock_reference, _extract_pulsar_type_from_mapping
 # from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer, Pulsar_QRM_sequencer
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, _determine_absolute_timing
@@ -440,7 +440,6 @@ def test_gate_and_pulse():
         assert len(prog['waveforms']['awg']) == 4
 
 
-@pytest.mark.skipif(not PULSAR_ASSEMBLER, reason="requires pulsar drivers available")
 def test_bad_driver_vers():
     def subtest(device, version):
         _check_driver_version(device, version)
@@ -454,3 +453,31 @@ def test_bad_driver_vers():
 
     subtest(pulsar_qcm_dummy('qcm_bad_vers'), QCM_DRIVER_VER)
     subtest(pulsar_qrm_dummy('qrm_bad_vers'), QRM_DRIVER_VER)
+
+
+def test_hardware_mapping_inversion():
+    portclock_reference = _build_portclock_reference(HARDWARE_MAPPING)
+    assert portclock_reference == {
+        "q0:mw_q0.01": ("qcm0", "complex_output_0"),
+        "q0:mw_q0.12": ("qcm0", "complex_output_0"),
+        "q1:mw_q1.01": ("qcm0", "complex_output_1"),
+        "q1:mw_q1.12": ("qcm0", "complex_output_1"),
+        "q0:res_q0.ro": ("qrm0", "complex_output_0"),
+        "q1:res_q1.ro": ("qrm0", "complex_output_0"),
+        "q2:res_q2.ro": ("qrm0", "complex_output_0"),
+        "q3:res_q3.ro": ("qrm0", "complex_output_0"),
+        "q0:fl_cl0.baseband": ("qcm1", "real_output_0"),
+        "q1:fl_cl0.baseband": ("qcm1", "real_output_1"),
+        "q2:fl_cl0.baseband": ("qcm1", "real_output_2"),
+        "c0:fl_cl0.baseband": ("qcm1", "real_output_3")
+    }
+
+    pulsar_type_validation = {
+        "qcm0": "Pulsar_QCM",
+        "qcm1": "Pulsar_QCM",
+        "qrm0": "Pulsar_QRM"
+    }
+    for portclock, (device_name, output) in portclock_reference.items():
+        port, clock = portclock.split("_")
+        pulsar_type = _extract_pulsar_type_from_mapping(HARDWARE_MAPPING, portclock_reference, port, clock)
+        assert pulsar_type_validation[device_name] == pulsar_type
