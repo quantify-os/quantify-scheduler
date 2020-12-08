@@ -11,7 +11,7 @@ from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, buil
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq_from_mapping, \
     get_portclock_path
 from quantify.scheduler.resources import ClockResource
-from quantify.scheduler.compilation import qcompile, _determine_absolute_timing
+from quantify.scheduler.compilation import qcompile, determine_absolute_timing
 import pathlib
 
 import inspect
@@ -332,7 +332,7 @@ def test_pulsar_assembler_backend_pulses_only():
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource('q0.01', freq=5e9)])
 
-    _determine_absolute_timing(sched)
+    determine_absolute_timing(sched)
 
     sched, config, instr, = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
 

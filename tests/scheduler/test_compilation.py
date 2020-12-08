@@ -4,7 +4,7 @@ import json
 from quantify.scheduler import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, CZ
 from quantify.scheduler.pulse_library import SquarePulse
-from quantify.scheduler.compilation import _determine_absolute_timing, validate_config, _add_pulse_information_transmon, qcompile
+from quantify.scheduler.compilation import determine_absolute_timing, validate_config, add_pulse_information_transmon, qcompile
 from quantify.scheduler.types import Operation, Resource
 
 import inspect
@@ -44,32 +44,32 @@ def test__determine_absolute_timing_ideal_clock():
         assert 'abs_time' not in constr.keys()
         assert constr['rel_time'] == 0
 
-    timed_sched = _determine_absolute_timing(sched, time_unit='ideal')
+    timed_sched = determine_absolute_timing(sched, time_unit='ideal')
 
     abs_times = [constr['abs_time'] for constr in timed_sched.data['timing_constraints']]
     assert abs_times == [0, 1, 2, 3, 4]
 
     # add a pulse and schedule simultaneous with the second pulse
     sched.add(Rxy(90, 0, qubit=q1), ref_pt='start', ref_op=ref_label_1)
-    timed_sched = _determine_absolute_timing(sched, time_unit='ideal')
+    timed_sched = determine_absolute_timing(sched, time_unit='ideal')
 
     abs_times = [constr['abs_time'] for constr in timed_sched.data['timing_constraints']]
     assert abs_times == [0, 1, 2, 3, 4, 1]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt='start', ref_op='M0')
-    timed_sched = _determine_absolute_timing(sched, time_unit='ideal')
+    timed_sched = determine_absolute_timing(sched, time_unit='ideal')
 
     abs_times = [constr['abs_time'] for constr in timed_sched.data['timing_constraints']]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt='end', ref_op=ref_label_1)
-    timed_sched = _determine_absolute_timing(sched, time_unit='ideal')
+    timed_sched = determine_absolute_timing(sched, time_unit='ideal')
 
     abs_times = [constr['abs_time'] for constr in timed_sched.data['timing_constraints']]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt='center', ref_op=ref_label_1)
-    timed_sched = _determine_absolute_timing(sched, time_unit='ideal')
+    timed_sched = determine_absolute_timing(sched, time_unit='ideal')
 
     abs_times = [constr['abs_time'] for constr in timed_sched.data['timing_constraints']]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2, 1.5]
@@ -78,7 +78,7 @@ def test__determine_absolute_timing_ideal_clock():
     bad_sched.add(Rxy(180, 0, qubit=q1))
     bad_sched.add(Rxy(90, 0, qubit=q1), ref_pt='bad')
     with pytest.raises(NotImplementedError):
-        _determine_absolute_timing(bad_sched)
+        determine_absolute_timing(bad_sched)
 
 
 def test_missing_ref_op():
@@ -105,8 +105,8 @@ def test_compile_transmon_program():
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label='M0')
     # pulse information is added
-    sched = _add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
-    sched = _determine_absolute_timing(sched, time_unit='physical')
+    sched = add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
+    sched = determine_absolute_timing(sched, time_unit='physical')
 
 
 def test_missing_edge():
@@ -117,13 +117,13 @@ def test_missing_edge():
     q0, q1 = ('q0', 'q1')
     sched.add(operation=CZ(qC=q0, qT=q1))
     with pytest.raises(ValueError, match="Attempting operation 'CZ' on qubits q1 and q0 which lack a connective edge."):
-        _add_pulse_information_transmon(sched, device_cfg=bad_cfg)
+        add_pulse_information_transmon(sched, device_cfg=bad_cfg)
 
 
 def test_empty_sched():
     sched = Schedule('empty')
     with pytest.raises(ValueError, match="schedule 'empty' contains no operations"):
-        _determine_absolute_timing(sched)
+        determine_absolute_timing(sched)
 
 
 def test_bad_gate():
@@ -143,7 +143,7 @@ def test_bad_gate():
     sched.add(Reset('q0'))
     sched.add(NotAGate('q0'))
     with pytest.raises(NotImplementedError, match='Operation type "bad" not supported by backend'):
-        _add_pulse_information_transmon(sched, DEVICE_CFG)
+        add_pulse_information_transmon(sched, DEVICE_CFG)
 
 
 def test_resource_resolution():
