@@ -348,6 +348,51 @@ def _extract_config_from_mapping(hardware_mapping, port: str, clock: str):
     return hardware_mapping[path[0]]
 
 
+def _extract_pulsar_type_from_mapping(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
+    pulsar_name = hw_mapping_inverted[_portclock(port, clock)]
+    return hardware_mapping[pulsar_name]['type']
+
+
+def _portclock(port: str, clock: str):
+    """
+    Creates the unique ID of port and clock in a fixed format
+    """
+    if port is None or clock is None:
+        return None
+    return "{}_{}".format(port, clock)
+
+
+def _build_portclock_reference(hardware_mapping):
+    """
+    Inverts the hardware mapping to create a fast lookup structure for port-clock identity to pulsar
+    """
+    portclock_reference = {}
+    for device_name, device_cfg in hardware_mapping.items():
+        if not isinstance(device_cfg, dict):
+            continue
+        if device_cfg['mode'] == 'complex':
+            outputs = ['complex_output_0']
+            if device_cfg['type'] == 'Pulsar_QCM':
+                outputs.extend(['complex_output_1'])
+        elif device_cfg['mode'] == 'real':
+            outputs = ['real_output_0', 'real_output_1']
+            if device_cfg['type'] == 'Pulsar_QCM':
+                outputs.extend(['real_output_2', 'real_output_3'])
+        else:
+            raise ValueError("Unrecognised output mode")
+        for output in outputs:
+            for seq_name, seq_cfg in device_cfg[output].items():
+                if not isinstance(seq_cfg, dict):
+                    continue
+                portclock = _portclock(seq_cfg['port'], seq_cfg['clock'])
+                if not portclock:  # undefined port/clock
+                    continue
+                if portclock in portclock_reference:
+                    raise ValueError("")
+                portclock_reference[portclock] = device_name
+    return portclock_reference
+
+
 def pulsar_assembler_backend(schedule, mapping: dict = None,
                              tuid=None, configure_hardware=False, debug=False):
     """
@@ -394,6 +439,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
 
     max_seq_duration = 0
     acquisitions = set()
+    portclock_mapping = _build_portclock_reference(mapping)
+
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
         op = schedule.operations[t_constr['operation_hash']]
 
@@ -426,14 +473,22 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
                 port = p['port'][:-8]
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
-            portclock = '{}_{}'.format(port, clock_id)
+            portclock = _portclock(port, clock_id)
             if portclock not in schedule.resources.keys():
+                pulsar_type = _extract_pulsar_type_from_mapping(mapping, portclock_mapping, port, clock_id)
+                if pulsar_type == 'Pulsar_QCM':
+                    sequencer_t = QCM_sequencer
+                elif pulsar_type == 'Pulsar_QRM':
+                    sequencer_t = QRM_sequencer
+                else:
+                    raise ValueError("Unrecognized Pulsar type '{}'".format(pulsar_type))
+
                 nco_freq = _extract_nco_freq_from_mapping(
                     mapping, port,
                     clock=clock_id,
                     clock_freq=schedule.resources[clock_id]['freq'])
                 schedule.add_resources(
-                    [QCM_sequencer(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
+                    [sequencer_t(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
 
             # extract pulse parameters
             gain = _extract_gain_from_mapping(mapping, port, clock_id)
