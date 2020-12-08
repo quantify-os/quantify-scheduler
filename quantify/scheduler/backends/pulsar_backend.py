@@ -560,50 +560,43 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
 
                 pulsars[pulsar_dict['name']] = pulsar
 
-                # FIXME: it seems these arguments are switched around. double check this.
-                # also, why is this a private argument?
+                # todo, remove check after QCM #57 is closed
                 if pulsar_dict['ref'] == 'int':
-                    pulsar._set_reference_source(True)
+                    if pulsar.reference_source() != 'internal':
+                        pulsar.reference_source('internal')
                 elif pulsar_dict['ref'] == 'ext':
-                    pulsar._set_reference_source(False)
+                    if pulsar.reference_source() != 'external':
+                        pulsar.reference_source('external')
+                else:
+                    raise ValueError("Unrecognized reference setting {}".format(pulsar_dict['ref']))
             else:
                 pulsar = pulsars[pulsar_dict['name']]
 
             is_qrm = instr_cfg['type'] == "QRM_sequencer"
-
             if is_qrm:
                 _check_driver_version(pulsar, QRM_DRIVER_VER)
             else:
                 _check_driver_version(pulsar, QCM_DRIVER_VER)
 
             pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
-            pulsar.set('sequencer{}_nco_freq'.format(
-                seq_idx), instr_cfg['nco_freq'])
-            pulsar.set('sequencer{}_nco_phase_offs'.format(
-                seq_idx), instr_cfg['nco_phase'])
+            pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
+            pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
             mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
             pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
             for path in (0, 1):
                 awg_path = "_awg_path{}".format(path)
-                pulsar.set('sequencer{}_cont_mode_en{}'.format(
-                    seq_idx, awg_path), False)
-                pulsar.set('sequencer{}_cont_mode_waveform_idx{}'.format(
-                    seq_idx, awg_path), 0)
-                pulsar.set('sequencer{}_upsample_rate{}'.format(
-                    seq_idx, awg_path), 0)
+                pulsar.set('sequencer{}_cont_mode_en{}'.format(seq_idx, awg_path), False)
+                pulsar.set('sequencer{}_cont_mode_waveform_idx{}'.format(seq_idx, awg_path), 0)
+                pulsar.set('sequencer{}_upsample_rate{}'.format(seq_idx, awg_path), 0)
                 pulsar.set('sequencer{}_gain{}'.format(seq_idx, awg_path), 1)
                 pulsar.set('sequencer{}_offset{}'.format(seq_idx, awg_path), 0)
 
             if is_qrm:
-                # trigger_mode False = triggered by instructions rather than on signal
-                pulsar.set(
-                    "sequencer{}_trigger_mode_acq_path0".format(seq_idx), False)
-                pulsar.set(
-                    "sequencer{}_trigger_mode_acq_path1".format(seq_idx), False)
+                pulsar.set("sequencer{}_trigger_mode_acq_path0".format(seq_idx), "sequencer")
+                pulsar.set("sequencer{}_trigger_mode_acq_path1".format(seq_idx), "sequencer")
 
             # configure sequencer
-            pulsar.set('sequencer{}_waveforms_and_program'.format(
-                seq_idx), config_fn)
+            pulsar.set('sequencer{}_waveforms_and_program'.format(seq_idx), config_fn)
 
     return pulsars
 
@@ -688,8 +681,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         # check if we must wait before beginning our next section
         wait_duration = timing - clock
         device = 'awg' if pulse_id not in acquisitions else 'acq'
-        auto_wait('', wait_duration, '#Wait', None if idx ==
-                  0 else timing_tuples[idx-1])
+        auto_wait('', wait_duration, '#Wait', None if idx == 0 else timing_tuples[idx-1])
         q1asm.line_break()
 
         q1asm.update_parameters(hardware_modulations, device)
@@ -698,8 +690,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         Q = pulse_dict[device]["{}_Q".format(pulse_id)]['index']
 
         # duration should be the pulse length or next start time
-        next_timing = timing_tuples[idx +
-                                    1][0] if idx < len(timing_tuples) - 1 else np.Inf
+        next_timing = timing_tuples[idx + 1][0] if idx < len(timing_tuples) - 1 else np.Inf
         # duration in nanoseconds, QCM sample rate is # 1Gsps
         pulse_runtime = get_pulse_runtime(pulse_id)
         duration = min(next_timing, pulse_runtime)
@@ -714,16 +705,14 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     # check if we must wait to sync up with fellow sequencers
     final_wait_duration = sequence_duration - clock
     if timing_tuples:
-        auto_wait('', final_wait_duration,
-                  '#Sync with other sequencers', timing_tuples[-1])
+        auto_wait('', final_wait_duration, '#Sync with other sequencers', timing_tuples[-1])
 
     q1asm.line_break()
     q1asm.jmp('', 'start', '#Loop back to start')
     return q1asm.get_str()
 
 
-def generate_sequencer_cfg(pulse_info, timing_tuples,
-                           sequence_duration: int, acquisitions: set):
+def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, acquisitions: set):
     """
     Generate a JSON compatible dictionary for defining a sequencer configuration. Contains a list of waveforms and a
     program in a q1asm string.
