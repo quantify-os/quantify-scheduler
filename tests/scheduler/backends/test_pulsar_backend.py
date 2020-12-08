@@ -38,6 +38,11 @@ except ImportError:
 
 
 def regenerate_ref_file(filename, contents):
+    """
+    Must only be used to regenerate a reference file after changes.
+    Make sure to check the created file is correct.
+    Do not push code that calls this function.
+    """
     with open(pathlib.Path(__file__).parent.joinpath(filename), 'w') as f:
         f.write(contents)
 

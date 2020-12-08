@@ -447,7 +447,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 seq.pulse_dict[pulse_id] = wf
 
             # FIXME, this is used to synchronise loop length, but will be removed in favour of wait_sync when phase
-            # FIXME, reset is implemented in hardware
+            # FIXME, reset is implemented in hardware, QCM #56
             seq_duration = seq.timing_tuples[-1][0] + len(seq.pulse_dict[pulse_id])
             max_seq_duration = max_seq_duration if max_seq_duration > seq_duration else seq_duration
             max_seq_duration = max_seq_duration + 4 - (max_seq_duration % 4)
