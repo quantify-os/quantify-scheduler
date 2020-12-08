@@ -4,7 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
 import quantify.scheduler.visualization.pulse_scheme as ps
-from quantify.scheduler.compilation import _determine_absolute_timing
+from quantify.scheduler.compilation import determine_absolute_timing
 from quantify.utilities.general import import_func_from_string
 
 
@@ -66,7 +66,7 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
         - matplotlib figure object.
         - matplotlib axis object.
     """
-    schedule = _determine_absolute_timing(schedule, 'ideal')
+    schedule = determine_absolute_timing(schedule, 'ideal')
 
     qubits = set()
     for _, op in schedule.operations.items():

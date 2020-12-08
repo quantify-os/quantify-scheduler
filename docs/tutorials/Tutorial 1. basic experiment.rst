@@ -165,12 +165,10 @@ Here we will use a configuration file for a transmon based system that is part o
 
 .. jupyter-execute::
 
-  from quantify.scheduler.compilation import _add_pulse_information_transmon, _determine_absolute_timing
+  from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
 
-  # FIXME should be a public method
-  _add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-  # FIXME should be included in the above method
-  _determine_absolute_timing(schedule=sched)
+  add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+  determine_absolute_timing(schedule=sched)
 
 
 .. jupyter-execute::
@@ -198,8 +196,8 @@ Compilation of pulses onto physical hardware
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
         sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
 
-    _add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-    _determine_absolute_timing(schedule=sched)
+    add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+    determine_absolute_timing(schedule=sched)
 
 The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file<Hardware mapping file>`.
 

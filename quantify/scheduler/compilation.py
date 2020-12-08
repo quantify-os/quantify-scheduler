@@ -6,14 +6,13 @@
 import logging
 import jsonschema
 import importlib
-from typing import Callable
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.pulse_library import ModSquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
 from quantify.utilities.general import load_json_schema
 
 
-def _determine_absolute_timing(schedule, time_unit='physical'):
+def determine_absolute_timing(schedule, time_unit='physical'):
     """
     Determines the absolute timing of a schedule based on the timing constraints.
 
@@ -42,10 +41,8 @@ def _determine_absolute_timing(schedule, time_unit='physical'):
         3. determining the of the start of the operation based on the rel_time and duration of operations.
 
     """
-
     if len(schedule.timing_constraints) == 0:
-        raise ValueError(
-            "schedule '{}' contains no operations".format(schedule.name))
+        raise ValueError("schedule '{}' contains no operations".format(schedule.name))
 
     # iterate over the objects in the schedule.
     last_constr = schedule.timing_constraints[0]
@@ -60,31 +57,27 @@ def _determine_absolute_timing(schedule, time_unit='physical'):
             ref_op = last_op
         else:
             # this assumes the reference op exists. This is ensured in schedule.add
-            ref_constr = next(
-                item for item in schedule.timing_constraints if item['label'] == t_constr['ref_op'])
+            ref_constr = next(item for item in schedule.timing_constraints if item['label'] == t_constr['ref_op'])
             ref_op = schedule.operations[ref_constr['operation_hash']]
 
         # duration = 1 is useful when e.g., drawing a circuit diagram.
         duration_ref_op = ref_op.duration if time_unit == 'physical' else 1
 
-        # determine
         if t_constr['ref_pt'] == 'start':
             t0 = ref_constr['abs_time']
         elif t_constr['ref_pt'] == 'center':
-            t0 = ref_constr['abs_time'] + duration_ref_op/2
+            t0 = ref_constr['abs_time'] + duration_ref_op / 2
         elif t_constr['ref_pt'] == 'end':
             t0 = ref_constr['abs_time'] + duration_ref_op
         else:
-            raise NotImplementedError(
-                'Timing "{}" not supported by backend'.format(ref_constr['abs_time']))
+            raise NotImplementedError('Timing "{}" not supported by backend'.format(ref_constr['abs_time']))
 
         duration_new_op = curr_op.duration if time_unit == 'physical' else 1
 
         if t_constr['ref_pt_new'] == 'start':
             t_constr['abs_time'] = t0 + t_constr['rel_time']
         elif t_constr['ref_pt_new'] == 'center':
-            t_constr['abs_time'] = t0 + \
-                t_constr['rel_time'] - duration_new_op/2
+            t_constr['abs_time'] = t0 + t_constr['rel_time'] - duration_new_op / 2
         elif t_constr['ref_pt_new'] == 'end':
             t_constr['abs_time'] = t0 + t_constr['rel_time'] - duration_new_op
 
@@ -104,15 +97,7 @@ def _find_edge(device_cfg, q0, q1, op_name):
     return edge_cfg
 
 
-# def _walk_address(device_cfg, address):
-#     paths = address.split(':')
-#     curr_level = device_cfg['qubits']  # todo, make this work with more than just qubits
-#     for path in paths:
-#         curr_level = curr_level[path]
-#     return curr_level
-
-
-def _add_pulse_information_transmon(schedule, device_cfg: dict):
+def add_pulse_information_transmon(schedule, device_cfg: dict):
     """
     Adds pulse information specified in the device config to the schedule.
 
@@ -169,8 +154,7 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
                                                 duration=q_cfg['params']['ro_acq_integration_time'],
                                                 # FIXME this is a bit of a hack,
                                                 # we need to properly define how acquisition "pulses" work
-                                                port="{}_READOUT".format(
-                                                    q_cfg['resources']['port_ro']),
+                                                port="{}_READOUT".format(q_cfg['resources']['port_ro']),
                                                 clock=q_cfg['resources']['clock_ro'],
                                                 t0=q_cfg['params']['ro_acq_delay']))
                     # add clock to resources
@@ -196,14 +180,12 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
 
             # add clock to resources
             if q_cfg['resources']['clock_01'] not in schedule.resources.keys():
-                schedule.add_resources(
-                    [ClockResource(q_cfg['resources']['clock_01'], freq=q_cfg['params']['mw_freq'])])
+                schedule.add_resources([ClockResource(q_cfg['resources']['clock_01'], freq=q_cfg['params']['mw_freq'])])
 
         elif op['gate_info']['operation_type'] == 'CNOT':
             # These methods don't raise exceptions as they will be implemented shortly
             logging.warning("Not Implemented yet")
-            logging.warning('Operation type "{}" not supported by backend'.format(
-                op['gate_info']['operation_type']))
+            logging.warning('Operation type "{}" not supported by backend'.format(op['gate_info']['operation_type']))
 
         elif op['gate_info']['operation_type'] == 'CZ':
             # todo mock implementation, needs a proper version before release
@@ -233,8 +215,7 @@ def _add_pulse_information_transmon(schedule, device_cfg: dict):
             qubits = op['gate_info']['qubits']
             init_times = []
             for q in qubits:
-                init_times.append(
-                    device_cfg['qubits'][q]['params']['init_duration'])
+                init_times.append(device_cfg['qubits'][q]['params']['init_duration'])
             op.add_pulse(IdlePulse(max(init_times)))
 
         else:
@@ -296,10 +277,8 @@ def qcompile(schedule: Schedule, device_cfg: dict,
 
         Add a schema for the hardware mapping.
     """
-    schedule = _add_pulse_information_transmon(
-        schedule=schedule, device_cfg=device_cfg)
-    schedule = _determine_absolute_timing(
-        schedule=schedule, time_unit='physical')
+    schedule = add_pulse_information_transmon(schedule=schedule, device_cfg=device_cfg)
+    schedule = determine_absolute_timing(schedule=schedule, time_unit='physical')
 
     if hardware_mapping is not None:
         bck_name = hardware_mapping['backend']
