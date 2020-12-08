@@ -13,6 +13,7 @@ from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
 from quantify.scheduler.types import Resource
+from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
 
@@ -239,6 +240,12 @@ class Q1ASMBuilder:
     def jmp(self, label, target, comment):
         self.rows.append([self._iff(label), 'jmp', '@{}'.format(target), comment])
 
+    def stop(self, label, comment):
+        self.rows.append([self._iff(label), 'stop', '', comment])
+
+    def forloop(self, label, start, reg, comment):
+        self.rows.append([self._iff(label), 'loop', '{},@{}'.format(reg, start), comment])
+
 
 # todo this doesnt work for custom waveform functions - use visitors?
 def _prepare_pulse(description, gain=0.0):
@@ -326,7 +333,8 @@ def _extract_config_from_mapping(hardware_mapping, port: str, clock: str):
     return hardware_mapping[path[0]]
 
 
-def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configure_hardware=False, debug=False):
+def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configure_hardware=False, debug=False,
+                             iterations=1):
     """
     Create sequencer configuration files for multiple Qblox pulsar modules.
 
@@ -341,19 +349,17 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
     ------------
     schedule : :class:`~quantify.scheduler.types.Schedule` :
         The schedule to convert into assembly.
-
     mapping : :class:`~quantify.scheduler.types.mapping` :
         The mapping that describes how the Pulsars are connected to the ports.
-
     tuid : :class:`~quantify.data.types.TUID` :
         a tuid of the experiment the schedule belongs to. If set to None, a new TUID will be generated to store
         the sequencer configuration files.
-
     configure_hardware : bool
         if True will configure the hardware to run the specified schedule.
-
     debug : bool
         if True will produce extra debug output
+    iterations : int
+        number of times to perform this program
 
     Returns
     ----------
@@ -403,6 +409,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = '{}_{}'.format(port, clock_id)
+            nco_freq = 0
             if portclock not in schedule.resources.keys():
                 nco_freq = _extract_nco_freq_from_mapping(
                     mapping, port,
@@ -436,10 +443,14 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                         wf_kwargs[kw] = p[kw]
                 # Calculate the numerical waveform using the wf_func
                 wf = wf_func(t=t, **wf_kwargs)
+                wf = modulate_wave(t, wf, nco_freq)
                 seq.pulse_dict[pulse_id] = wf
 
+            # FIXME, this is used to synchronise loop length, but will be removed in favour of wait_sync when phase
+            # FIXME, reset is implemented in hardware
             seq_duration = seq.timing_tuples[-1][0] + len(seq.pulse_dict[pulse_id])
             max_seq_duration = max_seq_duration if max_seq_duration > seq_duration else seq_duration
+            max_seq_duration = max_seq_duration + 4 - (max_seq_duration % 4)
 
     # Creating the files
     if tuid is None:
@@ -459,7 +470,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 pulse_info=resource.pulse_dict,
                 timing_tuples=sorted(resource.timing_tuples),
                 sequence_duration=max_seq_duration,
-                acquisitions=acquisitions
+                acquisitions=acquisitions,
+                iterations=iterations
             )
             seq_cfg['instr_cfg'] = resource.data
 
@@ -573,11 +585,15 @@ def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
     """
     Allocates numerical pulse representation to indices and formats for sequencer JSON.
 
-    Args:
-        pulse_info (dict): Pulse ID to array-like numerical representation
-        acquisitions (set): set of pulse_IDs which are acquisitions
+    Parameters
+    ----------
+    pulse_info : dict
+        Pulse ID to array-like numerical representation
+    acquisitions : set
+        Set of pulse_IDs which are acquisitions
 
-    Returns:
+    Returns
+    -------
         Dictionary mapping pulses to numerical representation and memory index
     """
     sequencer_cfg = {"waveforms": {"awg": {}, "acq": {}}}
@@ -598,7 +614,8 @@ def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
 
 
 # todo this needs a serious clean up
-def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, acquisitions: set) -> str:
+def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, acquisitions: set,
+                iterations: int) -> str:
     """
     Converts operations and waveforms to a q1asm program. This function verifies these hardware based constraints:
 
@@ -608,13 +625,21 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     .. warning:
         The above restrictions apply to any generated WAIT instructions.
 
-    Args:
-        timing_tuples (list): A sorted list of tuples matching timings to pulse_IDs.
-        pulse_dict (dict): pulse_IDs to numerical waveforms with registered index in waveform memory.
-        sequence_duration (int): maximum runtime of this sequence
-        acquisitions (set): set of pulse_IDs which are acquisitions
+    Parameters
+    ----------
+    timing_tuples : list
+        A sorted list of tuples matching timings to pulse_IDs.
+    pulse_dict : dict
+        pulse_IDs to numerical waveforms with registered index in waveform memory.
+    sequence_duration : int
+        maximum runtime of this sequence
+    acquisitions : set
+        pulse_IDs which are acquisitions
+    iterations : int
+        number of times to run this program
 
-    Returns:
+    Returns
+    -------
         A q1asm program in a string.
     """
 
@@ -637,8 +662,9 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
                              .format(previous[0], previous[1], str(e)))
 
     q1asm = Q1ASMBuilder()
-    q1asm.wait_sync()
-    q1asm.set_mrk('start', 1)
+    q1asm.move('', iterations, 'R0', '')
+    q1asm.wait_sync('start')
+    q1asm.set_mrk('', 1)
 
     if timing_tuples and get_pulse_finish_time(-1) > sequence_duration:
         raise ValueError("Provided sequence_duration '{}' is less than the total runtime of this sequence ({})."
@@ -676,26 +702,35 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         auto_wait('', final_wait_duration, '#Sync with other sequencers', timing_tuples[-1])
 
     q1asm.line_break()
-    q1asm.jmp('', 'start', '#Loop back to start')
+    q1asm.forloop('', 'start', 'R0', '')
+    q1asm.stop('', '')
     return q1asm.get_str()
 
 
-def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, acquisitions: set):
+def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, acquisitions: set, iterations: int):
     """
     Generate a JSON compatible dictionary for defining a sequencer configuration. Contains a list of waveforms and a
     program in a q1asm string.
 
-    Args:
-        pulse_info (dict): mapping of pulse IDs to numerical waveforms
-        timing_tuples (list): time ordered list of tuples containing the (absolute starting time, pulse ID, modulations)
-        sequence_duration (int): maximum runtime of this sequence
-        acquisitions (set): set of pulse IDs which are acquisitions
+    Parameters
+    ----------
+    timing_tuples : list
+        A sorted list of tuples matching timings to pulse_IDs.
+    pulse_info : dict
+        pulse_IDs to numerical waveforms with registered index in waveform memory.
+    sequence_duration : int
+        maximum runtime of this sequence
+    acquisitions : set
+        pulse_IDs which are acquisitions
+    iterations : int
+        number of times to run this program
 
-    Returns:
+    Returns
+    -------
         Sequencer configuration
     """
     cfg = build_waveform_dict(pulse_info, acquisitions)
-    cfg['program'] = build_q1asm(timing_tuples, cfg['waveforms'], sequence_duration, acquisitions)
+    cfg['program'] = build_q1asm(timing_tuples, cfg['waveforms'], sequence_duration, acquisitions, iterations)
     return cfg
 
 
