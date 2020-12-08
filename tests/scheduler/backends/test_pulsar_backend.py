@@ -7,7 +7,6 @@ from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse
-
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq, \
     _invert_hardware_mapping, _extract_pulsar_type, _extract_gain, _extract_io, _extract_pulsar_config
@@ -36,6 +35,16 @@ try:
     PULSAR_ASSEMBLER = True
 except ImportError:
     PULSAR_ASSEMBLER = False
+
+
+def regenerate_ref_file(filename, contents):
+    """
+    Must only be used to regenerate a reference file after changes.
+    Make sure to check the created file is correct.
+    Do not push code that calls this function.
+    """
+    with open(pathlib.Path(__file__).parent.joinpath(filename), 'w') as f:
+        f.write(contents)
 
 
 def test_build_waveform_dict():
@@ -88,16 +97,15 @@ def test_bad_pulse_timings():
 
     with pytest.raises(ValueError, match="Generated wait for '0':'drag_ID' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_pulse_timings, dummy_pulse_data,
-                    short_pulse_timings[-1][0] + 4, set())
+        build_q1asm(short_pulse_timings, dummy_pulse_data, short_pulse_timings[-1][0] + 4, set(), 1)
 
     with pytest.raises(ValueError, match="Generated wait for '0':'square_id' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_wait_timings, dummy_pulse_data, 10, set())
+        build_q1asm(short_wait_timings, dummy_pulse_data, 10, set(), 1)
 
     with pytest.raises(ValueError, match="Generated wait for '4':'square_id' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_final_wait, dummy_pulse_data, 10, set())
+        build_q1asm(short_final_wait, dummy_pulse_data, 10, set(), 1)
 
 
 def test_overflowing_instruction_times():
@@ -111,12 +119,14 @@ def test_overflowing_instruction_times():
             'square_ID_Q': {'data': np.zeros(len(real)), 'index': 1}
         }
     }
-    program_str = build_q1asm(pulse_timings, pulse_data, len(real), set())
+    program_str = build_q1asm(pulse_timings, pulse_data, len(real), set(), 1)
+    # regenerate_ref_file('ref_test_large_plays_q1asm', program_str)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_plays_q1asm'), 'r') as f:
         assert program_str == f.read()
 
     pulse_timings.append((229380 + pow(2, 16), 'square_ID', None))
-    program_str = build_q1asm(pulse_timings, pulse_data, 524296, set())
+    program_str = build_q1asm(pulse_timings, pulse_data, 524296, set(), 1)
+    # regenerate_ref_file('ref_test_large_waits_q1asm', program_str)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_waits_q1asm'), 'r') as f:
         assert program_str == f.read()
 
@@ -140,22 +150,29 @@ def test_build_q1asm():
         }
     }
 
-    program_str = build_q1asm(pulse_timings, pulse_data, 20, set())
+    program_str = build_q1asm(pulse_timings, pulse_data, 20, set(), 1)
+    # regenerate_ref_file('ref_test_build_q1asm', program_str)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm'), 'r') as f:
         assert program_str == f.read()
 
-    program_str_sync = build_q1asm(pulse_timings, pulse_data, 30, set())
+    program_str_sync = build_q1asm(pulse_timings, pulse_data, 30, set(), 1)
+    # regenerate_ref_file('ref_test_build_q1asm_sync', program_str_sync)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_sync'), 'r') as f:
         assert program_str_sync == f.read()
 
+    program_str_loop = build_q1asm(pulse_timings, pulse_data, 20, set(), 20)
+    # regenerate_ref_file('ref_test_build_q1asm_loop', program_str_loop)
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_loop'), 'r') as f:
+        assert program_str_loop == f.read()
+
     err = r"Provided sequence_duration.*4.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
-        build_q1asm(pulse_timings, pulse_data, 4, set())
+        build_q1asm(pulse_timings, pulse_data, 4, set(), 1)
 
     # sequence_duration greater than final timing but less than total runtime
     err = r"Provided sequence_duration.*18.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
-        build_q1asm(pulse_timings, pulse_data, 18, set())
+        build_q1asm(pulse_timings, pulse_data, 18, set(), 1)
 
 
 def test_generate_sequencer_cfg():
@@ -177,18 +194,13 @@ def test_generate_sequencer_cfg():
         assert exp_idx == entry['index']
         np.testing.assert_array_equal(exp_data, entry['data'])
 
-    sequence_cfg = generate_sequencer_cfg(pulse_data, pulse_timings, 20, set())
-    check_waveform(sequence_cfg['waveforms']["awg"]
-                   ["square_1_I"], [0.0, 1.0, 0.0, 0.0], 0)
-    check_waveform(sequence_cfg['waveforms']["awg"]
-                   ["square_1_Q"], np.zeros(4), 1)
-    check_waveform(sequence_cfg['waveforms']["awg"]
-                   ["drag_1_I"], complex_vals.real, 2)
-    check_waveform(sequence_cfg['waveforms']["awg"]
-                   ["drag_1_Q"], complex_vals.imag, 3)
+    sequence_cfg = generate_sequencer_cfg(pulse_data, pulse_timings, 20, set(), 1)
+    check_waveform(sequence_cfg['waveforms']["awg"]["square_1_I"], [0.0, 1.0, 0.0, 0.0], 0)
+    check_waveform(sequence_cfg['waveforms']["awg"]["square_1_Q"], np.zeros(4), 1)
+    check_waveform(sequence_cfg['waveforms']["awg"]["drag_1_I"], complex_vals.real, 2)
+    check_waveform(sequence_cfg['waveforms']["awg"]["drag_1_Q"], complex_vals.imag, 3)
     check_waveform(sequence_cfg['waveforms']["awg"]["square_2_I"], real, 4)
-    check_waveform(sequence_cfg['waveforms']["awg"]
-                   ["square_2_Q"], np.zeros(4), 5)
+    check_waveform(sequence_cfg['waveforms']["awg"]["square_2_Q"], np.zeros(4), 5)
     assert len(sequence_cfg['program'])
 
     if PULSAR_ASSEMBLER:
@@ -301,13 +313,14 @@ def test_pulsar_assembler_backend(dummy_pulsars):
     # assert len(sched.resources['q0:fl_cl0.baseband'].timing_tuples) ==  int(21*1)
     # assert len(sched.resources['q1:fl_cl0.baseband'].timing_tuples) ==  int(21*1)
 
-    assert sched.resources['q0:mw_q0.01']['nco_freq'] == HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
-    lo_freq = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_freq"]
-    rf_freq = DEVICE_CFG['qubits']["q1"]["params"]["mw_freq"]
-    assert sched.resources['q1:mw_q1.01']['nco_freq'] == rf_freq - lo_freq
+    # FIXME realtime modulation currently disabled awaiting realtime demodulation
+    # assert sched.resources['q0:mw_q0.01']['nco_freq'] == HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
+    # lo_freq = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_freq"]
+    # rf_freq = DEVICE_CFG['qubits']["q1"]["params"]["mw_freq"]
+    # assert sched.resources['q1:mw_q1.01']['nco_freq'] == rf_freq - lo_freq
 
     if PULSAR_ASSEMBLER:
-        assert dummy_pulsars[0].get('sequencer0_mod_en_awg')
+        assert dummy_pulsars[0].sequencer0_sync_en()
 
 
 def test_configure_pulsars():

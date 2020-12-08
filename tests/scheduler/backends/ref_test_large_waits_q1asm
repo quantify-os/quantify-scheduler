@@ -1,6 +1,7 @@
           
-          wait_sync  4          #sync                        
-  start:  set_mrk    1                                       
+          move       1,R0                                    
+  start:  wait_sync  4          #sync                        
+          set_mrk    1                                       
                                                              
           play       0,1,65535                               
           play       0,1,63845                               
@@ -13,4 +14,5 @@
           wait       65535      #Sync with other sequencers  
           wait       34465      #Sync with other sequencers  
                                                              
-          jmp        @start     #Loop back to start          
+          loop       R0,@start                               
+          stop                                               
