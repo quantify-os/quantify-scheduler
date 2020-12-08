@@ -288,13 +288,32 @@ def _prepare_pulse(description, gain=0.0):
         raise ValueError("Unknown wave {}".format(wf_func))
 
 
-def _extract_gain_from_mapping(hardware_mapping, port: str, clock: str):
-    path = get_portclock_path(hardware_mapping, port, clock)
-    gain = hardware_mapping[path[0]][path[1]]['gain']
-    return gain
+def _extract_device__output__sequencer(hw_mapping_inverted: dict, port: str, clock: str):
+    """
+    Extracts the device, output and sequencer for a port&clock pair
+
+    Parameters
+    ----------
+    hw_mapping_inverted : dict
+        The inverted hardware mapping (call _invert_hardware_mapping to generate this)
+    port : str
+        A qubit port identity
+    clock : str
+        A transition clock identity
+
+    Returns
+    -------
+    (str, str, str)
+        A tuple containing the device name, output name and sequencer name
+    """
+    portclock = _portclock(port, clock)
+    if portclock not in hw_mapping_inverted:
+        raise ValueError("No device found for the combination of port '{}' and clock '{}'".format(port, clock))
+    return hw_mapping_inverted[portclock]
 
 
-def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, clock_freq: float):
+def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str,
+                      clock_freq: float):
     """
     Determines the lo and nco frequencies based on the targetted clock frequency and the hardware mapping.
 
@@ -303,24 +322,19 @@ def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, cloc
 
     The following relation should hold
         LO + IF = RF
-
     """
-    path = get_portclock_path(hardware_mapping, port, clock)
-
-    # This slicing works because the data structure of the mapping is fixed
-    lo_freq = hardware_mapping[path[0]][path[1]]['lo_freq']
-    nco_freq = hardware_mapping[path[0]][path[1]][path[2]]['nco_freq']
+    qcm, output, seq = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    lo_freq = hardware_mapping[qcm][output]['lo_freq']
+    nco_freq = hardware_mapping[qcm][output][seq]['nco_freq']
 
     if lo_freq is None and nco_freq is None:
-        raise ValueError("frequency under constrained, specify either the"
-                         " lo_freq or nco_freq in the hardware mapping")
+        raise ValueError("frequency under constrained, specify either the lo_freq or nco_freq in the hardware mapping")
     elif lo_freq is None and nco_freq is not None:
         # LO = RF - IF
         lo_freq = clock_freq - nco_freq
     elif nco_freq is None and lo_freq is not None:
         # RF - LO = IF
         nco_freq = clock_freq - lo_freq
-
     elif lo_freq is not None and nco_freq is not None:
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
@@ -329,28 +343,99 @@ def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, cloc
     return nco_freq
 
 
-def _extract_io_from_mapping(hardware_mapping, port: str, clock: str):
+def _extract_io(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
     """
-    Identifies which io unit is used for a paricular port clock pair.
+    Extracts the name of an output channel for the given port&clock pair
 
-    e.g., for a pulse being generated with qm0 output 0, the io would be:
-        "complex_output_0"
+    Parameters
+    ----------
+    hardware_mapping : dict
+        The hardware mapping
+    hw_mapping_inverted : dict
+        The inverted hardware mapping (call _invert_hardware_mapping to generate this)
+    port : str
+        A qubit port identity
+    clock : str
+        A transition clock identity
+
+    Returns
+    -------
+    str
+        The name of the output channel
     """
-
-    path = get_portclock_path(hardware_mapping, port, clock)
-    io = path[1]
-    return io
+    _, output, _ = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    return output
 
 
-def _extract_config_from_mapping(hardware_mapping, port: str, clock: str):
-    # FIXME I'm not sure what config is supposed to be returned here.
-    path = get_portclock_path(hardware_mapping, port, clock)
-    return hardware_mapping[path[0]]
+def _extract_pulsar_config(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
+    """
+    Extracts the configuration of a pulsar device for the given port&clock pair
+
+    Parameters
+    ----------
+    hardware_mapping : dict
+        The hardware mapping
+    hw_mapping_inverted : dict
+        The inverted hardware mapping (call _invert_hardware_mapping to generate this)
+    port : str
+        A qubit port identity
+    clock : str
+        A transition clock identity
+
+    Returns
+    -------
+    dict
+        The configuration dict of the device
+    """
+    qcm, _, _ = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    return hardware_mapping[qcm]
 
 
-def _extract_pulsar_type_from_mapping(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
-    qcm, output = hw_mapping_inverted[_portclock(port, clock)]
-    return hardware_mapping[qcm]['type']
+def _extract_pulsar_type(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
+    """
+    Extracts the type of a pulsar device for the given port&clock pair
+
+    Parameters
+    ----------
+    hardware_mapping : dict
+        The hardware mapping
+    hw_mapping_inverted : dict
+        The inverted hardware mapping (call _invert_hardware_mapping to generate this)
+    port : str
+        A qubit port identity
+    clock : str
+        A transition clock identity
+
+    Returns
+    -------
+    str
+        The type of the pulsar
+    """
+    return _extract_pulsar_config(hardware_mapping, hw_mapping_inverted, port, clock)['type']
+
+
+def _extract_gain(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
+    """
+    Extracts the gain of an output channel for the given port&clock pair
+
+    Parameters
+    ----------
+    hardware_mapping : dict
+        The hardware mapping
+    hw_mapping_inverted : dict
+        The inverted hardware mapping (call _invert_hardware_mapping to generate this)
+    port : str
+        A qubit port identity
+    clock : str
+        A transition clock identity
+
+    Returns
+    -------
+    double
+        The gain of the output channel
+    """
+    qcm, output, _ = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    return hardware_mapping[qcm][output]['gain']
 
 
 def _portclock(port: str, clock: str):
@@ -362,7 +447,7 @@ def _portclock(port: str, clock: str):
     return "{}_{}".format(port, clock)
 
 
-def _build_portclock_reference(hardware_mapping):
+def _invert_hardware_mapping(hardware_mapping):
     """
     Inverts the hardware mapping to create a fast lookup structure for port-clock identity to pulsar
     """
@@ -389,7 +474,7 @@ def _build_portclock_reference(hardware_mapping):
                     continue
                 if portclock in portclock_reference:
                     raise ValueError("")
-                portclock_reference[portclock] = (device_name, output)
+                portclock_reference[portclock] = (device_name, output, seq_name)
     return portclock_reference
 
 
@@ -439,7 +524,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
 
     max_seq_duration = 0
     acquisitions = set()
-    portclock_mapping = _build_portclock_reference(mapping)
+    portclock_mapping = _invert_hardware_mapping(mapping)
 
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
         op = schedule.operations[t_constr['operation_hash']]
@@ -475,7 +560,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
             if portclock not in schedule.resources.keys():
-                pulsar_type = _extract_pulsar_type_from_mapping(mapping, portclock_mapping, port, clock_id)
+                pulsar_type = _extract_pulsar_type(mapping, portclock_mapping, port, clock_id)
                 if pulsar_type == 'Pulsar_QCM':
                     sequencer_t = QCM_sequencer
                 elif pulsar_type == 'Pulsar_QRM':
@@ -483,15 +568,20 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
                 else:
                     raise ValueError("Unrecognized Pulsar type '{}'".format(pulsar_type))
 
-                nco_freq = _extract_nco_freq_from_mapping(
-                    mapping, port,
+                nco_freq = _extract_nco_freq(
+                    hardware_mapping=mapping,
+                    hw_mapping_inverted=portclock_mapping,
+                    port=port,
                     clock=clock_id,
                     clock_freq=schedule.resources[clock_id]['freq'])
                 schedule.add_resources(
                     [sequencer_t(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
 
             # extract pulse parameters
-            gain = _extract_gain_from_mapping(mapping, port, clock_id)
+            gain = _extract_gain(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=portclock_mapping,
+                port=port, clock=clock_id)
             params, p = _prepare_pulse(p, gain)
 
             seq = schedule.resources[portclock]
@@ -559,7 +649,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
 
     instr = None
     if configure_hardware:
-        instr = configure_pulsars(config_dict, mapping)
+        instr = configure_pulsars(config_dict, mapping, portclock_mapping)
 
     return schedule, config_dict, instr
 
@@ -573,7 +663,7 @@ def _check_driver_version(instr, ver):
         ))
 
 
-def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run=False):
+def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = None):
     """
     Configures multiple pulsar modules based on a configuration dictionary.
 
@@ -584,17 +674,25 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
     """
 
     pulsars = {}
+    if not hw_mapping_inverted:
+        hw_mapping_inverted = _invert_hardware_mapping(mapping)
 
     # the keys in the config are ignored. The files are assumed to be self consistent.
     for _, config_fn in config.items():
         with open(config_fn) as seq_config:
             data = json.load(seq_config)
             instr_cfg = data['instr_cfg']  # all info is in the config
-            pulsar_dict = _extract_config_from_mapping(
-                mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
+            pulsar_dict = _extract_pulsar_config(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=hw_mapping_inverted,
+                port=instr_cfg['port'], clock=instr_cfg['clock']
+            )
 
-            io = _extract_io_from_mapping(
-                mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
+            io = _extract_io(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=hw_mapping_inverted,
+                port=instr_cfg['port'], clock=instr_cfg['clock']
+            )
 
             # configure settings
             if io == "complex_output_0":
@@ -796,46 +894,3 @@ def generate_sequencer_cfg(pulse_info, timing_tuples,
     cfg['program'] = build_q1asm(
         timing_tuples, cfg['waveforms'], sequence_duration, acquisitions)
     return cfg
-
-
-def get_portclock_path(hardware_mapping: dict, port: str, clock: str, prepath=()) -> list:
-    """
-    Searches a hardware_mapping for a specific port clock combination and returns
-    the path within the hardware mapping.
-
-    Parameters
-    ---------------
-    hardware_mapping
-        the dictionary to search
-    port
-        the port to search for
-    clock
-        the port to search for
-    prepath
-        the path to which to append, used because this function is recursive
-
-    Returns
-    -------
-        path
-            a tuple of strings indicating the path of the port clock combination in the dict.
-    """
-    for k, v in hardware_mapping.items():
-        path = prepath + (k,)
-
-        if hasattr(v, 'items'):
-            if 'port' in v.keys() and 'clock' in v.keys():
-                if v['port'] == port and v['clock'] == clock:
-                    # the portclock combination has been found
-                    return path
-            else:
-                # keep searching
-                p = get_portclock_path(
-                    v, port=port, clock=clock, prepath=path)  # recursive call
-                if p is not None:
-                    return p
-
-    # if we reach this point in the outermost call of this nested function
-    # we have not found the entry. This is indicated by the prepath being an empty tuple.
-    if prepath == ():
-        raise ValueError(
-            'Could not find the combination of port "{}" and clock "{}" in the hardware mapping.'.format(port, clock))
