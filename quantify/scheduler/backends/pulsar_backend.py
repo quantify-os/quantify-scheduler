@@ -460,9 +460,9 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
     seq_folder = os.path.join(exp_folder, 'schedule')
     os.makedirs(seq_folder, exist_ok=True)
 
-    # Convert timing tuples and pulse dicts for each seqeuncer into assembly configs
+    # Convert timing tuples and pulse dicts for each sequencer into assembly configs
     config_dict = {}
-    # the config_dict is a dict with resrouce names as keys and sequencer filenames as values.
+    # the config_dict is a dict with resource names as keys and sequencer filenames as values.
     for resource in schedule.resources.values():
         # only selects the resource objects here that are valid sequencer units.
         if hasattr(resource, 'timing_tuples'):
@@ -495,7 +495,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 def _check_driver_version(instr, ver):
     driver_vers = instr.get_idn()['build']['driver']['version']
     if driver_vers != ver:
-
         raise ValueError("Backend requires {} to have driver version {}, found {} installed.".format(
             instr.get_idn()['device'], ver, driver_vers
         ))
@@ -507,8 +506,10 @@ def configure_pulsars(config: dict, mapping: dict):
 
     Parameters
     ------------
-    config_dict: dict
+    config : dict
         Dictionary with resource_names as keys and filenames of sequencer config json files as values.
+    mapping : dict
+        Hardware mapping dictionary
     """
 
     pulsars = {}
@@ -531,11 +532,9 @@ def configure_pulsars(config: dict, mapping: dict):
                 raise ValueError('Output {} not supported.'.format(io))
 
             if pulsar_dict['name'] not in pulsars:
-                # Find the instrument
                 try:
                     pulsar = Instrument.find_instrument(pulsar_dict['name'])
                 except KeyError as e:
-                    # raise a friendlier error message if it can't find it.
                     raise KeyError('Could not find instrument '+str(e))
 
                 pulsars[pulsar_dict['name']] = pulsar
@@ -559,10 +558,11 @@ def configure_pulsars(config: dict, mapping: dict):
                 _check_driver_version(pulsar, QCM_DRIVER_VER)
 
             pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
-            pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
-            pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
-            mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
-            pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
+            # FIXME, re-add hardware modulation when hardware demodulation is supported
+            # pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
+            # pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
+            # mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
+            # pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
             for path in (0, 1):
                 awg_path = "_awg_path{}".format(path)
                 pulsar.set('sequencer{}_cont_mode_en{}'.format(seq_idx, awg_path), False)
@@ -575,7 +575,6 @@ def configure_pulsars(config: dict, mapping: dict):
                 pulsar.set("sequencer{}_trigger_mode_acq_path0".format(seq_idx), "sequencer")
                 pulsar.set("sequencer{}_trigger_mode_acq_path1".format(seq_idx), "sequencer")
 
-            # configure sequencer
             pulsar.set('sequencer{}_waveforms_and_program'.format(seq_idx), config_fn)
 
     return pulsars
