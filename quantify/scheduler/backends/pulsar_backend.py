@@ -6,14 +6,12 @@
 import os
 import inspect
 import json
-import logging
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
-from pulsar_qcm.pulsar_qcm import pulsar_qcm, pulsar_qcm_dummy
 from quantify.scheduler.types import Resource
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
@@ -34,8 +32,7 @@ class QCM_sequencer(Resource):
     a channel capabable of outputting complex valued signals (I, and Q).
     """
 
-    def __init__(self, name: str, port: str, clock: str,
-                 nco_freq: float = 0, nco_phase: float = 0):
+    def __init__(self, name: str, port: str, clock: str, nco_freq: float = 0, nco_phase: float = 0):
         """
         A QCM sequencer.
 
@@ -79,8 +76,7 @@ class QCM_sequencer(Resource):
 
 
 class QRM_sequencer(Resource):
-    def __init__(self, name: str, port: str, clock: str,
-                 nco_freq: float = 0, nco_phase: float = 0):
+    def __init__(self, name: str, port: str, clock: str, nco_freq: float = 0, nco_phase: float = 0):
         """
         A QRM sequencer.
 
@@ -169,8 +165,7 @@ class Q1ASMBuilder:
 
     def _check_playtime(self, duration):
         if duration < self.CYCLE_TIME_ns:
-            raise ValueError('duration {}ns < cycle time {}ns'.format(
-                duration, self.CYCLE_TIME_ns))
+            raise ValueError('duration {}ns < cycle time {}ns'.format(duration, self.CYCLE_TIME_ns))
         return duration
 
     def _calculate_phase_params(self, degrees):
@@ -184,49 +179,39 @@ class Q1ASMBuilder:
 
     def _expand_from_normalised_range(self, val, param):
         if val < -1.0 or val > 1.0:
-            raise ValueError(
-                "{} parameter of PulsarModulations must be in the range 0.0:1.0".format(param))
+            raise ValueError("{} parameter of PulsarModulations must be in the range 0.0:1.0".format(param))
         return int(val * self.IMMEDIATE_SZ / 2)
 
     def update_parameters(self, modulations: PulsarModulations, device):
         if not modulations:
             return
         if modulations.gain_I is not None:
-            normalised = modulations.gain_I/self.AWG_OUTPUT_VOLT
+            normalised = modulations.gain_I / self.AWG_OUTPUT_VOLT
             gain_I_val = self._expand_from_normalised_range(normalised, "Gain")
             gain_Q_val = gain_I_val
             if modulations.gain_Q is not None:
                 normalised = modulations.gain_Q / self.AWG_OUTPUT_VOLT
-                gain_Q_val = self._expand_from_normalised_range(
-                    normalised, "Gain")
-            self.rows.append(['', 'set_{}_gain'.format(
-                device), "{},{}".format(gain_I_val, gain_Q_val), '#Set gain'])
+                gain_Q_val = self._expand_from_normalised_range(normalised, "Gain")
+            self.rows.append(['', 'set_{}_gain'.format(device), "{},{}".format(gain_I_val, gain_Q_val), '#Set gain'])
         if modulations.offset is not None:
-            offset_val = self._expand_from_normalised_range(
-                modulations.offset, "Offset")
-            self.rows.append(['', 'set_{}_offs'.format(
-                device), "{0},{0}".format(offset_val), ""])
+            offset_val = self._expand_from_normalised_range(modulations.offset, "Offset")
+            self.rows.append(['', 'set_{}_offs'.format(device), "{0},{0}".format(offset_val), ""])
         if modulations.phase is not None:
-            coarse, fine, ufine = self._calculate_phase_params(
-                modulations.phase)
+            coarse, fine, ufine = self._calculate_phase_params(modulations.phase)
             # switched 'set_ph_delta' and 'delta' to workaround bug in firmware. Should be reverted in new release.
-            self.rows.append(
-                ['', 'set_ph_delta', '{},{},{}'.format(coarse, fine, ufine), ''])
+            self.rows.append(['', 'set_ph_delta', '{},{},{}'.format(coarse, fine, ufine), ''])
         if modulations.phase_delta is not None:
-            coarse, fine, ufine = self._calculate_phase_params(
-                modulations.phase_delta)
-            self.rows.append(
-                ['', 'set_ph', '{},{},{}'.format(coarse, fine, ufine), ''])
+            coarse, fine, ufine = self._calculate_phase_params(modulations.phase_delta)
+            self.rows.append(['', 'set_ph', '{},{},{}'.format(coarse, fine, ufine), ''])
 
     def line_break(self):
         self.rows.append(['', '', '', ''])
 
-    def wait_sync(self):
-        self.rows.append(['', 'wait_sync', '4', '#sync'])
+    def wait_sync(self, label):
+        self.rows.append([self._iff(label), 'wait_sync', '4', '#sync'])
 
     def move(self, label, source, target, comment):
-        self.rows.append(
-            [self._iff(label), 'move', '{},{}'.format(source, target), comment])
+        self.rows.append([self._iff(label), 'move', '{},{}'.format(source, target), comment])
 
     def play(self, label, I_idx, Q_idx, playtime, comment):
         for duration in self._split_playtime(playtime):
@@ -247,14 +232,12 @@ class Q1ASMBuilder:
 
     def wait(self, label, playtime, comment):
         for duration in self._split_playtime(playtime):
-            row = [label if label else '', 'wait', int(
-                self._check_playtime(duration)), comment]
+            row = [label if label else '', 'wait', int(self._check_playtime(duration)), comment]
             label = None
             self.rows.append(row)
 
     def jmp(self, label, target, comment):
-        self.rows.append(
-            [self._iff(label), 'jmp', '@{}'.format(target), comment])
+        self.rows.append([self._iff(label), 'jmp', '@{}'.format(target), comment])
 
 
 # todo this doesnt work for custom waveform functions - use visitors?
@@ -270,18 +253,16 @@ def _prepare_pulse(description, gain=0.0):
 
         # FIXME: Why is a square pulse modulated? What does PulsarModulations do?
         # FIXME: I see this is a module wide defined variable?!? that makes zero sense.
-        params = PulsarModulations(
-            gain_I=description['amp']/10**(gain/20),
-            gain_Q=description['amp']/10**(gain/20))
+        params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
     if wf_func == 'quantify.scheduler.waveforms.ramp':
-        params = PulsarModulations(
-            gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
+        params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
     elif wf_func == 'quantify.scheduler.waveforms.drag':
-        params = PulsarModulations(gain_I=description['G_amp']/10**(
-            gain/20), gain_Q=description['G_amp']/10**(gain/20), phase=description['phase'])
-        return params, dummy_load_params([('G_amp', 1.0), ('D_amp', description['D_amp']/description['G_amp']), ('phase', 0)])
+        params = PulsarModulations(gain_I=description['G_amp']/10**(gain/20), gain_Q=description['G_amp']/10**(gain/20),
+                                   phase=description['phase'])
+        return params, dummy_load_params([('G_amp', 1.0), ('D_amp', description['D_amp']/description['G_amp']),
+                                          ('phase', 0)])
     elif wf_func is None:
         return None, description
     else:
@@ -312,20 +293,18 @@ def _extract_nco_freq_from_mapping(hardware_mapping, port: str, clock: str, cloc
     nco_freq = hardware_mapping[path[0]][path[1]][path[2]]['nco_freq']
 
     if lo_freq is None and nco_freq is None:
-        raise ValueError("frequency under constrained, specify either the"
-                         " lo_freq or nco_freq in the hardware mapping")
+        raise ValueError("frequency under constrained, specify either the lo_freq or nco_freq in the hardware mapping")
     elif lo_freq is None and nco_freq is not None:
         # LO = RF - IF
         lo_freq = clock_freq - nco_freq
     elif nco_freq is None and lo_freq is not None:
         # RF - LO = IF
         nco_freq = clock_freq - lo_freq
-
     elif lo_freq is not None and nco_freq is not None:
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
 
-    # Fixme, maybe we always want to return all three.
+    # FIXME, maybe we always want to return all three.
     return nco_freq
 
 
@@ -336,7 +315,6 @@ def _extract_io_from_mapping(hardware_mapping, port: str, clock: str):
     e.g., for a pulse being generated with qm0 output 0, the io would be:
         "complex_output_0"
     """
-
     path = get_portclock_path(hardware_mapping, port, clock)
     io = path[1]
     return io
@@ -348,8 +326,7 @@ def _extract_config_from_mapping(hardware_mapping, port: str, clock: str):
     return hardware_mapping[path[0]]
 
 
-def pulsar_assembler_backend(schedule, mapping: dict = None,
-                             tuid=None, configure_hardware=False, debug=False):
+def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configure_hardware=False, debug=False):
     """
     Create sequencer configuration files for multiple Qblox pulsar modules.
 
@@ -403,8 +380,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
 
         for p_ref in op['pulse_info']:
             if 'abs_time' not in t_constr:
-                raise ValueError(
-                    "Absolute timing has not been determined for the schedule '{}'".format(schedule.name))
+                raise ValueError("Absolute timing has not been determined for the schedule '{}'".format(schedule.name))
 
             # copy to avoid changing the reference operation in the master schedule list
             p = p_ref.copy()
@@ -432,16 +408,14 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
                     mapping, port,
                     clock=clock_id,
                     clock_freq=schedule.resources[clock_id]['freq'])
-                schedule.add_resources(
-                    [QCM_sequencer(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
+                schedule.add_resources([QCM_sequencer(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
 
             # extract pulse parameters
             gain = _extract_gain_from_mapping(mapping, port, clock_id)
             params, p = _prepare_pulse(p, gain)
 
             seq = schedule.resources[portclock]
-            seq.timing_tuples.append(
-                (round(t0*seq['sampling_rate']), pulse_id, params))
+            seq.timing_tuples.append((round(t0*seq['sampling_rate']), pulse_id, params))
 
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
@@ -464,8 +438,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
                 wf = wf_func(t=t, **wf_kwargs)
                 seq.pulse_dict[pulse_id] = wf
 
-            seq_duration = seq.timing_tuples[-1][0] + \
-                len(seq.pulse_dict[pulse_id])
+            seq_duration = seq.timing_tuples[-1][0] + len(seq.pulse_dict[pulse_id])
             max_seq_duration = max_seq_duration if max_seq_duration > seq_duration else seq_duration
 
     # Creating the files
@@ -491,13 +464,11 @@ def pulsar_assembler_backend(schedule, mapping: dict = None,
             seq_cfg['instr_cfg'] = resource.data
 
             if debug:
-                qasm_dump = os.path.join(
-                    seq_folder, '{}_sequencer.q1asm'.format(resource.name))
+                qasm_dump = os.path.join(seq_folder, '{}_sequencer.q1asm'.format(resource.name))
                 with open(qasm_dump, 'w') as f:
                     f.write(seq_cfg['program'])
 
-            seq_fn = os.path.join(
-                seq_folder, '{}_sequencer_cfg.json'.format(resource.name))
+            seq_fn = os.path.join(seq_folder, '{}_sequencer_cfg.json'.format(resource.name))
             with open(seq_fn, 'w') as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
@@ -518,7 +489,7 @@ def _check_driver_version(instr, ver):
         ))
 
 
-def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run=False):
+def configure_pulsars(config: dict, mapping: dict):
     """
     Configures multiple pulsar modules based on a configuration dictionary.
 
@@ -535,11 +506,8 @@ def configure_pulsars(config: dict, mapping: dict, configure_hardware=False, run
         with open(config_fn) as seq_config:
             data = json.load(seq_config)
             instr_cfg = data['instr_cfg']  # all info is in the config
-            pulsar_dict = _extract_config_from_mapping(
-                mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
-
-            io = _extract_io_from_mapping(
-                mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
+            pulsar_dict = _extract_config_from_mapping(mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
+            io = _extract_io_from_mapping(mapping, port=instr_cfg['port'], clock=instr_cfg['clock'])
 
             # configure settings
             if io == "complex_output_0":
@@ -727,8 +695,7 @@ def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, ac
         Sequencer configuration
     """
     cfg = build_waveform_dict(pulse_info, acquisitions)
-    cfg['program'] = build_q1asm(
-        timing_tuples, cfg['waveforms'], sequence_duration, acquisitions)
+    cfg['program'] = build_q1asm(timing_tuples, cfg['waveforms'], sequence_duration, acquisitions)
     return cfg
 
 
@@ -763,8 +730,7 @@ def get_portclock_path(hardware_mapping: dict, port: str, clock: str, prepath=()
                     return path
             else:
                 # keep searching
-                p = get_portclock_path(
-                    v, port=port, clock=clock, prepath=path)  # recursive call
+                p = get_portclock_path(v, port=port, clock=clock, prepath=path)  # recursive call
                 if p is not None:
                     return p
 
