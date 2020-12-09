@@ -4,13 +4,9 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
 from .types import Operation
-from .resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
-    """
-    An idle pulse performing no actions for a certain duration.
-    """
 
     def __init__(self, duration):
         """
@@ -30,16 +26,9 @@ class IdlePulse(Operation):
         super().__init__(name=data['name'], data=data)
 
 
-class NumericPulse(Operation):
-    """
-    """
-
-    def __init__(self, t0):
-        raise NotImplementedError
-
 class RampPulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', t0: float = 0):
         """
         A single-channel square pulse.
 
@@ -57,14 +46,14 @@ class RampPulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.ramp',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'clock': 'cl0.baseband',
+            'clock': clock,
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 
 
 class SquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', t0: float = 0):
         """
         A single-channel square pulse.
 
@@ -82,15 +71,15 @@ class SquarePulse(Operation):
             'wf_func': 'quantify.scheduler.waveforms.square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'clock': 'cl0.baseband',
+            'clock': clock,
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 
 
 class ModSquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str,
-                 clock: str, phase: float = 0, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', phase: float = 0,
+                 t0: float = 0):
         """
         A two-channel square pulse.
 
@@ -128,12 +117,12 @@ class SoftSquarePulse(Operation):
     Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
     """
 
-    def __init__(self, amp: float, duration: float, port: str, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', t0: float = 0):
         data = {'name': 'SoftSquarePulse', 'pulse_info': [{
             'wf_func': 'quantify.scheduler.waveforms.soft_square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'clock': 'cl0.baseband',
+            'clock': clock,
             'port': port}]}
         super().__init__(name=data['name'], data=data)
 

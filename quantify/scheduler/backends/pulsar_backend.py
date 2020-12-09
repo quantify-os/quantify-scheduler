@@ -254,12 +254,8 @@ def _prepare_pulse(description, gain=0.0):
             description[param] = default
         return description
 
-    # FIXME: there is magic going on to hack specific function in terms of the modulation used...
     wf_func = description['wf_func']
     if wf_func == 'quantify.scheduler.waveforms.square' or wf_func == 'quantify.scheduler.waveforms.soft_square':
-
-        # FIXME: Why is a square pulse modulated? What does PulsarModulations do?
-        # FIXME: I see this is a module wide defined variable?!? that makes zero sense.
         params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
     if wf_func == 'quantify.scheduler.waveforms.ramp':
@@ -504,12 +500,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
         The schedule
     config_dict : dict
         of sequencer names as keys with json filenames as values
-
-
-    .. note::
-
-        Currently only supports the Pulsar_QCM module.
-        Does not yet support the Pulsar_QRM module.
     """
 
     max_seq_duration = 0
@@ -532,6 +522,12 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 
             port = p['port']
             clock_id = p['clock']
+
+            gain = _extract_gain(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=portclock_mapping,
+                port=port, clock=clock_id)
+            params, p = _prepare_pulse(p, gain)
 
             t0 = t_constr['abs_time']+p['t0']
             pulse_id = make_hash(without(p, ['t0']))
@@ -565,13 +561,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                     clock=clock_id,
                     clock_freq=schedule.resources[clock_id]['freq'])
                 schedule.add_resources([sequencer_t(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
-
-            # extract pulse parameters
-            gain = _extract_gain(
-                hardware_mapping=mapping,
-                hw_mapping_inverted=portclock_mapping,
-                port=port, clock=clock_id)
-            params, p = _prepare_pulse(p, gain)
 
             seq = schedule.resources[portclock]
             seq.timing_tuples.append((round(t0*seq['sampling_rate']), pulse_id, params))
@@ -637,11 +626,10 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
 
-    instr = None
     if configure_hardware:
-        instr = configure_pulsars(config_dict, mapping, portclock_mapping)
+        configure_pulsars(config_dict, mapping, portclock_mapping)
 
-    return schedule, config_dict, instr
+    return schedule, config_dict
 
 
 def _check_driver_version(instr, ver):
@@ -737,8 +725,6 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 pulsar.set("sequencer{}_trigger_mode_acq_path1".format(seq_idx), "sequencer")
 
             pulsar.set('sequencer{}_waveforms_and_program'.format(seq_idx), config_fn)
-
-    return pulsars
 
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:

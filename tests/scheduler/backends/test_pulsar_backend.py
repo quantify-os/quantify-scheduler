@@ -237,11 +237,7 @@ def dummy_pulsars():
 
 
 def test_pulsar_assembler_backend_pulses_only():
-    """
-    This is a minimal example for working with the pulsar backend.
-    """
     sched = Schedule('pulse_only_experiment')
-    # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
     sched.add(DRAGPulse(
         G_amp=.7, D_amp=-.2,
         phase=90,
@@ -250,28 +246,8 @@ def test_pulsar_assembler_backend_pulses_only():
         clock='q0.01'))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource('q0.01', freq=5e9)])
-
     determine_absolute_timing(sched)
-
-    sched, config, instr, = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
-
-
-def test_pulsar_assembler_backend_pulses_only_qcompile():
-    """
-    This is a minimal example for working with the pulsar backend.
-    """
-    sched = Schedule('pulse_only_experiment')
-    # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
-    sched.add(DRAGPulse(
-        G_amp=.7, D_amp=-.2,
-        phase=90,
-        port='q0:mw',
-        duration=20e-9,
-        clock='q0.01'))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource('q0.01', freq=5e9)])
-
-    qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    sched, config = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
 
 
 def test_pulsar_assembler_backend(dummy_pulsars):
@@ -301,9 +277,8 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     sched.add_resources([ClockResource('cl0:baseband', freq=0)])
 
-    sched, cfgs, instrs = qcompile(
-        sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
-        configure_hardware=PULSAR_ASSEMBLER)
+    sched, cfgs = qcompile(sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
+                           configure_hardware=PULSAR_ASSEMBLER)
     import logging
     logging.warning(sched.resources.keys())
     assert len(sched.resources['q0:mw_q0.01'].timing_tuples) == int(21*2)
@@ -321,14 +296,6 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     if PULSAR_ASSEMBLER:
         assert dummy_pulsars[0].sequencer0_sync_en()
-
-
-def test_configure_pulsars():
-    pass
-
-
-def test_configure_pulsars_instrument_not_found():
-    pass
 
 
 @pytest.mark.xfail
@@ -355,18 +322,16 @@ def test_mismatched_mod_freq():
         qcompile(sched, bad_config, backend=pulsar_assembler_backend)
 
 
-@pytest.mark.xfail
 def test_gate_and_pulse():
     sched = Schedule("Chevron Experiment")
-
     sched.add(X('q0'))
-    sched.add(SquarePulse(0.8, 20e-9, 'q0:mw_ch'))
+    sched.add(SquarePulse(0.8, 20e-9, 'q0:mw', clock="q0.01"))
     sched.add(Rxy(90, 90, 'q0'))
-    sched.add(SquarePulse(0.4, 20e-9, 'q0:mw_ch'))
+    sched.add(SquarePulse(0.4, 20e-9, 'q0:mw', clock="q0.01"))
+    sched.add_resources([ClockResource("q0.01", 6.02e9)])
 
-    sched, cfgs = qcompile(sched, DEVICE_TEST_CFG,
-                           backend=pulsar_assembler_backend)
-    with open(cfgs["qcm0.s0"], 'rb') as cfg:
+    sched, cfgs = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    with open(cfgs["q0:mw_q0.01"], 'rb') as cfg:
         prog = json.load(cfg)
         assert len(prog['waveforms']['awg']) == 4
 
