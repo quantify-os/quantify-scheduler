@@ -195,7 +195,6 @@ class Operation(UserDict):
         self.data['gate_info'] = {}
         self.data['pulse_info'] = []  # A list of pulses
         self.data['logic_info'] = {}
-        self.modulations = None
 
         if name is not None:
             self.data['name'] = name
@@ -278,6 +277,11 @@ class Operation(UserDict):
         if self.data['pulse_info']:
             return True
         return False
+
+    ACQUISITION_IDENTIFIER = "is_acquisition"
+
+    def mark_as_acquisition(self):
+        self.data[self.ACQUISITION_IDENTIFIER] = True
 
 
 class Resource(UserDict):

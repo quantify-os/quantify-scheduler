@@ -150,13 +150,13 @@ def add_pulse_information_transmon(schedule, device_cfg: dict):
                                                 clock=q_cfg['resources']['clock_ro'],
                                                 t0=0))
                     # acquisition integration window
-                    op.add_pulse(ModSquarePulse(amp=1,
-                                                duration=q_cfg['params']['ro_acq_integration_time'],
-                                                # FIXME this is a bit of a hack,
-                                                # we need to properly define how acquisition "pulses" work
-                                                port="{}_READOUT".format(q_cfg['resources']['port_ro']),
-                                                clock=q_cfg['resources']['clock_ro'],
-                                                t0=q_cfg['params']['ro_acq_delay']))
+                    acquisition = ModSquarePulse(amp=1,
+                                                 duration=q_cfg['params']['ro_acq_integration_time'],
+                                                 port=q_cfg['resources']['port_ro'],
+                                                 clock=q_cfg['resources']['clock_ro'],
+                                                 t0=q_cfg['params']['ro_acq_delay'])
+                    acquisition.mark_as_acquisition()
+                    op.add_pulse(acquisition)
                     # add clock to resources
                     if q_cfg['resources']['clock_ro'] not in schedule.resources.keys():
                         schedule.add_resources(

@@ -12,7 +12,7 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
-from quantify.scheduler.types import Resource
+from quantify.scheduler.types import Resource, Operation
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
@@ -523,6 +523,10 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
             port = p['port']
             clock_id = p['clock']
 
+            if port is None:
+                continue  # pulses with None port will be ignored by this backend
+                # this is used to add for example the reset and idle pulses
+
             gain = _extract_gain(
                 hardware_mapping=mapping,
                 hw_mapping_inverted=portclock_mapping,
@@ -532,15 +536,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
             t0 = t_constr['abs_time']+p['t0']
             pulse_id = make_hash(without(p, ['t0']))
 
-            if port is None:
-                continue  # pulses with None port will be ignored by this backend
-                # this is used to add for example the reset and idle pulses
-
-            # if the compiler has marked this pulse as being on a readout port, mark it in the acquisitions set
-            if p['port'][-8:] == '_READOUT':
+            if Operation.ACQUISITION_IDENTIFIER in p:
                 acquisitions.add(pulse_id)
-                # this is very hacky behaviour stemming from the fact that we have no working real-time demodulation yet.
-                port = p['port'][:-8]
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
