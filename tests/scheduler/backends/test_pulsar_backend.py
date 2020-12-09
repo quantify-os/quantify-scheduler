@@ -147,6 +147,10 @@ def test_build_q1asm():
             'square_id_Q': {'data': np.zeros(len(real)), 'index': 1},
             'drag_ID_I': {'data': complex_vals.real, 'index': 2},
             'drag_ID_Q': {'data': complex_vals.imag, 'index': 3}
+        },
+        'acq': {
+            'square_id_I': {'data': np.ones(4), 'index': 0},
+            'square_id_Q': {'data': np.zeros(4), 'index': 1}
         }
     }
 
@@ -164,6 +168,11 @@ def test_build_q1asm():
     # regenerate_ref_file('ref_test_build_q1asm_loop', program_str_loop)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_loop'), 'r') as f:
         assert program_str_loop == f.read()
+
+    program_str_meas = build_q1asm(pulse_timings, pulse_data, 20, {'square_id'}, 1)
+    # regenerate_ref_file('ref_test_build_q1asm_meas', program_str_meas)
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_meas'), 'r') as f:
+        assert program_str_meas == f.read()
 
     err = r"Provided sequence_duration.*4.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
