@@ -276,7 +276,7 @@ def _prepare_pulse(description, gain=0.0):
         raise ValueError("Unknown wave {}".format(wf_func))
 
 
-def _extract_device__output__sequencer(hw_mapping_inverted: dict, port: str, clock: str):
+def _extract_device_output_sequencer(hw_mapping_inverted: dict, port: str, clock: str):
     """
     Extracts the device, output and sequencer for a port&clock pair
 
@@ -291,8 +291,12 @@ def _extract_device__output__sequencer(hw_mapping_inverted: dict, port: str, clo
 
     Returns
     -------
-    (str, str, str)
-        A tuple containing the device name, output name and sequencer name
+    str
+        Device name
+    str
+        Output channel name
+    str
+        Sequencer name
     """
     portclock = _portclock(port, clock)
     if portclock not in hw_mapping_inverted:
@@ -311,7 +315,7 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
     The following relation should hold
         LO + IF = RF
     """
-    qcm, output, seq = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    qcm, output, seq = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     lo_freq = hardware_mapping[qcm][output]['lo_freq']
     nco_freq = hardware_mapping[qcm][output][seq]['nco_freq']
 
@@ -351,7 +355,7 @@ def _extract_io(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, cl
     str
         The name of the output channel
     """
-    _, output, _ = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    _, output, _ = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     return output
 
 
@@ -375,7 +379,7 @@ def _extract_pulsar_config(hardware_mapping: dict, hw_mapping_inverted: dict, po
     dict
         The configuration dict of the device
     """
-    qcm, _, _ = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    qcm, _, _ = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     return hardware_mapping[qcm]
 
 
@@ -422,7 +426,7 @@ def _extract_gain(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, 
     double
         The gain of the output channel
     """
-    qcm, output, _ = _extract_device__output__sequencer(hw_mapping_inverted, port, clock)
+    qcm, output, _ = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     return hardware_mapping[qcm][output]['gain']
 
 
