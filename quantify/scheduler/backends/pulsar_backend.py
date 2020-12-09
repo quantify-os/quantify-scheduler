@@ -461,7 +461,8 @@ def _invert_hardware_mapping(hardware_mapping):
                 if not portclock:  # undefined port/clock
                     continue
                 if portclock in portclock_reference:
-                    raise ValueError("")
+                    raise ValueError("Duplicate port and clock combination: '{}' and '{}'"
+                                     .format(seq_cfg['port'], seq_cfg['clock']))
                 portclock_reference[portclock] = (device_name, output, seq_name)
     return portclock_reference
 
@@ -565,7 +566,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
                 if clock_id != seq['clock']:
-                    # Fixme define a test where this edge case is triggered
                     raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
                                      .format(pulse_id, seq['name'], seq['clock'], p['clock']))
 

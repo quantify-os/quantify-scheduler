@@ -368,6 +368,10 @@ def test_extract():
         "c0:fl_cl0.baseband": ("qcm1", "real_output_3", "seq0")
     }
 
+    for func in [_extract_gain, _extract_io, _extract_pulsar_type, _extract_pulsar_config]:
+        with pytest.raises(ValueError):
+            func(HARDWARE_MAPPING, portclock_reference, "q0:mw", "q1.12")
+
     for portclock, (device_name, output, seq) in portclock_reference.items():
         port, clock = portclock.split("_")
         pulsar_cfg = _extract_pulsar_config(HARDWARE_MAPPING, portclock_reference, port, clock)

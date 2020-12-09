@@ -278,10 +278,15 @@ class Operation(UserDict):
             return True
         return False
 
+    """
+    Used by the compiler to identify pulses which must be acquired rather than played
+    """
     ACQUISITION_IDENTIFIER = "is_acquisition"
 
     def mark_as_acquisition(self):
-        self.data[self.ACQUISITION_IDENTIFIER] = True
+        assert self.valid_pulse
+        for p in self.data['pulse_info']:
+            p[self.ACQUISITION_IDENTIFIER] = True
 
 
 class Resource(UserDict):
