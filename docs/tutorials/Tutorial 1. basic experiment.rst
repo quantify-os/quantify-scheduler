@@ -235,13 +235,13 @@ also use for demonstration purposes as part of this tutorial:
   from pulsar_qcm.pulsar_qcm import pulsar_qcm
   from qcodes import Instrument
 
-  sched, config, instr, = pulsar_assembler_backend(sched, qblox_test_mapping)
+  sched, config = pulsar_assembler_backend(sched, qblox_test_mapping)
 
 The compiled schedule can be uploaded to the hardware using the following command.
 
 .. jupyter-execute::
 
-  instr = configure_pulsars(config, qblox_test_mapping)
+  configure_pulsars(config, qblox_test_mapping)
 
 
 At this point, the assembler on the device will load the waveforms into memory and verify the program can be executed. We must next arm and then start the device:
@@ -274,12 +274,44 @@ Precise timing control: The Ramsey experiment
 A hybrid experiment: The Chevron
 ------------------------------------------------
 
-.. todo::
+As well as defining our schedules in terms of Gates, we can also interleave arbitrary Pulse shapes, or even define a
+schedule entirely with Pulses. This can be useful for experiments involving pulse sequences not easily represented by
+Gates, such as the Chevron experiment. In this experiment, we want to vary the length and amplitude of a square pulse
+between X gates on a pair of qubits.
 
-  This tutorial should showcase hybridg schedules that mix pulse and gate level
-  descriptions.
+
+.. jupyter-execute::
+
+    from quantify.scheduler.gate_library import X, X90, Reset, Measure
+    from quantify.scheduler.pulse_library import SquarePulse
+    from quantify.scheduler.resources import ClockResource
+
+    sched = Schedule("Chevron Experiment")
+    for duration in np.linspace(20e-9, 40e-9, 5):
+        for amp in np.linspace(0.1, 1.0, 10):
+            begin = sched.add(Reset('q0', 'q1'))
+            sched.add(X('q0'), ref_op=begin, ref_pt='start')
+            square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
+            sched.add(X90('q0'), ref_op=square)
+            sched.add(X90('q1'), ref_op=square)
+            sched.add(Measure('q0', 'q1'))
+    sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
 
+Note that we add Pulses using the same interface as Gates. Pulses are Operations, and as such support the same timing
+and reference operators as Gates.
+
+.. warning::
+
+    When adding a Pulse to a schedule, the clock is not automatically added to the resources of the schedule. It may
+    be necessary to add this clock manually, as in the final line of the above example
+
+We can also quickly compile using the qcompile function and associate mapping files:
+
+.. jupyter-execute::
+
+    from quantify.scheduler.compilation import qcompile
+    sched, cfg = qcompile(sched, transmon_test_config, qblox_test_mapping)
 
 .. seealso::
 

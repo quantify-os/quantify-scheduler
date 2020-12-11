@@ -6,6 +6,7 @@ from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, CZ
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.compilation import determine_absolute_timing, validate_config, add_pulse_information_transmon, qcompile
 from quantify.scheduler.types import Operation, Resource
+from quantify.scheduler.resources import ClockResource
 
 import inspect
 import os
@@ -144,6 +145,18 @@ def test_bad_gate():
     sched.add(NotAGate('q0'))
     with pytest.raises(NotImplementedError, match='Operation type "bad" not supported by backend'):
         add_pulse_information_transmon(sched, DEVICE_CFG)
+
+
+def test_pulse_and_clock():
+    sched = Schedule("pulse_no_clock")
+    mystery_clock = 'BigBen'
+    op_label = sched.add(SquarePulse(0.5, 20e-9, 'q0:mw_ch', clock=mystery_clock))
+    op_hash = next(op for op in sched.timing_constraints if op['label'] == op_label)['operation_hash']
+    with pytest.raises(ValueError, match="Operation '{}' contains an unknown clock '{}'; ensure this resource has "
+                                         "been added to the schedule.".format(op_hash, mystery_clock)):
+        add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
+    sched.add_resources([ClockResource(mystery_clock, 6e9)])
+    add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
 
 
 def test_resource_resolution():
