@@ -395,23 +395,24 @@ def test_extract():
 
 def test_extract_nco_freq():
     inverted = _invert_hardware_mapping(HARDWARE_MAPPING)
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=5.32e9)
+    nco_freq, lo_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=5.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
 
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=1.32e9)
+    nco_freq, lo_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=1.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
 
     RF = 4.52e9
     LO = 4.8e9  # lo_freq set in config for output connected to q1:mw
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
+    nco_freq, lo_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
 
     # RF = LO + IF
     assert nco_freq == RF-LO
 
     RF = 8.52e9
     LO = 7.2e9  # lo_freq set in config for output connected to the feedline
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro',clock_freq=RF)
+    nco_freq, lo_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro', clock_freq=RF)
     assert nco_freq == RF-LO
+    assert lo_freq == RF-nco_freq
 
     invalid_mapping = {
         "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",

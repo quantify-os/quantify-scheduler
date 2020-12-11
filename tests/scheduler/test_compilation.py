@@ -168,7 +168,5 @@ def test_resource_resolution():
     sched.add(SquarePulse(0.6, 20e-9, 'q0:mw_ch'))
     sched.add(SquarePulse(0.4, 20e-9, 'q0:ro_ch'))
 
-    sched.add_resources([qcm0_s0, qrm0_s0])
+    sched.add_resources([qcm0_s0, qrm0_s0, ClockResource('cl0.baseband', 0)])
     sched = qcompile(sched, DEVICE_CFG)
-
-    print(sched)

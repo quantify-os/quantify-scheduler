@@ -310,6 +310,15 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
 
     The following relation should hold
         LO + IF = RF
+
+    Returns
+    -------
+    float
+        IF, nco_freq
+    float
+        LO, lo_freq
+    float
+        RF, clock_freq
     """
     qcm, output, seq = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     lo_freq = hardware_mapping[qcm][output]['lo_freq']
@@ -319,15 +328,15 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
         raise ValueError("frequency under constrained, specify either the lo_freq or nco_freq in the hardware mapping")
     elif lo_freq is None and nco_freq is not None:
         # LO = RF - IF
-        return clock_freq - nco_freq
+        lo_freq = clock_freq - nco_freq
     elif nco_freq is None and lo_freq is not None:
         # RF - LO = IF
-        return clock_freq - lo_freq
+        nco_freq = clock_freq - lo_freq
     elif lo_freq is not None and nco_freq is not None:
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
-    else:
-        raise ValueError("clock frequency undefined.")
+
+    return nco_freq, lo_freq, clock_freq
 
 
 def _extract_io(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
@@ -542,6 +551,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
             nco_freq = 0
+            lo_freq = 0  # FIXME, how does this variable figure in?
             if portclock not in schedule.resources.keys():
                 pulsar_type = _extract_pulsar_type(mapping, portclock_mapping, port, clock_id)
                 if pulsar_type == 'Pulsar_QCM':
@@ -551,7 +561,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 else:
                     raise ValueError("Unrecognized Pulsar type '{}'".format(pulsar_type))
 
-                nco_freq = _extract_nco_freq(
+                nco_freq, lo_freq, _ = _extract_nco_freq(
                     hardware_mapping=mapping,
                     hw_mapping_inverted=portclock_mapping,
                     port=port,
