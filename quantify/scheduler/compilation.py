@@ -207,10 +207,10 @@ def add_pulse_information_transmon(schedule, device_cfg: dict):
             amp = edge_cfg['params']['flux_amp_control']
 
             # FIXME: placeholder. currently puts a soft square pulse on the designated port of both qubits
-            pulse = SoftSquarePulse(
-                amp=amp, duration=edge_cfg['params']['flux_duration'], port=edge_cfg['resource_map'][q0])
-            pulse = SoftSquarePulse(
-                amp=amp, duration=edge_cfg['params']['flux_duration'], port=edge_cfg['resource_map'][q1])
+            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['params']['flux_duration'],
+                                    port=edge_cfg['resource_map'][q0], clock='cl0.baseband')
+            pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['params']['flux_duration'],
+                                    port=edge_cfg['resource_map'][q1], clock='cl0.baseband')
 
             op.add_pulse(pulse)
         elif op['gate_info']['operation_type'] == 'reset':

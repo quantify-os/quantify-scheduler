@@ -165,8 +165,8 @@ def test_resource_resolution():
     qrm0_s0 = Resource({'name': 'qrm0.s0', 'type': 'qrm'})
 
     sched.add(Rxy(90, 0, 'q0'))
-    sched.add(SquarePulse(0.6, 20e-9, 'q0:mw_ch'))
-    sched.add(SquarePulse(0.4, 20e-9, 'q0:ro_ch'))
+    sched.add(SquarePulse(0.6, 20e-9, 'q0:mw_ch', clock='cl0.baseband'))
+    sched.add(SquarePulse(0.4, 20e-9, 'q0:ro_ch', clock='cl0.baseband'))
 
     sched.add_resources([qcm0_s0, qrm0_s0, ClockResource('cl0.baseband', 0)])
     sched = qcompile(sched, DEVICE_CFG)

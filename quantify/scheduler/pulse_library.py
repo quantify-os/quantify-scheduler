@@ -28,7 +28,7 @@ class IdlePulse(Operation):
 
 class RampPulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
         """
         A single-channel square pulse.
 
@@ -53,7 +53,7 @@ class RampPulse(Operation):
 
 class SquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
         """
         A single-channel square pulse.
 
@@ -78,7 +78,7 @@ class SquarePulse(Operation):
 
 class ModSquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', phase: float = 0,
+    def __init__(self, amp: float, duration: float, port: str, clock: str, phase: float = 0,
                  t0: float = 0):
         """
         A two-channel square pulse.
@@ -117,7 +117,7 @@ class SoftSquarePulse(Operation):
     Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
     """
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str = 'cl0.baseband', t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
         data = {'name': 'SoftSquarePulse', 'pulse_info': [{
             'wf_func': 'quantify.scheduler.waveforms.soft_square',
             'amp': amp, 'duration': duration,

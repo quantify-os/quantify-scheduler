@@ -314,11 +314,11 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
     Returns
     -------
     float
-        IF, nco_freq
+        LO, frequency of the local oscillator
     float
-        LO, lo_freq
+        IF, inter-modulation frequency used to modulate the signal
     float
-        RF, clock_freq
+        RF, the frequency of the signal
     """
     qcm, output, seq = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     lo_freq = hardware_mapping[qcm][output]['lo_freq']
@@ -336,7 +336,7 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
 
-    return nco_freq, lo_freq, clock_freq
+    return lo_freq, nco_freq, clock_freq
 
 
 def _extract_io(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):

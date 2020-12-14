@@ -99,7 +99,7 @@ def test_gates_valid():
 
 
 def test_pulses_valid():
-    sqp = SquarePulse(0.35, duration=12e-9, port='q0:fl')
+    sqp = SquarePulse(0.35, duration=12e-9, port='q0:fl', clock='cl0.baseband')
     assert Operation.is_valid(sqp)
     sqp.hash
 
@@ -113,7 +113,7 @@ def test_type_properties():
     assert gate.valid_gate
     assert not gate.valid_pulse
 
-    pulse = SquarePulse(1.0, 20e-9, 'q0')
+    pulse = SquarePulse(1.0, 20e-9, 'q0', clock='cl0.baseband')
     assert not pulse.valid_gate
     assert pulse.valid_pulse
 
@@ -121,6 +121,6 @@ def test_type_properties():
     assert pulse.valid_gate
     assert pulse.valid_pulse
 
-    gate.add_pulse(SquarePulse(1.0, 20e-9, 'q0'))
+    gate.add_pulse(SquarePulse(1.0, 20e-9, 'q0', clock='cl0.baseband'))
     assert gate.valid_gate
     assert gate.valid_pulse
