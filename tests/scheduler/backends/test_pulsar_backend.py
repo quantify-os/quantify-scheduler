@@ -6,7 +6,7 @@ from qcodes.instrument.base import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
-from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse
+from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq, \
     _invert_hardware_mapping, _extract_pulsar_type, _extract_gain, _extract_io, _extract_pulsar_config
@@ -247,12 +247,8 @@ def dummy_pulsars():
 
 def test_pulsar_assembler_backend_pulses_only():
     sched = Schedule('pulse_only_experiment')
-    sched.add(DRAGPulse(
-        G_amp=.7, D_amp=-.2,
-        phase=90,
-        port='q0:mw',
-        duration=20e-9,
-        clock='q0.01'))
+    sched.add(DRAGPulse(G_amp=.7, D_amp=-.2,phase=90,port='q0:mw',duration=20e-9,clock='q0.01'))
+    sched.add(RampPulse(amp=0.5, duration=24e-9, port='q0:mw', clock='q0.01'))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource('q0.01', freq=5e9)])
     determine_absolute_timing(sched)
@@ -358,6 +354,41 @@ def test_bad_driver_vers():
 
     subtest(pulsar_qcm_dummy('qcm_bad_vers'), QCM_DRIVER_VER)
     subtest(pulsar_qrm_dummy('qrm_bad_vers'), QRM_DRIVER_VER)
+
+
+def test_bad_hardware_mapping():
+    duplicate_port_clock = {
+        "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0":
+        {
+            "name": "qcm0",
+            "type": "Pulsar_QCM",
+            "mode": "complex",
+            "ref": "int",
+            "IP address": "192.168.0.2",
+            "complex_output_0": {
+                "gain": 0, "lo_freq": None,
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+            },
+            "complex_output_1": {
+                "gain": 0, "lo_freq": None,
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+            }
+        }}
+    with pytest.raises(ValueError, match="Duplicate port and clock combination: 'q0:mw' and 'q0.01'"):
+        _invert_hardware_mapping(duplicate_port_clock)
+
+    bad_output = {
+        "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0":
+        {
+            "name": "qcm0",
+            "type": "Pulsar_QCM",
+            "mode": "blueberry",
+            "IP address": "192.168.0.2",
+        }}
+    with pytest.raises(ValueError, match="Unrecognised output mode"):
+        _invert_hardware_mapping(bad_output)
 
 
 def test_extract():

@@ -34,19 +34,16 @@ def test_operation_add_pulse():
 
 
 def test_operation_duration_composite_pulse():
-    dgp1 = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3,
-                     duration=10e-9, clock='cl:01', port='p.01', t0=0)
+    dgp1 = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3, duration=10e-9, clock='cl:01', port='p.01', t0=0)
     assert dgp1.duration == pytest.approx(10e-9)
 
     # Adding a shorter pulse is not expected to change the duration
-    dgp2 = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3,
-                     duration=7e-9, clock='cl:01', port='p.01', t0=2e-9)
+    dgp2 = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3, duration=7e-9, clock='cl:01', port='p.01', t0=2e-9)
     dgp1.add_pulse(dgp2)
     assert dgp1.duration == pytest.approx(10e-9)
 
     # adding a longer pulse is expected to change the duration
-    dgp3 = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3,
-                     duration=12e-9, clock='cl:01', port='p.01', t0=3.4e-9)
+    dgp3 = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3, duration=12e-9, clock='cl:01', port='p.01', t0=3.4e-9)
     dgp1.add_pulse(dgp3)
     assert dgp3.duration == pytest.approx(15.4e-9)
     assert dgp1.duration == pytest.approx(15.4e-9)

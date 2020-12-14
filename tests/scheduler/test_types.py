@@ -1,9 +1,8 @@
 import pytest
 import numpy as np
-from quantify.scheduler import Schedule, Operation, Resource
+from quantify.scheduler import Schedule, Operation
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, X, X90, Y, Y90, CZ
 from quantify.scheduler.pulse_library import SquarePulse
-# from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer
 
 
 def test_schedule_Bell():
@@ -61,19 +60,6 @@ def test_schedule_add_timing_constraints():
     assert Schedule.is_valid(sched)
 
 
-# def test_valid_resources():
-#     s0 = Pulsar_QCM_sequencer(address='qcm1.s0', seq_idx=0)
-#     s1 = Pulsar_QCM_sequencer(address='qcm1.s1', seq_idx=1)
-#     assert Resource.is_valid(s0)
-#     assert Resource.is_valid(s1)
-
-#     with pytest.raises(TypeError):
-#         qcm1 = CompositeResource('qcm1', [s0, s1])
-
-#     qcm1 = CompositeResource('qcm1', [s0.name, s1.name])
-#     assert Resource.is_valid(qcm1)
-
-
 def test_gates_valid():
     init_all = Reset('q0', 'q1')  # instantiates
     x90_q0 = Rxy(theta=124, phi=23.9, qubit='q5')
@@ -108,6 +94,7 @@ def test_type_properties():
     op = Operation('blank op')
     assert not op.valid_gate
     assert not op.valid_pulse
+    assert op.name == 'blank op'
 
     gate = X('q0')
     assert gate.valid_gate

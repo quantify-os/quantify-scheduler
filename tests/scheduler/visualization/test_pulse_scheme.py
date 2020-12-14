@@ -4,6 +4,15 @@ import pytest
 from quantify.scheduler import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, Rxy
 from quantify.scheduler.compilation import qcompile
+import inspect
+import json
+import os
+import quantify.scheduler.schemas.examples as es
+
+esp = inspect.getfile(es)
+cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+with open(cfg_f, 'r') as f:
+    DEVICE_CFG = json.load(f)
 
 
 cm = 1 / 2.54  # inch to cm conversion
@@ -52,29 +61,21 @@ def test_plot_pulses_n_q():
     return fig
 
 
-# Skipped because of new configs.
+# todo, verification of this, probably requires some horrible selenium malarkey
+def test_pulse_diagram_plotly():
+    sched = Schedule('Test schedule')
 
-# import pathlib
-# import json
-# cfg_f = pathlib.Path(__file__).parent.parent.parent.absolute() / 'test_data' / 'transmon_test_config.json'
-# with open(cfg_f, 'r') as f:
-#     DEVICE_TEST_CFG = json.load(f)
+    # define the resources
+    q0, q1 = ('q0', 'q1')
+    sched.add(Reset(q0, q1))
+    sched.add(Rxy(90, 0, qubit=q0))
+    # sched.add(operation=CZ(qC=q0, qT=q1)) # not implemented in config
+    sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Measure(q0, q1), label='M0')
+    # pulse information is added
+    sched = qcompile(sched, DEVICE_CFG, None)
 
-
-# def test_pulse_diagram_plotly():
-#     sched = Schedule('Test schedule')
-
-#     # define the resources
-#     q0, q1 = ('q0', 'q1')
-#     sched.add(Reset(q0, q1))
-#     sched.add(Rxy(90, 0, qubit=q0))
-#     # sched.add(operation=CZ(qC=q0, qT=q1)) # not implemented in config
-#     sched.add(Rxy(theta=90, phi=0, qubit=q0))
-#     sched.add(Measure(q0, q1), label='M0')
-#     # pulse information is added
-#     sched = qcompile(sched, DEVICE_TEST_CFG, None)
-
-#     # It should be possible to generate this visualization after compilation
-#     fig = pls.pulse_diagram_plotly(sched, ch_list=["qcm0.s0", "qrm0.s0", "qrm0.r0", "qrm0.s1", "qrm0.r1"])
-#     # and with auto labels
-#     fig = pls.pulse_diagram_plotly(sched)
+    # It should be possible to generate this visualization after compilation
+    fig = pls.pulse_diagram_plotly(sched)
+    # and with auto labels
+    fig = pls.pulse_diagram_plotly(sched)

@@ -5,8 +5,7 @@ from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 
 
-@pytest.mark.skip()
-# @pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_circuit_diagram_matplotlib():
     sched = Schedule('Test experiment')
 
@@ -23,7 +22,7 @@ def test_circuit_diagram_matplotlib():
     return f
 
 
-@pytest.mark.skip()
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_hybrid_circuit_diagram_matplotlib():
     sched = Schedule('Test experiment')
 
@@ -32,9 +31,8 @@ def test_hybrid_circuit_diagram_matplotlib():
 
     sched.add(Reset(q0, q1))
     sched.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
-    sched.add(SquarePulse(0.8, 20e-9, ch='q0'))  # will change with API update
+    sched.add(SquarePulse(0.8, 20e-9, port='q0:mw', clock='cl0.baseband'))
     sched.add(operation=CNOT(qC=q0, qT=q1))
-    sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label='M0')
 
     f, ax = circuit_diagram_matplotlib(sched)
