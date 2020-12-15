@@ -72,6 +72,8 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
     for _, op in schedule.operations.items():
         if op.valid_gate:
             qubits.update(op.data['gate_info']['qubits'])
+        if op.valid_pulse:
+            raise NotImplementedError("Hybrid visualisation not yet implemented for circuit diagrams.")
     qubit_map = {}
     for idx, qubit in enumerate(sorted(qubits)):
         qubit_map[qubit] = idx
@@ -99,12 +101,6 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
             plot_func = import_func_from_string(op['gate_info']['plot_func'])
             idxs = [qubit_map[q] for q in op['gate_info']['qubits']]
             plot_func(ax, time=time, qubit_idxs=idxs, tex=op['gate_info']['tex'])
-        elif op.valid_pulse:
-            plot_func = import_func_from_string('quantify.scheduler.visualization.circuit_diagram.gate_box')
-            qubits = [p['port'] for p in op['pulse_info']]
-            idxs = [qubit_map[q] for q in qubits]
-            time = t_constr['abs_time']
-            plot_func(ax, time=time, qubit_idxs=idxs, tex='Pulse')
         else:
             raise RuntimeError("Unknown operation")
 

@@ -22,7 +22,6 @@ def test_circuit_diagram_matplotlib():
     return f
 
 
-@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_hybrid_circuit_diagram_matplotlib():
     sched = Schedule('Test experiment')
 
@@ -35,5 +34,5 @@ def test_hybrid_circuit_diagram_matplotlib():
     sched.add(operation=CNOT(qC=q0, qT=q1))
     sched.add(Measure(q0, q1), label='M0')
 
-    f, ax = circuit_diagram_matplotlib(sched)
-    return f
+    with pytest.raises(NotImplementedError):
+        f, ax = circuit_diagram_matplotlib(sched)
