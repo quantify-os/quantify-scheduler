@@ -367,6 +367,14 @@ def test_bad_hardware_mapping():
         _invert_hardware_mapping(bad_output)
 
 
+def test_missing_clock():
+    sched = Schedule("mis")
+    sched.add(SquarePulse(amp=0.8, duration=20e-9, port="q0:mw", clock="q1.01"))
+    sched.add_resource(ClockResource("q1.01", freq=6.2e9))
+    with pytest.raises(ValueError):
+        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+
 def test_extract():
     portclock_reference = _invert_hardware_mapping(HARDWARE_MAPPING)
     assert portclock_reference == {
