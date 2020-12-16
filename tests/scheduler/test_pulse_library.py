@@ -1,7 +1,7 @@
 import pytest
 from quantify.scheduler import Operation
 from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, IdlePulse, ModSquarePulse
+from quantify.scheduler.pulse_library import DRAGPulse, IdlePulse, SquarePulse
 
 
 def test_operation_duration_single_pulse():
@@ -51,7 +51,7 @@ def test_operation_duration_composite_pulse():
 
 def test_pulses_valid():
     sqp = SquarePulse(amp=.5, duration=300e-9, port='p.01', clock='cl0.baseband')
-    msqp = ModSquarePulse(amp=.5, duration=300e-9, clock='cl:01', port='p.01')
+    msqp = SquarePulse(amp=.5, duration=300e-9, clock='cl:01', port='p.01')
     dgp = DRAGPulse(G_amp=.8, D_amp=-.3, phase=24.3, duration=20e-9, clock='cl:01', port='p.01')
     idle = IdlePulse(duration=50e-9)
 

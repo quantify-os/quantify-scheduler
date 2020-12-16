@@ -53,33 +53,7 @@ class RampPulse(Operation):
 
 class SquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
-        """
-        A single-channel square pulse.
-
-        Parameters
-        ------------
-        amp : float
-            Amplitude of the Gaussian envelope.
-        duration : float
-            Duration of the pulse in seconds.
-        port : str
-            Port of the pulse.
-        """
-
-        data = {'name': 'SquarePulse', 'pulse_info': [{
-            'wf_func': 'quantify.scheduler.waveforms.square',
-            'amp': amp, 'duration': duration,
-            't0': t0,
-            'clock': clock,
-            'port': port}]}
-        super().__init__(name=data['name'], data=data)
-
-
-class ModSquarePulse(Operation):
-
-    def __init__(self, amp: float, duration: float, port: str, clock: str, phase: float = 0,
-                 t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, phase: float = 0, t0: float = 0):
         """
         A two-channel square pulse.
 
@@ -93,11 +67,9 @@ class ModSquarePulse(Operation):
             Port of the pulse, must be capable of playing a complex waveform.
         phase : float
             Phase of the pulse in degrees.
-        clock :
+        clock : str
             Clock used to modulate the pulse.
-
         """
-
         if phase != 0:
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.

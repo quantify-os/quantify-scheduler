@@ -8,7 +8,7 @@ import jsonschema
 import importlib
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.resources import ClockResource
-from quantify.scheduler.pulse_library import ModSquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
+from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
 from quantify.utilities.general import load_json_schema
 
 
@@ -147,17 +147,17 @@ def add_pulse_information_transmon(schedule, device_cfg: dict):
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
                 if q_cfg['params']['ro_pulse_type'] == 'square':
-                    op.add_pulse(ModSquarePulse(amp=q_cfg['params']['ro_pulse_amp'],
-                                                duration=q_cfg['params']['ro_pulse_duration'],
-                                                port=q_cfg['resources']['port_ro'],
-                                                clock=q_cfg['resources']['clock_ro'],
-                                                t0=0))
+                    op.add_pulse(SquarePulse(amp=q_cfg['params']['ro_pulse_amp'],
+                                             duration=q_cfg['params']['ro_pulse_duration'],
+                                             port=q_cfg['resources']['port_ro'],
+                                             clock=q_cfg['resources']['clock_ro'],
+                                             t0=0))
                     # acquisition integration window
-                    acquisition = ModSquarePulse(amp=1,
-                                                 duration=q_cfg['params']['ro_acq_integration_time'],
-                                                 port=q_cfg['resources']['port_ro'],
-                                                 clock=q_cfg['resources']['clock_ro'],
-                                                 t0=q_cfg['params']['ro_acq_delay'])
+                    acquisition = SquarePulse(amp=1,
+                                              duration=q_cfg['params']['ro_acq_integration_time'],
+                                              port=q_cfg['resources']['port_ro'],
+                                              clock=q_cfg['resources']['clock_ro'],
+                                              t0=q_cfg['params']['ro_acq_delay'])
                     acquisition.mark_as_acquisition()
                     op.add_pulse(acquisition)
                     # add clock to resources
