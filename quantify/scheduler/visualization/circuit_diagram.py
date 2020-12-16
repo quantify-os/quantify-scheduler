@@ -3,6 +3,7 @@
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
+import logging
 import quantify.scheduler.visualization.pulse_scheme as ps
 from quantify.scheduler.compilation import determine_absolute_timing
 from quantify.utilities.general import import_func_from_string
@@ -72,8 +73,6 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
     for _, op in schedule.operations.items():
         if op.valid_gate:
             qubits.update(op.data['gate_info']['qubits'])
-        if op.valid_pulse:
-            raise NotImplementedError("Hybrid visualisation not yet implemented for circuit diagrams.")
     qubit_map = {}
     for idx, qubit in enumerate(sorted(qubits)):
         qubit_map[qubit] = idx
@@ -101,6 +100,10 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
             plot_func = import_func_from_string(op['gate_info']['plot_func'])
             idxs = [qubit_map[q] for q in op['gate_info']['qubits']]
             plot_func(ax, time=time, qubit_idxs=idxs, tex=op['gate_info']['tex'])
+        elif op.valid_pulse:
+            logging.warning("Elided drawing of pulse in circuit diagram at time '{}' (not currently supported)."
+                            .format(time))
+            continue
         else:
             raise RuntimeError("Unknown operation")
 
