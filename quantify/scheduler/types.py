@@ -74,7 +74,6 @@ class Schedule(UserDict):
         """
         return self.data['timing_constraints']
 
-    #   TODO check if this property is deprecated.
     @property
     def resources(self):
         """

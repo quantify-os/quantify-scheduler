@@ -280,7 +280,7 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         sched.add(Rxy(theta=90, phi=0, qubit=q1))
         sched.add(Measure(q0, "q1"), label='M {:.2f} deg'.format(theta))
 
-    sched.add_resources([ClockResource('cl0:baseband', freq=0)])
+    sched.add_resources([ClockResource('cl0.baseband', freq=0)])
 
     sched, cfgs = qcompile(sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
                            configure_hardware=PULSAR_ASSEMBLER)
