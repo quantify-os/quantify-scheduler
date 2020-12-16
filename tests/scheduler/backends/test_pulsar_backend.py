@@ -303,30 +303,6 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         assert dummy_pulsars[0].sequencer0_sync_en()
 
 
-@pytest.mark.xfail
-def test_mismatched_mod_freq():
-    bad_config = {
-        "qubits": {
-            "q0": {"mw_amp180": 0.75, "mw_motzoi": -0.25, "mw_duration": 20e-9, "mw_modulation_freq": 50e6,
-                   "mw_ef_amp180": 0.87, "mw_ch": "qcm0.s0"},
-            "q1": {"mw_amp180": 0.75, "mw_motzoi": -0.25, "mw_duration": 20e-9, "mw_modulation_freq": 70e6,
-                   "mw_ef_amp180": 0.87, "mw_ch": "qcm0.s0"}
-        },
-        "edges": {
-            "q0-q1": {}
-        }
-    }
-    sched = Schedule('Mismatched mod freq')
-    q0, q1 = ('q0', 'q1')
-    sched.add(Rxy(theta=90, phi=0, qubit=q0))
-    sched.add(Rxy(theta=90, phi=0, qubit=q1))
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
-    sched.add_resource(qcm0_s0)
-    with pytest.raises(ValueError, match=r'pulse.*\d+ on channel qcm0.s0 has an inconsistent modulation frequency: '
-                                         r'expected 50000000 but was 70000000'):
-        qcompile(sched, bad_config, backend=pulsar_assembler_backend)
-
-
 def test_gate_and_pulse():
     sched = Schedule("Chevron Experiment")
     sched.add(X('q0'))

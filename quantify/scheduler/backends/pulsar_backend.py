@@ -574,10 +574,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
-                if clock_id != seq['clock']:
-                    raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
-                                     .format(pulse_id, seq['name'], seq['clock'], p['clock']))
-
                 # the pulsar backend makes use of real-time pulse modulation
                 t = np.arange(0, 0+p['duration'], 1/seq['sampling_rate'])
                 wf_func = import_func_from_string(p['wf_func'])
@@ -667,15 +663,13 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
         with open(config_fn) as seq_config:
             data = json.load(seq_config)
             instr_cfg = data['instr_cfg']  # all info is in the config
-            pulsar_dict = _extract_pulsar_config(hardware_mapping=mapping,
-                hw_mapping_inverted=hw_mapping_inverted,
-                port=instr_cfg['port'], clock=instr_cfg['clock']
-            )
+            pulsar_dict = _extract_pulsar_config(hardware_mapping=mapping, hw_mapping_inverted=hw_mapping_inverted,
+                                                 port=instr_cfg['port'], clock=instr_cfg['clock']
+                                                 )
 
-            io = _extract_io(hardware_mapping=mapping,
-                hw_mapping_inverted=hw_mapping_inverted,
-                port=instr_cfg['port'], clock=instr_cfg['clock']
-            )
+            io = _extract_io(hardware_mapping=mapping, hw_mapping_inverted=hw_mapping_inverted,
+                             port=instr_cfg['port'], clock=instr_cfg['clock']
+                             )
 
             # configure settings
             if io == "complex_output_0":
