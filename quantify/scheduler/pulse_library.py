@@ -4,6 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
 # -----------------------------------------------------------------------------
 from .types import Operation
+from quantify.scheduler.resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
@@ -21,7 +22,7 @@ class IdlePulse(Operation):
             'wf_func': None,
             't0': 0,
             'duration': duration,
-            'clock': 'cl0.baseband',
+            'clock': BasebandClockResource.IDENTITY,
             'port': None}]}
         super().__init__(name=data['name'], data=data)
 

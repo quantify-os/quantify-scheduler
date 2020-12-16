@@ -53,6 +53,11 @@ class ClockResource(Resource):
 
 class BasebandClockResource(Resource):
 
+    """
+    Global identity for a virtual baseband clock
+    """
+    IDENTITY = 'cl0.baseband'
+
     def __init__(self, name: str):
         """
         A clock resource for pulses that operate at baseband.

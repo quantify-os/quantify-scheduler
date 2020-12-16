@@ -7,7 +7,7 @@ import logging
 import jsonschema
 import importlib
 from quantify.scheduler.types import Schedule
-from quantify.scheduler.resources import ClockResource
+from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
 from quantify.utilities.general import load_json_schema
 
@@ -133,6 +133,7 @@ def add_pulse_information_transmon(schedule, device_cfg: dict):
 
     """
     validate_config(device_cfg, scheme_fn='transmon_cfg.json')
+    schedule.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))  # add the master baseband
 
     for op in schedule.operations.values():
         if op.valid_pulse:
@@ -208,9 +209,9 @@ def add_pulse_information_transmon(schedule, device_cfg: dict):
 
             # FIXME: placeholder. currently puts a soft square pulse on the designated port of both qubits
             pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['params']['flux_duration'],
-                                    port=edge_cfg['resource_map'][q0], clock='cl0.baseband')
+                                    port=edge_cfg['resource_map'][q0], clock=BasebandClockResource.IDENTITY)
             pulse = SoftSquarePulse(amp=amp, duration=edge_cfg['params']['flux_duration'],
-                                    port=edge_cfg['resource_map'][q1], clock='cl0.baseband')
+                                    port=edge_cfg['resource_map'][q1], clock=BasebandClockResource.IDENTITY)
 
             op.add_pulse(pulse)
         elif op['gate_info']['operation_type'] == 'reset':
