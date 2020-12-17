@@ -109,6 +109,7 @@ An example of such a visualization is shown below.
 
   sched.add(Reset(q0, q1))
   sched.add(Rxy(theta=90, phi=0, qubit=q0))
+  sched.add(Rxy(theta=90, phi=0, qubit=q1), ref_pt='start')
   sched.add(CZ(qC=q0, qT=q1))
   sched.add(Rxy(theta=23, phi=0, qubit=q0))
   sched.add(Measure(q0, q1))
@@ -133,12 +134,35 @@ The location on chip is denoted by a *port* while the frequency is set using a *
 These resources are described in detail in :ref:`the next section<Resources: Qubits, Ports and Clocks>`.
 
 A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a pulsediagram using :func:`quantify.scheduler.visualization.circuit_diagram.pulse_diagram_plotly`.
-An example of such a visualization is shown below.
+An example of such a visualization is shown below:
 
-.. todo::
 
-  Add plotly visualization of basic example schedule.
+.. jupyter-execute::
+  :hide-code:
 
+
+  import json
+  import pprint
+  import os, inspect
+  from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
+  from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
+
+
+  import quantify.scheduler.schemas.examples as es
+
+  esp = inspect.getfile(es)
+  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+
+
+  with open(cfg_f, 'r') as f:
+      transmon_test_config = json.load(f)
+
+
+  add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+  determine_absolute_timing(schedule=sched)
+  pulse_diagram_plotly(sched, port_list=["q0:mw", "q1:mw", "q0:fl", "q1:fl", "q0:res" ], modulation_if = 10e6, sampling_rate = 1e9)
+
+In this visualization, the different rows correspond to different ports to which the pulses are applied, the clocks are used to modulate the respective signals, and time is shown on the x-axis.
 
 
 To summarize:
