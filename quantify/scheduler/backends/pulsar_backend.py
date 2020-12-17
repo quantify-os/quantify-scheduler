@@ -12,7 +12,8 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
-from quantify.scheduler.types import Resource
+from quantify.scheduler.types import Operation
+from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
@@ -254,12 +255,8 @@ def _prepare_pulse(description, gain=0.0):
             description[param] = default
         return description
 
-    # FIXME: there is magic going on to hack specific function in terms of the modulation used...
     wf_func = description['wf_func']
     if wf_func == 'quantify.scheduler.waveforms.square' or wf_func == 'quantify.scheduler.waveforms.soft_square':
-
-        # FIXME: Why is a square pulse modulated? What does PulsarModulations do?
-        # FIXME: I see this is a module wide defined variable?!? that makes zero sense.
         params = PulsarModulations(gain_I=description['amp']/10**(gain/20), gain_Q=description['amp']/10**(gain/20))
         return params, dummy_load_params([('amp', 1.0)])
     if wf_func == 'quantify.scheduler.waveforms.ramp':
@@ -314,6 +311,15 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
 
     The following relation should hold
         LO + IF = RF
+
+    Returns
+    -------
+    float
+        LO, frequency of the local oscillator
+    float
+        IF, inter-modulation frequency used to modulate the signal
+    float
+        RF, the frequency of the signal
     """
     qcm, output, seq = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
     lo_freq = hardware_mapping[qcm][output]['lo_freq']
@@ -323,14 +329,15 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
         raise ValueError("frequency under constrained, specify either the lo_freq or nco_freq in the hardware mapping")
     elif lo_freq is None and nco_freq is not None:
         # LO = RF - IF
-        return clock_freq - nco_freq
+        lo_freq = clock_freq - nco_freq
     elif nco_freq is None and lo_freq is not None:
         # RF - LO = IF
-        return clock_freq - lo_freq
+        nco_freq = clock_freq - lo_freq
     elif lo_freq is not None and nco_freq is not None:
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
-    return 0
+
+    return lo_freq, nco_freq, clock_freq
 
 
 def _extract_io(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
@@ -463,7 +470,8 @@ def _invert_hardware_mapping(hardware_mapping):
                 if not portclock:  # undefined port/clock
                     continue
                 if portclock in portclock_reference:
-                    raise ValueError("")
+                    raise ValueError("Duplicate port and clock combination: '{}' and '{}'"
+                                     .format(seq_cfg['port'], seq_cfg['clock']))
                 portclock_reference[portclock] = (device_name, output, seq_name)
     return portclock_reference
 
@@ -502,12 +510,6 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
         The schedule
     config_dict : dict
         of sequencer names as keys with json filenames as values
-
-
-    .. note::
-
-        Currently only supports the Pulsar_QCM module.
-        Does not yet support the Pulsar_QRM module.
     """
 
     max_seq_duration = 0
@@ -531,22 +533,26 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
             port = p['port']
             clock_id = p['clock']
 
-            t0 = t_constr['abs_time']+p['t0']
-            pulse_id = make_hash(without(p, ['t0']))
-
             if port is None:
                 continue  # pulses with None port will be ignored by this backend
                 # this is used to add for example the reset and idle pulses
 
-            # if the compiler has marked this pulse as being on a readout port, mark it in the acquisitions set
-            if p['port'][-8:] == '_READOUT':
+            gain = _extract_gain(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=portclock_mapping,
+                port=port, clock=clock_id)
+            params, p = _prepare_pulse(p, gain)
+
+            t0 = t_constr['abs_time']+p['t0']
+            pulse_id = make_hash(without(p, ['t0']))
+
+            if Operation.ACQUISITION_IDENTIFIER in p:
                 acquisitions.add(pulse_id)
-                # this is very hacky behaviour stemming from the fact that we have no working real-time demodulation yet.
-                port = p['port'][:-8]
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
             nco_freq = 0
+            lo_freq = 0  # FIXME, how does this variable figure in?
             if portclock not in schedule.resources.keys():
                 pulsar_type = _extract_pulsar_type(mapping, portclock_mapping, port, clock_id)
                 if pulsar_type == 'Pulsar_QCM':
@@ -556,7 +562,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 else:
                     raise ValueError("Unrecognized Pulsar type '{}'".format(pulsar_type))
 
-                nco_freq = _extract_nco_freq(
+                nco_freq, lo_freq, _ = _extract_nco_freq(
                     hardware_mapping=mapping,
                     hw_mapping_inverted=portclock_mapping,
                     port=port,
@@ -564,23 +570,11 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                     clock_freq=schedule.resources[clock_id]['freq'])
                 schedule.add_resources([sequencer_t(portclock, port=port, clock=clock_id, nco_freq=nco_freq)])
 
-            # extract pulse parameters
-            gain = _extract_gain(
-                hardware_mapping=mapping,
-                hw_mapping_inverted=portclock_mapping,
-                port=port, clock=clock_id)
-            params, p = _prepare_pulse(p, gain)
-
             seq = schedule.resources[portclock]
             seq.timing_tuples.append((round(t0*seq['sampling_rate']), pulse_id, params))
 
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
-                if clock_id != seq['clock']:
-                    # Fixme define a test where this edge case is triggered
-                    raise ValueError('pulse {} on sequencer {} has an inconsistent clock: expected {} but was {}'
-                                     .format(pulse_id, seq['name'], seq['clock'], p['clock']))
-
                 # the pulsar backend makes use of real-time pulse modulation
                 t = np.arange(0, 0+p['duration'], 1/seq['sampling_rate'])
                 wf_func = import_func_from_string(p['wf_func'])
@@ -635,11 +629,10 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
 
-    instr = None
     if configure_hardware:
-        instr = configure_pulsars(config_dict, mapping, portclock_mapping)
+        configure_pulsars(config_dict, mapping, portclock_mapping)
 
-    return schedule, config_dict, instr
+    return schedule, config_dict
 
 
 def _check_driver_version(instr, ver):
@@ -671,15 +664,13 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
         with open(config_fn) as seq_config:
             data = json.load(seq_config)
             instr_cfg = data['instr_cfg']  # all info is in the config
-            pulsar_dict = _extract_pulsar_config(hardware_mapping=mapping,
-                hw_mapping_inverted=hw_mapping_inverted,
-                port=instr_cfg['port'], clock=instr_cfg['clock']
-            )
+            pulsar_dict = _extract_pulsar_config(hardware_mapping=mapping, hw_mapping_inverted=hw_mapping_inverted,
+                                                 port=instr_cfg['port'], clock=instr_cfg['clock']
+                                                 )
 
-            io = _extract_io(hardware_mapping=mapping,
-                hw_mapping_inverted=hw_mapping_inverted,
-                port=instr_cfg['port'], clock=instr_cfg['clock']
-            )
+            io = _extract_io(hardware_mapping=mapping, hw_mapping_inverted=hw_mapping_inverted,
+                             port=instr_cfg['port'], clock=instr_cfg['clock']
+                             )
 
             # configure settings
             if io == "complex_output_0":
@@ -735,8 +726,6 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 pulsar.set("sequencer{}_trigger_mode_acq_path1".format(seq_idx), "sequencer")
 
             pulsar.set('sequencer{}_waveforms_and_program'.format(seq_idx), config_fn)
-
-    return pulsars
 
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:

@@ -6,7 +6,7 @@ from qcodes.instrument.base import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
-from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse
+from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq, \
     _invert_hardware_mapping, _extract_pulsar_type, _extract_gain, _extract_io, _extract_pulsar_config
@@ -147,6 +147,10 @@ def test_build_q1asm():
             'square_id_Q': {'data': np.zeros(len(real)), 'index': 1},
             'drag_ID_I': {'data': complex_vals.real, 'index': 2},
             'drag_ID_Q': {'data': complex_vals.imag, 'index': 3}
+        },
+        'acq': {
+            'square_id_I': {'data': np.ones(4), 'index': 0},
+            'square_id_Q': {'data': np.zeros(4), 'index': 1}
         }
     }
 
@@ -164,6 +168,11 @@ def test_build_q1asm():
     # regenerate_ref_file('ref_test_build_q1asm_loop', program_str_loop)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_loop'), 'r') as f:
         assert program_str_loop == f.read()
+
+    program_str_meas = build_q1asm(pulse_timings, pulse_data, 20, {'square_id'}, 1)
+    # regenerate_ref_file('ref_test_build_q1asm_meas', program_str_meas)
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_meas'), 'r') as f:
+        assert program_str_meas == f.read()
 
     err = r"Provided sequence_duration.*4.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
@@ -237,41 +246,13 @@ def dummy_pulsars():
 
 
 def test_pulsar_assembler_backend_pulses_only():
-    """
-    This is a minimal example for working with the pulsar backend.
-    """
     sched = Schedule('pulse_only_experiment')
-    # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
-    sched.add(DRAGPulse(
-        G_amp=.7, D_amp=-.2,
-        phase=90,
-        port='q0:mw',
-        duration=20e-9,
-        clock='q0.01'))
+    sched.add(DRAGPulse(G_amp=.7, D_amp=-.2,phase=90,port='q0:mw',duration=20e-9,clock='q0.01'))
+    sched.add(RampPulse(amp=0.5, duration=24e-9, port='q0:mw', clock='q0.01'))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource('q0.01', freq=5e9)])
-
     determine_absolute_timing(sched)
-
-    sched, config, instr, = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
-
-
-def test_pulsar_assembler_backend_pulses_only_qcompile():
-    """
-    This is a minimal example for working with the pulsar backend.
-    """
-    sched = Schedule('pulse_only_experiment')
-    # sched.add(SquarePulse(0.4, 20e-9, 'q0:fl'))
-    sched.add(DRAGPulse(
-        G_amp=.7, D_amp=-.2,
-        phase=90,
-        port='q0:mw',
-        duration=20e-9,
-        clock='q0.01'))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource('q0.01', freq=5e9)])
-
-    qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    sched, config = pulsar_assembler_backend(sched, HARDWARE_MAPPING)
 
 
 def test_pulsar_assembler_backend(dummy_pulsars):
@@ -299,11 +280,8 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         sched.add(Rxy(theta=90, phi=0, qubit=q1))
         sched.add(Measure(q0, "q1"), label='M {:.2f} deg'.format(theta))
 
-    sched.add_resources([ClockResource('cl0:baseband', freq=0)])
-
-    sched, cfgs, instrs = qcompile(
-        sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
-        configure_hardware=PULSAR_ASSEMBLER)
+    sched, cfgs = qcompile(sched, device_cfg=DEVICE_CFG, hardware_mapping=HARDWARE_MAPPING,
+                           configure_hardware=PULSAR_ASSEMBLER)
     import logging
     logging.warning(sched.resources.keys())
     assert len(sched.resources['q0:mw_q0.01'].timing_tuples) == int(21*2)
@@ -323,50 +301,16 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         assert dummy_pulsars[0].sequencer0_sync_en()
 
 
-def test_configure_pulsars():
-    pass
-
-
-def test_configure_pulsars_instrument_not_found():
-    pass
-
-
-@pytest.mark.xfail
-def test_mismatched_mod_freq():
-    bad_config = {
-        "qubits": {
-            "q0": {"mw_amp180": 0.75, "mw_motzoi": -0.25, "mw_duration": 20e-9, "mw_modulation_freq": 50e6,
-                   "mw_ef_amp180": 0.87, "mw_ch": "qcm0.s0"},
-            "q1": {"mw_amp180": 0.75, "mw_motzoi": -0.25, "mw_duration": 20e-9, "mw_modulation_freq": 70e6,
-                   "mw_ef_amp180": 0.87, "mw_ch": "qcm0.s0"}
-        },
-        "edges": {
-            "q0-q1": {}
-        }
-    }
-    sched = Schedule('Mismatched mod freq')
-    q0, q1 = ('q0', 'q1')
-    sched.add(Rxy(theta=90, phi=0, qubit=q0))
-    sched.add(Rxy(theta=90, phi=0, qubit=q1))
-    qcm0_s0 = Pulsar_QCM_sequencer('qcm0.s0', seq_idx=0)
-    sched.add_resource(qcm0_s0)
-    with pytest.raises(ValueError, match=r'pulse.*\d+ on channel qcm0.s0 has an inconsistent modulation frequency: '
-                                         r'expected 50000000 but was 70000000'):
-        qcompile(sched, bad_config, backend=pulsar_assembler_backend)
-
-
-@pytest.mark.xfail
 def test_gate_and_pulse():
     sched = Schedule("Chevron Experiment")
-
     sched.add(X('q0'))
-    sched.add(SquarePulse(0.8, 20e-9, 'q0:mw_ch'))
+    sched.add(SquarePulse(0.8, 20e-9, 'q0:mw', clock="q0.01"))
     sched.add(Rxy(90, 90, 'q0'))
-    sched.add(SquarePulse(0.4, 20e-9, 'q0:mw_ch'))
+    sched.add(SquarePulse(0.4, 20e-9, 'q0:mw', clock="q0.01"))
+    sched.add_resources([ClockResource("q0.01", 6.02e9)])
 
-    sched, cfgs = qcompile(sched, DEVICE_TEST_CFG,
-                           backend=pulsar_assembler_backend)
-    with open(cfgs["qcm0.s0"], 'rb') as cfg:
+    sched, cfgs = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    with open(cfgs["q0:mw_q0.01"], 'rb') as cfg:
         prog = json.load(cfg)
         assert len(prog['waveforms']['awg']) == 4
 
@@ -386,6 +330,49 @@ def test_bad_driver_vers():
     subtest(pulsar_qrm_dummy('qrm_bad_vers'), QRM_DRIVER_VER)
 
 
+def test_bad_hardware_mapping():
+    duplicate_port_clock = {
+        "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0":
+        {
+            "name": "qcm0",
+            "type": "Pulsar_QCM",
+            "mode": "complex",
+            "ref": "int",
+            "IP address": "192.168.0.2",
+            "complex_output_0": {
+                "gain": 0, "lo_freq": None,
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+            },
+            "complex_output_1": {
+                "gain": 0, "lo_freq": None,
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+            }
+        }}
+    with pytest.raises(ValueError, match="Duplicate port and clock combination: 'q0:mw' and 'q0.01'"):
+        _invert_hardware_mapping(duplicate_port_clock)
+
+    bad_output = {
+        "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0":
+        {
+            "name": "qcm0",
+            "type": "Pulsar_QCM",
+            "mode": "blueberry",
+            "IP address": "192.168.0.2",
+        }}
+    with pytest.raises(ValueError, match="Unrecognised output mode"):
+        _invert_hardware_mapping(bad_output)
+
+
+def test_missing_clock():
+    sched = Schedule("mis")
+    sched.add(SquarePulse(amp=0.8, duration=20e-9, port="q0:mw", clock="q1.01"))
+    sched.add_resource(ClockResource("q1.01", freq=6.2e9))
+    with pytest.raises(ValueError):
+        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+
 def test_extract():
     portclock_reference = _invert_hardware_mapping(HARDWARE_MAPPING)
     assert portclock_reference == {
@@ -403,6 +390,10 @@ def test_extract():
         "c0:fl_cl0.baseband": ("qcm1", "real_output_3", "seq0")
     }
 
+    for func in [_extract_gain, _extract_io, _extract_pulsar_type, _extract_pulsar_config]:
+        with pytest.raises(ValueError):
+            func(HARDWARE_MAPPING, portclock_reference, "q0:mw", "q1.12")
+
     for portclock, (device_name, output, seq) in portclock_reference.items():
         port, clock = portclock.split("_")
         pulsar_cfg = _extract_pulsar_config(HARDWARE_MAPPING, portclock_reference, port, clock)
@@ -417,23 +408,24 @@ def test_extract():
 
 def test_extract_nco_freq():
     inverted = _invert_hardware_mapping(HARDWARE_MAPPING)
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=5.32e9)
+    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=5.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
 
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=1.32e9)
+    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=1.32e9)
     assert nco_freq == -50e6  # Hardcoded in config
 
     RF = 4.52e9
     LO = 4.8e9  # lo_freq set in config for output connected to q1:mw
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
+    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
 
     # RF = LO + IF
     assert nco_freq == RF-LO
 
     RF = 8.52e9
     LO = 7.2e9  # lo_freq set in config for output connected to the feedline
-    nco_freq = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro',clock_freq=RF)
+    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro', clock_freq=RF)
     assert nco_freq == RF-LO
+    assert lo_freq == RF-nco_freq
 
     invalid_mapping = {
         "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",

@@ -7,6 +7,7 @@ from uuid import uuid4
 from collections import UserDict
 import jsonschema
 from quantify.utilities.general import make_hash, load_json_schema
+from quantify.scheduler.resources import Resource, BasebandClockResource
 
 
 class Schedule(UserDict):
@@ -41,6 +42,10 @@ class Schedule(UserDict):
         self.data['resource_dict'] = {}
         self.data['name'] = 'nameless'
 
+        # This is used to define baseband pulses and is expected to always be present
+        # in any schedule.
+        self.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
+
         if name is not None:
             self.data['name'] = name
 
@@ -74,7 +79,6 @@ class Schedule(UserDict):
         """
         return self.data['timing_constraints']
 
-    #   TODO check if this property is deprecated.
     @property
     def resources(self):
         """
@@ -91,7 +95,10 @@ class Schedule(UserDict):
         Add a resource such as a channel or qubit to the schedule.
         """
         assert Resource.is_valid(resource)
-        self.data['resource_dict'][resource.name] = resource
+        if resource.name in self.data['resource_dict']:
+            raise ValueError("Key {} is already present".format(resource.name))
+        else:
+            self.data['resource_dict'][resource.name] = resource
 
     def __repr__(self):
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
@@ -195,7 +202,6 @@ class Operation(UserDict):
         self.data['gate_info'] = {}
         self.data['pulse_info'] = []  # A list of pulses
         self.data['logic_info'] = {}
-        self.modulations = None
 
         if name is not None:
             self.data['name'] = name
@@ -279,20 +285,20 @@ class Operation(UserDict):
             return True
         return False
 
-
-class Resource(UserDict):
     """
-    A resource corresponds to a physical resource such as an AWG channel, a qubit, or a classical register.
-
-    .. jsonschema:: schemas/resource.json
+    Used by the compiler to identify pulses which must be acquired rather than played
     """
+    ACQUISITION_IDENTIFIER = "is_acquisition"
 
-    @classmethod
-    def is_valid(cls, operation):
-        scheme = load_json_schema(__file__, 'resource.json')
-        jsonschema.validate(operation.data, scheme)
-        return True  # if not exception was raised during validation
+    def mark_as_acquisition(self):
+        """
+        Marks all pulses within an operation as acquisition.
 
-    @property
-    def name(self):
-        return self.data['name']
+        For a typical measurement operation, this is applied to the acquisition pulse (operation) before
+        it is added to the main measurement operation.
+        """
+        assert self.valid_pulse
+        for p in self.data['pulse_info']:
+            p[self.ACQUISITION_IDENTIFIER] = True
+
+

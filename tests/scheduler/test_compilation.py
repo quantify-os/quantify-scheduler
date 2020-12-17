@@ -5,7 +5,8 @@ from quantify.scheduler import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, CZ
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.compilation import determine_absolute_timing, validate_config, add_pulse_information_transmon, qcompile
-from quantify.scheduler.types import Operation, Resource
+from quantify.scheduler.types import Operation
+from quantify.scheduler.resources import Resource, ClockResource, BasebandClockResource
 
 import inspect
 import os
@@ -146,16 +147,26 @@ def test_bad_gate():
         add_pulse_information_transmon(sched, DEVICE_CFG)
 
 
+def test_pulse_and_clock():
+    sched = Schedule("pulse_no_clock")
+    mystery_clock = 'BigBen'
+    op_label = sched.add(SquarePulse(0.5, 20e-9, 'q0:mw_ch', clock=mystery_clock))
+    op_hash = next(op for op in sched.timing_constraints if op['label'] == op_label)['operation_hash']
+    with pytest.raises(ValueError, match="Operation '{}' contains an unknown clock '{}'; ensure this resource has "
+                                         "been added to the schedule.".format(op_hash, mystery_clock)):
+        add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
+    sched.add_resources([ClockResource(mystery_clock, 6e9)])
+    add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
+
+
 def test_resource_resolution():
     sched = Schedule('resource_resolution')
     qcm0_s0 = Resource({'name': 'qcm0.s0', 'type': 'qcm'})
     qrm0_s0 = Resource({'name': 'qrm0.s0', 'type': 'qrm'})
 
     sched.add(Rxy(90, 0, 'q0'))
-    sched.add(SquarePulse(0.6, 20e-9, 'q0:mw_ch'))
-    sched.add(SquarePulse(0.4, 20e-9, 'q0:ro_ch'))
+    sched.add(SquarePulse(0.6, 20e-9, 'q0:mw_ch', clock=BasebandClockResource.IDENTITY))
+    sched.add(SquarePulse(0.4, 20e-9, 'q0:ro_ch', clock=BasebandClockResource.IDENTITY))
 
     sched.add_resources([qcm0_s0, qrm0_s0])
     sched = qcompile(sched, DEVICE_CFG)
-
-    print(sched)

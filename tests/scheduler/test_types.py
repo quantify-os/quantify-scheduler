@@ -1,9 +1,21 @@
 import pytest
 import numpy as np
-from quantify.scheduler import Schedule, Operation, Resource
+from quantify.scheduler import Schedule, Operation
+
+from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, X, X90, Y, Y90, CZ
 from quantify.scheduler.pulse_library import SquarePulse
-# from quantify.scheduler.resources import CompositeResource, Pulsar_QCM_sequencer
+
+
+def test_schedule_adding_double_resource():
+    # clock associated with qubit
+    sched = Schedule('Bell experiment')
+    with pytest.raises(ValueError):
+        sched.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
+
+    sched.add_resource(ClockResource('mystery', 6e9))
+    with pytest.raises(ValueError):
+        sched.add_resource(ClockResource('mystery', 6e9))
 
 
 def test_schedule_Bell():
@@ -61,19 +73,6 @@ def test_schedule_add_timing_constraints():
     assert Schedule.is_valid(sched)
 
 
-# def test_valid_resources():
-#     s0 = Pulsar_QCM_sequencer(address='qcm1.s0', seq_idx=0)
-#     s1 = Pulsar_QCM_sequencer(address='qcm1.s1', seq_idx=1)
-#     assert Resource.is_valid(s0)
-#     assert Resource.is_valid(s1)
-
-#     with pytest.raises(TypeError):
-#         qcm1 = CompositeResource('qcm1', [s0, s1])
-
-#     qcm1 = CompositeResource('qcm1', [s0.name, s1.name])
-#     assert Resource.is_valid(qcm1)
-
-
 def test_gates_valid():
     init_all = Reset('q0', 'q1')  # instantiates
     x90_q0 = Rxy(theta=124, phi=23.9, qubit='q5')
@@ -99,7 +98,7 @@ def test_gates_valid():
 
 
 def test_pulses_valid():
-    sqp = SquarePulse(0.35, duration=12e-9, port='q0:fl')
+    sqp = SquarePulse(0.35, duration=12e-9, port='q0:fl', clock='cl0.baseband')
     assert Operation.is_valid(sqp)
     sqp.hash
 
@@ -108,12 +107,13 @@ def test_type_properties():
     op = Operation('blank op')
     assert not op.valid_gate
     assert not op.valid_pulse
+    assert op.name == 'blank op'
 
     gate = X('q0')
     assert gate.valid_gate
     assert not gate.valid_pulse
 
-    pulse = SquarePulse(1.0, 20e-9, 'q0')
+    pulse = SquarePulse(1.0, 20e-9, 'q0', clock='cl0.baseband')
     assert not pulse.valid_gate
     assert pulse.valid_pulse
 
@@ -121,6 +121,6 @@ def test_type_properties():
     assert pulse.valid_gate
     assert pulse.valid_pulse
 
-    gate.add_pulse(SquarePulse(1.0, 20e-9, 'q0'))
+    gate.add_pulse(SquarePulse(1.0, 20e-9, 'q0', clock='cl0.baseband'))
     assert gate.valid_gate
     assert gate.valid_pulse
