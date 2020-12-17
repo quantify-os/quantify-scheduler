@@ -23,7 +23,7 @@ with open(map_f, 'r') as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-def test__determine_absolute_timing_ideal_clock():
+def test_determine_absolute_timing_ideal_clock():
     sched = Schedule('Test experiment')
 
     # define the resources

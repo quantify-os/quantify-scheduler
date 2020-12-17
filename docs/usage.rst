@@ -41,7 +41,7 @@ These compilation steps depend on configuration files that describe how to trans
      - parameterized waveforms
    * - Where
      - :class:`~quantify.scheduler.Resource`
-     - qubits
+     - qubits (str)
      - ports & clocks
 
 
@@ -80,12 +80,10 @@ Gate-level description
 The (quantum) gate-level description is an idealized mathematical description of the operations.
 In this describtion operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
 Operations can be represented by (idealized) unitaries acting on qubits which are represented here as strings (e.g., "q0", "q1", "qubit_left", etc.).
+Valid qubits are strings that appear in the device_config.json file.
 Qubits are a valid :class:`~quantify.scheduler.Resource`.
 The :mod:`~quantify.scheduler.gate_library` contains common gates (including the measurement operation).
 
-
-.. todo::
-  qubit should be a valid resource. this needs to be correct and have an associated test.
 
 .. note::
   Stricly speaking a measurement is not a gate as it cannot be described by a unitary. However, as it is a fundamental building block of circuit diagrams, we include it at this level of abstraction.
