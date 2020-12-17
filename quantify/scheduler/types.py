@@ -283,6 +283,12 @@ class Operation(UserDict):
     ACQUISITION_IDENTIFIER = "is_acquisition"
 
     def mark_as_acquisition(self):
+        """
+        Marks all pulses within an operation as acquisition.
+
+        For a typical measurement operation, this is applied to the acquisition pulse (operation) before
+        it is added to the main measurement operation.
+        """
         assert self.valid_pulse
         for p in self.data['pulse_info']:
             p[self.ACQUISITION_IDENTIFIER] = True
