@@ -279,7 +279,33 @@ The :mod:`quantify.scheduler.compilation` contains the main compilation function
 Device configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Used to compile from the idealized gate-level to the device specific pulse-level description.
+The device configuration file is used to compile from the idealized gate-level to the device specific pulse-level description.
+
+Here we show an example of such a device configuration file.
+
+.. todo::
+
+  Add schema for schedule here.
+  Describe what functionality the backend needs to provide and what fields must be there.
+
+
+.. jupyter-execute::
+
+  :hide-code:
+
+  import json
+  import pprint
+  import os, inspect
+  import quantify.scheduler.schemas.examples as es
+
+  esp = inspect.getfile(es)
+  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+
+
+  with open(cfg_f, 'r') as f:
+      transmon_test_config = json.load(f)
+
+  pprint.pprint(transmon_test_config)
 
 .. todo::
 
