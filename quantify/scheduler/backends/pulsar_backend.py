@@ -328,10 +328,10 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
         raise ValueError("frequency under constrained, specify either the lo_freq or nco_freq in the hardware mapping")
     elif lo_freq is None and nco_freq is not None:
         # LO = RF - IF
-        return clock_freq - nco_freq
+        lo_freq = clock_freq - nco_freq
     elif nco_freq is None and lo_freq is not None:
         # RF - LO = IF
-        return clock_freq - lo_freq
+        nco_freq = clock_freq - lo_freq
     elif lo_freq is not None and nco_freq is not None:
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
