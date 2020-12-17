@@ -7,9 +7,28 @@
 '''
 This module should be merged into types
 '''
+from collections import UserDict
+import jsonschema
+from quantify.utilities.general import load_json_schema
 
 
-from .types import Resource
+class Resource(UserDict):
+    """
+    A resource corresponds to a physical resource such as an AWG channel, a qubit, or a classical register.
+
+    .. jsonschema:: schemas/resource.json
+    """
+
+    @classmethod
+    def is_valid(cls, operation):
+        scheme = load_json_schema(__file__, 'resource.json')
+        jsonschema.validate(operation.data, scheme)
+        return True  # if not exception was raised during validation
+
+    @property
+    def name(self):
+        return self.data['name']
+
 
 
 class PortResource(Resource):

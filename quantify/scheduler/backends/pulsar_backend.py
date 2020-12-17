@@ -12,7 +12,8 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
-from quantify.scheduler.types import Resource, Operation
+from quantify.scheduler.types import Operation
+from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string

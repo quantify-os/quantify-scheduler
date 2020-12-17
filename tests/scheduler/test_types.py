@@ -1,8 +1,21 @@
 import pytest
 import numpy as np
 from quantify.scheduler import Schedule, Operation
+
+from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, X, X90, Y, Y90, CZ
 from quantify.scheduler.pulse_library import SquarePulse
+
+
+def test_schedule_adding_double_resource():
+    # clock associated with qubit
+    sched = Schedule('Bell experiment')
+    with pytest.raises(ValueError):
+        sched.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
+
+    sched.add_resource(ClockResource('mystery', 6e9))
+    with pytest.raises(ValueError):
+        sched.add_resource(ClockResource('mystery', 6e9))
 
 
 def test_schedule_Bell():

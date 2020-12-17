@@ -133,7 +133,6 @@ def add_pulse_information_transmon(schedule, device_cfg: dict):
 
     """
     validate_config(device_cfg, scheme_fn='transmon_cfg.json')
-    schedule.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))  # add the master baseband
 
     for op in schedule.operations.values():
         if op.valid_pulse:

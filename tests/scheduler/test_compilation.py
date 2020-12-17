@@ -5,8 +5,8 @@ from quantify.scheduler import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, CZ
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.compilation import determine_absolute_timing, validate_config, add_pulse_information_transmon, qcompile
-from quantify.scheduler.types import Operation, Resource
-from quantify.scheduler.resources import ClockResource, BasebandClockResource
+from quantify.scheduler.types import Operation
+from quantify.scheduler.resources import Resource, ClockResource, BasebandClockResource
 
 import inspect
 import os
