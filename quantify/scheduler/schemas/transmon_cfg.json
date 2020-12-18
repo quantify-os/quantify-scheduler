@@ -7,6 +7,10 @@
   "edges"
  ],
  "properties": {
+  "backend": {
+   "type": "string",
+   "description": "Specifies the function used for compiling from gate-level to pulse-level description. A valid specification is a period separated string e.g., 'quantify.scheduler.compilation.add_pulse_information_transmon'."
+  },
   "qubits": {
    "type": "object",
    "description": "Single qubit configuration."

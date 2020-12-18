@@ -1,5 +1,5 @@
 {
-   "backend":"quantify.scheduler.backends.compilation.add_pulse_information_transmon",
+   "backend":"quantify.scheduler.compilation.add_pulse_information_transmon",
    "qubits":{
         "q0": {
             "resources": {

@@ -280,16 +280,23 @@ def qcompile(schedule: Schedule, device_cfg: dict,
 
         Add a schema for the hardware mapping.
     """
-    schedule = add_pulse_information_transmon(schedule=schedule, device_cfg=device_cfg)
+
+    device_bck_name = device_cfg['backend']
+    if device_bck_name != 'quantify.scheduler.compilation.add_pulse_information_transmon':
+        raise NotImplementedError
+    (mod, cls) = (device_bck_name.rsplit(".", 1))
+    device_compile = getattr(importlib.import_module(mod), cls)
+
+    schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit='physical')
 
     if hardware_mapping is not None:
         bck_name = hardware_mapping['backend']
         # import the required backend callable to compile onto the backend
         (mod, cls) = (bck_name.rsplit(".", 1))
-        backend = getattr(importlib.import_module(mod), cls)
-        # compile using the appropriate backend
-        # FIXME: still contains a hardcoded argument
-        return backend(schedule, mapping=hardware_mapping, **kwargs)
+        # compile using the appropriate hardware backend
+        hardware_compile = getattr(importlib.import_module(mod), cls)
+        # FIXME: still contains a hardcoded argument in the kwargs
+        return hardware_compile(schedule, mapping=hardware_mapping, **kwargs)
     else:
         return schedule
