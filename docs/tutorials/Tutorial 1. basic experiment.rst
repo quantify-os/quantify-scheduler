@@ -1,3 +1,5 @@
+.. _sec-tutorial1::
+
 Tutorial 1. Basic experiments
 ================================
 

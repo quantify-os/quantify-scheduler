@@ -9,18 +9,17 @@ User guide
 Introduction
 ----------------
 Quantify-scheduler is a module for writing quantum programs.
-It is designed for experimentalists to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
+It features a unique hybrid control model allowing quantum gate- and pulse-level descriptions to be combined in a clearly defined and hardware-agnostic way.
+Quantify-scheduler is designed to allow experimentalists to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
 
-The :mod:`quantify.scheduler` can be used to schedule operations on the control hardware.
-The :mod:`quantify.scheduler` is designed to provide access to hardware functionality at a high-level (hardware agnostic) interface.
+Quantify-scheduler can be understood by understanding the following concepts:
 
+- :ref:`Schedules<sec-schedule>` describing when an operation needs to be applied.
+- :ref:`Operations<sec-operation>` describing what needs to be done.
+- :ref:`Resources<sec-resources>` describing where an operation should be applied.
+- :ref:`Compilation<sec-compilation>` between different abstraction layers and onto a (hardware) backend.
 
-To understand how the scheduler works it is important to understand the basic concepts.
-In the quantify scheduler, multiple :class:`~quantify.scheduler.types.Operation` s acting on :class:`~quantify.scheduler.Resource` s are added to a :class:`~quantify.scheduler.Schedule` which is then compiled for execution on a backend.
-The :class:`~quantify.scheduler.Schedule` is responsible for scheduling *when* operations are applied, the :class:`~quantify.scheduler.types.Operation` is responsible for specifying *what* is applied, while the :class:`~quantify.scheduler.Resource` is responsible for *where* it is applied.
-
-To schedule operations on control hardware different compilation steps take the schedule and compile it for a hardware backend.
-These compilation steps depend on configuration files that describe how to translate gates into pulses, and pulses onto the control hardware. This is described in detail in :ref:`the section on compilation<Compilation>`.
+The following table shows an overview of the different concepts and how these are represented at the gate- and pulse-level abstraction.
 
 
 .. list-table:: Overview of concepts and their representation at different levels of abstraction
@@ -42,18 +41,73 @@ These compilation steps depend on configuration files that describe how to trans
    * - Where
      - :class:`~quantify.scheduler.Resource`
      - qubits (str)
-     - ports & clocks
+     - ports (str) & clocks  (:class:`~quantify.scheduler.resources.ClockResource`)
 
 
-Schedules and Operations
+
+To schedule operations on control hardware different compilation steps take the schedule and compile it for a hardware backend.
+The following block diagram gives an overview of the different compilation steps.
+A schedule can be created using the quantify API (shown in :ref:`Tutorial 1<sec-tutorial1>`) or by importanting a program in one of the supported QASM-like formats (NotImplemented yet).
+A first :ref:`compilation <sec-compilation>` step uses the :ref:`device config<sec-device-config>` to add a pulse representation to operations with a gate representation.
+A second compilation step uses the :ref:`hardware config<sec-hardware-config>` to compile the pulses onto a physical hardware backend.
+
+.. blockdiag::
+
+    blockdiag scheduler {
+      orientation = portrait
+
+      qf_input [label="quantify API"];
+      ext_input [label="Q A S M-like\nformats", stacked];
+      hw_bck [label="Hardware\nbackends", stacked];
+      gt_lvl [label="Gate-level"];
+
+      ext_input -> qf_input;
+      qf_input -> gt_lvl;
+      qf_input -> Pulse-level;
+      gt_lvl -> Pulse-level [label="Config"];
+      Pulse-level -> hw_bck [label="Mapping"];
+      group {
+        label= "Input formats";
+        qf_input
+        ext_input
+        color="#90EE90"
+        }
+
+      group {
+
+        gt_lvl
+        Pulse-level
+        color=cyan
+        label="Schedule"
+        }
+
+      group {
+        label = "";
+        color = orange;
+        hw_bck
+        }
+    }
+
+
+
+
+
+
+
+
+.. _sec-schedule:
+
+Schedule
 --------------------------------
 
 The :class:`~quantify.scheduler.Schedule` is a data structure that is at the core of the Quantify-scheduler.
-The :class:`~quantify.scheduler.Schedule` contains information on *when* *what* operations should be performed.
+The :class:`~quantify.scheduler.Schedule` contains information on *when* operations should be performed.
 
-The :class:`~quantify.scheduler.types.Operation` object is a datastructure that describes the operation that should be performed, it also contains information on *where* it should be applied.
-An operation can be represented at different levels of abstraction such as the (quantum) :ref:`Gate-level description` and the :ref:`Pulse-level description`.
-The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_library` and the :mod:`quantify.scheduler.pulse_library` , both containing common operations.
+When adding an :class:`~quantify.scheduler.types.Operation` to a :class:`~quantify.scheduler.Schedule` using the :meth:`~quantify.scheduler.Schedule.add` method, it is possible to specify precisely *when* to perform this operation using timing constraints.
+However, at this point it is not required to specify how to respresent this :class:`~quantify.scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
+Instead, this information can be added later during :ref:`Compilation`.
+This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many (calibration) experiments.
+An example of such an experiment is shown in :ref:`Tutorial 1. basic experiment`.
 
 
 The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~quantify.scheduler.Schedule.operations`  and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
@@ -61,18 +115,15 @@ The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~qu
 :attr:`~quantify.scheduler.Schedule.timing_constraints`
 
 
-When adding an :class:`~quantify.scheduler.types.Operation` to a :class:`~quantify.scheduler.Schedule` using the :meth:`~quantify.scheduler.Schedule.add` method, it is possible to specify precisely *when* to perform this operation.
-However, at this point it is not required to specify how to respresent this :class:`~quantify.scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
-Instead, this information can be added later during :ref:`Compilation`.
-This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many calibration experiments.
-An example of such an experiment is shown in :ref:`Tutorial 1. basic experiment`.
+.. _sec-operation:
+
+Operation
+--------------------------------
 
 
-Gate- and Pulse-level description
------------------------------------
-A core feature of the :mod:`quantify.scheduler` is that it is possible to use both operations that are described at the gate level and operations that are described at the pulse level.
-This is possible because the schedule describes *when* operations should be performed while the operations describe *what* should be done using what resources. The resources describe *where* the opartion is applied.
-The description of *what* and *where* is different for the gate- and pulse-level descriptions.
+The :class:`~quantify.scheduler.types.Operation` object is a datastructure that describes the operation that should be performed, it also contains information on *where* it should be applied.
+An operation can be represented at different levels of abstraction such as the (quantum) :ref:`Gate-level description` and the :ref:`Pulse-level description`.
+The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_library` and the :mod:`quantify.scheduler.pulse_library` , both containing common operations.
 
 
 Gate-level description
@@ -80,17 +131,12 @@ Gate-level description
 The (quantum) gate-level description is an idealized mathematical description of the operations.
 In this describtion operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
 Operations can be represented by (idealized) unitaries acting on qubits which are represented here as strings (e.g., "q0", "q1", "qubit_left", etc.).
-Valid qubits are strings that appear in the device_config.json file.
-Qubits are a valid :class:`~quantify.scheduler.Resource`.
+Valid qubits are strings that appear in the :ref:`device configuration file<Device configuration file>` used when compiling the schedule.
 The :mod:`~quantify.scheduler.gate_library` contains common gates (including the measurement operation).
 
 
 .. note::
-  Stricly speaking a measurement is not a gate as it cannot be described by a unitary. However, as it is a fundamental building block of circuit diagrams, we include it at this level of abstraction.
-
-..
-  This explanation is correct and very common, but possibly very confusing to the non-expert. Please help me make this a clearer explanation. - MAR
-
+  Stricly speaking a measurement is not a gate as it cannot be described by a unitary. However, it is a fundamental building block of circuit diagrams and therefore included at this level of abstraction.
 
 
 A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a circuitdiagram using :func:`quantify.scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
@@ -171,44 +217,14 @@ To summarize:
 - Pulses are applied to *ports* at a frequency specified by a *clock*.
 - Ports and clocks are represented by strings.
 
+.. _sec-resources:
 
-Resources: Qubits, Ports and Clocks
+Resources
 --------------------------------------
 
-:mod:`quantify.scheduler.resources` denote where an opartion should be applied.
+Resources denote where an operation should be applied.
 Here we explain these concept using a simple cQED device shown in :numref:`resources_fig` .
-However, these concepts should be easy to generalize to other devices and systems.
-
-At the gate-level description, operations are applied to (abstract) qubits.
-For many systems, it is possible to associate a qubit with an element or location on a device.
-However, qubits typically have many different ports that signals can be applied to.
-A :class:`~quantify.scheduler.resources.PortResource` is used to indicate a location on a device that a signal can be applied to.
-It can be associated with a qubit by including the qubit name in the name of the port.
-This information can be used when visualizing a schedule and can be convenient to keep configuration files readable.
-Associating a port with a single qubit is not required so as not to complicate matters when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
-
-Besides the physical location on a device, a pulse is typically applied at a certain frequency.
-A :class:`~quantify.scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
-Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
-If the frequency of a clock is set to 0, the pulse is applied at baseband and is assumed to be real-valued.
-
-.. list-table:: Operations and resources on different levels of abstraction
-   :widths: 25 25 50
-   :header-rows: 1
-
-   * -
-     - Gate-level description
-     - Pulse-level description
-   * - What
-     - Unitaries and POVMs
-     - Waveforms
-   * - Where (space)
-     - Qubits
-     - Ports
-   * - Where (frequency)
-     - (implied)
-     - Clocks
-
+These concepts should be easy to generalize to other devices and systems.
 
 .. figure:: /images/Device_ports_clocks.svg
   :width: 800
@@ -216,73 +232,75 @@ If the frequency of a clock is set to 0, the pulse is applied at baseband and is
 
   Resources are used to indicate *where* operations are applied.
   (a) Ports (purple) indicate a location on a device.
-  By prefixing the name of a qubit in a port name a port can be associated with a qubit, but this is not required.
-  (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition. This can correspond to a qubit, but is not required.
+  By prefixing the name of a qubit in a port name (separated by a ":") a port can be associated with a qubit (red), but this is not required.
+  (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition.
+  By prefixing the name of a qubit in a clock name (separated by a ":") a clock can be associated with a qubit (red), but this is not required.
   Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
 
 
+Qubits
+~~~~~~~
 
+At the gate-level description, operations are applied to (abstract) qubits.
+Qubits are represented by strings corresponding to the name of a qubit (e.g., :code:`q0`, :code:`q1`, :code:`A1`, :code:`QL`, :code:`qubit_1`, etc.).
+Valid qubit names are those that appear in the :ref:`device config<sec-device-config>` used for compilation.
+
+Ports
+~~~~~~~
+
+For many systems, it is possible to associate a qubit with an element or location on a device that a signal can be applied to.
+We call such a location on a device a port.
+Like qubits, ports are represented as strings (e.g., :code:`P0`, :code:`feedline_in`, :code:`q0:mw_drive`, etc.).
+A port can be associated with a qubit by including the qubit name in the name of the port (separated by a ":").
+Valid qubit names are those that appear in the :ref:`hardware config<sec-hardware-config>` used for compilation.
+
+
+Associating a qubit can be useful when visualizing a schedule and or to keep configuration files readable.
+Associating a port with a single qubit is not required so as not to complicate matters when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
+
+Clocks
+~~~~~~~~~~~~~~~~~
+
+Besides the physical location on a device, a pulse is typically applied at a certain frequency.
+A :class:`~quantify.scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
+Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
+If the frequency of a clock is set to 0, the pulse is applied at baseband and is assumed to be real-valued.
+
+.. _sec-compilation:
 
 Compilation
 -------------
 
-Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on physical hardware. The scheduler currently supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
+Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on physical hardware.
+The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
 
-In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify.scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`configuration file<Device configuration file>`.
+In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify.scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`configuration file<sec-device-config>`.
 
 A second compilation step takes the schedule at the pulse level and translates this for use on a hardware backend.
-This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`mapping file<Hardware mapping file>`.
+This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`mapping file<sec-hardware-config>`.
 
-The block diagram below shows an overview of the different compilation steps.
-The :mod:`quantify.scheduler.compilation` contains the main compilation functions.
-
-.. blockdiag::
-
-    blockdiag scheduler {
-      orientation = portrait
-
-      qf_input [label="quantify API"];
-      ext_input [label="Q A S M-like\nformats", stacked];
-      hw_bck [label="Hardware\nbackends", stacked];
-      gt_lvl [label="Gate-level"];
-
-      ext_input -> qf_input;
-      qf_input -> gt_lvl;
-      qf_input -> Pulse-level;
-      gt_lvl -> Pulse-level [label="Config"];
-      Pulse-level -> hw_bck [label="Mapping"];
-      group {
-        label= "Input formats";
-        qf_input
-        ext_input
-        color="#90EE90"
-        }
-
-      group {
-
-        gt_lvl
-        Pulse-level
-        color=cyan
-        label="Schedule"
-        }
-
-      group {
-        label = "";
-        color = orange;
-        hw_bck
-        }
-    }
+Both compilation steps can be triggered by passing a :class:`~quantify.scheduler.Schedule` and the appropriate configuration files to :func:`~quantify.scheduler.compilation.qcompile`.
 
 
+.. _sec-device-config:
 
 Device configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The device configuration file is used to compile from the idealized gate-level to the device specific pulse-level description.
+The device configuration file is used to compile from the  gate-level to the device specific pulse-level description.
+The main responsibility is to add a pulse-representation to every operation that has a gate-level description.
+To do this, it contains information for all qubits, and all edges.
+Edges are pairs of qubits (separated by a "-") on which gates can act.
+The "backend" specified determines how the data for each qubit is used to create pulses.
+
+
+A valid device configuration is described by the schema shown here:
 
 .. jsonschema:: ../quantify/scheduler/schemas/transmon_cfg.json
 
 
+Example device configuration file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we show an example of such a device configuration file:
 
 .. jupyter-execute::
@@ -302,31 +320,32 @@ Here we show an example of such a device configuration file:
 
   pprint.pprint(transmon_test_config)
 
-.. todo::
+.. _sec-hardware-config:
 
-  import code snippet from the test device config used in the
-  examples + add test.
-
-* Resources vs params
-* Amplitudes represent amplitudes at port!
-
-Add example config file here and discuss it.
-
-
-Hardware mapping file
+Hardware configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Used to compile from the device-specific pulse-level description to control-hardware-specific instructions.
+The hardware configuration file is used to compile pulses to specific control electronics.
+To do this, it contains information on what ports are connected to what hardware outputs.
+The backend key of the hardware configuration specifies what backend is used to compile onto the control electronics.
+Here we show an example of such a device configuration file:
 
-* JSON files that contains all instruments that can be handled by the scheduler backend
-* Contains instrument settings
-* Contains gain between port and instrument output
-* Multiple “ports” can be linked to a single (complex) output.
+Example Qblox hardware mapping file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Add example mapping file here and discuss it.
+.. jupyter-execute::
+  :hide-code:
+
+  import json
+  import pprint
+  import os, inspect
+  import quantify.scheduler.schemas.examples as es
+
+  esp = inspect.getfile(es)
+  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
 
 
-.. todo::
+  with open(cfg_f, 'r') as f:
+      transmon_test_config = json.load(f)
 
-  import code snippet from the test mapping file used in the
-  examples + add test.
+  pprint.pprint(transmon_test_config)
