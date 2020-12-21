@@ -47,7 +47,7 @@ The following table shows an overview of the different concepts and how these ar
 
 To schedule operations on control hardware different compilation steps take the schedule and compile it for a hardware backend.
 The following block diagram gives an overview of the different compilation steps.
-A schedule can be created using the quantify API (shown in :ref:`Tutorial 1<sec-tutorial1>`) or by importanting a program in one of the supported QASM-like formats (NotImplemented yet).
+A schedule can be created using the quantify API (shown in :ref:`Tutorial 1<sec-tutorial1>`).
 A first :ref:`compilation <sec-compilation>` step uses the :ref:`device config<sec-device-config>` to add a pulse representation to operations with a gate representation.
 A second compilation step uses the :ref:`hardware config<sec-hardware-config>` to compile the pulses onto a physical hardware backend.
 
@@ -57,11 +57,9 @@ A second compilation step uses the :ref:`hardware config<sec-hardware-config>` t
       orientation = portrait
 
       qf_input [label="quantify API"];
-      ext_input [label="Q A S M-like\nformats", stacked];
       hw_bck [label="Hardware\nbackends", stacked];
       gt_lvl [label="Gate-level"];
 
-      ext_input -> qf_input;
       qf_input -> gt_lvl;
       qf_input -> Pulse-level;
       gt_lvl -> Pulse-level [label="Config"];
@@ -69,7 +67,6 @@ A second compilation step uses the :ref:`hardware config<sec-hardware-config>` t
       group {
         label= "Input formats";
         qf_input
-        ext_input
         color="#90EE90"
         }
 
