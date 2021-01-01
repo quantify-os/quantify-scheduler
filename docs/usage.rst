@@ -40,16 +40,14 @@ The following table shows an overview of the different concepts and how these ar
      - parameterized waveforms
    * - Where
      - :class:`~quantify.scheduler.Resource`
-     - qubits (str)
-     - ports (str) & clocks  (:class:`~quantify.scheduler.resources.ClockResource`)
+     - qubits (:code:`str`)
+     - ports (:code:`str`) & clocks  (:class:`~quantify.scheduler.resources.ClockResource`)
 
 
 
 To schedule operations on control hardware different compilation steps take the schedule and compile it for a hardware backend.
 The following block diagram gives an overview of the different compilation steps.
-A schedule can be created using the quantify API (shown in :ref:`Tutorial 1<sec-tutorial1>`).
-A first :ref:`compilation <sec-compilation>` step uses the :ref:`device config<sec-device-config>` to add a pulse representation to operations with a gate representation.
-A second compilation step uses the :ref:`hardware config<sec-hardware-config>` to compile the pulses onto a physical hardware backend.
+A schedule can be created using the quantify API (shown in :ref:`Tutorial 1 <sec-tutorial1>`).
 
 .. blockdiag::
 
@@ -85,6 +83,8 @@ A second compilation step uses the :ref:`hardware config<sec-hardware-config>` t
         }
     }
 
+A first :ref:`compilation <sec-compilation>` step uses the :ref:`device config<sec-device-config>` to add a pulse representation to operations with a gate representation.
+A second compilation step uses the :ref:`hardware config<sec-hardware-config>` to compile the pulses onto a hardware backend.
 
 
 
