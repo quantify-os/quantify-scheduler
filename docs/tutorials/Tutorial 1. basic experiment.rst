@@ -123,9 +123,10 @@ This allows efficient loading of pulses or gates to memory and also enables effi
 
 .. jupyter-execute::
 
+    from pprint import pprint
     from itertools import islice
     # showing the first 5 elements of the operation dict
-    dict(islice(sched.data['operation_dict'].items(), 5))
+    pprint(dict(islice(sched.data['operation_dict'].items(), 5)))
 
 The timing constraints are stored as a list of pulses.
 
@@ -139,7 +140,7 @@ Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also
 .. jupyter-execute::
 
     rxy_theta = Rxy(theta=theta, phi=0, qubit=q0)
-    rxy_theta.data
+    pprint(rxy_theta.data)
 
 
 Compilation of a circuit diagram into pulses

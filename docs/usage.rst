@@ -36,7 +36,7 @@ The following table shows an overview of the different concepts and how these ar
      - --
    * - What
      - :class:`~quantify.scheduler.types.Operation`
-     - unitaries and POVMs
+     - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
      - parameterized waveforms
    * - Where
      - :class:`~quantify.scheduler.Resource`
@@ -107,9 +107,9 @@ This allows the user to effortlessly mix the gate- and pulse-level descriptions 
 An example of such an experiment is shown in :ref:`Tutorial 1. basic experiment`.
 
 
-The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~quantify.scheduler.Schedule.operations`  and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
-:attr:`~quantify.scheduler.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
-:attr:`~quantify.scheduler.Schedule.timing_constraints`
+The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~quantify.scheduler.Schedule.operations` and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+The :attr:`~quantify.scheduler.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
+The :attr:`~quantify.scheduler.Schedule.timing_constraints` is a list of dictionaries describing timing constraints between operations, i.e. when to apply an operation.
 
 
 .. _sec-operation:
