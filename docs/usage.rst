@@ -268,7 +268,7 @@ If the frequency of a clock is set to 0, the pulse is applied at baseband and is
 Compilation
 -------------
 
-Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on physical hardware.
+Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
 The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
 
 In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify.scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`configuration file<sec-device-config>`.
