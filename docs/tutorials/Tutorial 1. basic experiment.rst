@@ -19,7 +19,7 @@ Basics: The Bell experiment
 
 As the first example, we want to perform the `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ .
 The goal of the Bell experiment is to create a Bell state :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` followed by a measurement.
-By rotating the measurement basis, or equavalently one of the qubits, it is possible to observe violations of the CSHS inequality.
+By rotating the measurement basis, or equivalently one of the qubits, it is possible to observe violations of the CSHS inequality.
 If everything is done properly, one should observe the following oscillation:
 
 .. jupyter-execute::
@@ -66,7 +66,7 @@ We also need to define the qubits.
 
 .. jupyter-execute::
 
-  q0, q1 = ('q0', 'q1') # we use strings because qubit resrouces have not been implemented yet.
+  q0, q1 = ('q0', 'q1') # we use strings because qubit resources have not been implemented yet.
 
 Creating the circuit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,7 +92,7 @@ Because this experiment is most conveniently described on the gate level, we use
 Visualizing the circuit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-And we can use this to create a default visualizaton:
+And we can use this to create a default visualization:
 
 .. jupyter-execute::
 
@@ -218,7 +218,7 @@ Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_
   pprint.pprint(qblox_test_mapping)
 
 
-The Pulsar QCM provides a QCodes based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will
+The Pulsar QCM provides a QCoDeS based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will
 also use for demonstration purposes as part of this tutorial:
 
 
@@ -294,6 +294,8 @@ between X gates on a pair of qubits.
         for amp in np.linspace(0.1, 1.0, 10):
             begin = sched.add(Reset('q0', 'q1'))
             sched.add(X('q0'), ref_op=begin, ref_pt='start')
+            # NB we specify a clock for tutorial purposes,
+            # Chevron experiments do not necessarily use modulated square pulses
             square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
             sched.add(X90('q0'), ref_op=square)
             sched.add(X90('q1'), ref_op=square)
@@ -309,7 +311,7 @@ and reference operators as Gates.
     When adding a Pulse to a schedule, the clock is not automatically added to the resources of the schedule. It may
     be necessary to add this clock manually, as in the final line of the above example
 
-We can also quickly compile using the qcompile function and associate mapping files:
+We can also quickly compile using the :func:`!qcompile` function and associate mapping files:
 
 .. jupyter-execute::
 
