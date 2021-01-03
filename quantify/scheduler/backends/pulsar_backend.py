@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # Description:    Compiler backend for the Pulsar QCM.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 import os
 import inspect
