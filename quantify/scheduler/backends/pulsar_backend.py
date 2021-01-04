@@ -6,6 +6,7 @@
 import os
 import inspect
 import json
+from typing import Optional
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
@@ -155,7 +156,7 @@ class Q1ASMBuilder:
 
     @staticmethod
     def _iff(label):
-        return '{}:'.format(label) if label else ''
+        return f'{label}:' if label else ''
 
     def _split_playtime(self, duration):
         split = []
@@ -167,7 +168,7 @@ class Q1ASMBuilder:
 
     def _check_playtime(self, duration):
         if duration < self.CYCLE_TIME_ns:
-            raise ValueError('duration {}ns < cycle time {}ns'.format(duration, self.CYCLE_TIME_ns))
+            raise ValueError(f'duration {duration}ns < cycle time {self.CYCLE_TIME_ns}ns')
         return duration
 
     def _calculate_phase_params(self, degrees):
@@ -181,7 +182,7 @@ class Q1ASMBuilder:
 
     def _expand_from_normalised_range(self, val, param):
         if val < -1.0 or val > 1.0:
-            raise ValueError("{} parameter of PulsarModulations must be in the range 0.0:1.0".format(param))
+            raise ValueError(f"{param} parameter of PulsarModulations must be in the range 0.0:1.0")
         return int(val * self.IMMEDIATE_SZ / 2)
 
     def update_parameters(self, modulations: PulsarModulations, device):
@@ -194,17 +195,17 @@ class Q1ASMBuilder:
             if modulations.gain_Q is not None:
                 normalised = modulations.gain_Q / self.AWG_OUTPUT_VOLT
                 gain_Q_val = self._expand_from_normalised_range(normalised, "Gain")
-            self.rows.append(['', 'set_{}_gain'.format(device), "{},{}".format(gain_I_val, gain_Q_val), '#Set gain'])
+            self.rows.append(['', f'set_{device}_gain', f"{gain_I_val},{gain_Q_val}", '#Set gain'])
         if modulations.offset is not None:
             offset_val = self._expand_from_normalised_range(modulations.offset, "Offset")
-            self.rows.append(['', 'set_{}_offs'.format(device), "{0},{0}".format(offset_val), ""])
+            self.rows.append(['', f'set_{device}_offs', f"{offset_val},{offset_val}", ""])
         if modulations.phase is not None:
             coarse, fine, ufine = self._calculate_phase_params(modulations.phase)
             # switched 'set_ph_delta' and 'delta' to workaround bug in firmware. Should be reverted in new release.
-            self.rows.append(['', 'set_ph_delta', '{},{},{}'.format(coarse, fine, ufine), ''])
+            self.rows.append(['', 'set_ph_delta', f'{coarse},{fine},{ufine}', ''])
         if modulations.phase_delta is not None:
             coarse, fine, ufine = self._calculate_phase_params(modulations.phase_delta)
-            self.rows.append(['', 'set_ph', '{},{},{}'.format(coarse, fine, ufine), ''])
+            self.rows.append(['', 'set_ph', f'{coarse},{fine},{ufine}', ''])
 
     def line_break(self):
         self.rows.append(['', '', '', ''])
@@ -213,18 +214,18 @@ class Q1ASMBuilder:
         self.rows.append([self._iff(label), 'wait_sync', '4', '#sync'])
 
     def move(self, label, source, target, comment):
-        self.rows.append([self._iff(label), 'move', '{},{}'.format(source, target), comment])
+        self.rows.append([self._iff(label), 'move', f'{source},{target}', comment])
 
     def play(self, label, I_idx, Q_idx, playtime, comment):
         for duration in self._split_playtime(playtime):
-            args = '{},{},{}'.format(I_idx, Q_idx, int(duration))
+            args = f'{I_idx},{Q_idx},{int(duration)}'
             row = [self._iff(label), 'play', args, comment]
             label = None
             self.rows.append(row)
 
     def acquire(self, label, I_idx, Q_idx, playtime, comment):
         for duration in self._split_playtime(playtime):
-            args = '{},{},{}'.format(I_idx, Q_idx, int(duration))
+            args = f'{I_idx},{Q_idx},{int(duration)}'
             row = [self._iff(label), 'acquire', args, comment]
             label = None
             self.rows.append(row)
@@ -234,18 +235,18 @@ class Q1ASMBuilder:
 
     def wait(self, label, playtime, comment):
         for duration in self._split_playtime(playtime):
-            row = [label if label else '', 'wait', int(self._check_playtime(duration)), comment]
+            row = [str(label or ''), 'wait', int(self._check_playtime(duration)), comment]
             label = None
             self.rows.append(row)
 
     def jmp(self, label, target, comment):
-        self.rows.append([self._iff(label), 'jmp', '@{}'.format(target), comment])
+        self.rows.append([self._iff(label), 'jmp', f'@{target}', comment])
 
     def stop(self, label, comment):
         self.rows.append([self._iff(label), 'stop', '', comment])
 
     def forloop(self, label, start, reg, comment):
-        self.rows.append([self._iff(label), 'loop', '{},@{}'.format(reg, start), comment])
+        self.rows.append([self._iff(label), 'loop', f'{reg},@{start}', comment])
 
 
 # todo this doesnt work for custom waveform functions - use visitors?
@@ -270,7 +271,7 @@ def _prepare_pulse(description, gain=0.0):
     elif wf_func is None:
         return None, description
     else:
-        raise ValueError("Unknown wave {}".format(wf_func))
+        raise ValueError(f"Unknown wave {wf_func}")
 
 
 def _extract_device_output_sequencer(hw_mapping_inverted: dict, port: str, clock: str):
@@ -297,7 +298,7 @@ def _extract_device_output_sequencer(hw_mapping_inverted: dict, port: str, clock
     """
     portclock = _portclock(port, clock)
     if portclock not in hw_mapping_inverted:
-        raise ValueError("No device found for the combination of port '{}' and clock '{}'".format(port, clock))
+        raise ValueError(f"No device found for the combination of port '{port}' and clock '{clock}'")
     return hw_mapping_inverted[portclock]
 
 
@@ -435,13 +436,13 @@ def _extract_gain(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, 
     return hardware_mapping[qcm][output]['gain']
 
 
-def _portclock(port: str, clock: str):
+def _portclock(port: str, clock: str) -> Optional[str]:
     """
     Creates the unique ID of port and clock in a fixed format
     """
     if port is None or clock is None:
         return None
-    return "{}_{}".format(port, clock)
+    return f"{port}_{clock}"
 
 
 def _invert_hardware_mapping(hardware_mapping):
@@ -470,8 +471,7 @@ def _invert_hardware_mapping(hardware_mapping):
                 if not portclock:  # undefined port/clock
                     continue
                 if portclock in portclock_reference:
-                    raise ValueError("Duplicate port and clock combination: '{}' and '{}'"
-                                     .format(seq_cfg['port'], seq_cfg['clock']))
+                    raise ValueError(f"Duplicate port and clock combination: '{seq_cfg['port']}' and '{seq_cfg['clock']}'")
                 portclock_reference[portclock] = (device_name, output, seq_name)
     return portclock_reference
 
@@ -521,11 +521,11 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 
         if len(op['pulse_info']) == 0:
             # this exception is raised when no pulses have been added yet.
-            raise ValueError('Operation {} has no pulse info'.format(op.name))
+            raise ValueError(f'Operation {op.name} has no pulse info')
 
         for p_ref in op['pulse_info']:
             if 'abs_time' not in t_constr:
-                raise ValueError("Absolute timing has not been determined for the schedule '{}'".format(schedule.name))
+                raise ValueError(f"Absolute timing has not been determined for the schedule '{schedule.name}'")
 
             # copy to avoid changing the reference operation in the master schedule list
             p = p_ref.copy()
@@ -560,7 +560,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 elif pulsar_type == 'Pulsar_QRM':
                     sequencer_t = QRM_sequencer
                 else:
-                    raise ValueError("Unrecognized Pulsar type '{}'".format(pulsar_type))
+                    raise ValueError(f"Unrecognized Pulsar type '{pulsar_type}'")
 
                 nco_freq, lo_freq, _ = _extract_nco_freq(
                     hardware_mapping=mapping,
@@ -620,11 +620,11 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
             seq_cfg['instr_cfg'] = resource.data
 
             if debug:
-                qasm_dump = os.path.join(seq_folder, '{}_sequencer.q1asm'.format(resource.name))
+                qasm_dump = os.path.join(seq_folder, f'{resource.name}_sequencer.q1asm')
                 with open(qasm_dump, 'w') as f:
                     f.write(seq_cfg['program'])
 
-            seq_fn = os.path.join(seq_folder, '{}_sequencer_cfg.json'.format(resource.name))
+            seq_fn = os.path.join(seq_folder, f'{resource.name}_sequencer_cfg.json')
             with open(seq_fn, 'w') as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
@@ -638,9 +638,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
 def _check_driver_version(instr, ver):
     driver_vers = instr.get_idn()['build']['driver']['version']
     if driver_vers != ver:
-        raise ValueError("Backend requires {} to have driver version {}, found {} installed.".format(
-            instr.get_idn()['device'], ver, driver_vers
-        ))
+        device = instr.get_idn()['device']
+        raise ValueError(f"Backend requires {device} to have driver version {ver}, found {driver_vers} installed.")
 
 
 def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = None):
@@ -679,13 +678,13 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 seq_idx = 1
             else:
                 # real outputs are not yet supported
-                raise ValueError('Output {} not supported.'.format(io))
+                raise ValueError(f'Output {io} not supported.')
 
             if pulsar_dict['name'] not in pulsars:
                 try:
                     pulsar = Instrument.find_instrument(pulsar_dict['name'])
                 except KeyError as e:
-                    raise KeyError('Could not find instrument '+str(e))
+                    raise KeyError(f'Could not find instrument "{str(e)}"')
 
                 pulsars[pulsar_dict['name']] = pulsar
 
@@ -697,7 +696,7 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                     if pulsar.reference_source() != 'external':
                         pulsar.reference_source('external')
                 else:
-                    raise ValueError("Unrecognized reference setting {}".format(pulsar_dict['ref']))
+                    raise ValueError(f"Unrecognized reference setting {pulsar_dict['ref']}")
             else:
                 pulsar = pulsars[pulsar_dict['name']]
 
@@ -707,25 +706,25 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
             else:
                 _check_driver_version(pulsar, QCM_DRIVER_VER)
 
-            pulsar.set("sequencer{}_sync_en".format(seq_idx), True)
+            pulsar.set(f"sequencer{seq_idx}_sync_en", True)
             # FIXME, re-add hardware modulation when hardware demodulation is supported
             # pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
             # pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
             # mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
             # pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
             for path in (0, 1):
-                awg_path = "_awg_path{}".format(path)
-                pulsar.set('sequencer{}_cont_mode_en{}'.format(seq_idx, awg_path), False)
-                pulsar.set('sequencer{}_cont_mode_waveform_idx{}'.format(seq_idx, awg_path), 0)
-                pulsar.set('sequencer{}_upsample_rate{}'.format(seq_idx, awg_path), 0)
-                pulsar.set('sequencer{}_gain{}'.format(seq_idx, awg_path), 1)
-                pulsar.set('sequencer{}_offset{}'.format(seq_idx, awg_path), 0)
+                awg_path = f"_awg_path{path}"
+                pulsar.set(f'sequencer{seq_idx}_cont_mode_en{awg_path}', False)
+                pulsar.set(f'sequencer{seq_idx}_cont_mode_waveform_idx{awg_path}', 0)
+                pulsar.set(f'sequencer{seq_idx}_upsample_rate{awg_path}', 0)
+                pulsar.set(f'sequencer{seq_idx}_gain{awg_path}', 1)
+                pulsar.set(f'sequencer{seq_idx}_offset{awg_path}', 0)
 
             if is_qrm:
-                pulsar.set("sequencer{}_trigger_mode_acq_path0".format(seq_idx), "sequencer")
-                pulsar.set("sequencer{}_trigger_mode_acq_path1".format(seq_idx), "sequencer")
+                pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path0", "sequencer")
+                pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer")
 
-            pulsar.set('sequencer{}_waveforms_and_program'.format(seq_idx), config_fn)
+            pulsar.set(f'sequencer{seq_idx}_waveforms_and_program', config_fn)
 
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
@@ -749,11 +748,11 @@ def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
         I = arr.real  # noqa: E741
         Q = arr.imag  # real-valued arrays automatically evaluate to an array of zeros
         device = 'awg' if pulse_id not in acquisitions else 'acq'
-        sequencer_cfg["waveforms"][device]["{}_I".format(pulse_id)] = {
+        sequencer_cfg["waveforms"][device][f"{pulse_id}_I"] = {
             "data": I,
             "index": len(sequencer_cfg["waveforms"][device])
         }
-        sequencer_cfg["waveforms"][device]["{}_Q".format(pulse_id)] = {
+        sequencer_cfg["waveforms"][device][f"{pulse_id}_Q"] = {
             "data": Q,
             "index": len(sequencer_cfg["waveforms"][device])
         }
@@ -792,7 +791,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
 
     def get_pulse_runtime(pulse_id):
         device = 'awg' if pulse_id not in acquisitions else 'acq'
-        return len(pulse_dict[device]["{}_I".format(pulse_id)]['data'])
+        return len(pulse_dict[device][f"{pulse_id}_I"]['data'])
 
     def get_pulse_finish_time(pulse_idx):
         start_time = timing_tuples[pulse_idx][0]
@@ -805,8 +804,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
             if duration > 0:
                 q1asm.wait(label, duration, comment)
         except ValueError as e:
-            raise ValueError("Generated wait for '{}':'{}' caused exception '{}'"
-                             .format(previous[0], previous[1], str(e)))
+            raise ValueError(f"Generated wait for '{previous[0]}':'{previous[1]}' caused exception '{str(e)}'")
 
     q1asm = Q1ASMBuilder()
     q1asm.move('', iterations, 'R0', '')
@@ -814,8 +812,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     q1asm.set_mrk('', 1)
 
     if timing_tuples and get_pulse_finish_time(-1) > sequence_duration:
-        raise ValueError("Provided sequence_duration '{}' is less than the total runtime of this sequence ({})."
-                         .format(sequence_duration, get_pulse_finish_time(-1)))
+        raise ValueError(f"Provided sequence_duration '{sequence_duration}' is less than the total runtime of this sequence ({get_pulse_finish_time(-1)}).")
 
     clock = 0  # current execution time
     for idx, (timing, pulse_id, hardware_modulations) in enumerate(timing_tuples):
@@ -827,8 +824,8 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
 
         q1asm.update_parameters(hardware_modulations, device)
 
-        I = pulse_dict[device]["{}_I".format(pulse_id)]['index']  # noqa: E741
-        Q = pulse_dict[device]["{}_Q".format(pulse_id)]['index']
+        I = pulse_dict[device][f"{pulse_id}_I"]['index']  # noqa: E741
+        Q = pulse_dict[device][f"{pulse_id}_Q"]['index']
 
         # duration should be the pulse length or next start time
         next_timing = timing_tuples[idx + 1][0] if idx < len(timing_tuples) - 1 else np.Inf
