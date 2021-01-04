@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # Description:    Library containing common resources for use with the quantify.scheduler.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 
 '''
@@ -14,7 +14,7 @@ from quantify.utilities.general import load_json_schema
 
 class Resource(UserDict):
     """
-    A resource corresponds to a physical resource such as an AWG channel, a qubit, or a classical register.
+    A resource corresponds to a physical resource such as a port or a clock.
 
     .. jsonschema:: schemas/resource.json
     """
@@ -28,22 +28,6 @@ class Resource(UserDict):
     @property
     def name(self):
         return self.data['name']
-
-
-
-class PortResource(Resource):
-    def __init__(self, name: str):
-        """
-        A port resource to which pulses can be scheduled.
-
-        Parameters
-        -------------
-        name : str
-            the name of this port
-
-        """
-        self.data = {'name': name,
-                     'type': str(self.__class__.__name__)}
 
 
 class ClockResource(Resource):

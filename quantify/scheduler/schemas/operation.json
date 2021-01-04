@@ -20,7 +20,7 @@
      "description": "A unitary matrix describing the operation."
     },
     "qubits": {
-     "description": "A list of strings indicating the qubits the gate acts on.",
+     "description": "A list of strings indicating the qubits the gate acts on. Valid qubits are strings that appear in the device_config.json file.",
      "type": "array"
     },
     "tex": {

@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # Description:    Module containing functions for drawing pulse schemes and circuit diagrams using matplotlib.
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 import logging
 import inspect
@@ -13,6 +13,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.utilities.general import import_func_from_string
+
+logger = logging.getLogger(__name__)
 
 
 def new_pulse_fig(figsize=None):
@@ -286,6 +288,6 @@ def pulse_diagram_plotly(schedule,
             fig.update_yaxes(row=r+1, col=1, tickformat=".2s", hoverformat='.3s',
                              ticksuffix='V', title=list(ch_map.keys())[r], range=[-1.1, 1.1])
         except Exception:
-            logging.warning("{} not enough channels".format(r))
+            logger.warning("{} not enough channels".format(r))
 
     return fig
