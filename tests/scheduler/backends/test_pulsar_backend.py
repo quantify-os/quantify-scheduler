@@ -274,7 +274,7 @@ def test_pulsar_assembler_backend(dummy_pulsars):
     for theta in np.linspace(0, 360, 21):
         sched.add(init_all)
         sched.add(x90_q0)
-        # FIXME real-valued outputs are not yet supported in the pulsar backend.
+        # FIXME real-valued outputs are not yet supported in the pulsar backend. issue #44
         # sched.add(operation=CZ(qC=q0, qT="q1"))
         sched.add(Rxy(theta=theta, phi=0, qubit="q0"))
         sched.add(Rxy(theta=90, phi=0, qubit=q1))
