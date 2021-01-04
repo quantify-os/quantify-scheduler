@@ -1,10 +1,11 @@
 # -----------------------------------------------------------------------------
 # Description:    Plotting functions used in the visualization backend of the sequencer.
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+import logging
 import quantify.scheduler.visualization.pulse_scheme as ps
-from quantify.scheduler.compilation import _determine_absolute_timing
+from quantify.scheduler.compilation import determine_absolute_timing
 from quantify.utilities.general import import_func_from_string
 
 
@@ -66,7 +67,7 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
         - matplotlib figure object.
         - matplotlib axis object.
     """
-    schedule = _determine_absolute_timing(schedule, 'ideal')
+    schedule = determine_absolute_timing(schedule, 'ideal')
 
     qubits = set()
     for _, op in schedule.operations.items():
@@ -100,11 +101,9 @@ def circuit_diagram_matplotlib(schedule, figsize=None):
             idxs = [qubit_map[q] for q in op['gate_info']['qubits']]
             plot_func(ax, time=time, qubit_idxs=idxs, tex=op['gate_info']['tex'])
         elif op.valid_pulse:
-            plot_func = import_func_from_string('quantify.scheduler.visualization.circuit_diagram.gate_box')
-            qubits = [p['channel'] for p in op['pulse_info']]
-            idxs = [qubit_map[q] for q in qubits]
-            time = t_constr['abs_time']
-            plot_func(ax, time=time, qubit_idxs=idxs, tex='Pulse')
+            logging.warning("Elided drawing of pulse in circuit diagram at time '{}' (not currently supported)."
+                            .format(time))
+            continue
         else:
             raise RuntimeError("Unknown operation")
 

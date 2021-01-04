@@ -24,6 +24,7 @@ requirements = [
     'plotly',
     'jsonschema',
     'quantify-core>=0.2.0',
+    'qblox-instruments>=0.2.1',
 ]
 
 setup_requirements = ['pytest-runner', ]

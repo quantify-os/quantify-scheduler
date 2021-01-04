@@ -1,12 +1,13 @@
 # -----------------------------------------------------------------------------
 # Description:    Module containing the core concepts of the scheduler.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from uuid import uuid4
 from collections import UserDict
 import jsonschema
 from quantify.utilities.general import make_hash, load_json_schema
+from quantify.scheduler.resources import Resource, BasebandClockResource
 
 
 class Schedule(UserDict):
@@ -41,6 +42,10 @@ class Schedule(UserDict):
         self.data['resource_dict'] = {}
         self.data['name'] = 'nameless'
 
+        # This is used to define baseband pulses and is expected to always be present
+        # in any schedule.
+        self.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
+
         if name is not None:
             self.data['name'] = name
 
@@ -54,7 +59,10 @@ class Schedule(UserDict):
     @property
     def operations(self):
         """
-        Operation dictionary, keys are the has of operations values are instances of :class:`Operation`.
+        A dictionary of all unique operations used in the schedule.
+        This specifies information on *what* operation to apply *where*.
+
+        The keys correspond to the :meth:`~Operation.hash` and values are instances of :class:`Operation`.
         """
         return self.data['operation_dict']
 
@@ -62,6 +70,12 @@ class Schedule(UserDict):
     def timing_constraints(self):
         """
         A list of dictionaries describing timing constraints between operations.
+
+        Each item in the list is a dictionary with the following keys:
+            [label, rel_time, ref_op, ref_pt_new, ref_pt, operation_hash]
+
+        The label is used as a unique identifier that can be used as a reference for other operations
+        the operation_hash refers to the hash of a unique operation in :meth:`~Schedule.operations`.
         """
         return self.data['timing_constraints']
 
@@ -81,7 +95,10 @@ class Schedule(UserDict):
         Add a resource such as a channel or qubit to the schedule.
         """
         assert Resource.is_valid(resource)
-        self.data['resource_dict'][resource.name] = resource
+        if resource.name in self.data['resource_dict']:
+            raise ValueError("Key {} is already present".format(resource.name))
+        else:
+            self.data['resource_dict'][resource.name] = resource
 
     def __repr__(self):
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
@@ -89,9 +106,9 @@ class Schedule(UserDict):
             len(self.data['operation_dict']), len(self.data['timing_constraints']))
 
     @classmethod
-    def is_valid(cls, operation):
+    def is_valid(cls, schedule):
         scheme = load_json_schema(__file__, 'schedule.json')
-        jsonschema.validate(operation.data, scheme)
+        jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 
     def add(self, operation, rel_time: float = 0,
@@ -185,7 +202,6 @@ class Operation(UserDict):
         self.data['gate_info'] = {}
         self.data['pulse_info'] = []  # A list of pulses
         self.data['logic_info'] = {}
-        self.modulations = None
 
         if name is not None:
             self.data['name'] = name
@@ -246,34 +262,43 @@ class Operation(UserDict):
     def is_valid(cls, operation):
         scheme = load_json_schema(__file__, 'operation.json')
         jsonschema.validate(operation.data, scheme)
+        operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
 
     @property
     def valid_gate(self):
+        """
+        An operation is a valid gate if it contains information on how
+        to represent the operation on the gate level.
+        """
         if self.data['gate_info']:
             return True
         return False
 
     @property
     def valid_pulse(self):
+        """
+        An operation is a valid pulse if it contains information on how
+        to represent the operation on the pulse level.
+        """
         if self.data['pulse_info']:
             return True
         return False
 
-
-class Resource(UserDict):
     """
-    A resource corresponds to a physical resource such as an AWG channel, a qubit, or a classical register.
-
-    .. jsonschema:: schemas/resource.json
+    Used by the compiler to identify pulses which must be acquired rather than played
     """
+    ACQUISITION_IDENTIFIER = "is_acquisition"
 
-    @classmethod
-    def is_valid(cls, operation):
-        scheme = load_json_schema(__file__, 'resource.json')
-        jsonschema.validate(operation.data, scheme)
-        return True  # if not exception was raised during validation
+    def mark_as_acquisition(self):
+        """
+        Marks all pulses within an operation as acquisition.
 
-    @property
-    def name(self):
-        return self.data['name']
+        For a typical measurement operation, this is applied to the acquisition pulse (operation) before
+        it is added to the main measurement operation.
+        """
+        assert self.valid_pulse
+        for p in self.data['pulse_info']:
+            p[self.ACQUISITION_IDENTIFIER] = True
+
+
