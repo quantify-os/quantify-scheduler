@@ -67,14 +67,14 @@ class QCM_sequencer(Resource):
                      }
 
     @property
-    def timing_tuples(self):
+    def timing_tuples(self) -> list:
         """
-        A list of timing tuples con
+        A list of timing tuples.
         """
         return self._timing_tuples
 
     @property
-    def pulse_dict(self):
+    def pulse_dict(self) -> dict:
         return self._pulse_dict
 
 
