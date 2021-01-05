@@ -58,3 +58,22 @@ def test_hybrid_circuit_diagram_modulated_matplotlib():
 
     f, _ = circuit_diagram_matplotlib(schedule)
     return f
+
+
+@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
+def test_hybrid_circuit_diagram_unknown_port_matplotlib():
+    schedule = Schedule('Test experiment')
+
+    q0, q1 = ('q0', 'q1')
+    ref_label_1 = 'my_label'
+
+    schedule.add_resource(ClockResource(name="q0.01", freq=6.02e9))
+
+    schedule.add(Reset(q0, q1))
+    schedule.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
+    schedule.add(SquarePulse(0.8, 20e-9, port='unknown_port', clock='q0.01'))
+    schedule.add(operation=CNOT(qC=q0, qT=q1))
+    schedule.add(Measure(q0, q1), label='M0')
+
+    f, _ = circuit_diagram_matplotlib(schedule)
+    return f
