@@ -1,15 +1,13 @@
 # -----------------------------------------------------------------------------
 # Description:    Library standard pulses for use with the quantify.scheduler.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from .types import Operation
+from quantify.scheduler.resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
-    """
-    An idle pulse performing no actions for a certain duration.
-    """
 
     def __init__(self, duration):
         """
@@ -24,22 +22,14 @@ class IdlePulse(Operation):
             'wf_func': None,
             't0': 0,
             'duration': duration,
-            'freq_mod': 0,
-            'channel': None}]}
+            'clock': BasebandClockResource.IDENTITY,
+            'port': None}]}
         super().__init__(name=data['name'], data=data)
 
 
-class NumericPulse(Operation):
-    """
-    """
+class RampPulse(Operation):
 
-    def __init__(self, t0):
-        raise NotImplementedError
-
-
-class SquarePulse(Operation):
-
-    def __init__(self, amp: float, duration: float, ch, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
         """
         A single-channel square pulse.
 
@@ -49,21 +39,22 @@ class SquarePulse(Operation):
             Amplitude of the Gaussian envelope.
         duration : float
             Duration of the pulse in seconds.
-        ch : str
-            channel of the pulse.
+        port : str
+            Port of the pulse.
         """
 
-        data = {'name': 'SquarePulse', 'pulse_info': [{
-            'wf_func': 'quantify.scheduler.waveforms.square',
+        data = {'name': 'RampPulse', 'pulse_info': [{
+            'wf_func': 'quantify.scheduler.waveforms.ramp',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'channel': ch}]}
+            'clock': clock,
+            'port': port}]}
         super().__init__(name=data['name'], data=data)
 
 
-class ModSquarePulse(Operation):
+class SquarePulse(Operation):
 
-    def __init__(self, amp: float, duration: float, ch: str, phase: float = 0, freq_mod: float = 0, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, phase: float = 0, t0: float = 0):
         """
         A two-channel square pulse.
 
@@ -73,21 +64,24 @@ class ModSquarePulse(Operation):
             Amplitude of the envelope.
         duration : float
             Duration of the pulse in seconds.
-        ch : str
-            channel of the pulse, must be capable of playing a complex waveform.
+        port : str
+            Port of the pulse, must be capable of playing a complex waveform.
         phase : float
             Phase of the pulse in degrees.
-        freq_mod :
-            Modulation frequency in Hz.
-
+        clock : str
+            Clock used to modulate the pulse.
         """
+        if phase != 0:
+            # Because of how clock interfaces were changed.
+            # FIXME: need to be able to add phases to the waveform separate from the clock.
+            raise NotImplementedError
 
         data = {'name': 'ModSquarePulse', 'pulse_info': [{
             'wf_func': 'quantify.scheduler.waveforms.square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'freq_mod': freq_mod,
-            'channel': ch}]}
+            'clock': clock,
+            'port': port}]}
         super().__init__(name=data['name'], data=data)
 
 
@@ -96,13 +90,13 @@ class SoftSquarePulse(Operation):
     Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
     """
 
-    def __init__(self, amp: float, duration: float, ch, t0: float = 0):
+    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
         data = {'name': 'SoftSquarePulse', 'pulse_info': [{
             'wf_func': 'quantify.scheduler.waveforms.soft_square',
             'amp': amp, 'duration': duration,
             't0': t0,
-            'freq_mod': 0,  # flux pulses cannot have a modulation frequency
-            'channel': ch}]}
+            'clock': clock,
+            'port': port}]}
         super().__init__(name=data['name'], data=data)
 
 
@@ -133,7 +127,7 @@ class DRAGPulse(Operation):
            Phys. Rev. Lett. 103, 110501 (2009).*
     """
 
-    def __init__(self, G_amp: float, D_amp: float, phase: float, freq_mod: float, duration: float, ch, t0: float = 0):
+    def __init__(self, G_amp: float, D_amp: float, phase: float, clock: str, duration: float, port: str, t0: float = 0):
         """
         Parameters
         ------------
@@ -147,16 +141,16 @@ class DRAGPulse(Operation):
             After how many sigma the Gaussian is cut off.
         phase : float
             Phase of the pulse in degrees.
-        freq_mod :
-            Modulation frequency in Hz.
-        ch : str
-            channel of the pulse, must be capable of playing a complex waveform.
+        clock : str
+            Clock used to modulate the pulse.
+        port : str
+            Port of the pulse, must be capable of carrying a complex waveform.
         """
 
         data = {'name': "DRAG", 'pulse_info': [{
             'wf_func': 'quantify.scheduler.waveforms.drag',
             'G_amp': G_amp, 'D_amp': D_amp, 'duration': duration,
-            'phase': phase, 'nr_sigma': 4, 'freq_mod': freq_mod,
-            'channel': ch,  't0': t0}]}
+            'phase': phase, 'nr_sigma': 4, 'clock': clock,
+            'port': port,  't0': t0}]}
 
         super().__init__(name=data['name'], data=data)

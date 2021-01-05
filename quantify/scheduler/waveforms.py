@@ -4,17 +4,18 @@
 #                 Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
 #                 sensitivity and interaction strengths and qubit frequencies.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020)
+# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 import numpy as np
 from scipy import signal
 
 
 def square(t, amp):
-    """
-    A square pulse.
-    """
     return amp*np.ones(len(t))
+
+
+def ramp(t, amp):
+    return np.linspace(0, amp, len(t))
 
 
 def soft_square(t, amp):
