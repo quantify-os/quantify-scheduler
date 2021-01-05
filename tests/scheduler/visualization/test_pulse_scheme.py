@@ -18,7 +18,7 @@ with open(cfg_f, 'r') as f:
 cm = 1 / 2.54  # inch to cm conversion
 
 
-@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
 def test_plot_pulses_single_q():
     fig, ax = pls.new_pulse_fig((7*cm, 3*cm))
 
@@ -35,7 +35,7 @@ def test_plot_pulses_single_q():
     return fig
 
 
-@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
 def test_plot_pulses_n_q():
     # Two-qubit pulse scheme (Grover's algorithm)
     fig = plt.figure(figsize=(9*cm, 5*cm))
