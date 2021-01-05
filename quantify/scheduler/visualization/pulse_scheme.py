@@ -3,6 +3,7 @@
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, Union, List
 import logging
 import inspect
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule
 
 
-def new_pulse_fig(figsize=None) -> Tuple['Figure', Union['Axes', List['Axes']]]:
+def new_pulse_fig(figsize=None) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Open a new figure and configure it to plot pulse schemes.
     """
@@ -170,14 +171,14 @@ def box_text(ax, x0, y0, text='', w=1.1, h=.8, color='black', fillcolor=None, te
     ax.text(x0, y0, text, ha='center', va='center', zorder=6, size=fontsize, color=textcolor).set_clip_on(True)
 
 
-def pulse_diagram_plotly(schedule: 'Schedule',
+def pulse_diagram_plotly(schedule: Schedule,
                          port_list: list = None,
                          fig_ch_height: float = 150,
                          fig_width: float = 1000,
                          modulation_if: float = 0,
                          modulation: bool = True,
                          sampling_rate: float = 1e9
-                         ) -> 'Figure':
+                         ) -> Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
 
