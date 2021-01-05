@@ -3,13 +3,20 @@
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from typing import TYPE_CHECKING, Tuple, Union, List
 import logging
 import quantify.scheduler.visualization.pulse_scheme as ps
 from quantify.scheduler.compilation import determine_absolute_timing
 from quantify.utilities.general import import_func_from_string
 
+import json
+if TYPE_CHECKING:
+    from quantify.scheduler.types import Schedule
+    from matplotlib.figure import Figure
+    from matplotlib.axes import Axes
 
-def gate_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
+
+def gate_box(ax, time: float, qubit_idxs: List[int], tex: str, **kw):
     """
     A box for a single gate containing a label.
     """
@@ -17,13 +24,13 @@ def gate_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
         ps.box_text(ax, x0=time, y0=qubit_idx, text=tex, fillcolor='C0', w=.8, h=.5, **kw)
 
 
-def pulse_box(ax, time: float, qubit_idxs: list, tex: str, **kw):
+def pulse_box(ax, time: float, qubit_idxs: List[int], tex: str, **kw):
     for qubit_idx in qubit_idxs:
         ps.box_text(ax, x0=time, y0=qubit_idx, fillcolor='w', w=.66, h=.3, **kw)
         ax.text(time, qubit_idx+0.3, tex, ha='center', va='center', zorder=6)
 
 
-def meter(ax, time: float, qubit_idxs: list, tex: str, **kw):
+def meter(ax, time: float, qubit_idxs: List[int], tex: str, **kw):
     """
     A simple meter to depict a measurement.
     """
@@ -31,7 +38,7 @@ def meter(ax, time: float, qubit_idxs: list, tex: str, **kw):
         ps.meter(ax, x0=time, y0=qubit_idx, fillcolor='C4', y_offs=0, w=.8, h=.5, **kw)
 
 
-def cnot(ax, time: float, qubit_idxs: list, tex: str, **kw):
+def cnot(ax, time: float, qubit_idxs: List[int], tex: str, **kw):
     """
     Markers to denote a CNOT gate between two qubits.
     """
@@ -39,14 +46,14 @@ def cnot(ax, time: float, qubit_idxs: list, tex: str, **kw):
     ax.plot([time], qubit_idxs[1], marker='+', markersize=12, color='white')
 
 
-def cz(ax, time: float, qubit_idxs: list, tex: str, **kw):
+def cz(ax, time: float, qubit_idxs: List[int], tex: str, **kw):
     """
     Markers to denote a CZ gate between two qubits.
     """
     ax.plot([time, time], qubit_idxs, marker='o', markersize=15, color='C1')
 
 
-def reset(ax, time: float, qubit_idxs: list, tex: str, **kw):
+def reset(ax, time: float, qubit_idxs: List[int], tex: str, **kw):
     """
     A broken line to denote qubit initialization.
     """
@@ -64,7 +71,7 @@ def _locate_qubit_in_address(qubit_map, address):
     raise ValueError("Could not resolve address '{}'".format(address))
 
 
-def circuit_diagram_matplotlib(schedule, figsize=None):
+def circuit_diagram_matplotlib(schedule: 'Schedule', figsize=None) -> Tuple['Figure', Union['Axes', List['Axes']]]:
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
 
