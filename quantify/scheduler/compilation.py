@@ -3,6 +3,8 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
+from typing import TYPE_CHECKING, Callable
 import logging
 import jsonschema
 import importlib
@@ -11,8 +13,11 @@ from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
 from quantify.utilities.general import load_json_schema
 
+if TYPE_CHECKING:
+    from quantify.scheduler import Schedule
 
-def determine_absolute_timing(schedule, time_unit='physical'):
+
+def determine_absolute_timing(schedule: Schedule, time_unit='physical'):
     """
     Determines the absolute timing of a schedule based on the timing constraints.
 
@@ -97,7 +102,7 @@ def _find_edge(device_cfg, q0, q1, op_name):
     return edge_cfg
 
 
-def add_pulse_information_transmon(schedule, device_cfg: dict):
+def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
     """
     Adds pulse information specified in the device config to the schedule.
 

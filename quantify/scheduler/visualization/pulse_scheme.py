@@ -3,9 +3,12 @@
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
+from typing import TYPE_CHECKING, Tuple, Union, List
 import logging
 import inspect
 import numpy as np
+
 import matplotlib.pyplot as plt
 import matplotlib.patches
 from plotly.subplots import make_subplots
@@ -16,8 +19,13 @@ from quantify.utilities.general import import_func_from_string
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from matplotlib.axes import Axes
+    from quantify.scheduler.types import Schedule
 
-def new_pulse_fig(figsize=None):
+
+def new_pulse_fig(figsize=None) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Open a new figure and configure it to plot pulse schemes.
     """
@@ -34,7 +42,7 @@ def new_pulse_fig(figsize=None):
     return fig, ax
 
 
-def new_pulse_subplot(fig, *args, **kwargs):
+def new_pulse_subplot(fig: 'Figure', *args, **kwargs) -> 'Axes':
     """
     Add a new subplot configured for plotting pulse schemes to a figure.
 
@@ -49,7 +57,7 @@ def new_pulse_subplot(fig, *args, **kwargs):
 
 
 def mwPulse(ax, pos, y_offs=0, width=1.5, amp=1, label=None, phase=0, label_height=1.3, color='C0',
-            modulation='normal', **plot_kws):
+            modulation='normal', **plot_kws) -> float:
     """
     Draw a microwave pulse: Gaussian envelope with modulation.
     """
@@ -74,7 +82,7 @@ def mwPulse(ax, pos, y_offs=0, width=1.5, amp=1, label=None, phase=0, label_heig
     return pos + width
 
 
-def fluxPulse(ax, pos, y_offs=0, width=2.5, s=.1, amp=1.5, label=None, label_height=1.7, color='C1', **plot_kws):
+def fluxPulse(ax, pos, y_offs=0, width=2.5, s=.1, amp=1.5, label=None, label_height=1.7, color='C1', **plot_kws) -> float:
     """
     Draw a smooth flux pulse, where the rising and falling edges are given by
     Fermi-Dirac functions.
@@ -92,7 +100,7 @@ def fluxPulse(ax, pos, y_offs=0, width=2.5, s=.1, amp=1.5, label=None, label_hei
     return pos + width
 
 
-def ramZPulse(ax, pos, y_offs=0, width=2.5, s=0.1, amp=1.5, sep=1.5, color='C1'):
+def ramZPulse(ax, pos, y_offs=0, width=2.5, s=0.1, amp=1.5, sep=1.5, color='C1') -> float:
     """
     Draw a Ram-Z flux pulse, i.e. only part of the pulse is shaded, to indicate
     cutting off the pulse at some time.
@@ -110,7 +118,7 @@ def ramZPulse(ax, pos, y_offs=0, width=2.5, s=0.1, amp=1.5, sep=1.5, color='C1')
 
 
 def interval(ax, start, stop, y_offs=0, height=1.5, label=None, label_height=None, vlines=True, color='k',
-             arrowstyle='<|-|>', **plot_kws):
+             arrowstyle='<|-|>', **plot_kws) -> None:
     """
     Draw an arrow to indicate an interval.
     """
@@ -130,7 +138,7 @@ def interval(ax, start, stop, y_offs=0, height=1.5, label=None, label_height=Non
         ax.text((start + stop) / 2, label_height+y_offs, label, color=color, ha='center').set_clip_on(True)
 
 
-def meter(ax, x0, y0, y_offs=0, w=1.1, h=.8, color='black', fillcolor=None):
+def meter(ax, x0, y0, y_offs=0, w=1.1, h=.8, color='black', fillcolor=None) -> None:
     """
     Draws a measurement meter on the specified position.
     """
@@ -149,7 +157,7 @@ def meter(ax, x0, y0, y_offs=0, w=1.1, h=.8, color='black', fillcolor=None):
              zorder=5)
 
 
-def box_text(ax, x0, y0, text='', w=1.1, h=.8, color='black', fillcolor=None, textcolor='black', fontsize=None):
+def box_text(ax, x0, y0, text='', w=1.1, h=.8, color='black', fillcolor=None, textcolor='black', fontsize=None) -> None:
     """
     Draws a box filled with text at the specified position.
     """
@@ -163,14 +171,14 @@ def box_text(ax, x0, y0, text='', w=1.1, h=.8, color='black', fillcolor=None, te
     ax.text(x0, y0, text, ha='center', va='center', zorder=6, size=fontsize, color=textcolor).set_clip_on(True)
 
 
-def pulse_diagram_plotly(schedule,
+def pulse_diagram_plotly(schedule: Schedule,
                          port_list: list = None,
                          fig_ch_height: float = 150,
                          fig_width: float = 1000,
                          modulation_if: float = 0,
                          modulation: bool = True,
                          sampling_rate: float = 1e9
-                         ):
+                         ) -> Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
 
