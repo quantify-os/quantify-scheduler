@@ -7,8 +7,8 @@ from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_mat
 import matplotlib.pyplot as plt
 
 
-@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
-def test_hybrid_circuit_diagram_baseband_matplotlib():
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+def test_hybrid_circuit_diagram_matplotlib():
     schedule = Schedule('Test experiment')
 
     q0, q1 = ('q0', 'q1')
@@ -17,15 +17,14 @@ def test_hybrid_circuit_diagram_baseband_matplotlib():
     schedule.add(Reset(q0, q1))
     schedule.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
     schedule.add(operation=CNOT(qC=q0, qT=q1))
-    schedule.add(Rxy(theta=90, phi=0, qubit=q0))
     schedule.add(Measure(q0, q1), label='M0')
 
     f, _ = circuit_diagram_matplotlib(schedule)
     return f
 
 
-@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
-def test_hybrid_circuit_diagram_matplotlib():
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
+def test_hybrid_circuit_diagram_baseband_matplotlib():
     schedule = Schedule('Test experiment')
 
     q0, q1 = ('q0', 'q1')
@@ -41,7 +40,7 @@ def test_hybrid_circuit_diagram_matplotlib():
     return f
 
 
-@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_hybrid_circuit_diagram_modulated_matplotlib():
     schedule = Schedule('Test experiment')
 
@@ -60,7 +59,7 @@ def test_hybrid_circuit_diagram_modulated_matplotlib():
     return f
 
 
-@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', style='default', savefig_kwargs={'dpi': 300})
+@pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
 def test_hybrid_circuit_diagram_unknown_port_matplotlib():
     schedule = Schedule('Test experiment')
 
