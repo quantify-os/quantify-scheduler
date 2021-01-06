@@ -116,7 +116,7 @@ def circuit_diagram_matplotlib(schedule: Schedule, figsize=None) -> Tuple[Figure
 
     # Validate pulses
     # If the pulse's port address was not found then the pulse
-    # will be plotted on the 'other' lifeline.
+    # will be plotted on the 'other' timeline.
     # Note: needs to be done be done before creating figure and axhline
     # in order to avoid unnecessary redraws.
     for t_constr in schedule.timing_constraints:
@@ -163,7 +163,7 @@ def circuit_diagram_matplotlib(schedule: Schedule, figsize=None) -> Tuple[Figure
                         for pulse_info in op['pulse_info']]
             except ValueError:
                 # The pulse port was not found in the qubit_map
-                # move this pulse to the 'other' lifeline
+                # move this pulse to the 'other' timeline
                 idxs = [0]
 
             for pulse_info in op['pulse_info']:
