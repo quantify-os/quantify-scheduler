@@ -206,7 +206,6 @@ def pulse_diagram_plotly(schedule,
         auto_map = False
         nr_rows = len(port_list)
         port_map = dict(zip(port_list, range(len(port_list))))
-        print(port_map)
 
     fig = make_subplots(rows=nr_rows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
     fig.update_layout(height=fig_ch_height*nr_rows, width=fig_width, title=schedule.data['name'], showlegend=False)
