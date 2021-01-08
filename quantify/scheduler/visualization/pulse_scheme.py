@@ -319,7 +319,12 @@ def pulse_diagram_plotly(schedule: Schedule,
                              range=[-1.1, 1.1])
 
     fig.update_xaxes(row=ports_length, col=1, title='Time',
-                     tickformat=".4s",
+                     tickformatstops=[
+                         dict(dtickrange=[None, 1e-9], value=".10s"),
+                         dict(dtickrange=[1e-9, 1e-6], value=".7s"),
+                         dict(dtickrange=[1e-6, 1e-3], value=".4s"),
+                     ],
+                     ticksuffix='s',
                      rangeslider_visible=True)
 
     return fig
