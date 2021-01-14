@@ -321,7 +321,7 @@ def _extract_device_output_sequencer(hw_mapping_inverted: dict, port: str, clock
     return hw_mapping_inverted[portclock]
 
 
-def _extract_nco_en(hardware_mapping: dict, hw_mapping_inverted: dict,port: str, clock: str):
+def _extract_nco_en(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str):
     """
     Extracts whether or not modulation with the nco is enabled in the hardware_mapping. Is key is absent,
     default to False.
@@ -339,7 +339,7 @@ def _extract_nco_en(hardware_mapping: dict, hw_mapping_inverted: dict,port: str,
 
 
 def _extract_interm_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: str, clock: str,
-                      clock_freq: float):
+                         clock_freq: float):
     """
     Determines the lo and nco frequencies based on the targetted clock frequency and the hardware mapping.
 
@@ -625,10 +625,10 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 # Calculate the numerical waveform using the wf_func
                 wf = wf_func(t=t, **wf_kwargs)
                 nco_en = _extract_nco_en(hardware_mapping=mapping,
-                    hw_mapping_inverted=portclock_mapping,
-                    port=port,
-                    clock=clock_id
-                    )
+                                         hw_mapping_inverted=portclock_mapping,
+                                         port=port,
+                                         clock=clock_id
+                                         )
                 if nco_en:
                     raise NotImplementedError("Modulation using the nco is not yet implemented in pulsar_backend")
                 else:
