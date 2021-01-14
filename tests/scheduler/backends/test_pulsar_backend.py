@@ -94,18 +94,19 @@ def test_bad_pulse_timings():
             'drag_ID_Q': {'data': np.ones(2), 'index': 3}
         }
     }
+    pulsar_type = 'QCM_sequencer'
 
     with pytest.raises(ValueError, match="Generated wait for '0':'drag_ID' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_pulse_timings, dummy_pulse_data, short_pulse_timings[-1][0] + 4, set(), 1)
+        build_q1asm(short_pulse_timings, dummy_pulse_data, short_pulse_timings[-1][0] + 4, set(), 1, pulsar_type)
 
     with pytest.raises(ValueError, match="Generated wait for '0':'square_id' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_wait_timings, dummy_pulse_data, 10, set(), 1)
+        build_q1asm(short_wait_timings, dummy_pulse_data, 10, set(), 1, pulsar_type)
 
     with pytest.raises(ValueError, match="Generated wait for '4':'square_id' caused exception 'duration 2ns < "
                                          "cycle time 4ns'"):
-        build_q1asm(short_final_wait, dummy_pulse_data, 10, set(), 1)
+        build_q1asm(short_final_wait, dummy_pulse_data, 10, set(), 1, pulsar_type)
 
 
 def test_overflowing_instruction_times():
@@ -119,13 +120,15 @@ def test_overflowing_instruction_times():
             'square_ID_Q': {'data': np.zeros(len(real)), 'index': 1}
         }
     }
-    program_str = build_q1asm(pulse_timings, pulse_data, len(real), set(), 1)
+    pulsar_type = 'QCM_sequencer'
+
+    program_str = build_q1asm(pulse_timings, pulse_data, len(real), set(), 1, pulsar_type)
     # regenerate_ref_file('ref_test_large_plays_q1asm', program_str)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_plays_q1asm'), 'r') as f:
         assert program_str == f.read()
 
     pulse_timings.append((229380 + pow(2, 16), 'square_ID', None))
-    program_str = build_q1asm(pulse_timings, pulse_data, 524296, set(), 1)
+    program_str = build_q1asm(pulse_timings, pulse_data, 524296, set(), 1, pulsar_type)
     # regenerate_ref_file('ref_test_large_waits_q1asm', program_str)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_large_waits_q1asm'), 'r') as f:
         assert program_str == f.read()
@@ -154,34 +157,36 @@ def test_build_q1asm():
         }
     }
 
-    program_str = build_q1asm(pulse_timings, pulse_data, 20, set(), 1)
+    pulsar_type = 'QCM_sequencer'
+
+    program_str = build_q1asm(pulse_timings, pulse_data, 20, set(), 1, pulsar_type)
     # regenerate_ref_file('ref_test_build_q1asm', program_str)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm'), 'r') as f:
         assert program_str == f.read()
 
-    program_str_sync = build_q1asm(pulse_timings, pulse_data, 30, set(), 1)
+    program_str_sync = build_q1asm(pulse_timings, pulse_data, 30, set(), 1, pulsar_type)
     # regenerate_ref_file('ref_test_build_q1asm_sync', program_str_sync)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_sync'), 'r') as f:
         assert program_str_sync == f.read()
 
-    program_str_loop = build_q1asm(pulse_timings, pulse_data, 20, set(), 20)
+    program_str_loop = build_q1asm(pulse_timings, pulse_data, 20, set(), 20, pulsar_type)
     # regenerate_ref_file('ref_test_build_q1asm_loop', program_str_loop)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_loop'), 'r') as f:
         assert program_str_loop == f.read()
 
-    program_str_meas = build_q1asm(pulse_timings, pulse_data, 20, {'square_id'}, 1)
+    program_str_meas = build_q1asm(pulse_timings, pulse_data, 20, {'square_id'}, 1, pulsar_type)
     # regenerate_ref_file('ref_test_build_q1asm_meas', program_str_meas)
     with open(pathlib.Path(__file__).parent.joinpath('ref_test_build_q1asm_meas'), 'r') as f:
         assert program_str_meas == f.read()
 
     err = r"Provided sequence_duration.*4.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
-        build_q1asm(pulse_timings, pulse_data, 4, set(), 1)
+        build_q1asm(pulse_timings, pulse_data, 4, set(), 1, pulsar_type)
 
     # sequence_duration greater than final timing but less than total runtime
     err = r"Provided sequence_duration.*18.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
-        build_q1asm(pulse_timings, pulse_data, 18, set(), 1)
+        build_q1asm(pulse_timings, pulse_data, 18, set(), 1, pulsar_type)
 
 
 def test_generate_sequencer_cfg():
@@ -198,12 +203,13 @@ def test_generate_sequencer_cfg():
         "drag_1": complex_vals,
         "square_2": real,
     }
+    pulsar_type = 'QCM_sequencer'
 
     def check_waveform(entry, exp_data, exp_idx):
         assert exp_idx == entry['index']
         np.testing.assert_array_equal(exp_data, entry['data'])
 
-    sequence_cfg = generate_sequencer_cfg(pulse_data, pulse_timings, 20, set(), 1)
+    sequence_cfg = generate_sequencer_cfg(pulse_data, pulse_timings, 20, set(), 1, pulsar_type)
     check_waveform(sequence_cfg['waveforms']["awg"]["square_1_I"], [0.0, 1.0, 0.0, 0.0], 0)
     check_waveform(sequence_cfg['waveforms']["awg"]["square_1_Q"], np.zeros(4), 1)
     check_waveform(sequence_cfg['waveforms']["awg"]["drag_1_I"], complex_vals.real, 2)
