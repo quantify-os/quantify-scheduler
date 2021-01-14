@@ -128,7 +128,8 @@ class Q1ASMBuilder:
     """
     IMMEDIATE_SZ = pow(2, 16) - 1
     CYCLE_TIME_ns = 4
-    AWG_OUTPUT_VOLT = 2.5
+    AWG_OUTPUT_VOLT_QCM = 2.5
+    AWG_OUTPUT_VOLT_QRM = 0.5
 
     # phase counter
     AWG_ACQ_SMPL_PATH_WITH = 4
@@ -185,15 +186,25 @@ class Q1ASMBuilder:
             raise ValueError(f"{param} parameter of PulsarModulations must be in the range 0.0:1.0")
         return int(val * self.IMMEDIATE_SZ / 2)
 
-    def update_parameters(self, modulations: PulsarModulations, device):
+    def update_parameters(self, modulations: PulsarModulations, device, pulsar_type: str):
         if not modulations:
             return
         if modulations.gain_I is not None:
-            normalised = modulations.gain_I / self.AWG_OUTPUT_VOLT
+            if device == 'awg':
+                if pulsar_type == 'QCM_sequencer':
+                    awg_output_volt = self.AWG_OUTPUT_VOLT_QCM
+                elif pulsar_type == 'QRM_sequencer':
+                    awg_output_volt = self.AWG_OUTPUT_VOLT_QRM
+                else:
+                    raise ValueError(f"Device {pulsar_type} not supported.")
+            else:
+                awg_output_volt = 1.0
+            normalised = modulations.gain_I / awg_output_volt
+            print(pulsar_type, device, awg_output_volt, modulations.gain_I, normalised)
             gain_I_val = self._expand_from_normalised_range(normalised, "Gain")
             gain_Q_val = gain_I_val
             if modulations.gain_Q is not None:
-                normalised = modulations.gain_Q / self.AWG_OUTPUT_VOLT
+                normalised = modulations.gain_Q / awg_output_volt
                 gain_Q_val = self._expand_from_normalised_range(normalised, "Gain")
             self.rows.append(['', f'set_{device}_gain', f"{gain_I_val},{gain_Q_val}", '#Set gain'])
         if modulations.offset is not None:
@@ -337,7 +348,6 @@ def _extract_nco_freq(hardware_mapping: dict, hw_mapping_inverted: dict, port: s
     elif lo_freq is not None and nco_freq is not None:
         raise ValueError("frequency over constrained, do not specify both "
                          "the lo_freq and nco_freq in the hardware mapping.")
-
     return lo_freq, nco_freq, clock_freq
 
 
@@ -562,7 +572,7 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 else:
                     raise ValueError(f"Unrecognized Pulsar type '{pulsar_type}'")
 
-                nco_freq, lo_freq, _ = _extract_nco_freq(
+                lo_freq, nco_freq, _ = _extract_nco_freq(
                     hardware_mapping=mapping,
                     hw_mapping_inverted=portclock_mapping,
                     port=port,
@@ -615,7 +625,8 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
                 timing_tuples=sorted(resource.timing_tuples),
                 sequence_duration=max_seq_duration,
                 acquisitions=acquisitions,
-                iterations=iterations
+                iterations=iterations,
+                pulsar_type=resource.data['type']
             )
             seq_cfg['instr_cfg'] = resource.data
 
@@ -761,7 +772,7 @@ def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
 
 # todo this needs a serious clean up
 def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, acquisitions: set,
-                iterations: int) -> str:
+                iterations: int, pulsar_type: str) -> str:
     """
     Converts operations and waveforms to a q1asm program. This function verifies these hardware based constraints:
 
@@ -822,7 +833,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         auto_wait('', wait_duration, '#Wait', None if idx == 0 else timing_tuples[idx-1])
         q1asm.line_break()
 
-        q1asm.update_parameters(hardware_modulations, device)
+        q1asm.update_parameters(hardware_modulations, device, pulsar_type)
 
         I = pulse_dict[device][f"{pulse_id}_I"]['index']  # noqa: E741
         Q = pulse_dict[device][f"{pulse_id}_Q"]['index']
@@ -851,7 +862,8 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     return q1asm.get_str()
 
 
-def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, acquisitions: set, iterations: int):
+def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, acquisitions: set, iterations: int,
+                           pulsar_type: str):
     """
     Generate a JSON compatible dictionary for defining a sequencer configuration. Contains a list of waveforms and a
     program in a q1asm string.
@@ -874,5 +886,6 @@ def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, ac
         Sequencer configuration
     """
     cfg = build_waveform_dict(pulse_info, acquisitions)
-    cfg['program'] = build_q1asm(timing_tuples, cfg['waveforms'], sequence_duration, acquisitions, iterations)
+    cfg['program'] = build_q1asm(timing_tuples, cfg['waveforms'], sequence_duration, acquisitions, iterations,
+                                 pulsar_type)
     return cfg
