@@ -471,7 +471,8 @@ def _invert_hardware_mapping(hardware_mapping):
                 if not portclock:  # undefined port/clock
                     continue
                 if portclock in portclock_reference:
-                    raise ValueError(f"Duplicate port and clock combination: '{seq_cfg['port']}' and '{seq_cfg['clock']}'")
+                    raise ValueError(
+                        f"Duplicate port and clock combination: '{seq_cfg['port']}' and '{seq_cfg['clock']}'")
                 portclock_reference[portclock] = (device_name, output, seq_name)
     return portclock_reference
 
@@ -812,7 +813,8 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     q1asm.set_mrk('', 1)
 
     if timing_tuples and get_pulse_finish_time(-1) > sequence_duration:
-        raise ValueError(f"Provided sequence_duration '{sequence_duration}' is less than the total runtime of this sequence ({get_pulse_finish_time(-1)}).")
+        raise ValueError(f"""Provided sequence_duration '{sequence_duration}' is less than
+            the total runtime of this sequence ({get_pulse_finish_time(-1)}).""")
 
     clock = 0  # current execution time
     for idx, (timing, pulse_id, hardware_modulations) in enumerate(timing_tuples):
