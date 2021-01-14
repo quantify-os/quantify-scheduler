@@ -5,7 +5,7 @@ import numpy as np
 from qcodes.instrument.base import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify.scheduler.types import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
+from quantify.scheduler.gate_library import Reset, Measure, Rxy, X
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq, \
@@ -299,7 +299,7 @@ def test_pulsar_assembler_backend(dummy_pulsars):
 
     # FIXME realtime modulation currently disabled awaiting realtime demodulation
     # assert sched.resources['q0:mw_q0.01']['nco_freq'] ==
-    # HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
+    #   HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
     # lo_freq = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_freq"]
     # rf_freq = DEVICE_CFG['qubits']["q1"]["params"]["mw_freq"]
     # assert sched.resources['q1:mw_q1.01']['nco_freq'] == rf_freq - lo_freq
