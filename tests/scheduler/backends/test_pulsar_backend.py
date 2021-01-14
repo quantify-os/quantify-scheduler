@@ -415,22 +415,26 @@ def test_extract():
 
 def test_extract_interm_freq():
     inverted = _invert_hardware_mapping(HARDWARE_MAPPING)
-    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=5.32e9)
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01',
+                                                   clock_freq=5.32e9)
     assert interm_freq == -50e6  # Hardcoded in config
 
-    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=1.32e9)
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01',
+                                                   clock_freq=1.32e9)
     assert interm_freq == -50e6  # Hardcoded in config
 
     RF = 4.52e9
     LO = 4.8e9  # lo_freq set in config for output connected to q1:mw
-    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01',
+                                                   clock_freq=RF)
 
     # RF = LO + IF
     assert interm_freq == RF-LO
 
     RF = 8.52e9
     LO = 7.2e9  # lo_freq set in config for output connected to the feedline
-    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro', clock_freq=RF)
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro',
+                                                   clock_freq=RF)
     assert interm_freq == RF-LO
     assert lo_freq == RF-interm_freq
 
