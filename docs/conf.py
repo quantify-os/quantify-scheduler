@@ -39,6 +39,7 @@ extensions = ['sphinx.ext.autodoc',  # auto document docstrings
               'sphinx-jsonschema',
               'sphinx_rtd_theme',
               'sphinx.ext.mathjax',
+              'sphinx.ext.todo',
               'nbsphinx',
               'sphinx-jsonschema',
               'jupyter_sphinx',
@@ -85,7 +86,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = True
 
 
 # -- Options for HTML output -------------------------------------------
@@ -171,3 +172,6 @@ texinfo_documents = [
 
 
 blockdiag_html_image_format = 'SVG'
+
+
+numfig = True

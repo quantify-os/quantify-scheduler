@@ -1,3 +1,9 @@
+.shared_windows_runners:
+  tags:
+  - shared-windows
+  - windows
+  - windows-1809
+
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
 image: python:3.7
@@ -6,7 +12,6 @@ image: python:3.7
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  GIT_SUBMODULE_STRATEGY: recursive
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
@@ -34,11 +39,9 @@ stages:
 test:
   stage: Test
   script:
-    - pip install -e git+https://$GITUSER:$GITPASS@gitlab.com/quantify-os/quantify-core.git@develop#egg=quantify-core
     - pip install -e .
     - pip install -r requirements_dev.txt
-    - apt install python3-pyqt5 -y  # install here manually due to issues
-    - py.test -s --cov=quantify/ --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
+    - py.test --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify/ --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
   artifacts:
     paths:
       - htmlcov
@@ -57,6 +60,21 @@ test-latest:
   extends: test
   image: python:latest
   allow_failure: true
+
+
+test-win-3.8:
+  before_script:
+    - choco install python --version=3.8.3 -y -f
+    - "C:\\Python38\\python.exe -m pip install -U pip"
+  extends:
+    - .shared_windows_runners
+    - test
+  script:
+    - "C:\\Python38\\python.exe -m pip install -e ."
+    - "C:\\Python38\\python.exe -m pip install pytest pytest-runner pytest-cov pytest-mpl"
+    - "C:\\Python38\\Scripts\\py.test.exe --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes"
+  only:
+    - develop
 
 
 flake8:

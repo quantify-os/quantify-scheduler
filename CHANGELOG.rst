@@ -2,6 +2,37 @@
 Changelog
 ===========
 
+0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
+-------------------------------------------------------------------
+
+* Major refactor of the scheduler resource code enabling hybrid pulse- gate-level control.
+* Moved quantify.scheduler.types.Resource class to a separate quantify.scheduler.resources module.
+* Adds a BasebandClockResource class within the newly created quantify.scheduler.resources module.
+* Moved QRM and QCM related classes to the quantify.scheduler.backends.pulsar_backend module.
+* In quantify.scheduler.compilation, rename of function '_determine_absolute_timing' to 'determine_absolute_timing'. Argument changed from clock_unit to time_unit.
+* In quantify.scheduler.compilation, rename of function '_add_pulse_information_transmon' to 'add_pulse_information_transmon'.
+* Added ramp waveform in quantify.scheduler.waveforms.
+* Added schemas for operation and transmon_cfg.
+* Added a basic hybrid visualisation for pulses using new addressing scheme.
+* Operations check whether an operation is a valid gate or pulse.
+* Refactor of visualization module. Moved quantify.scheduler.backends.visualization to quantify.scheduler.visualization module. Expect code breaking reorganization and changes to function names.
+* Pulsar backend version now checks for QCM and QRM drivers version 0.1.2.
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* fix(pulse_scheme): Add tickformatstops for x-axis using SI-unit 'seconds'. Closes #39. (!39)
+* Resolve "y-axis label is broken in plotly visualization after resources-refactor". Closes #45. (!38)
+* Resources refactor (!28, !29, !30)
+* Hybrid visualisation for pulses and circuit gate operations. Closes #22 and #6. (!27)
+* Support Pulsar parameterisation from scheduler. Support feature for #29. (!2)
+* Operation properties to check if an operation is a valid gate or pulse. Closes #28 (!25)
+* Visualisation refactor. Closes #26. (!22)
+* Windows job (!20)
+* Changed Pulsar backend version check from 0.1.1 to 0.1.2. (!21)
+
+
+
 0.1.0 (2020-10-21)
 ------------------
 * Refactored scheduler functionality from quantify-core into quantify-scheduler

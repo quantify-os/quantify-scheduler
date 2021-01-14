@@ -1,0 +1,17 @@
+[report]
+show_missing = True
+exclude_lines =
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+[run]
+branch = True
+source = quantify/
+omit =
+    *tests*
+    */usr/local/lib*
+    /usr/lib/python3/*
+    *__init__*
+    **/site-packages/**

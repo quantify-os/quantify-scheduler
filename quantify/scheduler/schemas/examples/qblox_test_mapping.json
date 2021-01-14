@@ -1,0 +1,63 @@
+{
+        "backend":"quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+        "qcm0":
+        {
+                "name": "qcm0",
+                "type": "Pulsar_QCM",
+                "mode": "complex",
+                "ref" : "int",
+                "IP address": "192.168.0.2",
+                "complex_output_0": {
+                        "gain": 0, "lo_freq": null,
+                        "seq0":{"port": "q0:mw", "clock":"q0.01", "nco_freq": -50e6},
+                        "seq1":{"port": "q0:mw", "clock":"q0.12", "nco_freq": -290e6},
+                        "seq2":{"port": null, "clock":null, "nco_freq": null},
+                        "seq3":{"port": null, "clock":null, "nco_freq": null}
+                },
+                "complex_output_1": {
+                        "gain": 0, "lo_freq": 4.8e9,
+                        "seq0":{"port": "q1:mw", "clock":"q1.01", "nco_freq": null},
+                        "seq1":{"port": "q1:mw", "clock":"q1.12", "nco_freq": null}
+                }
+        },
+
+        "qrm0":
+        {
+                "name": "qrm0",
+                "type": "Pulsar_QRM",
+                "mode": "complex",
+                "ref" : "ext",
+                "IP address": "192.168.0.6",
+                "complex_output_0": {
+                        "gain": 0, "lo_freq": 7.2e9,
+                        "seq0":{"port": "q0:res", "clock":"q0.ro", "nco_freq": null},
+                        "seq1":{"port": "q1:res", "clock":"q1.ro", "nco_freq": null},
+                        "seq2":{"port": "q2:res", "clock":"q2.ro", "nco_freq": null},
+                        "seq3":{"port": "q3:res", "clock":"q3.ro", "nco_freq": null}
+                }
+        },
+
+        "qcm1": {
+                "name": "qcm1",
+                "type": "Pulsar_QCM",
+                "mode": "real",
+                "ref" : "ext",
+                "IP address": "192.168.0.3",
+                "real_output_0": {
+                        "gain": 0, "lo_freq": null,
+                        "seq0":{"port": "q0:fl", "clock": "cl0.baseband", "nco_freq": null}
+                },
+                "real_output_1": {
+                        "gain": 0,
+                        "seq0":{"port": "q1:fl", "clock": "cl0.baseband"}
+                },
+                "real_output_2": {
+                        "gain": 0,
+                        "seq0":{"port": "q2:fl", "clock": "cl0.baseband"}
+                },
+                "real_output_3": {
+                        "gain": 0,
+                        "seq0":{"port": "c0:fl", "clock": "cl0.baseband"}
+                }
+        }
+}
