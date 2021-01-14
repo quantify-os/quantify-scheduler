@@ -4,17 +4,16 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 import logging
 import jsonschema
 import importlib
-from quantify.scheduler.types import Schedule
 from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, IdlePulse, SoftSquarePulse
 from quantify.utilities.general import load_json_schema
 
 if TYPE_CHECKING:
-    from quantify.scheduler import Schedule
+    from quantify.scheduler.types import Schedule
 
 
 def determine_absolute_timing(schedule: Schedule, time_unit='physical'):

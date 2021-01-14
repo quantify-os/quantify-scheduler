@@ -300,5 +300,3 @@ class Operation(UserDict):
         assert self.valid_pulse
         for p in self.data['pulse_info']:
             p[self.ACQUISITION_IDENTIFIER] = True
-
-
