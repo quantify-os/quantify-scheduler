@@ -2,10 +2,10 @@
 Changelog
 ===========
 
-0.2.0 (2021-01-13)
-------------------
+0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
+-------------------------------------------------------------------
 
-* Major refactor of the scheduler resource code.
+* Major refactor of the scheduler resource code enabling hybrid pulse- gate-level control.
 * Moved quantify.scheduler.types.Resource class to a separate quantify.scheduler.resources module.
 * Adds a BasebandClockResource class within the newly created quantify.scheduler.resources module.
 * Moved QRM and QCM related classes to the quantify.scheduler.backends.pulsar_backend module.
