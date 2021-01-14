@@ -76,6 +76,6 @@ def test_pulse_diagram_plotly():
     sched = qcompile(sched, DEVICE_CFG, None)
 
     # It should be possible to generate this visualization after compilation
-    fig = pls.pulse_diagram_plotly(sched)
+    _ = pls.pulse_diagram_plotly(sched)
     # and with auto labels
-    fig = pls.pulse_diagram_plotly(sched)
+    _ = pls.pulse_diagram_plotly(sched)
