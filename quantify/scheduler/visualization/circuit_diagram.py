@@ -5,12 +5,10 @@
 # -----------------------------------------------------------------------------
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, Union, List, Dict
-import logging
 import quantify.scheduler.visualization.pulse_scheme as ps
 from quantify.scheduler.compilation import determine_absolute_timing
 from quantify.utilities.general import import_func_from_string
 
-import json
 if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule
     from matplotlib.figure import Figure

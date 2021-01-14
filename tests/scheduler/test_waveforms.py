@@ -43,8 +43,8 @@ def test_drag_ns():
 
 def test_rotate_wave():
 
-    I = np.ones(10)  # Q component is zero
-    Q = np.zeros(10) # not used as input, only used for testing
+    I = np.ones(10)  # noqa # Q component is zero
+    Q = np.zeros(10)  # noqa # not used as input, only used for testing
 
     rot_wf = rotate_wave(I, 0)
 
@@ -71,8 +71,8 @@ def test_modulate():
     fs = 100
     f = 4
     t = np.arange(fs)
-    I = np.sin(2 * np.pi * f * (t/fs))
-    Q = np.sin(2 * np.pi * f * (t/fs) + (np.pi/2))
+    I = np.sin(2 * np.pi * f * (t/fs))  # noqa
+    Q = np.sin(2 * np.pi * f * (t/fs) + (np.pi/2))  # noqa
     wf = I + 1j*Q
 
     mod_wf = modulate_wave(np.linspace(0, 1, fs), wf, 2)

@@ -4,7 +4,6 @@ from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy
 from quantify.scheduler.pulse_library import SquarePulse
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-import matplotlib.pyplot as plt
 
 
 @pytest.mark.mpl_image_compare(style='default', savefig_kwargs={'dpi': 300})
