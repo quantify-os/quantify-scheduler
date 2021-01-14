@@ -4,7 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Union, List, Dict, Optional, Any
+from typing import TYPE_CHECKING, Tuple, Union, List, Dict, Optional
 import logging
 import inspect
 import numpy as np

@@ -5,7 +5,7 @@ import numpy as np
 from qcodes.instrument.base import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify.scheduler.types import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X, X90
+from quantify.scheduler.gate_library import Reset, Measure, Rxy, X
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
     pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq, \
@@ -247,7 +247,7 @@ def dummy_pulsars():
 
 def test_pulsar_assembler_backend_pulses_only():
     sched = Schedule('pulse_only_experiment')
-    sched.add(DRAGPulse(G_amp=.7, D_amp=-.2,phase=90,port='q0:mw',duration=20e-9,clock='q0.01'))
+    sched.add(DRAGPulse(G_amp=.7, D_amp=-.2, phase=90, port='q0:mw', duration=20e-9, clock='q0.01'))
     sched.add(RampPulse(amp=0.5, duration=24e-9, port='q0:mw', clock='q0.01'))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource('q0.01', freq=5e9)])
@@ -292,7 +292,8 @@ def test_pulsar_assembler_backend(dummy_pulsars):
     # assert len(sched.resources['q1:fl_cl0.baseband'].timing_tuples) ==  int(21*1)
 
     # FIXME realtime modulation currently disabled awaiting realtime demodulation
-    # assert sched.resources['q0:mw_q0.01']['nco_freq'] == HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
+    # assert sched.resources['q0:mw_q0.01']['nco_freq'] ==
+    #   HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"]["nco_freq"]
     # lo_freq = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_freq"]
     # rf_freq = DEVICE_CFG['qubits']["q1"]["params"]["mw_freq"]
     # assert sched.resources['q1:mw_q1.01']['nco_freq'] == rf_freq - lo_freq
