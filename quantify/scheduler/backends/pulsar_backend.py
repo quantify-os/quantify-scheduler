@@ -200,7 +200,6 @@ class Q1ASMBuilder:
             else:
                 awg_output_volt = 1.0
             normalised = modulations.gain_I / awg_output_volt
-            print(pulsar_type, device, awg_output_volt, modulations.gain_I, normalised)
             gain_I_val = self._expand_from_normalised_range(normalised, "Gain")
             gain_Q_val = gain_I_val
             if modulations.gain_Q is not None:
