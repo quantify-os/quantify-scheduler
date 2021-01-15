@@ -8,7 +8,7 @@ from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, Rxy, X
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.backends.pulsar_backend import build_waveform_dict, build_q1asm, generate_sequencer_cfg, \
-    pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_nco_freq, \
+    pulsar_assembler_backend, _check_driver_version, QCM_DRIVER_VER, QRM_DRIVER_VER, _extract_interm_freq, \
     _invert_hardware_mapping, _extract_pulsar_type, _extract_gain, _extract_io, _extract_pulsar_config
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
@@ -348,12 +348,12 @@ def test_bad_hardware_mapping():
             "ref": "int",
             "IP address": "192.168.0.2",
             "complex_output_0": {
-                "gain": 0, "lo_freq": None,
-                "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+                "line_gain_db": 0, "lo_freq": None,
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": -50e6},
             },
             "complex_output_1": {
-                "gain": 0, "lo_freq": None,
-                "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+                "line_gain_db": 0, "lo_freq": None,
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": -50e6},
             }
         }}
     with pytest.raises(ValueError, match="Duplicate port and clock combination: 'q0:mw' and 'q0.01'"):
@@ -409,30 +409,34 @@ def test_extract():
         io = _extract_io(HARDWARE_MAPPING, portclock_reference, port, clock)
         assert HARDWARE_MAPPING[device_name] == pulsar_cfg
         assert HARDWARE_MAPPING[device_name]['type'] == pulsar_type
-        assert HARDWARE_MAPPING[device_name][output]['gain'] == gain
+        assert HARDWARE_MAPPING[device_name][output]['line_gain_db'] == gain
         assert output == io
 
 
-def test_extract_nco_freq():
+def test_extract_interm_freq():
     inverted = _invert_hardware_mapping(HARDWARE_MAPPING)
-    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=5.32e9)
-    assert nco_freq == -50e6  # Hardcoded in config
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01',
+                                                   clock_freq=5.32e9)
+    assert interm_freq == -50e6  # Hardcoded in config
 
-    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01', clock_freq=1.32e9)
-    assert nco_freq == -50e6  # Hardcoded in config
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q0:mw', clock='q0.01',
+                                                   clock_freq=1.32e9)
+    assert interm_freq == -50e6  # Hardcoded in config
 
     RF = 4.52e9
     LO = 4.8e9  # lo_freq set in config for output connected to q1:mw
-    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q1:mw', clock='q1.01',
+                                                   clock_freq=RF)
 
     # RF = LO + IF
-    assert nco_freq == RF-LO
+    assert interm_freq == RF-LO
 
     RF = 8.52e9
     LO = 7.2e9  # lo_freq set in config for output connected to the feedline
-    lo_freq, nco_freq, _ = _extract_nco_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro', clock_freq=RF)
-    assert nco_freq == RF-LO
-    assert lo_freq == RF-nco_freq
+    lo_freq, interm_freq, _ = _extract_interm_freq(HARDWARE_MAPPING, inverted, port='q1:res', clock='q1.ro',
+                                                   clock_freq=RF)
+    assert interm_freq == RF-LO
+    assert lo_freq == RF-interm_freq
 
     invalid_mapping = {
         "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
@@ -444,19 +448,19 @@ def test_extract_nco_freq():
             "ref": "int",
             "IP address": "192.168.0.2",
             "complex_output_0": {
-                    "gain": 0, "lo_freq": 6.4e9,
-                    "seq0": {"port": "q0:mw", "clock": "q0.01", "nco_freq": -50e6},
+                    "line_gain_db": 0, "lo_freq": 6.4e9,
+                    "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": -50e6},
             },
             "complex_output_1": {
-                "gain": 0, "lo_freq": None,
-                "seq0": {"port": "q1:mw", "clock": "q1.01", "nco_freq": None},
-                "seq1": {"port": "q1:mw", "clock": "q1.12", "nco_freq": None}
+                "line_gain_db": 0, "lo_freq": None,
+                "seq0": {"port": "q1:mw", "clock": "q1.01", "interm_freq": None},
+                "seq1": {"port": "q1:mw", "clock": "q1.12", "interm_freq": None}
             }
         }}
     invalid_inverted = _invert_hardware_mapping(invalid_mapping)
     with pytest.raises(ValueError):
         # overconstrained example
-        _extract_nco_freq(invalid_mapping, invalid_inverted, port='q0:mw', clock='q0.01', clock_freq=RF)
+        _extract_interm_freq(invalid_mapping, invalid_inverted, port='q0:mw', clock='q0.01', clock_freq=RF)
     with pytest.raises(ValueError):
         # underconstrained example
-        _extract_nco_freq(invalid_mapping, invalid_inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
+        _extract_interm_freq(invalid_mapping, invalid_inverted, port='q1:mw', clock='q1.01', clock_freq=RF)
