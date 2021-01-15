@@ -655,9 +655,10 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
     for resource in schedule.resources.values():
         # only selects the resource objects here that are valid sequencer units.
         if hasattr(resource, 'timing_tuples'):
+            # print(resource.timing_tuples)
             seq_cfg = generate_sequencer_cfg(
                 pulse_info=resource.pulse_dict,
-                timing_tuples=sorted(resource.timing_tuples),
+                timing_tuples=list(reversed(resource.timing_tuples)),
                 sequence_duration=max_seq_duration,
                 acquisitions=acquisitions,
                 iterations=iterations,
@@ -860,7 +861,6 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     if timing_tuples and get_pulse_finish_time(-1) > sequence_duration:
         raise ValueError(f"Provided sequence_duration '{sequence_duration}' is less than " +
                          f"the total runtime of this sequence ({get_pulse_finish_time(-1)}).")
-
     clock = 0  # current execution time
     for idx, (timing, pulse_id, hardware_modulations) in enumerate(timing_tuples):
         # check if we must wait before beginning our next section
