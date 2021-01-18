@@ -655,10 +655,9 @@ def pulsar_assembler_backend(schedule, mapping: dict = None, tuid=None, configur
     for resource in schedule.resources.values():
         # only selects the resource objects here that are valid sequencer units.
         if hasattr(resource, 'timing_tuples'):
-            # print(resource.timing_tuples)
             seq_cfg = generate_sequencer_cfg(
                 pulse_info=resource.pulse_dict,
-                timing_tuples=list(reversed(resource.timing_tuples)),
+                timing_tuples=sorted(resource.timing_tuples),
                 sequence_duration=max_seq_duration,
                 acquisitions=acquisitions,
                 iterations=iterations,
@@ -830,6 +829,8 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         pulse_IDs which are acquisitions
     iterations : int
         number of times to run this program
+    pulsar_type: str
+        either 'QCM_sequencer' or 'QRM_sequencer' to know which device properties to use
 
     Returns
     -------
@@ -875,7 +876,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         Q = pulse_dict[device][f"{pulse_id}_Q"]['index']
 
         # duration should be the pulse length or next start time
-        next_timing = timing_tuples[idx + 1][0] if idx < len(timing_tuples) - 1 else np.Inf
+        next_timing = timing_tuples[idx + 1][0] - timing_tuples[idx][0] if idx < len(timing_tuples) - 1 else np.Inf
         # duration in nanoseconds, QCM sample rate is # 1Gsps
         pulse_runtime = get_pulse_runtime(pulse_id)
         duration = min(next_timing, pulse_runtime)
@@ -916,6 +917,8 @@ def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, ac
         pulse_IDs which are acquisitions
     iterations : int
         number of times to run this program
+    pulsar_type: str
+        either 'QCM_sequencer' or 'QRM_sequencer' to know which device properties to use
 
     Returns
     -------
