@@ -809,6 +809,8 @@ def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
 def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, acquisitions: set,
                 iterations: int, pulsar_type: str) -> str:
     """
+    N.B. as of 2021-01-21 NOT READY FOR PARALLEL OPERATIONS IN THE SCHEDULE
+
     Converts operations and waveforms to a q1asm program. This function verifies these hardware based constraints:
 
         * Each pulse must run for at least the INSTRUCTION_CLOCK_TIME
@@ -829,6 +831,8 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         pulse_IDs which are acquisitions
     iterations : int
         number of times to run this program
+    pulsar_type: str
+        either 'QCM_sequencer' or 'QRM_sequencer' to know which device properties to use
 
     Returns
     -------
@@ -860,13 +864,12 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
     if timing_tuples and get_pulse_finish_time(-1) > sequence_duration:
         raise ValueError(f"Provided sequence_duration '{sequence_duration}' is less than " +
                          f"the total runtime of this sequence ({get_pulse_finish_time(-1)}).")
-
     clock = 0  # current execution time
     for idx, (timing, pulse_id, hardware_modulations) in enumerate(timing_tuples):
         # check if we must wait before beginning our next section
         wait_duration = timing - clock
         device = 'awg' if pulse_id not in acquisitions else 'acq'
-        auto_wait('', wait_duration, '#Wait', None if idx == 0 else timing_tuples[idx-1])
+        auto_wait('', wait_duration, '#Wait', None if idx == 0 else timing_tuples[idx - 1])
         q1asm.line_break()
 
         q1asm.update_parameters(hardware_modulations, device, pulsar_type)
@@ -875,7 +878,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         Q = pulse_dict[device][f"{pulse_id}_Q"]['index']
 
         # duration should be the pulse length or next start time
-        next_timing = timing_tuples[idx + 1][0] if idx < len(timing_tuples) - 1 else np.Inf
+        next_timing = timing_tuples[idx + 1][0] - timing_tuples[idx][0] if idx < len(timing_tuples) - 1 else np.Inf
         # duration in nanoseconds, QCM sample rate is # 1Gsps
         pulse_runtime = get_pulse_runtime(pulse_id)
         duration = min(next_timing, pulse_runtime)
@@ -916,6 +919,8 @@ def generate_sequencer_cfg(pulse_info, timing_tuples, sequence_duration: int, ac
         pulse_IDs which are acquisitions
     iterations : int
         number of times to run this program
+    pulsar_type: str
+        either 'QCM_sequencer' or 'QRM_sequencer' to know which device properties to use
 
     Returns
     -------

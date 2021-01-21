@@ -109,6 +109,34 @@ def test_bad_pulse_timings():
         build_q1asm(short_final_wait, dummy_pulse_data, 10, set(), 1, pulsar_type)
 
 
+def test_acq_delay():
+    t0 = 10000
+    acq_delay = 50
+    wait_timings = [
+        (t0 + 0, -3772038313413949572, None),
+        (t0 + acq_delay, -1500324, None)
+    ]
+
+    dummy_pulse_data = {
+        'awg': {
+            '-3772038313413949572_I': {'data': np.ones(4), 'index': 0},
+            '-3772038313413949572_Q': {'data': np.ones(4), 'index': 1}
+        },
+        'acq': {
+            '-1500324_I': {'data': np.ones(4), 'index': 0},
+            '-1500324_Q': {'data': np.ones(4), 'index': 1}
+        }
+    }
+
+    pulsar_type = 'QRM_sequencer'
+
+    program_str = build_q1asm(wait_timings, dummy_pulse_data, t0+54, {-1500324}, 10, pulsar_type)
+
+    # regenerate_ref_file('ref_test_acq_delay_q1asm', program_str)
+    with open(pathlib.Path(__file__).parent.joinpath('ref_test_acq_delay_q1asm'), 'r') as f:
+        assert program_str == f.read()
+
+
 def test_overflowing_instruction_times():
     real = np.random.random(129380)
     pulse_timings = [
