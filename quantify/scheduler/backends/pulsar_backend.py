@@ -809,6 +809,8 @@ def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
 def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, acquisitions: set,
                 iterations: int, pulsar_type: str) -> str:
     """
+    N.B. as of 2021-01-21 NOT READY FOR PARALLEL OPERATIONS IN THE SCHEDULE
+
     Converts operations and waveforms to a q1asm program. This function verifies these hardware based constraints:
 
         * Each pulse must run for at least the INSTRUCTION_CLOCK_TIME
