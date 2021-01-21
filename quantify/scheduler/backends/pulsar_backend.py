@@ -867,7 +867,7 @@ def build_q1asm(timing_tuples: list, pulse_dict: dict, sequence_duration: int, a
         # check if we must wait before beginning our next section
         wait_duration = timing - clock
         device = 'awg' if pulse_id not in acquisitions else 'acq'
-        auto_wait('', wait_duration, '#Wait', None if idx == 0 else timing_tuples[idx-1])
+        auto_wait('', wait_duration, '#Wait', None if idx == 0 else timing_tuples[idx - 1])
         q1asm.line_break()
 
         q1asm.update_parameters(hardware_modulations, device, pulsar_type)
