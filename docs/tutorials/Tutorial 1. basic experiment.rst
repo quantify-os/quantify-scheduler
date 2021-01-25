@@ -51,6 +51,15 @@ We create this experiment using :ref:`gates acting on qubits<Gate-level descript
 We start by initializing an empty :class:`~quantify.scheduler.Schedule`
 
 .. jupyter-execute::
+    :hide-code:
+
+    from pathlib import Path
+    from os.path import join
+    from quantify.data.handling import set_datadir
+    set_datadir(join(Path.home(), 'quantify-data'))
+
+
+.. jupyter-execute::
 
   from quantify.scheduler import Schedule
   sched = Schedule('Bell experiment')
