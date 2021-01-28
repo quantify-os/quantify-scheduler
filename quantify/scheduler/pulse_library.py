@@ -8,7 +8,6 @@ from quantify.scheduler.resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
-
     def __init__(self, duration):
         """
         An idle pulse performing no actions for a certain duration.
@@ -18,18 +17,25 @@ class IdlePulse(Operation):
         duration : float
             Duration of the idling in seconds.
         """
-        data = {'name': 'Idle', 'pulse_info': [{
-            'wf_func': None,
-            't0': 0,
-            'duration': duration,
-            'clock': BasebandClockResource.IDENTITY,
-            'port': None}]}
-        super().__init__(name=data['name'], data=data)
+        data = {
+            "name": "Idle",
+            "pulse_info": [
+                {
+                    "wf_func": None,
+                    "t0": 0,
+                    "duration": duration,
+                    "clock": BasebandClockResource.IDENTITY,
+                    "port": None,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
 
 
 class RampPulse(Operation):
-
-    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
+    def __init__(
+        self, amp: float, duration: float, port: str, clock: str, t0: float = 0
+    ):
         """
         A single-channel square pulse.
 
@@ -43,18 +49,32 @@ class RampPulse(Operation):
             Port of the pulse.
         """
 
-        data = {'name': 'RampPulse', 'pulse_info': [{
-            'wf_func': 'quantify.scheduler.waveforms.ramp',
-            'amp': amp, 'duration': duration,
-            't0': t0,
-            'clock': clock,
-            'port': port}]}
-        super().__init__(name=data['name'], data=data)
+        data = {
+            "name": "RampPulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.ramp",
+                    "amp": amp,
+                    "duration": duration,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
 
 
 class SquarePulse(Operation):
-
-    def __init__(self, amp: float, duration: float, port: str, clock: str, phase: float = 0, t0: float = 0):
+    def __init__(
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str,
+        phase: float = 0,
+        t0: float = 0,
+    ):
         """
         A two-channel square pulse.
 
@@ -76,13 +96,20 @@ class SquarePulse(Operation):
             # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError
 
-        data = {'name': 'ModSquarePulse', 'pulse_info': [{
-            'wf_func': 'quantify.scheduler.waveforms.square',
-            'amp': amp, 'duration': duration,
-            't0': t0,
-            'clock': clock,
-            'port': port}]}
-        super().__init__(name=data['name'], data=data)
+        data = {
+            "name": "ModSquarePulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.square",
+                    "amp": amp,
+                    "duration": duration,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
 
 
 class SoftSquarePulse(Operation):
@@ -90,14 +117,23 @@ class SoftSquarePulse(Operation):
     Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
     """
 
-    def __init__(self, amp: float, duration: float, port: str, clock: str, t0: float = 0):
-        data = {'name': 'SoftSquarePulse', 'pulse_info': [{
-            'wf_func': 'quantify.scheduler.waveforms.soft_square',
-            'amp': amp, 'duration': duration,
-            't0': t0,
-            'clock': clock,
-            'port': port}]}
-        super().__init__(name=data['name'], data=data)
+    def __init__(
+        self, amp: float, duration: float, port: str, clock: str, t0: float = 0
+    ):
+        data = {
+            "name": "SoftSquarePulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.soft_square",
+                    "amp": amp,
+                    "duration": duration,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
 
 
 class DRAGPulse(Operation):
@@ -127,7 +163,16 @@ class DRAGPulse(Operation):
            Phys. Rev. Lett. 103, 110501 (2009).*
     """
 
-    def __init__(self, G_amp: float, D_amp: float, phase: float, clock: str, duration: float, port: str, t0: float = 0):
+    def __init__(
+        self,
+        G_amp: float,
+        D_amp: float,
+        phase: float,
+        clock: str,
+        duration: float,
+        port: str,
+        t0: float = 0,
+    ):
         """
         Parameters
         ------------
@@ -147,10 +192,21 @@ class DRAGPulse(Operation):
             Port of the pulse, must be capable of carrying a complex waveform.
         """
 
-        data = {'name': "DRAG", 'pulse_info': [{
-            'wf_func': 'quantify.scheduler.waveforms.drag',
-            'G_amp': G_amp, 'D_amp': D_amp, 'duration': duration,
-            'phase': phase, 'nr_sigma': 4, 'clock': clock,
-            'port': port,  't0': t0}]}
+        data = {
+            "name": "DRAG",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.drag",
+                    "G_amp": G_amp,
+                    "D_amp": D_amp,
+                    "duration": duration,
+                    "phase": phase,
+                    "nr_sigma": 4,
+                    "clock": clock,
+                    "port": port,
+                    "t0": t0,
+                }
+            ],
+        }
 
-        super().__init__(name=data['name'], data=data)
+        super().__init__(name=data["name"], data=data)
