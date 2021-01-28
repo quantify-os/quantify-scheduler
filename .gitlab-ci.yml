@@ -50,17 +50,14 @@ test:
       cobertura: coverage.xml
     when: always
 
-
 test-3.8:
   extends: test
   image: python:3.8
-
 
 test-latest:
   extends: test
   image: python:latest
   allow_failure: true
-
 
 test-win-3.8:
   before_script:
@@ -76,19 +73,13 @@ test-win-3.8:
   only:
     - develop
 
-
-flake8:
-  image: python:3.7
+black:
+  image: python:3.8
   stage: Static Analysis
-  allow_failure: true
+  allow_failure: false
   script:
     - pip install -r requirements_dev.txt
-    - flake8 quantify tests --format=html --htmldir=flake-report
-
-  artifacts:
-    paths:
-      - flake-report
-    when: on_failure
+    - black --check --fast .
 
 run:
   stage: Test
@@ -100,4 +91,3 @@ run:
   artifacts:
     paths:
       - dist/*.whl
-
