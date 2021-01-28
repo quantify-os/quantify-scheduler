@@ -11,7 +11,7 @@ from scipy import signal
 
 
 def square(t, amp):
-    return amp*np.ones(len(t))
+    return amp * np.ones(len(t))
 
 
 def ramp(t, amp):
@@ -21,16 +21,18 @@ def ramp(t, amp):
 def soft_square(t, amp):
     sq = square(t, amp)
     window = signal.windows.hann(int(len(t) / 2))
-    return signal.convolve(sq, window, mode='same') / sum(window)
+    return signal.convolve(sq, window, mode="same") / sum(window)
 
 
-def drag(t,
-         G_amp: float,
-         D_amp: float,
-         duration: float,
-         nr_sigma: int = 3,
-         phase: float = 0,
-         subtract_offset: str = 'average'):
+def drag(
+    t,
+    G_amp: float,
+    D_amp: float,
+    duration: float,
+    nr_sigma: int = 3,
+    phase: float = 0,
+    subtract_offset: str = "average",
+):
     """
     Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a Derivative :math:`D` as the Q-component.
 
@@ -92,29 +94,32 @@ def drag(t,
         .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
            Phys. Rev. Lett. 103, 110501 (2009).*
     """
-    mu = t[0] + duration/2
+    mu = t[0] + duration / 2
 
-    sigma = duration/(2*nr_sigma)
+    sigma = duration / (2 * nr_sigma)
 
-    gauss_env = G_amp*np.exp(-(0.5 * ((t-mu)**2) / sigma**2))
-    deriv_gauss_env = - D_amp * (t-mu)/(sigma**1) * gauss_env
+    gauss_env = G_amp * np.exp(-(0.5 * ((t - mu) ** 2) / sigma ** 2))
+    deriv_gauss_env = -D_amp * (t - mu) / (sigma ** 1) * gauss_env
 
     # Subtract offsets
-    if subtract_offset.lower() == 'none' or subtract_offset is None:
+    if subtract_offset.lower() == "none" or subtract_offset is None:
         # Do not subtract offset
         pass
-    elif subtract_offset.lower() == 'average':
-        gauss_env -= (gauss_env[0]+gauss_env[-1])/2.
-        deriv_gauss_env -= (deriv_gauss_env[0]+deriv_gauss_env[-1])/2.
-    elif subtract_offset.lower() == 'first':
+    elif subtract_offset.lower() == "average":
+        gauss_env -= (gauss_env[0] + gauss_env[-1]) / 2.0
+        deriv_gauss_env -= (deriv_gauss_env[0] + deriv_gauss_env[-1]) / 2.0
+    elif subtract_offset.lower() == "first":
         gauss_env -= gauss_env[0]
         deriv_gauss_env -= deriv_gauss_env[0]
-    elif subtract_offset.lower() == 'last':
+    elif subtract_offset.lower() == "last":
         gauss_env -= gauss_env[-1]
         deriv_gauss_env -= deriv_gauss_env[-1]
     else:
         raise ValueError(
-            'Unknown value "{}" for keyword argument subtract_offset".'.format(subtract_offset))
+            'Unknown value "{}" for keyword argument subtract_offset".'.format(
+                subtract_offset
+            )
+        )
 
     # generate pulses
     drag_wave = gauss_env + 1j * deriv_gauss_env
@@ -145,8 +150,8 @@ def rotate_wave(wave, phase: float):
     """
     angle = np.deg2rad(phase)
 
-    rot_I = np.cos(angle)*wave.real - np.sin(angle)*wave.imag
-    rot_Q = np.sin(angle)*wave.real + np.cos(angle)*wave.imag
+    rot_I = np.cos(angle) * wave.real - np.sin(angle) * wave.imag
+    rot_Q = np.sin(angle) * wave.real + np.cos(angle) * wave.imag
     return rot_I + 1j * rot_Q
 
 
@@ -179,9 +184,9 @@ def modulate_wave(t, wave, freq_mod):
         Pulse modulation is generally not included when specifying waveform envelopes
         as there are many hardware backends include this capability.
     """
-    cos_mod = np.cos(2*np.pi*freq_mod*t)
-    sin_mod = np.sin(2*np.pi*freq_mod*t)
-    mod_I = cos_mod*wave.real + sin_mod*wave.imag
-    mod_Q = - sin_mod*wave.real + cos_mod*wave.imag
+    cos_mod = np.cos(2 * np.pi * freq_mod * t)
+    sin_mod = np.sin(2 * np.pi * freq_mod * t)
+    mod_I = cos_mod * wave.real + sin_mod * wave.imag
+    mod_Q = -sin_mod * wave.real + cos_mod * wave.imag
 
-    return mod_I + 1j*mod_Q
+    return mod_I + 1j * mod_Q

@@ -37,24 +37,24 @@ class Schedule(UserDict):
         super().__init__()
 
         # ensure keys exist
-        self.data['operation_dict'] = {}
-        self.data['timing_constraints'] = []
-        self.data['resource_dict'] = {}
-        self.data['name'] = 'nameless'
+        self.data["operation_dict"] = {}
+        self.data["timing_constraints"] = []
+        self.data["resource_dict"] = {}
+        self.data["name"] = "nameless"
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
         self.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
 
         if name is not None:
-            self.data['name'] = name
+            self.data["name"] = name
 
         if data is not None:
             raise NotImplementedError
 
     @property
     def name(self):
-        return self.data['name']
+        return self.data["name"]
 
     @property
     def operations(self):
@@ -64,7 +64,7 @@ class Schedule(UserDict):
 
         The keys correspond to the :meth:`~Operation.hash` and values are instances of :class:`Operation`.
         """
-        return self.data['operation_dict']
+        return self.data["operation_dict"]
 
     @property
     def timing_constraints(self):
@@ -77,14 +77,14 @@ class Schedule(UserDict):
         The label is used as a unique identifier that can be used as a reference for other operations
         the operation_hash refers to the hash of a unique operation in :meth:`~Schedule.operations`.
         """
-        return self.data['timing_constraints']
+        return self.data["timing_constraints"]
 
     @property
     def resources(self):
         """
         A dictionary containing resources. Keys are names (str), values are instances of :class:`Resource` .
         """
-        return self.data['resource_dict']
+        return self.data["resource_dict"]
 
     def add_resources(self, resources: list):
         for r in resources:
@@ -95,27 +95,33 @@ class Schedule(UserDict):
         Add a resource such as a channel or qubit to the schedule.
         """
         assert Resource.is_valid(resource)
-        if resource.name in self.data['resource_dict']:
+        if resource.name in self.data["resource_dict"]:
             raise ValueError("Key {} is already present".format(resource.name))
         else:
-            self.data['resource_dict'][resource.name] = resource
+            self.data["resource_dict"][resource.name] = resource
 
     def __repr__(self):
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
-            self.data['name'],
-            len(self.data['operation_dict']), len(self.data['timing_constraints']))
+            self.data["name"],
+            len(self.data["operation_dict"]),
+            len(self.data["timing_constraints"]),
+        )
 
     @classmethod
     def is_valid(cls, schedule):
-        scheme = load_json_schema(__file__, 'schedule.json')
+        scheme = load_json_schema(__file__, "schedule.json")
         jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 
-    def add(self, operation, rel_time: float = 0,
-            ref_op: str = None,
-            ref_pt: str = 'end',
-            ref_pt_new: str = 'start',
-            label: str = None) -> str:
+    def add(
+        self,
+        operation,
+        rel_time: float = 0,
+        ref_op: str = None,
+        ref_pt: str = "end",
+        ref_pt_new: str = "start",
+        label: str = None,
+    ) -> str:
         """
         Add an Operation to the schedule and specify timing constraints.
 
@@ -147,25 +153,46 @@ class Schedule(UserDict):
 
         # assert that the label of the operation does not exists in the
         # timing constraints.
-        label_is_unique = len([item for item in self.data['timing_constraints'] if item['label'] == label]) == 0
+        label_is_unique = (
+            len(
+                [
+                    item
+                    for item in self.data["timing_constraints"]
+                    if item["label"] == label
+                ]
+            )
+            == 0
+        )
         if not label_is_unique:
             raise ValueError('label "{}" must be unique'.format(label))
 
         # assert that the reference operation exists
         if ref_op is not None:
-            ref_exists = len([item for item in self.data['timing_constraints'] if item['label'] == ref_op]) == 1
+            ref_exists = (
+                len(
+                    [
+                        item
+                        for item in self.data["timing_constraints"]
+                        if item["label"] == ref_op
+                    ]
+                )
+                == 1
+            )
             if not ref_exists:
-                raise ValueError('Reference "{}" does not exist in schedule.'.format(ref_op))
+                raise ValueError(
+                    'Reference "{}" does not exist in schedule.'.format(ref_op)
+                )
 
-        self.data['operation_dict'][operation_hash] = operation
-        timing_constr = {'label': label,
-                         'rel_time': rel_time,
-                         'ref_op': ref_op,
-                         'ref_pt_new': ref_pt_new,
-                         'ref_pt': ref_pt,
-                         'operation_hash': operation_hash
-                         }
-        self.data['timing_constraints'].append(timing_constr)
+        self.data["operation_dict"][operation_hash] = operation
+        timing_constr = {
+            "label": label,
+            "rel_time": rel_time,
+            "ref_op": ref_op,
+            "ref_pt_new": ref_pt_new,
+            "ref_pt": ref_pt,
+            "operation_hash": operation_hash,
+        }
+        self.data["timing_constraints"].append(timing_constr)
 
         return label
 
@@ -199,18 +226,18 @@ class Operation(UserDict):
         super().__init__()
 
         # ensure keys exist
-        self.data['gate_info'] = {}
-        self.data['pulse_info'] = []  # A list of pulses
-        self.data['logic_info'] = {}
+        self.data["gate_info"] = {}
+        self.data["pulse_info"] = []  # A list of pulses
+        self.data["logic_info"] = {}
 
         if name is not None:
-            self.data['name'] = name
+            self.data["name"] = name
         if data is not None:
             self.data.update(data)
 
     @property
     def name(self):
-        return self.data['name']
+        return self.data["name"]
 
     @property
     def duration(self):
@@ -222,8 +249,8 @@ class Operation(UserDict):
         duration = 0  # default to zero duration if no pulse content is specified.
 
         # Iterate over all pulses and take longest duration
-        for p in self.data['pulse_info']:
-            d = p['duration']+p['t0']
+        for p in self.data["pulse_info"]:
+            d = p["duration"] + p["t0"]
             if d > duration:
                 duration = d
 
@@ -245,7 +272,7 @@ class Operation(UserDict):
         gate_operation : :class:`Operation`
             an operation containing gate_info.
         """
-        self.data['gate_info'].update(gate_operation.data['gate_info'])
+        self.data["gate_info"].update(gate_operation.data["gate_info"])
 
     def add_pulse(self, pulse_operation):
         """
@@ -256,11 +283,11 @@ class Operation(UserDict):
         pulse_operation : :class:`Operation`
             an operation containing pulse_info.
         """
-        self.data['pulse_info'] += pulse_operation.data['pulse_info']
+        self.data["pulse_info"] += pulse_operation.data["pulse_info"]
 
     @classmethod
     def is_valid(cls, operation):
-        scheme = load_json_schema(__file__, 'operation.json')
+        scheme = load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
         operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
@@ -271,7 +298,7 @@ class Operation(UserDict):
         An operation is a valid gate if it contains information on how
         to represent the operation on the gate level.
         """
-        if self.data['gate_info']:
+        if self.data["gate_info"]:
             return True
         return False
 
@@ -281,7 +308,7 @@ class Operation(UserDict):
         An operation is a valid pulse if it contains information on how
         to represent the operation on the pulse level.
         """
-        if self.data['pulse_info']:
+        if self.data["pulse_info"]:
             return True
         return False
 
@@ -298,5 +325,5 @@ class Operation(UserDict):
         it is added to the main measurement operation.
         """
         assert self.valid_pulse
-        for p in self.data['pulse_info']:
+        for p in self.data["pulse_info"]:
             p[self.ACQUISITION_IDENTIFIER] = True

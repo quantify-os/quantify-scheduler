@@ -2,7 +2,6 @@ pip
 bump2version==0.5.11
 wheel==0.33.6
 watchdog==0.9.0
-flake8
 coverage
 sphinx>=2 # jupyter_sphinx requires sphinx>=2
 nbsphinx
@@ -15,4 +14,5 @@ pytest
 pytest-runner
 pytest-cov
 pytest-mpl
-flake8-html
+black
+pre-commit
