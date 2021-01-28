@@ -23,8 +23,8 @@ from quantify.utilities.general import make_hash, without, import_func_from_stri
 PulsarModulations = namedtuple('PulsarModulations', ['gain_I', 'gain_Q', 'offset', 'phase', 'phase_delta'],
                                defaults=[None, None, None, None, None])
 
-QCM_DRIVER_VER = '0.2.1'
-QRM_DRIVER_VER = '0.2.1'
+QCM_DRIVER_VER = '0.2.2'
+QRM_DRIVER_VER = '0.2.2'
 
 
 class QCM_sequencer(Resource):
