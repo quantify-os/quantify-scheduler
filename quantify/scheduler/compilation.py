@@ -15,6 +15,8 @@ from quantify.scheduler.pulse_library import (
     IdlePulse,
     SoftSquarePulse,
 )
+
+from quantify.scheduler.measurement_library import WeightedAcquisition
 from quantify.utilities.general import load_json_schema
 
 if TYPE_CHECKING:
@@ -163,30 +165,24 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
             continue
 
         if op["gate_info"]["operation_type"] == "measure":
+            i=0
             for q in op["gate_info"]["qubits"]:
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
-                if q_cfg["params"]["ro_pulse_type"] == "square":
-                    op.add_pulse(
-                        SquarePulse(
-                            amp=q_cfg["params"]["ro_pulse_amp"],
-                            duration=q_cfg["params"]["ro_pulse_duration"],
-                            port=q_cfg["resources"]["port_ro"],
-                            clock=q_cfg["resources"]["clock_ro"],
-                            t0=0,
-                        )
+                if q_cfg["params"]["meas_prot"] == "WeightedAcquisition":
+                    op.add_measurement_protocol(WeightedAcquisition(
+                                      amp=q_cfg["params"]["ro_pulse_amp"], 
+                                      duration_pulse=q_cfg["params"]["ro_pulse_duration"],
+                                      duration_acq=q_cfg["params"]["ro_acq_integration_time"],
+                                      acq_delay=q_cfg["params"]["ro_acq_delay"],
+                                      acq_index=op["gate_info"]["measure_index"][i],
+                                      port=q_cfg["resources"]["port_ro"],
+                                      clock=q_cfg["resources"]["clock_ro"],
+                                      store_IQ=q_cfg["params"]["store_IQ"],
+                                      store_trace=q_cfg["params"]["store_trace"],
+                                      )
                     )
-                    # acquisition integration window
-                    acquisition = SquarePulse(
-                        amp=1,
-                        duration=q_cfg["params"]["ro_acq_integration_time"],
-                        port=q_cfg["resources"]["port_ro"],
-                        clock=q_cfg["resources"]["clock_ro"],
-                        t0=q_cfg["params"]["ro_acq_delay"],
-                    )
-                    acquisition.mark_as_acquisition()
-                    op.add_pulse(acquisition)
-                    # add clock to resources
+
                     if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
                         schedule.add_resources(
                             [
@@ -196,6 +192,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                                 )
                             ]
                         )
+                i += 1
 
         elif op["gate_info"]["operation_type"] == "Rxy":
             q = op["gate_info"]["qubits"][0]

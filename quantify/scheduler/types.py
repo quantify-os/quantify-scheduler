@@ -228,6 +228,7 @@ class Operation(UserDict):
         # ensure keys exist
         self.data["gate_info"] = {}
         self.data["pulse_info"] = []  # A list of pulses
+        self.data["acquisition_weights_info"] = []  # A list of acquisition_weights
         self.data["logic_info"] = {}
 
         if name is not None:
@@ -284,6 +285,18 @@ class Operation(UserDict):
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
+ 
+    def add_measurement_protocol(self, measurement_protocol):
+        """
+        Adds measurement_protocol to self.
+
+        Parameters
+        ----------
+        measurement_protocol : :class:`Operation`
+            an operation containing measurement_protocol.
+        """
+        self.data["pulse_info"] += measurement_protocol.data["pulse_info"]
+        self.data["acquisition_weights_info"] += measurement_protocol.data["acquisition_weights_info"]
 
     @classmethod
     def is_valid(cls, operation):
@@ -311,19 +324,3 @@ class Operation(UserDict):
         if self.data["pulse_info"]:
             return True
         return False
-
-    """
-    Used by the compiler to identify pulses which must be acquired rather than played
-    """
-    ACQUISITION_IDENTIFIER = "is_acquisition"
-
-    def mark_as_acquisition(self):
-        """
-        Marks all pulses within an operation as acquisition.
-
-        For a typical measurement operation, this is applied to the acquisition pulse (operation) before
-        it is added to the main measurement operation.
-        """
-        assert self.valid_pulse
-        for p in self.data["pulse_info"]:
-            p[self.ACQUISITION_IDENTIFIER] = True
