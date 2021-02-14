@@ -431,7 +431,7 @@ def _extract_interm_freq(
             "the lo_freq and nco_freq in the hardware mapping."
         )
 
-    return lo_freq, interm_freq, clock_freq
+    return lo_freq, interm_freq
 
 
 def _extract_io(
@@ -560,7 +560,7 @@ def _invert_hardware_mapping(hardware_mapping):
             if device_cfg["type"] == "Pulsar_QCM":
                 io = ["complex_output_0", "complex_output_1"]
             elif device_cfg["type"] == "Pulsar_QRM":
-                io = ["complex_in/output_0"]
+                io = ["complex_io_0"]
         elif device_cfg["mode"] == "real":
             if device_cfg["type"] == "Pulsar_QCM":
                 io = ["real_output_0", "real_output_1", "real_output_", "real_output_3"]
@@ -680,7 +680,7 @@ def pulsar_assembler_backend(
                 else:
                     raise ValueError(f"Unrecognized Pulsar type '{pulsar_type}'")
 
-                lo_freq, interm_freq, _ = _extract_interm_freq(
+                lo_freq, interm_freq = _extract_interm_freq(
                     hardware_mapping=mapping,
                     hw_mapping_inverted=portclock_mapping,
                     port=port,
@@ -825,7 +825,7 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 seq_idx = 0
             elif io == "complex_output_1":
                 seq_idx = 1
-            elif io == "complex_in/output_0":
+            elif io == "complex_io_0":
                 seq_idx = 0
             else:
                 # real outputs are not yet supported
