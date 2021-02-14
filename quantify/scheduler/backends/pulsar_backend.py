@@ -662,8 +662,8 @@ def pulsar_assembler_backend(
             t0 = t_constr["abs_time"] + p["t0"]
             pulse_id = make_hash(without(p, ["t0"]))
 
-            if Operation.ACQUISITION_IDENTIFIER in p:
-                acquisitions.add(pulse_id)
+            # if Operation.ACQUISITION_IDENTIFIER in p:
+            #     acquisitions.add(pulse_id)
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
@@ -773,9 +773,7 @@ def pulsar_assembler_backend(
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
 
-    pulsar_control_stack_config = {"schedule": schedule, "config_dict": config_dict, "mapping": mapping, "portclock_mapping": portclockmapping}
-
-    return pulsar_control_stack_config
+    return config_dict
 
 
 def _check_driver_version(instr, ver):
@@ -827,6 +825,8 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 seq_idx = 0
             elif io == "complex_output_1":
                 seq_idx = 1
+            elif io == "complex_in/output_0":
+                seq_idx = 0
             else:
                 # real outputs are not yet supported
                 raise ValueError(f"Output {io} not supported.")
@@ -878,6 +878,7 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer")
 
             pulsar.set(f"sequencer{seq_idx}_waveforms_and_program", config_fn)
+            pulsar.arm_sequencer(seq_idx)
 
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
