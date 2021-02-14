@@ -7,21 +7,52 @@ from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
 
 
-class WeightedAcquisition(Operation):
+class TraceAcquisition(Operation):
+    def __init__(
+        self,
+        duration_acq: float,
+        acq_index: int,
+        port: str,
+        t0: float = 0,
+    ):
+        """
+        A two-channel modulated acquisition.
+
+        Parameters
+        ------------
+        duration : float
+            Duration of the aquisition in seconds.
+        port : str
+            Port of the pulse, must be capable of playing a complex waveform.
+        phase : float
+            Phase of the pulse in degrees.
+        clock : str
+            Clock used to modulate the pulse.
+        """
+        data = {
+            "name": "TraceAcquisition",
+            "trace_info": [
+                {
+                    "duration": duration_acq,
+                    "t0": t0,
+                    "port": port,
+                    "acq_index": acq_index,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+
+
+class VectorAcquisition(Operation):
     def __init__(
         self,
         duration_pulse: float,
         duration_acq: float,
         acq_delay: float,
         acq_index: int,
-        port: str,
-        clock: str,
         amp: float,
-        rot_angle: float = 0,
-        threshold: float = 0,
-        store_trace: bool = False,
-        store_IQ: bool = True,
-        store_threshold: bool = False,
+        port: str,
+        clock: str = None,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -45,7 +76,7 @@ class WeightedAcquisition(Operation):
             raise NotImplementedError
 
         data = {
-            "name": "SquareAcquisition",
+            "name": "VectorAcquisition",
             "pulse_info": [
                 {
                     "wf_func": "quantify.scheduler.waveforms.square",
@@ -53,6 +84,7 @@ class WeightedAcquisition(Operation):
                     "duration": duration_pulse,
                     "t0": t0,
                     "clock": clock,
+                    "phase": phase,
                     "port": port,
                 }
             ],
@@ -64,12 +96,8 @@ class WeightedAcquisition(Operation):
                     "t0": t0 + acq_delay,
                     "clock": clock,
                     "port": port,
+                    "phase": phase,
                     "acq_index": acq_index,
-                    "store_trace": store_trace,
-                    "store_IQ": store_IQ,
-                    "store_threshold": store_threshold,
-                    "rot_angle": rot_angle,
-                    "threshold": threshold,
                 }
             ],
         }

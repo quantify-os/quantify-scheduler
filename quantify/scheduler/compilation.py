@@ -16,7 +16,7 @@ from quantify.scheduler.pulse_library import (
     SoftSquarePulse,
 )
 
-from quantify.scheduler.measurement_library import WeightedAcquisition
+from quantify.scheduler.measurement_library import VectorAcquisition
 from quantify.utilities.general import load_json_schema
 
 if TYPE_CHECKING:
@@ -169,8 +169,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
             for q in op["gate_info"]["qubits"]:
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
-                if q_cfg["params"]["meas_prot"] == "WeightedAcquisition":
-                    op.add_measurement_protocol(WeightedAcquisition(
+                if q_cfg["params"]["meas_prot"] == "VectorAcquisition":
+                    op.add_measurement_protocol(VectorAcquisition(
                                       amp=q_cfg["params"]["ro_pulse_amp"], 
                                       duration_pulse=q_cfg["params"]["ro_pulse_duration"],
                                       duration_acq=q_cfg["params"]["ro_acq_integration_time"],
@@ -178,8 +178,6 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                                       acq_index=op["gate_info"]["measure_index"][i],
                                       port=q_cfg["resources"]["port_ro"],
                                       clock=q_cfg["resources"]["clock_ro"],
-                                      store_IQ=q_cfg["params"]["store_IQ"],
-                                      store_trace=q_cfg["params"]["store_trace"],
                                       )
                     )
 
