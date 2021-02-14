@@ -39,7 +39,7 @@ class QCM_sequencer(Resource):
     """
 
     def __init__(
-        self, name: str, port: str, clock: str, interm_freq: float = 0, phase: float = 0
+        self, name: str, port: str, clock: str, lo_freq: float = None, interm_freq: float = 0, phase: float = 0
     ):
         """
         A QCM sequencer.
@@ -68,6 +68,7 @@ class QCM_sequencer(Resource):
             "port": port,
             "clock": clock,
             "interm_freq": interm_freq,
+            "lo_freq": lo_freq,
             "phase": phase,
             "sampling_rate": 1e9,
         }
@@ -86,7 +87,7 @@ class QCM_sequencer(Resource):
 
 class QRM_sequencer(Resource):
     def __init__(
-        self, name: str, port: str, clock: str, interm_freq: float = 0, phase: float = 0
+        self, name: str, port: str, clock: str, lo_freq: float = None, interm_freq: float = 0, phase: float = 0
     ):
         """
         A QRM sequencer.
@@ -114,6 +115,7 @@ class QRM_sequencer(Resource):
             "type": str(self.__class__.__name__),
             "port": port,
             "clock": clock,
+            "lo_freq": lo_freq,
             "interm_freq": interm_freq,
             "phase": phase,
             "sampling_rate": 1e9,
@@ -668,7 +670,7 @@ def pulsar_assembler_backend(
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
             interm_freq = 0
-            lo_freq = 0  # FIXME, how does this variable figure in?
+            lo_freq = 0 
             if portclock not in schedule.resources.keys():
                 pulsar_type = _extract_pulsar_type(
                     mapping, portclock_mapping, port, clock_id
@@ -694,6 +696,7 @@ def pulsar_assembler_backend(
                             port=port,
                             clock=clock_id,
                             interm_freq=interm_freq,
+                            lo_freq=lo_freq,
                         )
                     ]
                 )
