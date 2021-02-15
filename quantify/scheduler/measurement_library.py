@@ -10,7 +10,7 @@ from quantify.scheduler.resources import BasebandClockResource
 class TraceAcquisition(Operation):
     def __init__(
         self,
-        duration_acq: float,
+        duration: float,
         acq_index: int,
         port: str,
         t0: float = 0,
@@ -33,7 +33,7 @@ class TraceAcquisition(Operation):
             "name": "TraceAcquisition",
             "trace_info": [
                 {
-                    "duration": duration_acq,
+                    "duration": duration,
                     "t0": t0,
                     "port": port,
                     "acq_index": acq_index,
