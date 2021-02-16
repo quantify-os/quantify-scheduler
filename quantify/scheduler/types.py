@@ -286,7 +286,7 @@ class Operation(UserDict):
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
- 
+
     def add_acquisition_protocol(self, acquisition_protocol):
         """
         Adds acquisition_protocol to self.
@@ -297,7 +297,9 @@ class Operation(UserDict):
             an operation containing acquisition_protocol.
         """
         self.data["pulse_info"] += acquisition_protocol.data["pulse_info"]
-        self.data["acquisition_weights_info"] += acquisition_protocol.data["acquisition_weights_info"]
+        self.data["acquisition_weights_info"] += acquisition_protocol.data[
+            "acquisition_weights_info"
+        ]
         self.data["trace_info"] += acquisition_protocol.data["trace_info"]
 
     @classmethod

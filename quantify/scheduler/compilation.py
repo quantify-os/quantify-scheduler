@@ -165,20 +165,21 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
             continue
 
         if op["gate_info"]["operation_type"] == "measure":
-            i=0
+            i = 0
             for q in op["gate_info"]["qubits"]:
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
                 if q_cfg["params"]["meas_prot"] == "VectorAcquisition":
-                    op.acquisition_protocol(VectorAcquisition(
-                                      amp=q_cfg["params"]["ro_pulse_amp"], 
-                                      duration_pulse=q_cfg["params"]["ro_pulse_duration"],
-                                      duration_acq=q_cfg["params"]["ro_acq_integration_time"],
-                                      acq_delay=q_cfg["params"]["ro_acq_delay"],
-                                      acq_index=op["gate_info"]["measure_index"][i],
-                                      port=q_cfg["resources"]["port_ro"],
-                                      clock=q_cfg["resources"]["clock_ro"],
-                                      )
+                    op.acquisition_protocol(
+                        VectorAcquisition(
+                            amp=q_cfg["params"]["ro_pulse_amp"],
+                            duration_pulse=q_cfg["params"]["ro_pulse_duration"],
+                            duration_acq=q_cfg["params"]["ro_acq_integration_time"],
+                            acq_delay=q_cfg["params"]["ro_acq_delay"],
+                            acq_index=op["gate_info"]["measure_index"][i],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
                     )
 
                     if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
@@ -357,9 +358,7 @@ def qcompile(
         return schedule
 
 
-def device_compile(
-    schedule: Schedule, device_cfg: dict
-):
+def device_compile(schedule: Schedule, device_cfg: dict):
     """
     Add pulse information to operations based on device config file.
 

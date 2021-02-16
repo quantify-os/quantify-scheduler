@@ -252,7 +252,7 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits, measure_index = []):
+    def __init__(self, *qubits, measure_index=[]):
         data = {
             "gate_info": {
                 "unitary": None,

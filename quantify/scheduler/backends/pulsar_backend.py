@@ -39,7 +39,13 @@ class QCM_sequencer(Resource):
     """
 
     def __init__(
-        self, name: str, port: str, clock: str, lo_freq: float = None, interm_freq: float = 0, phase: float = 0
+        self,
+        name: str,
+        port: str,
+        clock: str,
+        lo_freq: float = None,
+        interm_freq: float = 0,
+        phase: float = 0,
     ):
         """
         A QCM sequencer.
@@ -87,7 +93,13 @@ class QCM_sequencer(Resource):
 
 class QRM_sequencer(Resource):
     def __init__(
-        self, name: str, port: str, clock: str, lo_freq: float = None, interm_freq: float = 0, phase: float = 0
+        self,
+        name: str,
+        port: str,
+        clock: str,
+        lo_freq: float = None,
+        interm_freq: float = 0,
+        phase: float = 0,
     ):
         """
         A QRM sequencer.
@@ -567,9 +579,7 @@ def _invert_hardware_mapping(hardware_mapping):
             if device_cfg["type"] == "Pulsar_QCM":
                 io = ["real_output_0", "real_output_1", "real_output_", "real_output_3"]
             elif device_cfg["type"] == "Pulsar_QRM":
-                raise NotImplementedError(
-                        "QRM in real mode is not yet implemented"
-                    )        
+                raise NotImplementedError("QRM in real mode is not yet implemented")
         else:
             raise ValueError("Unrecognised output mode")
         for io in io:
@@ -637,7 +647,7 @@ def pulsar_assembler_backend(
             # this exception is raised when no pulses have been added yet.
             raise ValueError(f"Operation {op.name} has no pulse info")
 
-        for p_ref in (op["pulse_info"] + op["acquisition_weights_info"]):
+        for p_ref in op["pulse_info"] + op["acquisition_weights_info"]:
             if "abs_time" not in t_constr:
                 raise ValueError(
                     f"Absolute timing has not been determined for the schedule '{schedule.name}'"
@@ -667,14 +677,12 @@ def pulsar_assembler_backend(
             if "acq_index" in p:
                 acquisitions.add(pulse_id)
                 if p["acq_index"] > 0:
-                    raise NotImplementedError(
-                        "Binning in QRM is not yet implemented"
-                    )   
+                    raise NotImplementedError("Binning in QRM is not yet implemented")
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
             interm_freq = 0
-            lo_freq = 0 
+            lo_freq = 0
             if portclock not in schedule.resources.keys():
                 pulsar_type = _extract_pulsar_type(
                     mapping, portclock_mapping, port, clock_id
@@ -736,7 +744,7 @@ def pulsar_assembler_backend(
                     )
                 else:
                     wf = modulate_wave(t, wf, interm_freq)
-                    #TODO add mixer corrections
+                    # TODO add mixer corrections
                 seq.pulse_dict[pulse_id] = wf
 
             # FIXME, this is used to synchronise loop length, but will be removed in favour of wait_sync when phase
@@ -885,7 +893,8 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
 
             pulsar.set(f"sequencer{seq_idx}_waveforms_and_program", config_fn)
 
-            #TODO set LO_frequency
+            # TODO set LO_frequency
+
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
     """
