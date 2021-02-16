@@ -165,18 +165,17 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
             continue
 
         if op["gate_info"]["operation_type"] == "measure":
-            i = 0
-            for q in op["gate_info"]["qubits"]:
+            for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
                 if q_cfg["params"]["meas_prot"] == "VectorAcquisition":
-                    op.acquisition_protocol(
+                    op.add_acquisition_protocol(
                         VectorAcquisition(
                             amp=q_cfg["params"]["ro_pulse_amp"],
                             duration_pulse=q_cfg["params"]["ro_pulse_duration"],
                             duration_acq=q_cfg["params"]["ro_acq_integration_time"],
                             acq_delay=q_cfg["params"]["ro_acq_delay"],
-                            acq_index=op["gate_info"]["measure_index"][i],
+                            acq_index=op["gate_info"]["measure_index"][idx],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )
@@ -191,7 +190,6 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                                 )
                             ]
                         )
-                i += 1
 
         elif op["gate_info"]["operation_type"] == "Rxy":
             q = op["gate_info"]["qubits"][0]
