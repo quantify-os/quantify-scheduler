@@ -771,7 +771,9 @@ def pulsar_assembler_backend(
             with open(seq_fn, "w") as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
 
-            dev, _, seq = _extract_device_output_sequencer(portclock_mapping, resource['port'], resource['clock'])
+            dev, _, seq = _extract_device_output_sequencer(
+                portclock_mapping, resource["port"], resource["clock"]
+            )
             if dev not in config_dict.keys():
                 config_dict[dev] = {}
             config_dict[dev][seq] = seq_fn
@@ -873,14 +875,20 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 for path in (0, 1):
                     awg_path = f"_awg_path{path}"
                     pulsar.set(f"sequencer{seq_idx}_cont_mode_en{awg_path}", False)
-                    pulsar.set(f"sequencer{seq_idx}_cont_mode_waveform_idx{awg_path}", 0)
+                    pulsar.set(
+                        f"sequencer{seq_idx}_cont_mode_waveform_idx{awg_path}", 0
+                    )
                     pulsar.set(f"sequencer{seq_idx}_upsample_rate{awg_path}", 0)
                     pulsar.set(f"sequencer{seq_idx}_gain{awg_path}", 1)
                     pulsar.set(f"sequencer{seq_idx}_offset{awg_path}", 0)
 
                 if is_qrm:
-                    pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path0", "sequencer")
-                    pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer")
+                    pulsar.set(
+                        f"sequencer{seq_idx}_trigger_mode_acq_path0", "sequencer"
+                    )
+                    pulsar.set(
+                        f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer"
+                    )
 
                 pulsar.set(f"sequencer{seq_idx}_waveforms_and_program", config_fn)
 
