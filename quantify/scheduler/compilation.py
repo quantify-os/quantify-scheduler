@@ -175,7 +175,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                             duration_pulse=q_cfg["params"]["ro_pulse_duration"],
                             duration_acq=q_cfg["params"]["ro_acq_integration_time"],
                             acq_delay=q_cfg["params"]["ro_acq_delay"],
-                            acq_index=op["gate_info"]["measure_index"][i],
+                            acq_index=op["gate_info"]["measure_index"][idx],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )
