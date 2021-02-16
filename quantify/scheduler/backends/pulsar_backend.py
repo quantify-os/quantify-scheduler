@@ -776,7 +776,7 @@ def pulsar_assembler_backend(
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
 
-    return config_dict
+    return schedule, config_dict
 
 
 def _check_driver_version(instr, ver):

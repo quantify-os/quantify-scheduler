@@ -229,6 +229,7 @@ class Operation(UserDict):
         self.data["gate_info"] = {}
         self.data["pulse_info"] = []  # A list of pulses
         self.data["acquisition_weights_info"] = []  # A list of acquisition_weights
+        self.data["trace_info"] = []  # A list of traces
         self.data["logic_info"] = {}
 
         if name is not None:
@@ -286,17 +287,18 @@ class Operation(UserDict):
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
  
-    def add_measurement_protocol(self, measurement_protocol):
+    def add_acquisition_protocol(self, acquisition_protocol):
         """
-        Adds measurement_protocol to self.
+        Adds acquisition_protocol to self.
 
         Parameters
         ----------
-        measurement_protocol : :class:`Operation`
-            an operation containing measurement_protocol.
+        acquisition_protocol : :class:`Operation`
+            an operation containing acquisition_protocol.
         """
-        self.data["pulse_info"] += measurement_protocol.data["pulse_info"]
-        self.data["acquisition_weights_info"] += measurement_protocol.data["acquisition_weights_info"]
+        self.data["pulse_info"] += acquisition_protocol.data["pulse_info"]
+        self.data["acquisition_weights_info"] += acquisition_protocol.data["acquisition_weights_info"]
+        self.data["trace_info"] += acquisition_protocol.data["trace_info"]
 
     @classmethod
     def is_valid(cls, operation):

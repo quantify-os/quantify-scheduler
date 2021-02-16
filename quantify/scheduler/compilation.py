@@ -170,7 +170,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
                 if q_cfg["params"]["meas_prot"] == "VectorAcquisition":
-                    op.add_measurement_protocol(VectorAcquisition(
+                    op.acquisition_protocol(VectorAcquisition(
                                       amp=q_cfg["params"]["ro_pulse_amp"], 
                                       duration_pulse=q_cfg["params"]["ro_pulse_duration"],
                                       duration_acq=q_cfg["params"]["ro_acq_integration_time"],
