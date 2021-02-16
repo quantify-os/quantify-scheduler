@@ -637,7 +637,7 @@ def pulsar_assembler_backend(
             # this exception is raised when no pulses have been added yet.
             raise ValueError(f"Operation {op.name} has no pulse info")
 
-        for p_ref in op["pulse_info"]:
+        for p_ref in (op["pulse_info"] + op["acquisition_weights_info"]):
             if "abs_time" not in t_constr:
                 raise ValueError(
                     f"Absolute timing has not been determined for the schedule '{schedule.name}'"
@@ -664,8 +664,12 @@ def pulsar_assembler_backend(
             t0 = t_constr["abs_time"] + p["t0"]
             pulse_id = make_hash(without(p, ["t0"]))
 
-            # if Operation.ACQUISITION_IDENTIFIER in p:
-            #     acquisitions.add(pulse_id)
+            if "acq_index" in p:
+                acquisitions.add(pulse_id)
+                if p["acq_index"] > 0:
+                    raise NotImplementedError(
+                        "Binning in QRM is not yet implemented"
+                    )   
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
@@ -732,6 +736,7 @@ def pulsar_assembler_backend(
                     )
                 else:
                     wf = modulate_wave(t, wf, interm_freq)
+                    #TODO add mixer corrections
                 seq.pulse_dict[pulse_id] = wf
 
             # FIXME, this is used to synchronise loop length, but will be removed in favour of wait_sync when phase
@@ -828,8 +833,6 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 seq_idx = 0
             elif io == "complex_output_1":
                 seq_idx = 1
-            elif io == "complex_io_0":
-                seq_idx = 0
             else:
                 # real outputs are not yet supported
                 raise ValueError(f"Output {io} not supported.")
@@ -881,8 +884,8 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
                 pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer")
 
             pulsar.set(f"sequencer{seq_idx}_waveforms_and_program", config_fn)
-            pulsar.arm_sequencer(seq_idx)
 
+            #TODO set LO_frequency
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
     """
