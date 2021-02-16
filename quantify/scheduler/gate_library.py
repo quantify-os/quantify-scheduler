@@ -252,13 +252,14 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits):
+    def __init__(self, *qubits, measure_index=[]):
         data = {
             "gate_info": {
                 "unitary": None,
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.meter",
                 "tex": r"$\langle0|$",
                 "qubits": list(qubits),
+                "measure_index": measure_index,
                 "operation_type": "measure",
             }
         }

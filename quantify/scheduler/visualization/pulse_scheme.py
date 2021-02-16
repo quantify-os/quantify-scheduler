@@ -301,8 +301,8 @@ def pulse_diagram_plotly(
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 150,
     fig_width: float = 1000,
+    modulation: str = "off",
     modulation_if: float = 0,
-    modulation: bool = True,
     sampling_rate: int = 1e9,
 ) -> Figure:
     """
@@ -319,10 +319,10 @@ def pulse_diagram_plotly(
         Height for each channel subplot in px.
     fig_width: float
         Width for the figure in px.
-    modulation: bool
-        Determines if modulation is included in the visualization.
-    modulation_if: bool
-        Determines if intermediate frequency is used for the modulation in the visualization.
+    modulation: str
+        Determines if modulation is included in the visualization. Options are "off", "if", "clock".
+    modulation_if: float
+        Modulation frequency used when modulation is set to "if".
     sampling_rate : float
         The time resolution used in the visualization.
     Returns
@@ -421,13 +421,13 @@ def pulse_diagram_plotly(
             wf = wf_func(t=t, **wf_kwargs)
 
             # optionally adds some modulation
-            if modulation and modulation_if == 0.0 and "clock" in pulse_info:
+            if modulation == "clock":
                 # apply modulation to the waveforms
                 wf = modulate_wave(
                     t, wf, schedule.resources[pulse_info["clock"]]["freq"]
                 )
 
-            if modulation and modulation_if > 0 and "clock" in pulse_info:
+            if modulation == "if":
                 # apply modulation to the waveforms
                 wf = modulate_wave(t, wf, modulation_if)
 
