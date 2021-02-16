@@ -770,7 +770,11 @@ def pulsar_assembler_backend(
             seq_fn = os.path.join(seq_folder, f"{resource.name}_sequencer_cfg.json")
             with open(seq_fn, "w") as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
-            config_dict[resource.name] = seq_fn
+
+            dev, _, seq = _extract_device_output_sequencer(portclock_mapping, resource['port'], resource['clock'])
+            if dev not in config_dict.keys():
+                config_dict[dev] = {}
+            config_dict[dev][seq] = seq_fn
 
     if configure_hardware:
         configure_pulsars(config_dict, mapping, portclock_mapping)
@@ -804,80 +808,81 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
         hw_mapping_inverted = _invert_hardware_mapping(mapping)
 
     # the keys in the config are ignored. The files are assumed to be self consistent.
-    for _, config_fn in config.items():
-        with open(config_fn) as seq_config:
-            data = json.load(seq_config)
-            instr_cfg = data["instr_cfg"]  # all info is in the config
-            pulsar_dict = _extract_pulsar_config(
-                hardware_mapping=mapping,
-                hw_mapping_inverted=hw_mapping_inverted,
-                port=instr_cfg["port"],
-                clock=instr_cfg["clock"],
-            )
+    for pulsar_config in config.values():
+        for config_fn in pulsar_config.values():
+            with open(config_fn) as seq_config:
+                data = json.load(seq_config)
+                instr_cfg = data["instr_cfg"]  # all info is in the config
+                pulsar_dict = _extract_pulsar_config(
+                    hardware_mapping=mapping,
+                    hw_mapping_inverted=hw_mapping_inverted,
+                    port=instr_cfg["port"],
+                    clock=instr_cfg["clock"],
+                )
 
-            io = _extract_io(
-                hardware_mapping=mapping,
-                hw_mapping_inverted=hw_mapping_inverted,
-                port=instr_cfg["port"],
-                clock=instr_cfg["clock"],
-            )
+                io = _extract_io(
+                    hardware_mapping=mapping,
+                    hw_mapping_inverted=hw_mapping_inverted,
+                    port=instr_cfg["port"],
+                    clock=instr_cfg["clock"],
+                )
 
-            # configure settings
-            if io == "complex_output_0":
-                seq_idx = 0
-            elif io == "complex_output_1":
-                seq_idx = 1
-            else:
-                # real outputs are not yet supported
-                raise ValueError(f"Output {io} not supported.")
-
-            if pulsar_dict["name"] not in pulsars:
-                try:
-                    pulsar = Instrument.find_instrument(pulsar_dict["name"])
-                except KeyError as e:
-                    raise KeyError(f'Could not find instrument "{str(e)}"')
-
-                pulsars[pulsar_dict["name"]] = pulsar
-
-                # todo, remove check after QCM #57 is closed
-                if pulsar_dict["ref"] == "int":
-                    if pulsar.reference_source() != "internal":
-                        pulsar.reference_source("internal")
-                elif pulsar_dict["ref"] == "ext":
-                    if pulsar.reference_source() != "external":
-                        pulsar.reference_source("external")
+                # configure settings
+                if io == "complex_output_0":
+                    seq_idx = 0
+                elif io == "complex_output_1":
+                    seq_idx = 1
                 else:
-                    raise ValueError(
-                        f"Unrecognized reference setting {pulsar_dict['ref']}"
-                    )
-            else:
-                pulsar = pulsars[pulsar_dict["name"]]
+                    # real outputs are not yet supported
+                    raise ValueError(f"Output {io} not supported.")
 
-            is_qrm = instr_cfg["type"] == "QRM_sequencer"
-            if is_qrm:
-                _check_driver_version(pulsar, QRM_DRIVER_VER)
-            else:
-                _check_driver_version(pulsar, QCM_DRIVER_VER)
+                if pulsar_dict["name"] not in pulsars:
+                    try:
+                        pulsar = Instrument.find_instrument(pulsar_dict["name"])
+                    except KeyError as e:
+                        raise KeyError(f'Could not find instrument "{str(e)}"')
 
-            pulsar.set(f"sequencer{seq_idx}_sync_en", True)
-            # FIXME, re-add hardware modulation when hardware demodulation is supported
-            # pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
-            # pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
-            # mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
-            # pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
-            for path in (0, 1):
-                awg_path = f"_awg_path{path}"
-                pulsar.set(f"sequencer{seq_idx}_cont_mode_en{awg_path}", False)
-                pulsar.set(f"sequencer{seq_idx}_cont_mode_waveform_idx{awg_path}", 0)
-                pulsar.set(f"sequencer{seq_idx}_upsample_rate{awg_path}", 0)
-                pulsar.set(f"sequencer{seq_idx}_gain{awg_path}", 1)
-                pulsar.set(f"sequencer{seq_idx}_offset{awg_path}", 0)
+                    pulsars[pulsar_dict["name"]] = pulsar
 
-            if is_qrm:
-                pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path0", "sequencer")
-                pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer")
+                    # todo, remove check after QCM #57 is closed
+                    if pulsar_dict["ref"] == "int":
+                        if pulsar.reference_source() != "internal":
+                            pulsar.reference_source("internal")
+                    elif pulsar_dict["ref"] == "ext":
+                        if pulsar.reference_source() != "external":
+                            pulsar.reference_source("external")
+                    else:
+                        raise ValueError(
+                            f"Unrecognized reference setting {pulsar_dict['ref']}"
+                        )
+                else:
+                    pulsar = pulsars[pulsar_dict["name"]]
 
-            pulsar.set(f"sequencer{seq_idx}_waveforms_and_program", config_fn)
+                is_qrm = instr_cfg["type"] == "QRM_sequencer"
+                if is_qrm:
+                    _check_driver_version(pulsar, QRM_DRIVER_VER)
+                else:
+                    _check_driver_version(pulsar, QCM_DRIVER_VER)
+
+                pulsar.set(f"sequencer{seq_idx}_sync_en", True)
+                # FIXME, re-add hardware modulation when hardware demodulation is supported
+                # pulsar.set('sequencer{}_nco_freq'.format(seq_idx), instr_cfg['nco_freq'])
+                # pulsar.set('sequencer{}_nco_phase_offs'.format(seq_idx), instr_cfg['nco_phase'])
+                # mod_enable = True if instr_cfg['nco_freq'] != 0 or instr_cfg['nco_phase'] != 0 else False
+                # pulsar.set('sequencer{}_mod_en_awg'.format(seq_idx), mod_enable)
+                for path in (0, 1):
+                    awg_path = f"_awg_path{path}"
+                    pulsar.set(f"sequencer{seq_idx}_cont_mode_en{awg_path}", False)
+                    pulsar.set(f"sequencer{seq_idx}_cont_mode_waveform_idx{awg_path}", 0)
+                    pulsar.set(f"sequencer{seq_idx}_upsample_rate{awg_path}", 0)
+                    pulsar.set(f"sequencer{seq_idx}_gain{awg_path}", 1)
+                    pulsar.set(f"sequencer{seq_idx}_offset{awg_path}", 0)
+
+                if is_qrm:
+                    pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path0", "sequencer")
+                    pulsar.set(f"sequencer{seq_idx}_trigger_mode_acq_path1", "sequencer")
+
+                pulsar.set(f"sequencer{seq_idx}_waveforms_and_program", config_fn)
 
 
 def build_waveform_dict(pulse_info: dict, acquisitions: set) -> dict:
