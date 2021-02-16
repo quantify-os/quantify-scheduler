@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Description:    Library standard measurement protocols for use with the quantify.scheduler.
+# Description:    Library standard acquisition protocols for use with the quantify.scheduler.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C)   Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
@@ -16,18 +16,17 @@ class TraceAcquisition(Operation):
         t0: float = 0,
     ):
         """
-        A two-channel modulated acquisition.
+        A time-domain aqcuisition.
 
         Parameters
         ------------
         duration : float
             Duration of the aquisition in seconds.
         port : str
-            Port of the pulse, must be capable of playing a complex waveform.
-        phase : float
-            Phase of the pulse in degrees.
-        clock : str
-            Clock used to modulate the pulse.
+            Port of the acquisition.
+        acq_index : int
+            Bin in which the acquisition is stored. If multiple acquisitions with the same acq_index are used in the same experiment, their results will be averaged.
+
         """
         data = {
             "name": "TraceAcquisition",
@@ -57,18 +56,26 @@ class VectorAcquisition(Operation):
         t0: float = 0,
     ):
         """
-        A two-channel modulated acquisition.
+        A two-port vector network measurement. A modulated square-pulse is played on the output and captured and integrated on the input to determine IQ values
 
         Parameters
         ------------
-        duration : float
-            Duration of the aquisition in seconds.
+        duration_pulse : float
+            Duration of the pulse in seconds.
+        duration_acq : float
+            Duration of the acquisition in seconds.
+        acq_delay: float
+            Delay between start of pulse and start of acquisition in seconds.
+        amp: float
+            amplitude of the pulse in Volt.
         port : str
-            Port of the pulse, must be capable of playing a complex waveform.
+            Port of the acquisition.
+        acq_index : int
+            Bin in which the acquisition is stored. If multiple acquisitions with the same acq_index are used in the same experiment, their results will be averaged.
         phase : float
-            Phase of the pulse in degrees.
+            Phase of the pulse and acquisition in degrees.
         clock : str
-            Clock used to modulate the pulse.
+            Clock used to modulate the pulse and demodulate acquisition.
         """
         if phase != 0:
             # Because of how clock interfaces were changed.

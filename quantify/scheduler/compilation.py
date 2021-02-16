@@ -16,7 +16,7 @@ from quantify.scheduler.pulse_library import (
     SoftSquarePulse,
 )
 
-from quantify.scheduler.measurement_library import VectorAcquisition
+from quantify.scheduler.acquisition_library import VectorAcquisition
 from quantify.utilities.general import load_json_schema
 
 if TYPE_CHECKING:
@@ -355,3 +355,39 @@ def qcompile(
         return hardware_compile(schedule, mapping=hardware_mapping, **kwargs)
     else:
         return schedule
+
+
+def device_compile(
+    schedule: Schedule, device_cfg: dict
+):
+    """
+    Add pulse information to operations based on device config file.
+
+    Parameters
+    ----------
+    schedule : :class:`~quantify.scheduler.Schedule`
+        To be compiled
+    device_cfg : dict
+        Device specific configuration, defines the compilation step from
+        the gate-level to the pulse level description.
+
+    Returns
+    ----------
+    schedule : :class:`~quantify.scheduler.Schedule`
+        The updated schedule.
+
+    """
+
+    device_bck_name = device_cfg["backend"]
+    if (
+        device_bck_name
+        != "quantify.scheduler.compilation.add_pulse_information_transmon"
+    ):
+        raise NotImplementedError
+    (mod, cls) = device_bck_name.rsplit(".", 1)
+    device_compile = getattr(importlib.import_module(mod), cls)
+
+    schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
+    schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
+
+    return schedule

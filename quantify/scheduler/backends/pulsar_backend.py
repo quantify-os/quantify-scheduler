@@ -562,7 +562,7 @@ def _invert_hardware_mapping(hardware_mapping):
             if device_cfg["type"] == "Pulsar_QCM":
                 io = ["complex_output_0", "complex_output_1"]
             elif device_cfg["type"] == "Pulsar_QRM":
-                io = ["complex_io_0"]
+                io = ["complex_output_0"]
         elif device_cfg["mode"] == "real":
             if device_cfg["type"] == "Pulsar_QCM":
                 io = ["real_output_0", "real_output_1", "real_output_", "real_output_3"]
