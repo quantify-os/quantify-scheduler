@@ -163,7 +163,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                         "added to the schedule.".format(op.hash, p["clock"])
                     )
             continue
-        print(op)
+
         if op["gate_info"]["operation_type"] == "measure":
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
