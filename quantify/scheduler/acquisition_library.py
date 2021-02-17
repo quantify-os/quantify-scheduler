@@ -96,11 +96,12 @@ class SSBIntegrationComplex(Operation):
                     "phase": phase,
                     "data_reg": data_reg,
                     "bin_mode": bin_mode,
-                    "protocol": "weigthed_integrated_complex",
+                    "protocol": "weighted_integrated_complex",
                 }
             ],
         }
         super().__init__(name=data["name"], data=data)
+
 
 class WeightedIntegrationComplex(Operation):
     def __init__(
@@ -126,7 +127,7 @@ class WeightedIntegrationComplex(Operation):
         vals_1 : [complex]
             List of complex values used as weights on the incoming complex signal.
         t : [foat]
-            Time value of each weight. 
+            Time value of each weight.
         port : str
             Port of the acquisition.
         data_reg : int
