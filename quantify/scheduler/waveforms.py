@@ -14,7 +14,7 @@ def square(t, amp):
     return amp * np.ones(len(t))
 
 def square_complex(t, amp):
-    return amp * np.ones(len(t)) * (1 + 1j) / np.sqrt(2)
+    return amp * np.ones(len(t)) * (0 + 1j)
 
 def ramp(t, amp):
     return np.linspace(0, amp, len(t))

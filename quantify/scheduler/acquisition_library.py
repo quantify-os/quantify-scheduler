@@ -47,7 +47,7 @@ class Trace(Operation):
         super().__init__(name=data["name"], data=data)
 
 
-class SSBIntegratedComplex(Operation):
+class SSBIntegrationComplex(Operation):
     def __init__(
         self,
         duration: float,
@@ -86,13 +86,76 @@ class SSBIntegratedComplex(Operation):
             "name": "SSBIntegratedComplex",
             "acquisition_info": [
                 {
-                    "wf_func": "quantify.scheduler.waveforms.square_complex",
+                    "wf_func_0": "quantify.scheduler.waveforms.square",
+                    "wf_func_1": "quantify.scheduler.waveforms.square_complex",
                     "amp": 1,
                     "duration": duration,
                     "t0": t0,
                     "clock": clock,
                     "port": port,
                     "phase": phase,
+                    "data_reg": data_reg,
+                    "bin_mode": bin_mode,
+                    "protocol": "weigthed_integrated_complex",
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+
+class WeightedIntegrationComplex(Operation):
+    def __init__(
+        self,
+        vals_0: [complex],
+        vals_1: [complex],
+        t: [float],
+        port: str,
+        clock: str,
+        interpolation: str = "linear",
+        data_reg: int = 0,
+        bin_mode: str = "append",
+        phase: float = 0,
+        t0: float = 0,
+    ):
+        """
+        A weighted integrated acquisition on a complex signal using custom complex windows.
+
+        Parameters
+        ------------
+        vals_0 : [complex]
+            List of complex values used as weights on the incoming complex signal.
+        vals_1 : [complex]
+            List of complex values used as weights on the incoming complex signal.
+        t : [foat]
+            Time value of each weight. 
+        port : str
+            Port of the acquisition.
+        data_reg : int
+            Data register in which the acquisition is stored.
+        phase : float
+            Phase of the pulse and acquisition in degrees.
+        clock : str
+            Clock used to demodulate acquisition.
+        bin_mode : str
+            Describes what is done when data is written to a register that already contains a value. Options are "append" which appends the result to the list ar "average" which stores the weigthed average value of the new result and the old register value.
+
+        """
+        if phase != 0:
+            # Because of how clock interfaces were changed.
+            # FIXME: need to be able to add phases to the waveform separate from the clock.
+            raise NotImplementedError
+
+        data = {
+            "name": "SSBIntegratedComplex",
+            "acquisition_info": [
+                {
+                    "vals_0": vals_0,
+                    "vals_1": vals_1,
+                    "t": t,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                    "phase": phase,
+                    "interpolation": interpolation,
                     "data_reg": data_reg,
                     "bin_mode": bin_mode,
                     "protocol": "weigthed_integrated_complex",

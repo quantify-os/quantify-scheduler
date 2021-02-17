@@ -674,9 +674,9 @@ def pulsar_assembler_backend(
             t0 = t_constr["abs_time"] + p["t0"]
             pulse_id = make_hash(without(p, ["t0"]))
 
-            if "acq_index" in p:
+            if "data_reg" in p:
                 acquisitions.add(pulse_id)
-                if p["acq_index"] > 0:
+                if p["data_reg"] > 0:
                     raise NotImplementedError("Binning in QRM is not yet implemented")
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
