@@ -7,16 +7,17 @@ from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
 
 
-class TraceAcquisition(Operation):
+class Trace(Operation):
     def __init__(
         self,
         duration: float,
-        acq_index: int,
         port: str,
+        data_reg: int = 0,
+        bin_mode: str = "append",
         t0: float = 0,
     ):
         """
-        A time-domain aqcuisition.
+        Measures a signal s(t). Only processing performed is rescaling and adding units based on a calibrated scale.  Values are returned as a raw trace (numpy array of float datatype).
 
         Parameters
         ------------
@@ -24,58 +25,57 @@ class TraceAcquisition(Operation):
             Duration of the aquisition in seconds.
         port : str
             Port of the acquisition.
-        acq_index : int
-            Bin in which the acquisition is stored. If multiple acquisitions with the same acq_index are used in the same experiment, their results will be averaged.
+        data_reg : int
+            Data register in which the acquisition is stored.
+        bin_mode : str
+            Describes what is done when data is written to a register that already contains a value. Options are "append" which appends the result to the list ar "average" which stores the weigthed average value of the new result and the old register value.
 
         """
         data = {
-            "name": "TraceAcquisition",
-            "trace_info": [
+            "name": "Trace",
+            "acquisition_info": [
                 {
                     "duration": duration,
                     "t0": t0,
                     "port": port,
-                    "acq_index": acq_index,
+                    "data_reg": data_reg,
+                    "bin_mode": bin_mode,
+                    "protocol": "trace",
                 }
             ],
         }
         super().__init__(name=data["name"], data=data)
 
 
-class VectorAcquisition(Operation):
+class SSBIntegratedComplex(Operation):
     def __init__(
         self,
-        duration_pulse: float,
-        duration_acq: float,
-        acq_delay: float,
-        acq_index: int,
-        amp: float,
+        duration: float,
         port: str,
-        clock: str = None,
+        clock: str,
+        data_reg: int = 0,
+        bin_mode: str = "append",
         phase: float = 0,
         t0: float = 0,
     ):
         """
-        A two-port vector network measurement. A modulated square-pulse is played on the output and captured and integrated on the input to determine IQ values
+        A weighted integrated acquisition on a complex signal using a boxcar window.
 
         Parameters
         ------------
-        duration_pulse : float
-            Duration of the pulse in seconds.
-        duration_acq : float
+        duration : float
             Duration of the acquisition in seconds.
-        acq_delay: float
-            Delay between start of pulse and start of acquisition in seconds.
-        amp: float
-            amplitude of the pulse in Volt.
         port : str
             Port of the acquisition.
-        acq_index : int
-            Bin in which the acquisition is stored. If multiple acquisitions with the same acq_index are used in the same experiment, their results will be averaged.
+        data_reg : int
+            Data register in which the acquisition is stored.
         phase : float
             Phase of the pulse and acquisition in degrees.
         clock : str
-            Clock used to modulate the pulse and demodulate acquisition.
+            Clock used to demodulate acquisition.
+        bin_mode : str
+            Describes what is done when data is written to a register that already contains a value. Options are "append" which appends the result to the list ar "average" which stores the weigthed average value of the new result and the old register value.
+
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
@@ -83,28 +83,19 @@ class VectorAcquisition(Operation):
             raise NotImplementedError
 
         data = {
-            "name": "VectorAcquisition",
-            "pulse_info": [
+            "name": "SSBIntegratedComplex",
+            "acquisition_info": [
                 {
-                    "wf_func": "quantify.scheduler.waveforms.square",
-                    "amp": amp,
-                    "duration": duration_pulse,
+                    "wf_func": "quantify.scheduler.waveforms.square_complex",
+                    "amp": 1,
+                    "duration": duration,
                     "t0": t0,
                     "clock": clock,
-                    "phase": phase,
-                    "port": port,
-                }
-            ],
-            "acquisition_weights_info": [
-                {
-                    "wf_func": "quantify.scheduler.waveforms.square",
-                    "amp": 1,
-                    "duration": duration_acq,
-                    "t0": t0 + acq_delay,
-                    "clock": clock,
                     "port": port,
                     "phase": phase,
-                    "acq_index": acq_index,
+                    "data_reg": data_reg,
+                    "bin_mode": bin_mode,
+                    "protocol": "weigthed_integrated_complex",
                 }
             ],
         }

@@ -228,8 +228,7 @@ class Operation(UserDict):
         # ensure keys exist
         self.data["gate_info"] = {}
         self.data["pulse_info"] = []  # A list of pulses
-        self.data["acquisition_weights_info"] = []  # A list of acquisition_weights
-        self.data["trace_info"] = []  # A list of traces
+        self.data["acquisition_info"] = []  # A list of acquisition_weights
         self.data["logic_info"] = {}
 
         if name is not None:
@@ -287,20 +286,18 @@ class Operation(UserDict):
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
 
-    def add_acquisition_protocol(self, acquisition_protocol):
+    def add_acquisition(self, acquisition_operation):
         """
-        Adds acquisition_protocol to self.
+        Adds acquisition_info of acquisition_operation to self.
 
         Parameters
         ----------
-        acquisition_protocol : :class:`Operation`
-            an operation containing acquisition_protocol.
+        acquisition_operation : :class:`Operation`
+            an operation containing acquisition_info.
         """
-        self.data["pulse_info"] += acquisition_protocol.data["pulse_info"]
-        self.data["acquisition_weights_info"] += acquisition_protocol.data[
-            "acquisition_weights_info"
+        self.data["acquisition_info"] += acquisition_operation.data[
+            "acquisition_info"
         ]
-        self.data["trace_info"] += acquisition_protocol.data["trace_info"]
 
     @classmethod
     def is_valid(cls, operation):

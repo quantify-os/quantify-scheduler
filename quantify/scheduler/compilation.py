@@ -16,7 +16,7 @@ from quantify.scheduler.pulse_library import (
     SoftSquarePulse,
 )
 
-from quantify.scheduler.acquisition_library import VectorAcquisition
+from quantify.scheduler.acquisition_library import SSBIntegratedComplex
 from quantify.utilities.general import load_json_schema
 
 if TYPE_CHECKING:
@@ -168,14 +168,20 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
-                if q_cfg["params"]["meas_prot"] == "VectorAcquisition":
-                    op.add_acquisition_protocol(
-                        VectorAcquisition(
+                if q_cfg["params"]["acquisition"] == "SSBIntegratedComplex":
+                    op.add_pulse(
+                        SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
-                            duration_pulse=q_cfg["params"]["ro_pulse_duration"],
-                            duration_acq=q_cfg["params"]["ro_acq_integration_time"],
-                            acq_delay=q_cfg["params"]["ro_acq_delay"],
-                            acq_index=op["gate_info"]["measure_index"][idx],
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
+                    )                    
+                    op.add_acquisition(
+                        SSBIntegratedComplex(
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            t0=q_cfg["params"]["ro_acq_delay"],
+                            data_reg=op["gate_info"]["data_reg"][idx],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )

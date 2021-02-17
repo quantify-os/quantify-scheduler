@@ -13,6 +13,8 @@ from scipy import signal
 def square(t, amp):
     return amp * np.ones(len(t))
 
+def square_complex(t, amp):
+    return amp * np.ones(len(t)) * (1 + 1j) / np.sqrt(2)
 
 def ramp(t, amp):
     return np.linspace(0, amp, len(t))
