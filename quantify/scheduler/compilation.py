@@ -16,7 +16,7 @@ from quantify.scheduler.pulse_library import (
     SoftSquarePulse,
 )
 
-from quantify.scheduler.acquisition_library import SSBIntegratedComplex
+from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.utilities.general import load_json_schema
 
 if TYPE_CHECKING:
@@ -163,12 +163,12 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                         "added to the schedule.".format(op.hash, p["clock"])
                     )
             continue
-
+        print(op)
         if op["gate_info"]["operation_type"] == "measure":
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
                 # readout pulse
-                if q_cfg["params"]["acquisition"] == "SSBIntegratedComplex":
+                if q_cfg["params"]["acquisition"] == "SSBIntegrationComplex":
                     op.add_pulse(
                         SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
@@ -176,7 +176,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )
-                    )                    
+                    )
                     op.add_acquisition(
                         SSBIntegratedComplex(
                             duration=q_cfg["params"]["ro_acq_integration_time"],

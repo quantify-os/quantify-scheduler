@@ -83,7 +83,7 @@ class SSBIntegrationComplex(Operation):
             raise NotImplementedError
 
         data = {
-            "name": "SSBIntegratedComplex",
+            "name": "SSBIntegrationComplex",
             "acquisition_info": [
                 {
                     "wf_func_0": "quantify.scheduler.waveforms.square",
