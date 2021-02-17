@@ -639,7 +639,6 @@ def pulsar_assembler_backend(
     max_seq_duration = 0
     acquisitions = set()
     portclock_mapping = _invert_hardware_mapping(mapping)
-
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
         op = schedule.operations[t_constr["operation_hash"]]
 
@@ -693,7 +692,6 @@ def pulsar_assembler_backend(
                     sequencer_t = QRM_sequencer
                 else:
                     raise ValueError(f"Unrecognized Pulsar type '{pulsar_type}'")
-
                 lo_freq, interm_freq = _extract_interm_freq(
                     hardware_mapping=mapping,
                     hw_mapping_inverted=portclock_mapping,
@@ -765,6 +763,7 @@ def pulsar_assembler_backend(
 
     # Convert timing tuples and pulse dicts for each sequencer into assembly configs
     config_dict = {}
+    lo_params = {}
     # the config_dict is a dict with resource names as keys and sequencer filenames as values.
     for resource in schedule.resources.values():
         # only selects the resource objects here that are valid sequencer units.
@@ -795,6 +794,30 @@ def pulsar_assembler_backend(
                 config_dict[dev] = {}
             config_dict[dev][seq] = seq_fn
 
+            io = _extract_io(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=portclock_mapping,
+                port=resource["port"],
+                clock=resource["clock"],
+            )
+            p_config = _extract_pulsar_config(
+                hardware_mapping=mapping,
+                hw_mapping_inverted=portclock_mapping,
+                port=resource["port"],
+                clock=resource["clock"],
+            )
+            config_dict[dev]["settings"] = {"ref": p_config["ref"]}
+
+            if "lo_name" in p_config[io]:
+                lo_name = p_config[io]["lo_name"]
+                lo_freq = resource["lo_freq"]
+                if lo_name not in lo_params.keys():
+                    lo_params[lo_name] = {"lo_freq": lo_freq}
+                elif lo_params[lo_name]["lo_freq"] is not lo_freq:
+                    raise ValueError(
+                        f"Multiple values for lo_freq of {lo_name} specified!"
+                    )
+    config_dict.update(lo_params)
     return schedule, config_dict
 
 
@@ -860,17 +883,6 @@ def configure_pulsars(config: dict, mapping: dict, hw_mapping_inverted: dict = N
 
                     pulsars[pulsar_dict["name"]] = pulsar
 
-                    # todo, remove check after QCM #57 is closed
-                    if pulsar_dict["ref"] == "int":
-                        if pulsar.reference_source() != "internal":
-                            pulsar.reference_source("internal")
-                    elif pulsar_dict["ref"] == "ext":
-                        if pulsar.reference_source() != "external":
-                            pulsar.reference_source("external")
-                    else:
-                        raise ValueError(
-                            f"Unrecognized reference setting {pulsar_dict['ref']}"
-                        )
                 else:
                     pulsar = pulsars[pulsar_dict["name"]]
 
