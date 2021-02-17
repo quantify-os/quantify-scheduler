@@ -647,7 +647,7 @@ def pulsar_assembler_backend(
             # this exception is raised when no pulses have been added yet.
             raise ValueError(f"Operation {op.name} has no pulse info")
 
-        for p_ref in op["pulse_info"] + op["acquisition_weights_info"]:
+        for p_ref in op["pulse_info"] + op["acquisition_info"]:
             if "abs_time" not in t_constr:
                 raise ValueError(
                     f"Absolute timing has not been determined for the schedule '{schedule.name}'"
