@@ -684,7 +684,7 @@ def pulsar_assembler_backend(
 
             if "data_reg" in p:
                 acquisitions.add(pulse_id)
-                if p["data_reg"] > 0:  # FIXME this will go wrong pretty sure
+                if p["data_reg"] > 0:
                     raise NotImplementedError("Binning in QRM is not yet implemented")
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
@@ -795,19 +795,13 @@ def pulsar_assembler_backend(
             with open(seq_fn, "w") as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
 
-            dev, _, seq = _extract_device_output_sequencer(
+            dev, io, seq = _extract_device_output_sequencer(
                 portclock_mapping, resource["port"], resource["clock"]
             )
             if dev not in config_dict.keys():
                 config_dict[dev] = {}
             config_dict[dev][seq] = seq_fn
 
-            io = _extract_io(
-                hardware_mapping=mapping,
-                hw_mapping_inverted=portclock_mapping,
-                port=resource["port"],
-                clock=resource["clock"],
-            )
             p_config = _extract_pulsar_config(
                 hardware_mapping=mapping,
                 hw_mapping_inverted=portclock_mapping,
@@ -816,20 +810,23 @@ def pulsar_assembler_backend(
             )
             config_dict[dev]["settings"] = {"ref": p_config["ref"]}
 
-            if "lo_name" in p_config[io]:
-                lo_name = p_config[io]["lo_name"]
-                lo_freq = resource["lo_freq"]
-                if lo_name not in lo_params.keys():
-                    lo_params[lo_name] = {"lo_freq": lo_freq}
-                elif lo_params[lo_name]["lo_freq"] is not lo_freq:
-                    raise ValueError(
-                        f"Multiple values for lo_freq of {lo_name} specified!"
-                    )
+            lo_params = _add_lo_config(
+                lo_params=lo_params,
+                p_config=p_config,
+                io=io,
+                lo_freq=resource["lo_freq"],
+            )
     config_dict.update(lo_params)
     return schedule, config_dict
 
 
-# def _extract_lo_config
+def _add_lo_config(lo_params, p_config, io, lo_freq):
+    if "lo_name" in p_config[io]:
+        lo_name = p_config[io]["lo_name"]
+        if lo_name not in lo_params.keys():
+            lo_params[lo_name] = {"lo_freq": lo_freq}
+        elif lo_params[lo_name]["lo_freq"] is not lo_freq:
+            raise ValueError(f"Multiple values for lo_freq of {lo_name} specified!")
 
 
 def _check_driver_version(instr, ver):
