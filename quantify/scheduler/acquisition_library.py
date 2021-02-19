@@ -3,8 +3,8 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C)   Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from typing import List
 from quantify.scheduler.types import Operation
-from quantify.scheduler.resources import BasebandClockResource
 
 
 class Trace(Operation):
@@ -17,18 +17,21 @@ class Trace(Operation):
         t0: float = 0,
     ):
         """
-        Measures a signal s(t). Only processing performed is rescaling and adding units based on a calibrated scale.  Values are returned as a raw trace (numpy array of float datatype).
+        Measures a signal s(t). Only processing performed is rescaling and adding units based on a calibrated scale.
+        Values are returned as a raw trace (numpy array of float datatype).
 
         Parameters
         ------------
         duration : float
-            Duration of the aquisition in seconds.
+            Duration of the acquisition in seconds.
         port : str
             Port of the acquisition.
         data_reg : int
             Data register in which the acquisition is stored.
         bin_mode : str
-            Describes what is done when data is written to a register that already contains a value. Options are "append" which appends the result to the list ar "average" which stores the weigthed average value of the new result and the old register value.
+            Describes what is done when data is written to a register that already contains a value. Options are
+            "append" which appends the result to the list ar "average" which stores the weighted average value of the
+            new result and the old register value.
 
         """
         data = {
@@ -59,7 +62,7 @@ class SSBIntegrationComplex(Operation):
         t0: float = 0,
     ):
         """
-        A weighted integrated acquisition on a complex signal using a boxcar window.
+        A weighted integrated acquisition on a complex signal using a square window.
 
         Parameters
         ------------
@@ -74,22 +77,33 @@ class SSBIntegrationComplex(Operation):
         clock : str
             Clock used to demodulate acquisition.
         bin_mode : str
-            Describes what is done when data is written to a register that already contains a value. Options are "append" which appends the result to the list ar "average" which stores the weigthed average value of the new result and the old register value.
+            Describes what is done when data is written to a register that already contains a value. Options are
+            "append" which appends the result to the list ar "average" which stores the weigthed average value of the
+            new result and the old register value.
 
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
-            raise NotImplementedError
+            raise NotImplementedError("Non-zero phase not yet implemented")
+
+        waveform_0 = {
+            "func": "quantify.scheduler.waveforms.square",
+            "amp": 1,
+            "duration": duration,
+        }
+        waveform_1 = {
+            "func": "quantify.scheduler.waveforms.square_complex",
+            "amp": -1,
+            "duration": duration,
+        }
 
         data = {
             "name": "SSBIntegrationComplex",
             "acquisition_info": [
                 {
-                    "wf_func_0": "quantify.scheduler.waveforms.square",
-                    "wf_func_1": "quantify.scheduler.waveforms.square_complex",
-                    "amp": 1,
-                    "duration": duration,
+                    "waveform_0": waveform_0,
+                    "waveform_1": waveform_1,
                     "t0": t0,
                     "clock": clock,
                     "port": port,
@@ -106,9 +120,9 @@ class SSBIntegrationComplex(Operation):
 class WeightedIntegrationComplex(Operation):
     def __init__(
         self,
-        vals_0: [complex],
-        vals_1: [complex],
-        t: [float],
+        vals_0: List[complex],
+        vals_1: List[complex],
+        t: List[float],
         port: str,
         clock: str,
         interpolation: str = "linear",
@@ -122,11 +136,11 @@ class WeightedIntegrationComplex(Operation):
 
         Parameters
         ------------
-        vals_0 : [complex]
+        vals_0 : List[complex]
             List of complex values used as weights on the incoming complex signal.
-        vals_1 : [complex]
+        vals_1 : List[complex]
             List of complex values used as weights on the incoming complex signal.
-        t : [foat]
+        t : List[float]
             Time value of each weight.
         port : str
             Port of the acquisition.
@@ -137,7 +151,9 @@ class WeightedIntegrationComplex(Operation):
         clock : str
             Clock used to demodulate acquisition.
         bin_mode : str
-            Describes what is done when data is written to a register that already contains a value. Options are "append" which appends the result to the list ar "average" which stores the weigthed average value of the new result and the old register value.
+            Describes what is done when data is written to a register that already contains a value. Options are
+            "append" which appends the result to the list ar "average" which stores the weighted average value of the
+            new result and the old register value.
 
         """
         if phase != 0:
@@ -146,10 +162,10 @@ class WeightedIntegrationComplex(Operation):
             raise NotImplementedError
 
         data = {
-            "name": "SSBIntegratedComplex",
+            "name": "NumericalWeightedIntegrationComplex",
             "acquisition_info": [
                 {
-                    "vals_0": vals_0,
+                    "vals_0": vals_0,  # TODO add waveform function
                     "vals_1": vals_1,
                     "t": t,
                     "t0": t0,
@@ -159,7 +175,7 @@ class WeightedIntegrationComplex(Operation):
                     "interpolation": interpolation,
                     "data_reg": data_reg,
                     "bin_mode": bin_mode,
-                    "protocol": "weigthed_integrated_complex",
+                    "protocol": "weighted_integrated_complex",
                 }
             ],
         }

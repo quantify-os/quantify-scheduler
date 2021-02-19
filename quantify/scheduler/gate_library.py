@@ -252,7 +252,9 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits, data_reg=[]):
+    def __init__(
+        self, *qubits, data_reg=None
+    ):  # FIXME how to handle data_reg default properly?
         data = {
             "gate_info": {
                 "unitary": None,

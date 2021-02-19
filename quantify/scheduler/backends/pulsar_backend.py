@@ -301,6 +301,7 @@ class Q1ASMBuilder:
 
 
 # todo this doesnt work for custom waveform functions - use visitors?
+# todo docstring
 def _prepare_pulse(description, gain=0.0):
     def dummy_load_params(param_list):
         for param, default in param_list:
@@ -668,20 +669,27 @@ def pulsar_assembler_backend(
                 port=port,
                 clock=clock_id,
             )
-            params, p = _prepare_pulse(p, gain)
+            if "data_reg" not in p.keys():
+                params, p = _prepare_pulse(p, gain)
+            else:
+                # FIXME: ugly hack to get acquisition working
+                p["wf_func"] = p["waveform_0"]["func"]
+                p.update(p["waveform_0"])
+                params = PulsarModulations(
+                    gain_I=1.0, gain_Q=1.0, offset=None, phase=0, phase_delta=None
+                )
 
             t0 = t_constr["abs_time"] + p["t0"]
             pulse_id = make_hash(without(p, ["t0"]))
 
             if "data_reg" in p:
                 acquisitions.add(pulse_id)
-                if p["data_reg"] > 0:
+                if p["data_reg"] > 0:  # FIXME this will go wrong pretty sure
                     raise NotImplementedError("Binning in QRM is not yet implemented")
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
             interm_freq = 0
-            lo_freq = 0
             if portclock not in schedule.resources.keys():
                 pulsar_type = _extract_pulsar_type(
                     mapping, portclock_mapping, port, clock_id
@@ -819,6 +827,9 @@ def pulsar_assembler_backend(
                     )
     config_dict.update(lo_params)
     return schedule, config_dict
+
+
+# def _extract_lo_config
 
 
 def _check_driver_version(instr, ver):
