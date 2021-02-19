@@ -13,8 +13,10 @@ from scipy import signal
 def square(t, amp):
     return amp * np.ones(len(t))
 
+
 def square_complex(t, amp):
     return amp * np.ones(len(t)) * (0 + 1j)
+
 
 def ramp(t, amp):
     return np.linspace(0, amp, len(t))
@@ -146,15 +148,12 @@ def rotate_wave(wave, phase: float):
     Returns
     -----------
     rot_wave : :class:`numpy.ndarray`
-        rotated waveform.
-    rot_Q : :class:`numpy.ndarray`
-        rotated quadrature component of the waveform.
+        rotated complex waveform.
     """
     angle = np.deg2rad(phase)
 
-    rot_I = np.cos(angle) * wave.real - np.sin(angle) * wave.imag
-    rot_Q = np.sin(angle) * wave.real + np.cos(angle) * wave.imag
-    return rot_I + 1j * rot_Q
+    rot = (np.cos(angle) + 1.0j * np.sin(angle)) * wave
+    return rot
 
 
 def modulate_wave(t, wave, freq_mod):

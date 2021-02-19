@@ -78,7 +78,7 @@ class SSBIntegrationComplex(Operation):
             Clock used to demodulate acquisition.
         bin_mode : str
             Describes what is done when data is written to a register that already contains a value. Options are
-            "append" which appends the result to the list ar "average" which stores the weigthed average value of the
+            "append" which appends the result to the list ar "average" which stores the weighted average value of the
             new result and the old register value.
 
         """
