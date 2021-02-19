@@ -11,7 +11,7 @@
                 "clock_ro": "q0.ro"
             },
             "params": {
-                "acquisition_info": "SSBIntegrationComplex",
+                "acquisition": "SSBIntegrationComplex",
                 "mw_freq": 6.02e9,
                 "mw_amp180": 0.6e-0,
                 "mw_motzoi": 0.45,
