@@ -5,6 +5,7 @@
 # -----------------------------------------------------------------------------
 import numpy as np
 from .types import Operation
+from typing import Tuple, Union
 
 
 class Rxy(Operation):
@@ -236,7 +237,7 @@ class Reset(Operation):
                 "unitary": None,
                 "tex": r"$|0\rangle$",
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.reset",
-                "qubits": list(qubits),
+                "qubits": tuple(qubits),
                 "operation_type": "reset",
             }
         }
@@ -252,15 +253,17 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(
-        self, *qubits, data_reg=None
-    ):  # FIXME how to handle data_reg default properly?
+    def __init__(self, *qubits: str, data_reg: Union[Tuple[int], int] = (0,)):
+
+        if isinstance(data_reg, int):
+            data_reg = (data_reg,)
+
         data = {
             "gate_info": {
                 "unitary": None,
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.meter",
                 "tex": r"$\langle0|$",
-                "qubits": list(qubits),
+                "qubits": tuple(qubits),
                 "data_reg": data_reg,
                 "operation_type": "measure",
             }
