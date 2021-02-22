@@ -7,7 +7,7 @@ import os
 import inspect
 import json
 import warnings
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
@@ -406,9 +406,9 @@ def _extract_interm_freq(
     port: str,
     clock: str,
     clock_freq: float,
-) -> Tuple[float]:
+):
     """
-    Determines the lo and nco frequencies based on the targetted clock frequency and the hardware mapping.
+    Determines the lo and nco frequencies based on the targeted clock frequency and the hardware mapping.
 
     In the mapping file it is possible to specify either the LO frequency or the IF frequency.
     The clock determines the target or RF frequency.
@@ -422,8 +422,6 @@ def _extract_interm_freq(
         LO, frequency of the local oscillator
     float
         IF, inter-modulation frequency used to modulate the signal
-    float
-        RF, the frequency of the signal
     """
     qcm, output, seq = _extract_device_output_sequencer(
         hw_mapping_inverted, port, clock
