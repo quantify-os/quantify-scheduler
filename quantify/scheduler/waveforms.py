@@ -134,6 +134,27 @@ def drag(
     return rot_drag_wave
 
 
+def parameterized_interpolation(t, vals, **kwargs):
+    """
+    Uses given values with a specified time axis to parameterize the waveform, scipy.interpolate.interp1d is used to
+    interpolate between the given values.
+
+    Parameters
+    ----------
+    t
+        time axis used to parameterize the waveform
+    vals
+        y values used to parameterize the waveform
+    kwargs
+        Additional keyword arguments that are passed to scipy.interpolate.interp1d.
+
+    Returns
+    -------
+
+    """
+    pass
+
+
 # ----------------------------------
 # Utility functions
 # ----------------------------------
