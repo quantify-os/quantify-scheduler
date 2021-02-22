@@ -337,11 +337,6 @@ def qcompile(
 
         Add a schema for the hardware mapping.
     """
-
-    device_bck_name = device_cfg["backend"]
-    (mod, cls) = device_bck_name.rsplit(".", 1)
-    device_compile = getattr(importlib.import_module(mod), cls)
-
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
