@@ -77,7 +77,7 @@ class Trace(Operation):
 
 class SSBIntegrationComplex(Operation):
     """
-    A weighted integrated acquisition on a complex signal using a square window.
+    A weighted integrated acquisition on a complex signal using a square window for the acquisition weights.
 
     Parameters
     ------------
@@ -148,6 +148,12 @@ class SSBIntegrationComplex(Operation):
 class WeightedIntegrationComplex(Operation):
     """
     A weighted integrated acquisition on a complex signal using custom complex windows.
+
+    :math:`\widetilde{I} = \int ( \mathfrak{Re}(S(t))\cdot \mathfrak{Re}(W_I(t))
+    + \mathfrak{Im}(S(t))\cdot \mathfrak{Im}(W_I(t)) ) \mathrm{d}t`
+
+    :math:`\widetilde{Q} = \int ( \mathfrak{Re}(S(t))\cdot \mathfrak{Re}(W_Q(t))
+    + \mathfrak{Im}(S(t))\cdot \mathfrak{Im}(W_Q(t)) ) \mathrm{d}t`
 
     Parameters
     ------------
