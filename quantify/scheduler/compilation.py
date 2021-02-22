@@ -377,11 +377,6 @@ def device_compile(schedule: Schedule, device_cfg: dict):
     """
 
     device_bck_name = device_cfg["backend"]
-    if (
-        device_bck_name
-        != "quantify.scheduler.compilation.add_pulse_information_transmon"
-    ):
-        raise NotImplementedError
     (mod, cls) = device_bck_name.rsplit(".", 1)
     device_compilation_bck = getattr(importlib.import_module(mod), cls)
 
