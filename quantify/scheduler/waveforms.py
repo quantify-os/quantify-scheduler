@@ -134,6 +134,11 @@ def drag(
     return rot_drag_wave
 
 
+# ----------------------------------
+# Utility functions
+# ----------------------------------
+
+
 def rotate_wave(wave, phase: float):
     """
     Rotate a wave in the complex plane.
