@@ -546,7 +546,7 @@ def _extract_gain(
 
     Returns
     -------
-    double
+    float
         The gain of the output channel
     """
     qcm, output, _ = _extract_device_output_sequencer(hw_mapping_inverted, port, clock)
@@ -598,7 +598,7 @@ def _invert_hardware_mapping(hardware_mapping):
                     raise ValueError(
                         f"Duplicate port and clock combination: '{seq_cfg['port']}' and '{seq_cfg['clock']}'"
                     )
-                portclock_reference[portclock] = (device_name, io, seq_name)
+                portclock_reference[portclock] = (device_name, ch, seq_name)
     return portclock_reference
 
 
