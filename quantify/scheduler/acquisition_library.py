@@ -6,6 +6,28 @@
 from typing import List
 from quantify.scheduler.types import Operation
 
+VALID_BIN_MODES = ("append", "average")
+
+
+def _check_bin_mode_valid(bin_mode: str):
+    """
+    Raises exception if bin mode is not in VALID_BIN_MODES.
+
+    Parameters
+    ------------
+    bin_mode
+        The bin mode to check
+
+    Raises
+    ------------
+    NotImplementedError
+        bin_mode not in VALID_BIN_MODES
+    """
+    if bin_mode not in VALID_BIN_MODES:
+        raise NotImplementedError(
+            f"Bin mode {bin_mode} not implemented. Valid settings are {VALID_BIN_MODES}."
+        )
+
 
 class Trace(Operation):
     def __init__(
@@ -34,6 +56,8 @@ class Trace(Operation):
             new result and the old register value.
 
         """
+        _check_bin_mode_valid(bin_mode)
+
         data = {
             "name": "Trace",
             "acquisition_info": [
@@ -86,6 +110,8 @@ class SSBIntegrationComplex(Operation):
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError("Non-zero phase not yet implemented")
+
+        _check_bin_mode_valid(bin_mode)
 
         waveform_0 = {
             "func": "quantify.scheduler.waveforms.square",
@@ -159,13 +185,9 @@ class WeightedIntegrationComplex(Operation):
         if phase != 0:
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
-            raise NotImplementedError
+            raise NotImplementedError("Non-zero phase not yet implemented")
 
-        valid_bin_modes = ("append", "average")
-        if bin_mode not in valid_bin_modes:
-            raise NotImplementedError(
-                f"Bin mode {bin_mode} not implemented. Valid settings are {valid_bin_modes}"
-            )
+        _check_bin_mode_valid(bin_mode)
 
         data = {
             "name": "NumericalWeightedIntegrationComplex",
