@@ -55,6 +55,12 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
 
+    valid_time_units = ("physical", "ideal")
+    if time_unit not in valid_time_units:
+        raise ValueError(
+            f"{time_unit} not valid time_unit, must be either {valid_time_units}."
+        )
+
     # iterate over the objects in the schedule.
     last_constr = schedule.timing_constraints[0]
     last_op = schedule.operations[last_constr["operation_hash"]]
