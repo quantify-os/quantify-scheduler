@@ -30,6 +30,25 @@ def _check_bin_mode_valid(bin_mode: str):
 
 
 class Trace(Operation):
+    """
+    Measures a signal s(t). Only processing performed is rescaling and adding units based on a calibrated scale.
+    Values are returned as a raw trace (numpy array of float datatype).
+
+    Parameters
+    ------------
+    duration : float
+        Duration of the acquisition in seconds.
+    port : str
+        Port of the acquisition.
+    data_reg : int
+        Data register in which the acquisition is stored.
+    bin_mode : str
+        Describes what is done when data is written to a register that already contains a value. Options are
+        "append" which appends the result to the list ar "average" which stores the weighted average value of the
+        new result and the old register value.
+
+    """
+
     def __init__(
         self,
         duration: float,
@@ -38,24 +57,6 @@ class Trace(Operation):
         bin_mode: str = "append",
         t0: float = 0,
     ):
-        """
-        Measures a signal s(t). Only processing performed is rescaling and adding units based on a calibrated scale.
-        Values are returned as a raw trace (numpy array of float datatype).
-
-        Parameters
-        ------------
-        duration : float
-            Duration of the acquisition in seconds.
-        port : str
-            Port of the acquisition.
-        data_reg : int
-            Data register in which the acquisition is stored.
-        bin_mode : str
-            Describes what is done when data is written to a register that already contains a value. Options are
-            "append" which appends the result to the list ar "average" which stores the weighted average value of the
-            new result and the old register value.
-
-        """
         _check_bin_mode_valid(bin_mode)
 
         data = {
@@ -75,6 +76,28 @@ class Trace(Operation):
 
 
 class SSBIntegrationComplex(Operation):
+    """
+    A weighted integrated acquisition on a complex signal using a square window.
+
+    Parameters
+    ------------
+    duration : float
+        Duration of the acquisition in seconds.
+    port : str
+        Port of the acquisition.
+    data_reg : int
+        Data register in which the acquisition is stored.
+    phase : float
+        Phase of the pulse and acquisition in degrees.
+    clock : str
+        Clock used to demodulate acquisition.
+    bin_mode : str
+        Describes what is done when data is written to a register that already contains a value. Options are
+        "append" which appends the result to the list or "average" which stores the weighted average value of the
+        new result and the old register value.
+
+    """
+
     def __init__(
         self,
         duration: float,
@@ -85,27 +108,6 @@ class SSBIntegrationComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        """
-        A weighted integrated acquisition on a complex signal using a square window.
-
-        Parameters
-        ------------
-        duration : float
-            Duration of the acquisition in seconds.
-        port : str
-            Port of the acquisition.
-        data_reg : int
-            Data register in which the acquisition is stored.
-        phase : float
-            Phase of the pulse and acquisition in degrees.
-        clock : str
-            Clock used to demodulate acquisition.
-        bin_mode : str
-            Describes what is done when data is written to a register that already contains a value. Options are
-            "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value.
-
-        """
         if phase != 0:
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
@@ -144,6 +146,32 @@ class SSBIntegrationComplex(Operation):
 
 
 class WeightedIntegrationComplex(Operation):
+    """
+    A weighted integrated acquisition on a complex signal using custom complex windows.
+
+    Parameters
+    ------------
+    weights_I : List[complex]
+        List of complex values used as weights on the incoming complex signal.
+    weights_Q : List[complex]
+        List of complex values used as weights on the incoming complex signal.
+    t : List[float]
+        Time value of each weight.
+    port : str
+        Port of the acquisition.
+    data_reg : int
+        Data register in which the acquisition is stored.
+    phase : float
+        Phase of the pulse and acquisition in degrees.
+    clock : str
+        Clock used to demodulate acquisition.
+    bin_mode : str
+        Describes what is done when data is written to a register that already contains a value. Options are
+        "append" which appends the result to the list or "average" which stores the weighted average value of the
+        new result and the old register value.
+
+    """
+
     def __init__(
         self,
         weights_I: List[complex],
@@ -157,31 +185,6 @@ class WeightedIntegrationComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        """
-        A weighted integrated acquisition on a complex signal using custom complex windows.
-
-        Parameters
-        ------------
-        weights_I : List[complex]
-            List of complex values used as weights on the incoming complex signal.
-        weights_Q : List[complex]
-            List of complex values used as weights on the incoming complex signal.
-        t : List[float]
-            Time value of each weight.
-        port : str
-            Port of the acquisition.
-        data_reg : int
-            Data register in which the acquisition is stored.
-        phase : float
-            Phase of the pulse and acquisition in degrees.
-        clock : str
-            Clock used to demodulate acquisition.
-        bin_mode : str
-            Describes what is done when data is written to a register that already contains a value. Options are
-            "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value.
-
-        """
         if phase != 0:
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
