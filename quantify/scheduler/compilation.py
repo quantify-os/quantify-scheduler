@@ -258,6 +258,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                 port=edge_cfg["resource_map"][q0],
                 clock=BasebandClockResource.IDENTITY,
             )
+            op.add_pulse(pulse)
+
             pulse = SoftSquarePulse(
                 amp=amp,
                 duration=edge_cfg["params"]["flux_duration"],
