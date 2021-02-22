@@ -278,7 +278,7 @@ class Operation(UserDict):
 
     def add_pulse(self, pulse_operation: Operation):
         """
-        Adds pulse_info of pulse_operation to self.
+        Adds pulse_info of pulse_operation Operation to this Operation.
 
         Parameters
         ----------
