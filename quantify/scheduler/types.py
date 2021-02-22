@@ -288,16 +288,14 @@ class Operation(UserDict):
 
     def add_acquisition(self, acquisition_operation):
         """
-        Adds acquisition_info of acquisition_operation to self.
+        Adds acquisition_info of acquisition_operation Operation to this Operation.
 
         Parameters
         ----------
         acquisition_operation : :class:`Operation`
             an operation containing acquisition_info.
         """
-        self.data["acquisition_info"] += acquisition_operation.data[
-            "acquisition_info"
-        ]
+        self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
 
     @classmethod
     def is_valid(cls, operation):
