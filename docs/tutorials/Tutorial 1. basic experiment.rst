@@ -253,7 +253,7 @@ The compiled schedule can be uploaded to the hardware using the following comman
 
 .. jupyter-execute::
 
-  configure_pulsars(config, qblox_test_mapping)
+  #configure_pulsars(config, qblox_test_mapping)
 
 
 At this point, the assembler on the device will load the waveforms into memory and verify the program can be executed. We must next arm and then start the device:
