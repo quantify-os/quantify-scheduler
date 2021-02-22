@@ -6,6 +6,7 @@
 import os
 import inspect
 import json
+import warnings
 from typing import Optional
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
@@ -578,7 +579,12 @@ def _invert_hardware_mapping(hardware_mapping):
                 io = ["complex_output_0"]
         elif device_cfg["mode"] == "real":
             if device_cfg["type"] == "Pulsar_QCM":
-                io = ["real_output_0", "real_output_1", "real_output_", "real_output_3"]
+                io = [
+                    "real_output_0",
+                    "real_output_1",
+                    "real_output_2",
+                    "real_output_3",
+                ]
             elif device_cfg["type"] == "Pulsar_QRM":
                 raise NotImplementedError("QRM in real mode is not yet implemented")
         else:
@@ -685,7 +691,7 @@ def pulsar_assembler_backend(
             if "data_reg" in p:
                 acquisitions.add(pulse_id)
                 if p["data_reg"] > 0:
-                    raise NotImplementedError("Binning in QRM is not yet implemented")
+                    warnings.warn("Binning in QRM is not yet implemented")
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
             portclock = _portclock(port, clock_id)
@@ -827,6 +833,7 @@ def _add_lo_config(lo_params, p_config, io, lo_freq):
             lo_params[lo_name] = {"lo_freq": lo_freq}
         elif lo_params[lo_name]["lo_freq"] is not lo_freq:
             raise ValueError(f"Multiple values for lo_freq of {lo_name} specified!")
+    return lo_params
 
 
 def _check_driver_version(instr, ver):
