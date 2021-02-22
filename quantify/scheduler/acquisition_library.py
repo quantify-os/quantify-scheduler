@@ -152,7 +152,7 @@ class WeightedIntegrationComplex(Operation):
             Clock used to demodulate acquisition.
         bin_mode : str
             Describes what is done when data is written to a register that already contains a value. Options are
-            "append" which appends the result to the list ar "average" which stores the weighted average value of the
+            "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
 
         """
@@ -160,6 +160,12 @@ class WeightedIntegrationComplex(Operation):
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError
+
+        valid_bin_modes = ("append", "average")
+        if bin_mode not in valid_bin_modes:
+            raise NotImplementedError(
+                f"Bin mode {bin_mode} not implemented. Valid settings are {valid_bin_modes}"
+            )
 
         data = {
             "name": "NumericalWeightedIntegrationComplex",
