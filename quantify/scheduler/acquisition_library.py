@@ -120,8 +120,8 @@ class SSBIntegrationComplex(Operation):
 class WeightedIntegrationComplex(Operation):
     def __init__(
         self,
-        vals_0: List[complex],
-        vals_1: List[complex],
+        weights_I: List[complex],
+        weights_Q: List[complex],
         t: List[float],
         port: str,
         clock: str,
@@ -136,9 +136,9 @@ class WeightedIntegrationComplex(Operation):
 
         Parameters
         ------------
-        vals_0 : List[complex]
+        weights_I : List[complex]
             List of complex values used as weights on the incoming complex signal.
-        vals_1 : List[complex]
+        weights_Q : List[complex]
             List of complex values used as weights on the incoming complex signal.
         t : List[float]
             Time value of each weight.
@@ -165,8 +165,8 @@ class WeightedIntegrationComplex(Operation):
             "name": "NumericalWeightedIntegrationComplex",
             "acquisition_info": [
                 {
-                    "vals_0": vals_0,  # TODO add waveform function
-                    "vals_1": vals_1,
+                    "weights_I": weights_I,  # TODO add waveform function
+                    "weights_Q": weights_Q,
                     "t": t,
                     "t0": t0,
                     "clock": clock,
