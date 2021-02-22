@@ -95,7 +95,7 @@ Because this experiment is most conveniently described on the gate level, we use
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         sched.add(CZ(q0, q1))
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
+        sched.add(Measure(q0, q1, data_reg=(0, 1)), label='M {:.2f} deg'.format(theta))
 
 
 Visualizing the circuit
@@ -206,7 +206,7 @@ Compilation of pulses onto physical hardware
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         # sched.add(CZ(q0, q1)) # FIXME Commented out because of not implemented error
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
+        sched.add(Measure(q0, q1, data_reg=(0, 1)), label='M {:.2f} deg'.format(theta))
 
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
@@ -308,7 +308,7 @@ between X gates on a pair of qubits.
             square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
             sched.add(X90('q0'), ref_op=square)
             sched.add(X90('q1'), ref_op=square)
-            sched.add(Measure('q0', 'q1'))
+            sched.add(Measure('q0', 'q1', data_reg=(0,1)))
     sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
 
