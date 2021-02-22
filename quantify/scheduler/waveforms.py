@@ -14,8 +14,8 @@ def square(t, amp):
     return amp * np.ones(len(t))
 
 
-def square_complex(t, amp):
-    return amp * np.ones(len(t)) * (0 + 1j)
+def square_imaginary(t, amp):
+    return square(t, amp) * (0 + 1j)
 
 
 def ramp(t, amp):
