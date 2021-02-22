@@ -1,9 +1,13 @@
 import json
+import tempfile
+import pathlib
+import inspect
+import os
 import pytest
-from quantify.data.handling import set_datadir
 import numpy as np
 from qcodes.instrument.base import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
+from quantify.data.handling import set_datadir
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, Rxy, X
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
@@ -24,10 +28,7 @@ from quantify.scheduler.backends.pulsar_backend import (
 )
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
-import pathlib
 
-import inspect
-import os
 import quantify.scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
@@ -308,8 +309,9 @@ def dummy_pulsars():
     else:
         _pulsars = []
 
-    # ensures the default datadir is used which is excluded from git
-    set_datadir(None)
+    # ensures a temporary datadir is used which is excluded from git
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
     yield _pulsars
 
     # teardown
@@ -321,7 +323,7 @@ def dummy_pulsars():
             pass
 
 
-def test_pulsar_assembler_backend_pulses_only():
+def test_pulsar_assembler_backend_pulses_only(dummy_pulsars):
     sched = Schedule("pulse_only_experiment")
     sched.add(
         DRAGPulse(
@@ -387,7 +389,7 @@ def test_pulsar_assembler_backend(dummy_pulsars):
         assert dummy_pulsars[0].sequencer0_sync_en()
 
 
-def test_gate_and_pulse():
+def test_gate_and_pulse(dummy_pulsars):
     sched = Schedule("Chevron Experiment")
     sched.add(X("q0"))
     sched.add(SquarePulse(0.8, 20e-9, "q0:mw", clock="q0.01"))
