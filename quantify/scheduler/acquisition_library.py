@@ -3,7 +3,7 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C)   Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
-from typing import List
+from typing import List, Dict, Any
 from quantify.scheduler.types import Operation
 
 VALID_BIN_MODES = ("append", "average")
@@ -75,7 +75,75 @@ class Trace(Operation):
         super().__init__(name=data["name"], data=data)
 
 
-class SSBIntegrationComplex(Operation):
+class WeightedIntegratedComplex(Operation):
+    """
+    A weighted integrated acquisition on a complex signal using custom complex windows.
+
+    :math:`\widetilde{I} = \int ( \mathfrak{R}(S(t))\cdot \mathfrak{R}(W_I(t))
+    + \mathfrak{I}(S(t))\cdot \mathfrak{I}(W_I(t)) ) \mathrm{d}t`
+
+    :math:`\widetilde{Q} = \int ( \mathfrak{R}(S(t))\cdot \mathfrak{R}(W_Q(t))
+    + \mathfrak{I}(S(t))\cdot \mathfrak{I}(W_Q(t)) ) \mathrm{d}t`
+
+    Parameters
+    ------------
+    waveform_i : Dict[str, Any]
+        Dictionary with waveform function and parameters to be used as weights on the incoming complex signal.
+    waveform_q : Dict[str, Any]
+        Dictionary with waveform function and parameters to be used as weights on the incoming complex signal.
+    port : str
+        Port of the acquisition.
+    data_reg : int
+        Data register in which the acquisition is stored.
+    phase : float
+        Phase of the pulse and acquisition in degrees.
+    clock : str
+        Clock used to demodulate acquisition.
+    bin_mode : str
+        Describes what is done when data is written to a register that already contains a value. Options are
+        "append" which appends the result to the list or "average" which stores the weighted average value of the
+        new result and the old register value.
+
+    """
+
+    def __init__(
+        self,
+        waveform_i: Dict[str, Any],
+        waveform_q: Dict[str, Any],
+        port: str,
+        clock: str,
+        data_reg: int = 0,
+        bin_mode: str = "append",
+        phase: float = 0,
+        t0: float = 0,
+    ):
+        if phase != 0:
+            # Because of how clock interfaces were changed.
+            # FIXME: need to be able to add phases to the waveform separate from the clock.
+            raise NotImplementedError("Non-zero phase not yet implemented")
+
+        _check_bin_mode_valid(bin_mode)
+
+        waveforms = [waveform_i, waveform_q]
+        data = {
+            "name": "WeightedIntegrationComplex",
+            "acquisition_info": [
+                {
+                    "waveforms": waveforms,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                    "phase": phase,
+                    "data_reg": data_reg,
+                    "bin_mode": bin_mode,
+                    "protocol": "weighted_integrated_complex",
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+
+
+class SSBIntegrationComplex(WeightedIntegratedComplex):
     """
     A weighted integrated acquisition on a complex signal using a square window for the acquisition weights.
 
@@ -108,52 +176,34 @@ class SSBIntegrationComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        if phase != 0:
-            # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to the waveform separate from the clock.
-            raise NotImplementedError("Non-zero phase not yet implemented")
-
-        _check_bin_mode_valid(bin_mode)
-
-        waveform_0 = {
-            "func": "quantify.scheduler.waveforms.square",
-            "amp": 1,
-            "duration": duration,
-        }
-        waveform_1 = {
-            "func": "quantify.scheduler.waveforms.square_complex",
-            "amp": -1,
-            "duration": duration,
-        }
-
-        data = {
-            "name": "SSBIntegrationComplex",
-            "acquisition_info": [
-                {
-                    "waveform_0": waveform_0,
-                    "waveform_1": waveform_1,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                    "phase": phase,
-                    "data_reg": data_reg,
-                    "bin_mode": bin_mode,
-                    "protocol": "weighted_integrated_complex",
-                }
-            ],
-        }
-        super().__init__(name=data["name"], data=data)
+        waveforms = [
+            {
+                "func": "quantify.scheduler.waveforms.square",
+                "amp": 1,
+                "duration": duration,
+            },
+            {
+                "func": "quantify.scheduler.waveforms.square",
+                "amp": (0 - 1j),
+                "duration": duration,
+            },
+        ]
+        super().__init__(
+            *waveforms,
+            port=port,
+            clock=clock,
+            data_reg=data_reg,
+            bin_mode=bin_mode,
+            phase=phase,
+            t0=t0,
+        )
+        self.data["name"] = "SSBIntegrationComplex"
 
 
-class WeightedIntegrationComplex(Operation):
+class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
     """
-    A weighted integrated acquisition on a complex signal using custom complex windows.
-
-    :math:`\widetilde{I} = \int ( \mathfrak{Re}(S(t))\cdot \mathfrak{Re}(W_I(t))
-    + \mathfrak{Im}(S(t))\cdot \mathfrak{Im}(W_I(t)) ) \mathrm{d}t`
-
-    :math:`\widetilde{Q} = \int ( \mathfrak{Re}(S(t))\cdot \mathfrak{Re}(W_Q(t))
-    + \mathfrak{Im}(S(t))\cdot \mathfrak{Im}(W_Q(t)) ) \mathrm{d}t`
+    Implementation of :class:`WeightedIntegratedComplex` that uses a parameterized waveform and interpolation as
+    weights.
 
     Parameters
     ------------
@@ -191,29 +241,27 @@ class WeightedIntegrationComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        if phase != 0:
-            # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to the waveform separate from the clock.
-            raise NotImplementedError("Non-zero phase not yet implemented")
-
-        _check_bin_mode_valid(bin_mode)
-
-        data = {
-            "name": "NumericalWeightedIntegrationComplex",
-            "acquisition_info": [
-                {
-                    "weights_I": weights_I,  # TODO add waveform function
-                    "weights_Q": weights_Q,
-                    "t": t,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                    "phase": phase,
-                    "interpolation": interpolation,
-                    "data_reg": data_reg,
-                    "bin_mode": bin_mode,
-                    "protocol": "weighted_integrated_complex",
-                }
-            ],
-        }
-        super().__init__(name=data["name"], data=data)
+        waveforms = [
+            {
+                "func": "quantify.scheduler.waveforms.parameterized_interpolation",
+                "weights": weights_I,
+                "t": t,
+                "interpolation": interpolation,
+            },
+            {
+                "func": "quantify.scheduler.waveforms.parameterized_interpolation",
+                "weights": weights_Q,
+                "t": t,
+                "interpolation": interpolation,
+            },
+        ]
+        super().__init__(
+            *waveforms,
+            port=port,
+            clock=clock,
+            data_reg=data_reg,
+            bin_mode=bin_mode,
+            phase=phase,
+            t0=t0,
+        )
+        self.data["name"] = "NumericalWeightedIntegrationComplex"
