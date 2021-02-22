@@ -15,7 +15,7 @@ def square(t, amp):
 
 
 def square_imaginary(t, amp):
-    return square(t, amp) * (0 + 1j)
+    return square(t, 1j * amp)
 
 
 def ramp(t, amp):
@@ -138,6 +138,9 @@ def parameterized_interpolation(t, vals, **kwargs):
     """
     Uses given values with a specified time axis to parameterize the waveform, scipy.interpolate.interp1d is used to
     interpolate between the given values.
+
+    FIXME: scipy.interpolate.interp1d assumes real numbers, how to deal with complex numbers?
+    We can use interp2d but then the interpolation options are different
 
     Parameters
     ----------
