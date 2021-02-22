@@ -7,14 +7,14 @@ import os
 import inspect
 import json
 import warnings
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes import Instrument
 import numpy as np
-from quantify.scheduler.types import Operation
+from quantify.scheduler.types import Schedule
 from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
@@ -406,7 +406,7 @@ def _extract_interm_freq(
     port: str,
     clock: str,
     clock_freq: float,
-):
+) -> Tuple[float]:
     """
     Determines the lo and nco frequencies based on the targetted clock frequency and the hardware mapping.
 
@@ -589,8 +589,8 @@ def _invert_hardware_mapping(hardware_mapping):
                 raise NotImplementedError("QRM in real mode is not yet implemented")
         else:
             raise ValueError("Unrecognised output mode")
-        for io in io:
-            for seq_name, seq_cfg in device_cfg[io].items():
+        for ch in io:
+            for seq_name, seq_cfg in device_cfg[ch].items():
                 if not isinstance(seq_cfg, dict):
                     continue
                 portclock = _portclock(seq_cfg["port"], seq_cfg["clock"])
@@ -605,11 +605,11 @@ def _invert_hardware_mapping(hardware_mapping):
 
 
 def pulsar_assembler_backend(
-    schedule,
-    mapping,
-    tuid=None,
-    debug=False,
-    iterations=1,
+    schedule: Schedule,
+    mapping: Dict[str, Any],
+    tuid: bool = None,
+    debug: bool = False,
+    iterations: int = 1,
 ):
     """
     Create sequencer configuration files for multiple Qblox pulsar modules.
