@@ -3,6 +3,7 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
 from uuid import uuid4
 from collections import UserDict
 import jsonschema
@@ -264,7 +265,7 @@ class Operation(UserDict):
         """
         return make_hash(self.data)
 
-    def add_gate_info(self, gate_operation):
+    def add_gate_info(self, gate_operation: Operation):
         """
         Updates self.data['gate_info'] with contents of gate_operation.
 
@@ -275,7 +276,7 @@ class Operation(UserDict):
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
 
-    def add_pulse(self, pulse_operation):
+    def add_pulse(self, pulse_operation: Operation):
         """
         Adds pulse_info of pulse_operation to self.
 
@@ -286,7 +287,7 @@ class Operation(UserDict):
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
 
-    def add_acquisition(self, acquisition_operation):
+    def add_acquisition(self, acquisition_operation: Operation):
         """
         Adds acquisition_info of acquisition_operation Operation to this Operation.
 
