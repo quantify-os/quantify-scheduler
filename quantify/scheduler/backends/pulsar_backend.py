@@ -18,9 +18,7 @@ from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
-
-if TYPE_CHECKING:
-    from quantify.scheduler.types import Schedule
+from quantify.scheduler.types import Schedule
 
 
 PulsarModulations = namedtuple(
