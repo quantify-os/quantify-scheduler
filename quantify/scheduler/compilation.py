@@ -58,7 +58,7 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
     valid_time_units = ("physical", "ideal")
     if time_unit not in valid_time_units:
         raise ValueError(
-            f"{time_unit} not a valid value for time_unit, must be either {valid_time_units}."
+            f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
         )
 
     # iterate over the objects in the schedule.

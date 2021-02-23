@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
 # Description:    Contains function to generate most basic waveforms.
-#                 These functions are intened to be used to generate waveforms defined in the :mod:`.pulse_library`.
+#                 These functions are intended to be used to generate waveforms defined in the :mod:`.pulse_library`.
 #                 Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
 #                 sensitivity and interaction strengths and qubit frequencies.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
@@ -132,30 +132,6 @@ def drag(
     rot_drag_wave = rotate_wave(drag_wave, phase=phase)
 
     return rot_drag_wave
-
-
-def parameterized_interpolation(t, vals, **kwargs):
-    """
-    Uses given values with a specified time axis to parameterize the waveform, scipy.interpolate.interp1d is used to
-    interpolate between the given values.
-
-    FIXME: scipy.interpolate.interp1d assumes real numbers, how to deal with complex numbers?
-    We can use interp2d but then the interpolation options are different
-
-    Parameters
-    ----------
-    t
-        time axis used to parameterize the waveform
-    vals
-        y values used to parameterize the waveform
-    kwargs
-        Additional keyword arguments that are passed to scipy.interpolate.interp1d.
-
-    Returns
-    -------
-
-    """
-    pass
 
 
 # ----------------------------------

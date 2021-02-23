@@ -7,18 +7,20 @@ import os
 import inspect
 import json
 import warnings
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
 from collections import namedtuple
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
-from qcodes import Instrument
 import numpy as np
-from quantify.scheduler.types import Schedule
 from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, create_exp_folder
 from quantify.utilities.general import make_hash, without, import_func_from_string
+
+if TYPE_CHECKING:
+    from quantify.scheduler.types import Schedule
+    from qcodes import Instrument
 
 
 PulsarModulations = namedtuple(
@@ -676,7 +678,7 @@ def pulsar_assembler_backend(
             if "data_reg" not in p.keys():
                 params, p = _prepare_pulse(p, gain)
             else:
-                # FIXME: ugly hack to get acquisition working
+                # FIXME: ugly hack to get acquisition working, we seriously need to restructure this
                 p["wf_func"] = p["waveforms"][0]["func"]
                 p.update(p["waveforms"][0])
                 params = PulsarModulations(
