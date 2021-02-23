@@ -253,7 +253,7 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits: str, data_reg: Union[Tuple[int], int] = (0,)):
+    def __init__(self, *qubits: str, data_reg: Union[Tuple[int, ...], int] = (0,)):
 
         if isinstance(data_reg, int):
             data_reg = (data_reg,)
