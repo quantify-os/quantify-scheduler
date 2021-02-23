@@ -10,19 +10,7 @@ VALID_BIN_MODES = ("append", "average")
 
 
 def _check_bin_mode_valid(bin_mode: str):
-    """
-    Raises exception if bin mode is not in VALID_BIN_MODES.
-
-    Parameters
-    ------------
-    bin_mode
-        The bin mode to check
-
-    Raises
-    ------------
-    NotImplementedError
-        bin_mode not in VALID_BIN_MODES
-    """
+    """Raises exception if bin mode is not in VALID_BIN_MODES."""
     if bin_mode not in VALID_BIN_MODES:
         raise NotImplementedError(
             f"Bin mode {bin_mode} not implemented. Valid settings are {VALID_BIN_MODES}."
