@@ -9,6 +9,7 @@ import json
 import warnings
 from typing import Optional, Dict, Any, TYPE_CHECKING
 from collections import namedtuple
+from qcodes import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
@@ -20,7 +21,6 @@ from quantify.utilities.general import make_hash, without, import_func_from_stri
 
 if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule
-    from qcodes import Instrument
 
 
 PulsarModulations = namedtuple(
@@ -678,7 +678,7 @@ def pulsar_assembler_backend(
             if "data_reg" not in p.keys():
                 params, p = _prepare_pulse(p, gain)
             else:
-                # FIXME: ugly hack to get acquisition working, we seriously need to restructure this
+                # FIXME: ugly hack to get acquisition working, we seriously need to restructure this backend
                 p["wf_func"] = p["waveforms"][0]["func"]
                 p.update(p["waveforms"][0])
                 params = PulsarModulations(
