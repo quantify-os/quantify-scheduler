@@ -24,8 +24,7 @@ if TYPE_CHECKING:
 
 
 def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
-    """
-    Determines the absolute timing of a schedule based on the timing constraints.
+    """Determines the absolute timing of a schedule based on the timing constraints.
 
     Parameters
     ----------
