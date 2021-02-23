@@ -7,7 +7,7 @@ import os
 import inspect
 import json
 import warnings
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, Tuple
 from collections import namedtuple
 from qcodes import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
@@ -608,7 +608,7 @@ def pulsar_assembler_backend(
     tuid: bool = None,
     debug: bool = False,
     iterations: int = 1,
-):
+) -> Tuple[Schedule, Dict[str, Any]]:
     """
     Create sequencer configuration files for multiple Qblox pulsar modules.
 
