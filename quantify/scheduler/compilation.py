@@ -4,20 +4,22 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from typing import TYPE_CHECKING
-import logging
-import jsonschema
+
 import importlib
-from quantify.scheduler.resources import ClockResource, BasebandClockResource
+import logging
+from typing import TYPE_CHECKING
+
+import jsonschema
+from quantify.utilities.general import load_json_schema
+
+from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.scheduler.pulse_library import (
-    SquarePulse,
     DRAGPulse,
     IdlePulse,
     SoftSquarePulse,
+    SquarePulse,
 )
-
-from quantify.scheduler.acquisition_library import SSBIntegrationComplex
-from quantify.utilities.general import load_json_schema
+from quantify.scheduler.resources import BasebandClockResource, ClockResource
 
 if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule

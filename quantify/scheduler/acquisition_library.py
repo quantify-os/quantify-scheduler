@@ -3,18 +3,10 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C)   Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+from quantify.scheduler.enums import BinMode
 from quantify.scheduler.types import Operation
-
-VALID_BIN_MODES = ("append", "average")
-
-
-def _check_bin_mode_valid(bin_mode: str):
-    """Raises exception if bin mode is not in VALID_BIN_MODES."""
-    if bin_mode not in VALID_BIN_MODES:
-        raise NotImplementedError(
-            f"Bin mode {bin_mode} not implemented. Valid settings are {VALID_BIN_MODES}."
-        )
 
 
 class Trace(Operation):
@@ -24,7 +16,7 @@ class Trace(Operation):
         port: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         t0: float = 0,
     ):
         """
@@ -39,18 +31,18 @@ class Trace(Operation):
             Port of the acquisition.
         acq_index : int
             Data register in which the acquisition is stored.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
 
         """
-        _check_bin_mode_valid(bin_mode)
 
         data = {
             "name": "Trace",
             "acquisition_info": [
                 {
+                    "waveforms": [],
                     "duration": duration,
                     "t0": t0,
                     "port": port,
@@ -73,7 +65,7 @@ class WeightedIntegratedComplex(Operation):
         clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -100,7 +92,7 @@ class WeightedIntegratedComplex(Operation):
             Phase of the pulse and acquisition in degrees.
         clock : str
             Clock used to demodulate acquisition.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
@@ -110,8 +102,6 @@ class WeightedIntegratedComplex(Operation):
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError("Non-zero phase not yet implemented")
-
-        _check_bin_mode_valid(bin_mode)
 
         waveforms = [waveform_i, waveform_q]
         data = {
@@ -141,7 +131,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -160,22 +150,28 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             Phase of the pulse and acquisition in degrees.
         clock : str
             Clock used to demodulate acquisition.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
 
         """
         waveforms_i = {
-            "func": "quantify.scheduler.waveforms.square",
-            "amp": 1,
+            "port": port,
+            "clock": clock,
+            "t0": t0,
             "duration": duration,
+            "wf_func": "quantify.scheduler.waveforms.square",
+            "amp": 1,
         }
 
         waveforms_q = {
-            "func": "quantify.scheduler.waveforms.square",
-            "amp": (0 - 1j),
+            "port": port,
+            "clock": clock,
+            "t0": t0,
             "duration": duration,
+            "wf_func": "quantify.scheduler.waveforms.square",
+            "amp": (0 - 1j),
         }
 
         super().__init__(
@@ -203,7 +199,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -227,20 +223,20 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             Phase of the pulse and acquisition in degrees.
         clock : str
             Clock used to demodulate acquisition.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
 
         """
         waveforms_i = {
-            "func": "scipy.interpolate.interp1d",
+            "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_i,
             "t": t,
             "interpolation": interpolation,
         }
         waveforms_q = {
-            "func": "scipy.interpolate.interp1d",
+            "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_q,
             "t": t,
             "interpolation": interpolation,
