@@ -103,8 +103,6 @@ class WeightedIntegratedComplex(Operation):
             # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        _check_bin_mode_valid(bin_mode)
-
         waveforms = [waveform_i, waveform_q]
         data = {
             "name": "WeightedIntegrationComplex",
@@ -232,20 +230,12 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
 
         """
         waveforms_i = {
-            "port": port,
-            "clock": clock,
-            "t0": t0,
-            # "duration": duration, # Missing waveform duration
             "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_i,
             "t": t,
             "interpolation": interpolation,
         }
         waveforms_q = {
-            "port": port,
-            "clock": clock,
-            "t0": t0,
-            # "duration": duration, # Missing waveform duration
             "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_q,
             "t": t,
