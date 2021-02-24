@@ -256,12 +256,19 @@ class Measure(Operation):
     def __init__(
         self,
         *qubits: str,
-        acq_channel: Union[Tuple[int, ...], int] = (0,),
-        acq_index: Union[Tuple[int, ...], int] = (0,)
+        acq_channel: Union[Tuple[int, ...], int] = None,
+        acq_index: Union[Tuple[int, ...], int] = None
     ):
 
         if isinstance(acq_index, int):
             acq_index = (acq_index,)
+        elif acq_index is None:
+            acq_index = tuple(i for i in range(len(qubits)))
+
+        if isinstance(acq_channel, int):
+            acq_channel = (acq_channel,)
+        elif acq_channel is None:
+            acq_channel = tuple(i for i in range(len(qubits)))
 
         data = {
             "gate_info": {

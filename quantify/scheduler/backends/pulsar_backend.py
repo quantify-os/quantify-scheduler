@@ -673,7 +673,7 @@ def pulsar_assembler_backend(
                 port=port,
                 clock=clock_id,
             )
-            if "data_reg" not in p.keys():
+            if "acq_index" not in p.keys():  # hacky
                 params, p = _prepare_pulse(p, gain)
             else:
                 # FIXME: ugly hack to get acquisition working, we seriously need to restructure this backend
@@ -686,9 +686,9 @@ def pulsar_assembler_backend(
             t0 = t_constr["abs_time"] + p["t0"]
             pulse_id = make_hash(without(p, ["t0"]))
 
-            if "data_reg" in p:
+            if "acq_index" in p:
                 acquisitions.add(pulse_id)
-                if p["data_reg"] > 0:
+                if p["acq_index"] > 0:
                     warnings.warn("Binning in QRM is not yet implemented")
 
             # the combination of port + clock id is a unique combination that is associated to a sequencer
@@ -729,7 +729,7 @@ def pulsar_assembler_backend(
             )
             seq["duration"] = p["duration"]
             if (
-                "data_reg" in p
+                "acq_index" in p
             ):  # FIXME: we need to centralize this somewhere but structure makes this impossible
                 seq["protocol"] = p["protocol"]
                 seq["bin_mode"] = p["bin_mode"]

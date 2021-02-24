@@ -186,7 +186,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                         SSBIntegrationComplex(
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
-                            data_reg=op["gate_info"]["data_reg"][idx],
+                            acq_channel=op["gate_info"]["acq_channel"][idx],
+                            acq_index=op["gate_info"]["acq_index"][idx],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )
