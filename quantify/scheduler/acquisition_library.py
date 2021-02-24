@@ -162,13 +162,13 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
 
         """
         waveforms_i = {
-            "func": "quantify.scheduler.waveforms.square",
+            "wf_func": "quantify.scheduler.waveforms.square",
             "amp": 1,
             "duration": duration,
         }
 
         waveforms_q = {
-            "func": "quantify.scheduler.waveforms.square",
+            "wf_wf_func": "quantify.scheduler.waveforms.square",
             "amp": (0 - 1j),
             "duration": duration,
         }
@@ -227,13 +227,13 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
 
         """
         waveforms_i = {
-            "func": "scipy.interpolate.interp1d",
+            "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_i,
             "t": t,
             "interpolation": interpolation,
         }
         waveforms_q = {
-            "func": "scipy.interpolate.interp1d",
+            "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_q,
             "t": t,
             "interpolation": interpolation,
