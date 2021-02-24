@@ -22,7 +22,8 @@ class Trace(Operation):
         self,
         duration: float,
         port: str,
-        data_reg: int = 0,
+        acq_channel: int = 0,
+        acq_index: int = 0,
         bin_mode: str = "append",
         t0: float = 0,
     ):
@@ -36,7 +37,7 @@ class Trace(Operation):
             Duration of the acquisition in seconds.
         port : str
             Port of the acquisition.
-        data_reg : int
+        acq_index : int
             Data register in which the acquisition is stored.
         bin_mode : str
             Describes what is done when data is written to a register that already contains a value. Options are
@@ -53,7 +54,8 @@ class Trace(Operation):
                     "duration": duration,
                     "t0": t0,
                     "port": port,
-                    "data_reg": data_reg,
+                    "acq_channel": acq_channel,
+                    "acq_index": acq_index,
                     "bin_mode": bin_mode,
                     "protocol": "trace",
                 }
@@ -69,7 +71,8 @@ class WeightedIntegratedComplex(Operation):
         waveform_q: Dict[str, Any],
         port: str,
         clock: str,
-        data_reg: int = 0,
+        acq_channel: int = 0,
+        acq_index: int = 0,
         bin_mode: str = "append",
         phase: float = 0,
         t0: float = 0,
@@ -91,7 +94,7 @@ class WeightedIntegratedComplex(Operation):
             Dictionary with waveform function and parameters to be used as weights on the incoming complex signal.
         port : str
             Port of the acquisition.
-        data_reg : int
+        acq_index : int
             Data register in which the acquisition is stored.
         phase : float
             Phase of the pulse and acquisition in degrees.
@@ -120,7 +123,8 @@ class WeightedIntegratedComplex(Operation):
                     "clock": clock,
                     "port": port,
                     "phase": phase,
-                    "data_reg": data_reg,
+                    "acq_channel": acq_channel,
+                    "acq_index": acq_index,
                     "bin_mode": bin_mode,
                     "protocol": "weighted_integrated_complex",
                 }
@@ -135,7 +139,8 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         duration: float,
         port: str,
         clock: str,
-        data_reg: int = 0,
+        acq_channel: int = 0,
+        acq_index: int = 0,
         bin_mode: str = "append",
         phase: float = 0,
         t0: float = 0,
@@ -149,7 +154,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             Duration of the acquisition in seconds.
         port : str
             Port of the acquisition.
-        data_reg : int
+        acq_index : int
             Data register in which the acquisition is stored.
         phase : float
             Phase of the pulse and acquisition in degrees.
@@ -178,7 +183,8 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             waveforms_q,
             port=port,
             clock=clock,
-            data_reg=data_reg,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
             bin_mode=bin_mode,
             phase=phase,
             t0=t0,
@@ -195,7 +201,8 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         port: str,
         clock: str,
         interpolation: str = "linear",
-        data_reg: int = 0,
+        acq_channel: int = 0,
+        acq_index: int = 0,
         bin_mode: str = "append",
         phase: float = 0,
         t0: float = 0,
@@ -214,7 +221,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             Time value of each weight.
         port : str
             Port of the acquisition.
-        data_reg : int
+        acq_index : int
             Data register in which the acquisition is stored.
         phase : float
             Phase of the pulse and acquisition in degrees.
@@ -243,7 +250,8 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             waveforms_q,
             port=port,
             clock=clock,
-            data_reg=data_reg,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
             bin_mode=bin_mode,
             phase=phase,
             t0=t0,

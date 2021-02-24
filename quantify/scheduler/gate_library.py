@@ -253,10 +253,15 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits: str, data_reg: Union[Tuple[int, ...], int] = (0,)):
+    def __init__(
+        self,
+        *qubits: str,
+        acq_channel: Union[Tuple[int, ...], int] = (0,),
+        acq_index: Union[Tuple[int, ...], int] = (0,)
+    ):
 
-        if isinstance(data_reg, int):
-            data_reg = (data_reg,)
+        if isinstance(acq_index, int):
+            acq_index = (acq_index,)
 
         data = {
             "gate_info": {
@@ -264,7 +269,8 @@ class Measure(Operation):
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.meter",
                 "tex": r"$\langle0|$",
                 "qubits": tuple(qubits),
-                "data_reg": data_reg,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
                 "operation_type": "measure",
             }
         }
