@@ -677,7 +677,7 @@ def pulsar_assembler_backend(
                 params, p = _prepare_pulse(p, gain)
             else:
                 # FIXME: ugly hack to get acquisition working, we seriously need to restructure this backend
-                p["wf_func"] = p["waveforms"][0]["func"]
+                p["wf_func"] = p["waveforms"][0]["wf_func"]
                 p.update(p["waveforms"][0])
                 params = PulsarModulations(
                     gain_I=1.0, gain_Q=1.0, offset=None, phase=0, phase_delta=None
