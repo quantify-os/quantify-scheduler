@@ -3,18 +3,10 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C)   Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+from quantify.scheduler.enums import BinMode
 from quantify.scheduler.types import Operation
-
-VALID_BIN_MODES = ("append", "average")
-
-
-def _check_bin_mode_valid(bin_mode: str):
-    """Raises exception if bin mode is not in VALID_BIN_MODES."""
-    if bin_mode not in VALID_BIN_MODES:
-        raise NotImplementedError(
-            f"Bin mode {bin_mode} not implemented. Valid settings are {VALID_BIN_MODES}."
-        )
 
 
 class Trace(Operation):
@@ -24,7 +16,7 @@ class Trace(Operation):
         port: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         t0: float = 0,
     ):
         """
@@ -39,13 +31,12 @@ class Trace(Operation):
             Port of the acquisition.
         acq_index : int
             Data register in which the acquisition is stored.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
 
         """
-        _check_bin_mode_valid(bin_mode)
 
         data = {
             "name": "Trace",
@@ -74,7 +65,7 @@ class WeightedIntegratedComplex(Operation):
         clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -101,7 +92,7 @@ class WeightedIntegratedComplex(Operation):
             Phase of the pulse and acquisition in degrees.
         clock : str
             Clock used to demodulate acquisition.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
@@ -142,7 +133,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -161,7 +152,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             Phase of the pulse and acquisition in degrees.
         clock : str
             Clock used to demodulate acquisition.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
@@ -210,7 +201,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: str = "append",
+        bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
@@ -234,7 +225,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             Phase of the pulse and acquisition in degrees.
         clock : str
             Clock used to demodulate acquisition.
-        bin_mode : str
+        bin_mode : BinMode
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value.
