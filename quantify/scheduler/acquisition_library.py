@@ -51,6 +51,7 @@ class Trace(Operation):
             "name": "Trace",
             "acquisition_info": [
                 {
+                    "waveforms": [],
                     "duration": duration,
                     "t0": t0,
                     "port": port,
@@ -167,15 +168,21 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
 
         """
         waveforms_i = {
+            "port": port,
+            "clock": clock,
+            "t0": t0,
+            "duration": duration,
             "wf_func": "quantify.scheduler.waveforms.square",
             "amp": 1,
-            "duration": duration,
         }
 
         waveforms_q = {
-            "wf_wf_func": "quantify.scheduler.waveforms.square",
-            "amp": (0 - 1j),
+            "port": port,
+            "clock": clock,
+            "t0": t0,
             "duration": duration,
+            "wf_func": "quantify.scheduler.waveforms.square",
+            "amp": (0 - 1j),
         }
 
         super().__init__(
@@ -234,12 +241,20 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
 
         """
         waveforms_i = {
+            "port": port,
+            "clock": clock,
+            "t0": t0,
+            # "duration": duration, # Missing waveform duration
             "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_i,
             "t": t,
             "interpolation": interpolation,
         }
         waveforms_q = {
+            "port": port,
+            "clock": clock,
+            "t0": t0,
+            # "duration": duration, # Missing waveform duration
             "wf_func": "scipy.interpolate.interp1d",
             "weights": weights_q,
             "t": t,
