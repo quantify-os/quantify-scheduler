@@ -6,7 +6,8 @@
   "name",
   "gate_info",
   "pulse_info",
-  "logic_info"
+  "logic_info",
+   "acquisition_info"
  ],
  "properties": {
   "name": {
@@ -72,6 +73,9 @@
     }
    }
   },
+   "acquisition_info": {
+     "type": "array"
+   },
   "logic_info": {
     "description": "Not Implemented."
   }

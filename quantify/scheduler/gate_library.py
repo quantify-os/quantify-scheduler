@@ -237,7 +237,7 @@ class Reset(Operation):
                 "unitary": None,
                 "tex": r"$|0\rangle$",
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.reset",
-                "qubits": tuple(qubits),
+                "qubits": list(qubits),
                 "operation_type": "reset",
             }
         }
@@ -275,7 +275,7 @@ class Measure(Operation):
                 "unitary": None,
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.meter",
                 "tex": r"$\langle0|$",
-                "qubits": tuple(qubits),
+                "qubits": list(qubits),
                 "acq_channel": acq_channel,
                 "acq_index": acq_index,
                 "operation_type": "measure",
