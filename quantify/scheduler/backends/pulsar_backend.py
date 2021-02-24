@@ -727,6 +727,12 @@ def pulsar_assembler_backend(
             seq.timing_tuples.append(
                 (round(t0 * seq["sampling_rate"]), pulse_id, params)
             )
+            seq["duration"] = p["duration"]
+            if (
+                "data_reg" in p
+            ):  # FIXME: we need to centralize this somewhere but structure makes this impossible
+                seq["protocol"] = p["protocol"]
+                seq["bin_mode"] = p["bin_mode"]
 
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
@@ -804,7 +810,10 @@ def pulsar_assembler_backend(
             )
             if dev not in config_dict.keys():
                 config_dict[dev] = {}
-            config_dict[dev][seq] = seq_fn
+            config_dict[dev][seq] = {
+                "seq_fn": seq_fn,
+                "metadata": {"duration": resource["duration"]},
+            }
 
             p_config = _extract_pulsar_config(
                 hardware_mapping=mapping,
@@ -812,7 +821,16 @@ def pulsar_assembler_backend(
                 port=resource["port"],
                 clock=resource["clock"],
             )
-            config_dict[dev]["settings"] = {"ref": p_config["ref"]}
+            config_dict[dev]["settings"] = {
+                "ref": p_config["ref"],
+                "interm_freq": resource["interm_freq"],
+            }
+            if resource["type"] == "QRM_sequencer":
+                # TODO "SSBIntegrationComplex" is hardcoded but this we need to generalize to weighted acq
+                # this should be something like:
+                # config_dict[dev]["settings"]["acq_mode"] = resource["protocol"]
+                config_dict[dev]["settings"]["acq_mode"] = "SSBIntegrationComplex"
+                config_dict[dev]["settings"]["bin_mode"] = resource["bin_mode"]
 
             lo_params = _add_lo_config(
                 lo_params=lo_params,
