@@ -832,6 +832,8 @@ def pulsar_assembler_backend(
                 # config_dict[dev]["settings"]["acq_mode"] = resource["protocol"]
                 config_dict[dev]["settings"]["acq_mode"] = "SSBIntegrationComplex"
 
+            config_dict[dev]["settings"]["hardware_averages"] = iterations
+
             lo_params = _add_lo_config(
                 lo_params=lo_params,
                 p_config=p_config,

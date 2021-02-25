@@ -187,7 +187,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                             clock=q_cfg["resources"]["clock_ro"],
                         )
                     )
-                    op.add_acquisition(  # TODO protocol hardcoded
+                    op.add_acquisition(
                         SSBIntegrationComplex(
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
