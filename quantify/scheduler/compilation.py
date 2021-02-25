@@ -171,6 +171,9 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                     )
             continue
 
+        if len(op["acquisition_info"]) > 0:  # op is acquisition
+            continue
+
         if op["gate_info"]["operation_type"] == "measure":
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]

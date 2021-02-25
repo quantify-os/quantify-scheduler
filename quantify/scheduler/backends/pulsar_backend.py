@@ -7,6 +7,7 @@ import os
 import inspect
 import json
 import warnings
+import copy
 from typing import Optional, Dict, Any, Tuple
 from collections import namedtuple
 from qcodes import Instrument
@@ -647,7 +648,7 @@ def pulsar_assembler_backend(
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
         op = schedule.operations[t_constr["operation_hash"]]
 
-        if len(op["pulse_info"]) == 0:
+        if len(op["pulse_info"] + op["acquisition_info"]) == 0:
             # this exception is raised when no pulses have been added yet.
             raise ValueError(f"Operation {op.name} has no pulse info")
 
@@ -658,7 +659,7 @@ def pulsar_assembler_backend(
                 )
 
             # copy to avoid changing the reference operation in the master schedule list
-            p = p_ref.copy()
+            p = copy.deepcopy(p_ref)
 
             port = p["port"]
             clock_id = p["clock"]
@@ -830,7 +831,6 @@ def pulsar_assembler_backend(
                 # this should be something like:
                 # config_dict[dev]["settings"]["acq_mode"] = resource["protocol"]
                 config_dict[dev]["settings"]["acq_mode"] = "SSBIntegrationComplex"
-                config_dict[dev]["settings"]["bin_mode"] = resource["bin_mode"]
 
             lo_params = _add_lo_config(
                 lo_params=lo_params,
