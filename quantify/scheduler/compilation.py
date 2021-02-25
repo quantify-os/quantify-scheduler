@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import jsonschema
 from quantify.utilities.general import load_json_schema
 
-from quantify.scheduler.acquisition_library import SSBIntegrationComplex
+from quantify.scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify.scheduler.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -177,8 +177,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
         if op["gate_info"]["operation_type"] == "measure":
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
-                # readout pulse
                 if q_cfg["params"]["acquisition"] == "SSBIntegrationComplex":
+                    # readout pulse
                     op.add_pulse(
                         SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
@@ -195,6 +195,36 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                             acq_index=op["gate_info"]["acq_index"][idx],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
+                        )
+                    )
+
+                    if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
+                        schedule.add_resources(
+                            [
+                                ClockResource(
+                                    q_cfg["resources"]["clock_ro"],
+                                    freq=q_cfg["params"]["ro_freq"],
+                                )
+                            ]
+                        )
+
+                if q_cfg["params"]["acquisition"] == "Trace":
+                    # readout pulse
+                    op.add_pulse(
+                        SquarePulse(
+                            amp=q_cfg["params"]["ro_pulse_amp"],
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
+                    )
+                    op.add_acquisition(  # TODO protocol hardcoded
+                        Trace(
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            t0=q_cfg["params"]["ro_acq_delay"],
+                            acq_channel=op["gate_info"]["acq_channel"][idx],
+                            acq_index=op["gate_info"]["acq_index"][idx],
+                            port=q_cfg["resources"]["port_ro"],
                         )
                     )
 
