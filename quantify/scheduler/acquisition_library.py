@@ -73,11 +73,15 @@ class WeightedIntegratedComplex(Operation):
         r"""
         A weighted integrated acquisition on a complex signal using custom complex windows.
 
-        :math:`\widetilde{I} = \int ( \mathfrak{R}(S(t))\cdot \mathfrak{R}(W_I(t))
-        + \mathfrak{I}(S(t))\cdot \mathfrak{I}(W_I(t)) ) \mathrm{d}t`
+        .. math::
 
-        :math:`\widetilde{Q} = \int ( \mathfrak{R}(S(t))\cdot \mathfrak{R}(W_Q(t))
-        + \mathfrak{I}(S(t))\cdot \mathfrak{I}(W_Q(t)) ) \mathrm{d}t`
+            \widetilde{I} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_I(t)) +
+            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_I(t)) ) \mathrm{d}t
+
+        .. math::
+
+            \widetilde{Q} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_Q(t)) +
+            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_Q(t)) ) \mathrm{d}t
 
         Parameters
         ------------
@@ -138,6 +142,9 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
     ):
         """
         A weighted integrated acquisition on a complex signal using a square window for the acquisition weights.
+
+        The signal is demodulated using the specified clock, and the square window then effectively specifies an
+        integration window.
 
         Parameters
         ------------
