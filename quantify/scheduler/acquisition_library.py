@@ -19,7 +19,8 @@ class Trace(Operation):
         bin_mode: BinMode = BinMode.APPEND,
         t0: float = 0,
     ):
-        """Measure a signal s(t).
+        """
+        Measure a signal s(t).
 
         Only processing performed is rescaling and adding units based on a calibrated scale.
         Values are returned as a raw trace (numpy array of float datatype).
@@ -69,7 +70,8 @@ class WeightedIntegratedComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        r"""A weighted integrated acquisition on a complex signal using custom complex windows.
+        r"""
+        A weighted integrated acquisition on a complex signal using custom complex windows.
 
         Weights are applied as:
 
