@@ -324,3 +324,13 @@ class Operation(UserDict):
         if self.data["pulse_info"]:
             return True
         return False
+
+    @property
+    def valid_acquisition(self):
+        """
+        An operation is a valid acquisition if it contains information on how
+        to represent the operation as a acquisition on the pulse level.
+        """
+        if len(self.data["acquisition_info"]) > 0:
+            return True
+        return False

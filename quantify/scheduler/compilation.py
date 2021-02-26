@@ -172,7 +172,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                     )
             continue
 
-        if len(op["acquisition_info"]) > 0:  # op is acquisition
+        if op.valid_acquisition:
             continue
 
         if op["gate_info"]["operation_type"] == "measure":
