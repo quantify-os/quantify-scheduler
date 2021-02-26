@@ -9,6 +9,7 @@ from enum import Enum, unique
 
 @unique
 class BinMode(str, Enum):
+
     """
     The acquisition protocol bin mode enum type.
 
