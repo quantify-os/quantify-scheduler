@@ -259,7 +259,8 @@ class Measure(Operation):
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None
     ):
-        """Gate level description for a measurement.
+        """
+        Gate level description for a measurement.
 
         The measurement is compiled according to what is specified in the config.
 
