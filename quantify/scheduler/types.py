@@ -326,7 +326,7 @@ class Operation(UserDict):
         return False
 
     @property
-    def valid_acquisition(self):
+    def valid_acquisition(self) -> bool:
         """
         An operation is a valid acquisition if it contains information on how
         to represent the operation as a acquisition on the pulse level.
