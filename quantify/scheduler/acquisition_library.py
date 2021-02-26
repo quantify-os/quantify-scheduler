@@ -19,7 +19,9 @@ class Trace(Operation):
         bin_mode: BinMode = BinMode.APPEND,
         t0: float = 0,
     ):
-        """Measures a signal s(t). Only processing performed is rescaling and adding units based on a calibrated scale.
+        """Measure a signal s(t).
+
+        Only processing performed is rescaling and adding units based on a calibrated scale.
         Values are returned as a raw trace (numpy array of float datatype).
 
         Parameters
@@ -36,7 +38,6 @@ class Trace(Operation):
             new result and the old register value.
 
         """
-
         data = {
             "name": "Trace",
             "acquisition_info": [
@@ -68,7 +69,7 @@ class WeightedIntegratedComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        """
+        r"""
         A weighted integrated acquisition on a complex signal using custom complex windows.
 
         :math:`\widetilde{I} = \int ( \mathfrak{R}(S(t))\cdot \mathfrak{R}(W_I(t))
@@ -203,6 +204,8 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         t0: float = 0,
     ):
         """
+        Measure using custom acquisition weights.
+
         Implementation of :class:`WeightedIntegratedComplex` that uses a parameterized waveform and interpolation as
         weights.
 
