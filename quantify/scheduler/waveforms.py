@@ -8,13 +8,16 @@
 # -----------------------------------------------------------------------------
 import numpy as np
 from scipy import signal
+from typing import Union, List
 
 
-def square(t, amp):
+def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
     return amp * np.ones(len(t))
 
 
-def square_imaginary(t, amp):
+def square_imaginary(
+    t: Union[np.ndarray, List[float]], amp: Union[float, complex]
+) -> np.ndarray:
     return square(t, 1j * amp)
 
 
