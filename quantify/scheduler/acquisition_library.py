@@ -69,8 +69,7 @@ class WeightedIntegratedComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        r"""
-        A weighted integrated acquisition on a complex signal using custom complex windows.
+        r"""A weighted integrated acquisition on a complex signal using custom complex windows.
 
         :math:`\widetilde{I} = \int ( \mathfrak{R}(S(t))\cdot \mathfrak{R}(W_I(t))
         + \mathfrak{I}(S(t))\cdot \mathfrak{I}(W_I(t)) ) \mathrm{d}t`
