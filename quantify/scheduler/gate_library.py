@@ -259,6 +259,19 @@ class Measure(Operation):
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None
     ):
+        """Gate level description for a measurement.
+
+        The measurement is compiled according to what is specified in the config.
+
+        Parameters
+        ----------
+        qubits
+            The qubits you want to measure
+        acq_channel
+            Acquisition channel on which the measurement is performed
+        acq_index
+            Index of the register where the measurement is stored.
+        """
 
         if isinstance(acq_index, int):
             acq_index = (acq_index,)
