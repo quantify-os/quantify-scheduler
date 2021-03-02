@@ -20,24 +20,29 @@ class Trace(Operation):
         t0: float = 0,
     ):
         """
-        Measure a signal s(t).
+        Creates a new instance of Trace.
+        The Trace acquisition protocol measures a signal s(t).
 
-        Only processing performed is rescaling and adding units based on a calibrated scale.
-        Values are returned as a raw trace (numpy array of float datatype).
+        Only processing performed is rescaling and adding
+        units based on a calibrated scale. Values are returned
+        as a raw trace (numpy array of float datatype).
 
         Parameters
-        ------------
-        duration : float
-            Duration of the acquisition in seconds.
+        ----------
         port : str
-            Port of the acquisition.
-        acq_index : int
-            Data register in which the acquisition is stored.
-        bin_mode : BinMode
+            The acquisition port.
+        duration : float
+            The acquisition duration in seconds.
+        acq_channel : int, optional
+            [description], by default 0
+        acq_index : int, optional
+            The data register in which the acquisition is stored, by default 0
+        bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value.
-
+            new result and the old register value, by default BinMode.APPEND
+        t0 : float, optional
+            The acquisition start time in seconds, by default 0
         """
         data = {
             "name": "Trace",
@@ -64,14 +69,20 @@ class WeightedIntegratedComplex(Operation):
         waveform_q: Dict[str, Any],
         port: str,
         clock: str,
+        duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
         bin_mode: BinMode = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ):
-        r"""
-        A weighted integrated acquisition on a complex signal using custom complex windows.
+        """
+        Creates a new instance of WeightedIntegratedComplex.
+        Weighted integration acquisition protocol on a
+        complex signal in a custom complex window.
+
+        A weighted integrated acquisition on a complex
+        signal using custom complex windows.
 
         Weights are applied as:
 
@@ -86,39 +97,48 @@ class WeightedIntegratedComplex(Operation):
             \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_Q(t)) ) \mathrm{d}t
 
         Parameters
-        ------------
+        ----------
         waveform_i : Dict[str, Any]
-            Dictionary with waveform function and parameters to be used as weights on the incoming complex signal.
-        waveform_q : Dict[str, Any]
-            Dictionary with waveform function and parameters to be used as weights on the incoming complex signal.
+            The complex imaginary waveform used as integration weights.
+        weights_q : Dict[str, Any]
+            The complex real waveform used as integration weights.
         port : str
-            Port of the acquisition.
-        acq_index : int
-            Data register in which the acquisition is stored.
-        phase : float
-            Phase of the pulse and acquisition in degrees.
+            The acquisition port.
         clock : str
-            Clock used to demodulate acquisition.
-        bin_mode : BinMode
+            The clock used to demodulate the acquisition.
+        duration : float
+            The acquisition duration in seconds.
+        acq_channel : int, optional
+            [description], by default 0
+        acq_index : int, optional
+            The data register in which the acquisition is stored, by default 0
+        bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value.
+            new result and the old register value, by default BinMode.APPEND
+        phase : float, optional
+            The phase of the pulse and acquisition in degrees, by default 0
+        t0 : float, optional
+            The acquisition start time in seconds, by default 0
 
+        Raises
+        ------
+        NotImplementedError
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
             # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        waveforms = [waveform_i, waveform_q]
         data = {
             "name": "WeightedIntegrationComplex",
             "acquisition_info": [
                 {
-                    "waveforms": waveforms,
+                    "waveforms": [waveform_i, waveform_q],
                     "t0": t0,
                     "clock": clock,
                     "port": port,
+                    "duration": duration,
                     "phase": phase,
                     "acq_channel": acq_channel,
                     "acq_index": acq_index,
@@ -133,9 +153,9 @@ class WeightedIntegratedComplex(Operation):
 class SSBIntegrationComplex(WeightedIntegratedComplex):
     def __init__(
         self,
-        duration: float,
         port: str,
         clock: str,
+        duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
         bin_mode: BinMode = BinMode.APPEND,
@@ -143,30 +163,39 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         t0: float = 0,
     ):
         """
-        A weighted integrated acquisition on a complex signal using a square window for the acquisition weights.
+        Creates a new instance of SSBIntegrationComplex.
+        Single Sideband Integration acquisition protocol
+        with complex results.
+
+        A weighted integrated acquisition on a complex
+        signal using a square window for the acquisition
+        weights.
 
         The signal is demodulated using the specified clock, and the square window then effectively specifies an
         integration window.
 
         Parameters
-        ------------
-        duration : float
-            Duration of the acquisition in seconds.
+        ----------
         port : str
-            Port of the acquisition.
-        acq_index : int
-            Data register in which the acquisition is stored.
-        phase : float
-            Phase of the pulse and acquisition in degrees.
+            The acquisition port.
         clock : str
-            Clock used to demodulate acquisition.
-        bin_mode : BinMode
+            The clock used to demodulate the acquisition.
+        duration : float
+            The acquisition duration in seconds.
+        acq_channel : int, optional
+            [description], by default 0
+        acq_index : int, optional
+            The data register in which the acquisition is stored, by default 0
+        bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value.
-
+            new result and the old register value, by default BinMode.APPEND
+        phase : float, optional
+            The phase of the pulse and acquisition in degrees, by default 0
+        t0 : float, optional
+            The acquisition start time in seconds, by default 0
         """
-        waveforms_i = {
+        waveform_i = {
             "port": port,
             "clock": clock,
             "t0": t0,
@@ -175,7 +204,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             "amp": 1,
         }
 
-        waveforms_q = {
+        waveform_q = {
             "port": port,
             "clock": clock,
             "t0": t0,
@@ -185,15 +214,16 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         }
 
         super().__init__(
-            waveforms_i,
-            waveforms_q,
-            port=port,
-            clock=clock,
-            acq_channel=acq_channel,
-            acq_index=acq_index,
-            bin_mode=bin_mode,
-            phase=phase,
-            t0=t0,
+            waveform_i,
+            waveform_q,
+            port,
+            clock,
+            duration,
+            acq_channel,
+            acq_index,
+            bin_mode,
+            phase,
+            t0,
         )
         self.data["name"] = "SSBIntegrationComplex"
 
@@ -214,32 +244,39 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         t0: float = 0,
     ):
         """
-        Measure using custom acquisition weights.
-
-        Implementation of :class:`WeightedIntegratedComplex` that uses a parameterized waveform and interpolation as
-        weights.
+        Creates a new instance of NumericalWeightedIntegrationComplex.
+        NumericalWeightedIntegrationComplex inherits from
+        :class:`WeightedIntegratedComplex` that uses parameterized
+        waveforms and interpolation as integration weights.
 
         Parameters
-        ------------
+        ----------
         weights_i : List[complex]
-            List of complex values used as weights on the incoming complex signal.
+            The list of complex imaginary values used as weights on
+            the incoming complex signal.
         weights_q : List[complex]
-            List of complex values used as weights on the incoming complex signal.
+            The list of complex real values used as weights on
+            the incoming complex signal.
         t : List[float]
-            Time value of each weight.
+            The time values of each weight.
         port : str
-            Port of the acquisition.
-        acq_index : int
-            Data register in which the acquisition is stored.
-        phase : float
-            Phase of the pulse and acquisition in degrees.
+            The acquisition port.
         clock : str
-            Clock used to demodulate acquisition.
-        bin_mode : BinMode
+            The clock used to demodulate the acquisition.
+        interpolation : str, optional
+            [description], by default "linear"
+        acq_channel : int, optional
+            [description], by default 0
+        acq_index : int, optional
+            The data register in which the acquisition is stored, by default 0
+        bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value.
-
+            new result and the old register value, by default BinMode.APPEND
+        phase : float, optional
+            The phase of the pulse and acquisition in degrees, by default 0
+        t0 : float, optional
+            The acquisition start time in seconds, by default 0
         """
         waveforms_i = {
             "wf_func": "scipy.interpolate.interp1d",
@@ -253,15 +290,17 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             "t": t,
             "interpolation": interpolation,
         }
+        duration = t[-1] - t[0]
         super().__init__(
             waveforms_i,
             waveforms_q,
-            port=port,
-            clock=clock,
-            acq_channel=acq_channel,
-            acq_index=acq_index,
-            bin_mode=bin_mode,
-            phase=phase,
-            t0=t0,
+            port,
+            clock,
+            duration,
+            acq_channel,
+            acq_index,
+            bin_mode,
+            phase,
+            t0,
         )
         self.data["name"] = "NumericalWeightedIntegrationComplex"
