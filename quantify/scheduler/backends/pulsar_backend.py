@@ -17,7 +17,7 @@ from columnar.exceptions import TableOverflowError
 import numpy as np
 from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
-from quantify.data.handling import gen_tuid, create_exp_folder
+from quantify.data.handling import gen_tuid, create_exp_folder, get_datadir
 from quantify.utilities.general import make_hash, without, import_func_from_string
 from quantify.scheduler.types import Schedule
 
@@ -776,7 +776,7 @@ def pulsar_assembler_backend(
     if tuid is None:
         tuid = gen_tuid()
 
-    sched_folder = os.path.join(os.path.join(os.getcwd(), "data"), "schedules")
+    sched_folder = os.path.join(get_datadir(), "schedules")
     seq_folder = os.path.join(sched_folder, tuid)
     os.makedirs(seq_folder, exist_ok=True)
 
