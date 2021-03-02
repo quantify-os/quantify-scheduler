@@ -775,9 +775,9 @@ def pulsar_assembler_backend(
     # Creating the files
     if tuid is None:
         tuid = gen_tuid()
-    # Should use the folder of the matching file if tuid already exists
-    exp_folder = create_exp_folder(tuid=tuid, name=schedule.name + "_schedule")
-    seq_folder = os.path.join(exp_folder, "schedule")
+
+    sched_folder = os.path.join(os.path.join(os.getcwd(), "data"), "schedules")
+    seq_folder = os.path.join(sched_folder, tuid)
     os.makedirs(seq_folder, exist_ok=True)
 
     # Convert timing tuples and pulse dicts for each sequencer into assembly configs
