@@ -228,8 +228,8 @@ class Operation(UserDict):
 
         # ensure keys exist
         self.data["gate_info"] = {}
-        self.data["pulse_info"] = []  # A list of pulses
-        self.data["acquisition_info"] = []  # A list of acquisition_weights
+        self.data["pulse_info"] = []
+        self.data["acquisition_info"] = []
         self.data["logic_info"] = {}
 
         if name is not None:
