@@ -63,8 +63,6 @@ class Base_sequencer(Resource):
         self._timing_tuples = []
         self._pulse_dict = {}
 
-        offset: complex = 0.0 + 0.0 * 1.0j
-
         self.data = {
             "name": name,
             "type": str(self.__class__.__name__),
@@ -75,7 +73,8 @@ class Base_sequencer(Resource):
             "phase": phase,
             "sampling_rate": 1e9,
             "mixer_corrections": {
-                "offset": offset,
+                "offset_I": 0.0,
+                "offset_Q": 0.0,
                 "amp_ratio": 1.0,
                 "phase_error": 0,
             },
@@ -91,6 +90,9 @@ class Base_sequencer(Resource):
     @property
     def pulse_dict(self) -> dict:
         return self._pulse_dict
+
+    def add_mixer_corrections(self, corrections_dict):
+        self.data["mixer_corrections"] = corrections_dict
 
 
 class QCM_sequencer(Base_sequencer):
@@ -721,17 +723,19 @@ def pulsar_assembler_backend(
                     clock=clock_id,
                     clock_freq=schedule.resources[clock_id]["freq"],
                 )
-                schedule.add_resources(
-                    [
-                        sequencer_t(
-                            portclock,
-                            port=port,
-                            clock=clock_id,
-                            interm_freq=interm_freq,
-                            lo_freq=lo_freq,
-                        )
-                    ]
+
+                seq_obj = sequencer_t(
+                    portclock,
+                    port=port,
+                    clock=clock_id,
+                    interm_freq=interm_freq,
+                    lo_freq=lo_freq,
                 )
+                dev, io, _ = portclock_mapping[portclock]
+                seq_obj.add_mixer_corrections(
+                    _extract_mixer_corrections(mapping, dev, io)
+                )
+                schedule.add_resources([seq_obj])
 
             seq = schedule.resources[portclock]
             seq.timing_tuples.append(
@@ -835,6 +839,21 @@ def pulsar_assembler_backend(
     return schedule, config_dict
 
 
+def _extract_mixer_corrections(mapping: dict, dev: str, io: str) -> dict:
+
+    if "mixer_corrections" in mapping[dev][io].keys():
+        return mapping[dev][io]["mixer_corrections"]
+
+    else:
+        empty_corrections = dict()
+
+        empty_corrections["offset_I"] = 0
+        empty_corrections["offset_Q"] = 0
+        empty_corrections["amp_ratio"] = 1.0
+        empty_corrections["phase_error"] = 0
+        return empty_corrections
+
+
 def _generate_wf_data(p, seq, nco_en: bool = False):
     t = np.arange(0, 0 + p["duration"], 1 / seq["sampling_rate"])
     wf_func = import_func_from_string(p["wf_func"])
@@ -863,7 +882,11 @@ T = TypeVar("T")
 def _apply_mixer_corrections(wf: T, seq: Base_sequencer) -> T:
 
     alpha = seq.data["mixer_corrections"]["amp_ratio"]
-    wf = wf + seq.data["mixer_corrections"]["offset"]
+    wf = (
+        wf
+        + seq.data["mixer_corrections"]["offset_I"]
+        + 1.0j * seq.data["mixer_corrections"]["offset_Q"]
+    )
     wf = wf * np.exp(1.0j * seq.data["mixer_corrections"]["phase_error"])
 
     wf = alpha / 2.0 * wf.real + 2.0j / alpha * wf.imag
