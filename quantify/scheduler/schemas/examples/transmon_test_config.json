@@ -23,7 +23,7 @@
                 "ro_pulse_duration": 150e-9,
                 "ro_acq_delay": 120e-9,
                 "ro_acq_integration_time": 300e-9,
-                "ro_acq_weigth_type": "SSB",
+                "ro_acq_weight_type": "SSB",
                 "init_duration": 10e-6
             }
         },
@@ -56,7 +56,10 @@
     },
     "edges": {
         "q0-q1": {
-            "resource_map": {"q0": "q0:fl", "q1": "q1:fl"},
+            "resource_map": {
+                "q0": "q0:fl",
+                "q1": "q1:fl"
+            },
             "params": {
                 "flux_duration": 40e-9,
                 "flux_amp_control": 0.5,
