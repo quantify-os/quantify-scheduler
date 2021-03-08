@@ -24,8 +24,8 @@ from quantify.scheduler.types import Schedule
 
 PulsarModulations = namedtuple(
     "PulsarModulations",
-    ["gain_I", "gain_Q", "offset", "phase", "phase_delta"],
-    defaults=[None, None, None, None, None],
+    ["gain_I", "gain_Q", "offset_I", "offset_Q", "phase", "phase_delta"],
+    defaults=[None, None, None, None, None, None],
 )
 
 QCM_DRIVER_VER = "0.2.3"
@@ -252,12 +252,15 @@ class Q1ASMBuilder:
             self.rows.append(
                 ["", f"set_{device}_gain", f"{gain_I_val},{gain_Q_val}", "#Set gain"]
             )
-        if modulations.offset is not None:
-            offset_val = self._expand_from_normalised_range(
-                modulations.offset, "Offset"
+        if modulations.offset_I is not None:
+            offset_val_i = self._expand_from_normalised_range(
+                modulations.offset_I, "Offset"
+            )
+            offset_val_q = self._expand_from_normalised_range(
+                modulations.offset_Q, "Offset"
             )
             self.rows.append(
-                ["", f"set_{device}_offs", f"{offset_val},{offset_val}", ""]
+                ["", f"set_{device}_offs", f"{offset_val_i},{offset_val_q}", ""]
             )
         if modulations.phase is not None:
             coarse, fine, ufine = self._calculate_phase_params(modulations.phase)
@@ -316,7 +319,7 @@ class Q1ASMBuilder:
 
 # todo this doesnt work for custom waveform functions - use visitors?
 # todo docstring
-def _prepare_pulse(description, gain=0.0):
+def _prepare_pulse(description, gain=0.0, mixer_amp_ratio=1.0):
     def dummy_load_params(param_list):
         for param, default in param_list:
             description[param] = default
@@ -333,20 +336,32 @@ def _prepare_pulse(description, gain=0.0):
         or wf_func == "quantify.scheduler.waveforms.soft_square"
     ):
         params = PulsarModulations(
-            gain_I=calc_amplitude_correction(description["amp"], gain),
-            gain_Q=calc_amplitude_correction(description["amp"], gain),
+            gain_I=calc_amplitude_correction(
+                np.sqrt(mixer_amp_ratio) * description["amp"], gain
+            ),
+            gain_Q=calc_amplitude_correction(
+                1 / np.sqrt(mixer_amp_ratio) * description["amp"], gain
+            ),
         )
         return params, dummy_load_params([("amp", 1.0)])
     if wf_func == "quantify.scheduler.waveforms.ramp":
         params = PulsarModulations(
-            gain_I=calc_amplitude_correction(description["amp"], gain),
-            gain_Q=calc_amplitude_correction(description["amp"], gain),
+            gain_I=calc_amplitude_correction(
+                np.sqrt(mixer_amp_ratio) * description["amp"], gain
+            ),
+            gain_Q=calc_amplitude_correction(
+                1 / np.sqrt(mixer_amp_ratio) * description["amp"], gain
+            ),
         )
         return params, dummy_load_params([("amp", 1.0)])
     elif wf_func == "quantify.scheduler.waveforms.drag":
         params = PulsarModulations(
-            gain_I=calc_amplitude_correction(description["G_amp"], gain),
-            gain_Q=calc_amplitude_correction(description["G_amp"], gain),
+            gain_I=calc_amplitude_correction(
+                np.sqrt(mixer_amp_ratio) * description["G_amp"], gain
+            ),
+            gain_Q=calc_amplitude_correction(
+                1 / np.sqrt(mixer_amp_ratio) * description["G_amp"], gain
+            ),
             phase=description["phase"],
         )
         return params, dummy_load_params(
@@ -602,7 +617,7 @@ def _invert_hardware_mapping(hardware_mapping):
             raise ValueError("Unrecognised output mode")
         for ch in io:
             for seq_name, seq_cfg in device_cfg[ch].items():
-                if not isinstance(seq_cfg, dict):
+                if not isinstance(seq_cfg, dict) or seq_name == "mixer_corrections":
                     continue
                 portclock = _portclock(seq_cfg["port"], seq_cfg["clock"])
                 if not portclock:  # undefined port/clock
@@ -687,13 +702,16 @@ def pulsar_assembler_backend(
                 clock=clock_id,
             )
             if "acq_index" not in p.keys():  # hacky
-                params, p = _prepare_pulse(p, gain)
+                dev, io, _ = portclock_mapping[_portclock(port, clock_id)]
+                params, p = _prepare_pulse(
+                    p, gain, _extract_mixer_corrections(mapping, dev, io)["amp_ratio"]
+                )
             else:
                 # FIXME: ugly hack to get acquisition working, we seriously need to restructure this backend
                 p["wf_func"] = p["waveforms"][0]["wf_func"]
                 p.update(p["waveforms"][0])
                 params = PulsarModulations(
-                    gain_I=1.0, gain_Q=1.0, offset=None, phase=0, phase_delta=None
+                    gain_I=1.0, gain_Q=1.0, phase=0, phase_delta=None
                 )
 
             t0 = t_constr["abs_time"] + p["t0"]
@@ -828,6 +846,13 @@ def pulsar_assembler_backend(
                 config_dict[dev]["settings"]["acq_mode"] = "SSBIntegrationComplex"
 
             config_dict[dev]["settings"]["hardware_averages"] = iterations
+            config_dict[dev][seq]["settings"] = {}
+            config_dict[dev][seq]["settings"]["offset_I"] = resource.data[
+                "mixer_corrections"
+            ]["offset_I"]
+            config_dict[dev][seq]["settings"]["offset_Q"] = resource.data[
+                "mixer_corrections"
+            ]["offset_Q"]
 
             lo_params = _add_lo_config(
                 lo_params=lo_params,
@@ -845,13 +870,12 @@ def _extract_mixer_corrections(mapping: dict, dev: str, io: str) -> dict:
         return mapping[dev][io]["mixer_corrections"]
 
     else:
-        empty_corrections = dict()
-
-        empty_corrections["offset_I"] = 0
-        empty_corrections["offset_Q"] = 0
-        empty_corrections["amp_ratio"] = 1.0
-        empty_corrections["phase_error"] = 0
-        return empty_corrections
+        return {
+            "offset_I": 0,
+            "offset_Q": 0,
+            "amp_ratio": 1.0,
+            "phase_error": 0,
+        }
 
 
 def _generate_wf_data(p, seq, nco_en: bool = False):
@@ -872,26 +896,17 @@ def _generate_wf_data(p, seq, nco_en: bool = False):
         )
     else:
         wf = modulate_wave(t, wf, seq.data["interm_freq"])
-        wf = _apply_mixer_corrections(wf, seq)
+        if "phase_error" in seq.data["mixer_corrections"].keys():
+            wf = _correct_phase(
+                wf, np.deg2rad(seq.data["mixer_corrections"]["phase_error"])
+            )
     return wf
 
 
-T = TypeVar("T")
-
-
-def _apply_mixer_corrections(wf: T, seq: Base_sequencer) -> T:
-
-    alpha = seq.data["mixer_corrections"]["amp_ratio"]
-    wf = (
-        wf
-        + seq.data["mixer_corrections"]["offset_I"]
-        + 1.0j * seq.data["mixer_corrections"]["offset_Q"]
-    )
-    wf = wf * np.exp(1.0j * seq.data["mixer_corrections"]["phase_error"])
-
-    wf = alpha / 2.0 * wf.real + 2.0j / alpha * wf.imag
-
-    return wf
+def _correct_phase(wf, phase_shift: float):
+    wf_re = wf.real + wf.imag * np.tan(phase_shift)
+    wf_im = wf.imag / np.cos(phase_shift)
+    return wf_re / np.max(np.abs(wf_re)) + 1.0j * wf_im / np.max(np.abs(wf_im))
 
 
 def _add_lo_config(lo_params, p_config, io, lo_freq):
