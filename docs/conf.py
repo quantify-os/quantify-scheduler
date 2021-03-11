@@ -75,7 +75,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Quantify-Scheduler"
-copyright = "2021, Qblox & Orange Quantum Systems"
+copyright = "2020-2021, Qblox & Orange Quantum Systems"
 author = "The Quantify consortium"
 
 
