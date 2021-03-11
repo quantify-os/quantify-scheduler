@@ -45,6 +45,7 @@ extensions = [
     "sphinx-jsonschema",
     "jupyter_sphinx",
     "sphinxcontrib.blockdiag",
+    "sphinx_togglebutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,6 +56,9 @@ intersphinx_mapping = {
     "qcodes": ("https://qcodes.github.io/Qcodes/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
+    "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
 }
 
 
