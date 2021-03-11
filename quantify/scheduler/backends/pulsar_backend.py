@@ -974,7 +974,7 @@ def build_q1asm(
     q1asm = Q1ASMBuilder()
     q1asm.move("", iterations, "R0", "")
     q1asm.wait_sync("")
-    q1asm.set_mrk("start", 1)
+    q1asm.set_mrk("start", 1)  # starting the for-loop here using the "start" label
 
     if timing_tuples and get_pulse_finish_time(-1) > sequence_duration:
         raise ValueError(
@@ -1021,7 +1021,7 @@ def build_q1asm(
         )
 
     q1asm.line_break()
-    q1asm.forloop("", "start", "R0", "")
+    q1asm.forloop("", "start", "R0", "")  # looping back to set_mrk command
     q1asm.stop("", "")
     return q1asm.get_str()
 
