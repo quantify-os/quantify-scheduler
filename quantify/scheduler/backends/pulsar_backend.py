@@ -826,7 +826,7 @@ def pulsar_assembler_backend(
                 config_dict[dev] = {}
             config_dict[dev][seq] = {
                 "seq_fn": seq_fn,
-                "metadata": {"duration": resource["duration"]},
+                "settings": {"duration": resource["duration"]},
             }
 
             p_config = _extract_pulsar_config(
@@ -846,7 +846,10 @@ def pulsar_assembler_backend(
                 config_dict[dev]["settings"]["acq_mode"] = "SSBIntegrationComplex"
 
             config_dict[dev]["settings"]["hardware_averages"] = iterations
-            config_dict[dev][seq]["settings"] = {}
+
+            if "settings" not in config_dict[dev][seq].keys():
+                config_dict[dev][seq]["settings"] = {}
+
             config_dict[dev][seq]["settings"]["offset_I"] = resource.data[
                 "mixer_corrections"
             ]["offset_I"]
