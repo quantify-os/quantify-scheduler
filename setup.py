@@ -23,8 +23,8 @@ requirements = [
     "matplotlib",
     "plotly",
     "jsonschema",
-    "quantify-core>=0.2.0",
-    "qblox-instruments>=0.2.2",
+    "quantify-core>=0.3.1",
+    "qblox-instruments>=0.2.3",
 ]
 
 setup_requirements = [

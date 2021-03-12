@@ -34,6 +34,8 @@ sys.path.insert(0, package_path)
 extensions = [
     "sphinx.ext.autodoc",  # auto document docstrings
     "sphinx.ext.napoleon",  # autodoc understands numpy docstrings
+    # load after napoleon, improved compatibility with type hints annotations
+    "sphinx_autodoc_typehints",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosectionlabel",
@@ -45,6 +47,7 @@ extensions = [
     "sphinx-jsonschema",
     "jupyter_sphinx",
     "sphinxcontrib.blockdiag",
+    "sphinx_togglebutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,6 +58,9 @@ intersphinx_mapping = {
     "qcodes": ("https://qcodes.github.io/Qcodes/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
+    "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
 }
 
 
@@ -69,7 +75,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Quantify-Scheduler"
-copyright = "2020, Qblox & Orange Quantum Systems"
+copyright = "2020-2021, Qblox & Orange Quantum Systems"
 author = "The Quantify consortium"
 
 
