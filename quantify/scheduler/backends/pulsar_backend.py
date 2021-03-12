@@ -924,7 +924,7 @@ def _add_lo_config(lo_params, p_config, io, lo_freq):
     return lo_params
 
 
-def _sanitize_file_name(filename):
+def _sanitize_file_name(filename: str):
     invalid = '<>:"/\\|?* '
 
     sanitized_fn = filename
