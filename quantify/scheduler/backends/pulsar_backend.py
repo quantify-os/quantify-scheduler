@@ -8,7 +8,7 @@ import inspect
 import json
 import warnings
 import copy
-from typing import Optional, Dict, Any, Tuple, TypeVar, Union
+from typing import Optional, Dict, Any, Tuple
 from collections import namedtuple
 from qcodes import Instrument
 from qcodes.utils.helpers import NumpyJSONEncoder
@@ -17,7 +17,7 @@ from columnar.exceptions import TableOverflowError
 import numpy as np
 from quantify.scheduler.resources import Resource
 from quantify.scheduler.waveforms import modulate_wave
-from quantify.data.handling import gen_tuid, create_exp_folder, get_datadir
+from quantify.data.handling import gen_tuid, get_datadir
 from quantify.utilities.general import make_hash, without, import_func_from_string
 from quantify.scheduler.types import Schedule
 
