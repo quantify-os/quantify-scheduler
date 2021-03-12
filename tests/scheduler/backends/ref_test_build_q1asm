@@ -1,7 +1,7 @@
           
           move       1,R0              
-  start:  wait_sync  4          #sync  
-          set_mrk    1                 
+          wait_sync  4          #sync  
+  start:  set_mrk    1                 
                                        
           play       0,1,4             
                                        
