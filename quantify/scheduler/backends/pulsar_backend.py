@@ -768,6 +768,8 @@ def pulsar_assembler_backend(
                     f.write(seq_cfg["program"])
 
             seq_fn = os.path.join(seq_folder, f"{resource.name}_sequencer_cfg.json")
+            seq_fn = _sanitize_file_name(seq_fn)
+
             with open(seq_fn, "w") as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
             config_dict[resource.name] = seq_fn
@@ -776,6 +778,17 @@ def pulsar_assembler_backend(
         configure_pulsars(config_dict, mapping, portclock_mapping)
 
     return schedule, config_dict
+
+
+def _sanitize_file_name(filename):
+
+    invalid = '<>:"/\\|?* '
+
+    sanitized_fn = filename
+
+    for char in invalid:
+        sanitized_fn = sanitized_fn.replace(char, "_")
+    return sanitized_fn
 
 
 def _check_driver_version(instr, ver):
