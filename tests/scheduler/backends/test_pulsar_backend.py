@@ -25,6 +25,7 @@ from quantify.scheduler.backends.pulsar_backend import (
     _extract_gain,
     _extract_io,
     _extract_pulsar_config,
+    _sanitize_file_name,
 )
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
@@ -254,6 +255,12 @@ def test_build_q1asm():
     err = r"Provided sequence_duration.*18.*less than the total runtime of this sequence.*20"
     with pytest.raises(ValueError, match=err):
         build_q1asm(pulse_timings, pulse_data, 18, set(), 1, pulsar_type)
+
+
+def test_fn_sanitization():
+    test_fn = "this_is_a test_for\\an_invalid:file?name*okay?.test"
+    sanitized = _sanitize_file_name(test_fn)
+    assert sanitized == "this_is_a_test_for_an_invalid_file_name_okay_.test"
 
 
 def test_generate_sequencer_cfg():
