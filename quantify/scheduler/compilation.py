@@ -183,7 +183,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                     op.add_pulse(
                         SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
-                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )
@@ -214,7 +214,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                     op.add_pulse(
                         SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
-                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                         )
