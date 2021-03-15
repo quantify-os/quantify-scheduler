@@ -280,7 +280,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         interpolation : str, optional
             The type of interpolation to use, by default "linear". This argument is passed to scipy.interp1d.
         acq_channel : int, optional
-            The data channel in which the acquisition is stored, by default 0. The channel describes
+            The data channel in which the acquisition is stored, by default 0.
         acq_index : int, optional
             The data register in which the acquisition is stored, by default 0
         bin_mode : BinMode, optional
