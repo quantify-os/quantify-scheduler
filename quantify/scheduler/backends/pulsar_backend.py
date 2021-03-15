@@ -781,7 +781,7 @@ def pulsar_assembler_backend(
 
 
 def _sanitize_file_name(filename):
-    invalid = '<>:"/\\|?* '
+    invalid = '<>:"|?* '
 
     sanitized_fn = filename
     for char in invalid:
