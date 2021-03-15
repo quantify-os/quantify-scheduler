@@ -67,8 +67,8 @@ class Trace(Operation):
 class WeightedIntegratedComplex(Operation):
     def __init__(
         self,
-        waveform_i: Dict[str, Any],
-        waveform_q: Dict[str, Any],
+        waveform_a: Dict[str, Any],
+        waveform_b: Dict[str, Any],
         port: str,
         clock: str,
         duration: float,
@@ -90,20 +90,20 @@ class WeightedIntegratedComplex(Operation):
 
         .. math::
 
-            \widetilde{I} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_I(t)) +
-            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_I(t)) ) \mathrm{d}t
+            \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
+            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
 
         .. math::
 
-            \widetilde{Q} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_Q(t)) +
-            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_Q(t)) ) \mathrm{d}t
+            \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
+            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
 
         Parameters
         ----------
-        waveform_i : Dict[str, Any]
-            The complex imaginary waveform used as integration weights.
-        weights_q : Dict[str, Any]
-            The complex real waveform used as integration weights.
+        waveform_a : Dict[str, Any]
+            The complex waveform used as integration weights :math:`A(t)`.
+        waveform_b : Dict[str, Any]
+            The complex waveform used as integration weights :math:`B(t)`.
         port : str
             The acquisition port.
         clock : str
@@ -136,7 +136,7 @@ class WeightedIntegratedComplex(Operation):
             "name": "WeightedIntegrationComplex",
             "acquisition_info": [
                 {
-                    "waveforms": [waveform_i, waveform_q],
+                    "waveforms": [waveform_a, waveform_b],
                     "t0": t0,
                     "clock": clock,
                     "port": port,
@@ -233,8 +233,8 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
 class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
     def __init__(
         self,
-        weights_i: List[complex],
-        weights_q: List[complex],
+        weights_a: List[complex],
+        weights_b: List[complex],
         t: List[float],
         port: str,
         clock: str,
@@ -251,13 +251,25 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         :class:`WeightedIntegratedComplex` that uses parameterized
         waveforms and interpolation as integration weights.
 
+        Weights are applied as:
+
+        .. math::
+
+            \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
+            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
+
+        .. math::
+
+            \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
+            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
+
         Parameters
         ----------
-        weights_i : List[complex]
-            The list of complex imaginary values used as weights on
+        weights_a : List[complex]
+            The list of complex values used as weights :math:`A(t)` on
             the incoming complex signal.
-        weights_q : List[complex]
-            The list of complex real values used as weights on
+        weights_b : List[complex]
+            The list of complex values used as weights :math:`B(t)` on
             the incoming complex signal.
         t : List[float]
             The time values of each weight.
@@ -280,22 +292,22 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         t0 : float, optional
             The acquisition start time in seconds, by default 0
         """
-        waveforms_i = {
+        waveforms_a = {
             "wf_func": "scipy.interpolate.interp1d",
-            "weights": weights_i,
+            "weights": weights_a,
             "t": t,
             "interpolation": interpolation,
         }
-        waveforms_q = {
+        waveforms_b = {
             "wf_func": "scipy.interpolate.interp1d",
-            "weights": weights_q,
+            "weights": weights_b,
             "t": t,
             "interpolation": interpolation,
         }
         duration = t[-1] - t[0]
         super().__init__(
-            waveforms_i,
-            waveforms_q,
+            waveforms_a,
+            waveforms_b,
             port,
             clock,
             duration,
