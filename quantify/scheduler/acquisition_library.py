@@ -278,9 +278,9 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         clock : str
             The clock used to demodulate the acquisition.
         interpolation : str, optional
-            [description], by default "linear"
+            The type of interpolation to use, by default "linear". This argument is passed to scipy.interp1d.
         acq_channel : int, optional
-            [description], by default 0
+            The data channel in which the acquisition is stored, by default 0. The channel describes
         acq_index : int, optional
             The data register in which the acquisition is stored, by default 0
         bin_mode : BinMode, optional
