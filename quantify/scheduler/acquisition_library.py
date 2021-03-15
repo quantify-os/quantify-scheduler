@@ -210,7 +210,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             "t0": t0,
             "duration": duration,
             "wf_func": "quantify.scheduler.waveforms.square",
-            "amp": (0 - 1j),
+            "amp": (0 + 1j),
         }
 
         super().__init__(
