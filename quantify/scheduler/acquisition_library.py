@@ -280,9 +280,12 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         interpolation : str, optional
             The type of interpolation to use, by default "linear". This argument is passed to scipy.interp1d.
         acq_channel : int, optional
-            The data channel in which the acquisition is stored, by default 0.
+            The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
+            measurement, typically corresponds to a qubit idx.
         acq_index : int, optional
-            The data register in which the acquisition is stored, by default 0
+            The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
+            measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
+            setpoints of a schedule (e.g., tau in a T1 experiment).
         bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
