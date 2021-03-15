@@ -25,7 +25,9 @@ class Trace(Operation):
 
         Only processing performed is rescaling and adding
         units based on a calibrated scale. Values are returned
-        as a raw trace (numpy array of float datatype).
+        as a raw trace (numpy array of float datatype). Length of
+        this array depends on the sampling rate of the acquisition
+        device.
 
         Parameters
         ----------
