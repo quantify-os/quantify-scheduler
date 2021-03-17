@@ -47,6 +47,11 @@ class RampPulse(Operation):
             Duration of the pulse in seconds.
         port : str
             Port of the pulse.
+        clock : str
+            Clock used to modulate the pulse.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
         """
 
         data = {
@@ -86,10 +91,13 @@ class SquarePulse(Operation):
             Duration of the pulse in seconds.
         port : str
             Port of the pulse, must be capable of playing a complex waveform.
-        phase : float
-            Phase of the pulse in degrees.
         clock : str
             Clock used to modulate the pulse.
+        phase : float
+            Phase of the pulse in degrees.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
@@ -113,13 +121,26 @@ class SquarePulse(Operation):
 
 
 class SoftSquarePulse(Operation):
-    """
-    Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
-    """
-
     def __init__(
         self, amp: float, duration: float, port: str, clock: str, t0: float = 0
     ):
+        """
+        Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
+
+        Parameters
+        ------------
+        amp : float
+            Amplitude of the envelope.
+        duration : float
+            Duration of the pulse in seconds.
+        port : str
+            Port of the pulse, must be capable of playing a complex waveform.
+        clock : str
+            Clock used to modulate the pulse.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        """
         data = {
             "name": "SoftSquarePulse",
             "pulse_info": [
@@ -138,7 +159,7 @@ class SoftSquarePulse(Operation):
 
 class DRAGPulse(Operation):
     """
-    DRAG pulse inteded for single qubit gates in transmon based systems.
+    DRAG pulse intended for single qubit gates in transmon based systems.
 
     A DRAG pulse is a gaussian pulse with a derivative component added to the out-of-phase channel to
     reduce unwanted excitations of the :math:`|1\\rangle - |2\\rangle` transition.
@@ -182,14 +203,15 @@ class DRAGPulse(Operation):
             Amplitude of the derivative component, the DRAG-pulse parameter.
         duration : float
             Duration of the pulse in seconds.
-        nr_sigma : int
-            After how many sigma the Gaussian is cut off.
         phase : float
             Phase of the pulse in degrees.
         clock : str
             Clock used to modulate the pulse.
         port : str
             Port of the pulse, must be capable of carrying a complex waveform.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
         """
 
         data = {
