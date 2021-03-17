@@ -26,6 +26,7 @@ from quantify.scheduler.backends.pulsar_backend import (
     _extract_io,
     _extract_pulsar_config,
     _sanitize_file_name,
+    _portclock,
 )
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
@@ -261,6 +262,24 @@ def test_fn_sanitization():
     test_fn = "this_is_a test_for\\an_invalid:file?name*okay?.test"
     sanitized = _sanitize_file_name(test_fn)
     assert sanitized == "this_is_a_test_for_an_invalid_file_name_okay_.test"
+
+
+def test_compiled_program(dummy_pulsars):
+    qcm0 = dummy_pulsars[0]
+
+    port, clock = "q0:mw", "q0.01"
+
+    sched = Schedule("Chevron Experiment")
+    sched.add(X("q0"))
+    sched.add(SquarePulse(0.8, 20e-9, "q0:mw", clock="q0.01"))
+    sched.add(Rxy(90, 90, "q0"))
+    sched.add(SquarePulse(0.4, 20e-9, "q0:mw", clock="q0.01"))
+    sched.add_resources([ClockResource("q0.01", 6.02e9)])
+
+    portclock = _portclock(port, clock)
+
+    _, cfgs = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    qcm0.sequencer0_waveforms_and_program(cfgs[portclock])
 
 
 def test_generate_sequencer_cfg():
