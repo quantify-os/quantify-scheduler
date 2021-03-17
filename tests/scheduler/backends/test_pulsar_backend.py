@@ -271,10 +271,10 @@ def test_compiled_program(dummy_pulsars):
 
     sched = Schedule("Chevron Experiment")
     sched.add(X("q0"))
-    sched.add(SquarePulse(0.8, 20e-9, "q0:mw", clock="q0.01"))
+    sched.add(SquarePulse(0.8, 20e-9, port, clock=clock))
     sched.add(Rxy(90, 90, "q0"))
-    sched.add(SquarePulse(0.4, 20e-9, "q0:mw", clock="q0.01"))
-    sched.add_resources([ClockResource("q0.01", 6.02e9)])
+    sched.add(SquarePulse(0.4, 20e-9, port, clock=clock))
+    sched.add_resources([ClockResource(clock, 6.02e9)])
 
     portclock = _portclock(port, clock)
 
