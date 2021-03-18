@@ -37,7 +37,7 @@ Once you have a copy of the source, you can install it with:
 Setting up for local development
 --------------------------------
 
-Contributions are very welcome! To setup a an environment for local development see the instructions in the :doc:`installation guide of quantify-core <quantify-core:installation#setting-up-for-local-development>`. You only need to replace :code:`quantify-core` with :code:`quantify-scheduler` in the provided commands.
+Contributions are very welcome! To setup a an environment for local development see the instructions in the :doc:`installation guide of quantify-core <quantify-core:installation>`. You only need to replace :code:`quantify-core` with :code:`quantify-scheduler` in the provided commands.
 
 If you need any help reach out to us by `creating a new issue <https://gitlab.com/quantify-os/quantify-scheduler/-/issues>`_.
 
