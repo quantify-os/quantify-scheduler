@@ -1,5 +1,5 @@
 {
-  "backend": "quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend",
+  "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
   "qcm0": {
     "name": "qcm0",
     "type": "Pulsar_QCM",
@@ -8,6 +8,7 @@
     "IP address": "192.168.0.2",
     "complex_output_0": {
       "line_gain_db": 0,
+      "lo_name": "lo0",
       "lo_freq": null,
       "seq0": {
         "port": "q0:mw",
