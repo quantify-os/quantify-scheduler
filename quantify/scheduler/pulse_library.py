@@ -34,7 +34,12 @@ class IdlePulse(Operation):
 
 class RampPulse(Operation):
     def __init__(
-        self, amp: float, duration: float, port: str, clock: str, t0: float = 0
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str = BasebandClockResource.IDENTITY,
+        t0: float = 0,
     ):
         """
         A single-channel square pulse.
@@ -42,13 +47,13 @@ class RampPulse(Operation):
         Parameters
         ------------
         amp : float
-            Amplitude of the Gaussian envelope.
+            Final amplitude of the ramp envelope function.
         duration : float
             Duration of the pulse in seconds.
         port : str
             Port of the pulse.
         clock : str
-            Clock used to modulate the pulse.
+            Clock used to modulate the pulse, by default a BasebandClock is used.
         t0 : float
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -125,7 +130,7 @@ class SoftSquarePulse(Operation):
         self, amp: float, duration: float, port: str, clock: str, t0: float = 0
     ):
         """
-        Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
+        A two-channel square pulse convolved with a hann window in order to smoothen it.
 
         Parameters
         ------------
