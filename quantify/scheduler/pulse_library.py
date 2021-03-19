@@ -42,7 +42,7 @@ class RampPulse(Operation):
         t0: float = 0,
     ):
         """
-        A single-channel square pulse.
+        A real valued ramp pulse.
 
         Parameters
         ------------
@@ -86,7 +86,7 @@ class SquarePulse(Operation):
         t0: float = 0,
     ):
         """
-        A two-channel square pulse.
+        A real valued square pulse.
 
         Parameters
         ------------
@@ -130,7 +130,7 @@ class SoftSquarePulse(Operation):
         self, amp: float, duration: float, port: str, clock: str, t0: float = 0
     ):
         """
-        A two-channel square pulse convolved with a hann window in order to smoothen it.
+        A real valued square pulse convolved with a hann window in order to smoothen it.
 
         Parameters
         ------------
