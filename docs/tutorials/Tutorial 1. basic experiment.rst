@@ -6,6 +6,14 @@ Tutorial 1. Basic experiments
 .. jupyter-kernel::
   :id: Tutorial 1. Basic experiment
 
+.. seealso::
+
+    The complete source code of this tutorial can be found in
+
+    :jupyter-download:notebook:`Tutorial 1. Basic experiment`
+
+    :jupyter-download:script:`Tutorial 1. Basic experiment`
+
 .. tip::
     Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short) :ref:`User guide` before proceeding.
 
@@ -23,24 +31,22 @@ By rotating the measurement basis, or equivalently one of the qubits, it is poss
 If everything is done properly, one should observe the following oscillation:
 
 .. jupyter-execute::
-  :hide-code:
 
-  import plotly.graph_objects as go
-  import numpy as np
+    import plotly.graph_objects as go
+    import numpy as np
 
-  x = np.linspace(0, 360, 361)
-  y = np.cos(np.deg2rad(x-180))
-  yc = np.minimum(x/90-1, -x/90+3)
+    x = np.linspace(0, 360, 361)
+    y = np.cos(np.deg2rad(x-180))
+    yc = np.minimum(x/90-1, -x/90+3)
 
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x,y=y, name='Quantum'))
+    fig.add_trace(go.Scatter(x=x,y=yc, name='Classical'))
 
-  fig = go.Figure()
-  fig.add_trace(go.Scatter(x=x,y=y, name='Quantum'))
-  fig.add_trace(go.Scatter(x=x,y=yc, name='Classical'))
-
-  fig.update_layout(title='Bell experiment',
+    fig.update_layout(title='Bell experiment',
                      xaxis_title='Angle between detectors (deg)',
                      yaxis_title='Correlation')
-  fig.show()
+    fig.show()
 
 
 Bell circuit
@@ -51,31 +57,26 @@ We create this experiment using :ref:`gates acting on qubits<Gate-level descript
 We start by initializing an empty :class:`~quantify.scheduler.Schedule`
 
 .. jupyter-execute::
-    :hide-code:
 
     from pathlib import Path
     from os.path import join
     from quantify.data.handling import set_datadir
     set_datadir(join(Path.home(), 'quantify-data'))
-
-
-.. jupyter-execute::
-
-  from quantify.scheduler import Schedule
-  sched = Schedule('Bell experiment')
-  sched
+    from quantify.scheduler import Schedule
+    sched = Schedule('Bell experiment')
+    sched
 
 Under the hood, the :class:`~quantify.scheduler.Schedule` is based on a dictionary that can be serialized
 
 .. jupyter-execute::
 
-  sched.data
+    sched.data
 
 We also need to define the qubits.
 
 .. jupyter-execute::
 
-  q0, q1 = ('q0', 'q1') # we use strings because qubit resources have not been implemented yet.
+    q0, q1 = ('q0', 'q1') # we use strings because qubit resources have not been implemented yet.
 
 Creating the circuit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +96,7 @@ Because this experiment is most conveniently described on the gate level, we use
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         sched.add(CZ(q0, q1))
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
+        sched.add(Measure(q0, q1, acq_index=(0, 1)), label='M {:.2f} deg'.format(theta))
 
 
 Visualizing the circuit
@@ -105,12 +106,12 @@ And we can use this to create a default visualization:
 
 .. jupyter-execute::
 
-  %matplotlib inline
+    %matplotlib inline
 
-  from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-  f, ax = circuit_diagram_matplotlib(sched)
-  # all gates are plotted, but it doesn't all fit in a matplotlib figure
-  ax.set_xlim(-.5, 9.5)
+    from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+    f, ax = circuit_diagram_matplotlib(sched)
+    # all gates are plotted, but it doesn't all fit in a matplotlib figure
+    ax.set_xlim(-.5, 9.5)
 
 
 Datastructure internals
@@ -141,7 +142,7 @@ The timing constraints are stored as a list of pulses.
 
 .. jupyter-execute::
 
-  sched.data['timing_constraints'][:6]
+    sched.data['timing_constraints'][:6]
 
 
 Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also based on dicts.
@@ -160,34 +161,34 @@ Here we will use a configuration file for a transmon based system that is part o
 
 .. jupyter-execute::
 
-  import json
-  import pprint
-  import os, inspect
-  import quantify.scheduler.schemas.examples as es
+    import json
+    import pprint
+    import os, inspect
+    import quantify.scheduler.schemas.examples as es
 
-  esp = inspect.getfile(es)
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+    esp = inspect.getfile(es)
+    cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
 
 
-  with open(cfg_f, 'r') as f:
+    with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 
-  pprint.pprint(transmon_test_config)
+    pprint.pprint(transmon_test_config)
 
 
 .. jupyter-execute::
 
-  from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
+    from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
 
-  add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-  determine_absolute_timing(schedule=sched)
+    add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+    determine_absolute_timing(schedule=sched)
 
 
 .. jupyter-execute::
 
-  from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
+    from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
 
-  pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e9)
+    pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e9)
 
 
 
@@ -197,7 +198,6 @@ Compilation of pulses onto physical hardware
 
 
 .. jupyter-execute::
-    :hide-code:
 
     sched = Schedule('Bell experiment')
     for theta in np.linspace(0, 360, 21):
@@ -206,7 +206,7 @@ Compilation of pulses onto physical hardware
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         # sched.add(CZ(q0, q1)) # FIXME Commented out because of not implemented error
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1), label='M {:.2f} deg'.format(theta))
+        sched.add(Measure(q0, q1, acq_index=(0, 1)), label='M {:.2f} deg'.format(theta))
 
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
@@ -217,14 +217,14 @@ Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_
 
 .. jupyter-execute::
 
-  import pprint
+    import pprint
 
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+    cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
 
-  with open(cfg_f, 'r') as f:
+    with open(cfg_f, 'r') as f:
       qblox_test_mapping = json.load(f)
 
-  pprint.pprint(qblox_test_mapping)
+    pprint.pprint(qblox_test_mapping)
 
 
 The Pulsar QCM provides a QCoDeS based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will
@@ -233,27 +233,27 @@ also use for demonstration purposes as part of this tutorial:
 
 .. jupyter-execute::
 
-  from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-  from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
+    from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
+    from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
 
-  qcm0 = pulsar_qcm_dummy('qcm0')
-  qcm1 = pulsar_qcm_dummy('qcm1')
-  qrm0 = pulsar_qrm_dummy('qrm0')
+    qcm0 = pulsar_qcm_dummy('qcm0')
+    qcm1 = pulsar_qcm_dummy('qcm1')
+    qrm0 = pulsar_qrm_dummy('qrm0')
 
 
 .. jupyter-execute::
 
-  from quantify.scheduler.backends.pulsar_backend import pulsar_assembler_backend, configure_pulsars
-  from pulsar_qcm.pulsar_qcm import pulsar_qcm
-  from qcodes import Instrument
+    from quantify.scheduler.backends.pulsar_backend import pulsar_assembler_backend, configure_pulsars
+    from pulsar_qcm.pulsar_qcm import pulsar_qcm
+    from qcodes import Instrument
 
-  sched, config = pulsar_assembler_backend(sched, qblox_test_mapping)
+    sched, config = pulsar_assembler_backend(sched, qblox_test_mapping)
 
 The compiled schedule can be uploaded to the hardware using the following command.
 
 .. jupyter-execute::
 
-  configure_pulsars(config, qblox_test_mapping)
+  #configure_pulsars(config, qblox_test_mapping)
 
 
 At this point, the assembler on the device will load the waveforms into memory and verify the program can be executed. We must next arm and then start the device:
@@ -261,16 +261,13 @@ At this point, the assembler on the device will load the waveforms into memory a
 
 .. jupyter-execute::
 
-     qcm0.arm_sequencer()
-     qcm1.arm_sequencer()
-     qrm0.arm_sequencer()
+    qcm0.arm_sequencer()
+    qcm1.arm_sequencer()
+    qrm0.arm_sequencer()
 
-     qcm0.start_sequencer()
-     qcm1.start_sequencer()
-     qrm0.start_sequencer()
-
-
-
+    qcm0.start_sequencer()
+    qcm1.start_sequencer()
+    qrm0.start_sequencer()
 
 
 Precise timing control: The Ramsey experiment
@@ -278,8 +275,8 @@ Precise timing control: The Ramsey experiment
 
 .. todo::
 
-  This tutorial should showcase in detail the timing options possible in the
-  schedule.
+    This tutorial should showcase in detail the timing options possible in the
+    schedule.
 
 
 
@@ -308,7 +305,7 @@ between X gates on a pair of qubits.
             square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
             sched.add(X90('q0'), ref_op=square)
             sched.add(X90('q1'), ref_op=square)
-            sched.add(Measure('q0', 'q1'))
+            sched.add(Measure('q0', 'q1', acq_index=(0,1)))
     sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
 
@@ -326,11 +323,3 @@ We can also quickly compile using the :func:`!qcompile` function and associate m
 
     from quantify.scheduler.compilation import qcompile
     sched, cfg = qcompile(sched, transmon_test_config, qblox_test_mapping)
-
-.. seealso::
-
-    The complete source code of this tutorial can be found in
-
-    :jupyter-download:notebook:`Tutorial 1. Basic experiment`
-
-    :jupyter-download:script:`Tutorial 1. Basic experiment`

@@ -23,6 +23,11 @@ pulse_library
 .. automodule:: quantify.scheduler.pulse_library
     :members:
 
+acquisition_library
+---------------
+
+.. automodule:: quantify.scheduler.acquisition_library
+    :members:
 
 resources
 ---------------
