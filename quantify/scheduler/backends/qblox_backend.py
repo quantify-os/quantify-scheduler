@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple
+from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union
 from dataclasses import dataclass
 from collections import UserDict
 
@@ -51,7 +51,7 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
     return max_found
 
 
-def find_all_port_clock_combinations(d: Dict) -> List[Tuple[str, str]]:
+def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str, str]]:
     port_clocks = list()
     if "port" in d.keys():
         if "clock" not in d.keys():
@@ -128,16 +128,40 @@ class Pulsar_QRM:
 # ---------- Compilation ----------
 
 
-def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]):
-    lo_dict = generate_ext_local_oscillators(mapping)
+def _assign_frequencies(
+    device_compilers: Dict[str, Any],
+    lo_compilers: Dict[str, Any],
+    mapping: Dict[str, Any],
+):
+    pass
+
+
+def _construct_compiler_objects(device_names: List[str], mapping: Dict[str, Any]):
+    device_compilers = dict()
+    for device in device_names:
+        device_type = mapping[device]["type"]
+
+        device_compiler = getattr(sys.modules[__name__], device_type)
+        device_compilers[device] = device_compiler()
+    return device_compilers
+
+
+def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, Any]:
     total_play_time = _calculate_total_play_time(schedule)
 
     device_map = generate_port_clock_to_device_map(mapping)
     devices_used = find_devices_needed_in_schedule(schedule, device_map)
 
-    device_compilers = dict()
-    for device in devices_used:
-        device_type = mapping[device]["type"]
+    device_compilers = _construct_compiler_objects(
+        device_names=devices_used, mapping=mapping
+    )
 
-        device_compiler = getattr(sys.modules[__name__], device_type)
-        device_compilers[device] = device_compiler()
+    lo_compilers = generate_ext_local_oscillators(mapping)
+    _assign_frequencies(device_compilers, lo_compilers, mapping=mapping)
+    device_compilers.update(lo_compilers)
+
+    compiled_schedule = dict()
+    for name, compiler in device_compilers.items():
+        compiled_schedule[name] = compiler.hardware_compile()
+
+    return compiled_schedule
