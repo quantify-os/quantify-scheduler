@@ -61,10 +61,6 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
-    "quantify-core": (
-        "https://quantify-quantify-core.readthedocs-hosted.com/en/latest/",
-        None,
-    ),
 }
 
 
@@ -100,6 +96,7 @@ pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+autoclass_content = "both"
 
 
 # -- Options for HTML output -------------------------------------------

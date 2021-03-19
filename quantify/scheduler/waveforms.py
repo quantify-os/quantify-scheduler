@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
 # Description:    Contains function to generate most basic waveforms.
-#                 These functions are intened to be used to generate waveforms defined in the :mod:`.pulse_library`.
+#                 These functions are intended to be used to generate waveforms defined in the :mod:`.pulse_library`.
 #                 Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
 #                 sensitivity and interaction strengths and qubit frequencies.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
@@ -8,10 +8,17 @@
 # -----------------------------------------------------------------------------
 import numpy as np
 from scipy import signal
+from typing import Union, List
 
 
-def square(t, amp):
+def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
     return amp * np.ones(len(t))
+
+
+def square_imaginary(
+    t: Union[np.ndarray, List[float]], amp: Union[float, complex]
+) -> np.ndarray:
+    return square(t, 1j * amp)
 
 
 def ramp(t, amp):
@@ -130,6 +137,11 @@ def drag(
     return rot_drag_wave
 
 
+# ----------------------------------
+# Utility functions
+# ----------------------------------
+
+
 def rotate_wave(wave, phase: float):
     """
     Rotate a wave in the complex plane.
@@ -144,15 +156,12 @@ def rotate_wave(wave, phase: float):
     Returns
     -----------
     rot_wave : :class:`numpy.ndarray`
-        rotated waveform.
-    rot_Q : :class:`numpy.ndarray`
-        rotated quadrature component of the waveform.
+        rotated complex waveform.
     """
     angle = np.deg2rad(phase)
 
-    rot_I = np.cos(angle) * wave.real - np.sin(angle) * wave.imag
-    rot_Q = np.sin(angle) * wave.real + np.cos(angle) * wave.imag
-    return rot_I + 1j * rot_Q
+    rot = (np.cos(angle) + 1.0j * np.sin(angle)) * wave
+    return rot
 
 
 def modulate_wave(t, wave, freq_mod):

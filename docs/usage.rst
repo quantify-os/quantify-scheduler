@@ -160,7 +160,7 @@ An example of such a visualization is shown below.
   sched.add(Rxy(theta=90, phi=0, qubit=q1), ref_pt='start')
   sched.add(CZ(qC=q0, qT=q1))
   sched.add(Rxy(theta=23, phi=0, qubit=q0))
-  sched.add(Measure(q0, q1))
+  sched.add(Measure(q0, q1, acq_index=(0, 1)))
   f, ax = circuit_diagram_matplotlib(sched)
 
 To summarize:

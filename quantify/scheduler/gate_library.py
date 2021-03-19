@@ -5,6 +5,7 @@
 # -----------------------------------------------------------------------------
 import numpy as np
 from .types import Operation
+from typing import Tuple, Union
 
 
 class Rxy(Operation):
@@ -252,13 +253,45 @@ class Measure(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits):
+    def __init__(
+        self,
+        *qubits: str,
+        acq_channel: Union[Tuple[int, ...], int] = None,
+        acq_index: Union[Tuple[int, ...], int] = None
+    ):
+        """
+        Gate level description for a measurement.
+
+        The measurement is compiled according to what is specified in the config.
+
+        Parameters
+        ----------
+        qubits
+            The qubits you want to measure
+        acq_channel
+            Acquisition channel on which the measurement is performed
+        acq_index
+            Index of the register where the measurement is stored.
+        """
+
+        if isinstance(acq_index, int):
+            acq_index = (acq_index,)
+        elif acq_index is None:
+            acq_index = tuple(i for i in range(len(qubits)))
+
+        if isinstance(acq_channel, int):
+            acq_channel = (acq_channel,)
+        elif acq_channel is None:
+            acq_channel = tuple(i for i in range(len(qubits)))
+
         data = {
             "gate_info": {
                 "unitary": None,
                 "plot_func": "quantify.scheduler.visualization.circuit_diagram.meter",
                 "tex": r"$\langle0|$",
                 "qubits": list(qubits),
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
                 "operation_type": "measure",
             }
         }

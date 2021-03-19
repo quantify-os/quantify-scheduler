@@ -4,18 +4,22 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from typing import TYPE_CHECKING
-import logging
-import jsonschema
+
 import importlib
-from quantify.scheduler.resources import ClockResource, BasebandClockResource
+import logging
+from typing import TYPE_CHECKING
+
+import jsonschema
+from quantify.utilities.general import load_json_schema
+
+from quantify.scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify.scheduler.pulse_library import (
-    SquarePulse,
     DRAGPulse,
     IdlePulse,
     SoftSquarePulse,
+    SquarePulse,
 )
-from quantify.utilities.general import load_json_schema
+from quantify.scheduler.resources import BasebandClockResource, ClockResource
 
 if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule
@@ -52,6 +56,12 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
     """
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
+
+    valid_time_units = ("physical", "ideal")
+    if time_unit not in valid_time_units:
+        raise ValueError(
+            f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
+        )
 
     # iterate over the objects in the schedule.
     last_constr = schedule.timing_constraints[0]
@@ -162,31 +172,63 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                     )
             continue
 
+        if op.valid_acquisition:
+            continue
+
         if op["gate_info"]["operation_type"] == "measure":
-            for q in op["gate_info"]["qubits"]:
+            for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
-                # readout pulse
-                if q_cfg["params"]["ro_pulse_type"] == "square":
+                if q_cfg["params"]["acquisition"] == "SSBIntegrationComplex":
+                    # readout pulse
                     op.add_pulse(
                         SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
                             duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
-                            t0=0,
                         )
                     )
-                    # acquisition integration window
-                    acquisition = SquarePulse(
-                        amp=1,
-                        duration=q_cfg["params"]["ro_acq_integration_time"],
-                        port=q_cfg["resources"]["port_ro"],
-                        clock=q_cfg["resources"]["clock_ro"],
-                        t0=q_cfg["params"]["ro_acq_delay"],
+                    op.add_acquisition(
+                        SSBIntegrationComplex(
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            t0=q_cfg["params"]["ro_acq_delay"],
+                            acq_channel=op["gate_info"]["acq_channel"][idx],
+                            acq_index=op["gate_info"]["acq_index"][idx],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
                     )
-                    acquisition.mark_as_acquisition()
-                    op.add_pulse(acquisition)
-                    # add clock to resources
+
+                    if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
+                        schedule.add_resources(
+                            [
+                                ClockResource(
+                                    q_cfg["resources"]["clock_ro"],
+                                    freq=q_cfg["params"]["ro_freq"],
+                                )
+                            ]
+                        )
+
+                if q_cfg["params"]["acquisition"] == "Trace":
+                    # readout pulse
+                    op.add_pulse(
+                        SquarePulse(
+                            amp=q_cfg["params"]["ro_pulse_amp"],
+                            duration=q_cfg["params"]["ro_pulse_duration"],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
+                    )
+                    op.add_acquisition(  # TODO protocol hardcoded
+                        Trace(
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            t0=q_cfg["params"]["ro_acq_delay"],
+                            acq_channel=op["gate_info"]["acq_channel"][idx],
+                            acq_index=op["gate_info"]["acq_index"][idx],
+                            port=q_cfg["resources"]["port_ro"],
+                        )
+                    )
+
                     if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
                         schedule.add_resources(
                             [
@@ -258,6 +300,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
                 port=edge_cfg["resource_map"][q0],
                 clock=BasebandClockResource.IDENTITY,
             )
+            op.add_pulse(pulse)
+
             pulse = SoftSquarePulse(
                 amp=amp,
                 duration=edge_cfg["params"]["flux_duration"],
@@ -337,16 +381,6 @@ def qcompile(
 
         Add a schema for the hardware mapping.
     """
-
-    device_bck_name = device_cfg["backend"]
-    if (
-        device_bck_name
-        != "quantify.scheduler.compilation.add_pulse_information_transmon"
-    ):
-        raise NotImplementedError
-    (mod, cls) = device_bck_name.rsplit(".", 1)
-    device_compile = getattr(importlib.import_module(mod), cls)
-
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
@@ -360,3 +394,32 @@ def qcompile(
         return hardware_compile(schedule, mapping=hardware_mapping, **kwargs)
     else:
         return schedule
+
+
+def device_compile(schedule: Schedule, device_cfg: dict):
+    """
+    Add pulse information to operations based on device config file.
+
+    Parameters
+    ----------
+    schedule : :class:`~quantify.scheduler.Schedule`
+        To be compiled
+    device_cfg : dict
+        Device specific configuration, defines the compilation step from
+        the gate-level to the pulse level description.
+
+    Returns
+    ----------
+    schedule : :class:`~quantify.scheduler.Schedule`
+        The updated schedule.
+
+    """
+
+    device_bck_name = device_cfg["backend"]
+    (mod, cls) = device_bck_name.rsplit(".", 1)
+    device_compilation_bck = getattr(importlib.import_module(mod), cls)
+
+    schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
+    schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
+
+    return schedule

@@ -3,6 +3,7 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
 from uuid import uuid4
 from collections import UserDict
 import jsonschema
@@ -227,7 +228,8 @@ class Operation(UserDict):
 
         # ensure keys exist
         self.data["gate_info"] = {}
-        self.data["pulse_info"] = []  # A list of pulses
+        self.data["pulse_info"] = []
+        self.data["acquisition_info"] = []
         self.data["logic_info"] = {}
 
         if name is not None:
@@ -263,7 +265,7 @@ class Operation(UserDict):
         """
         return make_hash(self.data)
 
-    def add_gate_info(self, gate_operation):
+    def add_gate_info(self, gate_operation: Operation):
         """
         Updates self.data['gate_info'] with contents of gate_operation.
 
@@ -274,9 +276,9 @@ class Operation(UserDict):
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
 
-    def add_pulse(self, pulse_operation):
+    def add_pulse(self, pulse_operation: Operation):
         """
-        Adds pulse_info of pulse_operation to self.
+        Adds pulse_info of pulse_operation Operation to this Operation.
 
         Parameters
         ----------
@@ -284,6 +286,17 @@ class Operation(UserDict):
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
+
+    def add_acquisition(self, acquisition_operation: Operation):
+        """
+        Adds acquisition_info of acquisition_operation Operation to this Operation.
+
+        Parameters
+        ----------
+        acquisition_operation : :class:`Operation`
+            an operation containing acquisition_info.
+        """
+        self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
 
     @classmethod
     def is_valid(cls, operation):
@@ -312,18 +325,12 @@ class Operation(UserDict):
             return True
         return False
 
-    """
-    Used by the compiler to identify pulses which must be acquired rather than played
-    """
-    ACQUISITION_IDENTIFIER = "is_acquisition"
-
-    def mark_as_acquisition(self):
+    @property
+    def valid_acquisition(self) -> bool:
         """
-        Marks all pulses within an operation as acquisition.
-
-        For a typical measurement operation, this is applied to the acquisition pulse (operation) before
-        it is added to the main measurement operation.
+        An operation is a valid acquisition if it contains information on how
+        to represent the operation as a acquisition on the pulse level.
         """
-        assert self.valid_pulse
-        for p in self.data["pulse_info"]:
-            p[self.ACQUISITION_IDENTIFIER] = True
+        if len(self.data["acquisition_info"]) > 0:
+            return True
+        return False
