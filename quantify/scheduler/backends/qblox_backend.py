@@ -128,6 +128,14 @@ class Pulsar_QRM:
 # ---------- Compilation ----------
 
 
+def _assign_pulse_and_acq_info_to_devices(
+    schedule: Schedule,
+    device_compilers: Dict[str, Any],
+    portclock_mapping: Dict[Tuple[str, str], str],
+):
+    pass
+
+
 def _assign_frequencies(
     device_compilers: Dict[str, Any],
     lo_compilers: Dict[str, Any],
@@ -149,11 +157,16 @@ def _construct_compiler_objects(device_names: List[str], mapping: Dict[str, Any]
 def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, Any]:
     total_play_time = _calculate_total_play_time(schedule)
 
-    device_map = generate_port_clock_to_device_map(mapping)
-    devices_used = find_devices_needed_in_schedule(schedule, device_map)
+    portclock_map = generate_port_clock_to_device_map(mapping)
+    devices_used = find_devices_needed_in_schedule(schedule, portclock_map)
 
     device_compilers = _construct_compiler_objects(
         device_names=devices_used, mapping=mapping
+    )
+    _assign_pulse_and_acq_info_to_devices(
+        schedule=schedule,
+        device_compilers=device_compilers,
+        portclock_mapping=portclock_map,
     )
 
     lo_compilers = generate_ext_local_oscillators(mapping)
