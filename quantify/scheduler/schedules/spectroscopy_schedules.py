@@ -3,6 +3,7 @@ from quantify.scheduler.pulse_library import SquarePulse, IdlePulse
 from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.scheduler.resources import ClockResource
 
+
 def heterodyne_spec_sched(
     pulse_amp: float,
     pulse_duration: float,
@@ -11,7 +12,7 @@ def heterodyne_spec_sched(
     frequency: float,
     acquisition_delay: float,
     integration_time: float,
-    buffer_time: float = 18e-6, # min based on QRM repetition rate.
+    buffer_time: float = 18e-6,  # min based on QRM repetition rate.
 ):
     """
     Generate a schedule for performing heterodyne spectroscopy.
@@ -45,7 +46,7 @@ def heterodyne_spec_sched(
             port=port,
             clock=clock,
         ),
-        label="Spec_pulse",
+        label="spec_pulse",
     )
 
     sched.add(
@@ -59,13 +60,13 @@ def heterodyne_spec_sched(
         ref_op=pulse,
         ref_pt="start",
         rel_time=acquisition_delay,
-        label='Acquisition'
+        label="acquisition",
     )
 
     return sched
 
 
-def pulsed_spec_sched(
+def two_tone_spec_sched(
     spec_pulse_amp: float,
     spec_pulse_duration: float,
     spec_pulse_port: str,
@@ -79,11 +80,10 @@ def pulsed_spec_sched(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    buffer_time: float = 18e-6, # min based on QRM repetition rate.
-
+    buffer_time: float = 18e-6,  # min based on QRM repetition rate.
 ):
     """
-    Generate a schedule for performing heterodyne spectroscopy.
+    Generate a schedule for performing two-tone spectroscopy.
 
     Parameters
     ----------
@@ -106,6 +106,7 @@ def pulsed_spec_sched(
     # wait time between different repetitions of the schedule.
     sched.add(
         IdlePulse(duration=buffer_time),
+        label="buffer",
     )
 
     sched.add(
@@ -116,7 +117,6 @@ def pulsed_spec_sched(
             clock=spec_pulse_clock,
         ),
         label="spec_pulse",
-        ref_pt="end",
     )
 
     ro_pulse = sched.add(

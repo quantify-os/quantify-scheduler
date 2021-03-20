@@ -10,7 +10,7 @@ def test_heterodynce_spec_schedule():
     frequency = 4.48e9
     integration_time = 1e-6
     acquisition_delay = 220e-9
-    buffer_time=18e-6
+    buffer_time = 18e-6
 
     sched = sps.heterodyne_spec_sched(
         pulse_amp=pulse_amp,
@@ -24,8 +24,8 @@ def test_heterodynce_spec_schedule():
     )
 
     sched = determine_absolute_timing(sched)
-
-    labels = ["buffer", "Spec_pulse", "Acquisition"]
+    # test that the right operations are added and timing is as expected.
+    labels = ["buffer", "spec_pulse", "acquisition"]
     abs_times = [0, buffer_time, buffer_time + acquisition_delay]
 
     for i, constr in enumerate(sched.timing_constraints):
@@ -46,58 +46,34 @@ def test_pulsed_spec_schedule():
     ro_pulse_clock = "q0.ro"
     ro_pulse_frequency = 4.48e9
     ro_integration_time = 1e-6
+    ro_acquisition_delay = 220e-9
+    buffer_time = 18e-6
 
-    # sched = sps.pulsed_spec_sched(
-    #     spec_pulse_amp=spec_pulse_amp,
-    #     spec_pulse_duration=spec_pulse_duration,
-    #     spec_pulse_port=spec_pulse_port,
-    #     spec_pulse_clock=spec_pulse_clock,
-    #     spec_pulse_frequency=spec_pulse_frequency,
-    #     ro_pulse_amp=ro_pulse_amp,
-    #     ro_pulse_duration=ro_pulse_duration,
-    #     ro_pulse_delay=ro_pulse_delay,
-    #     ro_pulse_port=ro_pulse_port,
-    #     ro_pulse_clock=ro_pulse_clock,
-    #     ro_pulse_frequency=ro_pulse_frequency,
-    #     ro_integration_time=ro_integration_time,
-    # )
+    sched = sps.two_tone_spec_sched(
+        spec_pulse_amp=spec_pulse_amp,
+        spec_pulse_duration=spec_pulse_duration,
+        spec_pulse_port=spec_pulse_port,
+        spec_pulse_clock=spec_pulse_clock,
+        spec_pulse_frequency=spec_pulse_frequency,
+        ro_pulse_amp=ro_pulse_amp,
+        ro_pulse_duration=ro_pulse_duration,
+        ro_pulse_delay=ro_pulse_delay,
+        ro_pulse_port=ro_pulse_port,
+        ro_pulse_clock=ro_pulse_clock,
+        ro_pulse_frequency=ro_pulse_frequency,
+        ro_acquisition_delay=ro_acquisition_delay,
+        ro_integration_time=ro_integration_time,
+        buffer_time=buffer_time,
+    )
 
-    # assert sched.name == "Pulsed spectroscopy"
+    sched = determine_absolute_timing(sched)
+    # test that the right operations are added and timing is as expected.
+    labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
 
-    # sched = determine_absolute_timing(sched)
+    t2 = buffer_time+spec_pulse_duration+ro_pulse_delay
+    t3 = t2 + ro_acquisition_delay
+    abs_times = [0, buffer_time, t2, t3]
 
-    # labels = ["spec_pulse", "readout_pulse", "acquisition"]
-
-    # t_idle = 18e-6
-    # abs_times = [t_idle, t_idle + 2e-6, t_idle + 3.5e-6]
-
-    # for i, constr in enumerate(sched.timing_constraints):
-    #     if i != 0:  # ignore the first idle pulse as this is a backend artifact
-    #         assert constr["label"] == labels[i - 1]
-    #         assert constr["abs_time"] == abs_times[i - 1]
-
-    # # increase ro_pulse_delay
-    # ro_pulse_delay = 2e-6
-    # sched = ss.pulsed_spec_sched(
-    #     spec_pulse_amp=spec_pulse_amp,
-    #     spec_pulse_duration=spec_pulse_duration,
-    #     spec_pulse_port=spec_pulse_port,
-    #     spec_pulse_clock=spec_pulse_clock,
-    #     spec_pulse_frequency=spec_pulse_frequency,
-    #     ro_pulse_amp=ro_pulse_amp,
-    #     ro_pulse_duration=ro_pulse_duration,
-    #     ro_pulse_delay=ro_pulse_delay,
-    #     ro_pulse_port=ro_pulse_port,
-    #     ro_pulse_clock=ro_pulse_clock,
-    #     ro_pulse_frequency=ro_pulse_frequency,
-    #     ro_integration_time=ro_integration_time,
-    # )
-
-    # abs_times = [t_idle, t_idle + 3e-6, t_idle + 4.5e-6]
-
-    # sched = determine_absolute_timing(sched)
-
-    # for i, constr in enumerate(sched.timing_constraints):
-    #     if i != 0:  # ignore the first idle pulse as this is a backend artifact
-    #         assert constr["label"] == labels[i - 1]
-    #         assert constr["abs_time"] == abs_times[i - 1]
+    for i, constr in enumerate(sched.timing_constraints):
+        assert constr["label"] == labels[i]
+        assert constr["abs_time"] == abs_times[i]
