@@ -70,7 +70,7 @@ def test_pulsed_spec_schedule():
     # test that the right operations are added and timing is as expected.
     labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
 
-    t2 = buffer_time+spec_pulse_duration+ro_pulse_delay
+    t2 = buffer_time + spec_pulse_duration + ro_pulse_delay
     t3 = t2 + ro_acquisition_delay
     abs_times = [0, buffer_time, t2, t3]
 
