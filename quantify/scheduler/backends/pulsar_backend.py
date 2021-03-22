@@ -3,6 +3,7 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
 import os
 import inspect
 import json
@@ -20,7 +21,6 @@ from quantify.scheduler.waveforms import modulate_wave
 from quantify.data.handling import gen_tuid, get_datadir
 from quantify.utilities.general import make_hash, without, import_func_from_string
 from quantify.scheduler.types import Schedule
-
 
 PulsarModulations = namedtuple(
     "PulsarModulations",

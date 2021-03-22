@@ -13,14 +13,14 @@ from quantify.scheduler.resources import Resource, BasebandClockResource
 
 class Schedule(UserDict):
     """
-    A collection of :class:`Operation` objects and timing contraints
+    A collection of :class:`~Operation` objects and timing constraints
     that define relations between the operations.
 
     The Schedule data structure is based on a dictionary.
     This dictionary contains:
 
-        operation_dict     : a hash table containing the unique :class:`Operation` s added to the schedule.
-        timing_constraints : a list of all timing constraints added between operations.
+        - `operation_dict`     : a hash table containing the unique :class:`~Operation` s added to the schedule.
+        - `timing_constraints` : a list of all timing constraints added between operations.
 
 
     .. jsonschema:: schemas/schedule.json
@@ -29,12 +29,15 @@ class Schedule(UserDict):
 
     def __init__(self, name: str, data: dict = None):
         """
-        Args:
-            name (str) : name of the schedule
-            data (dict): a dictionary containing a pre-existing schedule.
+        Parameters
+        ----------
+        name :
+            name of the schedule
+        data :
+            a dictionary containing a pre-existing schedule.
         """
 
-        # valiate the input data to ensure it is valid schedule data
+        # validate the input data to ensure it is valid schedule data
         super().__init__()
 
         # ensure keys exist
@@ -63,7 +66,7 @@ class Schedule(UserDict):
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
 
-        The keys correspond to the :meth:`~Operation.hash` and values are instances of :class:`Operation`.
+        The keys correspond to the :meth:`~Operation.hash` and values are instances of :class:`~Operation`.
         """
         return self.data["operation_dict"]
 
@@ -83,7 +86,8 @@ class Schedule(UserDict):
     @property
     def resources(self):
         """
-        A dictionary containing resources. Keys are names (str), values are instances of :class:`Resource` .
+        A dictionary containing resources. Keys are names (str),
+        values are instances of :class:`~quantify.scheduler.resources.Resource` .
         """
         return self.data["resource_dict"]
 
@@ -116,7 +120,7 @@ class Schedule(UserDict):
 
     def add(
         self,
-        operation,
+        operation: Operation,
         rel_time: float = 0,
         ref_op: str = None,
         ref_pt: str = "end",
@@ -124,25 +128,25 @@ class Schedule(UserDict):
         label: str = None,
     ) -> str:
         """
-        Add an Operation to the schedule and specify timing constraints.
+        Add an :class:`~Operation` to the schedule and specify timing constraints.
 
         Parameters
         ----------
-        operation : :class:`Operation`
+        operation :
             The operation to add to the schedule
-        rel_time : float
+        rel_time :
             relative time between the the reference operation and added operation.
-        ref_op : str
+        ref_op :
             specifies the reference operation.
-        ref_pt : str
+        ref_pt :
             reference point in reference operation must be one of ('start', 'center', 'end').
-        ref_pt_new : str
+        ref_pt_new :
             reference point in added operation must be one of ('start', 'center', 'end').
-        label : str
+        label :
             a label that can be used as an identifier when adding more operations.
         Returns
         -------
-        str
+        :
             returns the (unique) label of the last added operation.
         """
         assert isinstance(operation, Operation)
@@ -202,7 +206,7 @@ class Operation(UserDict):
     """
     A JSON compatible data structure that contains information on
     how to represent the operation on the Gate, Pulse and/or Logical level.
-    It also contains information on the :class:`Resource` s used.
+    It also contains information on the :class:`~quantify.scheduler.resources.Resource` s used.
 
     An operation always has the following attributes
 
@@ -271,7 +275,7 @@ class Operation(UserDict):
 
         Parameters
         ----------
-        gate_operation : :class:`Operation`
+        gate_operation :
             an operation containing gate_info.
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
@@ -282,7 +286,7 @@ class Operation(UserDict):
 
         Parameters
         ----------
-        pulse_operation : :class:`Operation`
+        pulse_operation :
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
@@ -293,7 +297,7 @@ class Operation(UserDict):
 
         Parameters
         ----------
-        acquisition_operation : :class:`Operation`
+        acquisition_operation :
             an operation containing acquisition_info.
         """
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
@@ -302,7 +306,7 @@ class Operation(UserDict):
     def is_valid(cls, operation):
         scheme = load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
-        operation.hash  # test that the hash property evaluates
+        _ = operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
 
     @property

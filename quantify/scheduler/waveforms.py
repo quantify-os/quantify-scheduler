@@ -1,11 +1,15 @@
 # -----------------------------------------------------------------------------
 # Description:    Contains function to generate most basic waveforms.
-#                 These functions are intended to be used to generate waveforms defined in the :mod:`.pulse_library`.
-#                 Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
-#                 sensitivity and interaction strengths and qubit frequencies.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+"""
+Contains function to generate most basic waveforms.
+
+These functions are intended to be used to generate waveforms defined in the :mod:`~.pulse_library`.
+Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
+sensitivity and interaction strengths and qubit frequencies.
+"""
 import numpy as np
 from scipy import signal
 from typing import Union, List
@@ -32,7 +36,7 @@ def soft_square(t, amp):
 
 
 def drag(
-    t,
+    t: np.ndarray,
     G_amp: float,
     D_amp: float,
     duration: float,
@@ -40,44 +44,44 @@ def drag(
     phase: float = 0,
     subtract_offset: str = "average",
 ):
-    """
+    r"""
     Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a Derivative :math:`D` as the Q-component.
 
     All inputs are in s and Hz.
     phases are in degree.
 
-    :math:`G(t) = G_{amp} e^{- \\frac{(t-\\mu)^2}{2\\sigma^2}}`.
+    :math:`G(t) = G_{amp} e^{-(t-\mu)^2/(2\sigma^2)}`.
 
-    :math:`D(t) = -D_{amp} \\frac{(t-\\mu)}{\\sigma} G(t)`.
+    :math:`D(t) = -D_{amp} \frac{(t-\mu)}{\sigma} G(t)`.
 
     .. note:
 
-        One would expect a factor :math:`1/\\sigma^2` in the prefactor of :math:`1/\\sigma^2`, we absorb this
+        One would expect a factor :math:`1/\sigma^2` in the prefactor of :math:`1/\sigma^2`, we absorb this
         in the scaling factor :math:`D_{amp}` to ensure the derivative component is scale invariant with the duration of
         the pulse.
 
 
     Parameters
     ----------
-    t : :class:`numpy.ndarray`
+    t : :class:`~numpy.ndarray`
         times at which to evaluate the function
-    G_amp : float
+    G_amp :
         Amplitude of the Gaussian envelope.
-    D_amp : float
+    D_amp :
         Amplitude of the derivative component, the DRAG-pulse parameter.
-    duration : float
+    duration :
         Duration of the pulse in seconds.
-    nr_sigma : int
+    nr_sigma :
         After how many sigma the Gaussian is cut off.
-    phase : float
+    phase :
         Phase of the pulse in degrees.
-    subtract_offset : str
+    subtract_offset :
         Instruction on how to subtract the offset in order to avoid jumps in the waveform due to the cut-off.
 
-            - 'average': subtract the average of the first and last point.
-            - 'first': subtract the value of the waveform at the first sample.
-            - 'last': subtract the value of the waveform at the last sample.
-            - 'none', None: don't subtract any offset.
+        - 'average': subtract the average of the first and last point.
+        - 'first': subtract the value of the waveform at the first sample.
+        - 'last': subtract the value of the waveform at the last sample.
+        - 'none', None: don't subtract any offset.
     Returns
     ----------
     :class:`numpy.ndarray`

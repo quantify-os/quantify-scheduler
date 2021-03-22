@@ -4,25 +4,23 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Union, List, Dict, Optional
+from typing import Tuple, Union, List, Dict, Optional
 import logging
 import inspect
 import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib.patches
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 from plotly.subplots import make_subplots
 import plotly.express as px
 import plotly.graph_objects as go
+from quantify.scheduler.types import Schedule
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.utilities.general import import_func_from_string
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from matplotlib.figure import Figure
-    from matplotlib.axes import Axes
-    from quantify.scheduler.types import Schedule
 
 
 def new_pulse_fig(
@@ -30,6 +28,15 @@ def new_pulse_fig(
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Open a new figure and configure it to plot pulse schemes.
+
+    Parameters
+    ----------
+    figsize :
+
+    Returns
+    -------
+    Tuple[Figure, Union[:class:`~matplotlib.axes.Axes`, List[:class:`~matplotlib.axes.Axes`]]] :
+
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize, frameon=False)
     ax.get_xaxis().set_visible(False)
@@ -49,6 +56,15 @@ def new_pulse_subplot(fig: Figure, *args, **kwargs) -> Axes:
     Add a new subplot configured for plotting pulse schemes to a figure.
 
     All `*args` and `**kwargs` are passed to fig.add_subplot.
+
+    Parameters
+    ----------
+    fig :
+
+    Returns
+    -------
+    :class:`~matplotlib.axes.Axes` :
+
     """
     ax = fig.add_subplot(*args, **kwargs)
     ax.axis("off")
@@ -73,6 +89,32 @@ def mwPulse(
 ) -> float:
     """
     Draw a microwave pulse: Gaussian envelope with modulation.
+
+    Parameters
+    ----------
+
+    ax : :class:`~matplotlib.axes.Axes`
+
+    pos :
+
+    y_offs :
+
+    width :
+
+    amp :
+
+    label :
+
+    label_height :
+
+    color :
+
+    modulation :
+
+    Returns
+    -------
+    :
+
     """
     x = np.linspace(pos, pos + width, 100)
     envPos = amp * np.exp(-((x - (pos + width / 2)) ** 2) / (width / 4) ** 2)
@@ -116,7 +158,31 @@ def fluxPulse(
     """
     Draw a smooth flux pulse, where the rising and falling edges are given by
     Fermi-Dirac functions.
-    s: smoothness of edge
+
+    Parameters
+    ----------
+    ax : :class:`~matplotlib.axes.Axes`
+
+    pos :
+
+    y_offs :
+
+    width :
+
+    s :
+        smoothness of edge
+    amp :
+
+    label :
+
+    label_height :
+
+    color :
+
+    Returns
+    -------
+    :
+
     """
     x = np.linspace(pos, pos + width, 100)
     y = amp / (
@@ -152,6 +218,29 @@ def ramZPulse(
     """
     Draw a Ram-Z flux pulse, i.e. only part of the pulse is shaded, to indicate
     cutting off the pulse at some time.
+
+    Parameters
+    ----------
+    ax : :class:`~matplotlib.axes.Axes`
+
+    pos :
+
+    y_offs :
+
+    width :
+
+    s :
+
+    amp :
+
+    sep :
+
+    color :
+
+    Returns
+    -------
+    :
+
     """
     xLeft = np.linspace(pos, pos + sep, 100)
     xRight = np.linspace(pos + sep, pos + width, 100)
@@ -183,6 +272,33 @@ def interval(
 ) -> None:
     """
     Draw an arrow to indicate an interval.
+
+    Parameters
+    ----------
+    ax : :class:`~matplotlib.axes.Axes`
+
+    start :
+
+    stop :
+
+    y_offs :
+
+    height :
+
+    label :
+
+    label_height :
+
+    vlines :
+
+    color :
+
+    arrowstyle :
+
+    Returns
+    -------
+    :
+
     """
     if label_height is None:
         label_height = height + 0.2
@@ -223,6 +339,30 @@ def meter(
 ) -> None:
     """
     Draws a measurement meter on the specified position.
+
+    Parameters
+    ----------
+    ax : :class:`~matplotlib.axes.Axes`
+
+    x0 :
+
+    y0 :
+
+    y_offs :
+
+    w :
+
+    h :
+
+    color :
+
+    fillcolor :
+
+
+    Returns
+    -------
+    :
+
     """
     if fillcolor is None:
         fill = False
@@ -275,6 +415,34 @@ def box_text(
 ) -> None:
     """
     Draws a box filled with text at the specified position.
+
+    Parameters
+    ----------
+    ax : :class:`~matplotlib.axes.Axes`
+
+    x0 :
+
+    y0 :
+
+    text :
+
+    w :
+
+    h :
+
+    color :
+
+    fillcolor :
+
+    textcolor :
+
+    fontsize :
+
+
+    Returns
+    -------
+    :
+
     """
     if fillcolor is None:
         fill = False
@@ -304,30 +472,31 @@ def pulse_diagram_plotly(
     modulation: str = "off",
     modulation_if: float = 0,
     sampling_rate: int = 1e9,
-) -> Figure:
+) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
 
     Parameters
     ------------
-    schedule : :class:`~quantify.scheduler.types.Schedule`
+    schedule :
         The schedule to render.
-    port_list : list
+    port_list :
         A list of ports to show. if set to `None` will use the first
         8 ports it encounters in the sequence.
-    fig_ch_height: float
+    fig_ch_height :
         Height for each channel subplot in px.
-    fig_width: float
+    fig_width :
         Width for the figure in px.
-    modulation: str
+    modulation :
         Determines if modulation is included in the visualization. Options are "off", "if", "clock".
-    modulation_if: float
+    modulation_if :
         Modulation frequency used when modulation is set to "if".
-    sampling_rate : float
+    sampling_rate :
         The time resolution used in the visualization.
+
     Returns
     -------
-    :class:`plotly.graph_objects.Figure`
+    :class:`~plotly.graph_objects.Figure` :
         the plot
     """
 
@@ -335,7 +504,7 @@ def pulse_diagram_plotly(
     ports_length: int = 8
     auto_map: bool = True if port_list is None else False
 
-    def _populate_port_mapping(map: Dict[str, int]) -> None:
+    def _populate_port_mapping(portmap: Dict[str, int]) -> None:
         """
         Dynammically add up to 8 ports to the port_map dictionary.
         """
@@ -351,8 +520,8 @@ def pulse_diagram_plotly(
                 if port is None:
                     continue
 
-                if port not in port_map:
-                    port_map[port] = offset_idx
+                if port not in portmap:
+                    portmap[port] = offset_idx
                     offset_idx += 1
 
     if auto_map is False:

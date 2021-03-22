@@ -31,22 +31,22 @@ class Trace(Operation):
 
         Parameters
         ----------
-        port : str
+        port :
             The acquisition port.
-        duration : float
+        duration :
             The acquisition duration in seconds.
-        acq_channel : int, optional
+        acq_channel :
             The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
             measurement, typically corresponds to a qubit idx.
-        acq_index : int, optional
+        acq_index :
             The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
             measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
             setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode : BinMode, optional
+        bin_mode :
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
             new result and the old register value, by default BinMode.APPEND
-        t0 : float, optional
+        t0 :
             The acquisition start time in seconds, by default 0
         """
         data = {
@@ -81,7 +81,7 @@ class WeightedIntegratedComplex(Operation):
         phase: float = 0,
         t0: float = 0,
     ):
-        """
+        r"""
         Creates a new instance of WeightedIntegratedComplex.
         Weighted integration acquisition protocol on a
         complex signal in a custom complex window.
@@ -103,30 +103,30 @@ class WeightedIntegratedComplex(Operation):
 
         Parameters
         ----------
-        waveform_a : Dict[str, Any]
+        waveform_a :
             The complex waveform used as integration weights :math:`A(t)`.
-        waveform_b : Dict[str, Any]
+        waveform_b :
             The complex waveform used as integration weights :math:`B(t)`.
-        port : str
+        port :
             The acquisition port.
-        clock : str
+        clock :
             The clock used to demodulate the acquisition.
-        duration : float
+        duration :
             The acquisition duration in seconds.
-        acq_channel : int, optional
+        acq_channel :
             The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
             measurement, typically corresponds to a qubit idx.
-        acq_index : int, optional
+        acq_index :
             The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
             measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
             setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode : BinMode, optional
+        bin_mode :
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
-        phase : float, optional
+            new result and the old register value, by default :code:`BinMode.APPEND`
+        phase :
             The phase of the pulse and acquisition in degrees, by default 0
-        t0 : float, optional
+        t0 :
             The acquisition start time in seconds, by default 0
 
         Raises
@@ -184,26 +184,26 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
 
         Parameters
         ----------
-        port : str
+        port :
             The acquisition port.
-        clock : str
+        clock :
             The clock used to demodulate the acquisition.
-        duration : float
+        duration :
             The acquisition duration in seconds.
-        acq_channel : int, optional
+        acq_channel :
             The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
             measurement, typically corresponds to a qubit idx.
-        acq_index : int, optional
+        acq_index :
             The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
             measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
             setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode : BinMode, optional
+        bin_mode :
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
-        phase : float, optional
+            new result and the old register value, by default :code:`BinMode.APPEND`
+        phase :
             The phase of the pulse and acquisition in degrees, by default 0
-        t0 : float, optional
+        t0 :
             The acquisition start time in seconds, by default 0
         """
         waveform_i = {
@@ -254,7 +254,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         phase: float = 0,
         t0: float = 0,
     ):
-        """
+        r"""
         Creates a new instance of NumericalWeightedIntegrationComplex.
         NumericalWeightedIntegrationComplex inherits from
         :class:`WeightedIntegratedComplex` that uses parameterized
@@ -274,34 +274,34 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
 
         Parameters
         ----------
-        weights_a : List[complex]
+        weights_a :
             The list of complex values used as weights :math:`A(t)` on
             the incoming complex signal.
-        weights_b : List[complex]
+        weights_b :
             The list of complex values used as weights :math:`B(t)` on
             the incoming complex signal.
-        t : List[float]
+        t :
             The time values of each weight.
-        port : str
+        port :
             The acquisition port.
-        clock : str
+        clock :
             The clock used to demodulate the acquisition.
-        interpolation : str, optional
-            The type of interpolation to use, by default "linear". This argument is passed to scipy.interp1d.
-        acq_channel : int, optional
+        interpolation :
+            The type of interpolation to use, by default "linear". This argument is passed to :obj:`~scipy.interpolate.interp1d`.
+        acq_channel :
             The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
             measurement, typically corresponds to a qubit idx.
-        acq_index : int, optional
+        acq_index :
             The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
             measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
             setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode : BinMode, optional
+        bin_mode :
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
-        phase : float, optional
+            new result and the old register value, by default :code:`BinMode.APPEND`
+        phase :
             The phase of the pulse and acquisition in degrees, by default 0
-        t0 : float, optional
+        t0 :
             The acquisition start time in seconds, by default 0
         """
         waveforms_a = {

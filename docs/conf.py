@@ -61,6 +61,8 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "quantify-core": ("https://docs.scipy.org/doc/scipy/reference/", None),
 }
 
 
@@ -185,5 +187,7 @@ texinfo_documents = [
 
 blockdiag_html_image_format = "SVG"
 
+# At some point we might want to make no warnings imperative
+autodoc_warningiserror = False
 
 numfig = True

@@ -4,10 +4,8 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-
 import importlib
 import logging
-from typing import TYPE_CHECKING
 
 import jsonschema
 from quantify.utilities.general import load_json_schema
@@ -20,20 +18,18 @@ from quantify.scheduler.pulse_library import (
     SquarePulse,
 )
 from quantify.scheduler.resources import BasebandClockResource, ClockResource
-
-if TYPE_CHECKING:
-    from quantify.scheduler.types import Schedule
+from quantify.scheduler.types import Schedule
 
 
-def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
+def determine_absolute_timing(schedule: Schedule, time_unit="physical") -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
 
     Parameters
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         The schedule for which to determine timings.
-    time_unit : str
+    time_unit :
         Must be ('physical', 'ideal') : whether to use physical units to determine the
         absolute time or ideal time.
         When time_unit == "physical" the duration attribute is used.
@@ -41,8 +37,8 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
 
 
     Returns
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    -------
+    :
         a new schedule object where the absolute time for each operation has been determined.
 
 
@@ -52,7 +48,6 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
         1. iterating over all and elements in the timing_constraints.
         2. determining the absolute time of the reference operation.
         3. determining the of the start of the operation based on the rel_time and duration of operations.
-
     """
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
@@ -125,22 +120,22 @@ def _find_edge(device_cfg, q0, q1, op_name):
     return edge_cfg
 
 
-def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
+def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
     """
     Adds pulse information specified in the device config to the schedule.
 
     Parameters
     ------------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         The schedule for which to add pulse information.
 
-    device_cfg: dict
+    device_cfg :
         A dictionary specifying the required pulse information.
 
 
     Returns
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    :
         a new schedule object where the pulse information has been added.
 
 
@@ -328,22 +323,21 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
     return schedule
 
 
-def validate_config(config: dict, scheme_fn: str):
+def validate_config(config: dict, scheme_fn: str) -> bool:
     """
     Validate a configuration using a schema.
 
     Parameters
-    ------------
-    config : dict
+    ----------
+    config :
         The configuration to validate
-    scheme_fn : str
+    scheme_fn :
         The name of a json schema in the quantify.scheduler.schemas folder.
 
     Returns
     ----------
-        bool
-            True if valid
-
+    :
+        True if valid
     """
     scheme = load_json_schema(__file__, scheme_fn)
     jsonschema.validate(config, scheme)
@@ -352,24 +346,24 @@ def validate_config(config: dict, scheme_fn: str):
 
 def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
-):
+) -> Schedule:
     """
     Compile and assemble a schedule into deployables.
 
     Parameters
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         To be compiled
-    device_cfg : dict
+    device_cfg :
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
-    hardware_mapping: dict
+    hardware_mapping:
         hardware mapping, defines the compilation step from
         the pulse-level to a hardware backend.
 
     Returns
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    -------
+    :
         The prepared schedule if no backend is provided, otherwise whatever object returned by the backend
 
 
@@ -396,23 +390,22 @@ def qcompile(
         return schedule
 
 
-def device_compile(schedule: Schedule, device_cfg: dict):
+def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     """
     Add pulse information to operations based on device config file.
 
     Parameters
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         To be compiled
-    device_cfg : dict
+    device_cfg :
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
 
     Returns
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    -------
+    :
         The updated schedule.
-
     """
 
     device_bck_name = device_cfg["backend"]
