@@ -122,7 +122,7 @@ Let's take a look at the internals of the :class:`~quantify.scheduler.Schedule`.
 
     sched
 
-We can see that the number of unique operations is 24 corresponding to 4 operations that occur in every loop and 21 unique rotations for the different theta angles. (21+4 = 25 so we are missing something.
+We can see that the number of unique operations is 26 corresponding to 5 operations that occur in every loop (the measurement is considered an operation as well) and 21 unique rotations for the different theta angles.
 
 .. jupyter-execute::
 
