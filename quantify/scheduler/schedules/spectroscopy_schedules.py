@@ -1,7 +1,7 @@
 """
 Module containing schedules for common spectroscopy experiments.
 """
-
+from __future__ import annotations
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse
 from quantify.scheduler.acquisition_library import SSBIntegrationComplex
@@ -39,8 +39,7 @@ def heterodyne_spec_sched(
     clock
         reference clock used to track the spectroscopy frequency.
     buffer_time
-        time between end of the acquistion and start of the next spectroscopy pulse.
-
+        time between end of the acquisition and start of the next spectroscopy pulse.
     """
     sched = Schedule("Heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequency))
@@ -126,7 +125,7 @@ def two_tone_spec_sched(
     ro_integration_time
         integration time of the data acquisition in seconds.
     buffer_time
-        time between end of the acquistion and start of the next spectroscopy pulse.
+        time between end of the acquisition and start of the next spectroscopy pulse.
     """
     sched = Schedule("Pulsed spectroscopy")
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
