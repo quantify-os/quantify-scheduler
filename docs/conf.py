@@ -63,7 +63,6 @@ intersphinx_mapping = {
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
-    "quantify-core": ("https://docs.scipy.org/doc/scipy/reference/", None),
 }
 
 
