@@ -36,14 +36,13 @@ class ClockResource(Resource):
         A clock resource used to modulate pulses.
 
         Parameters
-        -------------
-        name : str
+        ----------
+        name :
             the name of this clock
-        freq : float
+        freq :
             the frequency of the clock in Hz
-        phase : float
+        phase :
             the starting phase of the clock in deg
-
         """
 
         self.data = {
@@ -66,12 +65,12 @@ class BasebandClockResource(Resource):
         """
         A clock resource for pulses that operate at baseband.
 
-        Parameters
-        -------------
-        name : str
-            the name of this clock
-
         Baseband signals are assumed to be real-valued and will not be modulated.
+
+        Parameters
+        ----------
+        name :
+            the name of this clock
         """
 
         self.data = {
