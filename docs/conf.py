@@ -48,6 +48,7 @@ extensions = [
     "jupyter_sphinx",
     "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
+    "scanpydoc.elegant_typehints",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -189,5 +190,9 @@ blockdiag_html_image_format = "SVG"
 
 # At some point we might want to make no warnings imperative
 autodoc_warningiserror = False
+
+qualname_overrides = {
+    "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
+}
 
 numfig = True
