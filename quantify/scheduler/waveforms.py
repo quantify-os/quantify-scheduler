@@ -43,7 +43,7 @@ def drag(
     nr_sigma: int = 3,
     phase: float = 0,
     subtract_offset: str = "average",
-):
+) -> np.ndarray:
     r"""
     Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a Derivative :math:`D` as the Q-component.
 
@@ -63,7 +63,7 @@ def drag(
 
     Parameters
     ----------
-    t : :class:`~numpy.ndarray`
+    t :
         times at which to evaluate the function
     G_amp :
         Amplitude of the Gaussian envelope.
@@ -83,27 +83,26 @@ def drag(
         - 'last': subtract the value of the waveform at the last sample.
         - 'none', None: don't subtract any offset.
     Returns
-    ----------
-    :class:`numpy.ndarray`
+    -------
+    :
         complex waveform
 
 
     References
     ----------
-        1. |citation1|_
 
-        .. _citation1: https://link.aps.org/doi/10.1103/PhysRevA.83.012308
+    1. |citation-1|_
 
-        .. |citation1| replace:: *Gambetta, J. M., Motzoi, F., Merkel, S. T. & Wilhelm, F. K.
-           Analytic control methods for high-fidelity unitary operations
-           in a weakly nonlinear oscillator. Phys. Rev. A 83, 012308 (2011).*
+        .. |citation-1| replace:: *Gambetta, J. M., Motzoi, F., Merkel, S. T. & Wilhelm, F. K. Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator. Phys. Rev. A 83, 012308 (2011).*
 
-        2. |citation2|_
+        .. _citation-1: https://link.aps.org/doi/10.1103/PhysRevA.83.012308
 
-        .. _citation2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
 
-        .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
-           Phys. Rev. Lett. 103, 110501 (2009).*
+    2. |citation-2|_
+
+        .. |citation-2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm Phys. Rev. Lett. 103, 110501 (2009).*
+
+        .. _citation-2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
     """
     mu = t[0] + duration / 2
 
@@ -146,20 +145,20 @@ def drag(
 # ----------------------------------
 
 
-def rotate_wave(wave, phase: float):
+def rotate_wave(wave: np.ndarray, phase: float) -> np.ndarray:
     """
     Rotate a wave in the complex plane.
 
     Parameters
-    -------------
-    wave : :py:class:`numpy.ndarray`
+    ----------
+    wave :
         complex waveform, real component corresponds to I, imag component to Q.
-    phase : float
+    phase :
         rotation angle in degrees
 
     Returns
-    -----------
-    rot_wave : :class:`numpy.ndarray`
+    -------
+    :
         rotated complex waveform.
     """
     angle = np.deg2rad(phase)
@@ -168,7 +167,7 @@ def rotate_wave(wave, phase: float):
     return rot
 
 
-def modulate_wave(t, wave, freq_mod):
+def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarray:
     """
     Apply single sideband (SSB) modulation to a waveform.
 
@@ -177,18 +176,18 @@ def modulate_wave(t, wave, freq_mod):
         freq_base + freq_mod = freq_signal
 
     Parameters
-    ------------
-    t : :py:class:`numpy.ndarray`
+    ----------
+    t :
         times at which to determine the modulation.
-    wave : :py:class:`numpy.ndarray`
+    wave :
         complex waveform, real component corresponds to I, imag component to Q.
-    freq_mod: float
+    freq_mod :
         modulation frequency in Hz.
 
 
     Returns
-    -----------
-    mod_wave : :py:class:`numpy.ndarray`
+    -------
+    :
         modulated waveform.
 
 

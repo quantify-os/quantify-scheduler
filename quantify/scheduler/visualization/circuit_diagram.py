@@ -19,7 +19,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     time :
 
@@ -40,7 +40,7 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     time :
 
@@ -62,7 +62,7 @@ def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **k
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     time :
 
@@ -82,7 +82,7 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     time :
 
@@ -103,7 +103,7 @@ def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     time :
 
@@ -122,7 +122,7 @@ def cz(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     time :
 
@@ -191,9 +191,10 @@ def circuit_diagram_matplotlib(
 
     Returns
     -------
-    Tuple[:class:`~matplotlib.figure.Figure`, Union[:class:`~matplotlib.axes.Axes`, List[:class:`~matplotlib.axes.Axes`]]] :
-        - matplotlib figure object.
-        - matplotlib axis object.
+    fig :
+        matplotlib figure object.
+    ax :
+        matplotlib axis object.
     """
     schedule = determine_absolute_timing(schedule, "ideal")
 
@@ -225,7 +226,7 @@ def circuit_diagram_matplotlib(
 
     if figsize is None:
         figsize = (10, len(qubit_map))
-    f, ax = ps.new_pulse_fig(figsize=figsize)
+    fig, ax = ps.new_pulse_fig(figsize=figsize)
     ax.set_title(schedule.data["name"])
     ax.set_aspect("equal")
 
@@ -272,4 +273,4 @@ def circuit_diagram_matplotlib(
 
     ax.set_xlim(-1, total_duration + 1)
 
-    return f, ax
+    return fig, ax

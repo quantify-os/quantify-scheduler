@@ -13,10 +13,10 @@ Quantify-scheduler is designed to allow experimentalists to easily define comple
 
 Quantify-scheduler can be understood by understanding the following concepts.
 
-- :ref:`Schedules<sec-schedule>`: describe when an operation needs to be applied.
-- :ref:`Operations<sec-operation>`: describe what needs to be done.
-- :ref:`Resources<sec-resources>`: describe where an operation should be applied.
-- :ref:`Compilation<sec-compilation>` between different abstraction layers and onto a hardware backend.
+- :ref:`Schedules <sec-schedule>`: describe when an operation needs to be applied.
+- :ref:`Operations <sec-operation>`: describe what needs to be done.
+- :ref:`Resources <sec-resources>`: describe where an operation should be applied.
+- :ref:`Compilation <sec-compilation>`: between different abstraction layers and onto a hardware backend.
 
 The following table shows an overview of the different concepts and how these are represented at the gate- and pulse-level abstraction.
 

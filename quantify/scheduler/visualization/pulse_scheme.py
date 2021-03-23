@@ -35,7 +35,7 @@ def new_pulse_fig(
 
     Returns
     -------
-    Tuple[Figure, Union[:class:`~matplotlib.axes.Axes`, List[:class:`~matplotlib.axes.Axes`]]] :
+    :
 
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize, frameon=False)
@@ -63,7 +63,7 @@ def new_pulse_subplot(fig: Figure, *args, **kwargs) -> Axes:
 
     Returns
     -------
-    :class:`~matplotlib.axes.Axes` :
+    :
 
     """
     ax = fig.add_subplot(*args, **kwargs)
@@ -93,7 +93,7 @@ def mwPulse(
     Parameters
     ----------
 
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     pos :
 
@@ -161,7 +161,7 @@ def fluxPulse(
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     pos :
 
@@ -221,7 +221,7 @@ def ramZPulse(
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     pos :
 
@@ -275,7 +275,7 @@ def interval(
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     start :
 
@@ -342,7 +342,7 @@ def meter(
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     x0 :
 
@@ -418,7 +418,7 @@ def box_text(
 
     Parameters
     ----------
-    ax : :class:`~matplotlib.axes.Axes`
+    ax :
 
     x0 :
 
@@ -496,7 +496,7 @@ def pulse_diagram_plotly(
 
     Returns
     -------
-    :class:`~plotly.graph_objects.Figure` :
+    :class:`!plotly.graph_objects.Figure` :
         the plot
     """
 
