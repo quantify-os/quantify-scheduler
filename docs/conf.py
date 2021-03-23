@@ -188,6 +188,8 @@ texinfo_documents = [
     ),
 ]
 
+# avoid duplicate label warning even when manual label has been used
+suppress_warnings = ["autosectionlabel.*"]
 
 blockdiag_html_image_format = "SVG"
 
