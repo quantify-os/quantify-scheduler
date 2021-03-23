@@ -60,13 +60,13 @@ schedules
     :members:
 
 spectroscopy_schedules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.schedules.spectroscopy_schedules
     :members:
 
 timedomain_schedules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.schedules.timedomain_schedules
     :members:

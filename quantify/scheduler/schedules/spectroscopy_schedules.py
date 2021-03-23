@@ -1,3 +1,7 @@
+"""
+Module containing schedules for common spectroscopy experiments.
+"""
+
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse
 from quantify.scheduler.acquisition_library import SSBIntegrationComplex
