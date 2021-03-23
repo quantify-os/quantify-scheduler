@@ -1,7 +1,7 @@
 .. _sec-tutorial1:
 
 Tutorial 1. Basic experiments
-================================
+=============================
 
 .. jupyter-kernel::
   :id: Tutorial 1. Basic experiment
@@ -23,7 +23,7 @@ Below we first give an example of basic usage using `Bell violations`.
 We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.Schedule`.
 
 Basics: The Bell experiment
------------------------------
+---------------------------
 
 As the first example, we want to perform the `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ .
 The goal of the Bell experiment is to create a Bell state :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` followed by a measurement.
@@ -50,7 +50,8 @@ If everything is done properly, one should observe the following oscillation:
 
 
 Bell circuit
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+
 We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
 
 
@@ -79,7 +80,7 @@ We also need to define the qubits.
     q0, q1 = ('q0', 'q1') # we use strings because qubit resources have not been implemented yet.
 
 Creating the circuit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 We will now add some operations to the schedule.
 Because this experiment is most conveniently described on the gate level, we use operations defined in the :mod:`quantify.scheduler.gate_library` .
@@ -100,7 +101,7 @@ Because this experiment is most conveniently described on the gate level, we use
 
 
 Visualizing the circuit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 And we can use this to create a default visualization:
 
@@ -115,14 +116,14 @@ And we can use this to create a default visualization:
 
 
 Datastructure internals
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 Let's take a look at the internals of the :class:`~quantify.scheduler.Schedule`.
 
 .. jupyter-execute::
 
     sched
 
-We can see that the number of unique operations is 24 corresponding to 4 operations that occur in every loop and 21 unique rotations for the different theta angles. (21+4 = 25 so we are missing something.
+We can see that the number of unique operations is 26 corresponding to 5 operations that occur in every loop (the measurement is considered an operation as well) and 21 unique rotations for the different theta angles.
 
 .. jupyter-execute::
 
@@ -154,7 +155,8 @@ Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also
 
 
 Compilation of a circuit diagram into pulses
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The compilation from the gate-level to the pulse-level description is done using the :ref:`device configuration file<Device configuration file>`.
 
 Here we will use a configuration file for a transmon based system that is part of the quantify-scheduler test suite.
@@ -191,11 +193,8 @@ Here we will use a configuration file for a transmon based system that is part o
     pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e9)
 
 
-
-
 Compilation of pulses onto physical hardware
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. jupyter-execute::
 
@@ -211,7 +210,7 @@ Compilation of pulses onto physical hardware
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file<Hardware mapping file>`.
+The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file <sec-hardware-config>`.
 
 Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend` made for the Qblox pulsar series hardware.
 
@@ -271,7 +270,7 @@ At this point, the assembler on the device will load the waveforms into memory a
 
 
 Precise timing control: The Ramsey experiment
-------------------------------------------------
+---------------------------------------------
 
 .. todo::
 
@@ -281,7 +280,7 @@ Precise timing control: The Ramsey experiment
 
 
 A hybrid experiment: The Chevron
-------------------------------------------------
+--------------------------------
 
 As well as defining our schedules in terms of Gates, we can also interleave arbitrary Pulse shapes, or even define a
 schedule entirely with Pulses. This can be useful for experiments involving pulse sequences not easily represented by

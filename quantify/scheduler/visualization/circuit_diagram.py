@@ -4,50 +4,92 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Union, List, Dict
+from typing import Tuple, Union, List, Dict
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 import quantify.scheduler.visualization.pulse_scheme as ps
+from quantify.scheduler.types import Schedule
 from quantify.scheduler.compilation import determine_absolute_timing
 from quantify.utilities.general import import_func_from_string
 
-if TYPE_CHECKING:
-    from quantify.scheduler.types import Schedule
-    from matplotlib.figure import Figure
-    from matplotlib.axes import Axes
 
-
-def gate_box(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     A box for a single gate containing a label.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
-            ax, x0=time, y0=qubit_idx, text=tex, fillcolor="C0", w=0.8, h=0.5, **kw
+            ax, x0=time, y0=qubit_idx, text=text, fillcolor="C0", w=0.8, h=0.5, **kw
         )
 
 
-def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     Adds a visual indicator for a Baseband pulse to the `mathplotlib.axes.Axis` instance.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     for qubit_idx in qubit_idxs:
         ps.fluxPulse(
             ax, pos=time, y_offs=qubit_idx, width=0.4, s=0.0025, amp=0.33, **kw
         )
-        ax.text(time + 0.2, qubit_idx + 0.45, tex, ha="center", va="center", zorder=6)
+        ax.text(time + 0.2, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     Adds a visual indicator for a Modulated pulse to the `mathplotlib.axes.Axis` instance.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     for qubit_idx in qubit_idxs:
         ps.mwPulse(ax, pos=time, y_offs=qubit_idx, width=0.4, amp=0.33, **kw)
-        ax.text(time + 0.2, qubit_idx + 0.45, tex, ha="center", va="center", zorder=6)
+        ax.text(time + 0.2, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def meter(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     A simple meter to depict a measurement.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
@@ -55,31 +97,64 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
         )
 
 
-def cnot(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     Markers to denote a CNOT gate between two qubits.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color="C1")
     ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
 
 
-def cz(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def cz(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     Markers to denote a CZ gate between two qubits.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color="C1")
 
 
-def reset(ax: Axes, time: float, qubit_idxs: List[int], tex: str, **kw):
+def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     A broken line to denote qubit initialization.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
             ax,
             x0=time,
             y0=qubit_idx,
-            text=tex,
+            text=text,
             color="white",
             fillcolor="white",
             w=0.4,
@@ -99,7 +174,7 @@ def _locate_qubit_in_address(qubit_map, address):
 
 
 def circuit_diagram_matplotlib(
-    schedule: Schedule, figsize=None
+    schedule: Schedule, figsize: Tuple[int, int] = None
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
@@ -109,15 +184,17 @@ def circuit_diagram_matplotlib(
 
     Parameters
     ----------
-    schedule : :class:`~quantify.scheduler.types.Schedule`
+    schedule :
         the schedule to render.
-    figsize : tuple
+    figsize :
         matplotlib figsize.
+
     Returns
     -------
-    tuple
-        - matplotlib figure object.
-        - matplotlib axis object.
+    fig :
+        matplotlib figure object.
+    ax :
+        matplotlib axis object.
     """
     schedule = determine_absolute_timing(schedule, "ideal")
 
@@ -149,7 +226,7 @@ def circuit_diagram_matplotlib(
 
     if figsize is None:
         figsize = (10, len(qubit_map))
-    f, ax = ps.new_pulse_fig(figsize=figsize)
+    fig, ax = ps.new_pulse_fig(figsize=figsize)
     ax.set_title(schedule.data["name"])
     ax.set_aspect("equal")
 
@@ -171,7 +248,7 @@ def circuit_diagram_matplotlib(
         if op.valid_gate:
             plot_func = import_func_from_string(op["gate_info"]["plot_func"])
             idxs = [qubit_map[q] for q in op["gate_info"]["qubits"]]
-            plot_func(ax, time=time, qubit_idxs=idxs, tex=op["gate_info"]["tex"])
+            plot_func(ax, time=time, qubit_idxs=idxs, text=op["gate_info"]["tex"])
         elif op.valid_pulse:
             idxs: List[int]
             try:
@@ -188,12 +265,12 @@ def circuit_diagram_matplotlib(
                 clock_id: str = pulse_info["clock"]
                 clock_resource: dict = schedule.data["resource_dict"][clock_id]
                 if clock_resource["freq"] == 0:
-                    pulse_baseband(ax, time=time, qubit_idxs=idxs, tex=op.name)
+                    pulse_baseband(ax, time=time, qubit_idxs=idxs, text=op.name)
                 else:
-                    pulse_modulated(ax, time=time, qubit_idxs=idxs, tex=op.name)
+                    pulse_modulated(ax, time=time, qubit_idxs=idxs, text=op.name)
         else:
             raise ValueError("Unknown operation")
 
     ax.set_xlim(-1, total_duration + 1)
 
-    return f, ax
+    return fig, ax
