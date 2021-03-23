@@ -48,6 +48,7 @@ extensions = [
     "jupyter_sphinx",
     "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
+    "scanpydoc.elegant_typehints",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -61,6 +62,11 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
+    "quantify-core": (
+        "https://quantify-quantify-core.readthedocs-hosted.com/en/latest/",
+        None,
+    ),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
 }
 
 
@@ -182,8 +188,16 @@ texinfo_documents = [
     ),
 ]
 
+# avoid duplicate label warning even when manual label has been used
+suppress_warnings = ["autosectionlabel.*"]
 
 blockdiag_html_image_format = "SVG"
 
+# At some point we might want to make no warnings imperative
+autodoc_warningiserror = False
+
+qualname_overrides = {
+    "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
+}
 
 numfig = True
