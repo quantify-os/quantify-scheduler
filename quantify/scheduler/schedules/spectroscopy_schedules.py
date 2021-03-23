@@ -7,29 +7,36 @@ from quantify.scheduler.resources import ClockResource
 def heterodyne_spec_sched(
     pulse_amp: float,
     pulse_duration: float,
-    port: str,
-    clock: str,
     frequency: float,
     acquisition_delay: float,
     integration_time: float,
+    port: str,
+    clock: str,
     buffer_time: float = 18e-6,  # min based on QRM repetition rate.
-):
+) -> Schedule:
     """
     Generate a schedule for performing heterodyne spectroscopy.
 
     Parameters
     ----------
-    port
-        location on the chip where the pulse should be applied and the
-        signal interpreted.
-    clock
-        name of the location in frequency space where to apply the pulse and interpret the signal.
-    integration_time
-        time in seconds to integrate
     pulse_amp
         amplitude of the spectroscopy pulse in Volt.
+    pulse_duration
+        duration of the spectroscopy pulse in seconds.
     frequency
-        frequency to which to set the clock.
+        frequency of the spectroscopy pulse and of the data acquisition in Hertz.
+    acquisition_delay
+        start of the data acquisition with respect to the start of the spectroscopy pulse
+        in seconds.
+    integration_time
+        integration time of the data acquisition in seconds.
+    port
+        location on the device where the pulse should be applied.
+    clock
+        reference clock used to track the spectroscopy frequency.
+    buffer_time
+        time between end of the acquistion and start of the next spectroscopy pulse.
+
     """
     sched = Schedule("Heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequency))
@@ -69,9 +76,9 @@ def heterodyne_spec_sched(
 def two_tone_spec_sched(
     spec_pulse_amp: float,
     spec_pulse_duration: float,
+    spec_pulse_frequency: float,
     spec_pulse_port: str,
     spec_pulse_clock: str,
-    spec_pulse_frequency: float,
     ro_pulse_amp: float,
     ro_pulse_duration: float,
     ro_pulse_delay: float,
@@ -81,23 +88,41 @@ def two_tone_spec_sched(
     ro_acquisition_delay: float,
     ro_integration_time: float,
     buffer_time: float = 18e-6,  # min based on QRM repetition rate.
-):
+) -> Schedule:
     """
     Generate a schedule for performing two-tone spectroscopy.
 
     Parameters
     ----------
-    port
-        location on the chip where the spec pulse should be applied and the
-        signal interpreted.
-    clock
-        name of the location in frequency space where to apply the pulse and interpret the signal.
-    integration_time
-        time in seconds to integrate
     spec_pulse_amp
         amplitude of the spectroscopy pulse in Volt.
-    frequency
-        frequency to which to set the clock.
+    spec_pulse_duration
+        duration of the spectroscopy pulse in seconds.
+    spec_pulse_frequency
+        frequency of the spectroscopy pulse in Hertz.
+    spec_pulse_port
+        location on the device where the spectroscopy pulse should be applied.
+    spec_pulse_clock
+        reference clock used to track the spectroscopy frequency.
+    ro_pulse_amp
+        amplitude of the readout (spectroscopy) pulse in Volt.
+    ro_pulse_duration
+        duration of the readout (spectroscopy) pulse in seconds.
+    ro_pulse_delay
+        time between the end of the spectroscopy pulse and the start of the readout (spectroscopy) pulse.
+    ro_pulse_port
+        location on the device where the readout (spectroscopy) pulse should be applied.
+    ro_pulse_clock
+        reference clock used to track the readout (spectroscopy) frequency.
+    ro_pulse_frequency
+        frequency of the spectroscopy pulse and of the data acquisition in Hertz.
+    ro_acquisition_delay
+        start of the data acquisition with respect to the start of the spectroscopy pulse
+        in seconds.
+    ro_integration_time
+        integration time of the data acquisition in seconds.
+    buffer_time
+        time between end of the acquistion and start of the next spectroscopy pulse.
     """
     sched = Schedule("Pulsed spectroscopy")
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
