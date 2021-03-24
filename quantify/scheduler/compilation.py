@@ -79,7 +79,7 @@ def determine_absolute_timing(
             )
             ref_op = schedule.operations[ref_constr["operation_hash"]]
 
-        # duration = 1 is useful when e.g. drawing a circuit diagram.
+        # duration = 1 is useful when e.g., drawing a circuit diagram.
         duration_ref_op = ref_op.duration if time_unit == "physical" else 1
 
         if t_constr["ref_pt"] == "start":
