@@ -4,6 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
+from typing_extensions import Literal
 import importlib
 import logging
 
@@ -21,7 +22,9 @@ from quantify.scheduler.resources import BasebandClockResource, ClockResource
 from quantify.scheduler.types import Schedule
 
 
-def determine_absolute_timing(schedule: Schedule, time_unit="physical") -> Schedule:
+def determine_absolute_timing(
+    schedule: Schedule, time_unit: Literal["physical", "ideal"] = "physical"
+) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
 
@@ -30,10 +33,10 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical") -> Sched
     schedule :
         The schedule for which to determine timings.
     time_unit :
-        Must be ('physical', 'ideal') : whether to use physical units to determine the
-        absolute time or ideal time.
-        When time_unit == "physical" the duration attribute is used.
-        When time_unit == "ideal" the duration attribute is ignored and treated as if it is 1.
+        Whether to use physical units to determine the absolute time or ideal time.
+        When :code:`time_unit == 'physical'` the duration attribute is used.
+        When :code:`time_unit == 'ideal'` the duration attribute is ignored and treated
+        as if it is :code:`1`.
 
 
     Returns
@@ -45,9 +48,9 @@ def determine_absolute_timing(schedule: Schedule, time_unit="physical") -> Sched
     This function determines absolute timings for every operation in the
     :attr:`~quantify.scheduler.Schedule.timing_constraints`. It does this by:
 
-        1. iterating over all and elements in the timing_constraints.
+        1. iterating over all and elements in the :attr:`~quantify.scheduler.Schedule.timing_constraints`.
         2. determining the absolute time of the reference operation.
-        3. determining the of the start of the operation based on the rel_time and duration of operations.
+        3. determining the start of the operation based on the `rel_time` and `duration` of operations.
     """
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
