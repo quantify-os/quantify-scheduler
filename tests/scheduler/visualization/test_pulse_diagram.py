@@ -29,4 +29,6 @@ def test_pulse_diagram_plotly():
     sched = qcompile(sched, DEVICE_CFG, None)
 
     # It should be possible to generate this visualization after compilation
-    _ = plsd.pulse_diagram_plotly(sched)
+    fig = plsd.pulse_diagram_plotly(sched)
+
+    assert fig.data
