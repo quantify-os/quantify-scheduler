@@ -8,7 +8,7 @@ from quantify.scheduler.compilation import determine_absolute_timing, qcompile
 from quantify.data.handling import set_datadir
 
 tmp_dir = tempfile.TemporaryDirectory()
-set_datadir(tmp_dir.name)
+
 
 esp = inspect.getfile(es)
 
@@ -23,6 +23,8 @@ with open(map_f, "r") as f:
 
 
 def test_heterodynce_spec_schedule():
+    set_datadir(tmp_dir.name)
+
     pulse_amp = 0.15
     pulse_duration = 1e-6
     port = "q0:res"
@@ -57,6 +59,8 @@ def test_heterodynce_spec_schedule():
 
 
 def test_pulsed_spec_schedule():
+    set_datadir(tmp_dir.name)
+
     spec_pulse_amp = 0.5
     spec_pulse_duration = 1e-6
     spec_pulse_port = "q0:mw"
