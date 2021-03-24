@@ -5,20 +5,23 @@
 # -----------------------------------------------------------------------------
 from __future__ import annotations
 from typing import Tuple, Union, List, Dict, Optional
+from typing_extensions import Literal
 import logging
 import inspect
 import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib.patches
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
 from plotly.subplots import make_subplots
 import plotly.express as px
 import plotly.graph_objects as go
-from quantify.scheduler.types import Schedule
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.utilities.general import import_func_from_string
+
+# For type hints, import modules to avoid circular dependencies
+from quantify.scheduler.types import Schedule
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 
 logger = logging.getLogger(__name__)
 
@@ -467,9 +470,9 @@ def box_text(
 def pulse_diagram_plotly(
     schedule: Schedule,
     port_list: Optional[List[str]] = None,
-    fig_ch_height: float = 150,
+    fig_ch_height: float = 300,
     fig_width: float = 1000,
-    modulation: str = "off",
+    modulation: str = Literal["off", "if", "clock"],
     modulation_if: float = 0,
     sampling_rate: int = 1e9,
 ) -> go.Figure:
@@ -488,7 +491,7 @@ def pulse_diagram_plotly(
     fig_width :
         Width for the figure in px.
     modulation :
-        Determines if modulation is included in the visualization. Options are "off", "if", "clock".
+        Determines if modulation is included in the visualization.
     modulation_if :
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
@@ -506,7 +509,7 @@ def pulse_diagram_plotly(
 
     def _populate_port_mapping(portmap: Dict[str, int]) -> None:
         """
-        Dynammically add up to 8 ports to the port_map dictionary.
+        Dynamically add up to 8 ports to the port_map dictionary.
         """
         offset_idx: int = 0
 
@@ -539,6 +542,7 @@ def pulse_diagram_plotly(
         title=schedule.data["name"],
         showlegend=False,
     )
+
     colors = px.colors.qualitative.Plotly
     col_idx: int = 0
 
@@ -552,17 +556,17 @@ def pulse_diagram_plotly(
 
             if pulse_info["port"] is None:
                 logger.warning(
-                    f"Unable to draw pulse for pulse_info due to missing 'port' for \
-                        operation name={operation['name']} \
-                        id={t_constr['operation_hash']} pulse_info={pulse_info}"
+                    f"Unable to draw pulse for pulse_info due to missing 'port' for "
+                    f"operation name={operation['name']} "
+                    f"id={t_constr['operation_hash']} pulse_info={pulse_info}"
                 )
                 continue
 
             if pulse_info["wf_func"] is None:
                 logger.warning(
-                    f"Unable to draw pulse for pulse_info due to missing 'wf_func' for \
-                        operation name={operation['name']} \
-                        id={t_constr['operation_hash']} pulse_info={pulse_info}"
+                    f"Unable to draw pulse for pulse_info due to missing 'wf_func' for "
+                    f"operation name={operation['name']} "
+                    f"id={t_constr['operation_hash']} pulse_info={pulse_info}"
                 )
                 continue
 
@@ -578,7 +582,6 @@ def pulse_diagram_plotly(
             # times at which to evaluate waveform
             t0 = t_constr["abs_time"] + pulse_info["t0"]
             t = np.arange(t0, t0 + pulse_info["duration"], 1 / sampling_rate)
-
             # select the arguments for the waveform function that are present in pulse info
             par_map = inspect.signature(wf_func).parameters
             wf_kwargs = {}
@@ -601,32 +604,35 @@ def pulse_diagram_plotly(
                 wf = modulate_wave(t, wf, modulation_if)
 
             row: int = port_map[port] + 1
-            # FIXME properly deal with complex waveforms.
-            for i in range(2):
-                showlegend = i == 0
-                label = operation["name"]
+
+            label = operation["name"]
+            fig.add_trace(
+                go.Scatter(
+                    x=t,
+                    y=wf.real,
+                    mode="lines",
+                    name=label,
+                    legendgroup=pls_idx,
+                    showlegend=True,
+                    line_color=colors[col_idx],
+                    hoverinfo="x+y+name",
+                ),
+                row=row,
+                col=1,
+            )
+
+            if wf.dtype.kind == "c":
+                # Only plot if the array is a complex numpy dtype
                 fig.add_trace(
                     go.Scatter(
                         x=t,
                         y=wf.imag,
                         mode="lines",
-                        name=label,
+                        name=f"Im[{label}]",
                         legendgroup=pls_idx,
-                        showlegend=showlegend,
-                        line_color="lightgrey",
-                    ),
-                    row=row,
-                    col=1,
-                )
-                fig.add_trace(
-                    go.Scatter(
-                        x=t,
-                        y=wf.real,
-                        mode="lines",
-                        name=label,
-                        legendgroup=pls_idx,
-                        showlegend=showlegend,
-                        line_color=colors[col_idx],
+                        showlegend=True,
+                        line_color="darkgrey",
+                        hoverinfo="x+y+name",
                     ),
                     row=row,
                     col=1,
