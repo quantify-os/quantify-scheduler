@@ -4,6 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
+from typing_extensions import Literal
 from uuid import uuid4
 from collections import UserDict
 import jsonschema
@@ -287,8 +288,8 @@ class Schedule(UserDict):
         operation: Operation,
         rel_time: float = 0,
         ref_op: str = None,
-        ref_pt: str = "end",
-        ref_pt_new: str = "start",
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
     ) -> str:
         """
@@ -303,9 +304,9 @@ class Schedule(UserDict):
         ref_op :
             specifies the reference operation.
         ref_pt :
-            reference point in reference operation must be one of ('start', 'center', 'end').
+            reference point in reference operation.
         ref_pt_new :
-            reference point in added operation must be one of ('start', 'center', 'end').
+            reference point in added operation.
         label :
             a label that can be used as an identifier when adding more operations.
         Returns
