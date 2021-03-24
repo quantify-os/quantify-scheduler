@@ -230,7 +230,7 @@ class Schedule(UserDict):
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
 
-        The keys correspond to the :meth:`~Operation.hash` and values are instances of :class:`~Operation`.
+        The keys correspond to the :attr:`~Operation.hash` and values are instances of :class:`~Operation`.
         """
         return self.data["operation_dict"]
 
@@ -240,10 +240,12 @@ class Schedule(UserDict):
         A list of dictionaries describing timing constraints between operations.
 
         Each item in the list is a dictionary with the following keys:
-            [label, rel_time, ref_op, ref_pt_new, ref_pt, operation_hash]
 
-        The label is used as a unique identifier that can be used as a reference for other operations
-        the operation_hash refers to the hash of a unique operation in :meth:`~Schedule.operations`.
+        :code:`['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_hash']`
+
+        The `label` is used as a unique identifier that can be used as a reference for
+        other operations, the `operation_hash` refers to the hash of a unique operation
+        in :attr:`~Schedule.operations`.
         """
         return self.data["timing_constraints"]
 
