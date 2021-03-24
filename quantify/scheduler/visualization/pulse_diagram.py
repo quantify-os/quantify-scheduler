@@ -3,7 +3,9 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+from __future__ import annotations
 import inspect
+import logging
 import numpy as np
 from typing import List, Dict, Optional
 from typing_extensions import Literal
@@ -15,6 +17,8 @@ import plotly.graph_objects as go
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.waveforms import modulate_wave
 from quantify.utilities.general import import_func_from_string
+
+logger = logging.getLogger(__name__)
 
 
 def pulse_diagram_plotly(
