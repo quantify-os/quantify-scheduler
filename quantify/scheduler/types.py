@@ -165,14 +165,22 @@ class Schedule(UserDict):
 
     """
 
-    def __init__(self, name: str, data: dict = None):
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None):
         """
+        Initialize a new instance of Schedule.
+
         Parameters
         ----------
         name :
-            name of the schedule
+            The name of the schedule
+        repetitions :
+            The amount of times the schedule will be repeated, by default 1
         data :
-            a dictionary containing a pre-existing schedule.
+            A dictionary containing a pre-existing schedule., by default None
+
+        Raises
+        ------
+        NotImplementedError
         """
 
         # validate the input data to ensure it is valid schedule data
@@ -183,6 +191,7 @@ class Schedule(UserDict):
         self.data["timing_constraints"] = []
         self.data["resource_dict"] = {}
         self.data["name"] = "nameless"
+        self.data["repetitions"] = repetitions
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
@@ -195,8 +204,25 @@ class Schedule(UserDict):
             raise NotImplementedError
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.data["name"]
+
+    @property
+    def repetitions(self) -> int:
+        """
+        Returns the amount of times this Schedule will be repeated.
+
+        Returns
+        -------
+        :
+            The repetitions count.
+        """
+        return self.data["repetitions"]
+
+    @repetitions.setter
+    def repetitions(self, value: int):
+        assert value > 0
+        self.data["repetitions"] = int(value)
 
     @property
     def operations(self):

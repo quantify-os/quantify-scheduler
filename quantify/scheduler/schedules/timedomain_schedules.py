@@ -1,7 +1,6 @@
 """
 Module containing schedules for common timedomain experiments such as a Rabi and T1 measurement.
 """
-
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse
 from quantify.scheduler.acquisition_library import SSBIntegrationComplex
