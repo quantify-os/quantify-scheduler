@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
 # Description:    Plotting functions used in the visualization backend of the sequencer.
-# Repository:     https://gitlab.com/qblox/packages/software/quantify/
+# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
