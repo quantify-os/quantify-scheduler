@@ -4,6 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 import inspect
+import numpy as np
 from typing import List, Dict, Optional
 from typing_extensions import Literal
 
@@ -21,7 +22,7 @@ def pulse_diagram_plotly(
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,
-    modulation: str = Literal["off", "if", "clock"],
+    modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0,
     sampling_rate: int = 1e9,
 ) -> go.Figure:
