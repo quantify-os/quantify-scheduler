@@ -39,7 +39,7 @@ def heterodyne_spec_sched(
     clock
         reference clock used to track the spectroscopy frequency.
     buffer_time
-        time between beginning of the acquisition and start of the next spectroscopy pulse.
+        time between end of the acquisition and start of the next spectroscopy pulse.
     """
     sched = Schedule("Heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequency))
