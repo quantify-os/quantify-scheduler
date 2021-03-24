@@ -28,6 +28,13 @@ def determine_absolute_timing(
     """
     Determines the absolute timing of a schedule based on the timing constraints.
 
+    This function determines absolute timings for every operation in the
+    :attr:`~quantify.scheduler.Schedule.timing_constraints`. It does this by:
+
+        1. iterating over all and elements in the :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+        2. determining the absolute time of the reference operation.
+        3. determining the start of the operation based on the `rel_time` and `duration` of operations.
+
     Parameters
     ----------
     schedule :
@@ -38,19 +45,10 @@ def determine_absolute_timing(
         When :code:`time_unit == 'ideal'` the duration attribute is ignored and treated
         as if it is :code:`1`.
 
-
     Returns
     -------
     :
         a new schedule object where the absolute time for each operation has been determined.
-
-
-    This function determines absolute timings for every operation in the
-    :attr:`~quantify.scheduler.Schedule.timing_constraints`. It does this by:
-
-        1. iterating over all and elements in the :attr:`~quantify.scheduler.Schedule.timing_constraints`.
-        2. determining the absolute time of the reference operation.
-        3. determining the start of the operation based on the `rel_time` and `duration` of operations.
     """
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
@@ -81,7 +79,7 @@ def determine_absolute_timing(
             )
             ref_op = schedule.operations[ref_constr["operation_hash"]]
 
-        # duration = 1 is useful when e.g., drawing a circuit diagram.
+        # duration = 1 is useful when e.g. drawing a circuit diagram.
         duration_ref_op = ref_op.duration if time_unit == "physical" else 1
 
         if t_constr["ref_pt"] == "start":
