@@ -16,7 +16,7 @@ def heterodyne_spec_sched(
     integration_time: float,
     port: str,
     clock: str,
-    buffer_time: float = 18e-6,  # min based on QRM repetition rate.
+    buffer_time: float = 18e-6,  # min based on QRM repetition rate
 ) -> Schedule:
     """
     Generate a schedule for performing heterodyne spectroscopy.
@@ -44,9 +44,11 @@ def heterodyne_spec_sched(
     sched = Schedule("Heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequency))
 
+    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is released
+    # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
+    # wait time between different repetitions of the schedule.
     sched.add(
-        IdlePulse(duration=buffer_time),
-        label="buffer",
+        IdlePulse(duration=buffer_time), label="buffer"
     )  # QRM can only start acquisition every 17 microseconds
 
     pulse = sched.add(
@@ -131,6 +133,8 @@ def two_tone_spec_sched(
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
     sched.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
+    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is released
+    # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
     # wait time between different repetitions of the schedule.
     sched.add(
         IdlePulse(duration=buffer_time),
