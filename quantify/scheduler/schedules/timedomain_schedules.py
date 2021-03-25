@@ -141,7 +141,6 @@ def allxy_sched(qubit: str):
     return schedule
 
 
-
 def rabi_pulse_sched(
     mw_G_amp: float,
     mw_D_amp: float,
