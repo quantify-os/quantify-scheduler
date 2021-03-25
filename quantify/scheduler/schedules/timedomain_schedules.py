@@ -142,10 +142,7 @@ def rabi_pulse_sched(
     sched.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
     # minimum sequence duration
-    sched.add(
-        IdlePulse(duration=reset_duration),
-        label='qubit reset'
-    )
+    sched.add(IdlePulse(duration=reset_duration), label="qubit reset")
     # QRM can only start acquisition every 17 microseconds this should be included in the backend
 
     sched.add(
