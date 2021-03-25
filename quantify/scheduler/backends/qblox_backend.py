@@ -38,6 +38,10 @@ def _sanitize_file_name(filename: str):
     return sanitized_fn
 
 
+def modulate_waveform(t, envelope, freq):
+    return envelope * np.exp(2 * np.pi * freq * t)
+
+
 def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
     t = np.arange(0, 0 + data_dict["duration"], 1 / sampling_rate)
 
