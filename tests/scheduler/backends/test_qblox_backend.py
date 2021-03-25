@@ -14,7 +14,7 @@ from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
 
-from quantify.scheduler.backends.qblox_backend import hardware_compile
+from quantify.scheduler.backends.qblox_backend import *
 
 import quantify.scheduler.schemas.examples as es
 
@@ -63,7 +63,26 @@ def dummy_pulsars():
             pass
 
 
-def test_simple_compile():
+def test_contruct_sequencer():
+    class Test_Pulsar(Pulsar_base):
+        def __init__(self):
+            super(Test_Pulsar, self).__init__(
+                name="tester",
+                hw_mapping=HARDWARE_MAPPING["qcm0"],
+                max_sequencers=2,
+                seq_type=QCM_sequencer,
+            )
+
+        def hardware_compile(self) -> Dict[str, Any]:
+            return {}
+
+    tp = Test_Pulsar()
+    tp._construct_sequencers()
+    assert len(tp._sequencers) == 2
+    assert type(tp._sequencers[0]) == QCM_sequencer
+
+
+def test_simple_compile(dummy_pulsars):
     sched = Schedule("pulse_only_experiment")
     sched.add(
         DRAGPulse(
@@ -76,7 +95,7 @@ def test_simple_compile():
             t0=4e-9,
         )
     )
-    sched.add(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
+    sched.add(RampPulse(t0=20e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     determine_absolute_timing(sched)
