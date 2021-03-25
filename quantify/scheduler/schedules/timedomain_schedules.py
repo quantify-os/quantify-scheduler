@@ -55,12 +55,11 @@ def t1_sched(
         the name of the qubit e.g., "q0" to perform the T1 experiment on.
     """
     schedule = Schedule("T1 schedule")
-    sched.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
-
     for tau in times:
         sched.add(Reset(qubit))
         sched.add(X180(qubit))
         schedule.add(Measure(qubit), ref_pt="start", rel_time=tau)
+    return schedule
 
 
 def ramsey_sched(
@@ -76,7 +75,6 @@ def ramsey_sched(
         the name of the qubit e.g., "q0" to perform the T1 experiment on.
     """
     schedule = Schedule("Ramsey schedule")
-    sched.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
 
     for tau in times:
         sched.add(Reset(qubit))
@@ -84,6 +82,7 @@ def ramsey_sched(
         # to be added artificial detuning
         sched.add(Rxy(qubit, theta=90, phi=0), ref_pt="start", rel_time=tau)
         schedule.add(Measure(qubit))
+    return schedule
 
 
 def echo_sched(
@@ -99,14 +98,48 @@ def echo_sched(
         the name of the qubit e.g., "q0" to perform the T1 experiment on.
     """
     schedule = Schedule("Echo schedule")
-    sched.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
-
     for tau in times:
         sched.add(Reset(qubit))
         sched.add(X90(qubit))
         sched.add(X180(qubit), ref_pt="start", rel_time=tau / 2)
         sched.add(X90(qubit), ref_pt="start", rel_time=tau / 2)
         schedule.add(Measure(qubit))
+    return schedule
+
+
+def allxy_sched(qubit: str):
+    # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of the AllXY experiment
+    allXY_combinations = [
+        [(0, 0), (0, 0)],
+        [(180, 0), (180, 0)],
+        [(180, 0), (180, 0)],
+        [(180, 0), (180, 90)],
+        [(180, 90), (180, 0)],
+        [(90, 0), (0, 0)],
+        [(90, 90), (0, 0)],
+        [(90, 0), (90, 90)],
+        [(90, 90), (90, 0)],
+        [(90, 0), (180, 90)],
+        [(90, 90), (180, 0)],
+        [(180, 0), (90, 90)],
+        [(180, 90), (90, 0)],
+        [(90, 0), (180, 0)],
+        [(180, 0), (90, 0)],
+        [(90, 90), (180, 90)],
+        [(180, 90), (90, 90)],
+        [(180, 0), (0, 0)],
+        [(180, 90), (0, 0)],
+        [(90, 0), (90, 0)],
+        [(90, 90), (90, 90)],
+    ]
+    schedule = Schedule("AllXY schedule")
+    for p0, p1 in allXY_combinations:
+        sched.add(Reset(qubit))
+        sched.add(Rxy(qubit=qubit, theta=p0[0], phi=p0[1]))
+        sched.add(Rxy(qubit=qubit, theta=p1[0], phi=p1[1]))
+        schedule.add(Measure(qubit))
+    return schedule
+
 
 
 def rabi_pulse_sched(
