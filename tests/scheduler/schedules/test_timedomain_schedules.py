@@ -7,11 +7,9 @@ from quantify.scheduler.schedules import timedomain_schedules as ts
 from quantify.scheduler.compilation import determine_absolute_timing, qcompile
 from quantify.data.handling import set_datadir
 
+# TODO to be replaced with fixture in tests/fixtures/schedule from !49
 tmp_dir = tempfile.TemporaryDirectory()
-set_datadir(tmp_dir.name)
-
 esp = inspect.getfile(es)
-
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
 with open(cfg_f, "r") as f:
     DEVICE_CFG = json.load(f)
@@ -21,6 +19,53 @@ with open(map_f, "r") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
+class Test_rabi_pulse:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "reset_duration": 200e-6,
+            "mw_G_amp": 0.5,
+            "mw_D_amp": 0,
+            "mw_frequency": 5.4e9,
+            "mw_clock": "q0.01",
+            "mw_port": "q0:mw",
+            "mw_pulse_duration": 20e-9,
+            "ro_pulse_amp": 0.1,
+            "ro_pulse_duration": 1e-6,
+            "ro_pulse_delay": 200e-9,
+            "ro_pulse_port": "q0:res",
+            "ro_pulse_clock": "q0.ro",
+            "ro_pulse_frequency": 8e9,
+            "ro_integration_time": 400e-9,
+            "ro_acquisition_delay": 120e-9,
+        }
 
-def test_rabi_schedule():
-    pass
+        cls.sched = ts.rabi_pulse_sched(**cls.sched_kwargs)
+
+    def test_timing(self):
+        sched = determine_absolute_timing(self.sched)
+        # test that the right operations are added and timing is as expected.
+        labels = ["qubit reset", "Rabi_pulse", "readout_pulse", "acquisition"]
+        t2 = (
+            self.sched_kwargs["reset_duration"]
+            + self.sched_kwargs["mw_pulse_duration"]
+            + self.sched_kwargs["ro_pulse_delay"]
+        )
+        t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
+        abs_times = [0, self.sched_kwargs["reset_duration"], t2, t3]
+
+        for i, constr in enumerate(sched.timing_constraints):
+            assert constr["label"] == labels[i]
+            assert constr["abs_time"] == abs_times[i]
+
+    def test_compiles_device_cfg_only(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG)
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        pass
