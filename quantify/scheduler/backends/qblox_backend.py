@@ -159,7 +159,7 @@ def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int):
 
 def find_devices_needed_in_schedule(
     schedule: Schedule, device_map: Dict[Tuple[str, str], str]
-) -> set[str]:
+) -> Set[str]:
     portclocks = find_all_port_clock_combinations(schedule.operations)
 
     devices_found = set()
@@ -281,7 +281,7 @@ class QASMProgram(list):
         instr_args = [""] * max_args_amount
         instr_args[: len(args)] = args
 
-        comment_str = f"#{comment}" if comment is not None else ""
+        comment_str = f"# {comment}" if comment is not None else ""
         return [label, instruction, *instr_args, comment_str]
 
     def emit(self, *args, **kwargs):
@@ -300,6 +300,16 @@ class QASMProgram(list):
 
         if time_left > 0:
             self.emit(PulsarInstructions.WAIT, time_left)
+
+    def wait_till_start_then_play(
+        self, current_time: int, pulse: OpInfo, idx0: int, idx1: int
+    ):
+        pulse_time = self.to_pulsar_time(pulse.timing)
+        if pulse_time > current_time:
+            wait_time = pulse_time - current_time
+            self.auto_wait(wait_time)
+            current_time += wait_time
+        self.emit(PulsarInstructions.PLAY, idx0, idx1)
 
     @staticmethod
     def to_pulsar_time(time: float) -> int:
@@ -347,6 +357,10 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         return self.port, self.clock
 
     @property
+    def modulation_freq(self) -> float:
+        return self._settings.modulation_freq
+
+    @property
     def settings(self) -> SequencerSettings:
         return self._settings
 
@@ -375,15 +389,14 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                     pulse.data, sampling_rate=self.SAMPLING_RATE
                 )
                 waveforms_complex[pulse.uuid] = self._apply_corrections_to_waveform(
-                    raw_wf_data
+                    raw_wf_data, pulse.duration
                 )
         return self._generate_waveform_dict(waveforms_complex)
 
-    def _apply_corrections_to_waveform(
-        self, waveform_data
-    ):  # mixer phase and modulation mainly
-        # TODO
-        return waveform_data
+    def _apply_corrections_to_waveform(self, waveform_data, time_duration: float):
+        # TODO mixer phase
+        t = np.arange(0, time_duration, 1 / self.SAMPLING_RATE)
+        return modulate_waveform(t, waveform_data, self.modulation_freq)
 
     def _normalize_waveform_data(self, data):
         return data / self.AWG_OUTPUT_VOLT
@@ -430,15 +443,10 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         pulse_queue = deque(sorted(pulses, key=lambda p: p.timing))
         current_time: int = 0
         while len(pulse_queue) > 0:
-            p = pulse_queue.popleft()
-            pulse_time = qasm.to_pulsar_time(p.timing)
-            if pulse_time > current_time:
-                wait_time = pulse_time - current_time
-                qasm.auto_wait(wait_time)
-                current_time += wait_time
-            idx0, idx1 = cls.get_indices_from_wf_dict(p.uuid, awg_dict)
-            qasm.emit(PulsarInstructions.PLAY, idx0, idx1)
-            current_time += qasm.to_pulsar_time(p.duration)
+            pulse = pulse_queue.popleft()
+            idx0, idx1 = cls.get_indices_from_wf_dict(pulse.uuid, awg_dict)
+            qasm.wait_till_start_then_play(current_time, pulse, idx0, idx1)
+            current_time += qasm.to_pulsar_time(pulse.duration)
 
         # program footer
         wait_time = qasm.to_pulsar_time(total_sequence_time) - current_time
@@ -675,8 +683,18 @@ def _assign_frequencies(
         if "lo_freq" in lo_info_dict.keys():
             lo_freq = lo_info_dict["lo_freq"]
         if lo_freq is None:
-            pass  # TODO check all portclocks?
+            for portclock_dict in associated_portclock_dicts:
+                port, clock = portclock_dict["port"], portclock_dict["clock"]
+                interm_freq = portclock_dict["interm_freq"]
+                cl_freq = schedule_resources[clock]["freq"]
 
+                dev_name = portclock_mapping[(port, clock)]
+                assign_frequency = getattr(
+                    device_compilers[dev_name], "assign_frequency"
+                )  # FIXME getattr should probably be removed in favour of inheritance.
+                # This would require an additional layer in structure
+                assign_frequency((port, clock), interm_freq)
+                lo_obj.assign_frequency(cl_freq - interm_freq)
         else:  # lo_freq given
             lo_obj.assign_frequency(lo_freq)
             for portclock_dict in associated_portclock_dicts:
