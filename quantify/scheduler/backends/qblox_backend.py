@@ -15,8 +15,9 @@ from columnar.exceptions import TableOverflowError
 from qcodes.utils.helpers import NumpyJSONEncoder
 from abc import ABCMeta, abstractmethod
 from collections import UserDict, defaultdict, deque
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Type
+from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Set
 
 import numpy as np
 from dataclasses_json import DataClassJsonMixin
@@ -62,7 +63,7 @@ def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray
 def generate_ext_local_oscillators(
     total_play_time: float, hardware_cfg: Dict[str, Any]
 ) -> Dict[str, LocalOscillator]:
-
+    # TODO more generic with get_inner_dicts_containing_key?
     lo_dict = dict()
     for key, device in hardware_cfg.items():
         if not isinstance(device, dict):  # is not a device
@@ -73,10 +74,19 @@ def generate_ext_local_oscillators(
                 continue
 
             if "lo_name" in io_cfg.keys():
-                if io_cfg["lo_name"] not in lo_dict.keys():
-                    lo_dict[io_cfg["lo_name"]] = LocalOscillator(
-                        io_cfg["lo_name"], total_play_time
+                lo_name = io_cfg["lo_name"]
+                if lo_name not in lo_dict.keys():
+                    lo_obj = LocalOscillator(
+                        lo_name,
+                        total_play_time,
                     )
+                    lo_obj.register_portclocks(
+                        *find_all_port_clock_combinations(io_cfg)
+                    )
+                    lo_dict[lo_name] = lo_obj
+
+                if "lo_freq" in io_cfg.keys():
+                    lo_dict[lo_name].assign_frequency(io_cfg["lo_freq"])
 
     return lo_dict
 
@@ -95,30 +105,31 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
     return max_found
 
 
-def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str, str]]:
-    port_clocks = list()
-    if "port" in d.keys():
-        if "clock" not in d.keys():
-            raise AttributeError(f"Port {d['port']} missing clock")
-
-        port, clock = d["port"], d["clock"]
-        port_clocks.append((port, clock))
-
+def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[dict]:
+    dicts_found = list()
+    if key in d.keys():
+        dicts_found.append(d)
     for val in d.values():
         if isinstance(val, dict) or isinstance(val, UserDict):
-            nested_port_clocks = find_all_port_clock_combinations(val)
+            dicts_found.extend(find_inner_dicts_containing_key(val, key))
+        elif isinstance(val, Iterable) and not isinstance(val, str):
+            for i_item in val:
+                dicts_found.extend(find_inner_dicts_containing_key(i_item, key))
+        else:
+            continue
+    return dicts_found
 
-            for item in nested_port_clocks:
-                if item not in port_clocks:
-                    port_clocks.append(item)
-        elif isinstance(val, list):
-            for l_item in val:
-                nested_port_clocks = find_all_port_clock_combinations(l_item)
 
-                for item in nested_port_clocks:
-                    if item not in port_clocks:
-                        port_clocks.append(item)
-
+def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str, str]]:
+    port_clocks = list()
+    dicts_with_port = find_inner_dicts_containing_key(d, "port")
+    for d in dicts_with_port:
+        if "port" in d.keys():
+            port = d["port"]
+            if "clock" not in d.keys():
+                raise AttributeError(f"Port {d['port']} missing clock")
+            clock = d["clock"]
+            port_clocks.append((port, clock))
     return port_clocks
 
 
@@ -148,13 +159,13 @@ def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int):
 
 def find_devices_needed_in_schedule(
     schedule: Schedule, device_map: Dict[Tuple[str, str], str]
-) -> List[str]:
+) -> set[str]:
     portclocks = find_all_port_clock_combinations(schedule.operations)
 
-    devices_found = list()
+    devices_found = set()
     for pc in portclocks:
         if pc not in devices_found:
-            devices_found.append(device_map[pc])
+            devices_found.add(device_map[pc])
 
     return devices_found
 
@@ -183,14 +194,36 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
 class LocalOscillator(InstrumentCompiler):
     def __init__(
-        self, name: str, total_play_time: float, lo_freq: Optional[int] = None
+        self,
+        name: str,
+        total_play_time: float,
+        lo_freq: Optional[int] = None,
     ):
         super().__init__(name, total_play_time)
-        if lo_freq:
-            self.lo_freq = lo_freq
+        self._lo_freq = lo_freq
+        self.portclocks = set()
+
+    def register_portclocks(self, *to_register: Tuple[str, str]):
+        self.portclocks.update(to_register)
+
+    def assign_frequency(self, freq: float):
+        if self._lo_freq is not None:
+            if freq != self._lo_freq:
+                raise ValueError(
+                    f"Attempting to set LO {self.name} to frequency {freq}, "
+                    f"while it has previously already been set to {self._lo_freq}!"
+                )
+        self._lo_freq = freq
+
+    @property
+    def frequency(self):
+        return self._lo_freq
+
+    def get_related_clocks(self) -> Set[str]:
+        return {portclock[1] for portclock in self.portclocks}
 
     def hardware_compile(self) -> Dict[str, Any]:
-        return {"interm_freq": self.lo_freq}
+        return {"interm_freq": self._lo_freq}
 
 
 # ---------- data structures ----------
@@ -209,6 +242,7 @@ class OpInfo(DataClassJsonMixin):
 class SequencerSettings(DataClassJsonMixin):
     nco_en: bool
     sync_en: bool
+    modulation_freq: float = None
 
 
 class PulsarInstructions:
@@ -228,6 +262,7 @@ class PulsarInstructions:
     ACQUIRE = "acquire"
     WAIT = "wait"
     WAIT_SYNC = "wait_sync"
+    UPDATE_PARAMETERS = "upd_param"
 
 
 class QASMProgram(list):
@@ -290,23 +325,68 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
     GRID_TIME_ns = 4
     SAMPLING_RATE = 1_000_000_000  # 1GS/s
 
-    def __init__(self, parent: Pulsar_base, name: str, portclock: Tuple[str, str]):
+    def __init__(
+        self,
+        parent: Pulsar_base,
+        name: str,
+        portclock: Tuple[str, str],
+        modulation_freq: Optional[float] = None,
+    ):
         self.parent = parent
-        self.name = name
+        self._name = name
         self.port = portclock[0]
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
-        self.settings = SequencerSettings(nco_en=False, sync_en=True)
+        self._settings = SequencerSettings(
+            nco_en=False, sync_en=True, modulation_freq=modulation_freq
+        )
 
     @property
     def portclock(self) -> Tuple[str, str]:
         return self.port, self.clock
 
     @property
+    def settings(self) -> SequencerSettings:
+        return self._settings
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
     @abstractmethod
     def AWG_OUTPUT_VOLT(self):
         pass
+
+    def assign_frequency(self, freq: float):
+        if self._settings.modulation_freq is None:
+            if self._settings.modulation_freq != freq:
+                raise ValueError(
+                    f"Attempting to set multiple modulation frequencies to {self._name} of {self.parent.name}."
+                )
+            self._settings.modulation_freq = freq
+
+    def _generate_awg_dict(self) -> Dict[str, Any]:
+        waveforms_complex = dict()
+        for pulse in self.pulses:
+            if pulse.uuid not in waveforms_complex.keys():
+                raw_wf_data = _generate_waveform_data(
+                    pulse.data, sampling_rate=self.SAMPLING_RATE
+                )
+                waveforms_complex[pulse.uuid] = self._apply_corrections_to_waveform(
+                    raw_wf_data
+                )
+        return self._generate_waveform_dict(waveforms_complex)
+
+    def _apply_corrections_to_waveform(
+        self, waveform_data
+    ):  # mixer phase and modulation mainly
+        # TODO
+        return waveform_data
+
+    def _normalize_waveform_data(self, data):
+        return data / self.AWG_OUTPUT_VOLT
 
     @staticmethod
     def _generate_waveform_names_from_uuid(uuid):
@@ -325,18 +405,6 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             }
             wf_dict.update(nested_dict)
         return wf_dict
-
-    def _generate_awg_dict(self) -> Dict[str, Any]:
-        waveforms_complex = dict()
-        for pulse in self.pulses:
-            if pulse.uuid not in waveforms_complex.keys():
-                raw_wf_data = _generate_waveform_data(
-                    pulse.data, sampling_rate=self.SAMPLING_RATE
-                )
-                waveforms_complex[pulse.uuid] = self._apply_corrections_to_waveform(
-                    raw_wf_data
-                )
-        return self._generate_waveform_dict(waveforms_complex)
 
     @classmethod
     def generate_qasm_program(
@@ -378,6 +446,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             raise ValueError(f"Invalid timing. Attempting to wait for {wait_time} ns.")
         qasm.auto_wait(wait_time)
         qasm.emit(PulsarInstructions.LOOP, loop_register, loop_label)
+        qasm.emit(PulsarInstructions.SET_MARKER, 0)
+        qasm.emit(PulsarInstructions.UPDATE_PARAMETERS, cls.GRID_TIME_ns)
         qasm.emit(PulsarInstructions.STOP)
         return str(qasm)
 
@@ -387,15 +457,6 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             uuid
         )
         return wf_dict[name_real]["index"], wf_dict[name_imag]["index"]
-
-    def _apply_corrections_to_waveform(
-        self, waveform_data
-    ):  # mixer phase and modulation mainly
-        # TODO
-        return waveform_data
-
-    def _normalize_waveform_data(self, data):
-        return data / self.AWG_OUTPUT_VOLT
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -460,22 +521,37 @@ class QRM_sequencer(Pulsar_sequencer_base):
 
 # ---------- pulsar instrument classes ----------
 class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
+
+    OUTPUT_TO_SEQ = {"complex_output_0": 0, "complex_output_1": 1}
+
     def __init__(
         self,
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
-        max_sequencers: int,
-        seq_type: Type[Pulsar_sequencer_base],
     ):
         super().__init__(name, total_play_time, hw_mapping)
-        self.max_sequencers = max_sequencers
-        self.seq_type = seq_type
 
-        self.port_clock_map = self._generate_portclock_to_seq_map()
+        self.portclock_map = self._generate_portclock_to_seq_map()
+        self.sequencers = self._construct_sequencers()
+
+    @property
+    @abstractmethod
+    def SEQ_TYPE(self):
+        pass
+
+    @property
+    @abstractmethod
+    def MAX_SEQUENCERS(self):
+        pass
+
+    def assign_modulation_freq(self, portclock: Tuple[str, str], freq: float):
+        seq_name = self.portclock_map[portclock]
+        seq = self.sequencers[seq_name]
+        seq.assign_frequency(freq)
 
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
-        output_to_seq = {"complex_output_0": 0, "complex_output_1": 1}
+        output_to_seq = self.OUTPUT_TO_SEQ
 
         mapping = dict()
         for io, data in self.hw_mapping.items():
@@ -500,44 +576,58 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                     ) from e
         return mapping
 
-    def _construct_sequencers(self):
-        portclocks_used = set(self._pulses.keys())
-        portclocks_used = portclocks_used.union(set(self._acquisitions.keys()))
+    def _construct_sequencers(self) -> Dict[str, Pulsar_sequencer_base]:
+        sequencers = dict()
+        for seq_name, seq_cfg in self.hw_mapping.items():
+            if not isinstance(seq_cfg, dict):
+                continue
 
-        sequencers = list()
-        for i, portclock in enumerate(portclocks_used):
-            if i >= self.max_sequencers:
-                raise ValueError(
-                    f"Attempting to construct too many sequencer compilers. "
-                    f"Maximum allowed for {self.__class__} is {self.max_sequencers}!"
-                )
-            seq = self.seq_type(self, self.port_clock_map[portclock], portclock)
-            sequencers.append(seq)
+            if "port" in seq_cfg.keys():
+                port = seq_cfg["port"]
+                if port is not None:
+                    portclock = (port, seq_cfg["clock"])
+                    if "interm_freq" in seq_cfg.keys():
+                        freq = seq_cfg["interm_freq"]
+                    else:
+                        freq = None
+                    sequencers[seq_name] = self.SEQ_TYPE(
+                        self, seq_name, portclock, freq
+                    )
+
+        if len(sequencers.keys()) > self.MAX_SEQUENCERS:
+            raise ValueError(
+                f"Attempting to construct too many sequencer compilers. "
+                f"Maximum allowed for {self.__class__} is {self.MAX_SEQUENCERS}!"
+            )
+
         return sequencers
 
     @abstractmethod
-    def _distribute_data(self, sequencers: List[Pulsar_sequencer_base]):
+    def _distribute_data(self, sequencers: Dict[str, Pulsar_sequencer_base]):
         pass
 
     def hardware_compile(self) -> Dict[str, Any]:
-        sequencers = self._construct_sequencers()
-        self._distribute_data(sequencers)
+        self._distribute_data(self.sequencers)
 
         program = dict()
-        for seq in sequencers:
-            program[seq.name] = seq.sequencer_compile()
+        for seq_name, seq in self.sequencers.items():
+            program[seq_name] = seq.sequencer_compile()
         return program
 
 
 class Pulsar_QCM(Pulsar_base):
     SEQ_TYPE = QCM_sequencer
+    MAX_SEQUENCERS = 2
 
-    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
-        super().__init__(
-            name, total_play_time, hw_mapping, max_sequencers=2, seq_type=self.SEQ_TYPE
-        )
+    def __init__(
+        self,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
+        super().__init__(name, total_play_time, hw_mapping)
 
-    def _distribute_data(self, sequencers: List[QCM_sequencer]):
+    def _distribute_data(self, sequencers: Dict[str, QCM_sequencer]):
         if self._acquisitions:
             raise ValueError(
                 f"Attempting to add acquisitions to {self.__class__} {self.name}, "
@@ -545,24 +635,60 @@ class Pulsar_QCM(Pulsar_base):
             )
 
         for portclock, pulse_data_list in self._pulses.items():
-            for seq in sequencers:
+            for seq in sequencers.values():
                 if seq.portclock == portclock:
                     seq.pulses = pulse_data_list
 
 
 class Pulsar_QRM(Pulsar_base):
     SEQ_TYPE = QRM_sequencer
+    MAX_SEQUENCERS = 1
 
-    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
-        super().__init__(
-            name, total_play_time, hw_mapping, max_sequencers=1, seq_type=self.SEQ_TYPE
-        )
+    def __init__(
+        self,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
+        super().__init__(name, total_play_time, hw_mapping)
 
-    def _distribute_data(self, sequencers: List[QRM_sequencer]):
+    def _distribute_data(self, sequencers: Dict[str, QRM_sequencer]):
         pass
 
 
 # ---------- Compilation methods ----------
+def _assign_frequencies(
+    device_compilers: Dict[str, InstrumentCompiler],
+    lo_compilers: Dict[str, LocalOscillator],
+    hw_mapping: Dict[str, Any],
+    portclock_mapping: Dict[Tuple[str, str], str],
+    schedule_resources: Dict[str, Any],
+):
+    lo_info_dicts = find_inner_dicts_containing_key(hw_mapping, "lo_name")
+    for lo_info_dict in lo_info_dicts:
+        lo_obj = lo_compilers[lo_info_dict["lo_name"]]
+        associated_portclock_dicts = find_inner_dicts_containing_key(
+            lo_info_dict, "port"
+        )
+
+        lo_freq = None
+        if "lo_freq" in lo_info_dict.keys():
+            lo_freq = lo_info_dict["lo_freq"]
+        if lo_freq is None:
+            pass  # TODO check all portclocks?
+
+        else:  # lo_freq given
+            lo_obj.assign_frequency(lo_freq)
+            for portclock_dict in associated_portclock_dicts:
+                port, clock = portclock_dict["port"], portclock_dict["clock"]
+                cl_freq = schedule_resources[clock]["freq"]
+                dev_name = portclock_mapping[(port, clock)]
+                assign_frequency = getattr(
+                    device_compilers[dev_name], "assign_frequency"
+                )
+                assign_frequency((port, clock), cl_freq - lo_freq)
+
+
 def _assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],
@@ -585,18 +711,10 @@ def _assign_pulse_and_acq_info_to_devices(
             device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
 
 
-def _assign_frequencies(
-    device_compilers: Dict[str, Any],
-    lo_compilers: Dict[str, Any],
-    mapping: Dict[str, Any],
-    schedule_resources: UserDict,
-):
-    for lo in lo_compilers.values():
-        lo.lo_freq = 0
-
-
 def _construct_compiler_objects(
-    device_names: List[str], total_play_time, mapping: Dict[str, Any]
+    device_names: Set[str],
+    total_play_time,
+    mapping: Dict[str, Any],
 ) -> Dict[str, InstrumentCompiler]:
     device_compilers = dict()
     for device in device_names:
@@ -604,7 +722,9 @@ def _construct_compiler_objects(
 
         device_compiler = getattr(sys.modules[__name__], device_type)
         device_compilers[device] = device_compiler(
-            device, total_play_time, mapping[device]
+            device,
+            total_play_time,
+            mapping[device],
         )
     return device_compilers
 
@@ -616,7 +736,9 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
     devices_used = find_devices_needed_in_schedule(schedule, portclock_map)
 
     device_compilers = _construct_compiler_objects(
-        device_names=devices_used, total_play_time=total_play_time, mapping=mapping
+        device_names=devices_used,
+        total_play_time=total_play_time,
+        mapping=mapping,
     )
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
@@ -628,7 +750,8 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
     _assign_frequencies(
         device_compilers,
         lo_compilers,
-        mapping=mapping,
+        hw_mapping=mapping,
+        portclock_mapping=portclock_map,
         schedule_resources=schedule.resources,
     )
     device_compilers.update(lo_compilers)

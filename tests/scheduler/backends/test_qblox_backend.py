@@ -65,21 +65,25 @@ def dummy_pulsars():
 
 def test_contruct_sequencer():
     class Test_Pulsar(Pulsar_base):
+        SEQ_TYPE = QCM_sequencer
+        MAX_SEQUENCERS = 10
+
         def __init__(self):
             super(Test_Pulsar, self).__init__(
-                name="tester",
-                hw_mapping=HARDWARE_MAPPING["qcm0"],
-                max_sequencers=2,
-                seq_type=QCM_sequencer,
+                name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
             )
+
+        def _distribute_data(self, sequencers: Dict[str, Pulsar_sequencer_base]):
+            pass
 
         def hardware_compile(self) -> Dict[str, Any]:
             return {}
 
     tp = Test_Pulsar()
     tp._construct_sequencers()
-    assert len(tp._sequencers) == 2
-    assert type(tp._sequencers[0]) == QCM_sequencer
+    seq_keys = tp.sequencers.keys()
+    assert len(seq_keys) == 2
+    assert type(tp.sequencers[seq_keys[0]]) == QCM_sequencer
 
 
 def test_simple_compile(dummy_pulsars):
