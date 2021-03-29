@@ -1,3 +1,7 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # -----------------------------------------------------------------------------
 # Description:    Tests for Zurich Instruments backend.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
@@ -411,11 +415,11 @@ def test_hdawg4_sequence(
     var __repetitions__ = 1;
     wave w0 = placeholder(48);\n
     // Operations
-    // Schedule offset: 1e-05s 3000 clocks
-    // Schedule duration: 4.3600000000000057e-07s 131 clocks
+    // Schedule offset: 0.0002s 60000 clocks
+    // Schedule duration: 4.3600000000000735e-07s 131 clocks
     // Sequence start: 0.0s 0 clocks
-    // Sequence duration: 1.5999999999999508e-08s 5 clocks
-    // Sequence end: 1.5999999999999508e-08s 5 clocks
+    // Sequence duration: 1.6000000000007978e-08s 5 clocks
+    // Sequence end: 1.6000000000007978e-08s 5 clocks
     // Dead time: 5e-06s 1500 clocks
     // Line delay: -1s 0 clocks
     assignWaveIndex(w0, w0, 0);
@@ -571,11 +575,11 @@ def test_uhfqa_sequence1(
     var __repetitions__ = 1;
     wave w0 = "dev2299_wave0";\n
     // Operations
-    // Schedule offset: 1e-05s 2250 clocks
-    // Schedule duration: 4.3600000000000057e-07s 98 clocks
-    // Sequence start: 1.5999999999999508e-08s 4 clocks
-    // Sequence duration: 3.000000000000005e-07s 67 clocks
-    // Sequence end: 3.16e-07s 71 clocks
+    // Schedule offset: 0.0002s 45000 clocks
+    // Schedule duration: 4.3600000000000735e-07s 98 clocks
+    // Sequence start: 1.6000000000007978e-08s 4 clocks
+    // Sequence duration: 3.000000000000073e-07s 67 clocks
+    // Sequence end: 3.1600000000001527e-07s 71 clocks
     // Dead time: 5e-06s 1125 clocks
     // Line delay: -1s 0 clocks
     repeat(__repetitions__)

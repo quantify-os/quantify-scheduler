@@ -1,3 +1,7 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # -----------------------------------------------------------------------------
 # Description:    Tests schedule helper functions.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
@@ -324,7 +328,7 @@ def test_get_schedule_time_offset(
     _schedule_with_measurement = create_schedule_with_pulse_info(
         schedule_with_measurement
     )
-    init_duration = 1e-05
+    init_duration = 200e-6
 
     # Act
     offset0 = get_schedule_time_offset(
