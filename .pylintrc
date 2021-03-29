@@ -87,3 +87,8 @@ evaluation=10 - ((float(5 * error + warning + refactor + convention) / statement
 # Template used to display messages. This is a python new-style format string
 # used to format the message information. See doc for all details.
 #msg-template=
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=88
