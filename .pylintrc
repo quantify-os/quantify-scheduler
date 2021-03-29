@@ -75,7 +75,6 @@ enable=c-extension-no-member,
        D213 # Multi-line docstring summary should start at the second line
 
 
-
 [REPORTS]
 
 # Python expression which should return a score less than or equal to 10. You
