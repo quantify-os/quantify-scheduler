@@ -14,10 +14,14 @@ sphinx-jsonschema>=1.15
 sphinx-autobuild
 sphinx-togglebutton
 sphinx-autodoc-typehints
+sphinx-toolbox
+enum_tools
 twine==1.14.0
 pytest
 pytest-runner
 pytest-cov
+pytest-mpl
+pytest-mock
 pytest-xdist # run parallel tests
 pygments==2.6.1
 black

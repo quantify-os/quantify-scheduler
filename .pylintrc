@@ -23,7 +23,7 @@ ignore-patterns=
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use.
-jobs=1
+jobs=0
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -61,9 +61,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=bad-continuation,
-        bad-whitespace,
-        protected-access,
+disable=protected-access,
         missing-module-docstring,
         logging-fstring-interpolation,
         logging-not-lazy,
@@ -75,7 +73,6 @@ disable=bad-continuation,
 # it should appear only once). See also the "--disable" option for examples.
 enable=c-extension-no-member,
        D213 # Multi-line docstring summary should start at the second line
-
 
 
 [REPORTS]
@@ -90,3 +87,47 @@ evaluation=10 - ((float(5 * error + warning + refactor + convention) / statement
 # Template used to display messages. This is a python new-style format string
 # used to format the message information. See doc for all details.
 #msg-template=
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=88
+
+
+[BASIC]
+
+# Good variable names which should always be accepted, separated by a comma
+# p0,p1,etc. are for pulses
+# x0,x1,y0,y1,etc. are for quantify dataset variables
+good-names=i,j,k,e,x,y,_,yi,yj,yk,ys,xi,xj,xk,xs,zi,zj,zk,zs,ax,S21,S11,S12,S22,t,t0,t1,t2,t3,t4,x0,x1,x2,x3,x4,y0,y1,y2,y3,y4,p0,p1,p2,p3,p4
+
+# Naming style matching correct argument names.
+argument-naming-style=snake_case
+
+# Naming style matching correct attribute names.
+attr-naming-style=snake_case
+
+# Naming style matching correct class attribute names.
+class-attribute-naming-style=snake_case
+
+# Naming style matching correct function names.
+function-naming-style=snake_case
+
+# Naming style matching correct method names.
+method-naming-style=snake_case
+
+# Naming style matching correct module names.
+module-naming-style=snake_case
+
+# Naming style matching correct variable names.
+variable-naming-style=snake_case
+
+# Naming style matching correct class names.
+class-naming-style=PascalCase
+
+# Naming style matching correct constant names.
+const-naming-style=UPPER_CASE
+
+# Regular expression which should only match function or class names that do
+# not require a docstring.
+no-docstring-rgx=^_

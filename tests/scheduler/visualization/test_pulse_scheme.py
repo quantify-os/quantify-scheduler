@@ -7,9 +7,9 @@ from quantify.scheduler.compilation import qcompile
 import inspect
 import json
 import os
-import quantify.scheduler.schemas.examples as es
+import quantify.scheduler.schemas.examples as examples
 
-esp = inspect.getfile(es)
+esp = inspect.getfile(examples)
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
 with open(cfg_f, "r") as f:
     DEVICE_CFG = json.load(f)

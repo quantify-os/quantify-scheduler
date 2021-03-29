@@ -49,6 +49,7 @@ extensions = [
     "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
     "scanpydoc.elegant_typehints",
+    "enum_tools.autoenum",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -67,6 +68,8 @@ intersphinx_mapping = {
         None,
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
+    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
 }
 
 
@@ -201,3 +204,5 @@ qualname_overrides = {
 }
 
 numfig = True
+
+set_type_checking_flag = False
