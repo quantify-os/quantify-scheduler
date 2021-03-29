@@ -96,6 +96,9 @@ max-line-length=88
 
 [BASIC]
 
+# Good variable names which should always be accepted, separated by a comma
+good-names=i,j,k,e,x,y,_,yi,yj,yk,ys,xi,xj,xk,xs,zi,zj,zk,zs,ax,S21,S11,S12,S22,t,t0,t1,t2,t3,t4
+
 # Naming style matching correct argument names.
 argument-naming-style=snake_case
 
@@ -126,3 +129,4 @@ const-naming-style=UPPER_CASE
 # Regular expression which should only match function or class names that do
 # not require a docstring.
 no-docstring-rgx=^_
+
