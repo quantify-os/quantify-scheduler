@@ -386,7 +386,7 @@ def qcompile(
         # compile using the appropriate hardware backend
         hardware_compile = getattr(importlib.import_module(mod), cls)
         # FIXME: still contains a hardcoded argument in the kwargs
-        return hardware_compile(schedule, mapping=hardware_mapping, **kwargs)
+        return hardware_compile(schedule, hardware_map=hardware_mapping, **kwargs)
     else:
         return schedule
 
