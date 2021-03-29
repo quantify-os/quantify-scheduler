@@ -13,7 +13,7 @@ from quantify.scheduler.schedules import timedomain_schedules as ts
 from quantify.scheduler.compilation import determine_absolute_timing, qcompile
 from quantify.data.handling import set_datadir
 
-# to be replaced with fixture in tests/fixtures/schedule from !49 (fixme)
+# FIXME to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
 esp = inspect.getfile(es)
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
