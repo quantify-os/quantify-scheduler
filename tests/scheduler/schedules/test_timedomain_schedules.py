@@ -165,12 +165,6 @@ class TestRamseySched:
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        labels = []
-
-        # label_tmpl = ["Reset {}", None, None, "Measurement {}"]
-        # for i in range(len(self.sched_kwargs['times'])):
-        #     labels+= [l.format(i) for l in label_tmpl]
-
         for i, constr in enumerate(self.sched.timing_constraints):
             if i % 4 == 0:
                 assert constr["label"][:5] == "Reset"
@@ -182,6 +176,42 @@ class TestRamseySched:
     def test_operations(self):
         # 4 for a regular Ramsey, more with artificial detuning
         assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        pass
+
+
+class TestEchoSched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "times": np.linspace(0, 80e-6, 21),
+            "qubit": "q0",
+        }
+
+        cls.sched = ts.echo_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        for i, constr in enumerate(self.sched.timing_constraints):
+            if i % 5 == 0:
+                assert constr["label"][:5] == "Reset"
+            if (i - 2) % 5 == 0:  # every second pi/2 operation
+                assert constr["rel_time"] == self.sched_kwargs["times"][i // 5] / 2
+            if (i - 3) % 5 == 0:  # every second pi/2 operation
+                assert constr["rel_time"] == self.sched_kwargs["times"][i // 5] / 2
+            if (i - 4) % 5 == 0:
+                assert constr["label"][:11] == "Measurement"
+
+    def test_operations(self):
+        # 4 for an echo
+        assert len(self.sched.operations) == 4  # init, x90, X and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile

@@ -124,7 +124,8 @@ def echo_sched(
     qubit: str,
 ) -> Schedule:
     """
-    Generete a schedule for performing an Echo experiment to measure the qubit echo-dephasing time :math:`T_2^{E}`.
+    Generete a schedule for performing an Echo experiment to measure the qubit
+    echo-dephasing time :math:`T_2^{E}`.
 
     An Echo experiment consists of
         pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 - Measure
@@ -138,12 +139,12 @@ def echo_sched(
         an array of wait times between the
     """
     schedule = Schedule("Echo schedule")
-    for tau in times:
-        schedule.add(Reset(qubit))
+    for i, tau in enumerate(times):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
         schedule.add(X(qubit), ref_pt="start", rel_time=tau / 2)
         schedule.add(X90(qubit), ref_pt="start", rel_time=tau / 2)
-        schedule.add(Measure(qubit))
+        schedule.add(Measure(qubit), label=f"Measurement {i}")
     return schedule
 
 
