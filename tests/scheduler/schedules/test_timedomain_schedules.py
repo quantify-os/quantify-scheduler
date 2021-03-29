@@ -219,3 +219,34 @@ class TestEchoSched:
 
     def test_compiles_zi_backend(self):
         pass
+
+
+class TestAllXYSched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "qubit": "q0",
+        }
+
+        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        for i, constr in enumerate(self.sched.timing_constraints):
+            if i % 4 == 0:
+                assert constr["label"][:5] == "Reset"
+            if (i - 3) % 4 == 0:
+                assert constr["label"][:11] == "Measurement"
+
+    def test_operations(self):
+        # 7 operations (x90, y90, X180, Y180, idle, reset measurement)
+        assert len(self.sched.operations) == 7
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        pass

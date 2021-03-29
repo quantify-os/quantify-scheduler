@@ -190,11 +190,11 @@ def allxy_sched(qubit: str) -> Schedule:
         [(90, 90), (90, 90)],
     ]
     schedule = Schedule("AllXY schedule")
-    for (th0, phi0), (th1, phi1) in allxy_combinations:
-        schedule.add(Reset(qubit))
+    for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
         schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
-        schedule.add(Measure(qubit))
+        schedule.add(Measure(qubit), label=f"Measurement {i}")
     return schedule
 
 
