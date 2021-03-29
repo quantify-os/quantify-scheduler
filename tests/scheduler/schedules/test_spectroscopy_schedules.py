@@ -1,3 +1,7 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 import inspect
 import os
 import json
@@ -20,7 +24,7 @@ with open(map_f, "r") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-class Test_heterodynce_spec_schedule:
+class TestHeterodynceSpecSchedule:
     @classmethod
     def setup_class(cls):
 
@@ -64,7 +68,7 @@ class Test_heterodynce_spec_schedule:
         pass
 
 
-class Test_pulsed_spec_schedule:
+class TestPulsedSpecSchedule:
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
