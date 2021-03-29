@@ -67,7 +67,8 @@ def t1_sched(
     qubit: str,
 ) -> Schedule:
     """
-    Generete a schedule for performing a T1 experiment to measure the qubit relaxation time.
+    Generete a schedule for performing a T1 experiment to measure the qubit
+    relaxation time.
 
     A T1 experiment consists of
         pi -- Idle(tau) - Measure
@@ -80,10 +81,12 @@ def t1_sched(
         the name of the qubit e.g., "q0" to perform the T1 experiment on.
     """
     schedule = Schedule("T1 schedule")
-    for tau in times:
-        schedule.add(Reset(qubit))
-        schedule.add(X(qubit))
-        schedule.add(Measure(qubit), ref_pt="start", rel_time=tau)
+    for i, tau in enumerate(times):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(X(qubit), label=f"pi {i}")
+        schedule.add(
+            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+        )
     return schedule
 
 
@@ -92,7 +95,8 @@ def ramsey_sched(
     qubit: str,
 ) -> Schedule:
     """
-    Generete a schedule for performing a Ramsey experiment to measure the dephasing time :math:`T_2^{\\star}`.
+    Generete a schedule for performing a Ramsey experiment to measure the
+    dephasing time :math:`T_2^{\\star}`.
 
     A Ramsey experiment consists of
         pi/2 -- Idle(tau) -- pi/2 - Measure
@@ -106,12 +110,12 @@ def ramsey_sched(
     """
     schedule = Schedule("Ramsey schedule")
 
-    for tau in times:
-        schedule.add(Reset(qubit))
+    for i, tau in enumerate(times):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
         # to be added artificial detuning
         schedule.add(Rxy(theta=90, phi=0, qubit=qubit), ref_pt="start", rel_time=tau)
-        schedule.add(Measure(qubit))
+        schedule.add(Measure(qubit), label=f"Measurement {i}")
     return schedule
 
 
@@ -159,8 +163,9 @@ def allxy_sched(qubit: str) -> Schedule:
         the name of the qubit e.g., "q0" to perform the experiment on.
     """
 
-    # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of the AllXY experiment
-    allXY_combinations = [
+    # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
+    # the AllXY experiment
+    allxy_combinations = [
         [(0, 0), (0, 0)],
         [(180, 0), (180, 0)],
         [(180, 0), (180, 0)],
@@ -184,10 +189,10 @@ def allxy_sched(qubit: str) -> Schedule:
         [(90, 90), (90, 90)],
     ]
     schedule = Schedule("AllXY schedule")
-    for p0, p1 in allXY_combinations:
+    for (th0, phi0), (th1, phi1) in allxy_combinations:
         schedule.add(Reset(qubit))
-        schedule.add(Rxy(qubit=qubit, theta=p0[0], phi=p0[1]))
-        schedule.add(Rxy(qubit=qubit, theta=p1[0], phi=p1[1]))
+        schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
+        schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
         schedule.add(Measure(qubit))
     return schedule
 

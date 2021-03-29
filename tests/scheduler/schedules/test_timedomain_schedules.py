@@ -5,13 +5,14 @@
 import inspect
 import os
 import json
+import numpy as np
 import tempfile
 import quantify.scheduler.schemas.examples as es
 from quantify.scheduler.schedules import timedomain_schedules as ts
 from quantify.scheduler.compilation import determine_absolute_timing, qcompile
 from quantify.data.handling import set_datadir
 
-# TODO to be replaced with fixture in tests/fixtures/schedule from !49
+# fixme to be replaced with fixture in tests/fixtures/schedule from !49
 tmp_dir = tempfile.TemporaryDirectory()
 esp = inspect.getfile(es)
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
@@ -103,9 +104,84 @@ class TestRabiSched:
     def test_correct_inference_of_port_clock(self):
         # operation 1 is tested in test_timing to be the Rabi pulse
         op_name = self.sched.timing_constraints[1]["operation_hash"]
-        op = self.sched.operations[op_name]
-        assert "q0:mw" == op["pulse_info"][0]["port"]
-        assert "q0.01" == op["pulse_info"][0]["clock"]
+        rabi_op = self.sched.operations[op_name]
+        assert rabi_op["pulse_info"][0]["port"] == "q0:mw"
+        assert rabi_op["pulse_info"][0]["clock"] == "q0.01"
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        pass
+
+
+class TestT1Sched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "times": np.linspace(0, 80e-6, 21),
+            "qubit": "q0",
+        }
+
+        cls.sched = ts.t1_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        labels = []
+        label_tmpl = ["Reset {}", "pi {}", "Measurement {}"]
+        for i in range(len(self.sched_kwargs["times"])):
+            labels += [l.format(i) for l in label_tmpl]
+
+        for i, constr in enumerate(self.sched.timing_constraints):
+            assert constr["label"] == labels[i]
+            if (i - 2) % 3 == 0:  # every measurement operation
+                assert constr["rel_time"] == self.sched_kwargs["times"][i // 3]
+
+    def test_operations(self):
+        assert len(self.sched.operations) == 3  # init, pi and measure
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        pass
+
+
+class TestRamseySched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "times": np.linspace(0, 80e-6, 21),
+            "qubit": "q0",
+        }
+
+        cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        labels = []
+
+        # label_tmpl = ["Reset {}", None, None, "Measurement {}"]
+        # for i in range(len(self.sched_kwargs['times'])):
+        #     labels+= [l.format(i) for l in label_tmpl]
+
+        for i, constr in enumerate(self.sched.timing_constraints):
+            if i % 4 == 0:
+                assert constr["label"][:5] == "Reset"
+            if (i - 2) % 4 == 0:  # every second pi/2 operation
+                assert constr["rel_time"] == self.sched_kwargs["times"][i // 4]
+            if (i - 3) % 4 == 0:
+                assert constr["label"][:11] == "Measurement"
+
+    def test_operations(self):
+        # 4 for a regular Ramsey, more with artificial detuning
+        assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
