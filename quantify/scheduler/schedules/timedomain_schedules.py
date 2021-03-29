@@ -42,11 +42,11 @@ def rabi_sched(
     if port is None:
         port = f"{qubit}:mw"
     if clock is None:
-        clock = f"{qubit}:01"
+        clock = f"{qubit}.01"
 
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
-    schedule.add(Reset(qubit))
+    schedule.add(Reset(qubit), label="Reset")
     schedule.add(
         DRAGPulse(
             duration=pulse_duration,
@@ -58,7 +58,8 @@ def rabi_sched(
         ),
         label="Rabi_pulse",
     )
-    schedule.add(Measure(qubit))
+    schedule.add(Measure(qubit), label="Measurement")
+    return schedule
 
 
 def t1_sched(

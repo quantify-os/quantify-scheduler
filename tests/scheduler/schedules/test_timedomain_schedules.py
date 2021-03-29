@@ -1,3 +1,7 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 import inspect
 import os
 import json
@@ -19,7 +23,7 @@ with open(map_f, "r") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-class Test_rabi_pulse:
+class TestRabiPulse:
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
@@ -62,6 +66,46 @@ class Test_rabi_pulse:
     def test_compiles_device_cfg_only(self):
         # assert that files properly compile
         qcompile(self.sched, DEVICE_CFG)
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        pass
+
+
+class TestRabiSched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "pulse_amplitude": 0.5,
+            "pulse_duration": 20e-9,
+            "frequency": 5.442e9,
+            "qubit": "q0",
+            "port": None,
+            "clock": None,
+        }
+
+        cls.sched = ts.rabi_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        labels = ["Reset", "Rabi_pulse", "Measurement"]
+        abs_times = [0, 200e-6, 200e-6 + 20e-9]
+
+        for i, constr in enumerate(self.sched.timing_constraints):
+            assert constr["label"] == labels[i]
+            assert constr["abs_time"] == abs_times[i]
+
+    def test_correct_inference_of_port_clock(self):
+        # operation 1 is tested in test_timing to be the Rabi pulse
+        op_name = self.sched.timing_constraints[1]["operation_hash"]
+        op = self.sched.operations[op_name]
+        assert "q0:mw" == op["pulse_info"][0]["port"]
+        assert "q0.01" == op["pulse_info"][0]["clock"]
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
