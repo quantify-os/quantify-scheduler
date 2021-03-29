@@ -77,6 +77,12 @@ compilation
 .. automodule:: quantify.scheduler.compilation
     :members:
 
+schedules
+-----------
+
+.. automodule:: quantify.scheduler.schedules.acquisition
+    :members:
+
 frontends
 ---------
 
@@ -95,6 +101,38 @@ pulsar_backend
 .. automodule:: quantify.scheduler.backends.pulsar_backend
     :members:
 
+zhinst_backend
+~~~~~~~~~~~~~~
+
+.. automodule:: quantify.scheduler.backends.zhinst_backend
+    :members:
+
+types
+~~~~~
+
+.. automodule:: quantify.scheduler.backends.types.zhinst
+    :members:
+
+zhinst
+~~~~~~
+
+.. automodule:: quantify.scheduler.backends.zhinst.helpers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.zhinst.resolvers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.zhinst.seqc_il_generator
+    :members:
+
+helpers
+-------
+
+.. automodule:: quantify.scheduler.helpers.schedule
+    :members:
+
+.. automodule:: quantify.scheduler.helpers.waveforms
+    :members:
 
 visualization
 -------------
@@ -109,4 +147,14 @@ circuit_diagram
 ~~~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.visualization.circuit_diagram
+    :members:
+
+
+miscellaneous
+-------------
+
+math
+~~~~~~~~~~~~~~~
+
+.. automodule:: quantify.scheduler.math
     :members:

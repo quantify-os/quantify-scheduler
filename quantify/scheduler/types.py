@@ -4,11 +4,13 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
-from uuid import uuid4
+
 from collections import UserDict
+from uuid import uuid4
+
 import jsonschema
-from quantify.utilities.general import make_hash, load_json_schema
-from quantify.scheduler.resources import Resource, BasebandClockResource
+from quantify.utilities import general
+from quantify.scheduler import resources
 
 
 class Operation(UserDict):
@@ -76,7 +78,7 @@ class Operation(UserDict):
         """
         A hash based on the contents of the Operation.
         """
-        return make_hash(self.data)
+        return general.make_hash(self.data)
 
     def add_gate_info(self, gate_operation: Operation):
         """
@@ -113,7 +115,7 @@ class Operation(UserDict):
 
     @classmethod
     def is_valid(cls, operation):
-        scheme = load_json_schema(__file__, "operation.json")
+        scheme = general.load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
         _ = operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
@@ -195,7 +197,9 @@ class Schedule(UserDict):
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
-        self.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
+        self.add_resource(
+            resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
+        )
 
         if name is not None:
             self.data["name"] = name
@@ -265,7 +269,7 @@ class Schedule(UserDict):
         """
         Add a resource such as a channel or qubit to the schedule.
         """
-        assert Resource.is_valid(resource)
+        assert resources.Resource.is_valid(resource)
         if resource.name in self.data["resource_dict"]:
             raise ValueError("Key {} is already present".format(resource.name))
         else:
@@ -280,7 +284,7 @@ class Schedule(UserDict):
 
     @classmethod
     def is_valid(cls, schedule):
-        scheme = load_json_schema(__file__, "schedule.json")
+        scheme = general.load_json_schema(__file__, "schedule.json")
         jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 

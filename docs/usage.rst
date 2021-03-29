@@ -1,3 +1,5 @@
+.. _sec-user-guide:
+
 User guide
 ==========
 
@@ -308,19 +310,13 @@ Here we show an example of such a device configuration file:
 .. jupyter-execute::
   :hide-code:
 
+  from pathlib import Path
   import json
-  import pprint
-  import os, inspect
-  import quantify.scheduler.schemas.examples as es
+  import quantify.scheduler.schemas.examples as examples
 
-  esp = inspect.getfile(es)
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
-
-
-  with open(cfg_f, 'r') as f:
-      transmon_test_config = json.load(f)
-
-  pprint.pprint(transmon_test_config)
+  path = Path(examples.__file__).parent.joinpath('transmon_test_config.json')
+  json_data = json.loads(path.read_text())
+  print(json.dumps(json_data, indent=4, sort_keys=True))
 
 .. _sec-hardware-config:
 
@@ -338,16 +334,26 @@ Example Qblox hardware configuration file
 .. jupyter-execute::
   :hide-code:
 
+  from pathlib import Path
   import json
-  import pprint
-  import os, inspect
-  import quantify.scheduler.schemas.examples as es
+  import quantify.scheduler.schemas.examples as examples
 
-  esp = inspect.getfile(es)
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+  path = Path(examples.__file__).parent.joinpath('qblox_test_mapping.json')
+  json_data = json.loads(path.read_text())
+  print(json.dumps(json_data, indent=4, sort_keys=True))
 
 
-  with open(cfg_f, 'r') as f:
-      transmon_test_config = json.load(f)
+Example Zurich Instruments hardware configuration file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  pprint.pprint(transmon_test_config)
+.. jupyter-execute::
+  :hide-code:
+
+  from pathlib import Path
+  import json
+  import quantify.scheduler.schemas.examples as examples
+
+  path = Path(examples.__file__).parent.joinpath('zhinst_test_mapping.json')
+  json_data = json.loads(path.read_text())
+  print(json.dumps(json_data, indent=4, sort_keys=True))
+
