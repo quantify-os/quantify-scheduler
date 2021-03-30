@@ -1,4 +1,7 @@
-import numpy as np
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from quantify.scheduler.compilation import validate_config
 from quantify.scheduler.device_elements.transmon_element import TransmonElement
 
@@ -21,7 +24,7 @@ class TestTransmonElement:
                 pass
 
     def test_qubit_name(self):
-        self.q0.name == "q0"
+        assert self.q0.name == "q0"
 
     def test_generate_qubit_config(self):
 
