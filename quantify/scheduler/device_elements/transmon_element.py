@@ -27,7 +27,12 @@ class TransmonElement(Instrument):
             unit="s",
             parameter_class=ManualParameter,
         )
-        self.add_parameter("mw_amp180", unit="V", parameter_class=ManualParameter)
+        self.add_parameter(
+            "mw_amp180",
+            label=r"$\pi-pulse amplitude$",
+            unit="V",
+            parameter_class=ManualParameter,
+        )
         self.add_parameter(
             "mw_motzoi", initial_value=0, unit="", parameter_class=ManualParameter
         )
@@ -38,6 +43,19 @@ class TransmonElement(Instrument):
             parameter_class=ManualParameter,
         )
         self.add_parameter("mw_ef_amp180", unit="V", parameter_class=ManualParameter)
+
+        self.add_parameter(
+            "mw_port", initial_value=f"{self.name}:mw", parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            "fl_port", initial_value=f"{self.name}:fl", parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            "ro_port", initial_value=f"{self.name}:res", parameter_class=ManualParameter
+        )
+
         self.add_parameter(
             "freq_01",
             label="Qubit frequency",
@@ -45,24 +63,35 @@ class TransmonElement(Instrument):
             parameter_class=ManualParameter,
         )
 
-    #         self.add_parameter("ro_freq", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("ro_pulse_amp", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("ro_pulse_type", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("ro_acq_delay", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("ro_acq_integration_time", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
+        self.add_parameter(
+            "ro_freq",
+            label="Readout frequency",
+            unit="Hz",
+            parameter_class=ManualParameter,
+        )
+        self.add_parameter(
+            "ro_pulse_amp", initial_value=0.5, unit="V", parameter_class=ManualParameter
+        )
+        self.add_parameter(
+            "ro_pulse_duration",
+            initial_value=300e-9,
+            unit="s",
+            parameter_class=ManualParameter,
+        )
 
-    # "ro_freq": 6.8979e9,
-    #                 "ro_pulse_amp": 0.5,  # readout pulse amplitude (V)
-    #                 "ro_pulse_type": "square",  # shape of waveform used for the readout pulse
-    #                 "ro_pulse_duration": 200e-9,  # readout pulse duration (s)
-    #                 "ro_acq_delay": 100e-9,  # time between sending readout pulse and acquisition (s)
-    #                 "ro_acq_integration_time": 400e-9,  # Minimum wait time between iterations (s)
-    #                 "ro_acq_weigth_type": "SSB",  # This is not used at the moment
+        self.add_parameter(
+            "ro_pulse_type", initial_value="square", parameter_class=ManualParameter
+        )  # TODO add enum validator
 
-    #         self.add_parameter("reset_duration", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("reset_duration", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("reset_duration", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
-    #         self.add_parameter("reset_duration", initial_value=200e-6, unit="s", parameter_class=ManualParameter)
+        self.add_parameter(
+            "ro_acq_delay", initial_value=0, unit="s", parameter_class=ManualParameter
+        )
+        self.add_parameter(
+            "ro_acq_integration_time",
+            initial_value=1e-6,
+            unit="s",
+            parameter_class=ManualParameter,
+        )
 
     def generate_qubit_config(self) -> dict:
         """
@@ -74,27 +103,27 @@ class TransmonElement(Instrument):
         qubit_config = {
             f"{self.name}": {
                 "resources": {
-                    "port_mw": f"{self.name}.mw",  # defines what port to apply mw on
-                    "port_ro": f"{self.name}.res",  # defines what port to apply readout pulses on
-                    "port_flux": f"{self.name}.fl",  # defines what port to apply flux pulses on
+                    "port_mw": self.mw_port(),
+                    "port_ro": self.ro_port(),
+                    "port_flux": self.fl_port(),
                     "clock_01": f"{self.name}.01",  # defines a clock that tracks the 0-1 transition of the qubit
                     "clock_ro": f"{self.name}.ro",  # defines a clock that tracks the readout resonator
                 },
                 "params": {
                     "acquisition": "SSBIntegrationComplex",
-                    "mw_freq": 5.55e9,  # this is the qubit frequency in Hz.
-                    "mw_amp180": 1,  # This is not used at the moment
-                    "mw_motzoi": 1,  # This is not used at the moment
-                    "mw_duration": 40e-9,  # DRAG pulse duration
-                    "mw_ef_amp180": 1,  # This is not used at the moment
-                    "ro_freq": 6.8979e9,
-                    "ro_pulse_amp": 0.5,  # readout pulse amplitude (V)
-                    "ro_pulse_type": "square",  # shape of waveform used for the readout pulse
-                    "ro_pulse_duration": 200e-9,  # readout pulse duration (s)
-                    "ro_acq_delay": 100e-9,  # time between sending readout pulse and acquisition (s)
-                    "ro_acq_integration_time": 400e-9,  # Minimum wait time between iterations (s)
-                    "ro_acq_weigth_type": "SSB",  # This is not used at the moment
-                    "init_duration": self.init_duration(),  # time before sending first pulse (s)
+                    "mw_freq": self.freq_01(),
+                    "mw_amp180": self.mw_amp180(),
+                    "mw_motzoi": self.mw_motzoi(),
+                    "mw_duration": self.mw_duration(),
+                    "mw_ef_amp180": self.mw_ef_amp180(),
+                    "ro_freq": self.ro_freq(),
+                    "ro_pulse_amp": self.ro_pulse_amp(),
+                    "ro_pulse_type": self.ro_pulse_type(),
+                    "ro_pulse_duration": self.ro_pulse_duration(),
+                    "ro_acq_delay": self.ro_acq_delay(),
+                    "ro_acq_integration_time": self.ro_acq_integration_time(),
+                    "ro_acq_weigth_type": "SSB",
+                    "init_duration": self.init_duration(),
                 },
             }
         }
