@@ -71,16 +71,27 @@ timedomain_schedules
 .. automodule:: quantify.scheduler.schedules.timedomain_schedules
     :members:
 
+
+acquisition
+~~~~~~~~~~~
+.. automodule:: quantify.scheduler.schedules.acquisition
+    :members:
+
+
+device_elements
+---------------
+
+.. automodule:: quantify.scheduler.device_elements
+    :members:
+
+.. automodule:: quantify.scheduler.device_elements.transmon_element
+    :members:
+
+
 compilation
 -----------
 
 .. automodule:: quantify.scheduler.compilation
-    :members:
-
-schedules
------------
-
-.. automodule:: quantify.scheduler.schedules.acquisition
     :members:
 
 frontends
