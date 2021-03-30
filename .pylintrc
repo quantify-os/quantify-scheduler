@@ -131,3 +131,14 @@ const-naming-style=UPPER_CASE
 # Regular expression which should only match function or class names that do
 # not require a docstring.
 no-docstring-rgx=^_
+
+
+[LOGGING]
+
+# The type of string formatting that logging methods do. `old` means using %
+# formatting, `new` is for `{}` formatting.
+logging-format-style=new
+
+# Logging modules to check that the string format arguments are in logging
+# function parameter format.
+logging-modules=logging
