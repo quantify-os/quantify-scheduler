@@ -14,6 +14,7 @@ from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
 
+from quantify.scheduler.backends import qblox_backend
 from quantify.scheduler.backends.qblox_backend import *
 
 import quantify.scheduler.schemas.examples as es
@@ -73,15 +74,12 @@ def test_contruct_sequencer():
                 name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
             )
 
-        def _distribute_data(self, sequencers: Dict[str, Pulsar_sequencer_base]):
-            pass
-
         def hardware_compile(self) -> Dict[str, Any]:
-            return {}
+            return dict()
 
     tp = Test_Pulsar()
-    tp._construct_sequencers()
-    seq_keys = tp.sequencers.keys()
+    tp.sequencers = tp._construct_sequencers()
+    seq_keys = list(tp.sequencers.keys())
     assert len(seq_keys) == 2
     assert type(tp.sequencers[seq_keys[0]]) == QCM_sequencer
 
@@ -99,8 +97,52 @@ def test_simple_compile(dummy_pulsars):
             t0=4e-9,
         )
     )
-    sched.add(RampPulse(t0=20e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     determine_absolute_timing(sched)
     qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_sanitize_fn():
+    filename = "this.isaninvalid=filename.exe.jpeg"
+    new_filename = qblox_backend._sanitize_file_name(filename)
+    assert new_filename == "this.isaninvalid=filename.exe.jpeg"
+
+
+def test_modulate_waveform():
+    number_of_points = 1000
+    freq = 10e6
+    t0 = 50e-9
+    t = np.linspace(0, 1e-6, number_of_points)
+    envelope = np.ones(number_of_points)
+    mod_wf = modulate_waveform(t, envelope, freq, t0)
+    test_re = np.cos(2 * np.pi * freq * (t + t0))
+    test_imag = np.sin(2 * np.pi * freq * (t + t0))
+    assert np.allclose(mod_wf.real, test_re)
+    assert np.allclose(test_re, mod_wf.real)
+
+    assert np.allclose(mod_wf.imag, test_imag)
+    assert np.allclose(test_imag, mod_wf.imag)
+
+
+def test_apply_mixer_corrections():
+    number_of_points = 1000
+    freq = 10e6
+    t = np.linspace(0, 1e-6, number_of_points)
+    amp_ratio = 2.1234
+
+    test_re = np.cos(2 * np.pi * freq * t)
+    test_imag = np.sin(2 * np.pi * freq * t)
+    corrected_wf = apply_mixer_skewness_corrections(
+        test_re + 1.0j * test_imag, amp_ratio, 90
+    )
+
+    amp_ratio_after = np.max(np.abs(corrected_wf.real)) / np.max(
+        np.abs(corrected_wf.imag)
+    )
+    assert pytest.approx(amp_ratio_after, amp_ratio)
+
+    re_normalized = corrected_wf.real / np.max(np.abs(corrected_wf.real))
+    im_normalized = corrected_wf.imag / np.max(np.abs(corrected_wf.imag))
+    assert np.allclose(re_normalized, im_normalized)
