@@ -37,7 +37,7 @@ class TransmonElement(Instrument):
             "mw_motzoi", initial_value=0, unit="", parameter_class=ManualParameter
         )
         self.add_parameter(
-            "mw_duration",
+            "mw_pulse_duration",
             initial_value=20e-9,
             unit="s",
             parameter_class=ManualParameter,
@@ -56,9 +56,28 @@ class TransmonElement(Instrument):
             "ro_port", initial_value=f"{self.name}:res", parameter_class=ManualParameter
         )
 
+
+        self.add_parameter(
+            "mw_01_clock", initial_value=f"{self.name}.01", parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            "mw_12_clock", initial_value=f"{self.name}.12", parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            "ro_clock", initial_value=f"{self.name}.ro", parameter_class=ManualParameter
+        )
+
         self.add_parameter(
             "freq_01",
             label="Qubit frequency",
+            unit="Hz",
+            parameter_class=ManualParameter,
+        )
+        self.add_parameter(
+            "freq_12",
+            label="Frequency of the 12 transition",
             unit="Hz",
             parameter_class=ManualParameter,
         )
@@ -84,6 +103,11 @@ class TransmonElement(Instrument):
         )  # TODO add enum validator
 
         self.add_parameter(
+            "ro_pulse_delay",  label='Readout pulse delay',
+            initial_value=300e-9, unit="s", parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
             "ro_acq_delay", initial_value=0, unit="s", parameter_class=ManualParameter
         )
         self.add_parameter(
@@ -92,6 +116,30 @@ class TransmonElement(Instrument):
             unit="s",
             parameter_class=ManualParameter,
         )
+        self.add_parameter(
+            "spec_pulse_duration",
+            initial_value=8e-6,
+            unit="s",
+            parameter_class=ManualParameter,
+        )
+        self.add_parameter(
+            "spec_pulse_frequency",
+            initial_value=4.715e9,
+            unit="Hz",
+            parameter_class=ManualParameter,
+        )
+        self.add_parameter(
+            "spec_pulse_amp",
+            initial_value=0.5,
+            unit="V",
+            parameter_class=ManualParameter,
+        )
+        self.add_parameter(
+            "spec_pulse_clock",
+            initial_value=f"{self.name}.01",
+            parameter_class=ManualParameter,
+        )
+
 
     def generate_qubit_config(self) -> dict:
         """
@@ -106,15 +154,15 @@ class TransmonElement(Instrument):
                     "port_mw": self.mw_port(),
                     "port_ro": self.ro_port(),
                     "port_flux": self.fl_port(),
-                    "clock_01": f"{self.name}.01",  # defines a clock that tracks the 0-1 transition of the qubit
-                    "clock_ro": f"{self.name}.ro",  # defines a clock that tracks the readout resonator
+                    "clock_01": self.mw_01_clock(),
+                    "clock_ro": self.ro_clock(),
                 },
                 "params": {
                     "acquisition": "SSBIntegrationComplex",
                     "mw_freq": self.freq_01(),
                     "mw_amp180": self.mw_amp180(),
                     "mw_motzoi": self.mw_motzoi(),
-                    "mw_duration": self.mw_duration(),
+                    "mw_duration": self.mw_pulse_duration(),
                     "mw_ef_amp180": self.mw_ef_amp180(),
                     "ro_freq": self.ro_freq(),
                     "ro_pulse_amp": self.ro_pulse_amp(),
