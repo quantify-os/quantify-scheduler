@@ -1,5 +1,6 @@
 """
-Module containing schedules for common timedomain experiments such as a Rabi and T1 measurement.
+Module containing schedules for common time domain experiments such as a Rabi and
+T1 measurement.
 """
 import numpy as np
 from quantify.scheduler.types import Schedule
@@ -18,25 +19,29 @@ def rabi_sched(
     clock: str = None,
 ) -> Schedule:
     """
-    Generete a schedule for performing a Rabi using a Gaussian pulse.
+    Generate a schedule for performing a Rabi using a Gaussian pulse.
+
+    Schedule sequence
+        .. centered:: Reset -- DRAG -- Measure
 
     Parameters
     ----------
     pulse_amplitude
         amplitude of the Rabi pulse in V.
     pulse_duration
-        duration of the gaussian shaped Rabi pulse. Corresponds to 4 sigma.
+        duration of the Gaussian shaped Rabi pulse. Corresponds to 4 sigma.
     frequency
         frequency of the qubit 01 transition.
     qubit
         the qubit on which to perform a Rabi experiment.
     port
         location on the chip where the Rabi pulse should be applied.
-        if set to None, will use the naming convention "<qubit>:mw" to infer the port.
+        if set to :code:`None`, will use the naming convention :code:`"<qubit>:mw"` to
+        infer the port.
     clock
         name of the location in frequency space where to apply the Rabi pulse.
-        if set to None, will use the naming convention "<qubit>.01" to infer the clock.
-
+        if set to :code:`None`, will use the naming convention :code:`"<qubit>.01"` to
+        infer the clock.
     """
     schedule = Schedule("Rabi schedule")
     if port is None:
@@ -67,18 +72,18 @@ def t1_sched(
     qubit: str,
 ) -> Schedule:
     """
-    Generete a schedule for performing a T1 experiment to measure the qubit
+    Generate a schedule for performing a T1 experiment to measure the qubit
     relaxation time.
 
-    A T1 experiment consists of
-        pi -- Idle(tau) - Measure
+    Schedule sequence
+        .. centered:: Reset -- pi -- Idle(tau) -- Measure
 
     Parameters
     ----------
     times
         an array of wait times tau between the pi-pulse and the measurement.
     qubit
-        the name of the qubit e.g., "q0" to perform the T1 experiment on.
+        the name of the qubit e.g., :code:`"q0"` to perform the T1 experiment on.
     """
     schedule = Schedule("T1 schedule")
     for i, tau in enumerate(times):
@@ -94,19 +99,19 @@ def ramsey_sched(
     times: np.ndarray,
     qubit: str,
 ) -> Schedule:
-    """
-    Generete a schedule for performing a Ramsey experiment to measure the
-    dephasing time :math:`T_2^{\\star}`.
+    r"""
+    Generate a schedule for performing a Ramsey experiment to measure the
+    dephasing time :math:`T_2^{\star}`.
 
-    A Ramsey experiment consists of
-        pi/2 -- Idle(tau) -- pi/2 - Measure
+    Schedule sequence
+        .. centered:: Reset -- pi/2 -- Idle(tau) -- pi/2 -- Measure
 
     Parameters
     ----------
     times
         an array of wait times tau between the pi/2 pulses.
     qubit
-        the name of the qubit e.g., "q0" to perform the Ramsey experiment on.
+        the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
     """
     schedule = Schedule("Ramsey schedule")
 
@@ -124,11 +129,11 @@ def echo_sched(
     qubit: str,
 ) -> Schedule:
     """
-    Generete a schedule for performing an Echo experiment to measure the qubit
+    Generate a schedule for performing an Echo experiment to measure the qubit
     echo-dephasing time :math:`T_2^{E}`.
 
-    An Echo experiment consists of
-        pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 - Measure
+    Schedule sequence
+        .. centered:: Reset -- pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 -- Measure
 
 
     Parameters
@@ -137,7 +142,7 @@ def echo_sched(
         the name of the qubit e.g., "q0" to perform the Echo experiment on.
     times
         an array of wait times between the
-    """
+    """  # pylint: disable=line-too-long
     schedule = Schedule("Echo schedule")
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
@@ -150,10 +155,10 @@ def echo_sched(
 
 def allxy_sched(qubit: str) -> Schedule:
     """
-    Generete a schedule for performing an AllXY experiment.
+    Generate a schedule for performing an AllXY experiment.
 
-    An AllXY experiment consists of
-        Rxy[0] -- Rxy[1] -- Measure
+    Schedule sequence
+        .. centered:: Reset -- Rxy[0] -- Rxy[1] -- Measure
 
     for a specific set of combinations of x90, x180, y90, y180 and idle rotations.
 
@@ -161,7 +166,7 @@ def allxy_sched(qubit: str) -> Schedule:
     Parameters
     ----------
     qubit
-        the name of the qubit e.g., "q0" to perform the experiment on.
+        the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
     """
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
@@ -216,7 +221,7 @@ def rabi_pulse_sched(
     reset_duration: float,
 ):
     """
-    Generete a schedule for performing a Rabi experiment.
+    Generate a schedule for performing a Rabi experiment.
 
     Parameters
     ----------
@@ -231,8 +236,9 @@ def rabi_pulse_sched(
     schedule.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
     # minimum sequence duration
+    # QRM can only start acquisition every 17 microseconds this should be included in
+    # the backend
     schedule.add(IdlePulse(duration=reset_duration), label="qubit reset")
-    # QRM can only start acquisition every 17 microseconds this should be included in the backend
 
     schedule.add(
         DRAGPulse(
