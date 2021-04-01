@@ -18,7 +18,7 @@ from collections import UserDict, defaultdict, deque
 from collections.abc import Iterable
 from dataclasses import dataclass
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Set
+from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Set, Callable
 
 import numpy as np
 from dataclasses_json import DataClassJsonMixin
@@ -246,7 +246,7 @@ class LocalOscillator(InstrumentCompiler):
         return {portclock[1] for portclock in self.portclocks}
 
     def hardware_compile(self) -> Dict[str, Any]:
-        return {"interm_freq": self._lo_freq}
+        return {"lo_freq": self._lo_freq}
 
 
 # ---------- data structures ----------
@@ -266,10 +266,28 @@ class OpInfo(DataClassJsonMixin):
 
 
 @dataclass
+class PulsarSettings(DataClassJsonMixin):
+    ref: str
+
+
+@dataclass
 class SequencerSettings(DataClassJsonMixin):
     nco_en: bool
     sync_en: bool
     modulation_freq: float = None
+
+
+@dataclass
+class MixerCorrections(DataClassJsonMixin):
+    amp_ratio: float = 1.0
+    phase_error: float = 0.0
+    offset_I: float = 0.0
+    offset_Q: float = 0.0
+
+    def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
+        return apply_mixer_skewness_corrections(
+            waveform, self.amp_ratio, self.phase_error
+        )
 
 
 class PulsarInstructions:
@@ -285,6 +303,14 @@ class PulsarInstructions:
     JUMP_LESS_EQUALS = "jle"
     # Arithmetic
     MOVE = "move"
+    NOT = "not"
+    ADD = "add"
+    SUB = "sub"
+    AND = "and"
+    OR = "or"
+    XOR = "xor"
+    ARITHMETIC_SHIFT_LEFT = "asl"
+    ARITHMETIC_SHIFT_RIGHT = "asr"
     # Real-time pipeline instructions
     SET_MARKER = "set_mrk"
     PLAY = "play"
@@ -295,6 +321,8 @@ class PulsarInstructions:
     UPDATE_PARAMETERS = "upd_param"
     SET_AWG_GAIN = "set_awg_gain"
     SET_ACQ_GAIN = "set_acq_gain"
+    SET_AWG_OFFSET = "set_awg_offs"
+    SET_ACQ_OFFSET = "set_acq_offs"
     SET_NCO_PHASE = "set_ph"
     SET_NCO_PHASE_OFFSET = "set_ph_delta"
 
@@ -305,21 +333,20 @@ class QASMProgram(list):
     @staticmethod
     def get_instruction_as_list(
         instruction: str,
-        *args: int,
+        *args: Union[int, str],
         label: Optional[str] = None,
         comment: Optional[str] = None,
     ) -> List[Union[str, int], ...]:
         max_args_amount = 3
         if len(args) > max_args_amount:
             raise SyntaxError(
-                f"Too many arguments supplied to `get_instruction_tuple` for instruction {instruction}"
+                f"Too many arguments supplied to `get_instruction_tuple` for instruction {instruction}."
             )
-        instr_args = [""] * max_args_amount
-        instr_args[: len(args)] = args
+        instr_args = ",".join(str(arg) for arg in args)
 
         label_str = f"{label}:" if label is not None else ""
         comment_str = f"# {comment}" if comment is not None else ""
-        return [label_str, instruction, *instr_args, comment_str]
+        return [label_str, instruction, instr_args, comment_str]
 
     def emit(self, *args, **kwargs):
         self.append(self.get_instruction_as_list(*args, **kwargs))
@@ -328,7 +355,11 @@ class QASMProgram(list):
 
     def auto_wait(self, wait_time: int):
         if wait_time < 0:
-            raise ValueError(f"Invalid timing. Attempting to wait for {wait_time} ns.")
+            raise ValueError(
+                f"Invalid wait time. Attempting to wait "
+                f"for {wait_time} ns at t={self.elapsed_time}"
+                f" ns."
+            )
 
         immediate_sz = Pulsar_sequencer_base.IMMEDIATE_SZ
         if wait_time > immediate_sz:
@@ -345,15 +376,16 @@ class QASMProgram(list):
 
         self.elapsed_time += wait_time
 
-    def wait_till_start_operation(self, pulse: OpInfo):
-        pulse_time = self.to_pulsar_time(pulse.timing)
-        wait_time = pulse_time - self.elapsed_time
+    def wait_till_start_operation(self, operation: OpInfo):
+        start_time = self.to_pulsar_time(operation.timing)
+        wait_time = start_time - self.elapsed_time
         if wait_time > 0:
             self.auto_wait(wait_time)
         elif wait_time < 0:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
-                f"ns. Are multiple pulses being played at the same time?"
+                f"ns before {repr(operation)}.\n"
+                f"Are multiple operations being played at the same time?"
             )
 
     def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
@@ -378,21 +410,26 @@ class QASMProgram(list):
         time_ns = int(time * 1e9)
         if time_ns % Pulsar_sequencer_base.GRID_TIME_ns != 0:
             raise ValueError(
-                f"Pulsar can only work in a timebase of {Pulsar_sequencer_base.GRID_TIME_ns}."
+                f"Pulsar can only work in a timebase of {Pulsar_sequencer_base.GRID_TIME_ns}"
+                f" ns. Attempting to use {time_ns} ns."
             )
         return time_ns
 
     def __str__(self):
         try:
-            return columnar(list(self), no_borders=True)
+            return columnar(list(self), headers=None, no_borders=True)
         # running in a sphinx environment can trigger a TableOverFlowError
         except TableOverflowError:
-            return columnar(list(self), no_borders=True, terminal_width=120)
+            return columnar(
+                list(self), headers=None, no_borders=True, terminal_width=120
+            )
 
     @contextmanager
     def loop(self, register: str, label: str, repetitions: int = 1):
+        comment = f"iterator for loop with label {label}"
+
         def gen_start():
-            self.emit(PulsarInstructions.MOVE, repetitions, register)
+            self.emit(PulsarInstructions.MOVE, repetitions, register, comment=comment)
             self.emit(PulsarInstructions.NEW_LINE, label=label)
 
         try:
@@ -424,6 +461,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         self._settings = SequencerSettings(
             nco_en=False, sync_en=True, modulation_freq=modulation_freq
         )
+        self.mixer_corrections = None
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -446,6 +484,10 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
     def AWG_OUTPUT_VOLT(self):
         pass
 
+    @property
+    def has_data(self):
+        return len(self.acquisitions) > 0 or len(self.pulses) > 0
+
     def assign_frequency(self, freq: float):
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
@@ -463,7 +505,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                     pulse.data, sampling_rate=self.SAMPLING_RATE
                 )
                 waveforms_complex[pulse.uuid] = self._apply_corrections_to_waveform(
-                    raw_wf_data, pulse.duration
+                    raw_wf_data, pulse.duration, pulse.timing
                 )
         return self._generate_waveform_dict(waveforms_complex)
 
@@ -480,22 +522,23 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 if not (
                     np.all(np.isreal(raw_wf_data_real))
                     and np.all(np.isreal(1.0j * raw_wf_data_imag))
-                ):
+                ):  # since next step will break if either is complex
                     raise NotImplementedError(
-                        f"Two complex weights not implemented. "
-                        f"Please use 1d weights. Exception was "
+                        f"Complex weights not implemented. "
+                        f"Please use two 1d real-valued weights. Exception was "
                         f"triggered because of {repr(acq)}."
                     )
-                    # next step will break if both are complex
                 waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
         return self._generate_waveform_dict(waveforms_complex)
 
     def _apply_corrections_to_waveform(
         self, waveform_data, time_duration: float, t0: float = 0
     ):
-        # TODO mixer phase
         t = np.arange(t0, time_duration + t0, 1 / self.SAMPLING_RATE)
-        return modulate_waveform(t, waveform_data, self.modulation_freq)
+        corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
+        if self.mixer_corrections is not None:
+            corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
+        return corrected_wf
 
     def _normalize_waveform_data(self, data):
         return data / self.AWG_OUTPUT_VOLT
@@ -602,9 +645,12 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         return file_path
 
-    def sequencer_compile(self) -> Dict[str, Any]:
+    def sequencer_compile(self) -> Optional[Dict[str, Any]]:
+        if not self.has_data:
+            return None
+
         awg_dict = self._generate_awg_dict()
-        acq_dict = self._generate_acq_dict()
+        acq_dict = self._generate_acq_dict() if len(self.acquisitions) > 0 else None
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
@@ -623,12 +669,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         )
         settings_dict = self.settings.to_dict()
 
-        return {
-            "seq_fn": json_filename,
-            "settings": settings_dict,
-            "debug": f"Compilation for {self.__class__} named {self.name} successful. "
-            f"Port, clock: {self.port, self.clock}",
-        }
+        return {"seq_fn": json_filename, "settings": settings_dict}
 
 
 class QCM_sequencer(Pulsar_sequencer_base):
@@ -654,6 +695,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
+        self._settings = self._extract_settings_from_mapping(hw_mapping)
 
     @property
     @abstractmethod
@@ -671,6 +713,11 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         portclocks_used.update(self._pulses.keys())
         portclocks_used.update(self._acquisitions.keys())
         return portclocks_used
+
+    @staticmethod
+    def _extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+        ref: str = mapping["ref"]
+        return PulsarSettings(ref=ref)
 
     def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
         seq_name = self.portclock_map[portclock]
@@ -698,8 +745,10 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                 try:
                     mapping[port_clock] = f"seq{output_to_seq[io]}"
                 except KeyError as e:
-                    raise KeyError(
-                        f"Attempting to use non-supported output {io}."
+                    raise NotImplementedError(
+                        f"Attempting to use non-supported output {io}. "
+                        f"Supported output types: "
+                        f"{(str(t) for t in output_to_seq.keys())}"
                     ) from e
         return mapping
 
@@ -725,6 +774,10 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
             seq_name = f"seq{self.OUTPUT_TO_SEQ[io]}"
             sequencers[seq_name] = self.SEQ_TYPE(self, seq_name, portclock, freq)
+            if "mixer_corrections" in io_cfg.keys():
+                sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
+                    io_cfg["mixer_corrections"]
+                )
 
         if len(sequencers.keys()) > self.MAX_SEQUENCERS:
             raise ValueError(
@@ -745,11 +798,18 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
-    def hardware_compile(self) -> Dict[str, Any]:
+    def hardware_compile(self) -> Optional[Dict[str, Any]]:
         self._distribute_data()
         program = dict()
         for seq_name, seq in self.sequencers.items():
-            program[seq_name] = seq.sequencer_compile()
+            seq_program = seq.sequencer_compile()
+            if seq_program is not None:
+                program[seq_name] = seq_program
+
+        if len(program) == 0:
+            return None
+
+        program["settings"] = self._settings.to_dict()
         return program
 
 
@@ -879,15 +939,16 @@ def _assign_pulse_and_acq_info_to_devices(
 
 
 def _construct_compiler_objects(
-    device_names: Set[str],
     total_play_time,
     mapping: Dict[str, Any],
 ) -> Dict[str, InstrumentCompiler]:
     device_compilers = dict()
-    for device in device_names:
-        device_type = mapping[device]["type"]
+    for device, dev_cfg in mapping.items():
+        if not isinstance(dev_cfg, dict):
+            continue
+        device_type = dev_cfg["type"]
 
-        device_compiler = getattr(sys.modules[__name__], device_type)
+        device_compiler: Callable = getattr(sys.modules[__name__], device_type)
         device_compilers[device] = device_compiler(
             device,
             total_play_time,
@@ -900,13 +961,8 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
     total_play_time = _calculate_total_play_time(schedule)
 
     portclock_map = generate_port_clock_to_device_map(mapping)
-    devices_used = {  # FIXME function broken, values hardcoded
-        "qcm0",
-        "qrm0",
-    }  # find_devices_needed_in_schedule(schedule, portclock_map)
 
     device_compilers = _construct_compiler_objects(
-        device_names=devices_used,
         total_play_time=total_play_time,
         mapping=mapping,
     )
@@ -928,6 +984,9 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
 
     compiled_schedule = dict()
     for name, compiler in device_compilers.items():
-        compiled_schedule[name] = compiler.hardware_compile()
+        compiled_dev_program = compiler.hardware_compile()
+
+        if compiled_dev_program is not None:
+            compiled_schedule[name] = compiled_dev_program
 
     return compiled_schedule
