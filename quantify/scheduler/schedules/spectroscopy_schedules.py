@@ -44,8 +44,9 @@ def heterodyne_spec_sched(
     sched = Schedule("Heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequency))
 
+    # pylint: disable=fixme
     # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is
-    # released
+    # released. See #99
     # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
     # wait time between different repetitions of the schedule.
     sched.add(
@@ -137,8 +138,9 @@ def two_tone_spec_sched(
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
     sched.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
+    # pylint: disable=fixme
     # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware
-    # is released
+    # is released. See #99
     # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
     # wait time between different repetitions of the schedule.
     sched.add(

@@ -2,8 +2,8 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
-import numpy as np
 from typing import Union
+import numpy as np
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse, DRAGPulse
 from quantify.scheduler.gate_library import Rxy, X, X90, Reset, Measure
