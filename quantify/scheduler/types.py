@@ -313,7 +313,7 @@ class Schedule(UserDict):
         operation :
             The operation to add to the schedule
         rel_time :
-            relative time between the the reference operation and the added operation.
+            relative time between the reference operation and the added operation.
             the time is the time between the "ref_pt" in the reference operation and
             "ref_pt_new" of the operation that is added.
         ref_op :
