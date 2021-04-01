@@ -2,8 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import inspect
-import os
+from pathlib import Path
 import json
 import tempfile
 import pytest
@@ -15,14 +14,12 @@ from quantify.data.handling import set_datadir
 
 # FIXME to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
-esp = inspect.getfile(es)
-cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
-with open(cfg_f, "r") as f:
-    DEVICE_CFG = json.load(f)
 
-map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
-with open(map_f, "r") as f:
-    HARDWARE_MAPPING = json.load(f)
+path = Path(es.__file__).parent.joinpath("transmon_test_config.json")
+DEVICE_CFG = json.loads(path.read_text())
+
+path = Path(es.__file__).parent.joinpath("qblox_test_mapping.json")
+HARDWARE_MAPPING = json.loads(path.read_text())
 
 
 class TestRabiPulse:
