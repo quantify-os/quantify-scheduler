@@ -3,6 +3,7 @@ Module containing schedules for common time domain experiments such as a Rabi an
 T1 measurement.
 """
 import numpy as np
+from typing import Union
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse, DRAGPulse
 from quantify.scheduler.gate_library import Rxy, X, X90, Reset, Measure
@@ -68,7 +69,7 @@ def rabi_sched(
 
 
 def t1_sched(
-    times: np.ndarray,
+    times: Union[np.ndarray, float],
     qubit: str,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -105,6 +106,10 @@ def t1_sched(
         .. _krantz_t1: https://doi.org/10.1063/1.5089550
 
     """
+    # ensure times is an iterable when passing floats.
+    times = np.asarray(times)
+    times = times.reshape(times.shape or (1,))
+
     schedule = Schedule("T1")
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
@@ -116,7 +121,7 @@ def t1_sched(
 
 
 def ramsey_sched(
-    times: np.ndarray,
+    times: Union[np.ndarray, float],
     qubit: str,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -153,6 +158,10 @@ def ramsey_sched(
         .. _krantz_ramsey: https://doi.org/10.1063/1.5089550
 
     """
+    # ensure times is an iterable when passing floats.
+    times = np.asarray(times)
+    times = times.reshape(times.shape or (1,))
+
     schedule = Schedule("Ramsey")
 
     for i, tau in enumerate(times):
@@ -165,7 +174,7 @@ def ramsey_sched(
 
 
 def echo_sched(
-    times: np.ndarray,
+    times: Union[np.ndarray, float],
     qubit: str,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -205,6 +214,11 @@ def echo_sched(
         .. _krantz_echo: https://doi.org/10.1063/1.5089550
 
     """  # pylint: disable=line-too-long
+
+    # ensure times is an iterable when passing floats.
+    times = np.asarray(times)
+    times = times.reshape(times.shape or (1,))
+
     schedule = Schedule("Echo")
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")

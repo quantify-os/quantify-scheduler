@@ -138,6 +138,16 @@ class TestT1Sched:
             if (i - 2) % 3 == 0:  # every measurement operation
                 assert constr["rel_time"] == self.sched_kwargs["times"][i // 3]
 
+    # pylint: disable=no-self-use
+    def test_sched_float_times(self):
+        sched_kwargs = {
+            "times": 3e-6,  # a floating point time
+            "qubit": "q0",
+        }
+
+        sched = ts.t1_sched(**sched_kwargs)
+        sched = qcompile(sched, DEVICE_CFG)
+
     def test_operations(self):
         assert len(self.sched.operations) == 3  # init, pi and measure
 
@@ -171,6 +181,16 @@ class TestRamseySched:
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
+    # pylint: disable=no-self-use
+    def test_sched_float_times(self):
+        sched_kwargs = {
+            "times": 3e-6,  # a floating point time
+            "qubit": "q0",
+        }
+
+        sched = ts.ramsey_sched(**sched_kwargs)
+        sched = qcompile(sched, DEVICE_CFG)
+
     def test_operations(self):
         # 4 for a regular Ramsey, more with artificial detuning
         assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
@@ -194,6 +214,16 @@ class TestEchoSched:
 
         cls.sched = ts.echo_sched(**cls.sched_kwargs)
         cls.sched = qcompile(cls.sched, DEVICE_CFG)
+
+    # pylint: disable=no-self-use
+    def test_sched_float_times(self):
+        sched_kwargs = {
+            "times": 3e-6,  # a floating point time
+            "qubit": "q0",
+        }
+
+        sched = ts.echo_sched(**sched_kwargs)
+        sched = qcompile(sched, DEVICE_CFG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
