@@ -71,12 +71,16 @@ def t1_sched(
     times: np.ndarray,
     qubit: str,
 ) -> Schedule:
+    # pylint: disable=line-too-long
     """
-    Generate a schedule for performing a T1 experiment to measure the qubit
+    Generate a schedule for performing a :math:`T_1` experiment to measure the qubit
     relaxation time.
 
     Schedule sequence
         .. centered:: Reset -- pi -- Idle(tau) -- Measure
+
+    See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
+    model of decoherence and the :math:`T_1` experiment.
 
     Parameters
     ----------
@@ -84,6 +88,22 @@ def t1_sched(
         an array of wait times tau between the pi-pulse and the measurement.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the T1 experiment on.
+
+
+    Returns
+    -------
+    :
+        An experiment schedule.
+
+    References
+    ----------
+
+    1. |krantz_t1|_
+
+        .. |krantz_t1| replace:: *Krantz et al. “A Quantum Engineer’s Guide to Superconducting Qubits.” Applied Physics Reviews (2019).*
+
+        .. _krantz_t1: https://doi.org/10.1063/1.5089550
+
     """
     schedule = Schedule("T1 schedule")
     for i, tau in enumerate(times):
@@ -99,6 +119,7 @@ def ramsey_sched(
     times: np.ndarray,
     qubit: str,
 ) -> Schedule:
+    # pylint: disable=line-too-long
     r"""
     Generate a schedule for performing a Ramsey experiment to measure the
     dephasing time :math:`T_2^{\star}`.
@@ -106,12 +127,31 @@ def ramsey_sched(
     Schedule sequence
         .. centered:: Reset -- pi/2 -- Idle(tau) -- pi/2 -- Measure
 
+    See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
+    model of decoherence and the Ramsey experiment.
+
     Parameters
     ----------
     times
         an array of wait times tau between the pi/2 pulses.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
+
+
+    Returns
+    -------
+    :
+        An experiment schedule.
+
+    References
+    ----------
+
+    1. |krantz_ramsey|_
+
+        .. |krantz_ramsey| replace:: *Krantz et al. “A Quantum Engineer’s Guide to Superconducting Qubits.” Applied Physics Reviews (2019).*
+
+        .. _krantz_ramsey: https://doi.org/10.1063/1.5089550
+
     """
     schedule = Schedule("Ramsey schedule")
 
@@ -128,6 +168,7 @@ def echo_sched(
     times: np.ndarray,
     qubit: str,
 ) -> Schedule:
+    # pylint: disable=line-too-long
     """
     Generate a schedule for performing an Echo experiment to measure the qubit
     echo-dephasing time :math:`T_2^{E}`.
@@ -136,12 +177,33 @@ def echo_sched(
         .. centered:: Reset -- pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 -- Measure
 
 
+
+    See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
+    model of decoherence and the echo experiment.
+
+
     Parameters
     ----------
     qubit
         the name of the qubit e.g., "q0" to perform the Echo experiment on.
     times
         an array of wait times between the
+
+
+    Returns
+    -------
+    :
+        An experiment schedule.
+
+    References
+    ----------
+
+    1. |krantz_echo|_
+
+        .. |krantz_echo| replace:: *Krantz et al. “A Quantum Engineer’s Guide to Superconducting Qubits.” Applied Physics Reviews (2019).*
+
+        .. _krantz_echo: https://doi.org/10.1063/1.5089550
+
     """  # pylint: disable=line-too-long
     schedule = Schedule("Echo schedule")
     for i, tau in enumerate(times):
@@ -154,6 +216,7 @@ def echo_sched(
 
 
 def allxy_sched(qubit: str) -> Schedule:
+    # pylint: disable=line-too-long
     """
     Generate a schedule for performing an AllXY experiment.
 
@@ -162,11 +225,29 @@ def allxy_sched(qubit: str) -> Schedule:
 
     for a specific set of combinations of x90, x180, y90, y180 and idle rotations.
 
+    See section 2.3.2 of Reed for an explanation of the AllXY experiment and
+    it's applications in diagnosing errors in single-qubit control pulses.
 
     Parameters
     ----------
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+
+
+    Returns
+    -------
+    :
+        An experiment schedule.
+
+    References
+    ----------
+
+    1. |reed_allxy|_
+
+        .. |reed_allxy| replace:: *Reed “Entanglement and Quantum Error Correction with Superconducting Qubits.” Yale University (2013).*
+
+        .. _reed_allxy: https://arxiv.org/abs/1311.6759
+
     """
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
@@ -203,6 +284,9 @@ def allxy_sched(qubit: str) -> Schedule:
     return schedule
 
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
+# pylint: disable=invalid-name
 def rabi_pulse_sched(
     mw_G_amp: float,
     mw_D_amp: float,
@@ -219,12 +303,49 @@ def rabi_pulse_sched(
     ro_acquisition_delay: float,
     ro_integration_time: float,
     reset_duration: float,
-):
+) -> Schedule:
     """
-    Generate a schedule for performing a Rabi experiment.
+    Generate a schedule for performing a Rabi experiment using a
+    :func:`quantify.scheduler.waveforms.drag` pulse.
+
+    .. note::
+
+        This function allows specifying a Rabi experiment directly using the pulse-level
+        abstraction. For most applications we recommend using :func:`rabi_sched`
+        instead.
 
     Parameters
     ----------
+    mw_G_amp
+        amplitude of the gaussian component of a DRAG pulse.
+    mw_D_amp
+        amplitude of the derivative-of-gaussian component of a DRAG pulse.
+    mw_frequency
+        frequency of the DRAG pulse.
+    mw_clock
+        reference clock used to track the qubit 01 transition.
+    mw_port
+        location on the device where the pulse should be applied.
+    mw_pulse_duration
+        duration of the DRAG pulse. Corresponds to 4 sigma.
+    ro_pulse_amp
+        amplitude of the readout pulse in Volt.
+    ro_pulse_duration
+        duration of the readout pulse in seconds.
+    ro_pulse_delay
+        time between the end of the spectroscopy pulse and the start of the readout
+        pulse.
+    ro_pulse_port
+        location on the device where the readout pulse should be applied.
+    ro_pulse_clock
+        reference clock used to track the readout frequency.
+    ro_pulse_frequency
+        frequency of the spectroscopy pulse and of the data acquisition in Hertz.
+    ro_acquisition_delay
+        start of the data acquisition with respect to the start of the readout pulse
+        in seconds.
+    ro_integration_time
+        integration time of the data acquisition in seconds.
     reset_duration
         time it takes for the qubit to initialize.
 
@@ -235,11 +356,7 @@ def rabi_pulse_sched(
     schedule.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
     schedule.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
-    # minimum sequence duration
-    # QRM can only start acquisition every 17 microseconds this should be included in
-    # the backend
     schedule.add(IdlePulse(duration=reset_duration), label="qubit reset")
-
     schedule.add(
         DRAGPulse(
             duration=mw_pulse_duration,
