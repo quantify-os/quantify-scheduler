@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=no-self-use
 
 from pathlib import Path
 import json
@@ -79,7 +80,7 @@ class TestRabiSched:
     def setup_class(cls):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
-            "pulse_amplitude": 0.5,
+            "pulse_amplitude": 0.2,
             "pulse_duration": 20e-9,
             "frequency": 5.442e9,
             "qubit": "q0",
@@ -92,12 +93,105 @@ class TestRabiSched:
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        labels = ["Reset", "Rabi_pulse", "Measurement"]
+        labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
         abs_times = [0, 200e-6, 200e-6 + 20e-9]
 
+        assert len(self.sched.timing_constraints) == len(labels)
         for i, constr in enumerate(self.sched.timing_constraints):
             assert constr["label"] == labels[i]
             assert constr["abs_time"] == abs_times[i]
+
+    def test_rabi_pulse_ops(self):
+        rabi_op_hash = self.sched.timing_constraints[1]["operation_hash"]
+        rabi_pulse = self.sched.operations[rabi_op_hash]["pulse_info"][0]
+        assert rabi_pulse["G_amp"] == 0.2
+        assert rabi_pulse["D_amp"] == 0
+        assert rabi_pulse["duration"] == 20e-9
+        assert self.sched.resources["q0.01"]["freq"] == 5.442e9
+
+    def test_batched_variant_single_val(self):
+        sched = ts.rabi_sched(
+            pulse_amplitude=[0.5],
+            pulse_duration=20e-9,
+            frequency=5.442e9,
+            qubit="q0",
+            port=None,
+            clock=None,
+        )
+        sched = qcompile(sched, DEVICE_CFG)
+
+        # test that the right operations are added and timing is as expected.
+        labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
+        assert len(sched.timing_constraints) == len(labels)
+        for i, constr in enumerate(sched.timing_constraints):
+            assert constr["label"] == labels[i]
+
+        rabi_op_hash = sched.timing_constraints[1]["operation_hash"]
+        rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
+        assert rabi_pulse["G_amp"] == 0.5
+        assert rabi_pulse["D_amp"] == 0
+        assert rabi_pulse["duration"] == 20e-9
+
+    def test_batched_variant_amps(self):
+
+        amps = np.linspace(-0.5, 0.5, 5)
+        sched = ts.rabi_sched(
+            pulse_amplitude=amps,
+            pulse_duration=20e-9,
+            frequency=5.442e9,
+            qubit="q0",
+            port=None,
+            clock=None,
+        )
+        sched = qcompile(sched, DEVICE_CFG)
+
+        # test that the right operations are added and timing is as expected.
+        labels = []
+        for j in range(5):
+            labels += [f"Reset {j}", f"Rabi_pulse {j}", f"Measurement {j}"]
+        assert len(sched.timing_constraints) == len(labels)
+        for i, constr in enumerate(sched.timing_constraints):
+            assert constr["label"] == labels[i]
+
+        for i, exp_amp in enumerate(amps):
+            rabi_op_hash = sched.timing_constraints[3 * i + 1]["operation_hash"]
+            rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
+            assert rabi_pulse["G_amp"] == exp_amp
+            assert rabi_pulse["D_amp"] == 0
+            assert rabi_pulse["duration"] == 20e-9
+
+    def test_batched_variant_durations(self):
+
+        durations = np.linspace(3e-9, 30e-9, 6)
+        sched = ts.rabi_sched(
+            pulse_amplitude=0.5,
+            pulse_duration=durations,
+            frequency=5.442e9,
+            qubit="q0",
+            port=None,
+            clock=None,
+        )
+        sched = qcompile(sched, DEVICE_CFG)
+
+        # test that the right operations are added and timing is as expected.
+        labels = []
+        for j in range(6):
+            labels += [f"Reset {j}", f"Rabi_pulse {j}", f"Measurement {j}"]
+
+        assert len(sched.timing_constraints) == len(labels)
+        for i, constr in enumerate(sched.timing_constraints):
+            assert constr["label"] == labels[i]
+
+    def test_batched_variant_incompatible(self):
+        with pytest.raises(ValueError):
+            _ = ts.rabi_sched(
+                pulse_amplitude=np.linspace(-0.3, 0.5, 3),
+                pulse_duration=np.linspace(5e-9, 19e-9, 8),
+                frequency=5.442e9,
+                qubit="q0",
+                port=None,
+                clock=None,
+            )
 
     def test_correct_inference_of_port_clock(self):
         # operation 1 is tested in test_timing to be the Rabi pulse

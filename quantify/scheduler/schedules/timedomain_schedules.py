@@ -12,8 +12,8 @@ from quantify.scheduler.resources import ClockResource
 
 # pylint: disable=too-many-arguments
 def rabi_sched(
-    pulse_amplitude: float,
-    pulse_duration: float,
+    pulse_amplitude: Union[np.ndarray, float],
+    pulse_duration: Union[np.ndarray, float],
     frequency: float,
     qubit: str,
     port: str = None,
@@ -44,27 +44,48 @@ def rabi_sched(
         if set to :code:`None`, will use the naming convention :code:`"<qubit>.01"` to
         infer the clock.
     """
-    schedule = Schedule("Rabi")
+
+    # ensure pulse_amplitude and pulse_duration are iterable.
+    amps = np.asarray(pulse_amplitude)
+    amps = amps.reshape(amps.shape or (1,))
+    durations = np.asarray(pulse_duration)
+    durations = durations.reshape(durations.shape or (1,))
+
+    # either the shapes of the amp and duration must match or one of
+    # them must be a constant floating point value.
+    if len(amps) == 1:
+        amps = np.ones(np.shape(durations)) * amps
+    elif len(durations) == 1:
+        durations = np.ones(np.shape(amps)) * durations
+    elif len(durations) != len(amps):
+        raise ValueError(
+            f"Shapes of pulse_amplitude ({pulse_amplitude.shape}) and "
+            f"pulse_duration ({pulse_duration.shape}) are incompatible."
+        )
+
     if port is None:
         port = f"{qubit}:mw"
     if clock is None:
         clock = f"{qubit}.01"
 
+    schedule = Schedule("Rabi")
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
-    schedule.add(Reset(qubit), label="Reset")
-    schedule.add(
-        DRAGPulse(
-            duration=pulse_duration,
-            G_amp=pulse_amplitude,
-            D_amp=0,
-            port=port,
-            clock=clock,
-            phase=0,
-        ),
-        label="Rabi_pulse",
-    )
-    schedule.add(Measure(qubit), label="Measurement")
+    for i, (amp, duration) in enumerate(zip(amps, durations)):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(
+            DRAGPulse(
+                duration=duration,
+                G_amp=amp,
+                D_amp=0,
+                port=port,
+                clock=clock,
+                phase=0,
+            ),
+            label=f"Rabi_pulse {i}",
+        )
+        schedule.add(Measure(qubit), label=f"Measurement {i}")
+
     return schedule
 
 
