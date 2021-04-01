@@ -43,7 +43,7 @@ def rabi_sched(
         if set to :code:`None`, will use the naming convention :code:`"<qubit>.01"` to
         infer the clock.
     """
-    schedule = Schedule("Rabi schedule")
+    schedule = Schedule("Rabi")
     if port is None:
         port = f"{qubit}:mw"
     if clock is None:
@@ -105,7 +105,7 @@ def t1_sched(
         .. _krantz_t1: https://doi.org/10.1063/1.5089550
 
     """
-    schedule = Schedule("T1 schedule")
+    schedule = Schedule("T1")
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
@@ -153,7 +153,7 @@ def ramsey_sched(
         .. _krantz_ramsey: https://doi.org/10.1063/1.5089550
 
     """
-    schedule = Schedule("Ramsey schedule")
+    schedule = Schedule("Ramsey")
 
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
@@ -205,7 +205,7 @@ def echo_sched(
         .. _krantz_echo: https://doi.org/10.1063/1.5089550
 
     """  # pylint: disable=line-too-long
-    schedule = Schedule("Echo schedule")
+    schedule = Schedule("Echo")
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
@@ -275,7 +275,7 @@ def allxy_sched(qubit: str) -> Schedule:
         [(90, 0), (90, 0)],
         [(90, 90), (90, 90)],
     ]
-    schedule = Schedule("AllXY schedule")
+    schedule = Schedule("AllXY")
     for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
