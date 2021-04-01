@@ -64,6 +64,48 @@ def dummy_pulsars():
             pass
 
 
+@pytest.fixture
+def pulse_only_schedule():
+    sched = Schedule("pulse_only_experiment")
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def mixed_schedule_with_acquisition():
+    sched = Schedule("mixed_schedule_with_acquisition")
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(Measure("q0"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
 def test_contruct_sequencer():
     class Test_Pulsar(Pulsar_base):
         SEQ_TYPE = QCM_sequencer
@@ -84,30 +126,23 @@ def test_contruct_sequencer():
     assert type(tp.sequencers[seq_keys[0]]) == QCM_sequencer
 
 
-def test_simple_compile(dummy_pulsars):
-    sched = Schedule("pulse_only_experiment")
-    sched.add(
-        DRAGPulse(
-            G_amp=0.7,
-            D_amp=-0.2,
-            phase=90,
-            port="q0:mw",
-            duration=20e-9,
-            clock="q0.01",
-            t0=4e-9,
-        )
-    )
-    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
-    qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+def test_simple_compile(dummy_pulsars, pulse_only_schedule):
+    """Tests if compilation with only pulses finishes without exceptions"""
+    qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+    qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_sanitize_fn():
-    filename = "this.isaninvalid=filename.exe.jpeg"
+    filename = "this.isavalid=filename.exe.jpeg"
     new_filename = qblox_backend._sanitize_file_name(filename)
-    assert new_filename == "this.isaninvalid=filename.exe.jpeg"
+    assert new_filename == "this.isavalid=filename.exe.jpeg"
+
+    filename = "this.isan:in>,valid=filename***!.exe.jpeg"
+    new_filename = qblox_backend._sanitize_file_name(filename)
+    assert new_filename == "this.isan_in__valid=filename____.exe.jpeg"
 
 
 def test_modulate_waveform():

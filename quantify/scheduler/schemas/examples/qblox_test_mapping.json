@@ -54,6 +54,7 @@
     "IP address": "192.168.0.6",
     "complex_output_0": {
       "line_gain_db": 0,
+      "lo_name": "lo1",
       "lo_freq": 7.2e9,
       "mixer_corrections": {
         "amp_ratio": 1.0,

@@ -31,25 +31,28 @@ if TYPE_CHECKING:
 
 # ---------- functions ----------
 def _sanitize_file_name(filename: str):
-    invalid = '<>:"/\\|?* '
+    invalid = ',<>:"/\\|!?* '
     sanitized_fn = filename
     for char in invalid:
         sanitized_fn = sanitized_fn.replace(char, "_")
     return sanitized_fn
 
 
-def modulate_waveform(t, envelope, freq: float, t0: float = 0):
-    return envelope * np.exp(1.0j * 2 * np.pi * freq * (t + t0))
+def modulate_waveform(t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0):
+    modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
+    return envelope * modulation
 
 
-def apply_mixer_skewness_corrections(wf, amplitude_ratio: float, phase_shift: float):
+def apply_mixer_skewness_corrections(
+    wf: np.ndarray, amplitude_ratio: float, phase_shift: float
+):
     def calc_corrected_re(wf, amplitude_ratio: float, phase_shift: float):
         original_amp = np.max(np.abs(wf.real))
         wf_re = wf.real + wf.imag * np.tan(phase_shift)
         wf_re = wf_re / np.max(np.abs(wf_re))
         return wf_re * original_amp * np.sqrt(amplitude_ratio)
 
-    def calc_corrected_imag(wf, amplitude_ratio: float, phase_shift: float):
+    def calc_corrected_imag(wf: np.ndarray, amplitude_ratio: float, phase_shift: float):
         original_amp = np.max(np.abs(wf.imag))
         wf_im = wf.imag / np.cos(phase_shift)
         wf_im = wf_im / np.max(np.abs(wf_im))
@@ -204,6 +207,9 @@ class InstrumentCompiler(metaclass=ABCMeta):
     def add_pulse(self, port: str, clock: str, pulse_info: OpInfo):
         self._pulses[(port, clock)].append(pulse_info)
 
+    def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
+        self._acquisitions[(port, clock)].append(acq_info)
+
     @abstractmethod
     def hardware_compile(self) -> Any:
         pass
@@ -256,7 +262,7 @@ class OpInfo(DataClassJsonMixin):
 
     @property
     def is_acquisition(self):
-        return False
+        return "acq_index" in self.data.keys()
 
 
 @dataclass
@@ -300,7 +306,7 @@ class QASMProgram(list):
     def get_instruction_as_list(
         instruction: str,
         *args: int,
-        label: Optional[str] = "",
+        label: Optional[str] = None,
         comment: Optional[str] = None,
     ) -> List[Union[str, int], ...]:
         max_args_amount = 3
@@ -311,8 +317,9 @@ class QASMProgram(list):
         instr_args = [""] * max_args_amount
         instr_args[: len(args)] = args
 
+        label_str = f"{label}:" if label is not None else ""
         comment_str = f"# {comment}" if comment is not None else ""
-        return [label, instruction, *instr_args, comment_str]
+        return [label_str, instruction, *instr_args, comment_str]
 
     def emit(self, *args, **kwargs):
         self.append(self.get_instruction_as_list(*args, **kwargs))
@@ -460,6 +467,29 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 )
         return self._generate_waveform_dict(waveforms_complex)
 
+    def _generate_acq_dict(self) -> Dict[str, Any]:
+        waveforms_complex = dict()
+        for acq in self.acquisitions:
+            if acq.uuid not in waveforms_complex.keys():
+                raw_wf_data_real = _generate_waveform_data(
+                    acq.data["waveforms"][0], sampling_rate=self.SAMPLING_RATE
+                )
+                raw_wf_data_imag = _generate_waveform_data(
+                    acq.data["waveforms"][1], sampling_rate=self.SAMPLING_RATE
+                )
+                if not (
+                    np.all(np.isreal(raw_wf_data_real))
+                    and np.all(np.isreal(1.0j * raw_wf_data_imag))
+                ):
+                    raise NotImplementedError(
+                        f"Two complex weights not implemented. "
+                        f"Please use 1d weights. Exception was "
+                        f"triggered because of {repr(acq)}."
+                    )
+                    # next step will break if both are complex
+                waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
+        return self._generate_waveform_dict(waveforms_complex)
+
     def _apply_corrections_to_waveform(
         self, waveform_data, time_duration: float, t0: float = 0
     ):
@@ -481,11 +511,11 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             name_i, name_q = Pulsar_sequencer_base._generate_waveform_names_from_uuid(
                 uuid
             )
-            nested_dict = {
+            to_add = {
                 name_i: {"data": complex_data.real, "index": 2 * idx},
                 name_q: {"data": complex_data.imag, "index": 2 * idx + 1},
             }
-            wf_dict.update(nested_dict)
+            wf_dict.update(to_add)
         return wf_dict
 
     @classmethod
@@ -574,12 +604,18 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
     def sequencer_compile(self) -> Dict[str, Any]:
         awg_dict = self._generate_awg_dict()
+        acq_dict = self._generate_acq_dict()
+
         qasm_program = self.generate_qasm_program(
-            self.parent.total_play_time, self.pulses, awg_dict
+            self.parent.total_play_time,
+            self.pulses,
+            awg_dict,
+            self.acquisitions,
+            acq_dict,
         )
 
         wf_and_pr_dict = self._generate_waveforms_and_program_dict(
-            qasm_program, awg_dict, {}
+            qasm_program, awg_dict, acq_dict
         )
 
         json_filename = self._dump_waveforms_and_program_json(
@@ -707,7 +743,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         for portclock, acq_data_list in self._acquisitions.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
-                    seq.pulses = acq_data_list
+                    seq.acquisitions = acq_data_list
 
     def hardware_compile(self) -> Dict[str, Any]:
         self._distribute_data()
@@ -736,6 +772,13 @@ class Pulsar_QCM(Pulsar_base):
                 f"which is not supported by hardware."
             )
         super()._distribute_data()
+
+    def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
+        raise RuntimeError(
+            f"Pulsar QCM {self.name} does not support acquisitions. "
+            f"Attempting to add acquisition {repr(acq_info)} "
+            f"on port {port} with clock {clock}."
+        )
 
 
 class Pulsar_QRM(Pulsar_base):
@@ -787,12 +830,13 @@ def _assign_frequencies(
             lo_obj.assign_frequency(lo_freq)
             for portclock_dict in associated_portclock_dicts:
                 port, clock = portclock_dict["port"], portclock_dict["clock"]
-                cl_freq = schedule_resources[clock]["freq"]
                 dev_name = portclock_mapping[(port, clock)]
                 assign_frequency = getattr(
-                    device_compilers[dev_name], "assign_frequency"
+                    device_compilers[dev_name], "assign_modulation_frequency"
                 )
-                assign_frequency((port, clock), cl_freq - lo_freq)
+                if clock in schedule_resources.keys():
+                    cl_freq = schedule_resources[clock]["freq"]
+                    assign_frequency((port, clock), cl_freq - lo_freq)
 
 
 def _assign_pulse_and_acq_info_to_devices(
@@ -815,6 +859,23 @@ def _assign_pulse_and_acq_info_to_devices(
 
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
+        for acq_data in op_data.data["acquisition_info"]:
+            if "t0" in acq_data:
+                acq_start_time = operation_start_time + acq_data["t0"]
+            else:
+                acq_start_time = operation_start_time
+            port = acq_data["port"]
+            clock = acq_data["clock"]
+
+            hashed_dict = without(acq_data, ["t0", "waveforms"])
+            hashed_dict["waveforms"] = list()
+            for acq in acq_data["waveforms"]:
+                hashed_dict["waveforms"].append(without(acq, ["t0"]))
+            uuid = make_hash(hashed_dict)
+
+            combined_data = OpInfo(data=acq_data, timing=acq_start_time, uuid=uuid)
+            dev = portclock_mapping[(port, clock)]
+            device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
 
 
 def _construct_compiler_objects(
@@ -839,7 +900,10 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
     total_play_time = _calculate_total_play_time(schedule)
 
     portclock_map = generate_port_clock_to_device_map(mapping)
-    devices_used = find_devices_needed_in_schedule(schedule, portclock_map)
+    devices_used = {  # FIXME function broken, values hardcoded
+        "qcm0",
+        "qrm0",
+    }  # find_devices_needed_in_schedule(schedule, portclock_map)
 
     device_compilers = _construct_compiler_objects(
         device_names=devices_used,
