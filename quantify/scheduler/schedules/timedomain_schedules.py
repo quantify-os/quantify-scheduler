@@ -158,7 +158,7 @@ def ramsey_sched(
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
-        # to be added artificial detuning
+        # FIXME: to be added artificial detuning see #98 # pylint: disable=fixme
         schedule.add(Rxy(theta=90, phi=0, qubit=qubit), ref_pt="start", rel_time=tau)
         schedule.add(Measure(qubit), label=f"Measurement {i}")
     return schedule
