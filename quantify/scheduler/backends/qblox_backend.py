@@ -44,23 +44,23 @@ def modulate_waveform(t: np.ndarray, envelope: np.ndarray, freq: float, t0: floa
 
 
 def apply_mixer_skewness_corrections(
-    wf: np.ndarray, amplitude_ratio: float, phase_shift: float
+    waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
 ):
-    def calc_corrected_re(wf, amplitude_ratio: float, phase_shift: float):
+    def calc_corrected_re(wf: np.ndarray, alpha: float, phi: float):
         original_amp = np.max(np.abs(wf.real))
-        wf_re = wf.real + wf.imag * np.tan(phase_shift)
+        wf_re = wf.real + wf.imag * np.tan(phi)
         wf_re = wf_re / np.max(np.abs(wf_re))
-        return wf_re * original_amp * np.sqrt(amplitude_ratio)
+        return wf_re * original_amp * np.sqrt(alpha)
 
-    def calc_corrected_imag(wf: np.ndarray, amplitude_ratio: float, phase_shift: float):
+    def calc_corrected_im(wf: np.ndarray, alpha: float, phi: float):
         original_amp = np.max(np.abs(wf.imag))
-        wf_im = wf.imag / np.cos(phase_shift)
+        wf_im = wf.imag / np.cos(phi)
         wf_im = wf_im / np.max(np.abs(wf_im))
-        return wf_im * original_amp / np.sqrt(amplitude_ratio)
+        return wf_im * original_amp / np.sqrt(alpha)
 
-    corrected_re = calc_corrected_re(wf, amplitude_ratio, np.deg2rad(phase_shift))
-    corrected_imag = calc_corrected_imag(wf, amplitude_ratio, np.deg2rad(phase_shift))
-    return corrected_re + 1.0j * corrected_imag
+    corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    return corrected_re + 1.0j * corrected_im
 
 
 def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
@@ -255,6 +255,7 @@ class OpInfo(DataClassJsonMixin):
     uuid: int
     data: dict
     timing: float
+    pulse_settings: Optional[QASMRuntimeSettings] = None
 
     @property
     def duration(self):
@@ -263,6 +264,13 @@ class OpInfo(DataClassJsonMixin):
     @property
     def is_acquisition(self):
         return "acq_index" in self.data.keys()
+
+    def __repr__(self):
+        s = 'Acquisition "' if self.is_acquisition else 'Pulse "'
+        s += str(self.uuid)
+        s += f'" (t={self.timing} to {self.timing+self.duration})'
+        s += f" data={self.data}"
+        return s
 
 
 @dataclass
@@ -275,6 +283,8 @@ class SequencerSettings(DataClassJsonMixin):
     nco_en: bool
     sync_en: bool
     modulation_freq: float = None
+    awg_offset_path_0: float = 0.0
+    awg_offset_path_1: float = 0.0
 
 
 @dataclass
@@ -288,6 +298,12 @@ class MixerCorrections(DataClassJsonMixin):
         return apply_mixer_skewness_corrections(
             waveform, self.amp_ratio, self.phase_error
         )
+
+
+@dataclass
+class QASMRuntimeSettings:
+    awg_gain_0: float
+    awg_gain_1: float
 
 
 class PulsarInstructions:
@@ -390,6 +406,7 @@ class QASMProgram(list):
 
     def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
         self.wait_till_start_operation(pulse)
+        self.update_runtime_settings(pulse)
         self.emit(
             PulsarInstructions.PLAY, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
         )
@@ -404,6 +421,33 @@ class QASMProgram(list):
 
     def reset_timing(self):
         self.elapsed_time = 0
+
+    def update_runtime_settings(self, operation: OpInfo):
+        if operation.pulse_settings is None:
+            raise RuntimeError(f"No real-time settings found for {repr(operation)}.")
+
+        awg_gain_path0 = self._expand_from_normalised_range(
+            operation.pulse_settings.awg_gain_0, "awg_gain_0", operation
+        )
+        awg_gain_path1 = self._expand_from_normalised_range(
+            operation.pulse_settings.awg_gain_1, "awg_gain_1", operation
+        )
+        self.emit(
+            PulsarInstructions.SET_AWG_GAIN,
+            awg_gain_path0,
+            awg_gain_path1,
+            comment=f"setting gain for {operation.uuid}",
+        )
+
+    @staticmethod
+    def _expand_from_normalised_range(val: float, param: str, operation: OpInfo):
+        immediate_sz = Pulsar_sequencer_base.IMMEDIATE_SZ
+        if np.abs(val) > 1.0:
+            raise ValueError(
+                f"{param} parameter must be in the range "
+                f"-1.0 < param < 1.0 for {repr(operation)}."
+            )
+        return int(val * immediate_sz / 2)
 
     @staticmethod
     def to_pulsar_time(time: float) -> int:
@@ -492,7 +536,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
                 raise ValueError(
-                    f"Attempting to set modulation frequency of {self._name} of {self.parent.name} to {freq}, "
+                    f"Attempting to set the modulation frequency of {self._name} of {self.parent.name} to {freq}, "
                     f"while it has previously been set to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
@@ -504,9 +548,14 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 raw_wf_data = _generate_waveform_data(
                     pulse.data, sampling_rate=self.SAMPLING_RATE
                 )
-                waveforms_complex[pulse.uuid] = self._apply_corrections_to_waveform(
+                raw_wf_data = self._apply_corrections_to_waveform(
                     raw_wf_data, pulse.duration, pulse.timing
                 )
+                raw_wf_data, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
+                pulse.pulse_settings = QASMRuntimeSettings(
+                    awg_gain_0=amp_i, awg_gain_1=amp_q
+                )
+                waveforms_complex[pulse.uuid] = raw_wf_data
         return self._generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_dict(self) -> Dict[str, Any]:
@@ -534,29 +583,45 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
     def _apply_corrections_to_waveform(
         self, waveform_data, time_duration: float, t0: float = 0
     ):
-        t = np.arange(t0, time_duration + t0, 1 / self.SAMPLING_RATE)
+        t = np.linspace(t0, time_duration + t0, int(time_duration * self.SAMPLING_RATE))
         corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
         return corrected_wf
 
-    def _normalize_waveform_data(self, data):
-        return data / self.AWG_OUTPUT_VOLT
+    def _normalize_waveform_data(
+        self, data: np.ndarray
+    ) -> Tuple[np.ndarray, float, float]:
+        amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
+        norm_data_r = data.real / amp_real / self.AWG_OUTPUT_VOLT
+        norm_data_i = data.imag / amp_imag / self.AWG_OUTPUT_VOLT
+        return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
+
+    def update_settings(self):
+        if self.mixer_corrections is not None:
+            self._settings.awg_offset_path_0 = (
+                self.mixer_corrections.offset_I / self.AWG_OUTPUT_VOLT
+            )
+            self._settings.awg_offset_path_1 = (
+                self.mixer_corrections.offset_Q / self.AWG_OUTPUT_VOLT
+            )
 
     @staticmethod
-    def _generate_waveform_names_from_uuid(uuid):
-        return f"{uuid}_I", f"{uuid}_Q"
+    def _generate_waveform_names_from_uuid(uuid: Any):
+        return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
     @staticmethod
-    def _generate_waveform_dict(waveforms_complex) -> dict:
+    def _generate_waveform_dict(
+        waveforms_complex: Dict[int, np.ndarray]
+    ) -> Dict[str, Any]:
         wf_dict = dict()
         for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
             name_i, name_q = Pulsar_sequencer_base._generate_waveform_names_from_uuid(
                 uuid
             )
             to_add = {
-                name_i: {"data": complex_data.real, "index": 2 * idx},
-                name_q: {"data": complex_data.imag, "index": 2 * idx + 1},
+                name_i: {"data": complex_data.real.tolist(), "index": 2 * idx},
+                name_q: {"data": complex_data.imag.tolist(), "index": 2 * idx + 1},
             }
             wf_dict.update(to_add)
         return wf_dict
@@ -667,8 +732,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         json_filename = self._dump_waveforms_and_program_json(
             wf_and_pr_dict, f"{self.port}_{self.clock}"
         )
+        self.update_settings()
         settings_dict = self.settings.to_dict()
-
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
