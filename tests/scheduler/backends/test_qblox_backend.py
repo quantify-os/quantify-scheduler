@@ -135,6 +135,9 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING)
 
 
+# --------- Test utility functions ---------
+
+
 def test_sanitize_fn():
     filename = "this.isavalid=filename.exe.jpeg"
     new_filename = qblox_backend._sanitize_file_name(filename)
@@ -181,3 +184,26 @@ def test_apply_mixer_corrections():
     re_normalized = corrected_wf.real / np.max(np.abs(corrected_wf.real))
     im_normalized = corrected_wf.imag / np.max(np.abs(corrected_wf.imag))
     assert np.allclose(re_normalized, im_normalized)
+
+
+def function_for_test_generate_waveform_data(t, foo, bar):
+    return foo * t + bar
+
+
+def test_generate_waveform_data():
+    foo = 10
+    bar = np.pi
+    sampling_rate = 1e9
+    duration = 1e-8
+    t_verification = np.arange(0, 0 + duration, 1 / sampling_rate)
+    verification_data = function_for_test_generate_waveform_data(
+        t_verification, foo, bar
+    )
+    data_dict = {
+        "wf_func": __name__ + ".function_for_test_generate_waveform_data",
+        "foo": foo,
+        "bar": bar,
+        "duration": 1e-8,
+    }
+    gen_data = qblox_backend._generate_waveform_data(data_dict, sampling_rate)
+    assert np.allclose(gen_data, verification_data)
