@@ -116,7 +116,6 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
     for time_constraint in schedule.timing_constraints:
         pulse_id = time_constraint["operation_hash"]
         operation = schedule.operations[pulse_id]
-        # TODO operation.duration already accounts for t0 right?
         end_time = operation.duration + time_constraint["abs_time"]
 
         if end_time > max_found:
@@ -134,7 +133,12 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
             dicts_found.extend(find_inner_dicts_containing_key(val, key))
         elif isinstance(val, Iterable) and not isinstance(val, str):
             for i_item in val:
-                dicts_found.extend(find_inner_dicts_containing_key(i_item, key))
+                try:
+                    dicts_found.extend(find_inner_dicts_containing_key(i_item, key))
+                # having a list that contains something other than a dict can cause an
+                # AttributeError on d.keys(), but this should be ignored anyway
+                except AttributeError:
+                    continue
         else:
             continue
     return dicts_found
@@ -175,19 +179,6 @@ def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int):
     for tc in timing_constraints:
         if tc["operation_hash"] == op_hash:
             return tc["abs_time"]
-
-
-def find_devices_needed_in_schedule(
-    schedule: Schedule, device_map: Dict[Tuple[str, str], str]
-) -> Set[str]:
-    portclocks = find_all_port_clock_combinations(schedule.operations)
-
-    devices_found = set()
-    for pc in portclocks:
-        if pc not in devices_found:
-            devices_found.add(device_map[pc])
-
-    return devices_found
 
 
 # ---------- classes ----------
@@ -686,9 +677,10 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
     ) -> Dict[str, Any]:
         compiled_dict = dict()
         compiled_dict["program"] = program
-        compiled_dict["awg"] = awg_dict
+        compiled_dict["waveforms"] = dict()
+        compiled_dict["waveforms"]["awg"] = awg_dict
         if acq_dict is not None:
-            compiled_dict["acq"] = acq_dict
+            compiled_dict["waveforms"]["acq"] = acq_dict
         return compiled_dict
 
     @staticmethod
@@ -970,6 +962,13 @@ def _assign_pulse_and_acq_info_to_devices(
     portclock_mapping: Dict[Tuple[str, str], str],
 ):
     for op_hash, op_data in schedule.operations.items():
+        if not op_data.valid_pulse and not op_data.valid_acquisition:
+            raise RuntimeError(
+                f"Operation {op_hash} is not a valid pulse or acquisition."
+                f" Please check whether the device compilation been performed successfully."
+                f" Operation data: {repr(op_data)}"
+            )
+
         operation_start_time = find_abs_time_from_operation_hash(schedule, op_hash)
         for pulse_data in op_data.data["pulse_info"]:
             if "t0" in pulse_data:

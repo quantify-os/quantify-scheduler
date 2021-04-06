@@ -3,6 +3,8 @@ import inspect
 import json
 import tempfile
 import pytest
+import numpy as np
+from typing import Dict, Any
 
 from qcodes.instrument.base import Instrument
 
@@ -12,10 +14,13 @@ from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, Rxy, X
 from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
 from quantify.scheduler.resources import ClockResource
-from quantify.scheduler.compilation import qcompile, determine_absolute_timing
+from quantify.scheduler.compilation import (
+    qcompile,
+    determine_absolute_timing,
+    device_compile,
+)
 
-from quantify.scheduler.backends import qblox_backend
-from quantify.scheduler.backends.qblox_backend import *
+from quantify.scheduler.backends import qblox_backend as qb
 
 import quantify.scheduler.schemas.examples as es
 
@@ -37,6 +42,8 @@ try:
     PULSAR_ASSEMBLER = True
 except ImportError:
     PULSAR_ASSEMBLER = False
+
+# --------- Test fixtures ---------
 
 
 @pytest.fixture
@@ -106,9 +113,12 @@ def mixed_schedule_with_acquisition():
     return sched
 
 
+# --------- Test classes and member methods ---------
+
+
 def test_contruct_sequencer():
-    class Test_Pulsar(Pulsar_base):
-        SEQ_TYPE = QCM_sequencer
+    class Test_Pulsar(qb.Pulsar_base):
+        SEQ_TYPE = qb.QCM_sequencer
         MAX_SEQUENCERS = 10
 
         def __init__(self):
@@ -123,7 +133,7 @@ def test_contruct_sequencer():
     tp.sequencers = tp._construct_sequencers()
     seq_keys = list(tp.sequencers.keys())
     assert len(seq_keys) == 2
-    assert type(tp.sequencers[seq_keys[0]]) == QCM_sequencer
+    assert type(tp.sequencers[seq_keys[0]]) == qb.QCM_sequencer
 
 
 def test_simple_compile(dummy_pulsars, pulse_only_schedule):
@@ -132,7 +142,16 @@ def test_simple_compile(dummy_pulsars, pulse_only_schedule):
 
 
 def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
-    qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING)
+    full_program = qcompile(
+        mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
+    )
+    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+
+    qcm0 = dummy_pulsars[0]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.arm_sequencer(0)
+    uploaded_waveforms = qcm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
 
 
 # --------- Test utility functions ---------
@@ -140,11 +159,11 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
 
 def test_sanitize_fn():
     filename = "this.isavalid=filename.exe.jpeg"
-    new_filename = qblox_backend._sanitize_file_name(filename)
+    new_filename = qb._sanitize_file_name(filename)
     assert new_filename == "this.isavalid=filename.exe.jpeg"
 
     filename = "this.isan:in>,valid=filename***!.exe.jpeg"
-    new_filename = qblox_backend._sanitize_file_name(filename)
+    new_filename = qb._sanitize_file_name(filename)
     assert new_filename == "this.isan_in__valid=filename____.exe.jpeg"
 
 
@@ -154,7 +173,7 @@ def test_modulate_waveform():
     t0 = 50e-9
     t = np.linspace(0, 1e-6, number_of_points)
     envelope = np.ones(number_of_points)
-    mod_wf = modulate_waveform(t, envelope, freq, t0)
+    mod_wf = qb.modulate_waveform(t, envelope, freq, t0)
     test_re = np.cos(2 * np.pi * freq * (t + t0))
     test_imag = np.sin(2 * np.pi * freq * (t + t0))
     assert np.allclose(mod_wf.real, test_re)
@@ -172,7 +191,7 @@ def test_apply_mixer_corrections():
 
     test_re = np.cos(2 * np.pi * freq * t)
     test_imag = np.sin(2 * np.pi * freq * t)
-    corrected_wf = apply_mixer_skewness_corrections(
+    corrected_wf = qb.apply_mixer_skewness_corrections(
         test_re + 1.0j * test_imag, amp_ratio, 90
     )
 
@@ -205,5 +224,59 @@ def test_generate_waveform_data():
         "bar": bar,
         "duration": 1e-8,
     }
-    gen_data = qblox_backend._generate_waveform_data(data_dict, sampling_rate)
+    gen_data = qb._generate_waveform_data(data_dict, sampling_rate)
     assert np.allclose(gen_data, verification_data)
+
+
+def test_generate_ext_local_oscillators():
+    lo_dict = qb.generate_ext_local_oscillators(10, HARDWARE_MAPPING)
+    defined_los = {"lo0", "lo1"}
+    assert lo_dict.keys() == defined_los
+
+    lo1 = lo_dict["lo1"]
+    lo1_freq = lo1.frequency
+    assert lo1_freq == 7.2e9
+
+
+def test_calculate_total_play_time(mixed_schedule_with_acquisition):
+    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    play_time = qb._calculate_total_play_time(sched)
+    answer = 184e-9
+    assert play_time == answer
+
+
+def test_find_inner_dicts_containing_key():
+    test_dict = {
+        "foo": "bar",
+        "list": [{"key": 1, "hello": "world", "other_key": "other_value"}, 4, "12"],
+        "nested": {"hello": "world", "other_key": "other_value"},
+    }
+    dicts_found = qb.find_inner_dicts_containing_key(test_dict, "hello")
+    assert len(dicts_found) == 2
+    for d in dicts_found:
+        assert d["hello"] == "world"
+        assert d["other_key"] == "other_value"
+
+
+def test_find_all_port_clock_combinations():
+    portclocks = qb.find_all_port_clock_combinations(HARDWARE_MAPPING)
+    portclocks = set(portclocks)
+    portclocks.discard((None, None))
+    assert portclocks == {
+        ("q1:mw", "q1.12"),
+        ("q1:mw", "q1.01"),
+        ("q0:mw", "q0.01"),
+        ("q0:mw", "q0.12"),
+        ("q0:res", "q0.ro"),
+    }
+
+
+def test_find_abs_time_from_operation_hash(mixed_schedule_with_acquisition):
+    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    first_op_hash = sched.timing_constraints[0]["operation_hash"]
+    first_abs_time = qb.find_abs_time_from_operation_hash(sched, first_op_hash)
+    assert first_abs_time == 0
+
+    second_op_hash = sched.timing_constraints[1]["operation_hash"]
+    second_abs_time = qb.find_abs_time_from_operation_hash(sched, second_op_hash)
+    assert second_abs_time == 24e-9
