@@ -280,3 +280,32 @@ def test_find_abs_time_from_operation_hash(mixed_schedule_with_acquisition):
     second_op_hash = sched.timing_constraints[1]["operation_hash"]
     second_abs_time = qb.find_abs_time_from_operation_hash(sched, second_op_hash)
     assert second_abs_time == 24e-9
+
+
+# --------- Test QASMProgram class ---------
+def test_QASMProgram_list_behavior():
+    fancy_list = qb.QASMProgram()
+    fancy_list.append("foo")
+    fancy_list.append("bar")
+    assert len(fancy_list) == 2
+    assert fancy_list[0] == "foo"
+    assert fancy_list[1] == "bar"
+
+
+def test_emit():
+    qasm = qb.QASMProgram()
+    qasm.emit(qb.PulsarInstructions.PLAY, 0, 1, 120)
+    qasm.emit(qb.PulsarInstructions.STOP, comment="This is a comment that is added")
+
+    assert len(qasm) == 2
+    with pytest.raises(SyntaxError):
+        qasm.emit(qb.PulsarInstructions.ACQUIRE, 0, 1, 120, "argument too many")
+
+
+def test_auto_wait():
+    qasm = qb.QASMProgram()
+    qasm.auto_wait(120)
+    assert len(qasm) == 1
+    qasm.auto_wait(70000)
+    assert len(qasm) == 3
+    assert qasm.elapsed_time == 70120

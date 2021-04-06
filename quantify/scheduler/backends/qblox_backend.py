@@ -233,9 +233,6 @@ class LocalOscillator(InstrumentCompiler):
     def frequency(self):
         return self._lo_freq
 
-    def get_related_clocks(self) -> Set[str]:
-        return {portclock[1] for portclock in self.portclocks}
-
     def hardware_compile(self) -> Dict[str, Any]:
         return {"lo_freq": self._lo_freq}
 
@@ -297,6 +294,7 @@ class QASMRuntimeSettings:
     awg_gain_1: float
 
 
+# ---------- utility classes ----------
 class PulsarInstructions:
     # Control
     ILLEGAL = "illegal"
@@ -409,9 +407,6 @@ class QASMProgram(list):
             PulsarInstructions.ACQUIRE, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
         )
         self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
-
-    def reset_timing(self):
-        self.elapsed_time = 0
 
     def update_runtime_settings(self, operation: OpInfo):
         if operation.pulse_settings is None:
