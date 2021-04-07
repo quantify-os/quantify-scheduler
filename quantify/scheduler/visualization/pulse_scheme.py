@@ -3,8 +3,10 @@
 # Repository:     https://gitlab.com/qblox/packages/software/quantify/
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+# pylint: disable=too-many-arguments
 from __future__ import annotations
 from typing import Tuple, Union, List, Optional
+import warnings
 import logging
 import numpy as np
 
@@ -329,8 +331,8 @@ def meter(
     x0: float,
     y0: float,
     y_offs: float = 0.0,
-    w: float = 1.1,
-    h: float = 0.8,
+    width: float = 1.1,
+    height: float = 0.8,
     color: str = "black",
     fillcolor: Optional[str] = None,
 ) -> None:
@@ -347,9 +349,9 @@ def meter(
 
     y_offs :
 
-    w :
+    width :
 
-    h :
+    height :
 
     color :
 
@@ -366,9 +368,9 @@ def meter(
     else:
         fill = True
     p1 = matplotlib.patches.Rectangle(
-        (x0 - w / 2, y0 - h / 2 + y_offs),
-        w,
-        h,
+        (x0 - width / 2, y0 - height / 2 + y_offs),
+        width,
+        height,
         facecolor=fillcolor,
         edgecolor=color,
         fill=fill,
@@ -376,7 +378,7 @@ def meter(
     )
     ax.add_patch(p1)
     p0 = matplotlib.patches.Wedge(
-        (x0, y0 - h / 1.75 + y_offs),
+        (x0, y0 - height / 1.75 + y_offs),
         0.4,
         theta1=40,
         theta2=180 - 40,
@@ -386,12 +388,12 @@ def meter(
         zorder=5,
     )
     ax.add_patch(p0)
-    r0 = h / 2.2
+    arrow_len = height / 2.2
     ax.arrow(
         x0,
-        y0 - h / 5 + y_offs,
-        dx=r0 * np.cos(np.deg2rad(70)),
-        dy=r0 * np.sin(np.deg2rad(70)),
+        y0 - height / 5 + y_offs,
+        dx=arrow_len * np.cos(np.deg2rad(70)),
+        dy=arrow_len * np.sin(np.deg2rad(70)),
         width=0.03,
         color=color,
         zorder=5,
@@ -403,8 +405,8 @@ def box_text(
     x0: float,
     y0: float,
     text: str = "",
-    w: float = 1.1,
-    h: float = 0.8,
+    width: float = 1.1,
+    height: float = 0.8,
     color: str = "black",
     fillcolor: Optional[str] = None,
     textcolor: str = "black",
@@ -423,9 +425,9 @@ def box_text(
 
     text :
 
-    w :
+    width :
 
-    h :
+    height :
 
     color :
 
@@ -446,9 +448,9 @@ def box_text(
     else:
         fill = True
     p1 = matplotlib.patches.Rectangle(
-        (x0 - w / 2, y0 - h / 2),
-        w,
-        h,
+        (x0 - width / 2, y0 - height / 2),
+        width,
+        height,
         facecolor=fillcolor,
         edgecolor=color,
         fill=fill,
@@ -463,10 +465,9 @@ def box_text(
 
 def pulse_diagram_plotly(*args, **kwargs):
     """
-    Deprecated import use :func:`~quantify.scheduler.visualization.pulse_diagram.pulse_diagram_plotly`
+    Deprecated import use
+    :func:`~quantify.scheduler.visualization.pulse_diagram.pulse_diagram_plotly`
     """
-    import warnings
-
     warnings.warn(
         "`pulse_diagram_plotly` will be removed from this module in quantify 1.0.0.\n"
         "Import as follows instead:\n"
