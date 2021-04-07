@@ -4,11 +4,12 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
+from typing import List, Dict, Optional
+from typing_extensions import Literal
+
 import inspect
 import logging
 import numpy as np
-from typing import List, Dict, Optional
-from typing_extensions import Literal
 
 from plotly.subplots import make_subplots
 import plotly.express as px
@@ -59,7 +60,7 @@ def pulse_diagram_plotly(
 
     port_map: Dict[str, int] = dict()
     ports_length: int = 8
-    auto_map: bool = True if port_list is None else False
+    auto_map: bool = port_list is None
 
     def _populate_port_mapping(portmap: Dict[str, int]) -> None:
         """
@@ -125,10 +126,10 @@ def pulse_diagram_plotly(
                 continue
 
             # port to map the waveform too
-            port: Optional[str] = pulse_info["port"]
+            port: str = pulse_info["port"]
 
             # function to generate waveform
-            wf_func: Optional[str] = import_func_from_string(pulse_info["wf_func"])
+            wf_func: str = import_func_from_string(pulse_info["wf_func"])
 
             # iterate through the colors in the color map
             col_idx = (col_idx + 1) % len(colors)
@@ -139,23 +140,23 @@ def pulse_diagram_plotly(
             # select the arguments for the waveform function that are present in pulse info
             par_map = inspect.signature(wf_func).parameters
             wf_kwargs = {}
-            for kw in par_map.keys():
-                if kw in pulse_info.keys():
-                    wf_kwargs[kw] = pulse_info[kw]
+            for kwargs in par_map.keys():
+                if kwargs in pulse_info.keys():
+                    wf_kwargs[kwargs] = pulse_info[kwargs]
 
             # Calculate the numerical waveform using the wf_func
-            wf = wf_func(t=t, **wf_kwargs)
+            waveform = wf_func(t=t, **wf_kwargs)
 
             # optionally adds some modulation
             if modulation == "clock":
                 # apply modulation to the waveforms
-                wf = modulate_wave(
-                    t, wf, schedule.resources[pulse_info["clock"]]["freq"]
+                waveform = modulate_wave(
+                    t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
                 )
 
             if modulation == "if":
                 # apply modulation to the waveforms
-                wf = modulate_wave(t, wf, modulation_if)
+                waveform = modulate_wave(t, waveform, modulation_if)
 
             row: int = port_map[port] + 1
 
@@ -163,7 +164,7 @@ def pulse_diagram_plotly(
             fig.add_trace(
                 go.Scatter(
                     x=t,
-                    y=wf.real,
+                    y=waveform.real,
                     mode="lines",
                     name=label,
                     legendgroup=pls_idx,
@@ -175,12 +176,12 @@ def pulse_diagram_plotly(
                 col=1,
             )
 
-            if wf.dtype.kind == "c":
+            if waveform.dtype.kind == "c":
                 # Only plot if the array is a complex numpy dtype
                 fig.add_trace(
                     go.Scatter(
                         x=t,
-                        y=wf.imag,
+                        y=waveform.imag,
                         mode="lines",
                         name=f"Im[{label}]",
                         legendgroup=pls_idx,
