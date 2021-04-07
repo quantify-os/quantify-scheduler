@@ -415,3 +415,42 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     qrm = device_compilers["qrm0"]
     assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
     assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+
+
+def test_assign_frequencies(mixed_schedule_with_acquisition):
+    schedule = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    total_play_time = qb._calculate_total_play_time(schedule)
+
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+
+    device_compilers = qb._construct_compiler_objects(
+        total_play_time=total_play_time,
+        mapping=HARDWARE_MAPPING,
+    )
+    qb._assign_pulse_and_acq_info_to_devices(
+        schedule=schedule,
+        device_compilers=device_compilers,
+        portclock_mapping=portclock_map,
+    )
+
+    lo_compilers = qb.generate_ext_local_oscillators(total_play_time, HARDWARE_MAPPING)
+    qb._assign_frequencies(
+        device_compilers,
+        lo_compilers,
+        hw_mapping=HARDWARE_MAPPING,
+        portclock_mapping=portclock_map,
+        schedule_resources=schedule.resources,
+    )
+    qcm = device_compilers["qcm0"]
+    qrm = device_compilers["qrm0"]
+
+    qcm_if = qcm.sequencers["seq0"].settings.modulation_freq
+    qrm_if = qrm.sequencers["seq0"].settings.modulation_freq
+
+    lo0_freq = lo_compilers["lo0"].frequency
+    lo1_freq = lo_compilers["lo1"].frequency
+
+    qcm_rf = schedule.resources["q0.01"].data["freq"]
+    qrm_rf = schedule.resources["q0.ro"].data["freq"]
+    assert qcm_rf == lo0_freq + qcm_if
+    assert qrm_rf == lo1_freq + qrm_if
