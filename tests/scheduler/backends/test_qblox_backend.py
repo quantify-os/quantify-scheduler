@@ -384,3 +384,34 @@ def test_assign_frequency():
 
 
 # --------- Test compilation functions ---------
+def test_assign_pulse_and_acq_info_to_devices_exception(
+    mixed_schedule_with_acquisition,
+):
+    total_play_time = qb._calculate_total_play_time(mixed_schedule_with_acquisition)
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+
+    device_compilers = qb._construct_compiler_objects(
+        total_play_time=total_play_time,
+        mapping=HARDWARE_MAPPING,
+    )
+    with pytest.raises(RuntimeError):
+        qb._assign_pulse_and_acq_info_to_devices(
+            mixed_schedule_with_acquisition, device_compilers, portclock_map
+        )
+
+
+def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
+    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    total_play_time = qb._calculate_total_play_time(mixed_schedule_with_acquisition)
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+
+    device_compilers = qb._construct_compiler_objects(
+        total_play_time=total_play_time,
+        mapping=HARDWARE_MAPPING,
+    )
+    qb._assign_pulse_and_acq_info_to_devices(
+        sched_with_pulse_info, device_compilers, portclock_map
+    )
+    qrm = device_compilers["qrm0"]
+    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
+    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1

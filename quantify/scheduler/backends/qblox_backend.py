@@ -203,6 +203,13 @@ class InstrumentCompiler(metaclass=ABCMeta):
     def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
         self._acquisitions[(port, clock)].append(acq_info)
 
+    @property
+    def portclocks_with_data(self):
+        portclocks_used = set()
+        portclocks_used.update(self._pulses.keys())
+        portclocks_used.update(self._acquisitions.keys())
+        return portclocks_used
+
     @abstractmethod
     def hardware_compile(self) -> Any:
         pass
@@ -760,13 +767,6 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
     @abstractmethod
     def MAX_SEQUENCERS(self):
         pass
-
-    @property
-    def portclocks_with_data(self):
-        portclocks_used = set()
-        portclocks_used.update(self._pulses.keys())
-        portclocks_used.update(self._acquisitions.keys())
-        return portclocks_used
 
     @staticmethod
     def _extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
