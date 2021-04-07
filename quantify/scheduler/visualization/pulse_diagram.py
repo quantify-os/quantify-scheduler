@@ -4,11 +4,11 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
+import inspect
+import logging
 from typing import List, Dict, Optional
 from typing_extensions import Literal
 
-import inspect
-import logging
 import numpy as np
 
 from plotly.subplots import make_subplots
