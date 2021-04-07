@@ -25,7 +25,7 @@ def square_imaginary(
     return square(t, 1j * amp)
 
 
-def ramp(t, amp):
+def ramp(t, amp) -> np.ndarray:
     return np.linspace(0, amp, len(t))
 
 

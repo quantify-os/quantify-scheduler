@@ -633,7 +633,7 @@ def _invert_hardware_mapping(hardware_mapping):
 
 def pulsar_assembler_backend(
     schedule: Schedule,
-    mapping: Dict[str, Any],
+    hardware_map: Dict[str, Any],
     tuid: str = None,
     debug: bool = False,
     iterations: int = 1,
@@ -652,7 +652,7 @@ def pulsar_assembler_backend(
     ----------
     schedule :
         The schedule to convert into assembly.
-    mapping :
+    hardware_map :
         The mapping that describes how the Pulsars are connected to the ports.
     tuid :
         a tuid of the experiment the schedule belongs to. If set to None, a new TUID will be generated to store
@@ -672,7 +672,7 @@ def pulsar_assembler_backend(
 
     max_seq_duration = 0
     acquisitions = set()
-    portclock_mapping = _invert_hardware_mapping(mapping)
+    portclock_mapping = _invert_hardware_mapping(hardware_map)
     for _, t_constr in enumerate(schedule.timing_constraints):
         op = schedule.operations[t_constr["operation_hash"]]
 
@@ -697,7 +697,7 @@ def pulsar_assembler_backend(
                 # this is used to add for example the reset and idle pulses
 
             gain = _extract_gain(
-                hardware_mapping=mapping,
+                hardware_mapping=hardware_map,
                 hw_mapping_inverted=portclock_mapping,
                 port=port,
                 clock=clock_id,
@@ -705,7 +705,9 @@ def pulsar_assembler_backend(
             if "acq_index" not in p.keys():  # hacky
                 dev, io, _ = portclock_mapping[_portclock(port, clock_id)]
                 params, p = _prepare_pulse(
-                    p, gain, _extract_mixer_corrections(mapping, dev, io)["amp_ratio"]
+                    p,
+                    gain,
+                    _extract_mixer_corrections(hardware_map, dev, io)["amp_ratio"],
                 )
             else:
                 # FIXME: ugly hack to get acquisition working, we seriously need to restructure this backend
@@ -727,7 +729,7 @@ def pulsar_assembler_backend(
             portclock = _portclock(port, clock_id)
             if portclock not in schedule.resources.keys():
                 pulsar_type = _extract_pulsar_type(
-                    mapping, portclock_mapping, port, clock_id
+                    hardware_map, portclock_mapping, port, clock_id
                 )
                 if pulsar_type == "Pulsar_QCM":
                     sequencer_t = QCM_sequencer
@@ -736,7 +738,7 @@ def pulsar_assembler_backend(
                 else:
                     raise ValueError(f"Unrecognized Pulsar type '{pulsar_type}'")
                 lo_freq, interm_freq = _extract_interm_freq(
-                    hardware_mapping=mapping,
+                    hardware_mapping=hardware_map,
                     hw_mapping_inverted=portclock_mapping,
                     port=port,
                     clock=clock_id,
@@ -752,7 +754,7 @@ def pulsar_assembler_backend(
                 )
                 dev, io, _ = portclock_mapping[portclock]
                 seq_obj.add_mixer_corrections(
-                    _extract_mixer_corrections(mapping, dev, io)
+                    _extract_mixer_corrections(hardware_map, dev, io)
                 )
                 schedule.add_resources([seq_obj])
 
@@ -770,7 +772,7 @@ def pulsar_assembler_backend(
             # determine waveform
             if pulse_id not in seq.pulse_dict.keys():
                 nco_en = _extract_nco_en(
-                    hardware_mapping=mapping,
+                    hardware_mapping=hardware_map,
                     hw_mapping_inverted=portclock_mapping,
                     port=port,
                     clock=clock_id,
@@ -834,7 +836,7 @@ def pulsar_assembler_backend(
             }
 
             p_config = _extract_pulsar_config(
-                hardware_mapping=mapping,
+                hardware_mapping=hardware_map,
                 hw_mapping_inverted=portclock_mapping,
                 port=resource["port"],
                 clock=resource["clock"],

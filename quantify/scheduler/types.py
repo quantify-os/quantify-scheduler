@@ -4,12 +4,13 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 from __future__ import annotations
+
 from typing_extensions import Literal
 from uuid import uuid4
 from collections import UserDict
 import jsonschema
-from quantify.utilities.general import make_hash, load_json_schema
-from quantify.scheduler.resources import Resource, BasebandClockResource
+from quantify.utilities import general
+from quantify.scheduler import resources
 
 
 class Operation(UserDict):
@@ -77,7 +78,7 @@ class Operation(UserDict):
         """
         A hash based on the contents of the Operation.
         """
-        return make_hash(self.data)
+        return general.make_hash(self.data)
 
     def add_gate_info(self, gate_operation: Operation):
         """
@@ -114,7 +115,7 @@ class Operation(UserDict):
 
     @classmethod
     def is_valid(cls, operation):
-        scheme = load_json_schema(__file__, "operation.json")
+        scheme = general.load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
         _ = operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
@@ -196,7 +197,9 @@ class Schedule(UserDict):
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
-        self.add_resource(BasebandClockResource(BasebandClockResource.IDENTITY))
+        self.add_resource(
+            resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
+        )
 
         if name is not None:
             self.data["name"] = name
@@ -266,7 +269,7 @@ class Schedule(UserDict):
         """
         Add a resource such as a channel or qubit to the schedule.
         """
-        assert Resource.is_valid(resource)
+        assert resources.Resource.is_valid(resource)
         if resource.name in self.data["resource_dict"]:
             raise ValueError("Key {} is already present".format(resource.name))
         else:
@@ -281,10 +284,11 @@ class Schedule(UserDict):
 
     @classmethod
     def is_valid(cls, schedule):
-        scheme = load_json_schema(__file__, "schedule.json")
+        scheme = general.load_json_schema(__file__, "schedule.json")
         jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 
+    # pylint: disable=too-many-arguments
     def add(
         self,
         operation: Operation,
@@ -297,20 +301,33 @@ class Schedule(UserDict):
         """
         Add an :class:`~Operation` to the schedule and specify timing constraints.
 
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference operation and the added operation.
+        The time can be specified with respect to the "start", "center", or "end" of
+        the operations.
+        The reference operation (:code:`"ref_op"`) is specified using its label
+        property.
+
         Parameters
         ----------
         operation :
             The operation to add to the schedule
         rel_time :
-            relative time between the the reference operation and added operation.
+            relative time between the reference operation and the added operation.
+            the time is the time between the "ref_pt" in the reference operation and
+            "ref_pt_new" of the operation that is added.
         ref_op :
-            specifies the reference operation.
+            label of the reference operation. If set to :code:`None`, will default
+            to the last added operation.
         ref_pt :
-            reference point in reference operation.
+            reference point in reference operation must be one of
+            ('start', 'center', 'end').
         ref_pt_new :
-            reference point in added operation.
+            reference point in added operation must be one of
+            ('start', 'center', 'end').
         label :
-            a label that can be used as an identifier when adding more operations.
+            a unique string that can be used as an identifier when adding operations.
+            if set to None, a random hash will be generated instead.
         Returns
         -------
         :

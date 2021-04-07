@@ -3,7 +3,7 @@ import inspect
 import pytest
 import numpy as np
 import json
-import quantify.scheduler.schemas.examples as es
+import quantify.scheduler.schemas.examples as examples
 from quantify.scheduler.resources import Resource, ClockResource, BasebandClockResource
 from quantify.scheduler.types import Operation
 from quantify.scheduler import Schedule
@@ -17,7 +17,7 @@ from quantify.scheduler.compilation import (
 )
 
 
-esp = inspect.getfile(es)
+esp = inspect.getfile(examples)
 
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
 with open(cfg_f, "r") as f:
