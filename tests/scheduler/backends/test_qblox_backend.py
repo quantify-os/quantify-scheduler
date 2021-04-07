@@ -230,6 +230,12 @@ def test_find_all_port_clock_combinations():
     }
 
 
+def test_generate_port_clock_to_device_map():
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+    assert (None, None) not in portclock_map.keys()
+    assert len(portclock_map.keys()) == 5
+
+
 def test_find_abs_time_from_operation_hash(mixed_schedule_with_acquisition):
     sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
     first_op_hash = sched.timing_constraints[0]["operation_hash"]
@@ -362,3 +368,19 @@ def test_loop():
     num_rep_used, reg_used = qasm[1][2].split(",")
     assert int(num_rep_used) == num_rep
     assert reg_used == reg
+
+
+# --------- Test sequencer compilation ---------
+def test_assign_frequency():
+    qcm = qb.Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm_seq0 = qcm.sequencers["seq0"]
+    qcm_seq0.assign_frequency(100e6)
+    qcm_seq0.assign_frequency(100e6)
+
+    assert qcm_seq0.settings.modulation_freq == 100e6
+
+    with pytest.raises(ValueError):
+        qcm_seq0.assign_frequency(110e6)
+
+
+# --------- Test compilation functions ---------

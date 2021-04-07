@@ -150,6 +150,8 @@ def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str
     for d in dicts_with_port:
         if "port" in d.keys():
             port = d["port"]
+            if port is None:
+                continue
             if "clock" not in d.keys():
                 raise AttributeError(f"Port {d['port']} missing clock")
             clock = d["clock"]
