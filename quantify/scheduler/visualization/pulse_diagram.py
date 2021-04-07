@@ -21,7 +21,9 @@ from quantify.utilities.general import import_func_from_string
 
 logger = logging.getLogger(__name__)
 
-
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
 def pulse_diagram_plotly(
     schedule: Schedule,
     port_list: Optional[List[str]] = None,
@@ -137,7 +139,8 @@ def pulse_diagram_plotly(
             # times at which to evaluate waveform
             t0 = t_constr["abs_time"] + pulse_info["t0"]
             t = np.arange(t0, t0 + pulse_info["duration"], 1 / sampling_rate)
-            # select the arguments for the waveform function that are present in pulse info
+            # select the arguments for the waveform function
+            # that are present in pulse info
             par_map = inspect.signature(wf_func).parameters
             wf_kwargs = {}
             for kwargs in par_map.keys():
