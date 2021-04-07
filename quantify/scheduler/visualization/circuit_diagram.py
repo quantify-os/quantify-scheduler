@@ -10,7 +10,9 @@ from matplotlib.axes import Axes
 import quantify.scheduler.visualization.pulse_scheme as ps
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.compilation import determine_absolute_timing
-from quantify.utilities.general import import_func_from_string
+from quantify.utilities.general import (
+    import_func_from_string,
+)  # pylint: disable=no-name-in-module
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -30,7 +32,14 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
-            ax, x0=time, y0=qubit_idx, text=text, fillcolor="C0", w=0.8, h=0.5, **kw
+            ax,
+            x0=time,
+            y0=qubit_idx,
+            text=text,
+            fillcolor="C0",
+            width=0.8,
+            height=0.5,
+            **kw
         )
 
 
@@ -93,7 +102,14 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
-            ax, x0=time, y0=qubit_idx, fillcolor="C4", y_offs=0, w=0.8, h=0.5, **kw
+            ax,
+            x0=time,
+            y0=qubit_idx,
+            fillcolor="C4",
+            y_offs=0,
+            width=0.8,
+            height=0.5,
+            **kw
         )
 
 
@@ -157,8 +173,8 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             text=text,
             color="white",
             fillcolor="white",
-            w=0.4,
-            h=0.5,
+            width=0.4,
+            height=0.5,
             **kw
         )
 

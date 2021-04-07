@@ -23,7 +23,7 @@ def test_pulse_diagram_plotly():
     sched = Schedule("Test schedule")
 
     # define the resources
-    qubit_0, qubit_1 = ("qubit_0", "qubit_1")
+    qubit_0, qubit_1 = ("q0", "q1")
     sched.add(Reset(qubit_0, qubit_1))
     sched.add(Rxy(90, 0, qubit=qubit_0))
     # sched.add(operation=CZ(qC=qubit_0, qT=qubit_1)) # not implemented in config
