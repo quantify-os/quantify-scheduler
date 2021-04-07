@@ -113,47 +113,6 @@ def mixed_schedule_with_acquisition():
     return sched
 
 
-# --------- Test classes and member methods ---------
-
-
-def test_contruct_sequencer():
-    class Test_Pulsar(qb.Pulsar_base):
-        SEQ_TYPE = qb.QCM_sequencer
-        MAX_SEQUENCERS = 10
-
-        def __init__(self):
-            super(Test_Pulsar, self).__init__(
-                name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
-            )
-
-        def hardware_compile(self) -> Dict[str, Any]:
-            return dict()
-
-    tp = Test_Pulsar()
-    tp.sequencers = tp._construct_sequencers()
-    seq_keys = list(tp.sequencers.keys())
-    assert len(seq_keys) == 2
-    assert type(tp.sequencers[seq_keys[0]]) == qb.QCM_sequencer
-
-
-def test_simple_compile(dummy_pulsars, pulse_only_schedule):
-    """Tests if compilation with only pulses finishes without exceptions"""
-    qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
-
-
-def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
-    full_program = qcompile(
-        mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
-    )
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
-
-    qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
-    qcm0.arm_sequencer(0)
-    uploaded_waveforms = qcm0.get_waveforms(0)
-    assert uploaded_waveforms is not None
-
-
 # --------- Test utility functions ---------
 
 
@@ -282,6 +241,45 @@ def test_find_abs_time_from_operation_hash(mixed_schedule_with_acquisition):
     assert second_abs_time == 24e-9
 
 
+# --------- Test classes and member methods ---------
+def test_contruct_sequencer():
+    class Test_Pulsar(qb.Pulsar_base):
+        SEQ_TYPE = qb.QCM_sequencer
+        MAX_SEQUENCERS = 10
+
+        def __init__(self):
+            super(Test_Pulsar, self).__init__(
+                name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
+            )
+
+        def hardware_compile(self) -> Dict[str, Any]:
+            return dict()
+
+    tp = Test_Pulsar()
+    tp.sequencers = tp._construct_sequencers()
+    seq_keys = list(tp.sequencers.keys())
+    assert len(seq_keys) == 2
+    assert type(tp.sequencers[seq_keys[0]]) == qb.QCM_sequencer
+
+
+def test_simple_compile(dummy_pulsars, pulse_only_schedule):
+    """Tests if compilation with only pulses finishes without exceptions"""
+    qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+    full_program = qcompile(
+        mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
+    )
+    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+
+    qcm0 = dummy_pulsars[0]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.arm_sequencer(0)
+    uploaded_waveforms = qcm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+
 # --------- Test QASMProgram class ---------
 def test_QASMProgram_list_behavior():
     fancy_list = qb.QASMProgram()
@@ -307,5 +305,60 @@ def test_auto_wait():
     qasm.auto_wait(120)
     assert len(qasm) == 1
     qasm.auto_wait(70000)
-    assert len(qasm) == 3
+    assert len(qasm) == 3  # since it should split the waits
     assert qasm.elapsed_time == 70120
+
+
+def test_wait_till_start_then_play():
+    minimal_pulse_data = {"duration": 20e-9}
+    runtime_settings = qb.QASMRuntimeSettings(1, 1)
+    pulse = qb.OpInfo(
+        uuid=0, data=minimal_pulse_data, timing=4e-9, pulse_settings=runtime_settings
+    )
+    qasm = qb.QASMProgram()
+    qasm.wait_till_start_then_play(pulse, 0, 1)
+    assert len(qasm) == 3
+    assert qasm[0][1] == qb.PulsarInstructions.WAIT
+    assert qasm[1][1] == qb.PulsarInstructions.SET_AWG_GAIN
+    assert qasm[2][1] == qb.PulsarInstructions.PLAY
+
+
+def test_wait_till_start_then_acquire():
+    minimal_pulse_data = {"duration": 20e-9}
+    acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
+    qasm = qb.QASMProgram()
+    qasm.wait_till_start_then_acquire(acq, 0, 1)
+    assert len(qasm) == 2
+    assert qasm[0][1] == qb.PulsarInstructions.WAIT
+    assert qasm[1][1] == qb.PulsarInstructions.ACQUIRE
+
+
+def test_expand_from_normalised_range():
+    minimal_pulse_data = {"duration": 20e-9}
+    acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
+    expanded_val = qb.QASMProgram._expand_from_normalised_range(1, "test_param", acq)
+    assert expanded_val == qb.Pulsar_sequencer_base.IMMEDIATE_SZ // 2
+    with pytest.raises(ValueError):
+        qb.QASMProgram._expand_from_normalised_range(10, "test_param", acq)
+
+
+def test_to_pulsar_time():
+    time_ns = qb.QASMProgram.to_pulsar_time(8e-9)
+    assert time_ns == 8
+    with pytest.raises(ValueError):
+        qb.QASMProgram.to_pulsar_time(7e-9)
+
+
+def test_loop():
+    num_rep = 10
+    reg = "R0"
+
+    qasm = qb.QASMProgram()
+    qasm.emit(qb.PulsarInstructions.WAIT_SYNC, 4)
+    with qasm.loop(reg, "this_loop", repetitions=num_rep):
+        qasm.emit(qb.PulsarInstructions.WAIT, 20)
+    assert len(qasm) == 5
+    assert qasm[1][1] == qb.PulsarInstructions.MOVE
+    num_rep_used, reg_used = qasm[1][2].split(",")
+    assert int(num_rep_used) == num_rep
+    assert reg_used == reg
