@@ -17,9 +17,9 @@ import plotly.graph_objects as go
 
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.waveforms import modulate_wave
-from quantify.utilities.general import (
-    import_func_from_string,
-)  # pylint: disable=no-name-in-module
+
+# pylint: disable=no-name-in-module
+from quantify.utilities.general import import_func_from_string
 
 logger = logging.getLogger(__name__)
 

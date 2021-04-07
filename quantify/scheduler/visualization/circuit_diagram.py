@@ -10,9 +10,9 @@ from matplotlib.axes import Axes
 import quantify.scheduler.visualization.pulse_scheme as ps
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.compilation import determine_absolute_timing
-from quantify.utilities.general import (
-    import_func_from_string,
-)  # pylint: disable=no-name-in-module
+
+# pylint: disable=no-name-in-module
+from quantify.utilities.general import import_func_from_string
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
