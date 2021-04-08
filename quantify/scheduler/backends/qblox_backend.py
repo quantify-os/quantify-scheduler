@@ -29,8 +29,26 @@ if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule
 
 
-# ---------- functions ----------
-def _sanitize_file_name(filename: str):
+# ---------- utility functions ----------
+def _sanitize_file_name(filename: str) -> str:
+    """
+    Takes a str representing a filename and removes invalid characters
+    by replacing it with an underscore character.
+
+    e.g. invalid:file?name.json -> invalid_file_name.json
+
+    Characters that are considered invalid: ',<>:"/\\|!?* '
+
+    Parameters
+    ----------
+    filename
+        The str representing the filename
+
+    Returns
+    -------
+        str
+            The sanitized filename
+    """
     invalid = ',<>:"/\\|!?* '
     sanitized_fn = filename
     for char in invalid:
@@ -38,14 +56,60 @@ def _sanitize_file_name(filename: str):
     return sanitized_fn
 
 
-def modulate_waveform(t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0):
+def modulate_waveform(
+    t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
+) -> np.ndarray:
+    """
+    Generates a modulated waveform from a given envelope by multiplying
+    it with a complex exponential.
+
+    .. math::
+        z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
+
+    Parameters
+    ----------
+    t: np.ndarray
+        A numpy array with time values
+    envelope: np.ndarray
+        The complex-valued envelope of the modulated waveform
+    freq: float
+        The frequency of the modulation
+    t0: float
+        Time offset for the modulation
+
+    Returns
+    -------
+        np.ndarray
+            The modulated waveform
+    """
     modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
     return envelope * modulation
 
 
 def apply_mixer_skewness_corrections(
     waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
-):
+) -> np.ndarray:
+    """
+    Takes a waveform and applies a correction for amplitude imbalances and
+    phase errors when using an IQ mixer from previously calibrated values.
+
+    Parameters
+    ----------
+    waveform: np.ndarray
+        The complex valued waveform on which the correction will be applied.
+    amplitude_ratio: float
+        The ratio between the amplitudes of I and Q that is used to correct
+        for amplitude imbalances between the different paths in the IQ mixer.
+    phase_shift: float
+        The phase error (in deg) used to correct the phase between I and Q.
+
+    Returns
+    -------
+        np.ndarray
+            The complex valued waveform with the applied phase and amplitude
+            corrections.
+    """
+
     def calc_corrected_re(wf: np.ndarray, alpha: float, phi: float):
         original_amp = np.max(np.abs(wf.real))
         wf_re = wf.real + wf.imag * np.tan(phi)
@@ -64,6 +128,22 @@ def apply_mixer_skewness_corrections(
 
 
 def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
+    """
+    Generates an array using the parameters specified in `data_dict`.
+
+    Parameters
+    ----------
+    data_dict: dict
+        The dictionary that contains the values needed to parameterize the
+        waveform. `data_dict['wf_func']` is then called to calculate the values.
+    sampling_rate: float
+        The sampling rate used to generate the time axis values.
+
+    Returns
+    -------
+        np.ndarray
+            The (possibly complex) values of the generated waveform
+    """
     t = np.arange(0, 0 + data_dict["duration"], 1 / sampling_rate)
 
     func = import_func_from_string(data_dict["wf_func"])
@@ -83,6 +163,24 @@ def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray
 def generate_ext_local_oscillators(
     total_play_time: float, hardware_cfg: Dict[str, Any]
 ) -> Dict[str, LocalOscillator]:
+    """
+    Traverses the `hardware_cfg` dict and extracts the used local oscillators.
+    `LocalOscillator` objects are instantiated for each LO and the `lo_freq` is
+    assigned if specified.
+
+    Parameters
+    ----------
+    total_play_time: float
+        Total time the schedule is played for, not counting repetitions.
+    hardware_cfg: dict
+        Hardware mapping dictionary
+
+    Returns
+    -------
+        Dict[str, LocalOscillator]
+            A dictionary with the names of the devices as keys and compiler
+            objects for the local oscillators as values.
+    """
     # TODO more generic with get_inner_dicts_containing_key?
     lo_dict = dict()
     for key, device in hardware_cfg.items():
@@ -112,6 +210,21 @@ def generate_ext_local_oscillators(
 
 
 def _calculate_total_play_time(schedule: Schedule) -> float:
+    """
+    Calculates the total time the schedule has to be executed on the hardware, not
+    accounting for repetitions. Effectively, this is the maximum of the end times of
+    the pulses and acquisitions.
+
+    Parameters
+    ----------
+    schedule: Schedule
+        The quantify schedule object of which we want the total execution time
+
+    Returns
+    -------
+        float
+            Total play time in seconds
+    """
     max_found: float = 0.0
     for time_constraint in schedule.timing_constraints:
         pulse_id = time_constraint["operation_hash"]
@@ -125,6 +238,25 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
 
 
 def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[dict]:
+    """
+    Generates a list of the first dictionaries encountered that contain a certain key,
+    in a complicated dictionary with nested dictionaries or Iterables.
+
+    This is achieved by recursively traversing the nested structures until the key is
+    found, which is then appended to a list.
+
+    Parameters
+    ----------
+    d: Union[Dict, UserDict]
+        The dictionary to traverse.
+    key: Any
+        The key to search for.
+
+    Returns
+    -------
+        List[dict]
+            A list containing all the inner dictionaries containing the specified key.
+    """
     dicts_found = list()
     if key in d.keys():
         dicts_found.append(d)
@@ -145,6 +277,22 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
 
 
 def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str, str]]:
+    """
+    Generates a list with all port and clock combinations found in a dictionary with
+    nested structures. Traversing the dictionary is done using the
+    `find_inner_dicts_containing_key` function.
+
+    Parameters
+    ----------
+    d: Union[Dict, UserDict]
+        The dictionary to traverse.
+
+    Returns
+    -------
+        List[Tuple[str, str]]
+            A list containing tuples representing the port and clock combinations found
+            in the dictionary.
+    """
     port_clocks = list()
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
     for d in dicts_with_port:
@@ -162,6 +310,26 @@ def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str
 def generate_port_clock_to_device_map(
     mapping: Dict[str, Any]
 ) -> Dict[Tuple[str, str], str]:
+    """
+    Generates a mapping which specifies which port-clock combinations belong to which
+    device.
+
+    .. note::
+        The same device may contain multiple port-clock combinations, but each
+        port-clock combination may only occur once.
+
+    Parameters
+    ----------
+    mapping: Dict[str, Any]
+        The hardware mapping config.
+
+    Returns
+    -------
+        Dict[Tuple[str, str], str]
+            A dictionary with as key a tuple representing a port-clock combination, and
+            as value the name of the device. Note that multiple port-clocks may point to
+            the same device.
+    """
 
     portclock_map = dict()
     for device_name, device_info in mapping.items():
@@ -176,7 +344,23 @@ def generate_port_clock_to_device_map(
     return portclock_map
 
 
-def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int):
+def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int) -> float:
+    """
+    Utility function to find the "abs_time" in the `timing_constraints` of the schedule
+    from a given "operation_hash".
+
+    Parameters
+    ----------
+    schedule: Schedule
+        The schedule that contains the operation to get the "abs_time" from.
+    op_hash: int
+        The operation hash of the operation that we want to get the "abs_time" from.
+
+    Returns
+    -------
+        float
+            The absolute start time of the operation.
+    """
     timing_constraints = schedule.timing_constraints
     for tc in timing_constraints:
         if tc["operation_hash"] == op_hash:
@@ -204,7 +388,7 @@ class InstrumentCompiler(metaclass=ABCMeta):
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
-    def portclocks_with_data(self):
+    def portclocks_with_data(self) -> Set:
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
         portclocks_used.update(self._acquisitions.keys())
@@ -354,7 +538,8 @@ class QASMProgram(list):
         max_args_amount = 3
         if len(args) > max_args_amount:
             raise SyntaxError(
-                f"Too many arguments supplied to `get_instruction_tuple` for instruction {instruction}."
+                f"Too many arguments supplied to `get_instruction_tuple` for "
+                f"instruction {instruction}."
             )
         instr_args = ",".join(str(arg) for arg in args)
 
@@ -1019,6 +1204,18 @@ def _construct_compiler_objects(
 
 
 def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Main function driving the compilation.
+
+    Parameters
+    ----------
+    schedule: Schedule
+    mapping: Dict[str, Any]
+
+    Returns
+    -------
+        Dict[str, Any]
+    """
     total_play_time = _calculate_total_play_time(schedule)
 
     portclock_map = generate_port_clock_to_device_map(mapping)
