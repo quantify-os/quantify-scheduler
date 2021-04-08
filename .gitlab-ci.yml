@@ -149,7 +149,7 @@ docs-make-html-win-3.8:
   script:
     - "C:\\Python38\\python.exe -m pip install --upgrade --upgrade-strategy eager -e ."
     - "C:\\Python38\\python.exe -m pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt"
-    - 'set SPHINXBUILD="C:\\Python38\\python.exe -msphinx"'  # point to sphinx-build executable
+    - 'set SPHINXBUILD="C:\\Python38\\Scripts\\sphinx-build.exe"'  # point to sphinx-build executable
     - "cd docs; ./make.bat html"
 
 black:
