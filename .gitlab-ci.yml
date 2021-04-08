@@ -68,12 +68,6 @@ stages:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
     - if: '$CI_COMMIT_BRANCH == "develop"'  # Also run for direct commits on develop
 
-.nightly-only-job:
-  # intended for very slow tests
-  rules:
-    # this variable is set in the Gitlab -> CI/CD -> Schedules
-    - if: '$CI_NIGHTLY_JOB == "True"'
-
 test-3.7:
   stage: Test
   image: "python:3.7"
@@ -135,22 +129,6 @@ docs-make-html-3.8:
     - cd docs; make html
   extends:
     - .develop-only-job
-
-docs-make-html-win-3.8:
-  needs: []  # allow running in parallel with previous stage
-  stage: Docs build
-  before_script:
-    - choco install python --version=3.8.3 -y -f
-    - "C:\\Python38\\python.exe -m pip install -U pip"
-  extends:
-    - .shared_windows_runners
-    # - .nightly-only-job
-    - .develop-only-job  # temporary testing
-  script:
-    - "C:\\Python38\\python.exe -m pip install --upgrade --upgrade-strategy eager -e ."
-    - "C:\\Python38\\python.exe -m pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt"
-    - "cd docs"
-    - "C:\\Python38\\Scripts\\sphinx-build.exe -M html . _build -W --keep-going -n"
 
 black:
   stage: Static Analysis
