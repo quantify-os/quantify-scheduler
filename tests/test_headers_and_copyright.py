@@ -5,10 +5,7 @@ import re
 import datetime
 import pprint
 from pathlib import Path
-import logging
 import pytest
-
-logger = logging.getLogger(__name__)
 
 
 def test_header():
@@ -27,7 +24,7 @@ def test_header():
         for file_name in files:
             if file_name[-3:] == ".py" and file_name not in skipfiles:
                 file_path = Path(root) / file_name
-                logger.debug(f"Processing header in: {file_path}")
+                print(f"Processing header in: {file_path}")
                 with open(file_path, "r") as file:
                     lines_iter = (line.strip() for line in file)
                     line_matches = [
