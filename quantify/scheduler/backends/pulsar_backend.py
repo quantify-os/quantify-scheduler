@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Compiler backend for the Pulsar QCM."""
+"""Compiler backend for the Qblox Pulsar QCM."""
 from __future__ import annotations
 import os
 import inspect

@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Library containing common resources for use with the quantify.scheduler."""
+"""Common resources for use with the quantify.scheduler."""
 from collections import UserDict
 import jsonschema
 from quantify.utilities.general import load_json_schema
