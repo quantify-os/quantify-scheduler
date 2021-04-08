@@ -124,7 +124,7 @@ def t1_sched(
 
     1. |krantz_t1|_
 
-        .. |krantz_t1| replace:: *Krantz et al. “A Quantum Engineer’s Guide to Superconducting Qubits.” Applied Physics Reviews (2019).*
+        .. |krantz_t1| replace:: *Krantz et al. "A Quantum Engineer's Guide to Superconducting Qubits." Applied Physics Reviews (2019).*
 
         .. _krantz_t1: https://doi.org/10.1063/1.5089550
 
@@ -176,7 +176,7 @@ def ramsey_sched(
 
     1. |krantz_ramsey|_
 
-        .. |krantz_ramsey| replace:: *Krantz et al. “A Quantum Engineer’s Guide to Superconducting Qubits.” Applied Physics Reviews (2019).*
+        .. |krantz_ramsey| replace:: *Krantz et al. "A Quantum Engineer's Guide to Superconducting Qubits."Applied Physics Reviews (2019).*
 
         .. _krantz_ramsey: https://doi.org/10.1063/1.5089550
 
@@ -232,7 +232,7 @@ def echo_sched(
 
     1. |krantz_echo|_
 
-        .. |krantz_echo| replace:: *Krantz et al. “A Quantum Engineer’s Guide to Superconducting Qubits.” Applied Physics Reviews (2019).*
+        .. |krantz_echo| replace:: *Krantz et al. "A Quantum Engineer's Guide to Superconducting Qubits." Applied Physics Reviews (2019).*
 
         .. _krantz_echo: https://doi.org/10.1063/1.5089550
 
@@ -281,7 +281,7 @@ def allxy_sched(qubit: str) -> Schedule:
 
     1. |reed_allxy|_
 
-        .. |reed_allxy| replace:: *Reed “Entanglement and Quantum Error Correction with Superconducting Qubits.” Yale University (2013).*
+        .. |reed_allxy| replace:: *Reed "Entanglement and Quantum Error Correction with Superconducting Qubits." Yale University (2013).*
 
         .. _reed_allxy: https://arxiv.org/abs/1311.6759
 
