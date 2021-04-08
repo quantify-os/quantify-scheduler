@@ -144,7 +144,8 @@ docs-make-html-win-3.8:
     - "C:\\Python38\\python.exe -m pip install -U pip"
   extends:
     - .shared_windows_runners
-    - .nightly-only-job
+    # - .nightly-only-job
+    - .develop-only-job  # temporary testing
   script:
     - "C:\\Python38\\python.exe -m pip install --upgrade --upgrade-strategy eager -e ."
     - "C:\\Python38\\python.exe -m pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt"
