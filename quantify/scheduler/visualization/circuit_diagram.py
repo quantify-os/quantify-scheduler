@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Plotting functions used in the visualization backend of the sequencer.
-# Repository:     https://gitlab.com/qblox/packages/software/quantify/
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Plotting functions used in the visualization backend of the sequencer."""
 from __future__ import annotations
 from typing import Tuple, Union, List, Dict
 from matplotlib.figure import Figure
