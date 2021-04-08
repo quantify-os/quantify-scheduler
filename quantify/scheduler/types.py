@@ -288,6 +288,7 @@ class Schedule(UserDict):
         jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 
+    # pylint: disable=too-many-arguments
     def add(
         self,
         operation: Operation,
@@ -300,20 +301,33 @@ class Schedule(UserDict):
         """
         Add an :class:`~Operation` to the schedule and specify timing constraints.
 
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference operation and the added operation.
+        The time can be specified with respect to the "start", "center", or "end" of
+        the operations.
+        The reference operation (:code:`"ref_op"`) is specified using its label
+        property.
+
         Parameters
         ----------
         operation :
             The operation to add to the schedule
         rel_time :
-            relative time between the the reference operation and added operation.
+            relative time between the reference operation and the added operation.
+            the time is the time between the "ref_pt" in the reference operation and
+            "ref_pt_new" of the operation that is added.
         ref_op :
-            specifies the reference operation.
+            label of the reference operation. If set to :code:`None`, will default
+            to the last added operation.
         ref_pt :
-            reference point in reference operation must be one of ('start', 'center', 'end').
+            reference point in reference operation must be one of
+            ('start', 'center', 'end').
         ref_pt_new :
-            reference point in added operation must be one of ('start', 'center', 'end').
+            reference point in added operation must be one of
+            ('start', 'center', 'end').
         label :
-            a label that can be used as an identifier when adding more operations.
+            a unique string that can be used as an identifier when adding operations.
+            if set to None, a random hash will be generated instead.
         Returns
         -------
         :
