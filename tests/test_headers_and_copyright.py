@@ -24,15 +24,19 @@ def test_header():
         for file_name in files:
             if file_name[-3:] == ".py" and file_name not in skipfiles:
                 file_path = Path(root) / file_name
-                print(f"Processing header in: {file_path}")
                 with open(file_path, "r") as file:
-                    lines_iter = (line.strip() for line in file)
-                    line_matches = [
-                        expected_line == line
-                        for expected_line, line in zip(header_lines, lines_iter)
-                    ]
-                    if not all(line_matches):
+                    try:
+                        lines_iter = (line.strip("\r\n") for line in file)
+                        line_matches = [
+                            expected_line == line
+                            for expected_line, line in zip(header_lines, lines_iter)
+                        ]
+                    except Exception as e:
+                        print(e)
                         failures.append(str(file_path))
+                    else:
+                        if not all(line_matches):
+                            failures.append(str(file_path))
     if failures:
         pytest.fail("Bad headers:\n{}".format(pprint.pformat(failures)))
 
