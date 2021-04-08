@@ -13,6 +13,7 @@ set SPHINXPROJ=quantify
 
 if "%1" == "" goto help
 
+echo PATH=%PATH%
 echo SPHINXBUILD=%SPHINXBUILD%
 %SPHINXBUILD%
 if errorlevel 9009 (
