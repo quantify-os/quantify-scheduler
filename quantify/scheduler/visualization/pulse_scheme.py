@@ -1,8 +1,9 @@
-# -----------------------------------------------------------------------------
-# Description:    Module containing functions for drawing pulse schemes and circuit diagrams using matplotlib.
-# Repository:     https://gitlab.com/qblox/packages/software/quantify/
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""
+Module containing functions for drawing pulse schemes and circuit diagrams
+using matplotlib.
+"""
 # pylint: disable=too-many-arguments
 from __future__ import annotations
 from typing import Tuple, Union, List, Optional
