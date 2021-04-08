@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Library standard acquisition protocols for use with the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C)   Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Library standard acquisition protocols for use with the quantify.scheduler."""
 from typing import Any, Dict, List
 
 from quantify.scheduler.enums import BinMode

@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Backend for Zurich Instruments.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Backend for Zurich Instruments."""
 from __future__ import annotations
 
 from typing import Tuple
