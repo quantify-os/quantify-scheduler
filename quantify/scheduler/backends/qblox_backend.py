@@ -517,17 +517,17 @@ class LocalOscillator(InstrumentCompiler):
         Parameters
         ----------
         freq: float
-            The frequency to set it to
+            The frequency to set it to.
 
         Returns
         -------
 
         Raises
         -------
-            ValueError
-                Occurs when a frequency has been previously set and attempting to set
-                the frequency to a different value than what it is currently set to.
-                This would indicate an invalid configuration in the hardware mapping.
+        ValueError
+            Occurs when a frequency has been previously set and attempting to set the
+            frequency to a different value than what it is currently set to. This would
+            indicate an invalid configuration in the hardware mapping.
         """
         if self._lo_freq is not None:
             if freq != self._lo_freq:
@@ -544,8 +544,8 @@ class LocalOscillator(InstrumentCompiler):
 
         Returns
         -------
-            float
-                The current frequency
+        float
+            The current frequency
         """
         return self._lo_freq
 
@@ -1151,6 +1151,10 @@ class QASMProgram(list):
 
 # ---------- pulsar sequencer classes ----------
 class Pulsar_sequencer_base(metaclass=ABCMeta):
+    """
+    Abstract base class that specify the compilation steps on the sequencer level. The
+    distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
+    """
 
     IMMEDIATE_SZ = pow(2, 16) - 1
     GRID_TIME_ns = 4
@@ -1163,6 +1167,22 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         portclock: Tuple[str, str],
         modulation_freq: Optional[float] = None,
     ):
+        """
+        Constructor for the sequencer compiler.
+
+        Parameters
+        ----------
+        parent: Pulsar_base
+            A reference to the parent instrument this sequencer belongs to.
+        name: str
+            Name of the sequencer. This is supposed to match "seq{index}".
+        portclock: Tuple[str, str]
+            Tuple that specifies the unique port and clock combination for this
+            sequencer. The first value is the port, second is the clock.
+        modulation_freq: Optional[float]
+            The frequency used for modulation. This can either be passed in the
+            constructor, or assigned in a later stage using `assign_frequency`.
+        """
         self.parent = parent
         self._name = name
         self.port = portclock[0]
@@ -1176,39 +1196,133 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
     @property
     def portclock(self) -> Tuple[str, str]:
+        """
+        A tuple containing the unique port and clock combination for this sequencer.
+
+        Returns
+        -------
+        Tuple[str, str]
+            The portclock
+        """
         return self.port, self.clock
 
     @property
     def modulation_freq(self) -> float:
+        """
+        The frequency used for modulation of the pulses.
+
+        Returns
+        -------
+        float
+            The frequency
+        """
         return self._settings.modulation_freq
 
     @property
     def settings(self) -> SequencerSettings:
+        """
+        Gives the current settings.
+
+        Returns
+        -------
+        SequencerSettings
+            The settings set to this sequencer.
+        """
         return self._settings
 
     @property
     def name(self):
+        """
+        The name assigned to this specific sequencer.
+
+        Returns
+        -------
+        str
+            The name.
+        """
         return self._name
 
     @property
     @abstractmethod
-    def AWG_OUTPUT_VOLT(self):
+    def AWG_OUTPUT_VOLT(self) -> float:
+        """
+        The output range in volts. This is to be overridden by the subclass to account
+        for the differences between a QCM and a QRM.
+
+        Returns
+        -------
+        float
+            The output range in volts.
+        """
         pass
 
     @property
     def has_data(self):
+        """
+        Whether or not the sequencer has any data (meaning pulses or acquisitions)
+        assigned to it or not.
+
+        Returns
+        -------
+        bool
+            Has data been assigned to this sequencer?
+        """
         return len(self.acquisitions) > 0 or len(self.pulses) > 0
 
     def assign_frequency(self, freq: float):
+        """
+        Assigns a modulation frequency to the sequencer.
+
+        Parameters
+        ----------
+        freq: float
+            The frequency to be used for modulation.
+
+        Returns
+        -------
+
+        Raises
+        ------
+        ValueError
+            Attempting to set the modulation frequency to a new value even though a
+            value has been previously assigned.
+        """
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
                 raise ValueError(
-                    f"Attempting to set the modulation frequency of {self._name} of {self.parent.name} to {freq}, "
-                    f"while it has previously been set to {self._settings.modulation_freq}."
+                    f"Attempting to set the modulation frequency of {self._name} of "
+                    f"{self.parent.name} to {freq}, while it has previously been set "
+                    f"to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
+        """
+        Generates the dictionary that corresponds that contains the awg waveforms in the
+        format accepted by the driver.
+
+        Notes
+        -----
+        The final dictionary to be included in the json that is uploaded to the pulsar
+        is of the form:
+
+            program
+            awg
+                waveform_name
+                    data
+                    index
+            acq
+                waveform_name
+                    data
+                    index
+
+        This function generates the awg dictionary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The awg dictionary
+        """
         waveforms_complex = dict()
         for pulse in self.pulses:
             if pulse.uuid not in waveforms_complex.keys():
@@ -1226,6 +1340,39 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         return self._generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_dict(self) -> Dict[str, Any]:
+        """
+        Generates the dictionary that corresponds that contains the acq weights
+        waveforms in the format accepted by the driver.
+
+        Notes
+        -----
+        The final dictionary to be included in the json that is uploaded to the pulsar
+        is of the form:
+
+            program
+            awg
+                waveform_name
+                    data
+                    index
+            acq
+                waveform_name
+                    data
+                    index
+
+        This function generates the acq dictionary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The acq dictionary
+
+        Raises
+        ------
+        NotImplementedError
+            Currently, only two one dimensional waveforms can be used as acquisition
+            weights. This exception is raised when either or both waveforms contain
+            both a real and imaginary part.
+        """
         waveforms_complex = dict()
         for acq in self.acquisitions:
             if acq.uuid not in waveforms_complex.keys():
@@ -1240,16 +1387,35 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                     and np.all(np.isreal(1.0j * raw_wf_data_imag))
                 ):  # since next step will break if either is complex
                     raise NotImplementedError(
-                        f"Complex weights not implemented. "
-                        f"Please use two 1d real-valued weights. Exception was "
-                        f"triggered because of {repr(acq)}."
+                        f"Complex weights not implemented. Please use two 1d "
+                        f"real-valued weights. Exception was triggered because of "
+                        f"{repr(acq)}."
                     )
                 waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
         return self._generate_waveform_dict(waveforms_complex)
 
     def _apply_corrections_to_waveform(
-        self, waveform_data, time_duration: float, t0: float = 0
-    ):
+        self, waveform_data: np.ndarray, time_duration: float, t0: Optional[float] = 0
+    ) -> np.ndarray:
+        """
+        Applies all the needed pre-processing on the waveform data. This includes mixer
+        corrections and modulation.
+
+        Parameters
+        ----------
+        waveform_data: np.ndarray
+            The data to correct.
+        time_duration: float
+            Total time is seconds that the waveform is used.
+        t0: Optional[float]
+            The start time of the pulse/acquisition. This is used for instance to make
+            the make the phase change continuously when the start time is not zero.
+
+        Returns
+        -------
+        np.ndarray
+            The waveform data after applying all the transformations.
+        """
         t = np.linspace(t0, time_duration + t0, int(time_duration * self.SAMPLING_RATE))
         corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
         if self.mixer_corrections is not None:
@@ -1259,12 +1425,38 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
     def _normalize_waveform_data(
         self, data: np.ndarray
     ) -> Tuple[np.ndarray, float, float]:
+        """
+        Rescales the waveform data so that the maximum amplitude is abs(amp) == 1.
+
+        Parameters
+        ----------
+        data: np.ndarray
+            The waveform data to rescale.
+
+        Returns
+        -------
+        np.ndarray
+            The rescaled data.
+        float
+            The original amplitude of the real part.
+        float
+            The original amplitude of the imaginary part.
+        """
         amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
         norm_data_r = data.real / amp_real / self.AWG_OUTPUT_VOLT
         norm_data_i = data.imag / amp_imag / self.AWG_OUTPUT_VOLT
         return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
 
     def update_settings(self):
+        """
+        Updates the sequencer settings to set all parameters that are determined by the
+        compiler. Currently, this only changes the offsets based on the mixer
+        calibration parameters.
+
+        Returns
+        -------
+
+        """
         if self.mixer_corrections is not None:
             self._settings.awg_offset_path_0 = (
                 self.mixer_corrections.offset_I / self.AWG_OUTPUT_VOLT
@@ -1274,7 +1466,18 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             )
 
     @staticmethod
-    def _generate_waveform_names_from_uuid(uuid: Any):
+    def _generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
+        """
+
+        Parameters
+        ----------
+        uuid
+            A unique identifier for a pulse/acquisition.
+
+        Returns
+        -------
+
+        """
         return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
     @staticmethod
