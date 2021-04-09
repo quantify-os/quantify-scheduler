@@ -938,10 +938,10 @@ def _sanitize_file_name(filename):
 def _check_driver_version(instr, ver):
     idn = instr.get_idn()
     if "device" in idn and "build" in idn:
-        device      = idn["device"]
+        device = idn["device"]
         driver_vers = idn["build"]["driver"]["version"]
     elif "model" in idn and "firmware" in idn:
-        device      = idn["model"]
+        device = idn["model"]
         driver_vers = idn["firmware"]["driver"]["version"]
     else:
         raise ValueError("Invalid IDN.")
