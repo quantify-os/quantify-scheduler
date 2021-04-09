@@ -17,7 +17,6 @@ See also [merge request guidelines](https://quantify-quantify-core.readthedocs-h
 - [ ] Merge request made onto appropriate branch (develop for most MRs).
 - [ ] New code is fully tested.
 - [ ] New code is documented and docstrings use [numpydoc format](https://numpydoc.readthedocs.io/en/latest/format.html).
-- [ ] New docstrings/docs raise no (fixable) warnings in the docs build (e.g., `WARNING: py:class reference target not found:` are not allowed)
 - [ ] CI pipelines pass
     - [ ] black code-formatting passes (gitlab-ci),
     - [ ] test suite passes (gitlab-ci),
