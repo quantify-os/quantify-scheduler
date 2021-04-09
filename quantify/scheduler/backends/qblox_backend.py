@@ -198,9 +198,6 @@ def generate_ext_local_oscillators(
                         lo_name,
                         total_play_time,
                     )
-                    lo_obj.register_portclocks(
-                        *find_all_port_clock_combinations(io_cfg)
-                    )
                     lo_dict[lo_name] = lo_obj
 
                 if "lo_freq" in io_cfg.keys():
@@ -358,8 +355,8 @@ def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int) -> float
 
     Returns
     -------
-        float
-            The absolute start time of the operation.
+    float
+        The absolute start time of the operation.
     """
     timing_constraints = schedule.timing_constraints
     for tc in timing_constraints:
@@ -369,12 +366,38 @@ def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int) -> float
 
 # ---------- classes ----------
 class InstrumentCompiler(metaclass=ABCMeta):
+    """
+    Abstract base class that defines a generic instrument compiler. The subclasses that
+    inherit from this are meant to implement the compilation steps needed to compile the
+    lists of `OpInfo` representing the pulse and acquisition info to device specific
+    instructions.
+
+    For each device that needs to be part of the compilation process such a
+    `InstrumentCompiler` should be implemented.
+    """
+
     def __init__(
         self,
         name: str,
         total_play_time: float,
         hw_mapping: Optional[Dict[str, Any]] = None,
     ):
+        """
+        Constructor for an InstrumentCompiler object.
+
+        Parameters
+        ----------
+        name: str
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time: str
+            Total time execution of the schedule should go on for. This parameter is
+            used to ensure that the different devices, potentially with different clock
+            rates, can work in a synchronized way when performing multiple executions of
+            the schedule.
+        hw_mapping: Optional[Dict[str, Any]]
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
@@ -382,13 +405,56 @@ class InstrumentCompiler(metaclass=ABCMeta):
         self._acquisitions = defaultdict(list)
 
     def add_pulse(self, port: str, clock: str, pulse_info: OpInfo):
+        """
+        Assigns a certain pulse to this device.
+
+        Parameters
+        ----------
+        port: str
+            The port the pulse needs to be sent to.
+        clock: str
+            The clock for modulation of the pulse. Can be a BasebandClock.
+        pulse_info: OpInfo
+            Data structure containing all the information regarding this specific pulse
+            operation.
+
+        Returns
+        -------
+
+        """
         self._pulses[(port, clock)].append(pulse_info)
 
     def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
+        """
+        Assigns a certain acquisition to this device.
+
+        Parameters
+        ----------
+        port: str
+            The port the pulse needs to be sent to.
+        clock: str
+            The clock for modulation of the pulse. Can be a BasebandClock.
+        acq_info: OpInfo
+            Data structure containing all the information regarding this specific
+            acquisition operation.
+
+        Returns
+        -------
+
+        """
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
-    def portclocks_with_data(self) -> Set:
+    def portclocks_with_data(self) -> Set[Tuple[str, str]]:
+        """
+        All the port-clock combinations associated with at least one pulse or
+        acquisition.
+
+        Returns
+        -------
+        Set[Tuple[str, str]]
+            A set containing all the port-clock combinations
+        """
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
         portclocks_used.update(self._acquisitions.keys())
@@ -396,24 +462,73 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
     @abstractmethod
     def hardware_compile(self) -> Any:
+        """
+        An abstract method that should be overridden by a subclass to implement the
+        actual compilation. Method turns the pulses and acquisitions added to the device
+        into device specific instructions.
+
+        Returns
+        -------
+            Any
+                A data structure representing the compiled program. The type is
+                dependent on implementation.
+        """
         pass
 
 
 class LocalOscillator(InstrumentCompiler):
+    """
+    Implementation of an `InstrumentCompiler` that compiles for a generic LO. The main
+    difference between this class and the other compiler classes is that it doesn't take
+    pulses and acquisitions.
+    """
+
     def __init__(
         self,
         name: str,
         total_play_time: float,
         lo_freq: Optional[int] = None,
     ):
+        """
+        Constructor for a local oscillator compiler.
+
+        Parameters
+        ----------
+        name: str
+            QCoDeS name of the device it compiles for.
+        total_play_time: float
+            Total time execution of the schedule should go on for. This parameter is
+            used to ensure that the different devices, potentially with different clock
+            rates, can work in a synchronized way when performing multiple executions of
+            the schedule.
+        lo_freq: Optional[int]
+            LO frequency it needs to be set to. Either this is passed to the constructor
+            or set later in the compilation process, in case the LO frequency is not
+            initially given and needs to be calculated.
+        """
         super().__init__(name, total_play_time)
         self._lo_freq = lo_freq
-        self.portclocks = set()
-
-    def register_portclocks(self, *to_register: Tuple[str, str]):
-        self.portclocks.update(to_register)
 
     def assign_frequency(self, freq: float):
+        """
+        Sets the lo frequency for this device if no frequency is specified, but raises
+        an exception otherwise.
+
+        Parameters
+        ----------
+        freq: float
+            The frequency to set it to
+
+        Returns
+        -------
+
+        Raises
+        -------
+            ValueError
+                Occurs when a frequency has been previously set and attempting to set
+                the frequency to a different value than what it is currently set to.
+                This would indicate an invalid configuration in the hardware mapping.
+        """
         if self._lo_freq is not None:
             if freq != self._lo_freq:
                 raise ValueError(
@@ -423,27 +538,84 @@ class LocalOscillator(InstrumentCompiler):
         self._lo_freq = freq
 
     @property
-    def frequency(self):
+    def frequency(self) -> float:
+        """
+        Getter for the frequency.
+
+        Returns
+        -------
+            float
+                The current frequency
+        """
         return self._lo_freq
 
     def hardware_compile(self) -> Dict[str, Any]:
+        """
+        Compiles the program for the LO control stack component.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing all the information the cs component needs to set the
+            parameters appropriately.
+        """
         return {"lo_freq": self._lo_freq}
 
 
 # ---------- data structures ----------
 @dataclass
 class OpInfo(DataClassJsonMixin):
+    """
+    Data structure containing all the information describing a pulse or acquisition
+    needed to play it.
+
+    Attributes
+    ----------
+    uuid: int
+        A unique identifier for this pulse/acquisition.
+    data: dict
+        The pulse/acquisition info taken from the `data` property of the
+        pulse/acquisition in the schedule.
+    timing: float
+        The start time of this pulse/acquisition.
+        Note that this is a combination of the start time "t_abs" of the schedule
+        operation, and the t0 of the pulse/acquisition which specifies a time relative
+        to "t_abs".
+    pulse_settings: Optional[QASMRuntimeSettings]
+        Settings that are to be set by the sequencer before playing this
+        pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
+        parameter to change the pulse amplitude, instead of changing the waveform. This
+        allows to reuse the same waveform multiple times despite a difference in
+        amplitude.
+    """
+
     uuid: int
     data: dict
     timing: float
     pulse_settings: Optional[QASMRuntimeSettings] = None
 
     @property
-    def duration(self):
+    def duration(self) -> float:
+        """
+        The duration of the pulse/acquisition.
+
+        Returns
+        -------
+        float
+            The duration of the pulse/acquisition.
+        """
         return self.data["duration"]
 
     @property
     def is_acquisition(self):
+        """
+        Returns true if this is an acquisition, false if it's a pulse.
+
+        Returns
+        -------
+        bool
+            Is this an acquisition?
+        """
         return "acq_index" in self.data.keys()
 
     def __repr__(self):
@@ -456,11 +628,46 @@ class OpInfo(DataClassJsonMixin):
 
 @dataclass
 class PulsarSettings(DataClassJsonMixin):
+    """
+    Global settings for the pulsar to be set in the control stack component. This is
+    kept separate from the settings that can be set on a per sequencer basis, which are
+    specified in `SequencerSettings`.
+
+    Attributes
+    ----------
+    ref: str
+        The reference source. Should either be "internal" or "external", will raise an
+        exception in the cs component otherwise.
+    """
+
     ref: str
 
 
 @dataclass
 class SequencerSettings(DataClassJsonMixin):
+    """
+    Sequencer level settings. In the drivers these settings are typically recognised by
+    parameter names of the form "sequencer_{index}_{setting}". These settings are set
+    once at the start and will remain unchanged after. Meaning that these correspond to
+    the "slow" QCoDeS parameters and not settings that are changed dynamically by the
+    sequencer.
+
+    Attributes
+    ----------
+    nco_en: bool
+        Specifies whether the nco will be used or not.
+    sync_en: bool
+        Enables party-line synchronization.
+    modulation_freq: float
+        Specifies the frequency of the modulation.
+    awg_offset_path_0: float
+        Sets the DC offset on path 0. This is used e.g. for calibration of lo leakage
+        when using IQ mixers.
+    awg_offset_path_1: float
+        Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
+        when using IQ mixers.
+    """
+
     nco_en: bool
     sync_en: bool
     modulation_freq: float = None
@@ -470,12 +677,46 @@ class SequencerSettings(DataClassJsonMixin):
 
 @dataclass
 class MixerCorrections(DataClassJsonMixin):
+    """
+    Data structure that holds all the mixer correction parameters to compensate for
+    skewness/lo feed-through. This class is used to correct the waveforms to compensate
+    for skewness and to set the `SequencerSettings`.
+
+    Attributes
+    ----------
+    amp_ratio: float
+        Amplitude ratio between the I and Q paths to correct for the imbalance in the
+        two path in the IQ mixer.
+    phase_error: float
+        Phase shift used to compensate for quadrature errors.
+    offset_I: float
+        DC offset on the I path used to compensate for lo feed-through.
+    offset_Q: float
+        DC offset on the Q path used to compensate for lo feed-through.
+    """
+
     amp_ratio: float = 1.0
     phase_error: float = 0.0
     offset_I: float = 0.0
     offset_Q: float = 0.0
 
     def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
+        """
+        Applies the pre-distortion needed to compensate for amplitude and phase errors
+        in the IQ mixer. In practice this is simply a wrapper around the
+        `apply_mixer_skewness_corrections` function, that uses the attributes specified
+        here.
+
+        Parameters
+        ----------
+        waveform: np.ndarray
+            The (complex-valued) waveform before correction.
+
+        Returns
+        -------
+        np.ndarray
+            The complex-valued waveform after correction.
+        """
         return apply_mixer_skewness_corrections(
             waveform, self.amp_ratio, self.phase_error
         )
@@ -483,12 +724,38 @@ class MixerCorrections(DataClassJsonMixin):
 
 @dataclass
 class QASMRuntimeSettings:
+    """
+    Settings that can be changed dynamically by the sequencer during execution of the
+    schedule. This is in contrast to the relatively static `SequencerSettings`.
+
+    Attributes
+    ----------
+    awg_gain_0: float
+        Gain set to the AWG output path 0. Value should be in the range -1.0 < param <
+        1.0. Else an exception will be raised during compilation.
+    awg_gain_1: float
+        Gain set to the AWG output path 1. Value should be in the range -1.0 < param <
+        1.0. Else an exception will be raised during compilation.
+    awg_offset_0: float
+        Offset applied to the AWG output path 0. Value should be in the range -1.0 <
+        param < 1.0. Else an exception will be raised during compilation.
+    awg_offset_1: float
+        Offset applied to the AWG output path 1. Value should be in the range -1.0 <
+        param < 1.0. Else an exception will be raised during compilation.
+    """
+
     awg_gain_0: float
     awg_gain_1: float
+    awg_offset_0: float = 0.0
+    awg_offset_1: float = 0.0
 
 
 # ---------- utility classes ----------
 class PulsarInstructions:
+    """
+    Class that holds all the valid instructions that can be executed by the sequencer.
+    """
+
     # Control
     ILLEGAL = "illegal"
     STOP = "stop"
@@ -526,6 +793,23 @@ class PulsarInstructions:
 
 
 class QASMProgram(list):
+    """
+    Class that holds the compiled Q1ASM program that is to be executed by the sequencer.
+
+    The object itself is a list which holds the instructions in order of execution. The
+    instructions in turn are also lists, which hold the instruction strings themselves
+    along with labels, comments and parameters.
+
+    Apart from this the class holds some convenience functions that auto generate
+    certain instructions with parameters, as well as update the elapsed time.
+
+    Attributes
+    ----------
+    elapsed_time: int
+        The time elapsed after finishing the program in its current form. This is used
+        to keep track of the overall timing and necessary waits.
+    """
+
     elapsed_time: int = 0
 
     @staticmethod
@@ -535,6 +819,33 @@ class QASMProgram(list):
         label: Optional[str] = None,
         comment: Optional[str] = None,
     ) -> List[Union[str, int], ...]:
+        """
+        Takes an instruction with arguments, label and comment and turns it into the
+        list required by the class.
+
+        Parameters
+        ----------
+        instruction: str
+            The instruction to use. This should be one specified in `PulsarInstructions`
+            or the assembler will raise an exception.
+        args: Union[int, str]
+            Arguments to be passed.
+        label: Optional[str]
+            Adds a label to the line. Used for jumps and loops.
+        comment: Optional[str]
+            Optionally add a comment to the instruction.
+
+        Returns
+        -------
+        List[Union[str, int]]
+            List that contains all the passed information in the valid format for the
+            program.
+
+        Raises
+        -------
+        SyntaxError
+            More arguments passed than the sequencer allows.
+        """
         max_args_amount = 3
         if len(args) > max_args_amount:
             raise SyntaxError(
@@ -548,12 +859,44 @@ class QASMProgram(list):
         return [label_str, instruction, instr_args, comment_str]
 
     def emit(self, *args, **kwargs):
+        """
+        Wrapper around the `get_instruction_as_list` which adds it to the program.
+
+        Parameters
+        ----------
+        args: Any
+            All arguments to pass to `get_instruction_as_list`.
+        kwargs
+            All keyword arguments to pass to `get_instruction_as_list`.
+
+        Returns
+        -------
+
+        """
         self.append(self.get_instruction_as_list(*args, **kwargs))
 
     # --- QOL functions -----
 
     def auto_wait(self, wait_time: int):
-        if wait_time < 0:
+        """
+        Automatically emits a correct wait command. If the wait time is longer than
+        allowed by the sequencer it correctly breaks it up into multiple wait
+        instructions.
+
+        Parameters
+        ----------
+        wait_time: int
+            Time to wait in ns.
+
+        Returns
+        -------
+
+        Raises
+        ------
+        ValueError
+            If `wait_time` <= 0
+        """
+        if wait_time <= 0:
             raise ValueError(
                 f"Invalid wait time. Attempting to wait "
                 f"for {wait_time} ns at t={self.elapsed_time}"
@@ -576,6 +919,22 @@ class QASMProgram(list):
         self.elapsed_time += wait_time
 
     def wait_till_start_operation(self, operation: OpInfo):
+        """
+        Waits until the start of a pulse or acquisition.
+
+        Parameters
+        ----------
+        operation: OpInfo
+            The pulse or acquisition that we want to wait for.
+
+        Returns
+        -------
+
+        Raises
+        ------
+        ValueError
+            If wait time < 0
+        """
         start_time = self.to_pulsar_time(operation.timing)
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:
@@ -588,6 +947,23 @@ class QASMProgram(list):
             )
 
     def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
+        """
+        Waits until the start of the pulse, sets the QASMRuntimeSettings and plays the
+        pulse.
+
+        Parameters
+        ----------
+        pulse: OpInfo
+            The pulse to play.
+        idx0: int
+            Index corresponding to the I channel of the pulse in the awg dict.
+        idx1
+            Index corresponding to the Q channel of the pulse in the awg dict.
+
+        Returns
+        -------
+
+        """
         self.wait_till_start_operation(pulse)
         self.update_runtime_settings(pulse)
         self.emit(
@@ -596,6 +972,24 @@ class QASMProgram(list):
         self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
+        """
+        Waits until the start of the acquisition, then starts the acquisition.
+
+        Parameters
+        ----------
+        acquisition: OpInfo
+            The pulse to perform.
+        idx0: int
+            Index corresponding to the I channel of the acquisition weights in the acq
+            dict.
+        idx1: int
+            Index corresponding to the Q channel of the acquisition weights in the acq
+            dict.
+
+        Returns
+        -------
+
+        """
         self.wait_till_start_operation(acquisition)
         self.emit(
             PulsarInstructions.ACQUIRE, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
@@ -603,6 +997,22 @@ class QASMProgram(list):
         self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
 
     def update_runtime_settings(self, operation: OpInfo):
+        """
+        Adds the commands needed to correctly set the QASMRuntimeSettings.
+
+        Parameters
+        ----------
+        operation: OpInfo
+            The pulse to prepare the settings for.
+
+        Returns
+        -------
+
+        Notes
+        -----
+            Currently only the AWG gain is set correctly, as that is the only one
+            actually used currently by the backend. Will be expanded in the future.
+        """
         if operation.pulse_settings is None:
             raise RuntimeError(f"No real-time settings found for {repr(operation)}.")
 
@@ -620,17 +1030,58 @@ class QASMProgram(list):
         )
 
     @staticmethod
-    def _expand_from_normalised_range(val: float, param: str, operation: OpInfo):
+    def _expand_from_normalised_range(
+        val: float, param: Optional[str] = None, operation: Optional[OpInfo] = None
+    ):
+        """
+        Takes a the value of a parameter in normalized form (abs(param) <= 1.0), and
+        expands it to an integer in the appropriate range required by the sequencer.
+
+        Parameters
+        ----------
+        val: float
+            The value of the parameter to expand.
+        param: Optional[str]
+            The name of the parameter, to make a possible exception message more
+            descriptive.
+        operation: Optional[OpInfo]
+            The operation this value is expanded for, to make a possible exception
+            message more descriptive.
+
+        Returns
+        -------
+        int
+            The expanded value of the parameter.
+
+        Raises
+        ------
+        ValueError
+            Parameter is not in the normalized range.
+        """
         immediate_sz = Pulsar_sequencer_base.IMMEDIATE_SZ
         if np.abs(val) > 1.0:
             raise ValueError(
                 f"{param} parameter must be in the range "
-                f"-1.0 < param < 1.0 for {repr(operation)}."
+                f"-1.0 <= param <= 1.0 for {repr(operation)}."
             )
         return int(val * immediate_sz / 2)
 
     @staticmethod
     def to_pulsar_time(time: float) -> int:
+        """
+        Takes a float value representing a time in seconds as used by the schedule, and
+        returns the integer valued time in nanoseconds that the sequencer uses.
+
+        Parameters
+        ----------
+        time: float
+            The time to convert
+
+        Returns
+        -------
+        int
+            The integer valued nanosecond time
+        """
         time_ns = int(time * 1e9)
         if time_ns % Pulsar_sequencer_base.GRID_TIME_ns != 0:
             raise ValueError(
@@ -639,7 +1090,19 @@ class QASMProgram(list):
             )
         return time_ns
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the program. The pulsar expects the program
+        to be such a string.
+
+        The conversion to str is done using `columnar`, which expects a list of lists,
+        and turns it into a string with rows and columns corresponding to those lists.
+
+        Returns
+        -------
+        str
+            The string representation of the program.
+        """
         try:
             return columnar(list(self), headers=None, no_borders=True)
         # running in a sphinx environment can trigger a TableOverFlowError
@@ -650,6 +1113,30 @@ class QASMProgram(list):
 
     @contextmanager
     def loop(self, register: str, label: str, repetitions: int = 1):
+        """
+        Defines a context manager that can be used to generate a loop in the QASM
+        program.
+
+        Parameters
+        ----------
+        register: str
+            The register to use for the loop iterator.
+        label: str
+            The label to use for the jump.
+        repetitions: int
+            The amount of iterations to perform.
+
+        Returns
+        -------
+
+        Examples
+        --------
+        qasm = QASMProgram()
+        with qasm.loop(register='R0', label='repeat', repetitions=10):
+             qasm.auto_wait(100)
+
+        This adds a loop to the program that loops 10 times over a wait of 100 ns.
+        """
         comment = f"iterator for loop with label {label}"
 
         def gen_start():
