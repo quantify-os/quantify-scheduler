@@ -2011,26 +2011,65 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
 
 class Pulsar_QCM(Pulsar_base):
+    """
+    Pulsar QCM specific implementation of the pulsar compiler.
+
+    Attributes
+    ----------
+    SEQ_TYPE: Pulsar_sequencer_base
+        Defines the type of sequencer that this pulsar uses.
+    MAX_SEQUENCERS: int
+        Maximum amount of sequencers that this pulsar implements.
+    """
+
     SEQ_TYPE = QCM_sequencer
     MAX_SEQUENCERS = 2
 
-    def __init__(
-        self,
-        name: str,
-        total_play_time: float,
-        hw_mapping: Dict[str, Any],
-    ):
-        super().__init__(name, total_play_time, hw_mapping)
-
     def _distribute_data(self):
+        """
+        Distributes the pulses and acquisitions assigned to this pulsar over the
+        different sequencers based on their portclocks. Overrides the function of the
+        same name in the superclass to raise an exception in case it attempts to
+        distribute acquisitions, since this is not supported by the pulsar QCM.
+
+        Returns
+        -------
+
+        Raises
+        ------
+        RuntimeError
+            Pulsar_QCM._acquisitions is not empty
+        """
         if self._acquisitions:
-            raise ValueError(
+            raise RuntimeError(
                 f"Attempting to add acquisitions to {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
             )
         super()._distribute_data()
 
     def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
+        """
+        Raises an exception when called since the pulsar QCM does not support
+        acquisitions.
+
+        Parameters
+        ----------
+        port: str
+            The port the pulse needs to be sent to.
+        clock: str
+            The clock for modulation of the pulse. Can be a BasebandClock.
+        acq_info: OpInfo
+            Data structure containing all the information regarding this specific
+            acquisition operation.
+
+        Returns
+        -------
+
+        Raises
+        ------
+        RuntimeError
+            Always
+        """
         raise RuntimeError(
             f"Pulsar QCM {self.name} does not support acquisitions. "
             f"Attempting to add acquisition {repr(acq_info)} "
@@ -2039,16 +2078,19 @@ class Pulsar_QCM(Pulsar_base):
 
 
 class Pulsar_QRM(Pulsar_base):
+    """
+    Pulsar QRM specific implementation of the pulsar compiler.
+
+    Attributes
+    ----------
+    SEQ_TYPE: Pulsar_sequencer_base
+        Defines the type of sequencer that this pulsar uses.
+    MAX_SEQUENCERS: int
+        Maximum amount of sequencers that this pulsar implements.
+    """
+
     SEQ_TYPE = QRM_sequencer
     MAX_SEQUENCERS = 1
-
-    def __init__(
-        self,
-        name: str,
-        total_play_time: float,
-        hw_mapping: Dict[str, Any],
-    ):
-        super().__init__(name, total_play_time, hw_mapping)
 
 
 # ---------- Compilation methods ----------
