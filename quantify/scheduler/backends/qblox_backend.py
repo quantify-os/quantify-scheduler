@@ -1801,6 +1801,22 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        """
+        Constructor function.
+
+        Parameters
+        ----------
+        name: str
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time: str
+            Total time execution of the schedule should go on for. This parameter is
+            used to ensure that the different devices, potentially with different clock
+            rates, can work in a synchronized way when performing multiple executions of
+            the schedule.
+        hw_mapping: Optional[Dict[str, Any]]
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
         super().__init__(name, total_play_time, hw_mapping)
 
         self.portclock_map = self._generate_portclock_to_seq_map()
@@ -1819,15 +1835,62 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
     @staticmethod
     def _extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+        """
+        TODO move to PulsarSettings
+
+        Takes all the settings defined in the mapping and generates a `PulsarSettings`
+        object from it.
+
+        Parameters
+        ----------
+        mapping: Dict[str, Any]
+
+
+        Returns
+        -------
+
+        """
         ref: str = mapping["ref"]
         return PulsarSettings(ref=ref)
 
     def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
+        """
+        Sets the modulation frequency for a certain portclock belonging to this
+        instrument.
+
+        Parameters
+        ----------
+        portclock: Tuple[str, str]
+            A tuple with the port as first element and clock as second.
+        freq: float
+            The modulation frequency to assign to the portclock.
+
+        Returns
+        -------
+
+        """
         seq_name = self.portclock_map[portclock]
         seq = self.sequencers[seq_name]
         seq.assign_frequency(freq)
 
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
+        """
+        Generates a mapping from portclock tuples to sequencer names.
+
+        Returns
+        -------
+        Dict[Tuple[str, str], str]
+            A dictionary with as key a portclock tuple and as value the name of a
+            sequencer.
+
+        Raises
+        ------
+        NotImplementedError
+            When the hardware mapping contains a dictionary, which is assumed to
+            correspond to an output channel, that does not have a name defined in
+            self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
+            real outputs (instead of complex), or when the hardware mapping is invalid.
+        """
         output_to_seq = self.OUTPUT_TO_SEQ
 
         mapping = dict()
@@ -1837,9 +1900,10 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
             port_clocks = find_all_port_clock_combinations(data)
             if len(port_clocks) > 1:
+                # TODO consider raising NotImplementedError?
                 warnings.warn(
                     f"Multiple ({len(port_clocks)}) sequencers set per output. "
-                    f"Only one is allowed.",
+                    f"Only one is allowed currently.",
                     RuntimeWarning,
                 )
 
@@ -1856,6 +1920,16 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         return mapping
 
     def _construct_sequencers(self) -> Dict[str, Pulsar_sequencer_base]:
+        """
+        Constructs `Pulsar_sequencer_base` objects for each port and clock combination
+        belonging to this device.
+
+        Returns
+        -------
+        Dict[str, Pulsar_sequencer_base]
+            A dictionary containing the sequencer objects, the keys correspond to the
+            names of the sequencers.
+        """
         sequencers = dict()
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
@@ -1891,6 +1965,14 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         return sequencers
 
     def _distribute_data(self):
+        """
+        Distributes the pulses and acquisitions assigned to this pulsar over the
+        different sequencers based on their portclocks.
+
+        Returns
+        -------
+
+        """
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
@@ -1902,6 +1984,18 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                     seq.acquisitions = acq_data_list
 
     def hardware_compile(self) -> Optional[Dict[str, Any]]:
+        """
+        Performs the actual compilation steps for this pulsar, by calling the sequencer
+        level compilation functions and combining them into a single dictionary. The
+        compiled program has a settings key, and keys for every sequencer.
+
+        Returns
+        -------
+        Optional[Dict[str, Any]]
+            The compiled program corresponding to this pulsar. It contains an entry for
+            every sequencer and general "settings". If the device is not actually used,
+            and an empty program is compiled, None is returned instead.
+        """
         self._distribute_data()
         program = dict()
         for seq_name, seq in self.sequencers.items():
