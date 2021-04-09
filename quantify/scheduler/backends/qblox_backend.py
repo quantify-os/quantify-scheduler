@@ -1780,6 +1780,18 @@ class QRM_sequencer(Pulsar_sequencer_base):
 
 # ---------- pulsar instrument classes ----------
 class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
+    """
+    `InstrumentCompiler` level compiler object for a pulsar. The class is defined as an
+    abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
+    implementations are defined in subclasses.
+
+    Attributes
+    ----------
+    OUTPUT_TO_SEQ: Dict[str, int]
+        Dictionary that maps output names to specific sequencer indices. This
+        implementation is temporary and will change when multiplexing is supported by
+        the hardware.
+    """
 
     OUTPUT_TO_SEQ = {"complex_output_0": 0, "complex_output_1": 1}
 
@@ -1953,6 +1965,32 @@ def _assign_frequencies(
     portclock_mapping: Dict[Tuple[str, str], str],
     schedule_resources: Dict[str, Any],
 ):
+    """
+    Determines the IF or LO frequency based on the clock frequency and assigns it to
+    the `InstrumentCompiler`. If the IF is specified the LO frequency is calculated
+    based on the constraint `clock_freq = interm_freq + lo_freq`, and vice versa.
+
+    Parameters
+    ----------
+    device_compilers: Dict[str, InstrumentCompiler]
+        A dictionary containing all the `InstrumentCompiler` objects for which IQ
+        modulation is used. The keys correspond to the QCoDeS names of the instruments.
+    lo_compilers: Dict[str, LocalOscillator]
+        A dictionary containing all the `LocalOscillator` objects that are used. The
+        keys correspond to the QCoDeS names of the instruments.
+    hw_mapping: Dict[str, Any]
+        The hardware mapping dictionary describing the whole setup.
+    portclock_mapping: Dict[Tuple[str, str], str]
+        A dictionary that maps tuples containing a port and a clock to names of
+        instruments. The port and clock combinations are unique, but multiple portclocks
+        can point to the same instrument.
+    schedule_resources: Dict[str, Any]
+        The schedule resources containing all the clocks.
+
+    Returns
+    -------
+
+    """
     lo_info_dicts = find_inner_dicts_containing_key(hw_mapping, "lo_name")
     for lo_info_dict in lo_info_dicts:
         lo_obj = lo_compilers[lo_info_dict["lo_name"]]
@@ -1973,8 +2011,9 @@ def _assign_frequencies(
                     dev_name = portclock_mapping[(port, clock)]
                     assign_frequency = getattr(
                         device_compilers[dev_name], "assign_modulation_frequency"
-                    )  # FIXME getattr should probably be removed in favour of inheritance.
-                    # This would require an additional layer in structure
+                    )
+                    # FIXME getattr should probably be removed in favour of inheritance.
+                    #  Though this would require an additional layer in structure
                     assign_frequency((port, clock), interm_freq)
                     lo_obj.assign_frequency(cl_freq - interm_freq)
         else:  # lo_freq given
@@ -1995,12 +2034,36 @@ def _assign_pulse_and_acq_info_to_devices(
     device_compilers: Dict[str, Any],
     portclock_mapping: Dict[Tuple[str, str], str],
 ):
+    """
+    Traverses the schedule and generates `OpInfo` objects for every pulse and
+    acquisition, and assigns it to the correct `InstrumentCompiler`.
+
+    Parameters
+    ----------
+    schedule: Schedule
+        The schedule to extract the pulse and acquisition info from.
+    device_compilers: Dict[str, Any]
+        Dictionary containing InstrumentCompilers as values and their names as keys.
+    portclock_mapping: Dict[Tuple[str, str], str]
+        A dictionary that maps tuples containing a port and a clock to names of
+        instruments. The port and clock combinations are unique, but multiple portclocks
+        can point to the same instrument.
+
+    Returns
+    -------
+
+    Raises
+    ------
+    RuntimeError
+        This exception is raised then the function encoutered an operation that has no
+        pulse or acquisition info assigned to it.
+    """
     for op_hash, op_data in schedule.operations.items():
         if not op_data.valid_pulse and not op_data.valid_acquisition:
             raise RuntimeError(
-                f"Operation {op_hash} is not a valid pulse or acquisition."
-                f" Please check whether the device compilation been performed successfully."
-                f" Operation data: {repr(op_data)}"
+                f"Operation {op_hash} is not a valid pulse or acquisition. Please check"
+                f" whether the device compilation been performed successfully. "
+                f"Operation data: {repr(op_data)}"
             )
 
         operation_start_time = find_abs_time_from_operation_hash(schedule, op_hash)
@@ -2037,9 +2100,29 @@ def _assign_pulse_and_acq_info_to_devices(
 
 
 def _construct_compiler_objects(
-    total_play_time,
+    total_play_time: float,
     mapping: Dict[str, Any],
 ) -> Dict[str, InstrumentCompiler]:
+    """
+    Traverses the hardware mapping dictionary and instantiates the appropriate
+    instrument compiler objects for all the devices that make up the setup. Local
+    oscillators are excluded from this step due to them being defined implicitly in the
+    hardware mapping.
+
+    Parameters
+    ----------
+    total_play_time: float
+        Total time that it takes to execute a single repetition of the schedule with the
+        current hardware setup as defined in the mapping.
+    mapping: Dict[str, Any]
+        The hardware mapping dictionary.
+
+    Returns
+    -------
+    Dict[str, InstrumentCompiler]
+        A dictionary with an `InstrumentCompiler` as value and the QCoDeS name of the
+        instrument the compiler compiles for as key.
+    """
     device_compilers = dict()
     for device, dev_cfg in mapping.items():
         if not isinstance(dev_cfg, dict):
@@ -2062,11 +2145,15 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
     Parameters
     ----------
     schedule: Schedule
+        The schedule to compile. It is assumed the pulse and acquisition info is
+        already added to the operation. Otherwise and exception is raised.
     mapping: Dict[str, Any]
+        The hardware mapping of the setup.
 
     Returns
     -------
-        Dict[str, Any]
+    Dict[str, Any]
+        The compiled program
     """
     total_play_time = _calculate_total_play_time(schedule)
 
