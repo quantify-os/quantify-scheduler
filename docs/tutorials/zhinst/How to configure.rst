@@ -28,7 +28,7 @@ A Device describes the type of Zurich Instruments and the physical setup.
     {
       "backend": "quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend",
       "devices": [
-          ...
+        
       ]
     }
 
