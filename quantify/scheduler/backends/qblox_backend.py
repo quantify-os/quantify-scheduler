@@ -364,6 +364,47 @@ def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int) -> float
             return tc["abs_time"]
 
 
+def _generate_waveform_dict(
+    waveforms_complex: Dict[int, np.ndarray]
+) -> Dict[str, dict]:
+    """
+    Takes a dictionary with complex waveforms and generates a new dictionary with
+    real valued waveforms with a unique index, as required by the hardware.
+
+    Parameters
+    ----------
+    waveforms_complex: Dict[int, np.ndarray]
+        Dictionary containing the complex waveforms. Keys correspond to a unique
+        identifier, value is the complex waveform.
+
+    Returns
+    -------
+    Dict[str, dict]
+        A dictionary with as key the unique name for that waveform, as value another
+        dictionary containing the real-valued data (list) as well as a unique index.
+        Note that the index of the Q waveform is always the index of the I waveform
+        +1.
+
+    Examples
+    --------
+    >>> complex_waveforms = {12345: np.array([1, 2])}
+    >>> _generate_waveform_dict(complex_waveforms)
+    {
+        "12345_I": {"data": [1, 2], "index": 0},
+        "12345_Q": {"data": [0, 0], "index": 1}
+    }
+    """
+    wf_dict = dict()
+    for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
+        name_i, name_q = Pulsar_sequencer_base.generate_waveform_names_from_uuid(uuid)
+        to_add = {
+            name_i: {"data": complex_data.real.tolist(), "index": 2 * idx},
+            name_q: {"data": complex_data.imag.tolist(), "index": 2 * idx + 1},
+        }
+        wf_dict.update(to_add)
+    return wf_dict
+
+
 # ---------- classes ----------
 class InstrumentCompiler(metaclass=ABCMeta):
     """
@@ -1337,7 +1378,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                     awg_gain_0=amp_i, awg_gain_1=amp_q
                 )
                 waveforms_complex[pulse.uuid] = raw_wf_data
-        return self._generate_waveform_dict(waveforms_complex)
+        return _generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_dict(self) -> Dict[str, Any]:
         """
@@ -1392,7 +1433,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                         f"{repr(acq)}."
                     )
                 waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
-        return self._generate_waveform_dict(waveforms_complex)
+        return _generate_waveform_dict(waveforms_complex)
 
     def _apply_corrections_to_waveform(
         self, waveform_data: np.ndarray, time_duration: float, t0: Optional[float] = 0
@@ -1466,8 +1507,10 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             )
 
     @staticmethod
-    def _generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
+    def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
         """
+        Generates names for the I and Q parts of the complex waveform based on a unique
+        identifier for the pulse/acquisition.
 
         Parameters
         ----------
@@ -1476,25 +1519,12 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-
+        str
+            Name for the I waveform.
+        str
+            Name for the Q waveform.
         """
         return f"{str(uuid)}_I", f"{str(uuid)}_Q"
-
-    @staticmethod
-    def _generate_waveform_dict(
-        waveforms_complex: Dict[int, np.ndarray]
-    ) -> Dict[str, Any]:
-        wf_dict = dict()
-        for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
-            name_i, name_q = Pulsar_sequencer_base._generate_waveform_names_from_uuid(
-                uuid
-            )
-            to_add = {
-                name_i: {"data": complex_data.real.tolist(), "index": 2 * idx},
-                name_q: {"data": complex_data.imag.tolist(), "index": 2 * idx + 1},
-            }
-            wf_dict.update(to_add)
-        return wf_dict
 
     @classmethod
     def generate_qasm_program(
@@ -1545,7 +1575,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
     @staticmethod
     def get_indices_from_wf_dict(uuid: int, wf_dict: Dict[str, Any]):
-        name_real, name_imag = Pulsar_sequencer_base._generate_waveform_names_from_uuid(
+        name_real, name_imag = Pulsar_sequencer_base.generate_waveform_names_from_uuid(
             uuid
         )
         return wf_dict[name_real]["index"], wf_dict[name_imag]["index"]
