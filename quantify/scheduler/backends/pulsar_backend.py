@@ -26,8 +26,8 @@ PulsarModulations = namedtuple(
     defaults=[None, None, None, None, None, None],
 )
 
-QCM_DRIVER_VER = "0.2.3"
-QRM_DRIVER_VER = "0.2.3"
+QCM_DRIVER_VER = "0.3.1"
+QRM_DRIVER_VER = "0.3.1"
 
 
 class Base_sequencer(Resource):
@@ -936,7 +936,14 @@ def _sanitize_file_name(filename):
 
 
 def _check_driver_version(instr, ver):
-    driver_vers = instr.get_idn()["build"]["driver"]["version"]
+    idn = instr.get_idn()
+    if "build" in idn:
+        driver_vers = idn["build"]["driver"]["version"]
+    elif "firmware" in idn:
+        driver_vers = idn["firmware"]["driver"]["version"]
+    else:
+        raise ValueError("Invalid IDN.")
+
     if driver_vers != ver:
         device = instr.get_idn()["device"]
         raise ValueError(
