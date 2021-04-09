@@ -16,7 +16,7 @@ quantify-scheduler
     :alt: Coverage
 
 .. image:: https://readthedocs.com/projects/quantify-quantify-scheduler/badge/?version=develop&token=ed6fdbf228e1369eacbeafdbad464f6de927e5dfb3a8e482ad0adcbea76fe74c
-    :target: https://quantify-quantify-scheduler.readthedocs-hosted.com/en/develop/?badge=develop
+    :target: https://quantify-quantify-scheduler.readthedocs-hosted.com
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/badge/License-BSD%204--Clause-blue.svg
