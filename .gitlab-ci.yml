@@ -127,6 +127,7 @@ docs-make-html-3.8:
     - cd docs; make html
   extends:
     - .develop-only-job
+  allow_failure: true  # temporarily allowed to fail, see issue #100
 
 black:
   stage: Static Analysis
