@@ -14,21 +14,6 @@
         "port": "q0:mw",
         "clock": "q0.01",
         "interm_freq": -50e6
-      },
-      "seq1": {
-        "port": "q0:mw",
-        "clock": "q0.12",
-        "interm_freq": -290e6
-      },
-      "seq2": {
-        "port": null,
-        "clock": null,
-        "interm_freq": null
-      },
-      "seq3": {
-        "port": null,
-        "clock": null,
-        "interm_freq": null
       }
     },
     "complex_output_1": {
@@ -37,11 +22,6 @@
       "seq0": {
         "port": "q1:mw",
         "clock": "q1.01",
-        "interm_freq": null
-      },
-      "seq1": {
-        "port": "q1:mw",
-        "clock": "q1.12",
         "interm_freq": null
       }
     }

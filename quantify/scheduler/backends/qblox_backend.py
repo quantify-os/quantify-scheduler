@@ -2245,11 +2245,15 @@ def _assign_pulse_and_acq_info_to_devices(
 
             port = pulse_data["port"]
             clock = pulse_data["clock"]
+            if port is None:
+                continue  # ignore idle pulse
+
             uuid = make_hash(without(pulse_data, "t0"))
             combined_data = OpInfo(data=pulse_data, timing=pulse_start_time, uuid=uuid)
 
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
+
         for acq_data in op_data.data["acquisition_info"]:
             if "t0" in acq_data:
                 acq_start_time = operation_start_time + acq_data["t0"]
@@ -2257,6 +2261,8 @@ def _assign_pulse_and_acq_info_to_devices(
                 acq_start_time = operation_start_time
             port = acq_data["port"]
             clock = acq_data["clock"]
+            if port is None:
+                continue
 
             hashed_dict = without(acq_data, ["t0", "waveforms"])
             hashed_dict["waveforms"] = list()
