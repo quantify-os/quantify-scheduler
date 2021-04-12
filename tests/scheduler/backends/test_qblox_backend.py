@@ -286,6 +286,22 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     assert uploaded_waveforms is not None
 
 
+def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition):
+    mixed_schedule_with_acquisition.repetitions = 10
+    full_program = qcompile(
+        mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
+    )
+    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    with open(qcm0_seq0_json) as f:
+        wf_and_prog = json.load(f)
+    program_from_json = wf_and_prog["program"]
+    move_line = program_from_json.split("\n")[3]
+    move_items = move_line.split()  # splits on whitespace
+    args = move_items[1]
+    iterations = int(args.split(",")[0])
+    assert iterations == 10
+
+
 # --------- Test QASMProgram class ---------
 def test_QASMProgram_list_behavior():
     fancy_list = qb.QASMProgram()

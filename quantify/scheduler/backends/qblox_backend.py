@@ -515,11 +515,16 @@ class InstrumentCompiler(metaclass=ABCMeta):
         return portclocks_used
 
     @abstractmethod
-    def hardware_compile(self) -> Any:
+    def hardware_compile(self, repetitions: int = 1) -> Any:
         """
         An abstract method that should be overridden by a subclass to implement the
         actual compilation. Method turns the pulses and acquisitions added to the device
         into device specific instructions.
+
+        Parameters
+        ----------
+        repetitions: int
+            Number of times execution the schedule is repeated
 
         Returns
         -------
@@ -603,7 +608,7 @@ class LocalOscillator(InstrumentCompiler):
         """
         return self._lo_freq
 
-    def hardware_compile(self) -> Dict[str, Any]:
+    def hardware_compile(self, repetitions: int = 1) -> Dict[str, Any]:
         """
         Compiles the program for the LO control stack component.
 
@@ -1725,7 +1730,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         return file_path
 
-    def sequencer_compile(self) -> Optional[Dict[str, Any]]:
+    def sequencer_compile(self, repetitions=1) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
@@ -1749,6 +1754,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             awg_dict,
             self.acquisitions,
             acq_dict,
+            repetitions=repetitions,
         )
 
         wf_and_pr_dict = self._generate_waveforms_and_program_dict(
@@ -1996,7 +2002,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
-    def hardware_compile(self) -> Optional[Dict[str, Any]]:
+    def hardware_compile(self, repetitions=1) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this pulsar, by calling the sequencer
         level compilation functions and combining them into a single dictionary. The
@@ -2012,7 +2018,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         self._distribute_data()
         program = dict()
         for seq_name, seq in self.sequencers.items():
-            seq_program = seq.sequencer_compile()
+            seq_program = seq.sequencer_compile(repetitions=repetitions)
             if seq_program is not None:
                 program[seq_name] = seq_program
 
@@ -2338,7 +2344,9 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
 
     compiled_schedule = dict()
     for name, compiler in device_compilers.items():
-        compiled_dev_program = compiler.hardware_compile()
+        compiled_dev_program = compiler.hardware_compile(
+            repetitions=schedule.repetitions
+        )
 
         if compiled_dev_program is not None:
             compiled_schedule[name] = compiled_dev_program
