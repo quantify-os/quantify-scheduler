@@ -2204,7 +2204,7 @@ def _assign_pulse_and_acq_info_to_devices(
     Raises
     ------
     RuntimeError
-        This exception is raised then the function encoutered an operation that has no
+        This exception is raised then the function encountered an operation that has no
         pulse or acquisition info assigned to it.
     """
     for op_hash, op_data in schedule.operations.items():
