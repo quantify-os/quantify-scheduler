@@ -36,9 +36,12 @@ class Trace(Operation):
         duration : float
             The acquisition duration in seconds.
         acq_channel : int, optional
-            [description], by default 0
+            The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
+            measurement, typically corresponds to a qubit idx.
         acq_index : int, optional
-            The data register in which the acquisition is stored, by default 0
+            The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
+            measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
+            setpoints of a schedule (e.g., tau in a T1 experiment).
         bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
@@ -111,9 +114,12 @@ class WeightedIntegratedComplex(Operation):
         duration : float
             The acquisition duration in seconds.
         acq_channel : int, optional
-            [description], by default 0
+            The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
+            measurement, typically corresponds to a qubit idx.
         acq_index : int, optional
-            The data register in which the acquisition is stored, by default 0
+            The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
+            measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
+            setpoints of a schedule (e.g., tau in a T1 experiment).
         bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the
@@ -185,9 +191,12 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         duration : float
             The acquisition duration in seconds.
         acq_channel : int, optional
-            [description], by default 0
+            The data channel in which the acquisition is stored, by default 0. Describes the "where" information of the
+            measurement, typically corresponds to a qubit idx.
         acq_index : int, optional
-            The data register in which the acquisition is stored, by default 0
+            The data register in which the acquisition is stored, by default 0. Describes the "when" information of the
+            measurement, used to label/tag individual measurements in a large circuit. Typically corresponds to the
+            setpoints of a schedule (e.g., tau in a T1 experiment).
         bin_mode : BinMode, optional
             Describes what is done when data is written to a register that already contains a value. Options are
             "append" which appends the result to the list or "average" which stores the weighted average value of the

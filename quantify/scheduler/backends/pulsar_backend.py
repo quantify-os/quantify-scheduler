@@ -815,8 +815,9 @@ def pulsar_assembler_backend(
                 with open(qasm_dump, "w") as f:
                     f.write(seq_cfg["program"])
 
-            seq_fn = os.path.join(seq_folder, f"{resource.name}_sequencer_cfg.json")
-            seq_fn = _sanitize_file_name(seq_fn)
+            filename = f"{resource.name}_sequencer_cfg.json"
+            filename = _sanitize_file_name(filename)
+            seq_fn = os.path.join(seq_folder, filename)
 
             with open(seq_fn, "w") as f:
                 json.dump(seq_cfg, f, cls=NumpyJSONEncoder, indent=4)
@@ -924,9 +925,8 @@ def _add_lo_config(lo_params, p_config, io, lo_freq):
     return lo_params
 
 
-def _sanitize_file_name(filename: str):
-    invalid = '<>:"/\\|?* '
-
+def _sanitize_file_name(filename):
+    invalid = "'<>:\"/\\|?* "
     sanitized_fn = filename
     for char in invalid:
         sanitized_fn = sanitized_fn.replace(char, "_")
