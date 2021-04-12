@@ -1006,8 +1006,9 @@ class QASMProgram(list):
         elif wait_time < 0:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
-                f"ns before {repr(operation)}.\n"
-                f"Are multiple operations being played at the same time?"
+                f"ns before {repr(operation)}. Please note that a wait time of at least"
+                f" {Pulsar_sequencer_base.GRID_TIME_ns} ns is required between "
+                f"operations.\nAre multiple operations being started at the same time?"
             )
 
     def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
@@ -1146,7 +1147,7 @@ class QASMProgram(list):
         int
             The integer valued nanosecond time
         """
-        time_ns = int(time * 1e9)
+        time_ns = int(np.round(time * 1e9))
         if time_ns % Pulsar_sequencer_base.GRID_TIME_ns != 0:
             raise ValueError(
                 f"Pulsar can only work in a timebase of {Pulsar_sequencer_base.GRID_TIME_ns}"
