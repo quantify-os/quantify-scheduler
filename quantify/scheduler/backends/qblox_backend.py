@@ -60,11 +60,14 @@ def modulate_waveform(
     t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
 ) -> np.ndarray:
     """
-    Generates a modulated waveform from a given envelope by multiplying
-    it with a complex exponential.
+    Generates a (single sideband) modulated waveform from a given envelope by
+    multiplying it with a complex exponential.
 
     .. math::
         z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
+
+    The signs are chosen such that the frequencies follow the relation RF = LO + IF for
+    LO, IF > 0.
 
     Parameters
     ----------
