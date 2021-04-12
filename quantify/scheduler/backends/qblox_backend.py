@@ -612,6 +612,11 @@ class LocalOscillator(InstrumentCompiler):
         """
         Compiles the program for the LO control stack component.
 
+        Parameters
+        ----------
+        repetitions: int
+            Number of times execution the schedule is repeated
+
         Returns
         -------
         Dict[str, Any]
@@ -1730,11 +1735,16 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         return file_path
 
-    def sequencer_compile(self, repetitions=1) -> Optional[Dict[str, Any]]:
+    def sequencer_compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
         and None is returned instead.
+
+        Parameters
+        ----------
+        repetitions: int
+            Number of times execution the schedule is repeated
 
         Returns
         -------
@@ -2002,11 +2012,16 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
-    def hardware_compile(self, repetitions=1) -> Optional[Dict[str, Any]]:
+    def hardware_compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this pulsar, by calling the sequencer
         level compilation functions and combining them into a single dictionary. The
         compiled program has a settings key, and keys for every sequencer.
+
+        Parameters
+        ----------
+        repetitions: int
+            Number of times execution the schedule is repeated
 
         Returns
         -------
