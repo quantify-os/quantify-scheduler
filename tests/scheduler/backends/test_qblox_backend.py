@@ -21,6 +21,10 @@ from quantify.scheduler.compilation import (
 )
 
 from quantify.scheduler.backends import qblox_backend as qb
+from quantify.scheduler.backends.types.qblox import (
+    QASMRuntimeSettings,
+    apply_mixer_skewness_corrections,
+)
 
 import quantify.scheduler.schemas.examples as es
 
@@ -150,7 +154,7 @@ def test_apply_mixer_corrections():
 
     test_re = np.cos(2 * np.pi * freq * t)
     test_imag = np.sin(2 * np.pi * freq * t)
-    corrected_wf = qb.apply_mixer_skewness_corrections(
+    corrected_wf = apply_mixer_skewness_corrections(
         test_re + 1.0j * test_imag, amp_ratio, 90
     )
 
@@ -332,7 +336,7 @@ def test_auto_wait():
 
 def test_wait_till_start_then_play():
     minimal_pulse_data = {"duration": 20e-9}
-    runtime_settings = qb.QASMRuntimeSettings(1, 1)
+    runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
         uuid=0, data=minimal_pulse_data, timing=4e-9, pulse_settings=runtime_settings
     )

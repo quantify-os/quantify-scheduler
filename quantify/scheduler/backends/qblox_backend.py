@@ -15,14 +15,20 @@ from qcodes.utils.helpers import NumpyJSONEncoder
 from abc import ABCMeta, abstractmethod
 from collections import UserDict, defaultdict, deque
 from collections.abc import Iterable
-from dataclasses import dataclass
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Set, Callable
 
 import numpy as np
-from dataclasses_json import DataClassJsonMixin
 from quantify.data.handling import get_datadir, gen_tuid
 from quantify.utilities.general import make_hash, without, import_func_from_string
+
+from quantify.scheduler.backends.types.qblox import (
+    PulsarSettings,
+    SequencerSettings,
+    MixerCorrections,
+    OpInfo,
+    QASMRuntimeSettings,
+)
 
 if TYPE_CHECKING:
     from quantify.scheduler.types import Schedule
@@ -86,57 +92,6 @@ def modulate_waveform(
     """
     modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
     return envelope * modulation
-
-
-def apply_mixer_skewness_corrections(
-    waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
-) -> np.ndarray:
-    """
-    Takes a waveform and applies a correction for amplitude imbalances and
-    phase errors when using an IQ mixer from previously calibrated values.
-
-    Phase correction is done using:
-
-    .. math::
-        Re(z_{corrected}) (t) = Re(z (t)) + Im(z (t)) \tan(\phi)
-        Im(z_{corrected}) (t) = Im(z (t)) / \cos(\phi)
-
-    The amplitude correction is achieved by rescaling the waveforms back to their
-    original amplitudes and multiplying or dividing the I and Q signals respectively by
-    the square root of the amplitude ratio.
-
-    Parameters
-    ----------
-    waveform: np.ndarray
-        The complex valued waveform on which the correction will be applied.
-    amplitude_ratio: float
-        The ratio between the amplitudes of I and Q that is used to correct
-        for amplitude imbalances between the different paths in the IQ mixer.
-    phase_shift: float
-        The phase error (in deg) used to correct the phase between I and Q.
-
-    Returns
-    -------
-        np.ndarray
-            The complex valued waveform with the applied phase and amplitude
-            corrections.
-    """
-
-    def calc_corrected_re(wf: np.ndarray, alpha: float, phi: float):
-        original_amp = np.max(np.abs(wf.real))
-        wf_re = wf.real + wf.imag * np.tan(phi)
-        wf_re = wf_re / np.max(np.abs(wf_re))
-        return wf_re * original_amp * np.sqrt(alpha)
-
-    def calc_corrected_im(wf: np.ndarray, alpha: float, phi: float):
-        original_amp = np.max(np.abs(wf.imag))
-        wf_im = wf.imag / np.cos(phi)
-        wf_im = wf_im / np.max(np.abs(wf_im))
-        return wf_im * original_amp / np.sqrt(alpha)
-
-    corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
-    corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
-    return corrected_re + 1.0j * corrected_im
 
 
 def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
@@ -624,194 +579,6 @@ class LocalOscillator(InstrumentCompiler):
             parameters appropriately.
         """
         return {"lo_freq": self._lo_freq}
-
-
-# ---------- data structures ----------
-@dataclass
-class OpInfo(DataClassJsonMixin):
-    """
-    Data structure containing all the information describing a pulse or acquisition
-    needed to play it.
-
-    Attributes
-    ----------
-    uuid: int
-        A unique identifier for this pulse/acquisition.
-    data: dict
-        The pulse/acquisition info taken from the `data` property of the
-        pulse/acquisition in the schedule.
-    timing: float
-        The start time of this pulse/acquisition.
-        Note that this is a combination of the start time "t_abs" of the schedule
-        operation, and the t0 of the pulse/acquisition which specifies a time relative
-        to "t_abs".
-    pulse_settings: Optional[QASMRuntimeSettings]
-        Settings that are to be set by the sequencer before playing this
-        pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
-        parameter to change the pulse amplitude, instead of changing the waveform. This
-        allows to reuse the same waveform multiple times despite a difference in
-        amplitude.
-    """
-
-    uuid: int
-    data: dict
-    timing: float
-    pulse_settings: Optional[QASMRuntimeSettings] = None
-
-    @property
-    def duration(self) -> float:
-        """
-        The duration of the pulse/acquisition.
-
-        Returns
-        -------
-        float
-            The duration of the pulse/acquisition.
-        """
-        return self.data["duration"]
-
-    @property
-    def is_acquisition(self):
-        """
-        Returns true if this is an acquisition, false if it's a pulse.
-
-        Returns
-        -------
-        bool
-            Is this an acquisition?
-        """
-        return "acq_index" in self.data
-
-    def __repr__(self):
-        s = 'Acquisition "' if self.is_acquisition else 'Pulse "'
-        s += str(self.uuid)
-        s += f'" (t={self.timing} to {self.timing+self.duration})'
-        s += f" data={self.data}"
-        return s
-
-
-@dataclass
-class PulsarSettings(DataClassJsonMixin):
-    """
-    Global settings for the pulsar to be set in the control stack component. This is
-    kept separate from the settings that can be set on a per sequencer basis, which are
-    specified in `SequencerSettings`.
-
-    Attributes
-    ----------
-    ref: str
-        The reference source. Should either be "internal" or "external", will raise an
-        exception in the cs component otherwise.
-    """
-
-    ref: str
-
-
-@dataclass
-class SequencerSettings(DataClassJsonMixin):
-    """
-    Sequencer level settings. In the drivers these settings are typically recognised by
-    parameter names of the form "sequencer_{index}_{setting}". These settings are set
-    once at the start and will remain unchanged after. Meaning that these correspond to
-    the "slow" QCoDeS parameters and not settings that are changed dynamically by the
-    sequencer.
-
-    Attributes
-    ----------
-    nco_en: bool
-        Specifies whether the nco will be used or not.
-    sync_en: bool
-        Enables party-line synchronization.
-    modulation_freq: float
-        Specifies the frequency of the modulation.
-    awg_offset_path_0: float
-        Sets the DC offset on path 0. This is used e.g. for calibration of lo leakage
-        when using IQ mixers.
-    awg_offset_path_1: float
-        Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
-        when using IQ mixers.
-    """
-
-    nco_en: bool
-    sync_en: bool
-    modulation_freq: float = None
-    awg_offset_path_0: float = 0.0
-    awg_offset_path_1: float = 0.0
-
-
-@dataclass
-class MixerCorrections(DataClassJsonMixin):
-    """
-    Data structure that holds all the mixer correction parameters to compensate for
-    skewness/lo feed-through. This class is used to correct the waveforms to compensate
-    for skewness and to set the `SequencerSettings`.
-
-    Attributes
-    ----------
-    amp_ratio: float
-        Amplitude ratio between the I and Q paths to correct for the imbalance in the
-        two path in the IQ mixer.
-    phase_error: float
-        Phase shift used to compensate for quadrature errors.
-    offset_I: float
-        DC offset on the I path used to compensate for lo feed-through.
-    offset_Q: float
-        DC offset on the Q path used to compensate for lo feed-through.
-    """
-
-    amp_ratio: float = 1.0
-    phase_error: float = 0.0
-    offset_I: float = 0.0
-    offset_Q: float = 0.0
-
-    def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
-        """
-        Applies the pre-distortion needed to compensate for amplitude and phase errors
-        in the IQ mixer. In practice this is simply a wrapper around the
-        `apply_mixer_skewness_corrections` function, that uses the attributes specified
-        here.
-
-        Parameters
-        ----------
-        waveform: np.ndarray
-            The (complex-valued) waveform before correction.
-
-        Returns
-        -------
-        np.ndarray
-            The complex-valued waveform after correction.
-        """
-        return apply_mixer_skewness_corrections(
-            waveform, self.amp_ratio, self.phase_error
-        )
-
-
-@dataclass
-class QASMRuntimeSettings:
-    """
-    Settings that can be changed dynamically by the sequencer during execution of the
-    schedule. This is in contrast to the relatively static `SequencerSettings`.
-
-    Attributes
-    ----------
-    awg_gain_0: float
-        Gain set to the AWG output path 0. Value should be in the range -1.0 < param <
-        1.0. Else an exception will be raised during compilation.
-    awg_gain_1: float
-        Gain set to the AWG output path 1. Value should be in the range -1.0 < param <
-        1.0. Else an exception will be raised during compilation.
-    awg_offset_0: float
-        Offset applied to the AWG output path 0. Value should be in the range -1.0 <
-        param < 1.0. Else an exception will be raised during compilation.
-    awg_offset_1: float
-        Offset applied to the AWG output path 1. Value should be in the range -1.0 <
-        param < 1.0. Else an exception will be raised during compilation.
-    """
-
-    awg_gain_0: float
-    awg_gain_1: float
-    awg_offset_0: float = 0.0
-    awg_offset_1: float = 0.0
 
 
 # ---------- utility classes ----------

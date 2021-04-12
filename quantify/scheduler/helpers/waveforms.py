@@ -280,3 +280,54 @@ def exec_custom_waveform_function(
 
     # Calculate the numerical waveform using the wf_func
     return function(t=t, **wf_kwargs)
+
+
+def apply_mixer_skewness_corrections(
+    waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
+) -> np.ndarray:
+    """
+    Takes a waveform and applies a correction for amplitude imbalances and
+    phase errors when using an IQ mixer from previously calibrated values.
+
+    Phase correction is done using:
+
+    .. math::
+        Re(z_{corrected}) (t) = Re(z (t)) + Im(z (t)) \tan(\phi)
+        Im(z_{corrected}) (t) = Im(z (t)) / \cos(\phi)
+
+    The amplitude correction is achieved by rescaling the waveforms back to their
+    original amplitudes and multiplying or dividing the I and Q signals respectively by
+    the square root of the amplitude ratio.
+
+    Parameters
+    ----------
+    waveform: np.ndarray
+        The complex valued waveform on which the correction will be applied.
+    amplitude_ratio: float
+        The ratio between the amplitudes of I and Q that is used to correct
+        for amplitude imbalances between the different paths in the IQ mixer.
+    phase_shift: float
+        The phase error (in deg) used to correct the phase between I and Q.
+
+    Returns
+    -------
+        np.ndarray
+            The complex valued waveform with the applied phase and amplitude
+            corrections.
+    """
+
+    def calc_corrected_re(wf: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(wf.real))
+        wf_re = wf.real + wf.imag * np.tan(phi)
+        wf_re = wf_re / np.max(np.abs(wf_re))
+        return wf_re * original_amp * np.sqrt(alpha)
+
+    def calc_corrected_im(wf: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(wf.imag))
+        wf_im = wf.imag / np.cos(phi)
+        wf_im = wf_im / np.max(np.abs(wf_im))
+        return wf_im * original_amp / np.sqrt(alpha)
+
+    corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    return corrected_re + 1.0j * corrected_im
