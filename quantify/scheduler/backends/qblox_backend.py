@@ -2289,7 +2289,15 @@ def _construct_compiler_objects(
 
 def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Main function driving the compilation.
+    Main function driving the compilation. The principle behind the overall compilation
+    works as follows:
+
+    For every instrument in the hardware mapping, we instantiate a compiler object. Then
+    we assign all the pulses/acquisitions that need to be played by that instrument to
+    the compiler, which then compiles for each instrument individually.
+
+    This function then returns all the compiled programs bundled together in a
+    dictionary with the QCoDeS name of the instrument as key.
 
     Parameters
     ----------
