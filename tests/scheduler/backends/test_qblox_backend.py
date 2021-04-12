@@ -292,8 +292,8 @@ def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
     qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
-    with open(qcm0_seq0_json) as f:
-        wf_and_prog = json.load(f)
+    with open(qcm0_seq0_json) as file:
+        wf_and_prog = json.load(file)
     program_from_json = wf_and_prog["program"]
     move_line = program_from_json.split("\n")[3]
     move_items = move_line.split()  # splits on whitespace
