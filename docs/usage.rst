@@ -1,23 +1,24 @@
+.. _sec-user-guide:
+
 User guide
-================================
+==========
 
 .. jupyter-kernel::
-  :id: Tutorial 1. Scheduler concepts
-
+  :id: Scheduler user guide
 
 
 Introduction
-----------------
+------------
 Quantify-scheduler is a module for writing quantum programs.
 It features a unique hybrid control model allowing quantum gate- and pulse-level descriptions to be combined in a clearly defined and hardware-agnostic way.
 Quantify-scheduler is designed to allow experimentalists to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
 
 Quantify-scheduler can be understood by understanding the following concepts.
 
-- :ref:`Schedules<sec-schedule>`: describe when an operation needs to be applied.
-- :ref:`Operations<sec-operation>`: describe what needs to be done.
-- :ref:`Resources<sec-resources>`: describe where an operation should be applied.
-- :ref:`Compilation<sec-compilation>` between different abstraction layers and onto a hardware backend.
+- :ref:`Schedules <sec-schedule>`: describe when an operation needs to be applied.
+- :ref:`Operations <sec-operation>`: describe what needs to be done.
+- :ref:`Resources <sec-resources>`: describe where an operation should be applied.
+- :ref:`Compilation <sec-compilation>`: between different abstraction layers and onto a hardware backend.
 
 The following table shows an overview of the different concepts and how these are represented at the gate- and pulse-level abstraction.
 
@@ -100,7 +101,7 @@ A second compilation step uses the :ref:`hardware configuration (file)<sec-hardw
 .. _sec-schedule:
 
 Schedule
---------------------------------
+--------
 
 The :class:`~quantify.scheduler.Schedule` is a data structure that is at the core of the Quantify-scheduler.
 The :class:`~quantify.scheduler.Schedule` contains information on *when* operations should be performed.
@@ -120,7 +121,7 @@ The :attr:`~quantify.scheduler.Schedule.timing_constraints` is a list of diction
 .. _sec-operation:
 
 Operation
---------------------------------
+---------
 
 
 The :class:`~quantify.scheduler.types.Operation` object is a datastructure that describes the operation that should be performed, it also contains information on *where* it should be applied.
@@ -129,7 +130,7 @@ The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_libr
 
 
 Gate-level description
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 The (quantum) gate-level description is an idealized mathematical description of the operations.
 In this description operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
 Operations can be represented by (idealized) unitaries acting on qubits which are represented here as strings (e.g., :code:`"q0"`, :code:`"q1"`, :code:`"qubit_left"`, etc.).
@@ -172,7 +173,8 @@ To summarize:
 
 
 Pulse-level description
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+
 The pulse-level description describes waveforms applied to a sample.
 These waveforms can be used to implement the unitaries of the gate-level description, in which case there is a one-to-one correspondence, but this is not required.
 The pulse-level description typically contain parameterization information, such as amplitudes, durations and so forth required to synthesize the waveform on control hardware.
@@ -181,7 +183,7 @@ To specify *where* an operation is applied, the pulse-level description needs to
 The location on chip is denoted by a *port* while the frequency is set using a *clock*, both are represented as strings.
 These resources are described in detail in :ref:`the next section<sec-resources>`.
 
-A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a pulse diagram using :func:`quantify.scheduler.visualization.circuit_diagram.pulse_diagram_plotly`.
+A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a pulse diagram using :func:`quantify.scheduler.visualization.pulse_scheme.pulse_diagram_plotly`.
 An example of such a visualization is shown below:
 
 
@@ -222,7 +224,7 @@ To summarize:
 .. _sec-resources:
 
 Resources
---------------------------------------
+---------
 
 Resources denote where an operation should be applied.
 Here we explain these concept using a simple cQED device shown in :numref:`resources_fig`.
@@ -241,14 +243,14 @@ These concepts should be easy to generalize to other devices and systems.
 
 
 Qubits
-~~~~~~~
+~~~~~~
 
 At the gate-level description, operations are applied to (abstract) qubits.
 Qubits are represented by strings corresponding to the name of a qubit (e.g., :code:`q0`, :code:`q1`, :code:`A1`, :code:`QL`, :code:`qubit_1`, etc.).
 Valid qubit names are those that appear in the :ref:`device config<sec-device-config>` used for compilation.
 
 Ports
-~~~~~~~
+~~~~~
 
 For many systems, it is possible to associate a qubit with an element or location on a device that a signal can be applied to.
 We call such a location on a device a port.
@@ -261,7 +263,7 @@ Associating a qubit can be useful when visualizing a schedule and or to keep con
 Associating a port with a single qubit is not required so as not to complicate matters when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
 
 Clocks
-~~~~~~~~~~~~~~~~~
+~~~~~~
 
 Besides the physical location on a device, a pulse is typically applied at a certain frequency.
 A :class:`~quantify.scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
@@ -271,7 +273,7 @@ If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband
 .. _sec-compilation:
 
 Compilation
--------------
+-----------
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
 The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
@@ -287,7 +289,7 @@ Both compilation steps can be triggered by passing a :class:`~quantify.scheduler
 .. _sec-device-config:
 
 Device configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The device configuration file is used to compile from the  gate-level to the device specific pulse-level description.
 The main responsibility is to add a pulse-representation to every operation that has a gate-level description.
@@ -302,30 +304,24 @@ A valid device configuration is described by the schema shown here:
 
 
 Example device configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we show an example of such a device configuration file:
 
 .. jupyter-execute::
   :hide-code:
 
+  from pathlib import Path
   import json
-  import pprint
-  import os, inspect
-  import quantify.scheduler.schemas.examples as es
+  import quantify.scheduler.schemas.examples as examples
 
-  esp = inspect.getfile(es)
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
-
-
-  with open(cfg_f, 'r') as f:
-      transmon_test_config = json.load(f)
-
-  pprint.pprint(transmon_test_config)
+  path = Path(examples.__file__).parent.joinpath('transmon_test_config.json')
+  json_data = json.loads(path.read_text())
+  print(json.dumps(json_data, indent=4, sort_keys=True))
 
 .. _sec-hardware-config:
 
 Hardware configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The hardware configuration file is used to compile pulses to specific control electronics.
 To do this, it contains information on what ports are connected to what hardware outputs/inputs, as well as other hardware-specific settings.
@@ -333,21 +329,31 @@ The backend key of the hardware configuration specifies what backend is used to 
 Here we show an example of such a device configuration file:
 
 Example Qblox hardware configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. jupyter-execute::
   :hide-code:
 
+  from pathlib import Path
   import json
-  import pprint
-  import os, inspect
-  import quantify.scheduler.schemas.examples as es
+  import quantify.scheduler.schemas.examples as examples
 
-  esp = inspect.getfile(es)
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+  path = Path(examples.__file__).parent.joinpath('qblox_test_mapping.json')
+  json_data = json.loads(path.read_text())
+  print(json.dumps(json_data, indent=4, sort_keys=True))
 
 
-  with open(cfg_f, 'r') as f:
-      transmon_test_config = json.load(f)
+Example Zurich Instruments hardware configuration file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  pprint.pprint(transmon_test_config)
+.. jupyter-execute::
+  :hide-code:
+
+  from pathlib import Path
+  import json
+  import quantify.scheduler.schemas.examples as examples
+
+  path = Path(examples.__file__).parent.joinpath('zhinst_test_mapping.json')
+  json_data = json.loads(path.read_text())
+  print(json.dumps(json_data, indent=4, sort_keys=True))
+

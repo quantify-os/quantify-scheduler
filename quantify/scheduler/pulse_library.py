@@ -1,8 +1,7 @@
-# -----------------------------------------------------------------------------
-# Description:    Library standard pulses for use with the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Standard pulses for use with the quantify.scheduler."""
+from __future__ import annotations
 from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
 
@@ -34,19 +33,29 @@ class IdlePulse(Operation):
 
 class RampPulse(Operation):
     def __init__(
-        self, amp: float, duration: float, port: str, clock: str, t0: float = 0
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str = BasebandClockResource.IDENTITY,
+        t0: float = 0,
     ):
         """
-        A single-channel square pulse.
+        A real valued ramp pulse.
 
         Parameters
         ------------
         amp : float
-            Amplitude of the Gaussian envelope.
+            Final amplitude of the ramp envelope function.
         duration : float
             Duration of the pulse in seconds.
         port : str
             Port of the pulse.
+        clock : str
+            Clock used to modulate the pulse, by default a BasebandClock is used.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
         """
 
         data = {
@@ -76,7 +85,7 @@ class SquarePulse(Operation):
         t0: float = 0,
     ):
         """
-        A two-channel square pulse.
+        A real valued square pulse.
 
         Parameters
         ------------
@@ -86,10 +95,13 @@ class SquarePulse(Operation):
             Duration of the pulse in seconds.
         port : str
             Port of the pulse, must be capable of playing a complex waveform.
-        phase : float
-            Phase of the pulse in degrees.
         clock : str
             Clock used to modulate the pulse.
+        phase : float
+            Phase of the pulse in degrees.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
@@ -113,13 +125,26 @@ class SquarePulse(Operation):
 
 
 class SoftSquarePulse(Operation):
-    """
-    Place holder pulse for mocking the CZ pulse until proper implementation. Replicates parameters.
-    """
-
     def __init__(
         self, amp: float, duration: float, port: str, clock: str, t0: float = 0
     ):
+        """
+        A real valued square pulse convolved with a hann window in order to smoothen it.
+
+        Parameters
+        ------------
+        amp : float
+            Amplitude of the envelope.
+        duration : float
+            Duration of the pulse in seconds.
+        port : str
+            Port of the pulse, must be capable of playing a complex waveform.
+        clock : str
+            Clock used to modulate the pulse.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        """
         data = {
             "name": "SoftSquarePulse",
             "pulse_info": [
@@ -138,7 +163,7 @@ class SoftSquarePulse(Operation):
 
 class DRAGPulse(Operation):
     """
-    DRAG pulse inteded for single qubit gates in transmon based systems.
+    DRAG pulse intended for single qubit gates in transmon based systems.
 
     A DRAG pulse is a gaussian pulse with a derivative component added to the out-of-phase channel to
     reduce unwanted excitations of the :math:`|1\\rangle - |2\\rangle` transition.
@@ -182,14 +207,15 @@ class DRAGPulse(Operation):
             Amplitude of the derivative component, the DRAG-pulse parameter.
         duration : float
             Duration of the pulse in seconds.
-        nr_sigma : int
-            After how many sigma the Gaussian is cut off.
         phase : float
             Phase of the pulse in degrees.
         clock : str
             Clock used to modulate the pulse.
         port : str
             Port of the pulse, must be capable of carrying a complex waveform.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
         """
 
         data = {

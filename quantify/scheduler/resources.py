@@ -1,12 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Library containing common resources for use with the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
-
-"""
-This module should be merged into types
-"""
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Common resources for use with the quantify.scheduler."""
 from collections import UserDict
 import jsonschema
 from quantify.utilities.general import load_json_schema
@@ -36,14 +30,13 @@ class ClockResource(Resource):
         A clock resource used to modulate pulses.
 
         Parameters
-        -------------
-        name : str
+        ----------
+        name :
             the name of this clock
-        freq : float
+        freq :
             the frequency of the clock in Hz
-        phase : float
+        phase :
             the starting phase of the clock in deg
-
         """
 
         self.data = {
@@ -66,12 +59,12 @@ class BasebandClockResource(Resource):
         """
         A clock resource for pulses that operate at baseband.
 
-        Parameters
-        -------------
-        name : str
-            the name of this clock
-
         Baseband signals are assumed to be real-valued and will not be modulated.
+
+        Parameters
+        ----------
+        name :
+            the name of this clock
         """
 
         self.data = {

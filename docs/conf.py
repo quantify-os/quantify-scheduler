@@ -48,6 +48,10 @@ extensions = [
     "jupyter_sphinx",
     "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
+    # fancy type hints in docs and
+    # solves the same issue as "sphinx_automodapi.smart_resolver"
+    "scanpydoc.elegant_typehints",
+    "enum_tools.autoenum",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -61,6 +65,13 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
+    "quantify-core": (
+        "https://quantify-quantify-core.readthedocs-hosted.com/en/develop/",
+        None,
+    ),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
+    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
 }
 
 
@@ -182,8 +193,18 @@ texinfo_documents = [
     ),
 ]
 
+# avoid duplicate label warning even when manual label has been used
+suppress_warnings = ["autosectionlabel.*"]
 
 blockdiag_html_image_format = "SVG"
 
+# At some point we might want to make no warnings imperative
+autodoc_warningiserror = False
+
+qualname_overrides = {
+    "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
+}
 
 numfig = True
+
+set_type_checking_flag = False

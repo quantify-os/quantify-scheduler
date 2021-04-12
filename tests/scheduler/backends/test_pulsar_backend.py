@@ -31,9 +31,9 @@ from quantify.scheduler.backends.pulsar_backend import (
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import qcompile, determine_absolute_timing
 
-import quantify.scheduler.schemas.examples as es
+import quantify.scheduler.schemas.examples as examples
 
-esp = inspect.getfile(es)
+esp = inspect.getfile(examples)
 
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
 with open(cfg_f, "r") as f:
@@ -180,7 +180,8 @@ def test_overflowing_instruction_times():
     )
     # regenerate_ref_file('ref_test_large_plays_q1asm', program_str)
     with open(
-        pathlib.Path(__file__).parent.joinpath("ref_test_large_plays_q1asm"), "r"
+        pathlib.Path(__file__).parent.joinpath("ref_test_large_plays_q1asm"),
+        "r",
     ) as f:
         assert program_str == f.read()
 
@@ -188,7 +189,8 @@ def test_overflowing_instruction_times():
     program_str = build_q1asm(pulse_timings, pulse_data, 524296, set(), 1, pulsar_type)
     # regenerate_ref_file('ref_test_large_waits_q1asm', program_str)
     with open(
-        pathlib.Path(__file__).parent.joinpath("ref_test_large_waits_q1asm"), "r"
+        pathlib.Path(__file__).parent.joinpath("ref_test_large_waits_q1asm"),
+        "r",
     ) as f:
         assert program_str == f.read()
 
@@ -353,7 +355,12 @@ def test_pulsar_assembler_backend_pulses_only(dummy_pulsars):
     sched = Schedule("pulse_only_experiment")
     sched.add(
         DRAGPulse(
-            G_amp=0.7, D_amp=-0.2, phase=90, port="q0:mw", duration=20e-9, clock="q0.01"
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
         )
     )
     sched.add(RampPulse(amp=0.5, duration=24e-9, port="q0:mw", clock="q0.01"))
@@ -570,13 +577,25 @@ def test_extract_interm_freq():
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_freq": 6.4e9,
-                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": -50e6},
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": -50e6,
+                },
             },
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_freq": None,
-                "seq0": {"port": "q1:mw", "clock": "q1.01", "interm_freq": None},
-                "seq1": {"port": "q1:mw", "clock": "q1.12", "interm_freq": None},
+                "seq0": {
+                    "port": "q1:mw",
+                    "clock": "q1.01",
+                    "interm_freq": None,
+                },
+                "seq1": {
+                    "port": "q1:mw",
+                    "clock": "q1.12",
+                    "interm_freq": None,
+                },
             },
         },
     }

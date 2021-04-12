@@ -1,11 +1,12 @@
-# -----------------------------------------------------------------------------
-# Description:    Contains function to generate most basic waveforms.
-#                 These functions are intended to be used to generate waveforms defined in the :mod:`.pulse_library`.
-#                 Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
-#                 sensitivity and interaction strengths and qubit frequencies.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""
+Contains function to generate most basic waveforms.
+
+These functions are intended to be used to generate waveforms defined in the :mod:`~.pulse_library`.
+Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
+sensitivity and interaction strengths and qubit frequencies.
+"""
 import numpy as np
 from scipy import signal
 from typing import Union, List
@@ -21,7 +22,7 @@ def square_imaginary(
     return square(t, 1j * amp)
 
 
-def ramp(t, amp):
+def ramp(t, amp) -> np.ndarray:
     return np.linspace(0, amp, len(t))
 
 
@@ -32,74 +33,73 @@ def soft_square(t, amp):
 
 
 def drag(
-    t,
+    t: np.ndarray,
     G_amp: float,
     D_amp: float,
     duration: float,
     nr_sigma: int = 3,
     phase: float = 0,
     subtract_offset: str = "average",
-):
-    """
+) -> np.ndarray:
+    r"""
     Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a Derivative :math:`D` as the Q-component.
 
     All inputs are in s and Hz.
     phases are in degree.
 
-    :math:`G(t) = G_{amp} e^{- \\frac{(t-\\mu)^2}{2\\sigma^2}}`.
+    :math:`G(t) = G_{amp} e^{-(t-\mu)^2/(2\sigma^2)}`.
 
-    :math:`D(t) = -D_{amp} \\frac{(t-\\mu)}{\\sigma} G(t)`.
+    :math:`D(t) = -D_{amp} \frac{(t-\mu)}{\sigma} G(t)`.
 
     .. note:
 
-        One would expect a factor :math:`1/\\sigma^2` in the prefactor of :math:`1/\\sigma^2`, we absorb this
+        One would expect a factor :math:`1/\sigma^2` in the prefactor of :math:`1/\sigma^2`, we absorb this
         in the scaling factor :math:`D_{amp}` to ensure the derivative component is scale invariant with the duration of
         the pulse.
 
 
     Parameters
     ----------
-    t : :class:`numpy.ndarray`
+    t :
         times at which to evaluate the function
-    G_amp : float
+    G_amp :
         Amplitude of the Gaussian envelope.
-    D_amp : float
+    D_amp :
         Amplitude of the derivative component, the DRAG-pulse parameter.
-    duration : float
+    duration :
         Duration of the pulse in seconds.
-    nr_sigma : int
+    nr_sigma :
         After how many sigma the Gaussian is cut off.
-    phase : float
+    phase :
         Phase of the pulse in degrees.
-    subtract_offset : str
+    subtract_offset :
         Instruction on how to subtract the offset in order to avoid jumps in the waveform due to the cut-off.
 
-            - 'average': subtract the average of the first and last point.
-            - 'first': subtract the value of the waveform at the first sample.
-            - 'last': subtract the value of the waveform at the last sample.
-            - 'none', None: don't subtract any offset.
+        - 'average': subtract the average of the first and last point.
+        - 'first': subtract the value of the waveform at the first sample.
+        - 'last': subtract the value of the waveform at the last sample.
+        - 'none', None: don't subtract any offset.
     Returns
-    ----------
-    :class:`numpy.ndarray`
+    -------
+    :
         complex waveform
 
 
     References
     ----------
-        1. |citation1|_
 
-        .. _citation1: https://link.aps.org/doi/10.1103/PhysRevA.83.012308
+    1. |citation-1|_
 
-        .. |citation1| replace:: *Gambetta, J. M., Motzoi, F., Merkel, S. T. & Wilhelm, F. K.
-           Analytic control methods for high-fidelity unitary operations
-           in a weakly nonlinear oscillator. Phys. Rev. A 83, 012308 (2011).*
+        .. |citation-1| replace:: *Gambetta, J. M., Motzoi, F., Merkel, S. T. & Wilhelm, F. K. Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator. Phys. Rev. A 83, 012308 (2011).*
 
-        2. |citation2|_
+        .. _citation-1: https://link.aps.org/doi/10.1103/PhysRevA.83.012308
 
-        .. _citation2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
 
-        .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
-           Phys. Rev. Lett. 103, 110501 (2009).*
+    2. |citation-2|_
+
+        .. |citation-2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm Phys. Rev. Lett. 103, 110501 (2009).*
+
+        .. _citation-2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
     """
     mu = t[0] + duration / 2
 
@@ -142,20 +142,20 @@ def drag(
 # ----------------------------------
 
 
-def rotate_wave(wave, phase: float):
+def rotate_wave(wave: np.ndarray, phase: float) -> np.ndarray:
     """
     Rotate a wave in the complex plane.
 
     Parameters
-    -------------
-    wave : :py:class:`numpy.ndarray`
+    ----------
+    wave :
         complex waveform, real component corresponds to I, imag component to Q.
-    phase : float
+    phase :
         rotation angle in degrees
 
     Returns
-    -----------
-    rot_wave : :class:`numpy.ndarray`
+    -------
+    :
         rotated complex waveform.
     """
     angle = np.deg2rad(phase)
@@ -164,7 +164,7 @@ def rotate_wave(wave, phase: float):
     return rot
 
 
-def modulate_wave(t, wave, freq_mod):
+def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarray:
     """
     Apply single sideband (SSB) modulation to a waveform.
 
@@ -173,18 +173,18 @@ def modulate_wave(t, wave, freq_mod):
         freq_base + freq_mod = freq_signal
 
     Parameters
-    ------------
-    t : :py:class:`numpy.ndarray`
+    ----------
+    t :
         times at which to determine the modulation.
-    wave : :py:class:`numpy.ndarray`
+    wave :
         complex waveform, real component corresponds to I, imag component to Q.
-    freq_mod: float
+    freq_mod :
         modulation frequency in Hz.
 
 
     Returns
-    -----------
-    mod_wave : :py:class:`numpy.ndarray`
+    -------
+    :
         modulated waveform.
 
 

@@ -1,13 +1,10 @@
-# -----------------------------------------------------------------------------
-# Description:    Compiler for the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Compiler for the quantify.scheduler."""
 from __future__ import annotations
-
 import importlib
 import logging
-from typing import TYPE_CHECKING
+from typing_extensions import Literal
 
 import jsonschema
 from quantify.utilities.general import load_json_schema
@@ -20,39 +17,36 @@ from quantify.scheduler.pulse_library import (
     SquarePulse,
 )
 from quantify.scheduler.resources import BasebandClockResource, ClockResource
-
-if TYPE_CHECKING:
-    from quantify.scheduler.types import Schedule
+from quantify.scheduler.types import Schedule
 
 
-def determine_absolute_timing(schedule: Schedule, time_unit="physical"):
+def determine_absolute_timing(
+    schedule: Schedule, time_unit: Literal["physical", "ideal"] = "physical"
+) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
-
-    Parameters
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
-        The schedule for which to determine timings.
-    time_unit : str
-        Must be ('physical', 'ideal') : whether to use physical units to determine the
-        absolute time or ideal time.
-        When time_unit == "physical" the duration attribute is used.
-        When time_unit == "ideal" the duration attribute is ignored and treated as if it is 1.
-
-
-    Returns
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
-        a new schedule object where the absolute time for each operation has been determined.
-
 
     This function determines absolute timings for every operation in the
     :attr:`~quantify.scheduler.Schedule.timing_constraints`. It does this by:
 
-        1. iterating over all and elements in the timing_constraints.
+        1. iterating over all and elements in the :attr:`~quantify.scheduler.Schedule.timing_constraints`.
         2. determining the absolute time of the reference operation.
-        3. determining the of the start of the operation based on the rel_time and duration of operations.
+        3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
+    Parameters
+    ----------
+    schedule :
+        The schedule for which to determine timings.
+    time_unit :
+        Whether to use physical units to determine the absolute time or ideal time.
+        When :code:`time_unit == 'physical'` the duration attribute is used.
+        When :code:`time_unit == 'ideal'` the duration attribute is ignored and treated
+        as if it is :code:`1`.
+
+    Returns
+    -------
+    :
+        a new schedule object where the absolute time for each operation has been determined.
     """
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
@@ -125,22 +119,22 @@ def _find_edge(device_cfg, q0, q1, op_name):
     return edge_cfg
 
 
-def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
+def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
     """
     Adds pulse information specified in the device config to the schedule.
 
     Parameters
     ------------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         The schedule for which to add pulse information.
 
-    device_cfg: dict
+    device_cfg :
         A dictionary specifying the required pulse information.
 
 
     Returns
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    :
         a new schedule object where the pulse information has been added.
 
 
@@ -328,22 +322,21 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict):
     return schedule
 
 
-def validate_config(config: dict, scheme_fn: str):
+def validate_config(config: dict, scheme_fn: str) -> bool:
     """
     Validate a configuration using a schema.
 
     Parameters
-    ------------
-    config : dict
+    ----------
+    config :
         The configuration to validate
-    scheme_fn : str
+    scheme_fn :
         The name of a json schema in the quantify.scheduler.schemas folder.
 
     Returns
     ----------
-        bool
-            True if valid
-
+    :
+        True if valid
     """
     scheme = load_json_schema(__file__, scheme_fn)
     jsonschema.validate(config, scheme)
@@ -352,24 +345,24 @@ def validate_config(config: dict, scheme_fn: str):
 
 def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
-):
+) -> Schedule:
     """
     Compile and assemble a schedule into deployables.
 
     Parameters
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         To be compiled
-    device_cfg : dict
+    device_cfg :
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
-    hardware_mapping: dict
+    hardware_mapping:
         hardware mapping, defines the compilation step from
         the pulse-level to a hardware backend.
 
     Returns
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    -------
+    :
         The prepared schedule if no backend is provided, otherwise whatever object returned by the backend
 
 
@@ -391,28 +384,27 @@ def qcompile(
         # compile using the appropriate hardware backend
         hardware_compile = getattr(importlib.import_module(mod), cls)
         # FIXME: still contains a hardcoded argument in the kwargs
-        return hardware_compile(schedule, mapping=hardware_mapping, **kwargs)
+        return hardware_compile(schedule, hardware_map=hardware_mapping, **kwargs)
     else:
         return schedule
 
 
-def device_compile(schedule: Schedule, device_cfg: dict):
+def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     """
     Add pulse information to operations based on device config file.
 
     Parameters
     ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    schedule :
         To be compiled
-    device_cfg : dict
+    device_cfg :
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
 
     Returns
-    ----------
-    schedule : :class:`~quantify.scheduler.Schedule`
+    -------
+    :
         The updated schedule.
-
     """
 
     device_bck_name = device_cfg["backend"]

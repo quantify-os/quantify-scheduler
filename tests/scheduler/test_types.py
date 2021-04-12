@@ -17,6 +17,15 @@ from quantify.scheduler.gate_library import (
 from quantify.scheduler.pulse_library import SquarePulse
 
 
+def test_schedule_properties():
+    # Act
+    schedule = Schedule("Test", repetitions=1e3)
+
+    # Assert
+    assert schedule.name == "Test"
+    assert schedule.repetitions == 1e3
+
+
 def test_schedule_adding_double_resource():
     # clock associated with qubit
     sched = Schedule("Bell experiment")

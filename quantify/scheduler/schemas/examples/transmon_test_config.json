@@ -24,7 +24,7 @@
         "ro_acq_delay": 120e-9,
         "ro_acq_integration_time": 300e-9,
         "ro_acq_weight_type": "SSB",
-        "init_duration": 10e-6
+        "init_duration": 200e-6
       }
     },
     "q1": {
@@ -50,7 +50,7 @@
         "ro_acq_delay": 120e-9,
         "ro_acq_integration_time": 300e-9,
         "ro_acq_weight_type": "SSB",
-        "init_duration": 10e-6
+        "init_duration": 200e-6
       }
     }
   },

@@ -1,11 +1,11 @@
-# -----------------------------------------------------------------------------
-# Description:    Library containing a standard gateset for use with the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
-import numpy as np
-from .types import Operation
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Standard gateset for use with the quantify.scheduler."""
 from typing import Tuple, Union
+
+import numpy as np
+
+from .types import Operation
 
 
 class Rxy(Operation):
@@ -46,8 +46,14 @@ class Rxy(Operation):
         # (e.g., measure and init)
         unitary = np.array(
             [
-                [np.cos(theta_r / 2), -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2)],
-                [-1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2), np.cos(theta_r / 2)],
+                [
+                    np.cos(theta_r / 2),
+                    -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
+                ],
+                [
+                    -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
+                    np.cos(theta_r / 2),
+                ],
             ]
         )
 
@@ -82,7 +88,7 @@ class X(Rxy):
 
     """
 
-    def __init__(self, qubit):
+    def __init__(self, qubit: str):
         """
         Parameters
         ----------
@@ -90,7 +96,7 @@ class X(Rxy):
             the target qubit
         """
         super().__init__(theta=180, phi=0, qubit=qubit)
-        self.data["name"] = "X {}".format(qubit)
+        self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
 
 
@@ -99,7 +105,7 @@ class X90(Rxy):
     A single qubit rotation of 90 degrees around the X-axis.
     """
 
-    def __init__(self, qubit):
+    def __init__(self, qubit: str):
         """
         Parameters
         ----------
@@ -107,7 +113,7 @@ class X90(Rxy):
             the target qubit
         """
         super().__init__(theta=90, phi=0, qubit=qubit)
-        self.data["name"] = "X_{90}" + " {}".format(qubit)
+        self.data["name"] = f"X_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi/2}$"
 
 
@@ -124,7 +130,7 @@ class Y(Rxy):
 
     """
 
-    def __init__(self, qubit):
+    def __init__(self, qubit: str):
         """
         Parameters
         ----------
@@ -132,7 +138,7 @@ class Y(Rxy):
             the target qubit
         """
         super().__init__(theta=180, phi=90, qubit=qubit)
-        self.data["name"] = "Y {}".format(qubit)
+        self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
 
@@ -141,7 +147,7 @@ class Y90(Rxy):
     A single qubit rotation of 90 degrees around the Y-axis.
     """
 
-    def __init__(self, qubit):
+    def __init__(self, qubit: str):
         """
         Parameters
         ----------
@@ -149,7 +155,7 @@ class Y90(Rxy):
             the target qubit
         """
         super().__init__(theta=90, phi=90, qubit=qubit)
-        self.data["name"] = "Y_{90}" + " {}".format(qubit)
+        self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
 
@@ -184,7 +190,7 @@ class CNOT(Operation):
                 "operation_type": "CNOT",
             }
         }
-        super().__init__("CNOT ({}, {})".format(qC, qT), data=data)
+        super().__init__(f"CNOT ({qC}, {qT})", data=data)
 
 
 class CZ(Operation):
@@ -218,7 +224,7 @@ class CZ(Operation):
                 "operation_type": "CZ",
             }
         }
-        super().__init__("CZ ({}, {})".format(qC, qT), data=data)
+        super().__init__(f"CZ ({qC}, {qT})", data=data)
 
 
 class Reset(Operation):
@@ -231,7 +237,7 @@ class Reset(Operation):
 
     """
 
-    def __init__(self, *qubits):
+    def __init__(self, *qubits: str):
         data = {
             "gate_info": {
                 "unitary": None,
@@ -241,7 +247,7 @@ class Reset(Operation):
                 "operation_type": "reset",
             }
         }
-        super().__init__("Reset {}".format(qubits), data=data)
+        super().__init__(f"Reset {qubits}", data=data)
 
 
 class Measure(Operation):
@@ -257,7 +263,7 @@ class Measure(Operation):
         self,
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
-        acq_index: Union[Tuple[int, ...], int] = None
+        acq_index: Union[Tuple[int, ...], int] = None,
     ):
         """
         Gate level description for a measurement.
@@ -295,4 +301,4 @@ class Measure(Operation):
                 "operation_type": "measure",
             }
         }
-        super().__init__("Measure {}".format(qubits), data=data)
+        super().__init__(f"Measure {qubits}", data=data)

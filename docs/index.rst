@@ -19,10 +19,10 @@ Tutorials
 ==============
 
 .. toctree::
-   :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/Tutorial 1. basic experiment.rst
+   tutorials/Tutorial 1. basic experiment
+   tutorials/zhinst/index
 
 API Reference
 ===================
