@@ -1,3 +1,7 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Python dataclasses for compilation to Qblox hardware."""
+
 import numpy as np
 
 from typing import Optional
