@@ -29,6 +29,11 @@ PulsarModulations = namedtuple(
 QCM_DRIVER_VER = "0.3.1"
 QRM_DRIVER_VER = "0.3.1"
 
+warnings.warn(
+    "The pulsar_backend is deprecated. Please use qblox_backend instead.",
+    DeprecationWarning,
+)
+
 
 class Base_sequencer(Resource):
     def __init__(
