@@ -93,6 +93,16 @@ def apply_mixer_skewness_corrections(
     Takes a waveform and applies a correction for amplitude imbalances and
     phase errors when using an IQ mixer from previously calibrated values.
 
+    Phase correction is done using:
+
+    .. math::
+        Re(z_{corrected}) (t) = Re(z (t)) + Im(z (t)) \tan(\phi)
+        Im(z_{corrected}) (t) = Im(z (t)) / \cos(\phi)
+
+    The amplitude correction is achieved by rescaling the waveforms back to their
+    original amplitudes and multiplying or dividing the I and Q signals respectively by
+    the square root of the amplitude ratio.
+
     Parameters
     ----------
     waveform: np.ndarray
