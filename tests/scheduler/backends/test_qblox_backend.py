@@ -221,19 +221,18 @@ def test_find_all_port_clock_combinations():
     portclocks = qb.find_all_port_clock_combinations(HARDWARE_MAPPING)
     portclocks = set(portclocks)
     portclocks.discard((None, None))
-    assert portclocks == {
-        ("q1:mw", "q1.12"),
+    answer = {
         ("q1:mw", "q1.01"),
         ("q0:mw", "q0.01"),
-        ("q0:mw", "q0.12"),
         ("q0:res", "q0.ro"),
     }
+    assert portclocks == answer
 
 
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 5
+    assert len(portclock_map.keys()) == 3
 
 
 def test_find_abs_time_from_operation_hash(mixed_schedule_with_acquisition):
@@ -258,7 +257,7 @@ def test_contruct_sequencer():
                 name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
             )
 
-        def hardware_compile(self) -> Dict[str, Any]:
+        def hardware_compile(self, repetitions: int = 1) -> Dict[str, Any]:
             return dict()
 
     tp = Test_Pulsar()

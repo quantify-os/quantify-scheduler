@@ -204,16 +204,16 @@ def generate_ext_local_oscillators(
             if not isinstance(io_cfg, dict):  # is not a in/output
                 continue
 
-            if "lo_name" in io_cfg.keys():
+            if "lo_name" in io_cfg:
                 lo_name = io_cfg["lo_name"]
-                if lo_name not in lo_dict.keys():
+                if lo_name not in lo_dict:
                     lo_obj = LocalOscillator(
                         lo_name,
                         total_play_time,
                     )
                     lo_dict[lo_name] = lo_obj
 
-                if "lo_freq" in io_cfg.keys():
+                if "lo_freq" in io_cfg:
                     lo_dict[lo_name].assign_frequency(io_cfg["lo_freq"])
 
     return lo_dict
@@ -268,8 +268,9 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
             A list containing all the inner dictionaries containing the specified key.
     """
     dicts_found = list()
-    if key in d.keys():
-        dicts_found.append(d)
+    if isinstance(d, dict):
+        if key in d:
+            dicts_found.append(d)
     for val in d.values():
         if isinstance(val, dict) or isinstance(val, UserDict):
             dicts_found.extend(find_inner_dicts_containing_key(val, key))
@@ -278,7 +279,7 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
                 try:
                     dicts_found.extend(find_inner_dicts_containing_key(i_item, key))
                 # having a list that contains something other than a dict can cause an
-                # AttributeError on d.keys(), but this should be ignored anyway
+                # AttributeError on d, but this should be ignored anyway
                 except AttributeError:
                     continue
         else:
@@ -306,11 +307,11 @@ def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str
     port_clocks = list()
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
     for d in dicts_with_port:
-        if "port" in d.keys():
+        if "port" in d:
             port = d["port"]
             if port is None:
                 continue
-            if "clock" not in d.keys():
+            if "clock" not in d:
                 raise AttributeError(f"Port {d['port']} missing clock")
             clock = d["clock"]
             port_clocks.append((port, clock))
@@ -680,7 +681,7 @@ class OpInfo(DataClassJsonMixin):
         bool
             Is this an acquisition?
         """
-        return "acq_index" in self.data.keys()
+        return "acq_index" in self.data
 
     def __repr__(self):
         s = 'Acquisition "' if self.is_acquisition else 'Pulse "'
@@ -1390,7 +1391,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
-            if pulse.uuid not in waveforms_complex.keys():
+            if pulse.uuid not in waveforms_complex:
                 raw_wf_data = _generate_waveform_data(
                     pulse.data, sampling_rate=self.SAMPLING_RATE
                 )
@@ -1440,7 +1441,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         """
         waveforms_complex = dict()
         for acq in self.acquisitions:
-            if acq.uuid not in waveforms_complex.keys():
+            if acq.uuid not in waveforms_complex:
                 raw_wf_data_real = _generate_waveform_data(
                     acq.data["waveforms"][0], sampling_rate=self.SAMPLING_RATE
                 )
@@ -1975,13 +1976,13 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
             portclock = portclock_dict["port"], portclock_dict["clock"]
             freq = (
                 None
-                if "interm_freq" in portclock_dict.keys()
+                if "interm_freq" in portclock_dict
                 else portclock_dict["interm_freq"]
             )
 
             seq_name = f"seq{self.OUTPUT_TO_SEQ[io]}"
             sequencers[seq_name] = self.SEQ_TYPE(self, seq_name, portclock, freq)
-            if "mixer_corrections" in io_cfg.keys():
+            if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
                     io_cfg["mixer_corrections"]
                 )
@@ -2170,7 +2171,7 @@ def _assign_frequencies(
         )
 
         lo_freq = None
-        if "lo_freq" in lo_info_dict.keys():
+        if "lo_freq" in lo_info_dict:
             lo_freq = lo_info_dict["lo_freq"]
         if lo_freq is None:
             for portclock_dict in associated_portclock_dicts:
@@ -2195,7 +2196,7 @@ def _assign_frequencies(
                 assign_frequency = getattr(
                     device_compilers[dev_name], "assign_modulation_frequency"
                 )
-                if clock in schedule_resources.keys():
+                if clock in schedule_resources:
                     cl_freq = schedule_resources[clock]["freq"]
                     assign_frequency((port, clock), cl_freq - lo_freq)
 
