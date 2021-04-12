@@ -2308,7 +2308,9 @@ def _construct_compiler_objects(
     return device_compilers
 
 
-def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, Any]:
+def hardware_compile(
+    schedule: Schedule, hardware_map: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Main function driving the compilation. The principle behind the overall compilation
     works as follows:
@@ -2335,11 +2337,11 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
     """
     total_play_time = _calculate_total_play_time(schedule)
 
-    portclock_map = generate_port_clock_to_device_map(mapping)
+    portclock_map = generate_port_clock_to_device_map(hardware_map)
 
     device_compilers = _construct_compiler_objects(
         total_play_time=total_play_time,
-        mapping=mapping,
+        mapping=hardware_map,
     )
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
@@ -2347,11 +2349,11 @@ def hardware_compile(schedule: Schedule, mapping: Dict[str, Any]) -> Dict[str, A
         portclock_mapping=portclock_map,
     )
 
-    lo_compilers = generate_ext_local_oscillators(total_play_time, mapping)
+    lo_compilers = generate_ext_local_oscillators(total_play_time, hardware_map)
     _assign_frequencies(
         device_compilers,
         lo_compilers,
-        hw_mapping=mapping,
+        hw_mapping=hardware_map,
         portclock_mapping=portclock_map,
         schedule_resources=schedule.resources,
     )
