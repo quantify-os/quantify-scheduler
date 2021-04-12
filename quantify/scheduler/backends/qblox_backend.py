@@ -817,7 +817,8 @@ class QASMRuntimeSettings:
 # ---------- utility classes ----------
 class PulsarInstructions:
     """
-    Class that holds all the valid instructions that can be executed by the sequencer.
+    Class that holds all the string literals that are valid instructions that can be
+    executed by the sequencer.
     """
 
     # Control
