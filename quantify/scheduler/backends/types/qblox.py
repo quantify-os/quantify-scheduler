@@ -119,7 +119,6 @@ class PulsarSettings(DataClassJsonMixin):
     ref: str
     hardware_averages: int = 1
     acq_mode: str = "SSBIntegrationComplex"  # TODO hardcoded. Also unnecessary for QCM
-    duration: int = 0
 
 
 @dataclass
@@ -152,6 +151,7 @@ class SequencerSettings(DataClassJsonMixin):
     modulation_freq: float = None
     awg_offset_path_0: float = 0.0
     awg_offset_path_1: float = 0.0
+    duration: int = 0  # TODO this should be replaced by the acq weights and later removed completely
 
 
 @dataclass
