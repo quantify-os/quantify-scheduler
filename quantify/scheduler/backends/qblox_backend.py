@@ -1698,11 +1698,12 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
             port_clocks = find_all_port_clock_combinations(data)
             if len(port_clocks) > 1:
-                # TODO consider raising NotImplementedError?
-                warnings.warn(
-                    f"Multiple ({len(port_clocks)}) sequencers set per output. "
-                    f"Only one is allowed currently.",
-                    RuntimeWarning,
+                raise NotImplementedError(
+                    f"{len(port_clocks)} port and clock "
+                    f"combinations specified for output {io} "
+                    f"(sequencer {output_to_seq[io]}). Multiple "
+                    f"sequencers per output is not yet supported "
+                    f"by this backend."
                 )
 
             if len(port_clocks) > 0:
