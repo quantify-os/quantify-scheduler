@@ -894,7 +894,7 @@ class QASMProgram(list):
         immediate_sz = Pulsar_sequencer_base.IMMEDIATE_SZ
         if np.abs(val) > 1.0:
             raise ValueError(
-                f"{param} parameter must be in the range "
+                f"{param} is set to {val}. Parameter must be in the range "
                 f"-1.0 <= param <= 1.0 for {repr(operation)}."
             )
         return int(val * immediate_sz / 2)
@@ -1167,7 +1167,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 )
                 raw_wf_data, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
                 pulse.pulse_settings = QASMRuntimeSettings(
-                    awg_gain_0=amp_i, awg_gain_1=amp_q
+                    awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
+                    awg_gain_1=amp_q / self.AWG_OUTPUT_VOLT,
                 )
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return _generate_waveform_dict(waveforms_complex)
@@ -1277,8 +1278,12 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             The original amplitude of the imaginary part.
         """
         amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
-        norm_data_r = data.real / amp_real / self.AWG_OUTPUT_VOLT
-        norm_data_i = data.imag / amp_imag / self.AWG_OUTPUT_VOLT
+        norm_data_r = (
+            data.real / amp_real / self.AWG_OUTPUT_VOLT if amp_real != 0.0 else 0
+        )
+        norm_data_i = (
+            data.imag / amp_imag / self.AWG_OUTPUT_VOLT if amp_imag != 0.0 else 0
+        )
         return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
 
     def update_settings(self):
@@ -1560,7 +1565,7 @@ class QCM_sequencer(Pulsar_sequencer_base):
         Voltage range of the awg output paths.
     """
 
-    AWG_OUTPUT_VOLT = 2.5
+    AWG_OUTPUT_VOLT = 5
 
 
 class QRM_sequencer(Pulsar_sequencer_base):
@@ -1574,7 +1579,7 @@ class QRM_sequencer(Pulsar_sequencer_base):
         Voltage range of the awg output paths.
     """
 
-    AWG_OUTPUT_VOLT = 0.5
+    AWG_OUTPUT_VOLT = 1
 
 
 # ---------- pulsar instrument classes ----------
