@@ -1215,6 +1215,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 raw_wf_data_imag = _generate_waveform_data(
                     acq.data["waveforms"][1], sampling_rate=self.SAMPLING_RATE
                 )
+                self._settings.duration = len(raw_wf_data_real)
                 if not (
                     np.all(np.isreal(raw_wf_data_real))
                     and np.all(np.isreal(1.0j * raw_wf_data_imag))
@@ -1736,9 +1737,11 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
             portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
             if len(portclock_dicts) > 1:
-                warnings.warn(
-                    f"{len(portclock_dicts)} sequencers specified for "
-                    f"output {io} in mapping. Only one currently supported."
+                raise NotImplementedError(
+                    f"{len(portclock_dicts)} port and clock "
+                    f"combinations specified for output {io}. Multiple "
+                    f"sequencers per output is not yet supported "
+                    f"by this backend."
                 )
             portclock_dict = portclock_dicts[0]
             portclock = portclock_dict["port"], portclock_dict["clock"]
