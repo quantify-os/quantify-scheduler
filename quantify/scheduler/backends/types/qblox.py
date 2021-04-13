@@ -117,6 +117,8 @@ class PulsarSettings(DataClassJsonMixin):
     """
 
     ref: str
+    hardware_averages: int = 1
+    acq_mode = "SSBIntegrationComplex"  # TODO hardcoded. Also unnecessary for QCM
 
 
 @dataclass
