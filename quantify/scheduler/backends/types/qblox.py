@@ -114,6 +114,11 @@ class PulsarSettings(DataClassJsonMixin):
     ref: str
         The reference source. Should either be "internal" or "external", will raise an
         exception in the cs component otherwise.
+    hardware_averages: int
+        The number of repetitions of the Schedule.
+    acq_mode: str
+        The acquisition mode the Pulsar operates in. This setting will most likely
+        change in the future.
     """
 
     ref: str
@@ -144,6 +149,9 @@ class SequencerSettings(DataClassJsonMixin):
     awg_offset_path_1: float
         Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
         when using IQ mixers.
+    duration: int
+        Duration of the acquisition. This is a temporary addition for not yet merged the
+        ControlStack to function properly. This will be removed in a later version!
     """
 
     nco_en: bool
