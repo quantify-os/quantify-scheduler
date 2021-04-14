@@ -241,7 +241,12 @@ def test_generate_ext_local_oscillators():
 def test_calculate_total_play_time(mixed_schedule_with_acquisition):
     sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
     play_time = qb._calculate_total_play_time(sched)
-    answer = 184e-9
+    end_acq = (
+        DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_delay"]
+        + DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_integration_time"]
+    )
+    ro_pulse_duration = DEVICE_CFG["qubits"]["q0"]["params"]["ro_pulse_duration"]
+    answer = 24e-9 + max(end_acq, ro_pulse_duration)
     assert play_time == answer
 
 
