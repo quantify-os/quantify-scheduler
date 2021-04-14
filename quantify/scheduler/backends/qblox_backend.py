@@ -8,14 +8,15 @@ import inspect
 import os
 import sys
 import json
-from columnar import columnar
-from columnar.exceptions import TableOverflowError
-from qcodes.utils.helpers import NumpyJSONEncoder
 from abc import ABCMeta, abstractmethod
 from collections import UserDict, defaultdict, deque
 from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Set, Callable
+
+from columnar import columnar
+from columnar.exceptions import TableOverflowError
+from qcodes.utils.helpers import NumpyJSONEncoder
 
 import numpy as np
 from quantify.scheduler.helpers.schedule import get_total_duration
@@ -151,7 +152,7 @@ def generate_ext_local_oscillators(
     """
     # TODO more generic with get_inner_dicts_containing_key?
     lo_dict = dict()
-    for key, device in hardware_cfg.items():
+    for device in hardware_cfg.values():
         if not isinstance(device, dict):  # is not a device
             continue
 
