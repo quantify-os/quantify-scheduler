@@ -111,7 +111,8 @@ def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray
         np.ndarray
             The (possibly complex) values of the generated waveform
     """
-    t = np.arange(0, 0 + data_dict["duration"], 1 / sampling_rate)
+    time_duration = data_dict["duration"]
+    t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
 
     func = import_func_from_string(data_dict["wf_func"])
     par_map = inspect.signature(func).parameters.keys()
@@ -1251,6 +1252,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             The waveform data after applying all the transformations.
         """
         t = np.linspace(t0, time_duration + t0, int(time_duration * self.SAMPLING_RATE))
+        # t = np.arange(t0, t0 + time_duration, 1 / self.SAMPLING_RATE)
         corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)

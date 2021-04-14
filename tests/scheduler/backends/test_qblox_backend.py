@@ -261,7 +261,7 @@ def test_generate_waveform_data():
 
 def test_generate_ext_local_oscillators():
     lo_dict = qb.generate_ext_local_oscillators(10, HARDWARE_MAPPING)
-    defined_los = {"lo0", "lo1"}
+    defined_los = {"lo0", "lo1", "lo3"}
     assert lo_dict.keys() == defined_los
 
     lo1 = lo_dict["lo1"]
@@ -334,6 +334,7 @@ def test_find_all_port_clock_combinations():
         ("q1:mw", "q1.01"),
         ("q0:mw", "q0.01"),
         ("q0:res", "q0.ro"),
+        ("q1:res", "q1.ro"),
     }
     assert portclocks == answer
 
@@ -341,7 +342,7 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 3
+    assert len(portclock_map.keys()) == 4
 
 
 # --------- Test classes and member methods ---------
