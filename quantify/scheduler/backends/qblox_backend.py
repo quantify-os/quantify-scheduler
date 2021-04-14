@@ -466,7 +466,6 @@ class InstrumentCompiler(metaclass=ABCMeta):
                 A data structure representing the compiled program. The type is
                 dependent on implementation.
         """
-        pass
 
 
 class LocalOscillator(InstrumentCompiler):
