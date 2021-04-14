@@ -7,6 +7,7 @@ from collections import UserDict
 from uuid import uuid4
 
 import jsonschema
+import numpy as np
 from quantify.utilities import general
 from quantify.scheduler import resources
 
@@ -61,15 +62,14 @@ class Operation(UserDict):
 
         If the operation contains no pulse info, it is assumed to be ideal and have zero duration.
         """
-        duration = 0  # default to zero duration if no pulse content is specified.
-
-        # Iterate over all pulses and take longest duration
+        durations = list()
         for p in self.data["pulse_info"]:
-            d = p["duration"] + p["t0"]
-            if d > duration:
-                duration = d
+            durations.append(p["duration"] + p["t0"])
 
-        return duration
+        for a in self.data["acquisition_info"]:
+            durations.append(a["duration"] + a["t0"])
+
+        return np.max(durations) if len(durations) > 0 else 0
 
     @property
     def hash(self):
