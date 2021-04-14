@@ -63,11 +63,11 @@ class Operation(UserDict):
         If the operation contains no pulse info, it is assumed to be ideal and have zero duration.
         """
         durations = list()
-        for p in self.data["pulse_info"]:
-            durations.append(p["duration"] + p["t0"])
 
-        for a in self.data["acquisition_info"]:
-            durations.append(a["duration"] + a["t0"])
+        durations.extend([p["duration"] + p["t0"] for p in self.data["pulse_info"]])
+        durations.extend(
+            [a["duration"] + a["t0"] for a in self.data["acquisition_info"]]
+        )
 
         return np.max(durations) if len(durations) > 0 else 0
 
