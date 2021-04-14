@@ -201,13 +201,6 @@ def test_generate_ext_local_oscillators():
     assert lo1_freq == 7.2e9
 
 
-def test_calculate_total_play_time(mixed_schedule_with_acquisition):
-    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    play_time = qb._calculate_total_play_time(sched)
-    answer = 184e-9
-    assert play_time == answer
-
-
 def test_find_inner_dicts_containing_key():
     test_dict = {
         "foo": "bar",

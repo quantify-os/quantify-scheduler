@@ -7,7 +7,6 @@ from __future__ import annotations
 import inspect
 import os
 import sys
-import warnings
 import json
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
@@ -19,6 +18,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple, Union, Set, Callable
 
 import numpy as np
+from quantify.scheduler.helpers.schedule import get_total_duration
 from quantify.data.handling import get_datadir, gen_tuid
 from quantify.utilities.general import make_hash, without, import_func_from_string
 
@@ -171,34 +171,6 @@ def generate_ext_local_oscillators(
                     lo_dict[lo_name].assign_frequency(io_cfg["lo_freq"])
 
     return lo_dict
-
-
-def _calculate_total_play_time(schedule: Schedule) -> float:
-    """
-    Calculates the total time the schedule has to be executed on the hardware, not
-    accounting for repetitions. Effectively, this is the maximum of the end times of
-    the pulses and acquisitions.
-
-    Parameters
-    ----------
-    schedule: Schedule
-        The quantify schedule object of which we want the total execution time
-
-    Returns
-    -------
-        float
-            Total play time in seconds
-    """
-    max_found: float = 0.0
-    for time_constraint in schedule.timing_constraints:
-        pulse_id = time_constraint["operation_hash"]
-        operation = schedule.operations[pulse_id]
-        end_time = operation.duration + time_constraint["abs_time"]
-
-        if end_time > max_found:
-            max_found = end_time
-
-    return max_found
 
 
 def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[dict]:
@@ -2124,7 +2096,7 @@ def hardware_compile(
     Dict[str, Any]
         The compiled program
     """
-    total_play_time = _calculate_total_play_time(schedule)
+    total_play_time = get_total_duration(schedule)
 
     portclock_map = generate_port_clock_to_device_map(hardware_map)
 
