@@ -156,7 +156,7 @@ def generate_ext_local_oscillators(
         if not isinstance(device, dict):  # is not a device
             continue
 
-        for io, io_cfg in device.items():
+        for io_cfg in device.values():
             if not isinstance(io_cfg, dict):  # is not a in/output
                 continue
 
