@@ -1154,6 +1154,11 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         -------
         Dict[str, Any]
             The awg dictionary
+
+        Raises
+        ------
+        ValueError
+            I or Q amplitude is being set outside of maximum range.
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
@@ -1166,6 +1171,22 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 raw_wf_data, pulse.duration, pulse.timing
             )
             _, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
+            if np.abs(amp_i) > self.AWG_OUTPUT_VOLT:
+                raise ValueError(
+                    f"Attempting to set amplitude to invalid value. "
+                    f"Maximum voltage range is +-{self.AWG_OUTPUT_VOLT} V for "
+                    f"{self.__class__.__name__}.\nAttempting"
+                    f"to use {amp_i} as amplitude for the I channel for pulse "
+                    f"{repr(pulse)}!"
+                )
+            if np.abs(amp_q) > self.AWG_OUTPUT_VOLT:
+                raise ValueError(
+                    f"Attempting to set amplitude to invalid value. "
+                    f"Maximum voltage range is +-{self.AWG_OUTPUT_VOLT} V for "
+                    f"{self.__class__.__name__}.\nAttempting "
+                    f"to use {amp_q} as amplitude for the Q channel for pulse "
+                    f"{repr(pulse)}!"
+                )
             pulse.pulse_settings = QASMRuntimeSettings(
                 awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
                 awg_gain_1=amp_q / self.AWG_OUTPUT_VOLT,
