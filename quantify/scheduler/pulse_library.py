@@ -4,6 +4,7 @@
 from __future__ import annotations
 from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
+from qcodes import validators as vals
 
 
 class IdlePulse(Operation):
@@ -122,6 +123,52 @@ class SquarePulse(Operation):
             ],
         }
         super().__init__(name=data["name"], data=data)
+
+
+def decompose_long_square_pulse(
+    duration: float, duration_max: float, single_duration: bool = False, **kwargs
+) -> list:
+    """
+    Generates a list of square pulses equivalent to a  (very) long square pulse.
+
+    Intended to be used for waveform-memory-limited devices. Effectively, only two
+    square pulses, at most, will be needed: a main one of duration `duration_max` and
+    a second one for potential mismatch between N `duration_max` and overall `duration`.
+
+    Parameters
+    ----------
+    duration
+        Duration of the long pulse in seconds.
+    duration_max
+        Maximum duration of square pulses to be generated in seconds.
+    single_duration
+        If `True`, only square pulses of duration `duration_max` will be generated.
+        If `False`, a square pulse of `duration` < `duration_max` might be generated if
+        necessary.
+    **kwargs
+        Other keyword arguments to be passed to the :class:`~SquarePulse`.
+
+    Returns
+    -------
+    :
+        A list of :class`SquarePulse` s equivalent to the desired long pulse.
+    """
+    # Sanity checks
+    validator = vals.Numbers(min_value=0.0, max_value=7 * 24 * 3600.0).validate
+    validator(duration)
+    validator = vals.Numbers(min_value=0.0, max_value=duration).validate
+    validator(duration_max)
+
+    duration_last_pulse = duration % duration_max
+    num_pulses = int(duration // duration_max)
+
+    pulses = [SquarePulse(duration=duration_max, **kwargs) for _ in range(num_pulses)]
+
+    if duration_last_pulse != 0.0:
+        duration_last_pulse = duration_max if single_duration else duration_last_pulse
+        pulses.append(SquarePulse(duration=duration_last_pulse, **kwargs))
+
+    return pulses
 
 
 class SoftSquarePulse(Operation):
