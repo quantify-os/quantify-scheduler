@@ -13,12 +13,13 @@
       "seq0": {
         "port": "q0:mw",
         "clock": "q0.01",
-        "interm_freq": -50e6
+        "interm_freq": 50e6
       }
     },
     "complex_output_1": {
       "line_gain_db": 0,
-      "lo_freq": 4.8e9,
+      "lo_name": "lo1",
+      "lo_freq": 7.2e9,
       "seq0": {
         "port": "q1:mw",
         "clock": "q1.01",
