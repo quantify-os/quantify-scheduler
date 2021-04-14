@@ -1157,33 +1157,21 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
+            # FIXME: Most of this is unnecessary but requires
+            #  that we change how we deal with QASMRuntimeSettings
+            raw_wf_data = _generate_waveform_data(
+                pulse.data, sampling_rate=self.SAMPLING_RATE
+            )
+            raw_wf_data = self._apply_corrections_to_waveform(
+                raw_wf_data, pulse.duration, pulse.timing
+            )
+            _, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
+            pulse.pulse_settings = QASMRuntimeSettings(
+                awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
+                awg_gain_1=amp_q / self.AWG_OUTPUT_VOLT,
+            )
             if pulse.uuid not in waveforms_complex:
-                raw_wf_data = _generate_waveform_data(
-                    pulse.data, sampling_rate=self.SAMPLING_RATE
-                )
-                raw_wf_data = self._apply_corrections_to_waveform(
-                    raw_wf_data, pulse.duration, pulse.timing
-                )
-                raw_wf_data, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
-                pulse.pulse_settings = QASMRuntimeSettings(
-                    awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
-                    awg_gain_1=amp_q / self.AWG_OUTPUT_VOLT,
-                )
                 waveforms_complex[pulse.uuid] = raw_wf_data
-            else:
-                # FIXME: Most of this is unnecessary but requires
-                #  that we change how we deal with QASMRuntimeSettings
-                raw_wf_data = _generate_waveform_data(
-                    pulse.data, sampling_rate=self.SAMPLING_RATE
-                )
-                raw_wf_data = self._apply_corrections_to_waveform(
-                    raw_wf_data, pulse.duration, pulse.timing
-                )
-                _, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
-                pulse.pulse_settings = QASMRuntimeSettings(
-                    awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
-                    awg_gain_1=amp_q / self.AWG_OUTPUT_VOLT,
-                )
         return _generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_dict(self) -> Dict[str, Any]:
