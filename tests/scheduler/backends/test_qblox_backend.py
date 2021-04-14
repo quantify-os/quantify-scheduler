@@ -97,6 +97,32 @@ def pulse_only_schedule():
 
 
 @pytest.fixture
+def pulse_only_schedule_with_operation_timing():
+    sched = Schedule("pulse_only_experiment")
+    first_op = sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(
+        RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"),
+        ref_op=first_op,
+        ref_pt="start",
+        rel_time=1e-3,
+    )
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
 def mixed_schedule_with_acquisition():
     sched = Schedule("mixed_schedule_with_acquisition")
     sched.add(
@@ -201,6 +227,29 @@ def test_generate_ext_local_oscillators():
     assert lo1_freq == 7.2e9
 
 
+def test_calculate_total_play_time(mixed_schedule_with_acquisition):
+    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    play_time = qb._calculate_total_play_time(sched)
+    answer = 184e-9
+    assert play_time == answer
+
+
+def test_calculate_total_play_time_without_acq(pulse_only_schedule):
+    sched = device_compile(pulse_only_schedule, DEVICE_CFG)
+    play_time = qb._calculate_total_play_time(sched)
+    answer = 24e-9 + 2e-3 + 28e-9
+    assert play_time == answer
+
+
+def test_calculate_total_play_time_with_op_timing(
+    pulse_only_schedule_with_operation_timing,
+):
+    sched = device_compile(pulse_only_schedule_with_operation_timing, DEVICE_CFG)
+    play_time = qb._calculate_total_play_time(sched)
+    answer = 3e-3 + 28e-9
+    assert play_time == answer
+
+
 def test_find_inner_dicts_containing_key():
     test_dict = {
         "foo": "bar",
@@ -280,6 +329,18 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
+
+def test_compile_with_rel_time(
+    dummy_pulsars, pulse_only_schedule_with_operation_timing
+):
+    full_program = qcompile(
+        pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_MAPPING
+    )
+    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+
+    qcm0 = dummy_pulsars[0]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
 
 
 def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition):

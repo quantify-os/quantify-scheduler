@@ -173,6 +173,33 @@ def generate_ext_local_oscillators(
     return lo_dict
 
 
+def _calculate_total_play_time(schedule: Schedule) -> float:
+    """
+    Calculates the total time the schedule has to be executed on the hardware, not
+    accounting for repetitions. Effectively, this is the maximum of the end times of
+    the pulses and acquisitions.
+
+    Parameters
+    ----------
+    schedule: Schedule
+        The quantify schedule object of which we want the total execution time
+
+    Returns
+    -------
+        float
+            Total play time in seconds
+    """
+    end_times = list()
+    for time_constraint in schedule.timing_constraints:
+        pulse_id = time_constraint["operation_hash"]
+        operation = schedule.operations[pulse_id]
+        end_time = operation.duration + time_constraint["abs_time"]
+
+        end_times.append(end_time)
+
+    return np.max(end_times)
+
+
 def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
