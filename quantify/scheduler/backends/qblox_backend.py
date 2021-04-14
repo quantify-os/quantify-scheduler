@@ -202,6 +202,7 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
     return np.max(end_times)
 
 
+# pylint disable:invalid-name
 def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
@@ -261,14 +262,14 @@ def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str
     """
     port_clocks = list()
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
-    for d in dicts_with_port:
-        if "port" in d:
-            port = d["port"]
+    for inner_dict in dicts_with_port:
+        if "port" in inner_dict:
+            port = inner_dict["port"]
             if port is None:
                 continue
-            if "clock" not in d:
-                raise AttributeError(f"Port {d['port']} missing clock")
-            clock = d["clock"]
+            if "clock" not in inner_dict:
+                raise AttributeError(f"Port {inner_dict['port']} missing clock")
+            clock = inner_dict["clock"]
             port_clocks.append((port, clock))
     return port_clocks
 
