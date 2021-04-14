@@ -308,29 +308,6 @@ def generate_port_clock_to_device_map(
     return portclock_map
 
 
-def find_abs_time_from_operation_hash(schedule: Schedule, op_hash: int) -> float:
-    """
-    Utility function to find the "abs_time" in the `timing_constraints` of the schedule
-    from a given "operation_hash".
-
-    Parameters
-    ----------
-    schedule: Schedule
-        The schedule that contains the operation to get the "abs_time" from.
-    op_hash: int
-        The operation hash of the operation that we want to get the "abs_time" from.
-
-    Returns
-    -------
-    float
-        The absolute start time of the operation.
-    """
-    timing_constraints = schedule.timing_constraints
-    for tc in timing_constraints:
-        if tc["operation_hash"] == op_hash:
-            return tc["abs_time"]
-
-
 def _generate_waveform_dict(
     waveforms_complex: Dict[int, np.ndarray]
 ) -> Dict[str, dict]:
@@ -1170,7 +1147,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             raw_wf_data = self._apply_corrections_to_waveform(
                 raw_wf_data, pulse.duration, pulse.timing
             )
-            _, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
+            raw_wf_data, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
             if np.abs(amp_i) > self.AWG_OUTPUT_VOLT:
                 raise ValueError(
                     f"Attempting to set amplitude to invalid value. "
@@ -2036,7 +2013,10 @@ def _assign_pulse_and_acq_info_to_devices(
         This exception is raised then the function encountered an operation that has no
         pulse or acquisition info assigned to it.
     """
-    for op_hash, op_data in schedule.operations.items():
+    # for op_hash, op_data in schedule.operations.items():
+    for op_timing_constraint in schedule.timing_constraints:
+        op_hash = op_timing_constraint["operation_hash"]
+        op_data = schedule.operations[op_hash]
         if not op_data.valid_pulse and not op_data.valid_acquisition:
             raise RuntimeError(
                 f"Operation {op_hash} is not a valid pulse or acquisition. Please check"
@@ -2044,7 +2024,7 @@ def _assign_pulse_and_acq_info_to_devices(
                 f"Operation data: {repr(op_data)}"
             )
 
-        operation_start_time = find_abs_time_from_operation_hash(schedule, op_hash)
+        operation_start_time = op_timing_constraint["abs_time"]
         for pulse_data in op_data.data["pulse_info"]:
             if "t0" in pulse_data:
                 pulse_start_time = operation_start_time + pulse_data["t0"]

@@ -344,17 +344,6 @@ def test_generate_port_clock_to_device_map():
     assert len(portclock_map.keys()) == 3
 
 
-def test_find_abs_time_from_operation_hash(mixed_schedule_with_acquisition):
-    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    first_op_hash = sched.timing_constraints[0]["operation_hash"]
-    first_abs_time = qb.find_abs_time_from_operation_hash(sched, first_op_hash)
-    assert first_abs_time == 0
-
-    second_op_hash = sched.timing_constraints[1]["operation_hash"]
-    second_abs_time = qb.find_abs_time_from_operation_hash(sched, second_op_hash)
-    assert second_abs_time == 24e-9
-
-
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
     class Test_Pulsar(qb.Pulsar_base):
