@@ -2,11 +2,10 @@
 # Licensed according to the LICENCE file on the master branch
 """Python dataclasses for compilation to Qblox hardware."""
 
-import numpy as np
-
 from typing import Optional
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
+import numpy as np
 
 from quantify.scheduler.helpers.waveforms import apply_mixer_skewness_corrections
 
@@ -184,8 +183,8 @@ class MixerCorrections(DataClassJsonMixin):
 
     amp_ratio: float = 1.0
     phase_error: float = 0.0
-    offset_I: float = 0.0
-    offset_Q: float = 0.0
+    offset_I: float = 0.0  # pylint disable=invalid-name
+    offset_Q: float = 0.0  # pylint disable=invalid-name
 
     def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
         """

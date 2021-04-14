@@ -560,6 +560,7 @@ class LocalOscillator(InstrumentCompiler):
 
 
 # ---------- utility classes ----------
+# pylint: disable=too-few-public-methods
 class PulsarInstructions:
     """
     Class that holds all the string literals that are valid instructions that can be
@@ -896,7 +897,8 @@ class QASMProgram(list):
         time_ns = int(np.round(time * 1e9))
         if time_ns % Pulsar_sequencer_base.GRID_TIME_ns != 0:
             raise ValueError(
-                f"Pulsar can only work in a timebase of {Pulsar_sequencer_base.GRID_TIME_ns}"
+                f"Pulsar can only work in a timebase of "
+                f"{Pulsar_sequencer_base.GRID_TIME_ns}"
                 f" ns. Attempting to use {time_ns} ns."
             )
         return time_ns
