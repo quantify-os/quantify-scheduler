@@ -98,7 +98,7 @@ def pulse_only_schedule():
 
 @pytest.fixture
 def pulse_only_schedule_with_operation_timing():
-    sched = Schedule("pulse_only_experiment")
+    sched = Schedule("pulse_only_schedule_with_operation_timing")
     first_op = sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -113,7 +113,7 @@ def pulse_only_schedule_with_operation_timing():
     sched.add(
         RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"),
         ref_op=first_op,
-        ref_pt="start",
+        ref_pt="end",
         rel_time=1e-3,
     )
     # Clocks need to be manually added at this stage.
@@ -137,6 +137,17 @@ def mixed_schedule_with_acquisition():
         )
     )
     sched.add(Measure("q0"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def gate_only_schedule():
+    sched = Schedule("gate_only_schedule")
+    x_gate = sched.add(X("q0"))
+    sched.add(Measure("q0"), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     determine_absolute_timing(sched)
@@ -246,7 +257,23 @@ def test_calculate_total_play_time_with_op_timing(
 ):
     sched = device_compile(pulse_only_schedule_with_operation_timing, DEVICE_CFG)
     play_time = qb._calculate_total_play_time(sched)
-    answer = 3e-3 + 28e-9
+    answer = 3e-3 + 28e-9 + 24e-9
+    assert play_time == answer
+
+
+def test_calculate_total_play_time_with_gates(
+    gate_only_schedule,
+):
+    rel_time = 1e-6
+    mw_duration = DEVICE_CFG["qubits"]["q0"]["params"]["mw_duration"]
+    end_acq = (
+        DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_delay"]
+        + DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_integration_time"]
+    )
+    ro_pulse_duration = DEVICE_CFG["qubits"]["q0"]["params"]["ro_pulse_duration"]
+    sched = device_compile(gate_only_schedule, DEVICE_CFG)
+    play_time = qb._calculate_total_play_time(sched)
+    answer = mw_duration + rel_time + max(end_acq, ro_pulse_duration)
     assert play_time == answer
 
 
