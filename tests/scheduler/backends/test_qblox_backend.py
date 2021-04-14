@@ -97,6 +97,37 @@ def pulse_only_schedule():
 
 
 @pytest.fixture
+def identical_pulses_schedule():
+    sched = Schedule("identical_pulses_schedule")
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=0,
+        )
+    )
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
 def pulse_only_schedule_with_operation_timing():
     sched = Schedule("pulse_only_schedule_with_operation_timing")
     first_op = sched.add(
@@ -348,6 +379,11 @@ def test_contruct_sequencer():
 def test_simple_compile(dummy_pulsars, pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_identical_pulses_compile(dummy_pulsars, identical_pulses_schedule):
+    """Tests if compilation with only pulses finishes without exceptions"""
+    qcompile(identical_pulses_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
