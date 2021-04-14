@@ -1409,6 +1409,13 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
             end_time = qasm.to_pulsar_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
+            if wait_time <= 0:
+                raise RuntimeError(
+                    f"Invalid timing detected, attempting to insert wait "
+                    f"of {wait_time} ns. The total duration of the "
+                    f"schedule is {end_time} but {qasm.elapsed_time} ns "
+                    f"already processed."
+                )
             qasm.auto_wait(wait_time)
 
         # program footer
