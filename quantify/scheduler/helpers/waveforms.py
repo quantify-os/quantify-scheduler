@@ -316,16 +316,16 @@ def apply_mixer_skewness_corrections(
             corrections.
     """
 
-    def calc_corrected_re(wf: np.ndarray, alpha: float, phi: float):
-        original_amp = np.max(np.abs(wf.real))
-        wf_re = wf.real + wf.imag * np.tan(phi)
+    def calc_corrected_re(wvfm: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(wvfm.real))
+        wf_re = wvfm.real + wvfm.imag * np.tan(phi)
         new_amp = np.max(np.abs(wf_re))
         wf_re = wf_re / new_amp if new_amp != 0 else np.zeros(wf_re.shape)
         return wf_re * original_amp * np.sqrt(alpha)
 
-    def calc_corrected_im(wf: np.ndarray, alpha: float, phi: float):
-        original_amp = np.max(np.abs(wf.imag))
-        wf_im = wf.imag / np.cos(phi)
+    def calc_corrected_im(wvfm: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(wvfm.imag))
+        wf_im = wvfm.imag / np.cos(phi)
         new_amp = np.max(np.abs(wf_im))
         wf_im = wf_im / new_amp if new_amp != 0 else np.zeros(wf_im.shape)
         return wf_im * original_amp / np.sqrt(alpha)
