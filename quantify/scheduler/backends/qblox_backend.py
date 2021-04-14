@@ -1279,10 +1279,14 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         """
         amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
         norm_data_r = (
-            data.real / amp_real / self.AWG_OUTPUT_VOLT if amp_real != 0.0 else 0
+            data.real / amp_real / self.AWG_OUTPUT_VOLT
+            if amp_real != 0.0
+            else np.zeros(data.real.shape)
         )
         norm_data_i = (
-            data.imag / amp_imag / self.AWG_OUTPUT_VOLT if amp_imag != 0.0 else 0
+            data.imag / amp_imag / self.AWG_OUTPUT_VOLT
+            if amp_imag != 0.0
+            else np.zeros(data.imag.shape)
         )
         return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
 
