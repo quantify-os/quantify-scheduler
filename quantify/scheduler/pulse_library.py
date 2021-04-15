@@ -2,9 +2,9 @@
 # Licensed according to the LICENCE file on the master branch
 """Standard pulses for use with the quantify.scheduler."""
 from __future__ import annotations
+from qcodes import validators as vals
 from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
-from qcodes import validators as vals
 
 
 class IdlePulse(Operation):
