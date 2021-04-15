@@ -60,6 +60,7 @@ stages:
     paths:
       - htmlcov
       - coverage.xml
+      - pip-list.txt
     reports:
       cobertura: coverage.xml
     when: always
@@ -131,6 +132,9 @@ docs-make-html-3.8:
   extends:
     - .develop-only-job
   allow_failure: true  # temporarily allowed to fail, see issue #100
+  artifacts:
+    paths:
+      - pip-list.txt
 
 black:
   stage: Static Analysis
