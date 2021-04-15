@@ -3,15 +3,15 @@
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
-from collections import UserDict
 from uuid import uuid4
-
+from collections import UserDict
+from typing_extensions import Literal
 import jsonschema
 from quantify.utilities import general
 from quantify.scheduler import resources
 
 
-class Operation(UserDict):
+class Operation(UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
     how to represent the operation on the Gate, Pulse and/or Logical level.
@@ -52,6 +52,7 @@ class Operation(UserDict):
 
     @property
     def name(self):
+        """Return the name of the operation."""
         return self.data["name"]
 
     @property
@@ -64,10 +65,10 @@ class Operation(UserDict):
         duration = 0  # default to zero duration if no pulse content is specified.
 
         # Iterate over all pulses and take longest duration
-        for p in self.data["pulse_info"]:
-            d = p["duration"] + p["t0"]
-            if d > duration:
-                duration = d
+        for pulse in self.data["pulse_info"]:
+            pulse_duration = pulse["duration"] + pulse["t0"]
+            if pulse_duration > duration:
+                duration = pulse_duration
 
         return duration
 
@@ -113,6 +114,7 @@ class Operation(UserDict):
 
     @classmethod
     def is_valid(cls, operation):
+        """Checks if the operation is valid according to its schema."""
         scheme = general.load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
         _ = operation.hash  # test that the hash property evaluates
@@ -149,7 +151,7 @@ class Operation(UserDict):
         return False
 
 
-class Schedule(UserDict):
+class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     """
     A collection of :class:`~Operation` objects and timing constraints
     that define relations between the operations.
@@ -207,6 +209,7 @@ class Schedule(UserDict):
 
     @property
     def name(self) -> str:
+        """Returns the name of the schedule."""
         return self.data["name"]
 
     @property
@@ -259,9 +262,10 @@ class Schedule(UserDict):
         """
         return self.data["resource_dict"]
 
-    def add_resources(self, resources: list):
-        for r in resources:
-            self.add_resource(r)
+    def add_resources(self, resources_list: list):
+        """Add wrapper for adding multiple resources"""
+        for resource in resources_list:
+            self.add_resource(resource)
 
     def add_resource(self, resource):
         """
@@ -270,8 +274,8 @@ class Schedule(UserDict):
         assert resources.Resource.is_valid(resource)
         if resource.name in self.data["resource_dict"]:
             raise ValueError("Key {} is already present".format(resource.name))
-        else:
-            self.data["resource_dict"][resource.name] = resource
+
+        self.data["resource_dict"][resource.name] = resource
 
     def __repr__(self):
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
@@ -282,6 +286,9 @@ class Schedule(UserDict):
 
     @classmethod
     def is_valid(cls, schedule):
+        """
+        Checks the schedule validity according to its schema.
+        """
         scheme = general.load_json_schema(__file__, "schedule.json")
         jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
@@ -292,8 +299,8 @@ class Schedule(UserDict):
         operation: Operation,
         rel_time: float = 0,
         ref_op: str = None,
-        ref_pt: str = "end",
-        ref_pt_new: str = "start",
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
     ) -> str:
         """
