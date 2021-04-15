@@ -28,6 +28,7 @@ cache:
   paths:
     - .cache/pip
     - venv/
+    - pip-list.txt
 
 before_script:
   - python -V  # Print out python version for debugging
@@ -38,6 +39,7 @@ before_script:
   - sleep 3
   - pip install --upgrade --upgrade-strategy eager -e .
   - pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt
+  - pip list > pip-list.txt; cat pip-list.txt # save the versions of the packages installed for debugging
 
 stages:
   - Static Analysis
