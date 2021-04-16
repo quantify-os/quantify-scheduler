@@ -154,6 +154,7 @@ pulse_diagram
 ~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
+
 =======
 
 miscellaneous
