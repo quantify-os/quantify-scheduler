@@ -43,7 +43,6 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
-    "nbsphinx",
     "sphinx-jsonschema",
     "jupyter_sphinx",
     "sphinxcontrib.blockdiag",
@@ -198,13 +197,12 @@ suppress_warnings = ["autosectionlabel.*"]
 
 blockdiag_html_image_format = "SVG"
 
-# At some point we might want to make no warnings imperative
-autodoc_warningiserror = False
-
+# used by scanpydoc.elegant_typehints to correctly link to external docs
 qualname_overrides = {
     "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
 }
 
 numfig = True
 
+# Cannot be set to `True` because plotly and qcodes break the docs build
 set_type_checking_flag = False

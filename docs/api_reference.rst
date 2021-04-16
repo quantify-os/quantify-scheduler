@@ -150,6 +150,11 @@ circuit_diagram
 .. automodule:: quantify.scheduler.visualization.circuit_diagram
     :members:
 
+pulse_diagram
+~~~~~~~~~~~~~
+
+.. automodule:: quantify.scheduler.visualization.pulse_diagram
+=======
 
 miscellaneous
 -------------
