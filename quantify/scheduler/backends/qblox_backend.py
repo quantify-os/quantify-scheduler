@@ -1994,6 +1994,7 @@ def _assign_frequencies(
                 if clock in schedule_resources:
                     cl_freq = schedule_resources[clock]["freq"]
                     assign_frequency((port, clock), cl_freq - lo_freq)
+
     unused_los = set(lo_compilers.keys()).difference(los_used)
     for lo_name in unused_los:
         lo_compilers.pop(lo_name)
