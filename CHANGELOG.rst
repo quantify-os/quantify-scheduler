@@ -2,8 +2,16 @@
 Changelog
 ===========
 
+Unreleased
+----------
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* [Docs] pinned scanpydoc==0.6 due to conflicting docs dependencies (!84)
+
 0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
--------------------------------------------------------------------
+---------------------------------------------------------
 
 * Major refactor of the scheduler resource code enabling hybrid pulse- gate-level control.
 * Moved quantify.scheduler.types.Resource class to a separate quantify.scheduler.resources module.
@@ -19,7 +27,7 @@ Changelog
 * Pulsar backend version now checks for QCM and QRM drivers version 0.1.2.
 
 Merged branches and closed issues
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * fix(pulse_scheme): Add tickformatstops for x-axis using SI-unit 'seconds'. Closes #39. (!39)
 * Resolve "y-axis label is broken in plotly visualization after resources-refactor". Closes #45. (!38)

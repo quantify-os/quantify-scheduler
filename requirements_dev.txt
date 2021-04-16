@@ -24,11 +24,11 @@ pygments==2.6.1
 black
 pylint
 pre-commit
-scanpydoc
+scanpydoc==0.6 # pinned because 0.7 is made for sphinx-autodoc-typehints==1.12.0 but sphinx-toolbox requires sphinx-autodoc-typehints==1.11.1
 docutils<0.17 # pinned due to issue #175 (quantify-core)
 
 # scheduler-only
 
 pytest-mpl
-sphinx-toolbox  # required by enum_tools
-enum_tools
+sphinx-toolbox  # required by enum_tools when building the docs, 2.4.1 requires sphinx==3.3.1
+enum_tools # requires sphinx-toolbox when building docs
