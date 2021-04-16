@@ -59,11 +59,11 @@
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo3",
-      "lo_freq": 7.2e9,
+      "lo_freq": null,
       "seq0": {
         "port": "q1:res",
         "clock": "q1.ro",
-        "interm_freq": null
+        "interm_freq": 100e6
         }
       }
     }

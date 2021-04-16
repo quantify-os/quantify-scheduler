@@ -1930,6 +1930,8 @@ def _assign_frequencies(
     the `InstrumentCompiler`. If the IF is specified the LO frequency is calculated
     based on the constraint `clock_freq = interm_freq + lo_freq`, and vice versa.
 
+    Function removes LOs from lo_compilers if not used by any devices.
+
     Parameters
     ----------
     device_compilers: Dict[str, InstrumentCompiler]
@@ -1952,6 +1954,7 @@ def _assign_frequencies(
 
     """
     lo_info_dicts = find_inner_dicts_containing_key(hw_mapping, "lo_name")
+    los_used = set()
     for lo_info_dict in lo_info_dicts:
         lo_obj = lo_compilers[lo_info_dict["lo_name"]]
         associated_portclock_dicts = find_inner_dicts_containing_key(
@@ -1969,6 +1972,8 @@ def _assign_frequencies(
                     cl_freq = schedule_resources[clock]["freq"]
 
                     dev_name = portclock_mapping[(port, clock)]
+                    if (port, clock) in device_compilers[dev_name].portclocks_with_data:
+                        los_used.add(lo_obj.name)
                     assign_frequency = getattr(
                         device_compilers[dev_name], "assign_modulation_frequency"
                     )
@@ -1981,12 +1986,17 @@ def _assign_frequencies(
             for portclock_dict in associated_portclock_dicts:
                 port, clock = portclock_dict["port"], portclock_dict["clock"]
                 dev_name = portclock_mapping[(port, clock)]
+                if (port, clock) in device_compilers[dev_name].portclocks_with_data:
+                    los_used.add(lo_obj.name)
                 assign_frequency = getattr(
                     device_compilers[dev_name], "assign_modulation_frequency"
                 )
                 if clock in schedule_resources:
                     cl_freq = schedule_resources[clock]["freq"]
                     assign_frequency((port, clock), cl_freq - lo_freq)
+    unused_los = set(lo_compilers.keys()).difference(los_used)
+    for lo_name in unused_los:
+        lo_compilers.pop(lo_name)
 
 
 def _assign_pulse_and_acq_info_to_devices(
