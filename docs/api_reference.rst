@@ -96,10 +96,10 @@ backends
 .. automodule:: quantify.scheduler.backends
     :members:
 
-pulsar_backend
+qblox_backend
 ~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.backends.pulsar_backend
+.. automodule:: quantify.scheduler.backends.qblox_backend
     :members:
 
 zhinst_backend
