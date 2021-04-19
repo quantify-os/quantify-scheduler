@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Standard pulses for use with the quantify.scheduler."""
 from __future__ import annotations
-from qcodes import validators as vals
+from qcodes import validators
 from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
 
@@ -154,9 +154,9 @@ def decompose_long_square_pulse(
         A list of :class`SquarePulse` s equivalent to the desired long pulse.
     """
     # Sanity checks
-    validator = vals.Numbers(min_value=0.0, max_value=7 * 24 * 3600.0).validate
+    validator = validators.Numbers(min_value=0.0, max_value=7 * 24 * 3600.0).validate
     validator(duration)
-    validator = vals.Numbers(min_value=0.0, max_value=duration).validate
+    validator = validators.Numbers(min_value=0.0, max_value=duration).validate
     validator(duration_max)
 
     duration_last_pulse = duration % duration_max
