@@ -38,6 +38,7 @@ before_script:
   - sleep 3
   - pip install --upgrade --upgrade-strategy eager -e .
   - pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt
+  - pip list > pip-list.txt; cat pip-list.txt # save the version of the packages installed for CI debugging
 
 stages:
   - Static Analysis
@@ -58,6 +59,7 @@ stages:
     paths:
       - htmlcov
       - coverage.xml
+      - pip-list.txt
     reports:
       cobertura: coverage.xml
     when: always
@@ -129,6 +131,9 @@ docs-make-html-3.8:
   extends:
     - .develop-only-job
   allow_failure: true  # temporarily allowed to fail, see issue #100
+  artifacts:
+    paths:
+      - pip-list.txt
 
 black:
   stage: Static Analysis
