@@ -2,7 +2,8 @@
 # Licensed according to the LICENCE file on the master branch
 """Python dataclasses for compilation to Qblox hardware."""
 
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
@@ -123,6 +124,24 @@ class PulsarSettings(DataClassJsonMixin):
     ref: str
     hardware_averages: int = 1
     acq_mode: str = "SSBIntegrationComplex"  # TODO hardcoded. Also unnecessary for QCM
+
+    @staticmethod
+    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a `PulsarSettings` object from it.
+
+        Parameters
+        ----------
+        mapping: Dict[str, Any]
+
+
+        Returns
+        -------
+
+        """
+        ref: str = mapping["ref"]
+        return PulsarSettings(ref=ref)
 
 
 @dataclass

@@ -1635,7 +1635,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
-        self._settings = self._extract_settings_from_mapping(hw_mapping)
+        self._settings = PulsarSettings.extract_settings_from_mapping(hw_mapping)
 
     @property
     @abstractmethod
@@ -1646,26 +1646,6 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
     @abstractmethod
     def MAX_SEQUENCERS(self):
         pass
-
-    @staticmethod
-    def _extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
-        """
-        TODO move to PulsarSettings
-
-        Takes all the settings defined in the mapping and generates a `PulsarSettings`
-        object from it.
-
-        Parameters
-        ----------
-        mapping: Dict[str, Any]
-
-
-        Returns
-        -------
-
-        """
-        ref: str = mapping["ref"]
-        return PulsarSettings(ref=ref)
 
     def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
         """
