@@ -1301,7 +1301,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
     @classmethod
-    def generate_qasm_program(
+    def generate_qasm_program(  # pylint -ignore=too-many-locals
         cls,
         total_sequence_time: float,
         pulses: Optional[List[OpInfo]] = None,
