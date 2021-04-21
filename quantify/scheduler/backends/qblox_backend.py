@@ -20,6 +20,7 @@ from qcodes.utils.helpers import NumpyJSONEncoder
 
 import numpy as np
 from quantify.scheduler.helpers.schedule import get_total_duration
+from quantify.scheduler.helpers.waveforms import normalize_waveform_data
 from quantify.data.handling import get_datadir, gen_tuid
 from quantify.utilities.general import make_hash, without, import_func_from_string
 
@@ -561,6 +562,7 @@ class LocalOscillator(InstrumentCompiler):
 
 # ---------- utility classes ----------
 # pylint: disable=too-few-public-methods
+# pylint disable=invalid-name
 class PulsarInstructions:
     """
     Class that holds all the string literals that are valid instructions that can be
@@ -1151,7 +1153,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             raw_wf_data = self._apply_corrections_to_waveform(
                 raw_wf_data, pulse.duration, pulse.timing
             )
-            raw_wf_data, amp_i, amp_q = self._normalize_waveform_data(raw_wf_data)
+            raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
             if np.abs(amp_i) > self.AWG_OUTPUT_VOLT:
                 raise ValueError(
                     f"Attempting to set amplitude to invalid value. "
@@ -1259,35 +1261,6 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
         return corrected_wf
-
-    def _normalize_waveform_data(
-        self, data: np.ndarray
-    ) -> Tuple[np.ndarray, float, float]:
-        """
-        Rescales the waveform data so that the maximum amplitude is abs(amp) == 1.
-
-        Parameters
-        ----------
-        data: np.ndarray
-            The waveform data to rescale.
-
-        Returns
-        -------
-        np.ndarray
-            The rescaled data.
-        float
-            The original amplitude of the real part.
-        float
-            The original amplitude of the imaginary part.
-        """
-        amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
-        norm_data_r = (
-            data.real / amp_real if amp_real != 0.0 else np.zeros(data.real.shape)
-        )
-        norm_data_i = (
-            data.imag / amp_imag if amp_imag != 0.0 else np.zeros(data.imag.shape)
-        )
-        return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
 
     def update_settings(self):
         """

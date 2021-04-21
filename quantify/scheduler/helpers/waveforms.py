@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 from functools import partial
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from abc import ABC
 
 try:
@@ -333,3 +333,27 @@ def apply_mixer_skewness_corrections(
     corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
     corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
     return corrected_re + 1.0j * corrected_im
+
+
+def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]:
+    """
+    Rescales the waveform data so that the maximum amplitude is abs(amp) == 1.
+
+    Parameters
+    ----------
+    data: np.ndarray
+        The waveform data to rescale.
+
+    Returns
+    -------
+    np.ndarray
+        The rescaled data.
+    float
+        The original amplitude of the real part.
+    float
+        The original amplitude of the imaginary part.
+    """
+    amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
+    norm_data_r = data.real / amp_real if amp_real != 0.0 else np.zeros(data.real.shape)
+    norm_data_i = data.imag / amp_imag if amp_imag != 0.0 else np.zeros(data.imag.shape)
+    return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
