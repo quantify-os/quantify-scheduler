@@ -52,8 +52,8 @@ def _sanitize_file_name(filename: str) -> str:
 
     Returns
     -------
-        str
-            The sanitized filename
+    str
+        The sanitized filename
     """
     invalid = ',<>:"/\\|!?* '
     sanitized_fn = filename
