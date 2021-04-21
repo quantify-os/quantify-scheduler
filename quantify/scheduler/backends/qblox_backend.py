@@ -2136,7 +2136,7 @@ def hardware_compile(
     schedule: Schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
-    mapping: Dict[str, Any]
+    hardware_map: Dict[str, Any]
         The hardware mapping of the setup.
 
     Returns
