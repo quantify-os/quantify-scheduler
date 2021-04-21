@@ -229,7 +229,7 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
         if key in d:
             dicts_found.append(d)
     for val in d.values():
-        if isinstance(val, dict) or isinstance(val, UserDict):
+        if isinstance(val, (dict, UserDict)):
             dicts_found.extend(find_inner_dicts_containing_key(val, key))
         elif isinstance(val, Iterable) and not isinstance(val, str):
             for i_item in val:
@@ -244,6 +244,7 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
     return dicts_found
 
 
+# pylint disable:invalid-name
 def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str, str]]:
     """
     Generates a list with all port and clock combinations found in a dictionary with
@@ -1300,8 +1301,10 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         """
         return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
+    # pylint -ignore=too-many-locals
+    # pylint -ignore=too-many-arguments
     @classmethod
-    def generate_qasm_program(  # pylint -ignore=too-many-locals
+    def generate_qasm_program(
         cls,
         total_sequence_time: float,
         pulses: Optional[List[OpInfo]] = None,
@@ -1488,8 +1491,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         filename = _sanitize_file_name(filename)
         file_path = os.path.join(folder, filename)
 
-        with open(file_path, "w") as f:
-            json.dump(wf_and_pr_dict, f, cls=NumpyJSONEncoder, indent=4)
+        with open(file_path, "w") as file:
+            json.dump(wf_and_pr_dict, file, cls=NumpyJSONEncoder, indent=4)
 
         return file_path
 
