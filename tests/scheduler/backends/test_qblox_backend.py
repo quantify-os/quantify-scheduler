@@ -364,7 +364,7 @@ def test_contruct_sequencer():
                 name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
             )
 
-        def hardware_compile(self, repetitions: int = 1) -> Dict[str, Any]:
+        def compile(self, repetitions: int = 1) -> Dict[str, Any]:
             return dict()
 
     tp = Test_Pulsar()
