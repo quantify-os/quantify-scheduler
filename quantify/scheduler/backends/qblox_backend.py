@@ -897,9 +897,9 @@ class QASMProgram(list):
         time_ns = int(np.round(time * 1e9))
         if time_ns % Pulsar_sequencer_base.GRID_TIME_ns != 0:
             raise ValueError(
-                f"Pulsar can only work in a timebase of "
-                f"{Pulsar_sequencer_base.GRID_TIME_ns}"
-                f" ns. Attempting to use {time_ns} ns."
+                f"Attempting to use a time interval of {time_ns} ns. "
+                f"Please ensure that the durations of and wait times between "
+                f"operations are multiples of {Pulsar_sequencer_base.GRID_TIME_ns} ns."
             )
         return time_ns
 
@@ -1156,17 +1156,17 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 raise ValueError(
                     f"Attempting to set amplitude to invalid value. "
                     f"Maximum voltage range is +-{self.AWG_OUTPUT_VOLT} V for "
-                    f"{self.__class__.__name__}.\nAttempting"
-                    f"to use {amp_i} as amplitude for the I channel for pulse "
-                    f"{repr(pulse)}!"
+                    f"{self.__class__.__name__}.\n"
+                    f"{amp_i} V is set as amplitude for the I channel for "
+                    f"{repr(pulse)}"
                 )
             if np.abs(amp_q) > self.AWG_OUTPUT_VOLT:
                 raise ValueError(
                     f"Attempting to set amplitude to invalid value. "
                     f"Maximum voltage range is +-{self.AWG_OUTPUT_VOLT} V for "
-                    f"{self.__class__.__name__}.\nAttempting "
-                    f"to use {amp_q} as amplitude for the Q channel for pulse "
-                    f"{repr(pulse)}!"
+                    f"{self.__class__.__name__}.\n"
+                    f"{amp_q} V is set as amplitude for the Q channel for "
+                    f"{repr(pulse)}"
                 )
             pulse.pulse_settings = QASMRuntimeSettings(
                 awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
@@ -1255,7 +1255,6 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             The waveform data after applying all the transformations.
         """
         t = np.linspace(t0, time_duration + t0, int(time_duration * self.SAMPLING_RATE))
-        # t = np.arange(t0, t0 + time_duration, 1 / self.SAMPLING_RATE)
         corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
