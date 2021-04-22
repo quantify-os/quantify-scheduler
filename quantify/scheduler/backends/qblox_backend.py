@@ -203,7 +203,9 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
 
 
 # pylint disable:invalid-name
-def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[dict]:
+def find_inner_dicts_containing_key(
+    d: Union[Dict[Any, Any], UserDict[Any, Any]], key: Any
+) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
     in a complicated dictionary with nested dictionaries or Iterables.
@@ -244,7 +246,9 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
 
 
 # pylint disable:invalid-name
-def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str, str]]:
+def find_all_port_clock_combinations(
+    d: Union[Dict[Any, Any], UserDict[Any, Any]]
+) -> List[Tuple[str, str]]:
     """
     Generates a list with all port and clock combinations found in a dictionary with
     nested structures. Traversing the dictionary is done using the
