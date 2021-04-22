@@ -32,8 +32,7 @@ from quantify.scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
 )
 
-if TYPE_CHECKING:
-    from quantify.scheduler.types import Schedule
+from quantify.scheduler.types import Schedule
 
 
 # ---------- utility functions ----------
@@ -53,7 +52,7 @@ def _sanitize_file_name(filename: str) -> str:
 
     Returns
     -------
-    str
+    :
         The sanitized filename
     """
     invalid = ',<>:"/\\|!?* '
@@ -78,19 +77,19 @@ def modulate_waveform(
 
     Parameters
     ----------
-    t: np.ndarray
+    t:
         A numpy array with time values
-    envelope: np.ndarray
+    envelope:
         The complex-valued envelope of the modulated waveform
-    freq: float
+    freq:
         The frequency of the modulation
-    t0: float
+    t0:
         Time offset for the modulation
 
     Returns
     -------
-        np.ndarray
-            The modulated waveform
+    :
+        The modulated waveform
     """
     modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
     return envelope * modulation
@@ -102,16 +101,16 @@ def _generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray
 
     Parameters
     ----------
-    data_dict: dict
+    data_dict:
         The dictionary that contains the values needed to parameterize the
         waveform. `data_dict['wf_func']` is then called to calculate the values.
-    sampling_rate: float
+    sampling_rate:
         The sampling rate used to generate the time axis values.
 
     Returns
     -------
-        np.ndarray
-            The (possibly complex) values of the generated waveform
+    :
+        The (possibly complex) values of the generated waveform
     """
     time_duration = data_dict["duration"]
     t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
@@ -140,16 +139,16 @@ def generate_ext_local_oscillators(
 
     Parameters
     ----------
-    total_play_time: float
+    total_play_time:
         Total time the schedule is played for, not counting repetitions.
-    hardware_cfg: dict
+    hardware_cfg:
         Hardware mapping dictionary
 
     Returns
     -------
-        Dict[str, LocalOscillator]
-            A dictionary with the names of the devices as keys and compiler
-            objects for the local oscillators as values.
+    :
+        A dictionary with the names of the devices as keys and compiler
+        objects for the local oscillators as values.
     """
     # TODO more generic with get_inner_dicts_containing_key?
     lo_dict = dict()
@@ -184,13 +183,13 @@ def _calculate_total_play_time(schedule: Schedule) -> float:
 
     Parameters
     ----------
-    schedule: Schedule
+    schedule:
         The quantify schedule object of which we want the total execution time
 
     Returns
     -------
-        float
-            Total play time in seconds
+    :
+        Total play time in seconds
     """
     end_times = list()
     for time_constraint in schedule.timing_constraints:
@@ -214,15 +213,15 @@ def find_inner_dicts_containing_key(d: Union[Dict, UserDict], key: Any) -> List[
 
     Parameters
     ----------
-    d: Union[Dict, UserDict]
+    d:
         The dictionary to traverse.
-    key: Any
+    key:
         The key to search for.
 
     Returns
     -------
-        List[dict]
-            A list containing all the inner dictionaries containing the specified key.
+    :
+        A list containing all the inner dictionaries containing the specified key.
     """
     dicts_found = list()
     if isinstance(d, dict):
@@ -253,14 +252,14 @@ def find_all_port_clock_combinations(d: Union[Dict, UserDict]) -> List[Tuple[str
 
     Parameters
     ----------
-    d: Union[Dict, UserDict]
+    d:
         The dictionary to traverse.
 
     Returns
     -------
-        List[Tuple[str, str]]
-            A list containing tuples representing the port and clock combinations found
-            in the dictionary.
+    :
+        A list containing tuples representing the port and clock combinations found
+        in the dictionary.
     """
     port_clocks = list()
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
@@ -289,15 +288,15 @@ def generate_port_clock_to_device_map(
 
     Parameters
     ----------
-    mapping: Dict[str, Any]
+    mapping:
         The hardware mapping config.
 
     Returns
     -------
-        Dict[Tuple[str, str], str]
-            A dictionary with as key a tuple representing a port-clock combination, and
-            as value the name of the device. Note that multiple port-clocks may point to
-            the same device.
+    :
+        A dictionary with as key a tuple representing a port-clock combination, and
+        as value the name of the device. Note that multiple port-clocks may point to
+        the same device.
     """
 
     portclock_map = dict()
@@ -322,13 +321,13 @@ def _generate_waveform_dict(
 
     Parameters
     ----------
-    waveforms_complex: Dict[int, np.ndarray]
+    waveforms_complex:
         Dictionary containing the complex waveforms. Keys correspond to a unique
         identifier, value is the complex waveform.
 
     Returns
     -------
-    Dict[str, dict]
+    :
         A dictionary with as key the unique name for that waveform, as value another
         dictionary containing the real-valued data (list) as well as a unique index.
         Note that the index of the Q waveform is always the index of the I waveform
@@ -336,12 +335,15 @@ def _generate_waveform_dict(
 
     Examples
     --------
-    >>> complex_waveforms = {12345: np.array([1, 2])}
-    >>> _generate_waveform_dict(complex_waveforms)
-    {
-        "12345_I": {"data": [1, 2], "index": 0},
-        "12345_Q": {"data": [0, 0], "index": 1}
-    }
+
+    .. code-block::
+
+        complex_waveforms = {12345: np.array([1, 2])}
+        _generate_waveform_dict(complex_waveforms)
+        {
+            "12345_I": {"data": [1, 2], "index": 0},
+            "12345_Q": {"data": [0, 0], "index": 1}
+        }
     """
     wf_dict = dict()
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
@@ -377,14 +379,14 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
         Parameters
         ----------
-        name: str
+        name:
             Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time: str
+        total_play_time:
             Total time execution of the schedule should go on for. This parameter is
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping: Optional[Dict[str, Any]]
+        hw_mapping:
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
@@ -400,11 +402,11 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
         Parameters
         ----------
-        port: str
+        port:
             The port the pulse needs to be sent to.
-        clock: str
+        clock:
             The clock for modulation of the pulse. Can be a BasebandClock.
-        pulse_info: OpInfo
+        pulse_info:
             Data structure containing all the information regarding this specific pulse
             operation.
 
@@ -420,11 +422,11 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
         Parameters
         ----------
-        port: str
+        port:
             The port the pulse needs to be sent to.
-        clock: str
+        clock:
             The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info: OpInfo
+        acq_info:
             Data structure containing all the information regarding this specific
             acquisition operation.
 
@@ -442,7 +444,7 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
         Returns
         -------
-        Set[Tuple[str, str]]
+        :
             A set containing all the port-clock combinations
         """
         portclocks_used = set()
@@ -459,14 +461,14 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
         Parameters
         ----------
-        repetitions: int
+        repetitions:
             Number of times execution the schedule is repeated
 
         Returns
         -------
-            Any
-                A data structure representing the compiled program. The type is
-                dependent on implementation.
+        :
+            A data structure representing the compiled program. The type is
+            dependent on implementation.
         """
 
 
@@ -488,14 +490,14 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
-        name: str
+        name:
             QCoDeS name of the device it compiles for.
-        total_play_time: float
+        total_play_time:
             Total time execution of the schedule should go on for. This parameter is
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        lo_freq: Optional[int]
+        lo_freq:
             LO frequency it needs to be set to. Either this is passed to the constructor
             or set later in the compilation process, in case the LO frequency is not
             initially given and needs to be calculated.
@@ -510,7 +512,7 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
-        freq: float
+        freq:
             The frequency to set it to.
 
         Returns
@@ -538,7 +540,7 @@ class LocalOscillator(InstrumentCompiler):
 
         Returns
         -------
-        float
+        :
             The current frequency
         """
         return self._lo_freq
@@ -549,12 +551,12 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
-        repetitions: int
+        repetitions:
             Number of times execution the schedule is repeated
 
         Returns
         -------
-        Dict[str, Any]
+        :
             Dictionary containing all the information the cs component needs to set the
             parameters appropriately.
         """
@@ -619,7 +621,7 @@ class QASMProgram(list):
 
     Attributes
     ----------
-    elapsed_time: int
+    elapsed_time:
         The time elapsed after finishing the program in its current form. This is used
         to keep track of the overall timing and necessary waits.
     """
@@ -632,26 +634,26 @@ class QASMProgram(list):
         *args: Union[int, str],
         label: Optional[str] = None,
         comment: Optional[str] = None,
-    ) -> List[Union[str, int], ...]:
+    ) -> List[Union[str, int]]:
         """
         Takes an instruction with arguments, label and comment and turns it into the
         list required by the class.
 
         Parameters
         ----------
-        instruction: str
+        instruction:
             The instruction to use. This should be one specified in `PulsarInstructions`
             or the assembler will raise an exception.
-        args: Union[int, str]
+        args:
             Arguments to be passed.
-        label: Optional[str]
+        label:
             Adds a label to the line. Used for jumps and loops.
-        comment: Optional[str]
+        comment:
             Optionally add a comment to the instruction.
 
         Returns
         -------
-        List[Union[str, int]]
+        :
             List that contains all the passed information in the valid format for the
             program.
 
@@ -672,20 +674,16 @@ class QASMProgram(list):
         comment_str = f"# {comment}" if comment is not None else ""
         return [label_str, instruction, instr_args, comment_str]
 
-    def emit(self, *args, **kwargs):
+    def emit(self, *args, **kwargs) -> None:
         """
         Wrapper around the `get_instruction_as_list` which adds it to the program.
 
         Parameters
         ----------
-        args: Any
+        args:
             All arguments to pass to `get_instruction_as_list`.
-        kwargs
+        kwargs:
             All keyword arguments to pass to `get_instruction_as_list`.
-
-        Returns
-        -------
-
         """
         self.append(self.get_instruction_as_list(*args, **kwargs))
 
@@ -699,7 +697,7 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        wait_time: int
+        wait_time:
             Time to wait in ns.
 
         Returns
@@ -738,7 +736,7 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        operation: OpInfo
+        operation:
             The pulse or acquisition that we want to wait for.
 
         Returns
@@ -768,11 +766,11 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        pulse: OpInfo
+        pulse:
             The pulse to play.
-        idx0: int
+        idx0:
             Index corresponding to the I channel of the pulse in the awg dict.
-        idx1
+        idx1:
             Index corresponding to the Q channel of the pulse in the awg dict.
 
         Returns
@@ -792,12 +790,12 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        acquisition: OpInfo
+        acquisition:
             The pulse to perform.
-        idx0: int
+        idx0:
             Index corresponding to the I channel of the acquisition weights in the acq
             dict.
-        idx1: int
+        idx1:
             Index corresponding to the Q channel of the acquisition weights in the acq
             dict.
 
@@ -817,7 +815,7 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        operation: OpInfo
+        operation:
             The pulse to prepare the settings for.
 
         Returns
@@ -854,18 +852,18 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        val: float
+        val:
             The value of the parameter to expand.
-        param: Optional[str]
+        param:
             The name of the parameter, to make a possible exception message more
             descriptive.
-        operation: Optional[OpInfo]
+        operation:
             The operation this value is expanded for, to make a possible exception
             message more descriptive.
 
         Returns
         -------
-        int
+        :
             The expanded value of the parameter.
 
         Raises
@@ -889,12 +887,12 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        time: float
+        time:
             The time to convert
 
         Returns
         -------
-        int
+        :
             The integer valued nanosecond time
         """
         time_ns = int(np.round(time * 1e9))
@@ -916,7 +914,7 @@ class QASMProgram(list):
 
         Returns
         -------
-        str
+        :
             The string representation of the program.
         """
         try:
@@ -935,11 +933,11 @@ class QASMProgram(list):
 
         Parameters
         ----------
-        register: str
+        register:
             The register to use for the loop iterator.
-        label: str
+        label:
             The label to use for the jump.
-        repetitions: int
+        repetitions:
             The amount of iterations to perform.
 
         Returns
@@ -947,9 +945,13 @@ class QASMProgram(list):
 
         Examples
         --------
-        qasm = QASMProgram()
-        with qasm.loop(register='R0', label='repeat', repetitions=10):
-             qasm.auto_wait(100)
+        .. jupyter-execute::
+
+            from quantify.scheduler.backends.qblox_backend import QASMProgram
+
+            qasm = QASMProgram()
+            with qasm.loop(register='R0', label='repeat', repetitions=10):
+                qasm.auto_wait(100)
 
         This adds a loop to the program that loops 10 times over a wait of 100 ns.
         """
@@ -988,14 +990,14 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        parent: Pulsar_base
+        parent:
             A reference to the parent instrument this sequencer belongs to.
-        name: str
+        name:
             Name of the sequencer. This is supposed to match "seq{index}".
-        portclock: Tuple[str, str]
+        portclock:
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
-        modulation_freq: Optional[float]
+        modulation_freq:
             The frequency used for modulation. This can either be passed in the
             constructor, or assigned in a later stage using `assign_frequency`.
         """
@@ -1017,7 +1019,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        Tuple[str, str]
+        :
             The portclock
         """
         return self.port, self.clock
@@ -1029,7 +1031,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        float
+        :
             The frequency
         """
         return self._settings.modulation_freq
@@ -1041,7 +1043,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        SequencerSettings
+        :
             The settings set to this sequencer.
         """
         return self._settings
@@ -1067,7 +1069,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        float
+        :
             The output range in volts.
         """
         pass
@@ -1080,7 +1082,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        bool
+        :
             Has data been assigned to this sequencer?
         """
         return len(self.acquisitions) > 0 or len(self.pulses) > 0
@@ -1091,7 +1093,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        freq: float
+        freq:
             The frequency to be used for modulation.
 
         Returns
@@ -1122,6 +1124,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         The final dictionary to be included in the json that is uploaded to the pulsar
         is of the form:
 
+        .. code-block::
+
             program
             awg
                 waveform_name
@@ -1136,7 +1140,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        Dict[str, Any]
+        :
             The awg dictionary
 
         Raises
@@ -1189,6 +1193,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         The final dictionary to be included in the json that is uploaded to the pulsar
         is of the form:
 
+        .. code-block::
+
             program
             awg
                 waveform_name
@@ -1203,7 +1209,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        Dict[str, Any]
+        :
             The acq dictionary
 
         Raises
@@ -1244,17 +1250,17 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        waveform_data: np.ndarray
+        waveform_data:
             The data to correct.
-        time_duration: float
+        time_duration:
             Total time is seconds that the waveform is used.
-        t0: Optional[float]
+        t0:
             The start time of the pulse/acquisition. This is used for instance to make
             the make the phase change continuously when the start time is not zero.
 
         Returns
         -------
-        np.ndarray
+        :
             The waveform data after applying all the transformations.
         """
         t = np.linspace(t0, time_duration + t0, int(time_duration * self.SAMPLING_RATE))
@@ -1294,9 +1300,9 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Returns
         -------
-        str
+        :
             Name for the I waveform.
-        str
+        :
             Name for the Q waveform.
         """
         return f"{str(uuid)}_I", f"{str(uuid)}_Q"
@@ -1319,6 +1325,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Example of a program generated by this function:
 
+        .. code-block::
+
                     wait_sync     4
                     set_mrk       1
                     move          10,R0         # iterator for loop with label start
@@ -1332,30 +1340,31 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                     upd_param     4
                     stop
 
+
         Parameters
         ----------
-        total_sequence_time: float
+        total_sequence_time:
             Total time the program needs to play for. If the sequencer would be done
             before this time, a wait is added at the end to ensure synchronization.
-        pulses: Optional[List[OpInfo]]
+        pulses:
             A list containing all the pulses that are to be played.
-        awg_dict: Optional[Dict[str, Any]]
+        awg_dict:
             Dictionary containing the pulse waveform data and the index that is assigned
             to the I and Q waveforms, as generated by the `generate_awg_dict` function.
             This is used to extract the relevant indexes when adding a play instruction.
-        acquisitions: Optional[List[OpInfo]]
+        acquisitions:
             A list containing all the acquisitions that are to be performed.
-        acq_dict: Optional[Dict[str, Any]]
+        acq_dict:
             Dictionary containing the acquisition waveform data and the index that is
             assigned to the I and Q waveforms, as generated by the `generate_acq_dict`
             function. This is used to extract the relevant indexes when adding an
             acquire instruction.
-        repetitions: Optional[int]
+        repetitions:
             Number of times to repeat execution of the schedule.
 
         Returns
         -------
-        str
+        :
             The generated QASM program.
         """
         loop_label = "start"
@@ -1410,16 +1419,16 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        uuid: int
+        uuid:
             The unique identifier of the pulse/acquisition.
-        wf_dict: Dict[str, Any]
+        wf_dict:
             The awg or acq dict that holds the waveform data and indices.
 
         Returns
         -------
-        int
+        :
             Index of the I waveform.
-        int
+        :
             Index of the Q waveform.
         """
         name_real, name_imag = Pulsar_sequencer_base.generate_waveform_names_from_uuid(
@@ -1440,18 +1449,18 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        program: str
+        program:
             The compiled QASM program as a string.
-        awg_dict: Dict[str, Any]
+        awg_dict:
             The dictionary containing all the awg data and indices. This is expected to
             be of the form generated by the `generate_awg_dict` method.
-        acq_dict: Optional[Dict[str, Any]]
+        acq_dict:
             The dictionary containing all the acq data and indices. This is expected to
             be of the form generated by the `generate_acq_dict` method.
 
         Returns
         -------
-        Dict[str, Any]
+        :
             The combined program.
         """
         compiled_dict = dict()
@@ -1471,14 +1480,14 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        wf_and_pr_dict: Dict[str, Any]
+        wf_and_pr_dict:
             The dict to dump as a json file.
-        label
+        label:
             A label that is appended to the filename.
 
         Returns
         -------
-        str
+        :
             The full absolute path where the json file is stored.
         """
         data_dir = get_datadir()
@@ -1504,12 +1513,12 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         Parameters
         ----------
-        repetitions: int
+        repetitions:
             Number of times execution the schedule is repeated
 
         Returns
         -------
-        Optional[Dict[str, Any]]
+        :
             The compiled program. If no data is assigned to this sequencer, the
             compilation is skipped and None is returned instead.
         """
@@ -1547,7 +1556,7 @@ class QCM_sequencer(Pulsar_sequencer_base):
 
     Attributes
     ----------
-    AWG_OUTPUT_VOLT: float
+    AWG_OUTPUT_VOLT:
         Voltage range of the awg output paths.
     """
 
@@ -1561,7 +1570,7 @@ class QRM_sequencer(Pulsar_sequencer_base):
 
     Attributes
     ----------
-    AWG_OUTPUT_VOLT: float
+    AWG_OUTPUT_VOLT:
         Voltage range of the awg output paths.
     """
 
@@ -1577,7 +1586,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
     Attributes
     ----------
-    OUTPUT_TO_SEQ: Dict[str, int]
+    OUTPUT_TO_SEQ:
         Dictionary that maps output names to specific sequencer indices. This
         implementation is temporary and will change when multiplexing is supported by
         the hardware.
@@ -1596,14 +1605,14 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
-        name: str
+        name:
             Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time: str
+        total_play_time:
             Total time execution of the schedule should go on for. This parameter is
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping: Optional[Dict[str, Any]]
+        hw_mapping:
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
@@ -1630,9 +1639,9 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
-        portclock: Tuple[str, str]
+        portclock:
             A tuple with the port as first element and clock as second.
-        freq: float
+        freq:
             The modulation frequency to assign to the portclock.
 
         Returns
@@ -1649,7 +1658,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         Returns
         -------
-        Dict[Tuple[str, str], str]
+        :
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
 
@@ -1697,7 +1706,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         Returns
         -------
-        Dict[str, Pulsar_sequencer_base]
+        :
             A dictionary containing the sequencer objects, the keys correspond to the
             names of the sequencers.
         """
@@ -1764,12 +1773,12 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
-        repetitions: int
+        repetitions:
             Number of times execution the schedule is repeated
 
         Returns
         -------
-        Optional[Dict[str, Any]]
+        :
             The compiled program corresponding to this pulsar. It contains an entry for
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
@@ -1795,9 +1804,9 @@ class Pulsar_QCM(Pulsar_base):
 
     Attributes
     ----------
-    SEQ_TYPE: Pulsar_sequencer_base
+    SEQ_TYPE:
         Defines the type of sequencer that this pulsar uses.
-    MAX_SEQUENCERS: int
+    MAX_SEQUENCERS:
         Maximum amount of sequencers that this pulsar implements.
     """
 
@@ -1833,11 +1842,11 @@ class Pulsar_QCM(Pulsar_base):
 
         Parameters
         ----------
-        port: str
+        port:
             The port the pulse needs to be sent to.
-        clock: str
+        clock:
             The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info: OpInfo
+        acq_info:
             Data structure containing all the information regarding this specific
             acquisition operation.
 
@@ -1862,9 +1871,9 @@ class Pulsar_QRM(Pulsar_base):
 
     Attributes
     ----------
-    SEQ_TYPE: Pulsar_sequencer_base
+    SEQ_TYPE:
         Defines the type of sequencer that this pulsar uses.
-    MAX_SEQUENCERS: int
+    MAX_SEQUENCERS:
         Maximum amount of sequencers that this pulsar implements.
     """
 
@@ -1889,19 +1898,19 @@ def _assign_frequencies(
 
     Parameters
     ----------
-    device_compilers: Dict[str, InstrumentCompiler]
+    device_compilers:
         A dictionary containing all the `InstrumentCompiler` objects for which IQ
         modulation is used. The keys correspond to the QCoDeS names of the instruments.
-    lo_compilers: Dict[str, LocalOscillator]
+    lo_compilers:
         A dictionary containing all the `LocalOscillator` objects that are used. The
         keys correspond to the QCoDeS names of the instruments.
-    hw_mapping: Dict[str, Any]
+    hw_mapping:
         The hardware mapping dictionary describing the whole setup.
-    portclock_mapping: Dict[Tuple[str, str], str]
+    portclock_mapping:
         A dictionary that maps tuples containing a port and a clock to names of
         instruments. The port and clock combinations are unique, but multiple portclocks
         can point to the same instrument.
-    schedule_resources: Dict[str, Any]
+    schedule_resources:
         The schedule resources containing all the clocks.
 
     Returns
@@ -1966,11 +1975,11 @@ def _assign_pulse_and_acq_info_to_devices(
 
     Parameters
     ----------
-    schedule: Schedule
+    schedule:
         The schedule to extract the pulse and acquisition info from.
-    device_compilers: Dict[str, Any]
+    device_compilers:
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    portclock_mapping: Dict[Tuple[str, str], str]
+    portclock_mapping:
         A dictionary that maps tuples containing a port and a clock to names of
         instruments. The port and clock combinations are unique, but multiple portclocks
         can point to the same instrument.
@@ -2046,15 +2055,15 @@ def _construct_compiler_objects(
 
     Parameters
     ----------
-    total_play_time: float
+    total_play_time:
         Total time that it takes to execute a single repetition of the schedule with the
         current hardware setup as defined in the mapping.
-    mapping: Dict[str, Any]
+    mapping:
         The hardware mapping dictionary.
 
     Returns
     -------
-    Dict[str, InstrumentCompiler]
+    :
         A dictionary with an `InstrumentCompiler` as value and the QCoDeS name of the
         instrument the compiler compiles for as key.
     """
@@ -2089,15 +2098,15 @@ def hardware_compile(
 
     Parameters
     ----------
-    schedule: Schedule
+    schedule:
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
-    hardware_map: Dict[str, Any]
+    hardware_map:
         The hardware mapping of the setup.
 
     Returns
     -------
-    Dict[str, Any]
+    :
         The compiled program
     """
     total_play_time = get_total_duration(schedule)
