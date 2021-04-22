@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import List, Optional, Union
 
+import numpy as np
 from dataclasses_json import DataClassJsonMixin
-
 from quantify.scheduler import enums
 
 
@@ -140,15 +140,6 @@ class CommandTableHeader(DataClassJsonMixin):
 
 
 @dataclass
-class CommandTableEntryIndex(DataClassJsonMixin):
-    """
-    A CommandTable entry definition with an index.
-    """
-
-    index: int
-
-
-@dataclass
 class CommandTableEntryValue(DataClassJsonMixin):
     """
     A CommandTable entry definition with a value.
@@ -158,13 +149,23 @@ class CommandTableEntryValue(DataClassJsonMixin):
 
 
 @dataclass
+class CommandTableWaveform(DataClassJsonMixin):
+    """
+    The command table waveform properties.
+    """
+
+    index: int
+    length: int
+
+
+@dataclass
 class CommandTableEntry(DataClassJsonMixin):
     """
     The definition of a single CommandTable entry.
     """
 
     index: int
-    waveform: "CommandTableEntryIndex"
+    waveform: "CommandTableWaveform"
 
 
 @dataclass
@@ -182,7 +183,7 @@ class CommandTable(DataClassJsonMixin):
 
 
 @unique
-class QAS_IntegrationMode(Enum):
+class QasIntegrationMode(Enum):
     """
     Operation mode of all weighted integration units.
 
@@ -196,3 +197,102 @@ class QAS_IntegrationMode(Enum):
 
     NORMAL = 0
     SPECTROSCOPY = 1
+
+
+class WaveformDestination(Enum):
+    """The waveform destination enum type."""
+
+    CSV = 0
+    WAVEFORM_TABLE = 1
+
+
+@dataclass
+class InstrumentInfo:
+    """Instrument information record type."""
+
+    clock_rate: int
+    resolution: int
+    granularity: int
+    low_res_clock: float = field(init=False)
+
+    def __post_init__(self):
+        """Initializes fields after initializing object."""
+        self.low_res_clock = self.resolution / self.clock_rate
+
+
+@dataclass(frozen=True)
+class Instruction:
+    """Sequence base instruction record type."""
+
+    uuid: int
+    abs_time: float
+    timeslot_index: int
+    start_in_seconds: float
+    start_in_clocks: int
+
+    duration_in_seconds: float
+    duration_in_clocks: int
+
+    @staticmethod
+    def default():
+        """
+        Returns a default Instruction instance.
+
+        Returns
+        -------
+        Instruction :
+        """
+        return Instruction(-1, 0, 0, 0, 0, 0, 0)
+
+
+@dataclass(frozen=True)
+class Measure(Instruction):
+    """Sequence measurement instruction record type."""
+
+    weights_i: np.ndarray
+    weights_q: np.ndarray
+
+    def __repr__(self):
+        return "%-20i | %-12f | %-12f | %-12f | %-8i | %-8i | %-6i " % (
+            self.uuid,
+            self.abs_time * 1e9,
+            self.start_in_seconds * 1e9,
+            self.duration_in_seconds * 1e9,
+            self.start_in_clocks,
+            self.duration_in_clocks,
+            len(self.weights_i),
+        )
+
+
+@dataclass(frozen=True)
+class Wave(Instruction):
+    """Sequence waveform instruction record type."""
+
+    waveform: np.ndarray
+    n_samples: int
+    n_samples_scaled: int
+
+    def __repr__(self):
+        return "%-20i | %-12f | %-12f | %-12f | %-8i | %-8i | %-6i | %-6i " % (
+            self.uuid,
+            self.abs_time * 1e9,
+            self.start_in_seconds * 1e9,
+            self.duration_in_seconds * 1e9,
+            self.start_in_clocks,
+            self.duration_in_clocks,
+            self.n_samples,
+            self.n_samples_scaled - self.n_samples,
+        )
+
+    @staticmethod
+    def __header__():
+        return "%-20s | %-12s | %-12s | %-12s | %-8s | %-8s | %-6s | %-6s " % (
+            "uuid",
+            "abs_time",
+            "t0",
+            "duration",
+            "start",
+            "duration",
+            "length",
+            "n shifted",
+        )
