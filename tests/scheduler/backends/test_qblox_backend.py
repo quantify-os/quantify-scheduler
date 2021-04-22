@@ -6,21 +6,22 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
 
+from typing import Dict, Any
+
 import os
 import inspect
 import json
 import tempfile
 import pytest
 import numpy as np
-from typing import Dict, Any
 
 from qcodes.instrument.base import Instrument
 
 from quantify.data.handling import set_datadir
 
 from quantify.scheduler.types import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, Rxy, X
-from quantify.scheduler.pulse_library import SquarePulse, DRAGPulse, RampPulse
+from quantify.scheduler.gate_library import Reset, Measure, X
+from quantify.scheduler.pulse_library import DRAGPulse, RampPulse
 from quantify.scheduler.resources import ClockResource
 from quantify.scheduler.compilation import (
     qcompile,
@@ -86,6 +87,7 @@ def dummy_pulsars():
 @pytest.fixture
 def pulse_only_schedule():
     sched = Schedule("pulse_only_experiment")
+    sched.add(Reset("q0"))
     sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -107,6 +109,7 @@ def pulse_only_schedule():
 @pytest.fixture
 def identical_pulses_schedule():
     sched = Schedule("identical_pulses_schedule")
+    sched.add(Reset("q0"))
     sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -138,6 +141,7 @@ def identical_pulses_schedule():
 @pytest.fixture
 def pulse_only_schedule_with_operation_timing():
     sched = Schedule("pulse_only_schedule_with_operation_timing")
+    sched.add(Reset("q0"))
     first_op = sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -164,6 +168,7 @@ def pulse_only_schedule_with_operation_timing():
 @pytest.fixture
 def mixed_schedule_with_acquisition():
     sched = Schedule("mixed_schedule_with_acquisition")
+    sched.add(Reset("q0"))
     sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -185,6 +190,7 @@ def mixed_schedule_with_acquisition():
 @pytest.fixture
 def gate_only_schedule():
     sched = Schedule("gate_only_schedule")
+    sched.add(Reset("q0"))
     x_gate = sched.add(X("q0"))
     sched.add(Measure("q0"), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
     # Clocks need to be manually added at this stage.
@@ -285,14 +291,17 @@ def test_calculate_total_play_time(mixed_schedule_with_acquisition):
         + DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_integration_time"]
     )
     ro_pulse_duration = DEVICE_CFG["qubits"]["q0"]["params"]["ro_pulse_duration"]
-    answer = 24e-9 + max(end_acq, ro_pulse_duration)
+    init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
+
+    answer = 24e-9 + max(end_acq, ro_pulse_duration) + init_duration
     assert play_time == answer
 
 
 def test_calculate_total_play_time_without_acq(pulse_only_schedule):
     sched = device_compile(pulse_only_schedule, DEVICE_CFG)
+    init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
     play_time = qb._calculate_total_play_time(sched)
-    answer = 24e-9 + 2e-3 + 28e-9
+    answer = 24e-9 + 2e-3 + 28e-9 + init_duration
     assert play_time == answer
 
 
@@ -301,7 +310,8 @@ def test_calculate_total_play_time_with_op_timing(
 ):
     sched = device_compile(pulse_only_schedule_with_operation_timing, DEVICE_CFG)
     play_time = qb._calculate_total_play_time(sched)
-    answer = 3e-3 + 28e-9 + 24e-9
+    init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
+    answer = 3e-3 + 28e-9 + 24e-9 + init_duration
     assert play_time == answer
 
 
@@ -314,10 +324,11 @@ def test_calculate_total_play_time_with_gates(
         DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_delay"]
         + DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_integration_time"]
     )
+    init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
     ro_pulse_duration = DEVICE_CFG["qubits"]["q0"]["params"]["ro_pulse_duration"]
     sched = device_compile(gate_only_schedule, DEVICE_CFG)
     play_time = qb._calculate_total_play_time(sched)
-    answer = mw_duration + rel_time + max(end_acq, ro_pulse_duration)
+    answer = mw_duration + rel_time + max(end_acq, ro_pulse_duration) + init_duration
     assert play_time == answer
 
 
