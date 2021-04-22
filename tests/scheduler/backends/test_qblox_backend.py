@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
@@ -366,23 +367,23 @@ def test_generate_port_clock_to_device_map():
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class Test_Pulsar(qb.Pulsar_base):
+    class TestPulsar(qb.Pulsar_base):
         SEQ_TYPE = qb.QCM_sequencer
         MAX_SEQUENCERS = 10
 
         def __init__(self):
-            super(Test_Pulsar, self).__init__(
+            super().__init__(
                 name="tester", total_play_time=1, hw_mapping=HARDWARE_MAPPING["qcm0"]
             )
 
         def compile(self, repetitions: int = 1) -> Dict[str, Any]:
             return dict()
 
-    tp = Test_Pulsar()
-    tp.sequencers = tp._construct_sequencers()
-    seq_keys = list(tp.sequencers.keys())
+    test_p = TestPulsar()
+    test_p.sequencers = test_p._construct_sequencers()
+    seq_keys = list(test_p.sequencers.keys())
     assert len(seq_keys) == 2
-    assert type(tp.sequencers[seq_keys[0]]) == qb.QCM_sequencer
+    assert isinstance(test_p.sequencers[seq_keys[0]], qb.QCM_sequencer)
 
 
 def test_simple_compile(dummy_pulsars, pulse_only_schedule):
@@ -437,7 +438,7 @@ def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition
 
 
 # --------- Test QASMProgram class ---------
-def test_QASMProgram_list_behavior():
+def test_qasm_program_list_behavior():
     fancy_list = qb.QASMProgram()
     fancy_list.append("foo")
     fancy_list.append("bar")
