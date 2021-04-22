@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-
+# pylint: disable=redefined-outer-name
 # -----------------------------------------------------------------------------
 # Description:    Tests for Zurich Instruments backend.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List
@@ -18,32 +17,29 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
-from zhinst.qcodes import hdawg, uhfqa, uhfli, mfli
+
+from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
 import quantify.scheduler.backends.zhinst_backend as zhinst_backend
 import quantify.scheduler.waveforms as waveforms
-from quantify.scheduler.backends.types.zhinst import Device, DeviceType
-from quantify.scheduler.backends.zhinst_backend import (
-    _WaveformDestination,
-)
+from quantify.scheduler.backends.types import zhinst
+from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 from quantify.scheduler.enums import ModulationModeType
 from quantify.scheduler.gate_library import X90, Measure, Reset, X
 from quantify.scheduler.helpers.schedule import (
-    get_port_timeline,
+    CachedSchedule,
     get_pulse_info_by_uuid,
 )
 from quantify.scheduler.helpers.waveforms import (
     GetWaveformPartial,
     get_waveform_by_pulseid,
 )
-from quantify.scheduler.math import closest_number_ceil
 from quantify.scheduler.schedules.acquisition import (
     raw_trace_schedule,
     ssb_integration_complex_schedule,
 )
 from quantify.scheduler.types import Schedule
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 
 
 @pytest.fixture
@@ -117,8 +113,8 @@ def hdawg_hardware_map() -> Dict[str, Any]:
 
 @pytest.fixture
 def create_device():
-    def _create_device(hardware_map: Dict[str, Any], index: int = 0) -> Device:
-        return Device.schema().load(hardware_map["devices"][index])
+    def _create_device(hardware_map: Dict[str, Any], index: int = 0) -> zhinst.Device:
+        return zhinst.Device.schema().load(hardware_map["devices"][index])
 
     yield _create_device
 
@@ -139,7 +135,7 @@ def create_uhfqa_mock(mocker):
             }
         )
 
-        def create_UHFQA_AWG(i: int) -> uhfqa.AWG:
+        def create_uhfqa_awg(i: int) -> uhfqa.AWG:
             _sequence_params = {
                 "sequence_parameters": {
                     "clock_rate": 1.8e9,  # GSa/s
@@ -174,15 +170,15 @@ def create_uhfqa_mock(mocker):
 
             return awg_mock
 
-        def create_UHFQA_ReadoutChannel(i: int) -> uhfqa.ReadoutChannel:
+        def create_uhfqa_readoutchannel(i: int) -> uhfqa.ReadoutChannel:
             attrs = {
                 "_index": i,
                 "rotation": mocker.Mock(),
             }
             return mocker.MagicMock(spec=uhfqa.ReadoutChannel, **attrs)
 
-        mock.awg = create_UHFQA_AWG(0)
-        mock.channels = list(map(create_UHFQA_ReadoutChannel, range(10)))
+        mock.awg = create_uhfqa_awg(0)
+        mock.channels = list(map(create_uhfqa_readoutchannel, range(10)))
 
         return mock
 
@@ -209,7 +205,7 @@ def create_hdawg_mock(mocker):
             }
         )
 
-        def create_HDAWG_AWG(i: int):
+        def create_hdawg_awg(i: int):
             # https://www.zhinst.com/sites/default/files/documents/2020-09/ziHDAWG_UserManual_20.07.1.pdf
             # Section: 4.14.3 Constansts and Variables (page 181)
             _sequence_params = {
@@ -247,17 +243,17 @@ def create_hdawg_mock(mocker):
             )
             return awg_mock
 
-        mock.awgs = list(map(create_HDAWG_AWG, range(awg_count)))
+        mock.awgs = list(map(create_hdawg_awg, range(awg_count)))
         return mock
 
     yield _create_hdawg_mock
 
 
 @pytest.mark.parametrize(
-    "unsupported_device_type", [(DeviceType.UHFLI), (DeviceType.MFLI)]
+    "unsupported_device_type", [(zhinst.DeviceType.UHFLI), (zhinst.DeviceType.MFLI)]
 )
 def test_setup_zhinst_backend_supported_devices(
-    mocker, unsupported_device_type: DeviceType, create_schedule_with_pulse_info
+    mocker, unsupported_device_type: zhinst.DeviceType, create_schedule_with_pulse_info
 ):
     # Arrange
     zhinst_hardware_map = json.loads(
@@ -282,9 +278,9 @@ def test_setup_zhinst_backend_supported_devices(
         """
     )
 
-    if unsupported_device_type == DeviceType.UHFLI:
+    if unsupported_device_type == zhinst.DeviceType.UHFLI:
         instrument = mocker.create_autospec(uhfli.UHFLI, instance=True)
-    elif unsupported_device_type == DeviceType.MFLI:
+    elif unsupported_device_type == zhinst.DeviceType.MFLI:
         instrument = mocker.create_autospec(mfli.MFLI, instance=True)
 
     mocker.patch(
@@ -300,8 +296,8 @@ def test_setup_zhinst_backend_supported_devices(
 
     # Assert
     assert (
-        f"Unable to create zhinst backend for '{unsupported_device_type.value}'!"
-        == str(execinfo.value)
+        str(execinfo.value)
+        == f"Unable to create zhinst backend for '{unsupported_device_type.value}'!"
     )
 
 
@@ -320,17 +316,6 @@ def test_setup_zhinst_backend_hdawg4_successfully(
     schedule = create_schedule_with_pulse_info(schedule)
 
     hdawg_mock: hdawg.HDAWG = create_hdawg_mock(4)
-    clock_rate = hdawg_mock.awgs[0]._awg.sequence_params["sequence_parameters"][
-        "clock_rate"
-    ]
-    step = 1 / clock_rate  # (1/sampling_rate)
-    pulse_duration = 1.6e-08
-
-    # ceil((stop - start)/step)
-    expected_wave_length: int = math.ceil((pulse_duration - 0) / step)
-    corrected_wave_length: int = closest_number_ceil(
-        expected_wave_length, zhinst_backend.WAVEFORM_GRANULARITY[DeviceType.HDAWG]
-    )
     mocker.patch(
         "qcodes.instrument.base.Instrument.find_instrument",
         return_value=hdawg_mock,
@@ -357,13 +342,14 @@ def test_setup_zhinst_backend_hdawg4_successfully(
     write_seqc_file_mock.assert_called()
 
     expected_call = [call(hdawg_mock, 0, 0, ANY), call(hdawg_mock, 1, 0, ANY)]
+    expected_lengths = [96, 128]
     assert set_wave_vector_mock.call_args_list == expected_call
     # Assert waveform sizes
-    for call_args in set_wave_vector_mock.call_args_list:
+    for i, call_args in enumerate(set_wave_vector_mock.call_args_list):
         args, _ = call_args
         waveform_data = args[3]
         assert isinstance(waveform_data, (np.ndarray, np.generic))
-        assert len(waveform_data) == (corrected_wave_length * 2)
+        assert len(waveform_data) == (expected_lengths[i])
 
     expected_call = [call(hdawg_mock, 0, ANY), call(hdawg_mock, 1, ANY)]
     assert set_commandtable_data_mock.call_args_list == expected_call
@@ -415,25 +401,23 @@ def test_hdawg4_sequence(
     var __repetitions__ = 1;
     wave w0 = placeholder(48);\n
     // Operations
-    // Schedule offset: 0.0002s 60000 clocks
-    // Schedule duration: 4.3600000000000735e-07s 131 clocks
-    // Sequence start: 0.0s 0 clocks
-    // Sequence duration: 1.6000000000007978e-08s 5 clocks
-    // Sequence end: 1.6000000000007978e-08s 5 clocks
-    // Dead time: 5e-06s 1500 clocks
-    // Line delay: -1s 0 clocks
+    // Schedule offset: 0.000200000s 60000 clocks
+    // Schedule duration: 0.000000436s 131 clocks
+    // Sequence start: 0.000000000s 0 clocks
+    // Sequence duration: 0.000000000s 0 clocks
+    // Sequence end: 0.000000000s 0 clocks
+    // Line delay: -1.000000000s 0 clocks
     assignWaveIndex(w0, w0, 0);
-    setTrigger(0);
+    setTrigger(0);	//  n_instr=1
     repeat(__repetitions__)
     {
-      setTrigger(AWG_MARKER1 + AWG_MARKER2);
-      executeTableEntry(0);	// clock=0 pulse=0
-      waitWave();	// clock=0
-      setTrigger(0);	// clock=6
+      setTrigger(AWG_MARKER1 + AWG_MARKER2);	//  n_instr=2
+      executeTableEntry(0);	// clock=0 pulse=0 n_instr=0
+      setTrigger(0);	// clock=0 n_instr=1
       // Dead time
-      wait(1621);	//  n_instr=3
+      wait(59997);	// 	// clock=1 n_instr=3
     }
-    setTrigger(0);
+    setTrigger(0);	// 	// clock=60001 n_instr=1
     """
     ).lstrip("\n")
 
@@ -473,11 +457,12 @@ def test__program_hdawg4_channelgrouping(
     schedule.add(X90(q0))
     schedule.add(X90(q1))
     schedule = create_schedule_with_pulse_info(schedule)
+    schedule = CachedSchedule(schedule)
 
     hdawg_mock: hdawg.HDAWG = create_hdawg_mock(channels)
 
-    device: Device = create_device(hdawg_hardware_map)
-    device.type = DeviceType.HDAWG
+    device: zhinst.Device = create_device(hdawg_hardware_map)
+    device.type = zhinst.DeviceType.HDAWG
     device.channelgrouping = channelgrouping
 
     channels_list = list(range(int(channels / 2)))
@@ -494,9 +479,6 @@ def test__program_hdawg4_channelgrouping(
         hdawg_mock,
         device,
         schedule,
-        get_pulse_info_by_uuid(schedule),
-        get_waveform_by_pulseid(schedule),
-        get_port_timeline(schedule),
     )
 
     # Assert
@@ -523,16 +505,17 @@ def test_validate_schedule(
     with pytest.raises(ValueError) as execinfo:
         zhinst_backend._validate_schedule(empty_schedule)
 
-    assert "Undefined timing contraints for schedule 'Empty Experiment'!" == str(
-        execinfo.value
+    assert (
+        str(execinfo.value)
+        == "Undefined timing contraints for schedule 'Empty Experiment'!"
     )
 
     with pytest.raises(ValueError) as execinfo:
         zhinst_backend._validate_schedule(basic_schedule)
 
     assert (
-        "Absolute timing has not been determined for the schedule 'Basic schedule'!"
-        == str(execinfo.value)
+        str(execinfo.value)
+        == "Absolute timing has not been determined for the schedule 'Basic schedule'!"
     )
 
     zhinst_backend._validate_schedule(schedule_with_pulse_info)
@@ -567,33 +550,32 @@ def test_uhfqa_sequence1(
     write_seqc_file_mock = mocker.patch.object(
         zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
     )
-
+    # pylint: disable=line-too-long
     expected_seqc = dedent(
         """\
     // Generated by quantify-scheduler.
     // Variables
     var __repetitions__ = 1;
+    var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
     wave w0 = "dev2299_wave0";\n
     // Operations
-    // Schedule offset: 0.0002s 45000 clocks
-    // Schedule duration: 4.3600000000000735e-07s 98 clocks
-    // Sequence start: 1.6000000000007978e-08s 4 clocks
-    // Sequence duration: 3.000000000000073e-07s 67 clocks
-    // Sequence end: 3.1600000000001527e-07s 71 clocks
-    // Dead time: 5e-06s 1125 clocks
-    // Line delay: -1s 0 clocks
+    // Schedule offset: 0.000200000s 45000 clocks
+    // Schedule duration: 0.000000436s 98 clocks
+    // Sequence start: 0.000000016s 4 clocks
+    // Sequence duration: 0.000000300s 67 clocks
+    // Sequence end: 0.000000316s 71 clocks
+    // Line delay: -1.000000000s 0 clocks
     repeat(__repetitions__)
     {
       waitDigTrigger(2, 1);	// clock=0
-      wait(1);	// clock=0 n_instr=3
-      playWave(w0);	// clock=4 n_instr=3
-      wait(21);	// clock=4 n_instr=3
-      setTrigger(AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER);	// clock=31 n_instr=3
-      // Final wait + dead time
-      wait(1190);	// clock=99
+      wait(4);	// clock=0 n_instr=4
+      playWave(w0);	// clock=4 n_instr=0
+      wait(23);	// 	// clock=4 n_instr=23
+      setTrigger(integration_trigger);	// clock=27 n_instr=2
     }
     """
     ).lstrip("\n")
+    # pylint: enable=line-too-long
 
     # Act
     zhinst_backend.setup_zhinst_backend(schedule, uhfqa_hardware_map)
@@ -644,31 +626,31 @@ def test_uhfqa_sequence2(
         zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
     )
 
+    # pylint: disable=line-too-long
     expected_seqc = dedent(
         """\
     // Generated by quantify-scheduler.
     // Variables
     var __repetitions__ = 1;
+    var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
     wave w0 = "dev2299_wave0";\n
     // Operations
-    // Schedule offset: 1e-06s 225 clocks
-    // Schedule duration: 1.5999999999999997e-06s 360 clocks
-    // Sequence start: 0.0s 0 clocks
-    // Sequence duration: 1.5999999999999997e-06s 360 clocks
-    // Sequence end: 1.5999999999999997e-06s 360 clocks
-    // Dead time: 5e-06s 1125 clocks
-    // Line delay: -1s 0 clocks
+    // Schedule offset: 0.000001000s 225 clocks
+    // Schedule duration: 0.000001600s 360 clocks
+    // Sequence start: 0.000000000s 0 clocks
+    // Sequence duration: 0.000001600s 360 clocks
+    // Sequence end: 0.000001600s 360 clocks
+    // Line delay: -1.000000000s 0 clocks
     repeat(__repetitions__)
     {
       waitDigTrigger(2, 1);	// clock=0
-      setTrigger(AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER);	// clock=0 n_instr=3
-      wait(332);	// clock=0 n_instr=3
-      playWave(w0);	// clock=338 n_instr=3
-      // Final wait + dead time
-      wait(1146);	// clock=362
+      setTrigger(integration_trigger);	// clock=0 n_instr=2
+      wait(335);	// 	// clock=2 n_instr=335
+      playWave(w0);	// clock=337 n_instr=0
     }
     """
     ).lstrip("\n")
+    # pylint: enable=line-too-long
 
     # Act
     zhinst_backend.setup_zhinst_backend(schedule, uhfqa_hardware_map)
@@ -719,36 +701,36 @@ def test_uhfqa_sequence3(
         zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
     )
 
+    # pylint: disable=line-too-long
     expected_seqc = dedent(
         """\
     // Generated by quantify-scheduler.
     // Variables
     var __repetitions__ = 1;
+    var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
     wave w0 = "dev2299_wave0";
     wave w1 = "dev2299_wave1";\n
     // Operations
-    // Schedule offset: 1e-06s 225 clocks
-    // Schedule duration: 1.1999999999999997e-06s 270 clocks
-    // Sequence start: 0.0s 0 clocks
-    // Sequence duration: 1.1999999999999997e-06s 270 clocks
-    // Sequence end: 1.1999999999999997e-06s 270 clocks
-    // Dead time: 5e-06s 1125 clocks
-    // Line delay: -1s 0 clocks
+    // Schedule offset: 0.000001000s 225 clocks
+    // Schedule duration: 0.000001200s 270 clocks
+    // Sequence start: 0.000000000s 0 clocks
+    // Sequence duration: 0.000001200s 270 clocks
+    // Sequence end: 0.000001200s 270 clocks
+    // Line delay: -1.000000000s 0 clocks
     repeat(__repetitions__)
     {
       waitDigTrigger(2, 1);	// clock=0
-      setTrigger(AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER);	// clock=0 n_instr=3
-      wait(107);	// clock=0 n_instr=3
-      playWave(w0);	// clock=113 n_instr=3
-      wait(16);	// clock=113 n_instr=3
-      setTrigger(AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER);	// clock=135 n_instr=3
-      wait(106);	// clock=135 n_instr=3
-      playWave(w1);	// clock=247 n_instr=3
-      // Final wait + dead time
-      wait(1146);	// clock=271
+      setTrigger(integration_trigger);	// clock=0 n_instr=2
+      wait(110);	// 	// clock=2 n_instr=110
+      playWave(w0);	// clock=112 n_instr=0
+      wait(20);	// 	// clock=112 n_instr=20
+      setTrigger(integration_trigger);	// clock=132 n_instr=2
+      wait(113);	// 	// clock=134 n_instr=113
+      playWave(w1);	// clock=247 n_instr=0
     }
     """
     ).lstrip("\n")
+    # pylint: enable=line-too-long
 
     # Act
     zhinst_backend.setup_zhinst_backend(schedule, uhfqa_hardware_map)
@@ -766,7 +748,7 @@ def test_uhfqa_sequence3(
     )
 
 
-def test__program_modulation_PREMODULATE(
+def test__program_modulation_type_is_premodulate(
     mocker,
     uhfqa_hardware_map: Dict[str, Any],
     create_device,
@@ -775,8 +757,8 @@ def test__program_modulation_PREMODULATE(
 ):
     # Arrange
     uhfqa = create_uhfqa_mock()
-    device: Device = create_device(uhfqa_hardware_map)
-    device.type = DeviceType.UHFQA
+    device: zhinst.Device = create_device(uhfqa_hardware_map)
+    device.type = zhinst.DeviceType.UHFQA
     device.channel_0.modulation = ModulationModeType.PREMODULATE
 
     schedule: Schedule = create_schedule_with_pulse_info()
@@ -803,9 +785,11 @@ def test__program_modulation_PREMODULATE(
     modulate_wave_spy.assert_called()
 
 
-@pytest.mark.parametrize("device_type", [(DeviceType.UHFQA), (DeviceType.HDAWG)])
-def test__program_modulation_MODULATE(
-    device_type: DeviceType,
+@pytest.mark.parametrize(
+    "device_type", [(zhinst.DeviceType.UHFQA), (zhinst.DeviceType.HDAWG)]
+)
+def test__program_modulation_type_is_modulate(
+    device_type: zhinst.DeviceType,
     uhfqa_hardware_map: Dict[str, Any],
     hdawg_hardware_map: Dict[str, Any],
     create_device,
@@ -813,14 +797,14 @@ def test__program_modulation_MODULATE(
     create_hdawg_mock,
 ):
     # Arrange
-    if device_type == DeviceType.HDAWG:
+    if device_type == zhinst.DeviceType.HDAWG:
         instrument = create_hdawg_mock(4)
-        device: Device = create_device(hdawg_hardware_map)
+        device: zhinst.Device = create_device(hdawg_hardware_map)
         device.type = device_type
         awg = instrument.awgs[0]
-    elif device_type == DeviceType.UHFQA:
+    elif device_type == zhinst.DeviceType.UHFQA:
         instrument = create_uhfqa_mock()
-        device: Device = create_device(uhfqa_hardware_map)
+        device: zhinst.Device = create_device(uhfqa_hardware_map)
         device.type = device_type
         awg = instrument.awg
 
@@ -830,7 +814,7 @@ def test__program_modulation_MODULATE(
     zhinst_backend._program_modulation(awg, device, device.channel_0, dict(), dict())
 
     # Assert
-    if device_type == DeviceType.HDAWG:
+    if device_type == zhinst.DeviceType.HDAWG:
         output = device.channel_0
         awg.enable_iq_modulation.assert_called()
         awg.modulation_freq.assert_called_with(output.lo_freq + output.interm_freq)
@@ -838,12 +822,14 @@ def test__program_modulation_MODULATE(
         awg.gain1.assert_called_with(output.gain1)
         awg.gain2.assert_called_with(output.gain2)
     else:
-        assert hasattr(awg, "enable_iq_modulation") == False
+        assert hasattr(awg, "enable_iq_modulation") is False
 
 
-@pytest.mark.parametrize("device_type", [(DeviceType.UHFQA), (DeviceType.HDAWG)])
-def test__program_modulation_NONE(
-    device_type: DeviceType,
+@pytest.mark.parametrize(
+    "device_type", [(zhinst.DeviceType.UHFQA), (zhinst.DeviceType.HDAWG)]
+)
+def test__program_modulation_type_is_none(
+    device_type: zhinst.DeviceType,
     uhfqa_hardware_map: Dict[str, Any],
     hdawg_hardware_map: Dict[str, Any],
     create_device,
@@ -851,14 +837,14 @@ def test__program_modulation_NONE(
     create_hdawg_mock,
 ):
     # Arrange
-    if device_type == DeviceType.HDAWG:
+    if device_type == zhinst.DeviceType.HDAWG:
         instrument = create_hdawg_mock(4)
-        device: Device = create_device(hdawg_hardware_map)
+        device: zhinst.Device = create_device(hdawg_hardware_map)
         device.type = device_type
         awg = instrument.awgs[0]
-    elif device_type == DeviceType.UHFQA:
+    elif device_type == zhinst.DeviceType.UHFQA:
         instrument = create_uhfqa_mock()
-        device: Device = create_device(uhfqa_hardware_map)
+        device: zhinst.Device = create_device(uhfqa_hardware_map)
         device.type = device_type
         awg = instrument.awg
 
@@ -868,20 +854,19 @@ def test__program_modulation_NONE(
     zhinst_backend._program_modulation(awg, device, device.channel_0, dict(), dict())
 
     # Assert
-    if device_type == DeviceType.HDAWG:
+    if device_type == zhinst.DeviceType.HDAWG:
         awg.disable_iq_modulation.assert_called()
     else:
-        assert hasattr(awg, "disable_iq_modulation") == False
+        assert hasattr(awg, "disable_iq_modulation") is False
 
 
-def test__set_waveforms_WAVEFORM_TABLE(mocker, create_hdawg_mock):
+def test__set_waveforms_destination_is_waveformtable(mocker, create_hdawg_mock):
     # Arrange
     instrument = create_hdawg_mock(4)
     awg = instrument.awgs[0]
     waveform = np.vectorize(complex)(np.zeros(1024), np.ones(1024))
     waveforms_dict = {0: waveform}
     commandtable_map = {0: 0}
-    pulseid_pulseinfo_dict = {0: {"wf_func": "square"}}
 
     set_wave_vector_mock = mocker.patch.object(zi_helpers, "set_wave_vector")
 
@@ -896,8 +881,7 @@ def test__set_waveforms_WAVEFORM_TABLE(mocker, create_hdawg_mock):
         awg,
         waveforms_dict,
         commandtable_map,
-        pulseid_pulseinfo_dict,
-        _WaveformDestination.WAVEFORM_TABLE,
+        zhinst.WaveformDestination.WAVEFORM_TABLE,
     )
 
     # Assert
@@ -907,14 +891,13 @@ def test__set_waveforms_WAVEFORM_TABLE(mocker, create_hdawg_mock):
     np.testing.assert_array_equal(args[3], expected_data)
 
 
-def test__set_waveforms_CSV(mocker, create_hdawg_mock):
+def test__set_waveforms_destination_is_csv(mocker, create_hdawg_mock):
     # Arrange
     instrument = create_hdawg_mock(4)
     awg = instrument.awgs[0]
     waveform = np.vectorize(complex)(np.zeros(1024), np.ones(1024))
     waveforms_dict = {0: waveform}
     commandtable_map = {0: 0}
-    pulseid_pulseinfo_dict = {0: {"wf_func": "square"}}
 
     np_savetext_mock = mocker.patch.object(np, "savetxt")
     expected_path = Path(".").joinpath(
@@ -932,8 +915,7 @@ def test__set_waveforms_CSV(mocker, create_hdawg_mock):
         awg,
         waveforms_dict,
         commandtable_map,
-        pulseid_pulseinfo_dict,
-        _WaveformDestination.CSV,
+        zhinst.WaveformDestination.CSV,
     )
 
     # Assert

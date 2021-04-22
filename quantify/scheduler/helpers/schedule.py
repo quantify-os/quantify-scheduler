@@ -4,15 +4,123 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import quantify.utilities.general as general
-
 from quantify.scheduler import types
+from quantify.scheduler.helpers import waveforms as waveform_helpers
 
 
-def get_pulse_uuid(pulse_info: Dict[str, Any]) -> int:
+class CachedSchedule:
+    """
+    The CachedSchedule class wraps around the types.Schedule
+    class and populates the lookup dictionaries that are
+    used for compilation of the backends.
+    """
+
+    _start_offset_in_seconds: Optional[float] = None
+    _total_duration_in_seconds: Optional[float] = None
+
+    def __init__(self, schedule: types.Schedule):
+        self._schedule = schedule
+
+        self._pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
+        self._pulseid_waveformfn_dict = waveform_helpers.get_waveform_by_pulseid(
+            schedule
+        )
+        self._port_timeline_dict = get_port_timeline(schedule)
+        self._acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
+
+    @property
+    def schedule(self) -> types.Schedule:
+        """
+        Returns schedule.
+
+        Returns
+        -------
+        types.Schedule
+        """
+        return self._schedule
+
+    @property
+    def pulseid_pulseinfo_dict(self) -> Dict[int, Dict[str, Any]]:
+        """
+        Returns the pulse info lookup table.
+
+        Returns
+        -------
+        Dict[int, Dict[str, Any]]
+        """
+        return self._pulseid_pulseinfo_dict
+
+    @property
+    def pulseid_waveformfn_dict(self) -> Dict[int, waveform_helpers.GetWaveformPartial]:
+        """
+        Returns waveform function lookup table.
+
+        Returns
+        -------
+        Dict[int, waveform_helpers.GetWaveformPartial]
+        """
+        return self._pulseid_waveformfn_dict
+
+    @property
+    def acqid_acqinfo_dict(self) -> Dict[int, Dict[str, Any]]:
+        """
+        Returns the acquisition info lookup table.
+
+        Returns
+        -------
+        Dict[int, Dict[str, Any]]
+        """
+        return self._acqid_acqinfo_dict
+
+    @property
+    def port_timeline_dict(self) -> Dict[str, Dict[int, List[int]]]:
+        """
+        Returns the timeline per port lookup dictionary.
+
+        Returns
+        -------
+        Dict[str, Dict[int, List[int]]]
+        """
+        return self._port_timeline_dict
+
+    @property
+    def start_offset_in_seconds(self) -> float:
+        """
+        Returns the schedule start offset in seconds.
+        The start offset is determined by a Reset operation
+        at the start of one of the ports.
+
+        Returns
+        -------
+        float
+        """
+        if self._start_offset_in_seconds is None:
+            self._start_offset_in_seconds = get_schedule_time_offset(
+                self.schedule, self.port_timeline_dict
+            )
+
+        return self._start_offset_in_seconds
+
+    @property
+    def total_duration_in_seconds(self) -> float:
+        """
+        Returns the schedule total duration in seconds.
+
+        Returns
+        -------
+        float
+        """
+        if self._total_duration_in_seconds is None:
+            self._total_duration_in_seconds = get_total_duration(self.schedule)
+
+        return self._total_duration_in_seconds
+
+
+def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> int:
     """
     Returns an unique identifier for a pulse.
 
@@ -26,7 +134,10 @@ def get_pulse_uuid(pulse_info: Dict[str, Any]) -> int:
     int
         The uuid hash.
     """
-    return general.make_hash(general.without(pulse_info, ["t0"]))
+    if excludes is None:
+        excludes = ["t0"]
+
+    return general.make_hash(general.without(pulse_info, excludes))
 
 
 def get_acq_uuid(acq_info: Dict[str, Any]) -> int:

@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from zhinst.qcodes.base import ZIBaseInstrument
 
-from quantify.scheduler.backends.types.zhinst import DeviceType, QAS_IntegrationMode
+from quantify.scheduler.backends.types.zhinst import DeviceType, QasIntegrationMode
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 
 
@@ -242,7 +242,7 @@ def test_set_qas_parameters(mocker):
     ]
 
     # Act
-    zi_helpers.set_qas_parameters(instrument, 1024, QAS_IntegrationMode.NORMAL, 0)
+    zi_helpers.set_qas_parameters(instrument, 1024, QasIntegrationMode.NORMAL, 0)
 
     # Assert
     assert mock_set.mock_calls == expected_calls
