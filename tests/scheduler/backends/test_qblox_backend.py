@@ -71,9 +71,6 @@ def dummy_pulsars():
     else:
         _pulsars = []
 
-    # ensures a temporary datadir is used which is excluded from git
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
     yield _pulsars
 
     # teardown
@@ -201,8 +198,6 @@ def gate_only_schedule():
 
 
 # --------- Test utility functions ---------
-
-
 def test_sanitize_fn():
     filename = "this.isavalid=filename.exe.jpeg"
     new_filename = qb._sanitize_file_name(filename)
@@ -386,17 +381,23 @@ def test_contruct_sequencer():
     assert isinstance(test_p.sequencers[seq_keys[0]], qb.QCM_sequencer)
 
 
-def test_simple_compile(dummy_pulsars, pulse_only_schedule):
+def test_simple_compile(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
-def test_identical_pulses_compile(dummy_pulsars, identical_pulses_schedule):
+def test_identical_pulses_compile(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
     qcompile(identical_pulses_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
     full_program = qcompile(
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
@@ -412,6 +413,8 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
 def test_compile_with_rel_time(
     dummy_pulsars, pulse_only_schedule_with_operation_timing
 ):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
     full_program = qcompile(
         pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_MAPPING
     )
@@ -422,6 +425,8 @@ def test_compile_with_rel_time(
 
 
 def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
     mixed_schedule_with_acquisition.repetitions = 10
     full_program = qcompile(
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
