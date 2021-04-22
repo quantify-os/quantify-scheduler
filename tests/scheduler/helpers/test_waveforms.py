@@ -3,22 +3,24 @@
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
+# pylint: disable=missing-function-docstring
 from __future__ import annotations
 
 import inspect
-from quantify.scheduler.helpers.schedule import get_pulse_uuid
 from typing import List
 
 import numpy as np
 import pytest
 
 from quantify.scheduler.gate_library import X90
+from quantify.scheduler.helpers.schedule import get_pulse_uuid
 from quantify.scheduler.helpers.waveforms import (
     exec_custom_waveform_function,
     exec_waveform_function,
     get_waveform,
     get_waveform_by_pulseid,
     resize_waveform,
+    shift_waveform,
 )
 from quantify.scheduler.types import Schedule
 
@@ -204,3 +206,49 @@ def test_exec_custom_waveform_function(mocker):
 
     # Assert
     mock.assert_called_with(t=t, duration=1.4e-9, t0=0)
+
+
+def test_shift_waveform_misaligned():
+    # Arrange
+    clock_rate: int = 2400000000
+    t = np.arange(0, 16e-9, 1 / clock_rate)
+    waveform = np.ones(len(t))
+    start_in_seconds = 16e-9  # 16ns
+    resolution = 8
+
+    start_in_clocks = start_in_seconds * clock_rate
+    n_samples = int(start_in_clocks % resolution)
+
+    # 16e-9 / (8 / 2.4e9) = 4.8
+    # waveform must start at: floor(4.8)
+
+    expected = np.concatenate([np.zeros(n_samples), waveform])
+
+    # Act
+    clock, shifted_waveform = shift_waveform(
+        waveform, start_in_seconds, clock_rate, resolution
+    )
+
+    # Assert
+    assert clock == 4
+    assert n_samples == 6
+    assert len(shifted_waveform) == 45
+    np.testing.assert_array_equal(shifted_waveform, expected)
+
+
+def test_shift_waveform_aligned():
+    # Arrange
+    clock_rate: int = 2400000000
+    t = np.arange(0, 16e-9, 1 / clock_rate)
+    waveform = np.ones(len(t))
+    start_in_seconds = 3.3333e-9
+    resolution = 8
+
+    # Act
+    clock, shifted_waveform = shift_waveform(
+        waveform, start_in_seconds, clock_rate, resolution
+    )
+
+    # Assert
+    assert clock == 1
+    np.testing.assert_array_equal(shifted_waveform, waveform)

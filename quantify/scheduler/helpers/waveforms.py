@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 from functools import partial
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from abc import ABC
 
 try:
@@ -45,7 +45,28 @@ class GetWaveformPartial(Protocol):  # typing.Protocol
         """
 
 
-def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int):
+def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
+    """
+    Returns the number of samples required to
+    respect the granularity.
+
+    Parameters
+    ----------
+    waveform :
+    granularity : int
+
+    Returns
+    -------
+    int
+    """
+    size: int = len(waveform)
+    if size % granularity != 0:
+        size = math.closest_number_ceil(size, granularity)
+
+    return size
+
+
+def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) -> None:
     """
     Resizes the waveforms to a multiple of the given
     granularity.
@@ -64,7 +85,7 @@ def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int):
         )
 
 
-def resize_waveform(waveform: np.array, granularity: int) -> np.array:
+def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
     """
     Returns the waveform in a size that is a modulo of the given granularity.
 
@@ -92,6 +113,52 @@ def resize_waveform(waveform: np.array, granularity: int) -> np.array:
 
     # Append the waveform with the remainder zeros
     return np.concatenate([waveform, np.zeros(remainder)])
+
+
+def shift_waveform(
+    waveform: np.ndarray, start_in_seconds: float, clock_rate: int, resolution: int
+) -> Tuple[int, np.ndarray]:
+    """
+    Returns the waveform shifted with a number of samples
+    to compensate for rounding errors that cause misalignment
+    of the waveform in the clock time domain.
+
+    Note: when using this method be sure that the pulse starts
+    at a `round(start_in_clocks)`.
+
+    .. code-block::
+
+        waveform = np.ones(32)
+        clock_rate = int(2.4e9)
+        resolution: int = 8
+
+        t0: float = 16e-9
+        #                 4.8 = 16e-9 / (8 / 2.4e9)
+        start_in_clocks = (t0 // (resolution / clock_rate))
+
+        start_waveform_at_clock(start_in_clocks, waveform)
+
+    Parameters
+    ----------
+    waveform : np.ndarray
+    start_in_seconds : float
+    clock_rate : int
+    resolution : int
+        The sequencer resolution.
+
+    Returns
+    -------
+    Tuple[int, np.ndarray]
+    """
+
+    start_in_clocks = round(start_in_seconds * clock_rate)
+    samples_shift = start_in_clocks % resolution
+    start_in_lowres_clock = start_in_clocks // resolution
+
+    if samples_shift == 0:
+        return start_in_lowres_clock, waveform
+
+    return start_in_lowres_clock, np.concatenate([np.zeros(samples_shift), waveform])
 
 
 def get_waveform(
