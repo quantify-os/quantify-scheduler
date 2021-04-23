@@ -49,29 +49,21 @@ def generate_ext_local_oscillators(
         A dictionary with the names of the devices as keys and compiler
         objects for the local oscillators as values.
     """
-    # TODO more generic with get_inner_dicts_containing_key?
-    lo_dict = dict()
-    for device in hardware_cfg.values():
-        if not isinstance(device, dict):  # is not a device
-            continue
+    all_lo_objs = dict()
+    lo_dicts = find_inner_dicts_containing_key(hardware_cfg, "lo_name")
+    for lo_dict in lo_dicts:
+        lo_name = lo_dict["lo_name"]
+        if lo_name not in all_lo_objs:
+            lo_obj = LocalOscillator(
+                lo_name,
+                total_play_time,
+            )
+            all_lo_objs[lo_name] = lo_obj
 
-        for io_cfg in device.values():
-            if not isinstance(io_cfg, dict):  # is not a in/output
-                continue
+        if "lo_freq" in lo_dict:
+            all_lo_objs[lo_name].assign_frequency(lo_dict["lo_freq"])
 
-            if "lo_name" in io_cfg:
-                lo_name = io_cfg["lo_name"]
-                if lo_name not in lo_dict:
-                    lo_obj = LocalOscillator(
-                        lo_name,
-                        total_play_time,
-                    )
-                    lo_dict[lo_name] = lo_obj
-
-                if "lo_freq" in io_cfg:
-                    lo_dict[lo_name].assign_frequency(io_cfg["lo_freq"])
-
-    return lo_dict
+    return all_lo_objs
 
 
 def _calculate_total_play_time(schedule: Schedule) -> float:

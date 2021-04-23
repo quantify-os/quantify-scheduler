@@ -123,7 +123,7 @@ class PulsarSettings(DataClassJsonMixin):
 
     ref: str
     hardware_averages: int = 1
-    acq_mode: str = "SSBIntegrationComplex"  # TODO hardcoded. Also unnecessary for QCM
+    acq_mode: str = "SSBIntegrationComplex"
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
@@ -178,7 +178,6 @@ class SequencerSettings(DataClassJsonMixin):
     awg_offset_path_0: float = 0.0
     awg_offset_path_1: float = 0.0
     duration: int = 0
-    # TODO duration should be replaced by the acq weights and later removed completely
 
 
 @dataclass
