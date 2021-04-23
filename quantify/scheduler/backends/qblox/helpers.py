@@ -48,7 +48,7 @@ def verify_qblox_instruments_version():
             else f" Please install a support version (currently supported: "
             f"{SUPPORTED_DRIVER_VERSIONS})"
         )
-        message += f" to continue to use this backend."
+        message += " to continue to use this backend."
         raise DriverVersionError(message)
 
 
