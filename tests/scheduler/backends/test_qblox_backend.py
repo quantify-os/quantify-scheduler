@@ -30,10 +30,23 @@ from quantify.scheduler.compilation import (
     device_compile,
 )
 
+from quantify.scheduler.backends.qblox.helpers import (
+    sanitize_file_name,
+    modulate_waveform,
+    generate_waveform_data,
+)
 from quantify.scheduler.backends import qblox_backend as qb
 from quantify.scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
     apply_mixer_skewness_corrections,
+)
+from quantify.scheduler.backends.qblox.instrument_compilers import (
+    Q1ASMInstructions,
+    QASMProgram,
+    Pulsar_sequencer_base,
+    Pulsar_QCM,
+    Pulsar_base,
+    QCM_sequencer,
 )
 
 import quantify.scheduler.schemas.examples as es
@@ -200,11 +213,11 @@ def gate_only_schedule():
 # --------- Test utility functions ---------
 def test_sanitize_fn():
     filename = "this.isavalid=filename.exe.jpeg"
-    new_filename = qb._sanitize_file_name(filename)
+    new_filename = sanitize_file_name(filename)
     assert new_filename == "this.isavalid=filename.exe.jpeg"
 
     filename = "this.isan:in>,valid=filename***!.exe.jpeg"
-    new_filename = qb._sanitize_file_name(filename)
+    new_filename = sanitize_file_name(filename)
     assert new_filename == "this.isan_in__valid=filename____.exe.jpeg"
 
 
@@ -214,7 +227,7 @@ def test_modulate_waveform():
     t0 = 50e-9
     t = np.linspace(0, 1e-6, number_of_points)
     envelope = np.ones(number_of_points)
-    mod_wf = qb.modulate_waveform(t, envelope, freq, t0)
+    mod_wf = modulate_waveform(t, envelope, freq, t0)
     test_re = np.cos(2 * np.pi * freq * (t + t0))
     test_imag = np.sin(2 * np.pi * freq * (t + t0))
     assert np.allclose(mod_wf.real, test_re)
@@ -265,7 +278,7 @@ def test_generate_waveform_data():
         "bar": bar,
         "duration": 1e-8,
     }
-    gen_data = qb._generate_waveform_data(data_dict, sampling_rate)
+    gen_data = generate_waveform_data(data_dict, sampling_rate)
     assert np.allclose(gen_data, verification_data)
 
 
@@ -362,8 +375,8 @@ def test_generate_port_clock_to_device_map():
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class TestPulsar(qb.Pulsar_base):
-        SEQ_TYPE = qb.QCM_sequencer
+    class TestPulsar(Pulsar_base):
+        SEQ_TYPE = QCM_sequencer
         MAX_SEQUENCERS = 10
 
         def __init__(self):
@@ -378,7 +391,7 @@ def test_contruct_sequencer():
     test_p.sequencers = test_p._construct_sequencers()
     seq_keys = list(test_p.sequencers.keys())
     assert len(seq_keys) == 2
-    assert isinstance(test_p.sequencers[seq_keys[0]], qb.QCM_sequencer)
+    assert isinstance(test_p.sequencers[seq_keys[0]], QCM_sequencer)
 
 
 def test_simple_compile(pulse_only_schedule):
@@ -444,7 +457,7 @@ def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition
 
 # --------- Test QASMProgram class ---------
 def test_qasm_program_list_behavior():
-    fancy_list = qb.QASMProgram()
+    fancy_list = QASMProgram()
     fancy_list.append("foo")
     fancy_list.append("bar")
     assert len(fancy_list) == 2
@@ -453,17 +466,17 @@ def test_qasm_program_list_behavior():
 
 
 def test_emit():
-    qasm = qb.QASMProgram()
-    qasm.emit(qb.PulsarInstructions.PLAY, 0, 1, 120)
-    qasm.emit(qb.PulsarInstructions.STOP, comment="This is a comment that is added")
+    qasm = QASMProgram()
+    qasm.emit(Q1ASMInstructions.PLAY, 0, 1, 120)
+    qasm.emit(Q1ASMInstructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm) == 2
     with pytest.raises(SyntaxError):
-        qasm.emit(qb.PulsarInstructions.ACQUIRE, 0, 1, 120, "argument too many")
+        qasm.emit(Q1ASMInstructions.ACQUIRE, 0, 1, 120, "argument too many")
 
 
 def test_auto_wait():
-    qasm = qb.QASMProgram()
+    qasm = QASMProgram()
     qasm.auto_wait(120)
     assert len(qasm) == 1
     qasm.auto_wait(70000)
@@ -477,50 +490,50 @@ def test_wait_till_start_then_play():
     pulse = qb.OpInfo(
         uuid=0, data=minimal_pulse_data, timing=4e-9, pulse_settings=runtime_settings
     )
-    qasm = qb.QASMProgram()
+    qasm = QASMProgram()
     qasm.wait_till_start_then_play(pulse, 0, 1)
     assert len(qasm) == 3
-    assert qasm[0][1] == qb.PulsarInstructions.WAIT
-    assert qasm[1][1] == qb.PulsarInstructions.SET_AWG_GAIN
-    assert qasm[2][1] == qb.PulsarInstructions.PLAY
+    assert qasm[0][1] == Q1ASMInstructions.WAIT
+    assert qasm[1][1] == Q1ASMInstructions.SET_AWG_GAIN
+    assert qasm[2][1] == Q1ASMInstructions.PLAY
 
 
 def test_wait_till_start_then_acquire():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
-    qasm = qb.QASMProgram()
+    qasm = QASMProgram()
     qasm.wait_till_start_then_acquire(acq, 0, 1)
     assert len(qasm) == 2
-    assert qasm[0][1] == qb.PulsarInstructions.WAIT
-    assert qasm[1][1] == qb.PulsarInstructions.ACQUIRE
+    assert qasm[0][1] == Q1ASMInstructions.WAIT
+    assert qasm[1][1] == Q1ASMInstructions.ACQUIRE
 
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
-    expanded_val = qb.QASMProgram._expand_from_normalised_range(1, "test_param", acq)
-    assert expanded_val == qb.Pulsar_sequencer_base.IMMEDIATE_SZ // 2
+    expanded_val = QASMProgram._expand_from_normalised_range(1, "test_param", acq)
+    assert expanded_val == Pulsar_sequencer_base.IMMEDIATE_SZ // 2
     with pytest.raises(ValueError):
-        qb.QASMProgram._expand_from_normalised_range(10, "test_param", acq)
+        QASMProgram._expand_from_normalised_range(10, "test_param", acq)
 
 
 def test_to_pulsar_time():
-    time_ns = qb.QASMProgram.to_pulsar_time(8e-9)
+    time_ns = QASMProgram.to_pulsar_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
-        qb.QASMProgram.to_pulsar_time(7e-9)
+        QASMProgram.to_pulsar_time(7e-9)
 
 
 def test_loop():
     num_rep = 10
     reg = "R0"
 
-    qasm = qb.QASMProgram()
-    qasm.emit(qb.PulsarInstructions.WAIT_SYNC, 4)
+    qasm = QASMProgram()
+    qasm.emit(Q1ASMInstructions.WAIT_SYNC, 4)
     with qasm.loop(reg, "this_loop", repetitions=num_rep):
-        qasm.emit(qb.PulsarInstructions.WAIT, 20)
+        qasm.emit(Q1ASMInstructions.WAIT, 20)
     assert len(qasm) == 5
-    assert qasm[1][1] == qb.PulsarInstructions.MOVE
+    assert qasm[1][1] == Q1ASMInstructions.MOVE
     num_rep_used, reg_used = qasm[1][2].split(",")
     assert int(num_rep_used) == num_rep
     assert reg_used == reg
@@ -528,7 +541,7 @@ def test_loop():
 
 # --------- Test sequencer compilation ---------
 def test_assign_frequency():
-    qcm = qb.Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
     qcm_seq0 = qcm.sequencers["seq0"]
     qcm_seq0.assign_frequency(100e6)
     qcm_seq0.assign_frequency(100e6)
