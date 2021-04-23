@@ -111,8 +111,24 @@ zhinst_backend
 types
 ~~~~~
 
+.. automodule:: quantify.scheduler.backends.types.qblox
+    :members:
+
 .. automodule:: quantify.scheduler.backends.types.zhinst
     :members:
+
+Qblox
+~~~~~~
+
+.. automodule:: quantify.scheduler.backends.qblox.helpers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.q1asm_instructions
+    :members:
+
 
 zhinst
 ~~~~~~

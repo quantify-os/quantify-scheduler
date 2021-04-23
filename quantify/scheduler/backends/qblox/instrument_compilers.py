@@ -583,7 +583,7 @@ class QASMProgram(list):
         --------
         .. jupyter-execute::
 
-            from quantify.scheduler.backends.qblox_backend import QASMProgram
+            from quantify.scheduler.backends.qblox.instrument_compilers import QASMProgram
 
             qasm = QASMProgram()
             with qasm.loop(register='R0', label='repeat', repetitions=10):
