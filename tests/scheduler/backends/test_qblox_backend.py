@@ -46,7 +46,6 @@ from quantify.scheduler.backends.qblox.instrument_compilers import (
     QCMSequencer,
 )
 from quantify.scheduler.backends.qblox.compiler_abc import (
-    PulsarSequencerBase,
     PulsarBase,
 )
 from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
