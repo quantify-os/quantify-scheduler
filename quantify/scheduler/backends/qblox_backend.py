@@ -18,15 +18,12 @@ from quantify.scheduler.backends.qblox.helpers import (
 )
 from quantify.scheduler.backends.qblox import instrument_compilers
 from quantify.scheduler.backends.qblox.instrument_compilers import (
-    InstrumentCompiler,
     LocalOscillator,
 )
+from quantify.scheduler.backends.qblox.compiler_abc import InstrumentCompiler
 from quantify.scheduler.backends.types.qblox import OpInfo
 
 from quantify.scheduler.types import Schedule
-
-
-# ---------- utility functions ----------
 
 
 def generate_ext_local_oscillators(
@@ -138,8 +135,6 @@ def generate_port_clock_to_device_map(
 
     return portclock_map
 
-
-# ---------- Compilation methods ----------
 
 # pylint: disable=too-many-locals
 def _assign_frequencies(

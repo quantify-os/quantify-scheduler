@@ -40,11 +40,13 @@ from quantify.scheduler.backends.types.qblox import (
     apply_mixer_skewness_corrections,
 )
 from quantify.scheduler.backends.qblox.instrument_compilers import (
+    Pulsar_QCM,
+    QCMSequencer,
+)
+from quantify.scheduler.backends.qblox.compiler_abc import (
     QASMProgram,
     PulsarSequencerBase,
-    Pulsar_QCM,
     PulsarBase,
-    QCMSequencer,
 )
 from quantify.scheduler.backends.qblox import q1asm_instructions
 
