@@ -19,7 +19,8 @@ import numpy as np
 
 from qcodes.instrument.base import Instrument
 
-from quantify.data.handling import set_datadir  # pylint: disable=no-name-in-module
+# pylint: disable=no-name-in-module
+from quantify.data.handling import set_datadir
 
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, X

@@ -9,9 +9,10 @@ from collections import UserDict
 
 import numpy as np
 
+# pylint: disable=no-name-in-module
 from quantify.utilities.general import (
     import_func_from_string,
-)  # pylint: disable=no-name-in-module
+)
 
 try:
     from qblox_instruments.build import __version__ as driver_version
@@ -52,32 +53,6 @@ def verify_qblox_instruments_version():
         )
         message += " to continue to use this backend."
         raise DriverVersionError(message)
-
-
-def sanitize_file_name(filename: str) -> str:
-    """
-    Takes a str representing a filename and removes invalid characters
-    by replacing it with an underscore character.
-
-    e.g. invalid:file?name.json -> invalid_file_name.json
-
-    Characters that are considered invalid: ',<>:"/\\|!?* '
-
-    Parameters
-    ----------
-    filename
-        The str representing the filename
-
-    Returns
-    -------
-    :
-        The sanitized filename
-    """
-    invalid = ',<>:"/\\|!?* '
-    sanitized_fn = filename
-    for char in invalid:
-        sanitized_fn = sanitized_fn.replace(char, "_")
-    return sanitized_fn
 
 
 # pylint: disable=invalid-name

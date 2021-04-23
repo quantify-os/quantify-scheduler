@@ -126,6 +126,12 @@ Qblox
 .. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
     :members:
 
+.. automodule:: quantify.scheduler.backends.qblox.compilers_abc
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.constants
+    :members:
+
 .. automodule:: quantify.scheduler.backends.qblox.q1asm_instructions
     :members:
 

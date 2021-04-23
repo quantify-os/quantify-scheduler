@@ -7,10 +7,12 @@ from typing import Dict, Any, Tuple, Callable
 
 import numpy as np
 from quantify.scheduler.helpers.schedule import get_total_duration
+
+# pylint: disable=no-name-in-module
 from quantify.utilities.general import (
     make_hash,
     without,
-)  # pylint: disable=no-name-in-module
+)
 
 from quantify.scheduler.backends.qblox.helpers import (
     find_inner_dicts_containing_key,

@@ -14,10 +14,11 @@ import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 
+# pylint: disable=no-name-in-module
 from quantify.data.handling import (
     get_datadir,
     gen_tuid,
-)  # pylint: disable=no-name-in-module
+)
 
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox.helpers import (
