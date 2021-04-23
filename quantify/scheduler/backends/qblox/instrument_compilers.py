@@ -14,6 +14,8 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from qcodes.utils.helpers import NumpyJSONEncoder
 
+from pathvalidate import sanitize_filename
+
 import numpy as np
 from quantify.scheduler.helpers.waveforms import normalize_waveform_data
 from quantify.data.handling import get_datadir, gen_tuid
@@ -21,7 +23,6 @@ from quantify.data.handling import get_datadir, gen_tuid
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_names_from_uuid,
     _generate_waveform_dict,
-    sanitize_file_name,
     find_all_port_clock_combinations,
     modulate_waveform,
     find_inner_dicts_containing_key,
@@ -1108,7 +1109,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         filename = (
             f"{gen_tuid()}.json" if label is None else f"{gen_tuid()}_{label}.json"
         )
-        filename = sanitize_file_name(filename)
+        filename = sanitize_filename(filename)
         file_path = os.path.join(folder, filename)
 
         with open(file_path, "w") as file:
@@ -1236,7 +1237,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def SEQ_TYPE(self) -> type(Pulsar_sequencer_base):
+    def sequencer_type(self) -> type(Pulsar_sequencer_base):
         """
         Specifies whether the sequencers in this pulsar are QCM_sequencers or
         QRM_sequencers.
@@ -1348,7 +1349,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
             )
 
             seq_name = f"seq{self.OUTPUT_TO_SEQ[io]}"
-            sequencers[seq_name] = self.SEQ_TYPE(self, seq_name, portclock, freq)
+            sequencers[seq_name] = self.sequencer_type(self, seq_name, portclock, freq)
             if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
                     io_cfg["mixer_corrections"]
@@ -1416,13 +1417,13 @@ class Pulsar_QCM(Pulsar_base):
 
     Attributes
     ----------
-    SEQ_TYPE:
+    sequencer_type:
         Defines the type of sequencer that this pulsar uses.
     MAX_SEQUENCERS:
         Maximum amount of sequencers that this pulsar implements.
     """
 
-    SEQ_TYPE = QCM_sequencer
+    sequencer_type = QCM_sequencer
     MAX_SEQUENCERS = 2
 
     def _distribute_data(self):
@@ -1480,11 +1481,11 @@ class Pulsar_QRM(Pulsar_base):
 
     Attributes
     ----------
-    SEQ_TYPE:
+    sequencer_type:
         Defines the type of sequencer that this pulsar uses.
     MAX_SEQUENCERS:
         Maximum amount of sequencers that this pulsar implements.
     """
 
-    SEQ_TYPE = QRM_sequencer
+    sequencer_type = QRM_sequencer
     MAX_SEQUENCERS = 1

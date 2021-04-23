@@ -25,6 +25,7 @@ requirements = [
     "jsonschema",
     "dataclasses-json",
     "zhinst-qcodes",
+    "pathvalidate",
     "quantify-core>=0.3.1",
     "qblox-instruments==0.3.2",
 ]

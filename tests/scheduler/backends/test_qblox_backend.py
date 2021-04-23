@@ -31,7 +31,6 @@ from quantify.scheduler.compilation import (
 )
 
 from quantify.scheduler.backends.qblox.helpers import (
-    sanitize_file_name,
     modulate_waveform,
     generate_waveform_data,
 )
@@ -211,16 +210,6 @@ def gate_only_schedule():
 
 
 # --------- Test utility functions ---------
-def test_sanitize_fn():
-    filename = "this.isavalid=filename.exe.jpeg"
-    new_filename = sanitize_file_name(filename)
-    assert new_filename == "this.isavalid=filename.exe.jpeg"
-
-    filename = "this.isan:in>,valid=filename***!.exe.jpeg"
-    new_filename = sanitize_file_name(filename)
-    assert new_filename == "this.isan_in__valid=filename____.exe.jpeg"
-
-
 def test_modulate_waveform():
     number_of_points = 1000
     freq = 10e6
@@ -376,7 +365,7 @@ def test_generate_port_clock_to_device_map():
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
     class TestPulsar(Pulsar_base):
-        SEQ_TYPE = QCM_sequencer
+        sequencer_type = QCM_sequencer
         MAX_SEQUENCERS = 10
 
         def __init__(self):
