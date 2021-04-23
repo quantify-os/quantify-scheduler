@@ -292,9 +292,9 @@ class QASMProgram(list):
     """
     Class that holds the compiled Q1ASM program that is to be executed by the sequencer.
 
-    The object itself is a list which holds the instructions in order of execution. The
-    instructions in turn are also lists, which hold the instruction strings themselves
-    along with labels, comments and parameters.
+    The object itself is a subclass of list which holds the instructions in order of
+    execution. The instructions in turn are also lists, which hold the instruction
+    strings themselves along with labels, comments and parameters.
 
     Apart from this the class holds some convenience functions that auto generate
     certain instructions with parameters, as well as update the elapsed time.
@@ -356,7 +356,7 @@ class QASMProgram(list):
 
     def emit(self, *args, **kwargs) -> None:
         """
-        Wrapper around the `get_instruction_as_list` which adds it to the program.
+        Wrapper around the `get_instruction_as_list` which adds it to this program.
 
         Parameters
         ----------
