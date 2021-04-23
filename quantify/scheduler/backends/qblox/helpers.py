@@ -26,6 +26,14 @@ class DriverVersionError(Exception):
 
 
 def verify_qblox_instruments_version():
+    """
+    Verifies whether the installed version is supported by the qblox_backend.
+
+    Raises
+    ------
+    DriverVersionError
+        When an incorrect or no installation of qblox-instruments was found.
+    """
     if driver_version is None:
         raise DriverVersionError(
             "qblox-instruments version check could not be "
@@ -37,7 +45,8 @@ def verify_qblox_instruments_version():
         message += (
             f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
             if len(SUPPORTED_DRIVER_VERSIONS) == 1
-            else f" Please install a support version (currently supported: {SUPPORTED_DRIVER_VERSIONS})"
+            else f" Please install a support version (currently supported: "
+            f"{SUPPORTED_DRIVER_VERSIONS})"
         )
         message += f" to continue to use this backend."
         raise DriverVersionError(message)
