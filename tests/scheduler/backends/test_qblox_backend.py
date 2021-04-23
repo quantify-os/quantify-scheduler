@@ -261,8 +261,8 @@ def test_generate_waveform_data():
     verification_data = function_for_test_generate_waveform_data(t_verification, x, y)
     data_dict = {
         "wf_func": __name__ + ".function_for_test_generate_waveform_data",
-        "foo": x,
-        "bar": y,
+        "x": x,
+        "y": y,
         "duration": 1e-8,
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
