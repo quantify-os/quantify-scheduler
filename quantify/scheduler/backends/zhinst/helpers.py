@@ -266,7 +266,7 @@ def get_commandtable_map(
 def set_qas_parameters(
     instrument: qcodes.ZIBaseInstrument,
     integration_length: int,
-    mode: types.QAS_IntegrationMode = types.QAS_IntegrationMode.NORMAL,
+    mode: types.QasIntegrationMode = types.QasIntegrationMode.NORMAL,
     delay: int = 0,
 ):
     assert integration_length <= 4096
