@@ -7,7 +7,10 @@ from typing import Dict, Any, Tuple, Callable
 
 import numpy as np
 from quantify.scheduler.helpers.schedule import get_total_duration
-from quantify.utilities.general import make_hash, without
+from quantify.utilities.general import (
+    make_hash,
+    without,
+)  # pylint: disable=no-name-in-module
 
 from quantify.scheduler.backends.qblox.helpers import (
     find_inner_dicts_containing_key,
@@ -137,6 +140,8 @@ def generate_port_clock_to_device_map(
 
 
 # ---------- Compilation methods ----------
+
+# pylint: disable=too-many-locals
 def _assign_frequencies(
     device_compilers: Dict[str, InstrumentCompiler],
     lo_compilers: Dict[str, LocalOscillator],

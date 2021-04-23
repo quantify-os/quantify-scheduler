@@ -18,7 +18,10 @@ from pathvalidate import sanitize_filename
 
 import numpy as np
 from quantify.scheduler.helpers.waveforms import normalize_waveform_data
-from quantify.data.handling import get_datadir, gen_tuid
+from quantify.data.handling import (
+    get_datadir,
+    gen_tuid,
+)  # pylint: disable=no-name-in-module
 
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_names_from_uuid,
@@ -354,7 +357,7 @@ class QASMProgram:
                 f" ns."
             )
 
-        immediate_sz = PulsarSequencerBase.IMMEDIATE_SZ
+        immediate_sz = PulsarSequencerBase.immediate_sz
         if wait_time > immediate_sz:
             for _ in range(wait_time // immediate_sz):
                 self.emit(
@@ -394,7 +397,7 @@ class QASMProgram:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
                 f"ns before {repr(operation)}. Please note that a wait time of at least"
-                f" {PulsarSequencerBase.GRID_TIME_ns} ns is required between "
+                f" {PulsarSequencerBase.grid_time_ns} ns is required between "
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
@@ -418,8 +421,8 @@ class QASMProgram:
         """
         self.wait_till_start_operation(pulse)
         self.update_runtime_settings(pulse)
-        self.emit(q1asm_instructions.PLAY, idx0, idx1, PulsarSequencerBase.GRID_TIME_ns)
-        self.elapsed_time += PulsarSequencerBase.GRID_TIME_ns
+        self.emit(q1asm_instructions.PLAY, idx0, idx1, PulsarSequencerBase.grid_time_ns)
+        self.elapsed_time += PulsarSequencerBase.grid_time_ns
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -442,9 +445,9 @@ class QASMProgram:
         """
         self.wait_till_start_operation(acquisition)
         self.emit(
-            q1asm_instructions.ACQUIRE, idx0, idx1, PulsarSequencerBase.GRID_TIME_ns
+            q1asm_instructions.ACQUIRE, idx0, idx1, PulsarSequencerBase.grid_time_ns
         )
-        self.elapsed_time += PulsarSequencerBase.GRID_TIME_ns
+        self.elapsed_time += PulsarSequencerBase.grid_time_ns
 
     def update_runtime_settings(self, operation: OpInfo):
         """
@@ -508,7 +511,7 @@ class QASMProgram:
         ValueError
             Parameter is not in the normalized range.
         """
-        immediate_sz = PulsarSequencerBase.IMMEDIATE_SZ
+        immediate_sz = PulsarSequencerBase.immediate_sz
         if np.abs(val) > 1.0:
             raise ValueError(
                 f"{param} is set to {val}. Parameter must be in the range "
@@ -533,11 +536,11 @@ class QASMProgram:
             The integer valued nanosecond time
         """
         time_ns = int(np.round(time * 1e9))
-        if time_ns % PulsarSequencerBase.GRID_TIME_ns != 0:
+        if time_ns % PulsarSequencerBase.grid_time_ns != 0:
             raise ValueError(
                 f"Attempting to use a time interval of {time_ns} ns. "
                 f"Please ensure that the durations of and wait times between "
-                f"operations are multiples of {PulsarSequencerBase.GRID_TIME_ns} ns."
+                f"operations are multiples of {PulsarSequencerBase.grid_time_ns} ns."
             )
         return time_ns
 
@@ -605,15 +608,17 @@ class QASMProgram:
 
 
 # ---------- pulsar sequencer classes ----------
+
+# pylint: disable=too-many-instance-attributes
 class PulsarSequencerBase(metaclass=ABCMeta):
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
     """
 
-    IMMEDIATE_SZ = pow(2, 16) - 1
-    GRID_TIME_ns = 4
-    SAMPLING_RATE = 1_000_000_000  # 1GS/s
+    immediate_sz = pow(2, 16) - 1
+    grid_time_ns = 4
+    sampling_rate = 1_000_000_000  # 1GS/s
 
     def __init__(
         self,
@@ -789,7 +794,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
             # FIXME: Most of this is unnecessary but requires
             #  that we change how we deal with QASMRuntimeSettings
             raw_wf_data = generate_waveform_data(
-                pulse.data, sampling_rate=self.SAMPLING_RATE
+                pulse.data, sampling_rate=self.sampling_rate
             )
             raw_wf_data = self._apply_corrections_to_waveform(
                 raw_wf_data, pulse.duration, pulse.timing
@@ -859,10 +864,10 @@ class PulsarSequencerBase(metaclass=ABCMeta):
         for acq in self.acquisitions:
             if acq.uuid not in waveforms_complex:
                 raw_wf_data_real = generate_waveform_data(
-                    acq.data["waveforms"][0], sampling_rate=self.SAMPLING_RATE
+                    acq.data["waveforms"][0], sampling_rate=self.sampling_rate
                 )
                 raw_wf_data_imag = generate_waveform_data(
-                    acq.data["waveforms"][1], sampling_rate=self.SAMPLING_RATE
+                    acq.data["waveforms"][1], sampling_rate=self.sampling_rate
                 )
                 self._settings.duration = len(raw_wf_data_real)
                 if not (
@@ -899,7 +904,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
         :
             The waveform data after applying all the transformations.
         """
-        t = np.linspace(t0, time_duration + t0, int(time_duration * self.SAMPLING_RATE))
+        t = np.linspace(t0, time_duration + t0, int(time_duration * self.sampling_rate))
         corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
@@ -984,7 +989,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
 
         qasm = QASMProgram()
         # program header
-        qasm.emit(q1asm_instructions.WAIT_SYNC, cls.GRID_TIME_ns)
+        qasm.emit(q1asm_instructions.WAIT_SYNC, cls.grid_time_ns)
         qasm.emit(q1asm_instructions.SET_MARKER, 1)
 
         # program body
@@ -1019,7 +1024,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
 
         # program footer
         qasm.emit(q1asm_instructions.SET_MARKER, 0)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, cls.GRID_TIME_ns)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, cls.grid_time_ns)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
 
@@ -1248,8 +1253,15 @@ class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def max_sequencers(self):
-        pass
+    def max_sequencers(self) -> int:
+        """
+        Specifies the maximum amount of sequencers available to this instrument.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
 
     def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
         """
@@ -1413,17 +1425,10 @@ class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
 class Pulsar_QCM(PulsarBase):
     """
     Pulsar QCM specific implementation of the pulsar compiler.
-
-    Attributes
-    ----------
-    sequencer_type:
-        Defines the type of sequencer that this pulsar uses.
-    max_sequencers:
-        Maximum amount of sequencers that this pulsar implements.
     """
 
     sequencer_type = QCMSequencer
-    max_sequencers = 2
+    max_sequencers: int = 2
 
     def _distribute_data(self):
         """
@@ -1478,14 +1483,7 @@ class Pulsar_QCM(PulsarBase):
 class Pulsar_QRM(PulsarBase):
     """
     Pulsar QRM specific implementation of the pulsar compiler.
-
-    Attributes
-    ----------
-    sequencer_type:
-        Defines the type of sequencer that this pulsar uses.
-    max_sequencers:
-        Maximum amount of sequencers that this pulsar implements.
     """
 
     sequencer_type = QRMSequencer
-    max_sequencers = 1
+    max_sequencers: int = 1
