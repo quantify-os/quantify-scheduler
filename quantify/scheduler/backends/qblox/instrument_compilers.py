@@ -354,7 +354,7 @@ class QASMProgram:
                 f" ns."
             )
 
-        immediate_sz = Pulsar_sequencer_base.IMMEDIATE_SZ
+        immediate_sz = PulsarSequencerBase.IMMEDIATE_SZ
         if wait_time > immediate_sz:
             for _ in range(wait_time // immediate_sz):
                 self.emit(
@@ -394,7 +394,7 @@ class QASMProgram:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
                 f"ns before {repr(operation)}. Please note that a wait time of at least"
-                f" {Pulsar_sequencer_base.GRID_TIME_ns} ns is required between "
+                f" {PulsarSequencerBase.GRID_TIME_ns} ns is required between "
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
@@ -418,10 +418,8 @@ class QASMProgram:
         """
         self.wait_till_start_operation(pulse)
         self.update_runtime_settings(pulse)
-        self.emit(
-            q1asm_instructions.PLAY, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
-        )
-        self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
+        self.emit(q1asm_instructions.PLAY, idx0, idx1, PulsarSequencerBase.GRID_TIME_ns)
+        self.elapsed_time += PulsarSequencerBase.GRID_TIME_ns
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -444,9 +442,9 @@ class QASMProgram:
         """
         self.wait_till_start_operation(acquisition)
         self.emit(
-            q1asm_instructions.ACQUIRE, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
+            q1asm_instructions.ACQUIRE, idx0, idx1, PulsarSequencerBase.GRID_TIME_ns
         )
-        self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
+        self.elapsed_time += PulsarSequencerBase.GRID_TIME_ns
 
     def update_runtime_settings(self, operation: OpInfo):
         """
@@ -510,7 +508,7 @@ class QASMProgram:
         ValueError
             Parameter is not in the normalized range.
         """
-        immediate_sz = Pulsar_sequencer_base.IMMEDIATE_SZ
+        immediate_sz = PulsarSequencerBase.IMMEDIATE_SZ
         if np.abs(val) > 1.0:
             raise ValueError(
                 f"{param} is set to {val}. Parameter must be in the range "
@@ -535,11 +533,11 @@ class QASMProgram:
             The integer valued nanosecond time
         """
         time_ns = int(np.round(time * 1e9))
-        if time_ns % Pulsar_sequencer_base.GRID_TIME_ns != 0:
+        if time_ns % PulsarSequencerBase.GRID_TIME_ns != 0:
             raise ValueError(
                 f"Attempting to use a time interval of {time_ns} ns. "
                 f"Please ensure that the durations of and wait times between "
-                f"operations are multiples of {Pulsar_sequencer_base.GRID_TIME_ns} ns."
+                f"operations are multiples of {PulsarSequencerBase.GRID_TIME_ns} ns."
             )
         return time_ns
 
@@ -607,7 +605,7 @@ class QASMProgram:
 
 
 # ---------- pulsar sequencer classes ----------
-class Pulsar_sequencer_base(metaclass=ABCMeta):
+class PulsarSequencerBase(metaclass=ABCMeta):
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
@@ -619,7 +617,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
     def __init__(
         self,
-        parent: Pulsar_base,
+        parent: PulsarBase,
         name: str,
         portclock: Tuple[str, str],
         modulation_freq: Optional[float] = None,
@@ -1161,7 +1159,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class QCM_sequencer(Pulsar_sequencer_base):
+class QCMSequencer(PulsarSequencerBase):
     """
     Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
     specific to a Pulsar QCM sequencer.
@@ -1175,7 +1173,7 @@ class QCM_sequencer(Pulsar_sequencer_base):
     awg_output_volt = 5
 
 
-class QRM_sequencer(Pulsar_sequencer_base):
+class QRMSequencer(PulsarSequencerBase):
     """
     Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
     specific to a Pulsar QRM sequencer.
@@ -1190,7 +1188,7 @@ class QRM_sequencer(Pulsar_sequencer_base):
 
 
 # ---------- pulsar instrument classes ----------
-class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
+class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
     """
     `InstrumentCompiler` level compiler object for a pulsar. The class is defined as an
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
@@ -1204,7 +1202,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         the hardware.
     """
 
-    OUTPUT_TO_SEQ = {"complex_output_0": 0, "complex_output_1": 1}
+    output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
 
     def __init__(
         self,
@@ -1237,7 +1235,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def sequencer_type(self) -> type(Pulsar_sequencer_base):
+    def sequencer_type(self) -> type(PulsarSequencerBase):
         """
         Specifies whether the sequencers in this pulsar are QCM_sequencers or
         QRM_sequencers.
@@ -1250,7 +1248,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def MAX_SEQUENCERS(self):
+    def max_sequencers(self):
         pass
 
     def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
@@ -1287,7 +1285,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
             self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
             real outputs (instead of complex), or when the hardware mapping is invalid.
         """
-        output_to_seq = self.OUTPUT_TO_SEQ
+        output_to_seq = self.output_to_sequencer_idx
 
         mapping = dict()
         for io, data in self.hw_mapping.items():
@@ -1316,7 +1314,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                     ) from e
         return mapping
 
-    def _construct_sequencers(self) -> Dict[str, Pulsar_sequencer_base]:
+    def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:
         """
         Constructs `Pulsar_sequencer_base` objects for each port and clock combination
         belonging to this device.
@@ -1348,17 +1346,17 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
                 else portclock_dict["interm_freq"]
             )
 
-            seq_name = f"seq{self.OUTPUT_TO_SEQ[io]}"
+            seq_name = f"seq{self.output_to_sequencer_idx[io]}"
             sequencers[seq_name] = self.sequencer_type(self, seq_name, portclock, freq)
             if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
                     io_cfg["mixer_corrections"]
                 )
 
-        if len(sequencers.keys()) > self.MAX_SEQUENCERS:
+        if len(sequencers.keys()) > self.max_sequencers:
             raise ValueError(
                 f"Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__} is {self.MAX_SEQUENCERS}!"
+                f"Maximum allowed for {self.__class__} is {self.max_sequencers}!"
             )
 
         return sequencers
@@ -1411,7 +1409,8 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         return program
 
 
-class Pulsar_QCM(Pulsar_base):
+# pylint: disable=invalid-name
+class Pulsar_QCM(PulsarBase):
     """
     Pulsar QCM specific implementation of the pulsar compiler.
 
@@ -1419,12 +1418,12 @@ class Pulsar_QCM(Pulsar_base):
     ----------
     sequencer_type:
         Defines the type of sequencer that this pulsar uses.
-    MAX_SEQUENCERS:
+    max_sequencers:
         Maximum amount of sequencers that this pulsar implements.
     """
 
-    sequencer_type = QCM_sequencer
-    MAX_SEQUENCERS = 2
+    sequencer_type = QCMSequencer
+    max_sequencers = 2
 
     def _distribute_data(self):
         """
@@ -1475,7 +1474,8 @@ class Pulsar_QCM(Pulsar_base):
         )
 
 
-class Pulsar_QRM(Pulsar_base):
+# pylint: disable=invalid-name
+class Pulsar_QRM(PulsarBase):
     """
     Pulsar QRM specific implementation of the pulsar compiler.
 
@@ -1483,9 +1483,9 @@ class Pulsar_QRM(Pulsar_base):
     ----------
     sequencer_type:
         Defines the type of sequencer that this pulsar uses.
-    MAX_SEQUENCERS:
+    max_sequencers:
         Maximum amount of sequencers that this pulsar implements.
     """
 
-    sequencer_type = QRM_sequencer
-    MAX_SEQUENCERS = 1
+    sequencer_type = QRMSequencer
+    max_sequencers = 1

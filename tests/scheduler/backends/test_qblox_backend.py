@@ -1,7 +1,7 @@
-# pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
+# pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
@@ -41,10 +41,10 @@ from quantify.scheduler.backends.types.qblox import (
 )
 from quantify.scheduler.backends.qblox.instrument_compilers import (
     QASMProgram,
-    Pulsar_sequencer_base,
+    PulsarSequencerBase,
     Pulsar_QCM,
-    Pulsar_base,
-    QCM_sequencer,
+    PulsarBase,
+    QCMSequencer,
 )
 from quantify.scheduler.backends.qblox import q1asm_instructions
 
@@ -248,23 +248,21 @@ def test_apply_mixer_corrections():
     assert np.allclose(re_normalized, im_normalized)
 
 
-def function_for_test_generate_waveform_data(t, foo, bar):
-    return foo * t + bar
+def function_for_test_generate_waveform_data(t, x, y):
+    return x * t + y
 
 
 def test_generate_waveform_data():
-    foo = 10
-    bar = np.pi
+    x = 10
+    y = np.pi
     sampling_rate = 1e9
     duration = 1e-8
     t_verification = np.arange(0, 0 + duration, 1 / sampling_rate)
-    verification_data = function_for_test_generate_waveform_data(
-        t_verification, foo, bar
-    )
+    verification_data = function_for_test_generate_waveform_data(t_verification, x, y)
     data_dict = {
         "wf_func": __name__ + ".function_for_test_generate_waveform_data",
-        "foo": foo,
-        "bar": bar,
+        "foo": x,
+        "bar": y,
         "duration": 1e-8,
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
@@ -338,9 +336,9 @@ def test_find_inner_dicts_containing_key():
     }
     dicts_found = qb.find_inner_dicts_containing_key(test_dict, "hello")
     assert len(dicts_found) == 2
-    for d in dicts_found:
-        assert d["hello"] == "world"
-        assert d["other_key"] == "other_value"
+    for inner_dict in dicts_found:
+        assert inner_dict["hello"] == "world"
+        assert inner_dict["other_key"] == "other_value"
 
 
 def test_find_all_port_clock_combinations():
@@ -364,9 +362,9 @@ def test_generate_port_clock_to_device_map():
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class TestPulsar(Pulsar_base):
-        sequencer_type = QCM_sequencer
-        MAX_SEQUENCERS = 10
+    class TestPulsar(PulsarBase):
+        sequencer_type = QCMSequencer
+        max_sequencers = 10
 
         def __init__(self):
             super().__init__(
@@ -380,7 +378,7 @@ def test_contruct_sequencer():
     test_p.sequencers = test_p._construct_sequencers()
     seq_keys = list(test_p.sequencers.keys())
     assert len(seq_keys) == 2
-    assert isinstance(test_p.sequencers[seq_keys[0]], QCM_sequencer)
+    assert isinstance(test_p.sequencers[seq_keys[0]], QCMSequencer)
 
 
 def test_simple_compile(pulse_only_schedule):
@@ -494,7 +492,7 @@ def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
     expanded_val = QASMProgram._expand_from_normalised_range(1, "test_param", acq)
-    assert expanded_val == Pulsar_sequencer_base.IMMEDIATE_SZ // 2
+    assert expanded_val == PulsarSequencerBase.IMMEDIATE_SZ // 2
     with pytest.raises(ValueError):
         QASMProgram._expand_from_normalised_range(10, "test_param", acq)
 

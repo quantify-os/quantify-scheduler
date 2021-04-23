@@ -7,7 +7,7 @@ from typing import Dict, Any, Tuple, Callable
 
 import numpy as np
 from quantify.scheduler.helpers.schedule import get_total_duration
-from quantify.utilities.general import make_hash, without, import_func_from_string
+from quantify.utilities.general import make_hash, without
 
 from quantify.scheduler.backends.qblox.helpers import (
     find_inner_dicts_containing_key,
@@ -219,6 +219,7 @@ def _assign_frequencies(
         lo_compilers.pop(lo_name)
 
 
+# pylint: disable=too-many-locals
 def _assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],
