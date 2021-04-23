@@ -44,11 +44,12 @@ from quantify.scheduler.backends.qblox.instrument_compilers import (
     QCMSequencer,
 )
 from quantify.scheduler.backends.qblox.compiler_abc import (
-    QASMProgram,
     PulsarSequencerBase,
     PulsarBase,
 )
+from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify.scheduler.backends.qblox import q1asm_instructions
+from quantify.scheduler.backends.qblox.constants import IMMEDIATE_SZ
 
 import quantify.scheduler.schemas.examples as es
 
@@ -494,7 +495,7 @@ def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
     expanded_val = QASMProgram._expand_from_normalised_range(1, "test_param", acq)
-    assert expanded_val == PulsarSequencerBase.immediate_sz // 2
+    assert expanded_val == IMMEDIATE_SZ // 2
     with pytest.raises(ValueError):
         QASMProgram._expand_from_normalised_range(10, "test_param", acq)
 
