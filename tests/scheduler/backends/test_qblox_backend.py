@@ -456,13 +456,6 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
 
 
 # --------- Test QASMProgram class ---------
-def test_qasm_program_list_behavior():
-    fancy_list = QASMProgram()
-    fancy_list.append("foo")
-    fancy_list.append("bar")
-    assert len(fancy_list) == 2
-    assert fancy_list[0] == "foo"
-    assert fancy_list[1] == "bar"
 
 
 def test_emit():
@@ -470,7 +463,7 @@ def test_emit():
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
-    assert len(qasm) == 2
+    assert len(qasm.instructions) == 2
     with pytest.raises(SyntaxError):
         qasm.emit(q1asm_instructions.ACQUIRE, 0, 1, 120, "argument too many")
 
@@ -478,9 +471,9 @@ def test_emit():
 def test_auto_wait():
     qasm = QASMProgram()
     qasm.auto_wait(120)
-    assert len(qasm) == 1
+    assert len(qasm.instructions) == 1
     qasm.auto_wait(70000)
-    assert len(qasm) == 3  # since it should split the waits
+    assert len(qasm.instructions) == 3  # since it should split the waits
     assert qasm.elapsed_time == 70120
 
 
@@ -492,10 +485,10 @@ def test_wait_till_start_then_play():
     )
     qasm = QASMProgram()
     qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert len(qasm) == 3
-    assert qasm[0][1] == q1asm_instructions.WAIT
-    assert qasm[1][1] == q1asm_instructions.SET_AWG_GAIN
-    assert qasm[2][1] == q1asm_instructions.PLAY
+    assert len(qasm.instructions) == 3
+    assert qasm.instructions[0][1] == q1asm_instructions.WAIT
+    assert qasm.instructions[1][1] == q1asm_instructions.SET_AWG_GAIN
+    assert qasm.instructions[2][1] == q1asm_instructions.PLAY
 
 
 def test_wait_till_start_then_acquire():
@@ -503,9 +496,9 @@ def test_wait_till_start_then_acquire():
     acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
     qasm = QASMProgram()
     qasm.wait_till_start_then_acquire(acq, 0, 1)
-    assert len(qasm) == 2
-    assert qasm[0][1] == q1asm_instructions.WAIT
-    assert qasm[1][1] == q1asm_instructions.ACQUIRE
+    assert len(qasm.instructions) == 2
+    assert qasm.instructions[0][1] == q1asm_instructions.WAIT
+    assert qasm.instructions[1][1] == q1asm_instructions.ACQUIRE
 
 
 def test_expand_from_normalised_range():
@@ -532,9 +525,9 @@ def test_loop():
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
     with qasm.loop(reg, "this_loop", repetitions=num_rep):
         qasm.emit(q1asm_instructions.WAIT, 20)
-    assert len(qasm) == 5
-    assert qasm[1][1] == q1asm_instructions.MOVE
-    num_rep_used, reg_used = qasm[1][2].split(",")
+    assert len(qasm.instructions) == 5
+    assert qasm.instructions[1][1] == q1asm_instructions.MOVE
+    num_rep_used, reg_used = qasm.instructions[1][2].split(",")
     assert int(num_rep_used) == num_rep
     assert reg_used == reg
 

@@ -244,13 +244,9 @@ class LocalOscillator(InstrumentCompiler):
 
 
 # ---------- utility classes ----------
-class QASMProgram(list):
+class QASMProgram:
     """
     Class that holds the compiled Q1ASM program that is to be executed by the sequencer.
-
-    The object itself is a subclass of list which holds the instructions in order of
-    execution. The instructions in turn are also lists, which hold the instruction
-    strings themselves along with labels, comments and parameters.
 
     Apart from this the class holds some convenience functions that auto generate
     certain instructions with parameters, as well as update the elapsed time.
@@ -260,9 +256,13 @@ class QASMProgram(list):
     elapsed_time:
         The time elapsed after finishing the program in its current form. This is used
         to keep track of the overall timing and necessary waits.
+    instructions:
+        A list containing the instructions added to the program
     """
 
-    elapsed_time: int = 0
+    def __init__(self):
+        self.elapsed_time: int = 0
+        self.instructions: List[list] = list()
 
     @staticmethod
     def get_instruction_as_list(
@@ -321,7 +321,7 @@ class QASMProgram(list):
         kwargs:
             All keyword arguments to pass to `get_instruction_as_list`.
         """
-        self.append(self.get_instruction_as_list(*args, **kwargs))
+        self.instructions.append(self.get_instruction_as_list(*args, **kwargs))
 
     # --- QOL functions -----
 
@@ -554,11 +554,11 @@ class QASMProgram(list):
             The string representation of the program.
         """
         try:
-            return columnar(list(self), headers=None, no_borders=True)
+            return columnar(self.instructions, headers=None, no_borders=True)
         # running in a sphinx environment can trigger a TableOverFlowError
         except TableOverflowError:
             return columnar(
-                list(self), headers=None, no_borders=True, terminal_width=120
+                self.instructions, headers=None, no_borders=True, terminal_width=120
             )
 
     @contextmanager
