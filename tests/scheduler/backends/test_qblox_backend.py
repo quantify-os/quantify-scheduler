@@ -39,9 +39,9 @@ from quantify.scheduler.backends import qblox_backend as qb
 from quantify.scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
     apply_mixer_skewness_corrections,
+    Q1ASMInstructions,
 )
 from quantify.scheduler.backends.qblox.instrument_compilers import (
-    Q1ASMInstructions,
     QASMProgram,
     Pulsar_sequencer_base,
     Pulsar_QCM,
@@ -437,7 +437,7 @@ def test_compile_with_rel_time(
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
 
 
-def test_compile_with_repetitions(dummy_pulsars, mixed_schedule_with_acquisition):
+def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     mixed_schedule_with_acquisition.repetitions = 10
