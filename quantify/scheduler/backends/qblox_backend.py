@@ -3,7 +3,6 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-import sys
 from typing import Dict, Any, Tuple, Callable
 
 import numpy as np

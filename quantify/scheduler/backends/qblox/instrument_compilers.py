@@ -33,9 +33,8 @@ from quantify.scheduler.backends.types.qblox import (
     MixerCorrections,
     OpInfo,
     QASMRuntimeSettings,
-    Q1ASMInstructions,
 )
-
+from quantify.scheduler.backends.qblox import q1asm_instructions
 
 # ---------- classes ----------
 class InstrumentCompiler(metaclass=ABCMeta):
@@ -356,14 +355,14 @@ class QASMProgram(list):
         if wait_time > immediate_sz:
             for _ in range(wait_time // immediate_sz):
                 self.emit(
-                    Q1ASMInstructions.WAIT, immediate_sz, comment="auto generated wait"
+                    q1asm_instructions.WAIT, immediate_sz, comment="auto generated wait"
                 )
             time_left = wait_time % immediate_sz
         else:
             time_left = int(wait_time)
 
         if time_left > 0:
-            self.emit(Q1ASMInstructions.WAIT, time_left)
+            self.emit(q1asm_instructions.WAIT, time_left)
 
         self.elapsed_time += wait_time
 
@@ -417,7 +416,7 @@ class QASMProgram(list):
         self.wait_till_start_operation(pulse)
         self.update_runtime_settings(pulse)
         self.emit(
-            Q1ASMInstructions.PLAY, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
+            q1asm_instructions.PLAY, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
         )
         self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
 
@@ -442,7 +441,7 @@ class QASMProgram(list):
         """
         self.wait_till_start_operation(acquisition)
         self.emit(
-            Q1ASMInstructions.ACQUIRE, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
+            q1asm_instructions.ACQUIRE, idx0, idx1, Pulsar_sequencer_base.GRID_TIME_ns
         )
         self.elapsed_time += Pulsar_sequencer_base.GRID_TIME_ns
 
@@ -473,7 +472,7 @@ class QASMProgram(list):
             operation.pulse_settings.awg_gain_1, "awg_gain_1", operation
         )
         self.emit(
-            Q1ASMInstructions.SET_AWG_GAIN,
+            q1asm_instructions.SET_AWG_GAIN,
             awg_gain_path0,
             awg_gain_path1,
             comment=f"setting gain for {operation.uuid}",
@@ -595,13 +594,13 @@ class QASMProgram(list):
         comment = f"iterator for loop with label {label}"
 
         def gen_start():
-            self.emit(Q1ASMInstructions.MOVE, repetitions, register, comment=comment)
-            self.emit(Q1ASMInstructions.NEW_LINE, label=label)
+            self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
+            self.emit(q1asm_instructions.NEW_LINE, label=label)
 
         try:
             yield gen_start()
         finally:
-            self.emit(Q1ASMInstructions.LOOP, register, f"@{label}")
+            self.emit(q1asm_instructions.LOOP, register, f"@{label}")
 
 
 # ---------- pulsar sequencer classes ----------
@@ -989,8 +988,8 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
         qasm = QASMProgram()
         # program header
-        qasm.emit(Q1ASMInstructions.WAIT_SYNC, cls.GRID_TIME_ns)
-        qasm.emit(Q1ASMInstructions.SET_MARKER, 1)
+        qasm.emit(q1asm_instructions.WAIT_SYNC, cls.GRID_TIME_ns)
+        qasm.emit(q1asm_instructions.SET_MARKER, 1)
 
         # program body
         pulses = list() if pulses is None else pulses
@@ -1023,9 +1022,9 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.emit(Q1ASMInstructions.SET_MARKER, 0)
-        qasm.emit(Q1ASMInstructions.UPDATE_PARAMETERS, cls.GRID_TIME_ns)
-        qasm.emit(Q1ASMInstructions.STOP)
+        qasm.emit(q1asm_instructions.SET_MARKER, 0)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, cls.GRID_TIME_ns)
+        qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
 
     @staticmethod
