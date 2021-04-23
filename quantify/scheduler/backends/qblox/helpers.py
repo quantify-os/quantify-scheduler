@@ -9,7 +9,9 @@ from collections import UserDict
 
 import numpy as np
 
-from quantify.utilities.general import import_func_from_string
+from quantify.utilities.general import (
+    import_func_from_string,
+)  # pylint: disable=no-name-in-module
 
 try:
     from qblox_instruments.build import __version__ as driver_version
