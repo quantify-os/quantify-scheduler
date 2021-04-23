@@ -36,6 +36,7 @@ from quantify.scheduler.backends.types.qblox import (
 )
 from quantify.scheduler.backends.qblox import q1asm_instructions
 
+
 # ---------- classes ----------
 class InstrumentCompiler(metaclass=ABCMeta):
     """
@@ -583,7 +584,7 @@ class QASMProgram:
         --------
         .. jupyter-execute::
 
-            from quantify.scheduler.backends.qblox.instrument_compilers import QASMProgram
+            from quantify.scheduler.backends.qblox.instrument_compilers import QASMProgram #pylint: disable=line-too-long
 
             qasm = QASMProgram()
             with qasm.loop(register='R0', label='repeat', repetitions=10):
@@ -698,7 +699,7 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def AWG_OUTPUT_VOLT(self) -> float:
+    def awg_output_volt(self) -> float:
         """
         The output range in volts. This is to be overridden by the subclass to account
         for the differences between a QCM and a QRM.
@@ -708,7 +709,6 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         :
             The output range in volts.
         """
-        pass
 
     @property
     def has_data(self):
@@ -795,25 +795,25 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
                 raw_wf_data, pulse.duration, pulse.timing
             )
             raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
-            if np.abs(amp_i) > self.AWG_OUTPUT_VOLT:
+            if np.abs(amp_i) > self.awg_output_volt:
                 raise ValueError(
-                    f"Attempting to set amplitude to invalid value. "
-                    f"Maximum voltage range is +-{self.AWG_OUTPUT_VOLT} V for "
+                    f"Attempting to set amplitude to an invalid value. "
+                    f"Maximum voltage range is +-{self.awg_output_volt} V for "
                     f"{self.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
-            if np.abs(amp_q) > self.AWG_OUTPUT_VOLT:
+            if np.abs(amp_q) > self.awg_output_volt:
                 raise ValueError(
-                    f"Attempting to set amplitude to invalid value. "
-                    f"Maximum voltage range is +-{self.AWG_OUTPUT_VOLT} V for "
+                    f"Attempting to set amplitude to an invalid value. "
+                    f"Maximum voltage range is +-{self.awg_output_volt} V for "
                     f"{self.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
             pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.AWG_OUTPUT_VOLT,
-                awg_gain_1=amp_q / self.AWG_OUTPUT_VOLT,
+                awg_gain_0=amp_i / self.awg_output_volt,
+                awg_gain_1=amp_q / self.awg_output_volt,
             )
             if pulse.uuid not in waveforms_complex:
                 waveforms_complex[pulse.uuid] = raw_wf_data
@@ -910,17 +910,13 @@ class Pulsar_sequencer_base(metaclass=ABCMeta):
         Updates the sequencer settings to set all parameters that are determined by the
         compiler. Currently, this only changes the offsets based on the mixer
         calibration parameters.
-
-        Returns
-        -------
-
         """
         if self.mixer_corrections is not None:
             self._settings.awg_offset_path_0 = (
-                self.mixer_corrections.offset_I / self.AWG_OUTPUT_VOLT
+                self.mixer_corrections.offset_I / self.awg_output_volt
             )
             self._settings.awg_offset_path_1 = (
-                self.mixer_corrections.offset_Q / self.AWG_OUTPUT_VOLT
+                self.mixer_corrections.offset_Q / self.awg_output_volt
             )
 
     # pylint -ignore=too-many-locals
@@ -1170,11 +1166,11 @@ class QCM_sequencer(Pulsar_sequencer_base):
 
     Attributes
     ----------
-    AWG_OUTPUT_VOLT:
+    awg_output_volt:
         Voltage range of the awg output paths.
     """
 
-    AWG_OUTPUT_VOLT = 5
+    awg_output_volt = 5
 
 
 class QRM_sequencer(Pulsar_sequencer_base):
@@ -1184,11 +1180,11 @@ class QRM_sequencer(Pulsar_sequencer_base):
 
     Attributes
     ----------
-    AWG_OUTPUT_VOLT:
+    awg_output_volt:
         Voltage range of the awg output paths.
     """
 
-    AWG_OUTPUT_VOLT = 1
+    awg_output_volt = 1
 
 
 # ---------- pulsar instrument classes ----------
@@ -1238,8 +1234,16 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def SEQ_TYPE(self):
-        pass
+    def SEQ_TYPE(self) -> type(Pulsar_sequencer_base):
+        """
+        Specifies whether the sequencers in this pulsar are QCM_sequencers or
+        QRM_sequencers.
+
+        Returns
+        -------
+        :
+            A pulsar sequencer type
+        """
 
     @property
     @abstractmethod
@@ -1257,10 +1261,6 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
             A tuple with the port as first element and clock as second.
         freq:
             The modulation frequency to assign to the portclock.
-
-        Returns
-        -------
-
         """
         seq_name = self.portclock_map[portclock]
         seq = self.sequencers[seq_name]
@@ -1364,10 +1364,6 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
         """
         Distributes the pulses and acquisitions assigned to this pulsar over the
         different sequencers based on their portclocks.
-
-        Returns
-        -------
-
         """
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
@@ -1433,9 +1429,6 @@ class Pulsar_QCM(Pulsar_base):
         different sequencers based on their portclocks. Overrides the function of the
         same name in the superclass to raise an exception in case it attempts to
         distribute acquisitions, since this is not supported by the pulsar QCM.
-
-        Returns
-        -------
 
         Raises
         ------

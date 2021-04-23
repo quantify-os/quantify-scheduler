@@ -9,11 +9,13 @@ ILLEGAL = "illegal"
 STOP = "stop"
 NOP = "nop"
 NEW_LINE = ""
+
 # Jumps
 JUMP = "jmp"
 LOOP = "loop"
 JUMP_GREATER_EQUALS = "jge"
 JUMP_LESS_EQUALS = "jle"
+
 # Arithmetic
 MOVE = "move"
 NOT = "not"
@@ -24,6 +26,7 @@ OR = "or"
 XOR = "xor"
 ARITHMETIC_SHIFT_LEFT = "asl"
 ARITHMETIC_SHIFT_RIGHT = "asr"
+
 # Real-time pipeline instructions
 SET_MARKER = "set_mrk"
 PLAY = "play"
