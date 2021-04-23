@@ -203,8 +203,8 @@ class MixerCorrections(DataClassJsonMixin):
 
     amp_ratio: float = 1.0
     phase_error: float = 0.0
-    offset_I: float = 0.0  # pylint disable=invalid-name
-    offset_Q: float = 0.0  # pylint disable=invalid-name
+    offset_I: float = 0.0  # pylint: disable=invalid-name
+    offset_Q: float = 0.0  # pylint: disable=invalid-name
 
     def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
         """
