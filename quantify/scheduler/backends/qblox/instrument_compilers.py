@@ -26,6 +26,7 @@ from quantify.scheduler.backends.qblox.helpers import (
     modulate_waveform,
     find_inner_dicts_containing_key,
     generate_waveform_data,
+    verify_qblox_instruments_version,
 )
 from quantify.scheduler.backends.types.qblox import (
     PulsarSettings,
@@ -1227,6 +1228,7 @@ class Pulsar_base(InstrumentCompiler, metaclass=ABCMeta):
             of the inner dictionaries of the overall hardware config.
         """
         super().__init__(name, total_play_time, hw_mapping)
+        verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()

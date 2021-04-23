@@ -11,6 +11,36 @@ import numpy as np
 
 from quantify.utilities.general import import_func_from_string
 
+try:
+    from qblox_instruments.build import __version__ as driver_version
+except ImportError:
+    driver_version = None
+
+SUPPORTED_DRIVER_VERSIONS = ("0.3.2",)
+
+
+class DriverVersionError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+def verify_qblox_instruments_version():
+    if driver_version is None:
+        raise DriverVersionError(
+            "qblox-instruments version check could not be "
+            "performed. Either the package is not installed "
+            "correctly or a version < 0.3.2 was found."
+        )
+    if driver_version not in SUPPORTED_DRIVER_VERSIONS:
+        message = f"Installed driver version {driver_version} not supported by backend."
+        message += (
+            f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
+            if len(SUPPORTED_DRIVER_VERSIONS) == 1
+            else f" Please install a support version (currently supported: {SUPPORTED_DRIVER_VERSIONS})"
+        )
+        message += f" to continue to use this backend."
+        raise DriverVersionError(message)
+
 
 def sanitize_file_name(filename: str) -> str:
     """
