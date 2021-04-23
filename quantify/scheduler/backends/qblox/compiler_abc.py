@@ -96,10 +96,6 @@ class InstrumentCompiler(metaclass=ABCMeta):
         pulse_info:
             Data structure containing all the information regarding this specific pulse
             operation.
-
-        Returns
-        -------
-
         """
         self._pulses[(port, clock)].append(pulse_info)
 
@@ -116,10 +112,6 @@ class InstrumentCompiler(metaclass=ABCMeta):
         acq_info:
             Data structure containing all the information regarding this specific
             acquisition operation.
-
-        Returns
-        -------
-
         """
         self._acquisitions[(port, clock)].append(acq_info)
 
