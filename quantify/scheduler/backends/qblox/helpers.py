@@ -78,7 +78,7 @@ def sanitize_file_name(filename: str) -> str:
     return sanitized_fn
 
 
-# pylint disable:invalid-name
+# pylint: disable=invalid-name
 def find_inner_dicts_containing_key(d: Union[dict], key: Any) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
@@ -119,7 +119,7 @@ def find_inner_dicts_containing_key(d: Union[dict], key: Any) -> List[dict]:
     return dicts_found
 
 
-# pylint disable:invalid-name
+# pylint: disable=invalid-name
 def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     """
     Generates a list with all port and clock combinations found in a dictionary with
