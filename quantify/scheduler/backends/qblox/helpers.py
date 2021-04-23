@@ -20,8 +20,9 @@ SUPPORTED_DRIVER_VERSIONS = ("0.3.2",)
 
 
 class DriverVersionError(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    """
+    Raise when the installed driver version is not supported
+    """
 
 
 def verify_qblox_instruments_version():
