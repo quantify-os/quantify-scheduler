@@ -289,9 +289,6 @@ class QASMProgram:
         operation:
             The pulse or acquisition that we want to wait for.
 
-        Returns
-        -------
-
         Raises
         ------
         ValueError
