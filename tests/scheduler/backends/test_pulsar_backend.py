@@ -416,13 +416,11 @@ def test_gate_and_pulse(dummy_pulsars):
 def test_bad_driver_vers():
     def subtest(device, version):
         _check_driver_version(device, version)
-        # sad path
-        device._build = {"version": "l.o.l."}
-        error = "Backend requires Pulsar Dummy to have driver version {}, found l.o.l. installed.".format(
+        error = "Backend requires Pulsar Dummy to have driver version l.o.l., found {} installed.".format(
             version
         )
         with pytest.raises(ValueError, match=error):
-            _check_driver_version(device, version)
+            _check_driver_version(device, "l.o.l.")
         device.close()
 
     subtest(pulsar_qcm_dummy("qcm_bad_vers"), QCM_DRIVER_VER)
