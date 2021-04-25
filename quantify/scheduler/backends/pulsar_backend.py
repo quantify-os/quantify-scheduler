@@ -26,8 +26,8 @@ PulsarModulations = namedtuple(
     defaults=[None, None, None, None, None, None],
 )
 
-QCM_DRIVER_VER = "0.3.1"
-QRM_DRIVER_VER = "0.3.1"
+QCM_DRIVER_VER = "0.3.2"
+QRM_DRIVER_VER = "0.3.2"
 
 
 class Base_sequencer(Resource):
