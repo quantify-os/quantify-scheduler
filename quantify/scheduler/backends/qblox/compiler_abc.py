@@ -460,8 +460,8 @@ class PulsarSequencerBase(metaclass=ABCMeta):
                 self.mixer_corrections.offset_Q / self.awg_output_volt
             )
 
-    # pylint disable=too-many-locals
-    # pylint disable=too-many-arguments
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-arguments
     @classmethod
     def generate_qasm_program(
         cls,
