@@ -340,13 +340,17 @@ def exec_custom_waveform_function(
     # select the arguments for the waveform function that are present
     # in pulse info
     par_map = inspect.signature(function).parameters
-    wf_kwargs = {}
-    for kw in par_map.keys():
-        if kw in pulse_info:
-            wf_kwargs[kw] = pulse_info[kw]
+    data_dict_keys = set(pulse_info.keys())
+    parameters_supplied = data_dict_keys.intersection(set(par_map))
+
+    kwargs = {key: pulse_info[key] for key in parameters_supplied}
 
     # Calculate the numerical waveform using the wf_func
-    return function(t=t, **wf_kwargs)
+    wf_data = function(t=t, **kwargs)
+    if not isinstance(wf_data, np.ndarray):
+        wf_data = np.array(wf_data)
+
+    return wf_data
 
 
 def apply_mixer_skewness_corrections(

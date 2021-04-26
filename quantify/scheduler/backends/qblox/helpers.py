@@ -9,10 +9,7 @@ from collections import UserDict
 
 import numpy as np
 
-# pylint: disable=no-name-in-module
-from quantify.utilities.general import (
-    import_func_from_string,
-)
+from quantify.scheduler.helpers.waveforms import exec_waveform_function
 
 try:
     from qblox_instruments.build import __version__ as driver_version
@@ -181,16 +178,7 @@ def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
     time_duration = data_dict["duration"]
     t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
 
-    func = import_func_from_string(data_dict["wf_func"])
-    par_map = inspect.signature(func).parameters.keys()
-
-    data_dict_keys = set(data_dict.keys())
-    parameters_supplied = data_dict_keys.intersection(set(par_map))
-
-    kwargs = {key: data_dict[key] for key in parameters_supplied}
-    wf_data = func(t=t, **kwargs)
-    if not isinstance(wf_data, np.ndarray):
-        wf_data = np.array(wf_data)
+    wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
 
     return wf_data
 
