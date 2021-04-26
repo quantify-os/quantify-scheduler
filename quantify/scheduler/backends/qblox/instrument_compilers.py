@@ -119,7 +119,7 @@ class QCMSequencer(PulsarSequencerBase):
         Voltage range of the awg output paths.
     """
 
-    awg_output_volt = 5
+    awg_output_volt = 2.5
 
 
 class QRMSequencer(PulsarSequencerBase):
@@ -133,7 +133,7 @@ class QRMSequencer(PulsarSequencerBase):
         Voltage range of the awg output paths.
     """
 
-    awg_output_volt = 1
+    awg_output_volt = 0.5
 
 
 # pylint: disable=invalid-name
