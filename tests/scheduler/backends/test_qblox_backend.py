@@ -31,6 +31,7 @@ from quantify.scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
 )
+from quantify.scheduler.helpers.schedule import get_total_duration
 
 from quantify.scheduler.backends.qblox.helpers import (
     modulate_waveform,
@@ -283,24 +284,10 @@ def test_generate_ext_local_oscillators():
     assert lo1_freq == 7.2e9
 
 
-def test_calculate_total_play_time(mixed_schedule_with_acquisition):
-    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    play_time = qb._calculate_total_play_time(sched)
-    end_acq = (
-        DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_delay"]
-        + DEVICE_CFG["qubits"]["q0"]["params"]["ro_acq_integration_time"]
-    )
-    ro_pulse_duration = DEVICE_CFG["qubits"]["q0"]["params"]["ro_pulse_duration"]
-    init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
-
-    answer = 24e-9 + max(end_acq, ro_pulse_duration) + init_duration
-    assert play_time == answer
-
-
 def test_calculate_total_play_time_without_acq(pulse_only_schedule):
     sched = device_compile(pulse_only_schedule, DEVICE_CFG)
     init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
-    play_time = qb._calculate_total_play_time(sched)
+    play_time = get_total_duration(sched)
     answer = 24e-9 + 2e-3 + 28e-9 + init_duration
     assert play_time == answer
 
@@ -309,7 +296,7 @@ def test_calculate_total_play_time_with_op_timing(
     pulse_only_schedule_with_operation_timing,
 ):
     sched = device_compile(pulse_only_schedule_with_operation_timing, DEVICE_CFG)
-    play_time = qb._calculate_total_play_time(sched)
+    play_time = get_total_duration(sched)
     init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
     answer = 3e-3 + 28e-9 + 24e-9 + init_duration
     assert play_time == answer
@@ -327,7 +314,7 @@ def test_calculate_total_play_time_with_gates(
     init_duration = DEVICE_CFG["qubits"]["q0"]["params"]["init_duration"]
     ro_pulse_duration = DEVICE_CFG["qubits"]["q0"]["params"]["ro_pulse_duration"]
     sched = device_compile(gate_only_schedule, DEVICE_CFG)
-    play_time = qb._calculate_total_play_time(sched)
+    play_time = get_total_duration(sched)
     answer = mw_duration + rel_time + max(end_acq, ro_pulse_duration) + init_duration
     assert play_time == answer
 
@@ -540,7 +527,7 @@ def test_assign_frequency():
 def test_assign_pulse_and_acq_info_to_devices_exception(
     mixed_schedule_with_acquisition,
 ):
-    total_play_time = qb._calculate_total_play_time(mixed_schedule_with_acquisition)
+    total_play_time = get_total_duration(mixed_schedule_with_acquisition)
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
 
     device_compilers = qb._construct_compiler_objects(
@@ -555,7 +542,7 @@ def test_assign_pulse_and_acq_info_to_devices_exception(
 
 def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    total_play_time = qb._calculate_total_play_time(mixed_schedule_with_acquisition)
+    total_play_time = get_total_duration(mixed_schedule_with_acquisition)
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
 
     device_compilers = qb._construct_compiler_objects(
@@ -572,7 +559,7 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
 
 def test_assign_frequencies(mixed_schedule_with_acquisition):
     schedule = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    total_play_time = qb._calculate_total_play_time(schedule)
+    total_play_time = get_total_duration(schedule)
 
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
 
@@ -611,7 +598,7 @@ def test_assign_frequencies(mixed_schedule_with_acquisition):
 
 def test_assign_frequencies_unused_lo(pulse_only_schedule):
     schedule = device_compile(pulse_only_schedule, DEVICE_CFG)
-    total_play_time = qb._calculate_total_play_time(schedule)
+    total_play_time = get_total_duration(schedule)
 
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
 

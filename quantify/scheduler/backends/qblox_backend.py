@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Dict, Any, Tuple, Callable
 
-import numpy as np
 from quantify.scheduler.helpers.schedule import get_total_duration
 
 # pylint: disable=no-name-in-module
@@ -64,33 +63,6 @@ def generate_ext_local_oscillators(
             all_lo_objs[lo_name].assign_frequency(lo_dict["lo_freq"])
 
     return all_lo_objs
-
-
-def _calculate_total_play_time(schedule: Schedule) -> float:
-    """
-    Calculates the total time the schedule has to be executed on the hardware, not
-    accounting for repetitions. Effectively, this is the maximum of the end times of
-    the pulses and acquisitions.
-
-    Parameters
-    ----------
-    schedule:
-        The quantify schedule object of which we want the total execution time
-
-    Returns
-    -------
-    :
-        Total play time in seconds
-    """
-    end_times = list()
-    for time_constraint in schedule.timing_constraints:
-        pulse_id = time_constraint["operation_hash"]
-        operation = schedule.operations[pulse_id]
-        end_time = operation.duration + time_constraint["abs_time"]
-
-        end_times.append(end_time)
-
-    return np.max(end_times)
 
 
 def generate_port_clock_to_device_map(

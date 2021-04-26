@@ -174,33 +174,15 @@ def get_total_duration(schedule: types.Schedule) -> float:
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
-    t_constr = schedule.timing_constraints[-1]
-    operation = schedule.operations[t_constr["operation_hash"]]
+    end_times = list()
+    for time_constraint in schedule.timing_constraints:
+        pulse_id = time_constraint["operation_hash"]
+        operation = schedule.operations[pulse_id]
+        end_time = operation.duration + time_constraint["abs_time"]
 
-    t0 = t_constr["abs_time"]
-    duration = 0
+        end_times.append(end_time)
 
-    pulse_info: dict = (
-        operation["pulse_info"][-1]
-        if len(operation["pulse_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-    acq_info: dict = (
-        operation["acquisition_info"][-1]
-        if len(operation["acquisition_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-
-    if acq_info["t0"] != -1 and acq_info["t0"] > pulse_info["t0"]:
-        t0 += acq_info["t0"]
-        duration = acq_info["duration"]
-    elif pulse_info["t0"] >= 0:
-        t0 += pulse_info["t0"]
-        duration = pulse_info["duration"]
-    else:
-        raise ValueError("Undefined 't0' in pulse_info or acquisition_info!")
-
-    return t0 + duration
+    return np.max(end_times)
 
 
 def get_operation_start(

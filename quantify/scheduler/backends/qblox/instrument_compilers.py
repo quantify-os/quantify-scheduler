@@ -11,9 +11,7 @@ from quantify.scheduler.backends.qblox.compiler_abc import (
     PulsarBase,
 )
 
-from quantify.scheduler.backends.types.qblox import (
-    OpInfo,
-)
+from quantify.scheduler.backends.types.qblox import OpInfo
 
 
 class LocalOscillator(InstrumentCompiler):
