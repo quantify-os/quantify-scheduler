@@ -2,8 +2,6 @@
 # Licensed according to the LICENCE file on the master branch
 """Helper functions for Qblox backend."""
 
-import inspect
-
 from typing import Any, Dict, Union, List, Iterable, Tuple
 from collections import UserDict
 
