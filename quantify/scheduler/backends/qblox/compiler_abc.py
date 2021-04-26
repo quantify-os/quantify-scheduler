@@ -31,7 +31,7 @@ from quantify.scheduler.backends.qblox.helpers import (
     find_inner_dicts_containing_key,
 )
 from quantify.scheduler.backends.qblox.constants import (
-    GRID_TIME_ns,
+    GRID_TIME,
     SAMPLING_RATE,
 )
 from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
@@ -525,7 +525,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
 
         qasm = QASMProgram()
         # program header
-        qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME_ns)
+        qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
         qasm.emit(q1asm_instructions.SET_MARKER, 1)
 
         # program body
@@ -560,7 +560,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
 
         # program footer
         qasm.emit(q1asm_instructions.SET_MARKER, 0)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME_ns)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
 

@@ -3,5 +3,5 @@
 """Constants for compilation to Qblox hardware."""
 
 IMMEDIATE_SZ = pow(2, 16) - 1
-GRID_TIME_ns = 4
+GRID_TIME = 4  # ns
 SAMPLING_RATE = 1_000_000_000  # 1GS/s

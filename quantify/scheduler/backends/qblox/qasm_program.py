@@ -8,7 +8,7 @@ import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from quantify.scheduler.backends.qblox import q1asm_instructions
-from quantify.scheduler.backends.qblox.constants import IMMEDIATE_SZ, GRID_TIME_ns
+from quantify.scheduler.backends.qblox.constants import IMMEDIATE_SZ, GRID_TIME
 from quantify.scheduler.backends.types.qblox import OpInfo
 
 
@@ -155,7 +155,7 @@ class QASMProgram:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
                 f"ns before {repr(operation)}. Please note that a wait time of at least"
-                f" {GRID_TIME_ns} ns is required between "
+                f" {GRID_TIME} ns is required between "
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
@@ -179,8 +179,8 @@ class QASMProgram:
         """
         self.wait_till_start_operation(pulse)
         self.update_runtime_settings(pulse)
-        self.emit(q1asm_instructions.PLAY, idx0, idx1, GRID_TIME_ns)
-        self.elapsed_time += GRID_TIME_ns
+        self.emit(q1asm_instructions.PLAY, idx0, idx1, GRID_TIME)
+        self.elapsed_time += GRID_TIME
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -202,8 +202,8 @@ class QASMProgram:
 
         """
         self.wait_till_start_operation(acquisition)
-        self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, GRID_TIME_ns)
-        self.elapsed_time += GRID_TIME_ns
+        self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, GRID_TIME)
+        self.elapsed_time += GRID_TIME
 
     def update_runtime_settings(self, operation: OpInfo):
         """
@@ -291,11 +291,11 @@ class QASMProgram:
             The integer valued nanosecond time
         """
         time_ns = int(np.round(time * 1e9))
-        if time_ns % GRID_TIME_ns != 0:
+        if time_ns % GRID_TIME != 0:
             raise ValueError(
                 f"Attempting to use a time interval of {time_ns} ns. "
                 f"Please ensure that the durations of and wait times between "
-                f"operations are multiples of {GRID_TIME_ns} ns."
+                f"operations are multiples of {GRID_TIME} ns."
             )
         return time_ns
 
