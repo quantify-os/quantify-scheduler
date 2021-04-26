@@ -43,7 +43,7 @@ def verify_qblox_instruments_version():
         message += (
             f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
             if len(SUPPORTED_DRIVER_VERSIONS) == 1
-            else f" Please install a support version (currently supported: "
+            else f" Please install a supported version (currently supported: "
             f"{SUPPORTED_DRIVER_VERSIONS})"
         )
         message += " to continue to use this backend."
