@@ -26,7 +26,7 @@ requirements = [
     "dataclasses-json",
     "zhinst-qcodes",
     "quantify-core>=0.3.1",
-    "qblox-instruments==0.3.1",
+    "qblox-instruments==0.3.2",
 ]
 
 setup_requirements = [
