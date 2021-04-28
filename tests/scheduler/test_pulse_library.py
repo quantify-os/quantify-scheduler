@@ -1,7 +1,15 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 import pytest
 from quantify.scheduler import Operation
 from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import DRAGPulse, IdlePulse, SquarePulse
+from quantify.scheduler.pulse_library import (
+    DRAGPulse,
+    IdlePulse,
+    SquarePulse,
+    decompose_long_square_pulse,
+)
 
 
 def test_operation_duration_single_pulse():
@@ -95,3 +103,50 @@ def test_pulses_valid():
     assert Operation.is_valid(msqp)
     assert Operation.is_valid(dgp)
     assert Operation.is_valid(idle)
+
+
+def test_decompose_long_square_pulse():
+    # Non matching durations ("extra" pulse needed to get the necessary duration)
+    duration = 200e-9
+    duration_sq_max = 16e-9
+    amp = 1.0
+    port = "LP"
+    clock = "baseband"
+    sums = [duration, duration + duration_sq_max - (duration % duration_sq_max)]
+    for single_duration, sum_ in zip([False, True], sums):
+        pulses = decompose_long_square_pulse(
+            duration=duration,
+            duration_max=duration_sq_max,
+            single_duration=single_duration,
+            amp=amp,
+            port=port,
+            clock=clock,
+        )
+
+        assert len(pulses) == int(duration // duration_sq_max) + bool(
+            duration % duration_sq_max
+        )
+        assert sum(
+            pulse["pulse_info"][0]["duration"] for pulse in pulses
+        ) == pytest.approx(sum_)
+
+    # Exactly matching durations
+    duration = 200e-6
+    duration_sq_max = 50e-6
+
+    for single_duration in [False, True]:
+        pulses = decompose_long_square_pulse(
+            duration=duration,
+            duration_max=duration_sq_max,
+            single_duration=single_duration,
+            amp=amp,
+            port=port,
+            clock=clock,
+        )
+
+        assert len(pulses) == int(duration // duration_sq_max) + bool(
+            duration % duration_sq_max
+        )
+        assert sum(
+            pulse["pulse_info"][0]["duration"] for pulse in pulses
+        ) == pytest.approx(duration)
