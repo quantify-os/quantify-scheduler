@@ -24,8 +24,8 @@ from quantify.data.handling import set_datadir
 
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, X
-from quantify.scheduler.pulse_library import DRAGPulse, RampPulse
-from quantify.scheduler.resources import ClockResource
+from quantify.scheduler.pulse_library import DRAGPulse, RampPulse, SquarePulse
+from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.compilation import (
     qcompile,
     determine_absolute_timing,
@@ -211,6 +211,22 @@ def gate_only_schedule():
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def baseband_square_pulse_schedule():
+    sched = Schedule("baseband_square_pulse_schedule")
+    sched.add(Reset("q0"))
+    sched.add(
+        SquarePulse(
+            amp=2.0,
+            duration=2.5e-6,
+            port="q0:mw",
+            clock=BasebandClockResource.IDENTITY,
+            t0=1e-6,
+        )
+    )
     return sched
 
 
@@ -433,6 +449,18 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     assert iterations == 10
 
 
+def test_compile_with_pulse_stitching(dummy_pulsars, baseband_square_pulse_schedule):
+    sched = baseband_square_pulse_schedule
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched.repetitions = 11
+    full_program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+
+    qcm0 = dummy_pulsars[0]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+
+
 # --------- Test QASMProgram class ---------
 
 
@@ -459,7 +487,10 @@ def test_wait_till_start_then_play():
     minimal_pulse_data = {"duration": 20e-9}
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
-        uuid=0, data=minimal_pulse_data, timing=4e-9, pulse_settings=runtime_settings
+        uuid="test_pulse",
+        data=minimal_pulse_data,
+        timing=4e-9,
+        pulse_settings=runtime_settings,
     )
     qasm = QASMProgram()
     qasm.wait_till_start_then_play(pulse, 0, 1)
@@ -471,7 +502,7 @@ def test_wait_till_start_then_play():
 
 def test_wait_till_start_then_acquire():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
     qasm = QASMProgram()
     qasm.wait_till_start_then_acquire(acq, 0, 1)
     assert len(qasm.instructions) == 2
@@ -481,11 +512,28 @@ def test_wait_till_start_then_acquire():
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
     expanded_val = QASMProgram._expand_from_normalised_range(1, "test_param", acq)
     assert expanded_val == IMMEDIATE_SZ // 2
     with pytest.raises(ValueError):
         QASMProgram._expand_from_normalised_range(10, "test_param", acq)
+
+
+def test_pulse_stitching_qasm_prog():
+    minimal_pulse_data = {
+        "wf_func": "quantify.scheduler.waveforms.square",
+        "duration": 20.5e-6,
+    }
+    runtime_settings = QASMRuntimeSettings(1, 1)
+    pulse = qb.OpInfo(
+        uuid="stitched_square_pulse",
+        data=minimal_pulse_data,
+        timing=4e-9,
+        pulse_settings=runtime_settings,
+    )
+    qasm = QASMProgram()
+    qasm.wait_till_start_then_play(pulse, 0, 1)
+    assert qasm.instructions[2][2] == "20,R2"
 
 
 def test_to_pulsar_time():

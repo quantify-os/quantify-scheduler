@@ -20,9 +20,11 @@ from quantify.data.handling import (
     gen_tuid,
 )
 
+from quantify.scheduler.resources import BasebandClockResource
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
+    generate_reserved_waveform_data,
     _generate_waveform_dict,
     modulate_waveform,
     generate_waveform_names_from_uuid,
@@ -327,15 +329,23 @@ class PulsarSequencerBase(metaclass=ABCMeta):
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
-            # FIXME: Most of this is unnecessary but requires
-            #  that we change how we deal with QASMRuntimeSettings
-            raw_wf_data = generate_waveform_data(
-                pulse.data, sampling_rate=SAMPLING_RATE
-            )
-            raw_wf_data = self._apply_corrections_to_waveform(
-                raw_wf_data, pulse.duration, pulse.timing
-            )
-            raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
+            reserved_pulse_id = self._check_reserved_pulses(
+                pulse
+            )  # FIXME: this is nicer in a separate function
+            if reserved_pulse_id is None:
+                raw_wf_data = generate_waveform_data(
+                    pulse.data, sampling_rate=SAMPLING_RATE
+                )
+                raw_wf_data = self._apply_corrections_to_waveform(
+                    raw_wf_data, pulse.duration, pulse.timing
+                )
+                raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
+            else:
+                pulse.uuid = reserved_pulse_id
+                raw_wf_data, amp_i, amp_q = generate_reserved_waveform_data(
+                    reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
+                )
+
             if np.abs(amp_i) > self.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
@@ -549,7 +559,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
 
             end_time = qasm.to_pulsar_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
-            if wait_time <= 0:
+            if wait_time < 0:
                 raise RuntimeError(
                     f"Invalid timing detected, attempting to insert wait "
                     f"of {wait_time} ns. The total duration of the "
@@ -565,7 +575,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
         return str(qasm)
 
     @staticmethod
-    def get_indices_from_wf_dict(uuid: int, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
+    def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
         """
         Takes a awg_dict or acq_dict and extracts the waveform indices based off of the
         uuid of the pulse/acquisition.
@@ -655,6 +665,23 @@ class PulsarSequencerBase(metaclass=ABCMeta):
             json.dump(wf_and_pr_dict, file, cls=NumpyJSONEncoder, indent=4)
 
         return file_path
+
+    @staticmethod
+    def _check_reserved_pulses(pulse: OpInfo) -> Optional[str]:
+        def _check_square_pulse_stitching() -> bool:
+            reserved_wf_func = "quantify.scheduler.waveforms.square"
+            if pulse.data["clock"] == BasebandClockResource.IDENTITY:
+                if pulse.data["wf_func"] == reserved_wf_func:
+                    return True
+            return False
+
+        reserved_pulse_mapping = {
+            "stitched_square_pulse": _check_square_pulse_stitching
+        }
+        for key, checking_func in reserved_pulse_mapping.items():
+            if checking_func():
+                return key
+        return None
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """

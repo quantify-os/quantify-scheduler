@@ -65,7 +65,7 @@ class OpInfo(DataClassJsonMixin):
         amplitude.
     """
 
-    uuid: int
+    uuid: str
     data: dict
     timing: float
     pulse_settings: Optional[QASMRuntimeSettings] = None

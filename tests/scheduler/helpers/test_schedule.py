@@ -256,7 +256,7 @@ def test_get_total_duration(
     # Assert
     assert duration0 == 0.0
     assert duration1 == 1.6e-08
-    assert duration2 == 0.001697824000000001
+    assert duration2 == 0.0017983880000000012
 
 
 def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_pulse_info):

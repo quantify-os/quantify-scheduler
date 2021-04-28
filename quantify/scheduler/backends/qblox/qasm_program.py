@@ -8,7 +8,11 @@ import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from quantify.scheduler.backends.qblox import q1asm_instructions
-from quantify.scheduler.backends.qblox.constants import IMMEDIATE_SZ, GRID_TIME
+from quantify.scheduler.backends.qblox.constants import (
+    IMMEDIATE_SZ,
+    GRID_TIME,
+    PULSE_STITCHING_DURATION,
+)
 from quantify.scheduler.backends.types.qblox import OpInfo
 
 
@@ -112,12 +116,14 @@ class QASMProgram:
         ValueError
             If `wait_time` <= 0
         """
-        if wait_time <= 0:
+        if wait_time < 0:
             raise ValueError(
                 f"Invalid wait time. Attempting to wait "
                 f"for {wait_time} ns at t={self.elapsed_time}"
                 f" ns."
             )
+        elif wait_time == 0:
+            return
 
         if wait_time > IMMEDIATE_SZ:
             for _ in range(wait_time // IMMEDIATE_SZ):
@@ -179,8 +185,45 @@ class QASMProgram:
         """
         self.wait_till_start_operation(pulse)
         self.update_runtime_settings(pulse)
-        self.emit(q1asm_instructions.PLAY, idx0, idx1, GRID_TIME)
-        self.elapsed_time += GRID_TIME
+        self.auto_play_pulse(pulse, idx0, idx1)
+
+    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+        register = "R2"
+        rep = int(pulse.duration // PULSE_STITCHING_DURATION)
+
+        if rep > 0:
+            with self.loop(
+                register=register,
+                label=f"stitch{len(self.instructions)}",
+                repetitions=rep,
+            ):
+                self.emit(
+                    q1asm_instructions.PLAY,
+                    idx0,
+                    idx1,
+                    self.to_pulsar_time(PULSE_STITCHING_DURATION),
+                )
+                self.elapsed_time += rep * self.to_pulsar_time(PULSE_STITCHING_DURATION)
+
+        pulse_time_rem = self.to_pulsar_time(pulse.duration % PULSE_STITCHING_DURATION)
+        if pulse_time_rem > 0:
+            self.emit(q1asm_instructions.PLAY, idx0, idx1, pulse_time_rem)
+            self.emit(
+                q1asm_instructions.SET_AWG_GAIN,
+                0,
+                0,
+                comment="zero as workaround",
+            )
+        self.elapsed_time += pulse_time_rem
+
+    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+        reserved_pulse_mapping = {"stitched_square_pulse": self.play_stitched_pulse}
+        if pulse.uuid in reserved_pulse_mapping:
+            func = reserved_pulse_mapping[pulse.uuid]
+            func(pulse, idx0, idx1)
+        else:
+            self.emit(q1asm_instructions.PLAY, idx0, idx1, GRID_TIME)
+            self.elapsed_time += GRID_TIME
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -313,7 +356,9 @@ class QASMProgram:
             The string representation of the program.
         """
         try:
-            return columnar(self.instructions, headers=None, no_borders=True)
+            return columnar(
+                self.instructions, headers=None, no_borders=True, wrap_max=0
+            )
         # running in a sphinx environment can trigger a TableOverFlowError
         except TableOverflowError:
             return columnar(
