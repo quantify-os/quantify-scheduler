@@ -32,6 +32,11 @@ def soft_square(t, amp):
     return signal.convolve(sq, window, mode="same") / sum(window)
 
 
+def chirp(t: np.ndarray, amp: float, end_freq: float, start_freq: float = 0.0):
+    freqs = np.linspace(start_freq, end_freq, len(t))
+    return amp * np.exp(1.0j * 2 * np.pi * freqs * t)
+
+
 def drag(
     t: np.ndarray,
     G_amp: float,

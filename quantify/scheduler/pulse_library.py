@@ -161,6 +161,38 @@ class SoftSquarePulse(Operation):
         super().__init__(name=data["name"], data=data)
 
 
+class ChirpPulse(Operation):
+    def __init__(
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str,
+        end_freq: float,
+        start_freq: float = 0.0,
+        t0: float = 0,
+    ):
+        """
+        chirp
+        """
+        data = {
+            "name": "ChirpPulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.chirp",
+                    "amp": amp,
+                    "duration": duration,
+                    "start_freq": start_freq,
+                    "end_freq": end_freq,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+
+
 class DRAGPulse(Operation):
     """
     DRAG pulse intended for single qubit gates in transmon based systems.

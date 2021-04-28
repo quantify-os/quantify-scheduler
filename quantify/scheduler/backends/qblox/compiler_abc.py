@@ -888,7 +888,7 @@ class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
             portclock = portclock_dict["port"], portclock_dict["clock"]
             freq = (
                 None
-                if "interm_freq" in portclock_dict
+                if "interm_freq" not in portclock_dict
                 else portclock_dict["interm_freq"]
             )
 
