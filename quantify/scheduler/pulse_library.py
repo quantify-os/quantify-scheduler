@@ -154,10 +154,11 @@ def decompose_long_square_pulse(
         A list of :class`SquarePulse` s equivalent to the desired long pulse.
     """
     # Sanity checks
-    validator = validators.Numbers(min_value=0.0, max_value=7 * 24 * 3600.0).validate
-    validator(duration)
-    validator = validators.Numbers(min_value=0.0, max_value=duration).validate
-    validator(duration_max)
+    validator_dur = validators.Numbers(min_value=0.0, max_value=7 * 24 * 3600.0)
+    validator_dur.validate(duration)
+
+    validator_dur_max = validators.Numbers(min_value=0.0, max_value=duration)
+    validator_dur_max.validate(duration_max)
 
     duration_last_pulse = duration % duration_max
     num_pulses = int(duration // duration_max)
