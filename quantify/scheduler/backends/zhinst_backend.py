@@ -4,26 +4,36 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from enum import Enum
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Tuple,
+    Union,
+    cast,
+)
 
 import numpy as np
-from qcodes.instrument.base import Instrument
 from zhinst.toolkit.helpers import Waveform
-
+from qcodes.instrument.base import Instrument
 import quantify.scheduler.waveforms as waveforms
-from quantify.scheduler import enums, math, types
+from quantify.scheduler import enums
+from quantify.scheduler import types
 from quantify.scheduler.backends.types import zhinst
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
-from quantify.scheduler.backends.zhinst import resolvers, seqc_il_generator
+from quantify.scheduler.backends.zhinst import seqc_il_generator
+from quantify.scheduler.backends.zhinst import resolvers
 from quantify.scheduler.helpers import schedule as schedule_helpers
 from quantify.scheduler.helpers import waveforms as waveform_helpers
 
 if TYPE_CHECKING:
-    from zhinst.qcodes import HDAWG, UHFQA
+    from zhinst.qcodes import UHFQA
+    from zhinst.qcodes import HDAWG
     from zhinst.qcodes.base import ZIBaseInstrument
     from zhinst.qcodes.hdawg import AWG as HDAWG_CORE
     from zhinst.qcodes.uhfqa import AWG as UHFQA_CORE
@@ -33,7 +43,6 @@ logger = logging.getLogger()
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
     # "%(levelname)-8s | %(module)s | %(funcName)s::%(lineno)s. %(message)s"
-    # "%(asctime)s | %(levelname)-8s | %(module)s | %(funcName)s::%(lineno)s. %(message)s"
 )
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -46,38 +55,6 @@ WAVEFORM_GRANULARITY: Dict[zhinst.DeviceType, int] = {
     zhinst.DeviceType.HDAWG: 16,
     zhinst.DeviceType.UHFQA: 16,
 }
-
-
-class _WaveformDestination(Enum):
-
-    """The waveform destination enum type."""
-
-    CSV = 0
-    WAVEFORM_TABLE = 1
-
-
-@dataclass(frozen=True)
-class _Pulse:
-    id: int
-    abs_time: float
-    t0: float
-    duration: float
-    start_in_clocks: int
-    duration_in_clocks: int
-    size: int
-
-    def __repr__(self):
-        return "%-20i | %-16f | %-16f | %-16f | %-16f | %-14i | %-18i | %-6i" % (
-            self.id,
-            self.t0,
-            self.abs_time * 1e9,
-            (self.abs_time + self.t0) * 1e9,
-            self.duration * 1e9,
-            self.start_in_clocks,
-            self.duration_in_clocks,
-            self.size,
-        )
-
 
 # https://www.zhinst.com/sites/default/files/documents/2020-09/ziHDAWG_UserManual_20.07.2.pdf
 # page: 262
@@ -127,24 +104,308 @@ def _validate_schedule(schedule: types.Schedule) -> None:
             )
 
 
-class _Context(object):
-    def __init__(self):
-        self._devices: Dict[str, Tuple[zhinst.Device, ZIBaseInstrument]] = dict()
+def apply_waveform_corrections(
+    output: zhinst.Output,
+    waveform: np.ndarray,
+    start_and_duration_in_seconds: Tuple[float, float],
+    instrument_info: zhinst.InstrumentInfo,
+    is_pulse: bool,
+) -> Tuple[int, int, np.ndarray]:
+    """
+    Add waveform corrections such as modulation, changing the
+    waveform starting time by shifting it and resizing it
+    based on the Instruments granularity.
 
-    def add_device(self, device: zhinst.Device, instrument: ZIBaseInstrument):
-        self._devices[device.name] = (device, instrument)
+    Parameters
+    ----------
+    output :
+    waveform :
+    start_and_duration_in_seconds :
+    instrument_info :
+    is_pulse :
 
-    @property
-    def devices(self) -> Iterable[Tuple[zhinst.Device, ZIBaseInstrument]]:
-        return self._devices.values()
+    Returns
+    -------
+    Tuple[int, int, np.ndarray]
+    """
+
+    (start_in_seconds, duration_in_seconds) = start_and_duration_in_seconds
+
+    if is_pulse:
+        # Modulate the waveform
+        if output.modulation == enums.ModulationModeType.PREMODULATE:
+            t: np.ndarray = np.arange(
+                0, 0 + duration_in_seconds, 1 / instrument_info.clock_rate
+            )
+            waveform = waveforms.modulate_wave(
+                t=t, wave=waveform, freq_mod=output.interm_freq
+            )
+
+        # TODO [TReynders] Add mixer corrections here.  pylint: disable=fixme
+
+    start_in_clocks, waveform = waveform_helpers.shift_waveform(
+        waveform,
+        start_in_seconds,
+        instrument_info.clock_rate,
+        instrument_info.resolution,
+    )
+    n_samples_shifted = len(waveform)
+
+    waveform = waveform_helpers.resize_waveform(waveform, instrument_info.granularity)
+
+    return start_in_clocks, n_samples_shifted, waveform
 
 
-def _get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
-    size: int = len(waveform)
-    if size % granularity != 0:
-        size = math.closest_number_ceil(size, granularity)
+def _flatten_dict(collection: Dict[Any, Any]) -> Iterable[Tuple[Any, Any]]:
+    """
+    Flattens a collection to an iterable set of tuples.
 
-    return size
+    Parameters
+    ----------
+    collection : Dict[Any, Any]
+
+    Returns
+    -------
+    Iterable[Tuple[Any, Any]]
+    """
+
+    def expand(key, obj):
+        if isinstance(obj, dict):
+            for i, value in obj.items():
+                yield from expand(i, value)
+        elif isinstance(obj, list):
+            for value in obj:
+                yield (key, value)
+        else:
+            yield (key, obj)
+
+    return expand(None, collection)
+
+
+def get_wave_instruction(
+    uuid: int,
+    timeslot_index: int,
+    output: zhinst.Output,
+    cached_schedule: schedule_helpers.CachedSchedule,
+    instrument_info: zhinst.InstrumentInfo,
+) -> zhinst.Wave:
+    """
+    Returns wave sequence instruction.
+
+    This function returns a record type class
+    containing the waveform and timing critical
+    information.
+
+    Parameters
+    ----------
+    uuid :
+    timeslot_index :t
+    output :
+    cached_schedule :
+    instrument_info :
+
+    Returns
+    -------
+    zhinst._Wave
+    """
+    pulse_info = cached_schedule.pulseid_pulseinfo_dict[uuid]
+
+    t_constr = cached_schedule.schedule.timing_constraints[timeslot_index]
+    abs_time = t_constr["abs_time"] - cached_schedule.start_offset_in_seconds
+    t0: float = abs_time + pulse_info["t0"]
+
+    duration_in_seconds: float = pulse_info["duration"]
+    waveform = waveform_helpers.exec_waveform_partial(
+        uuid, cached_schedule.pulseid_waveformfn_dict, instrument_info.clock_rate
+    )
+    n_samples = len(waveform)
+
+    (
+        corrected_start_in_clocks,
+        n_samples_shifted,
+        waveform,
+    ) = apply_waveform_corrections(
+        output,
+        waveform,
+        (t0, duration_in_seconds),
+        instrument_info,
+        True,
+    )
+
+    duration_in_clocks: float = duration_in_seconds / instrument_info.low_res_clock
+
+    if n_samples_shifted != n_samples:
+        # If the slope start waveform shifts with a number of samples,
+        # the base waveform is altered therefore a new uuid is required.
+        pulse_info["_n_samples_shifted"] = n_samples_shifted
+        uuid = schedule_helpers.get_pulse_uuid(pulse_info, [])
+        del pulse_info["_n_samples_shifted"]
+
+    # Overwrite or add newly created uuid's pulse_info
+    cached_schedule.pulseid_pulseinfo_dict[uuid] = pulse_info
+
+    return zhinst.Wave(
+        uuid,
+        abs_time,
+        timeslot_index,
+        t0,
+        corrected_start_in_clocks,
+        duration_in_seconds,
+        round(duration_in_clocks),
+        waveform,
+        n_samples,
+        n_samples_shifted,
+    )
+
+
+def get_measure_instruction(
+    uuid: int,
+    timeslot_index: int,
+    output: zhinst.Output,
+    cached_schedule: schedule_helpers.CachedSchedule,
+    instrument_info: zhinst.InstrumentInfo,
+) -> zhinst.Measure:
+    """
+    Returns the measurement sequence instruction.
+
+    This
+
+    Parameters
+    ----------
+    uuid :
+    timeslot_index :
+    output :
+    cached_schedule :
+    instrument_info :
+
+    Returns
+    -------
+    zhinst._Measure
+    """
+    acq_info = cached_schedule.acqid_acqinfo_dict[uuid]
+    abs_time = (
+        cached_schedule.schedule.timing_constraints[timeslot_index]["abs_time"]
+        - cached_schedule.start_offset_in_seconds
+    )
+
+    t0: float = abs_time + acq_info["t0"]
+    duration_in_seconds: float = acq_info["duration"]
+
+    weights_list: List[np.ndarray] = [np.empty((0,)), np.empty((0,))]
+    corrected_start_in_clocks: int = 0
+    for i, pulse_info in enumerate(acq_info["waveforms"]):
+        waveform = waveform_helpers.exec_waveform_partial(
+            schedule_helpers.get_pulse_uuid(pulse_info),
+            cached_schedule.pulseid_waveformfn_dict,
+            instrument_info.clock_rate,
+        )
+        (corrected_start_in_clocks, _, waveform) = apply_waveform_corrections(
+            output,
+            waveform,
+            (t0, duration_in_seconds),
+            instrument_info,
+            False,
+        )
+        weights_list[i] = waveform
+
+    return zhinst.Measure(
+        uuid,
+        abs_time,
+        timeslot_index,
+        t0,
+        corrected_start_in_clocks,
+        duration_in_seconds,
+        round(duration_in_seconds / instrument_info.low_res_clock),
+        *weights_list,
+    )
+
+
+def get_execution_table(
+    cached_schedule: schedule_helpers.CachedSchedule,
+    instrument_info: zhinst.InstrumentInfo,
+    output: zhinst.Output,
+) -> List[zhinst.Instruction]:
+    """
+    Returns a timing critical execution table of Instructions.
+
+    Parameters
+    ----------
+    cached_schedule :
+    instrument_info :
+    output :
+
+    Returns
+    -------
+    List[zhinst._Instruction]
+
+    Raises
+    ------
+    RuntimeError
+        Raised if encountered an unknown uuid.
+    """
+
+    def filter_uuid(pair: Tuple[int, int]) -> bool:
+        (_, uuid) = pair
+
+        if uuid in cached_schedule.pulseid_pulseinfo_dict:
+            pulse_info = cached_schedule.pulseid_pulseinfo_dict[uuid]
+            if pulse_info["port"] is None:
+                # Skip pulses without a port, such as Reset.
+                return False
+
+        # Item is added
+        return True
+
+    def get_instruction(timeslot_index: int, uuid: int) -> zhinst.Instruction:
+        if uuid in cached_schedule.acqid_acqinfo_dict:
+            return get_measure_instruction(
+                uuid, timeslot_index, output, cached_schedule, instrument_info
+            )
+        if uuid in cached_schedule.pulseid_pulseinfo_dict:
+            return get_wave_instruction(
+                uuid, timeslot_index, output, cached_schedule, instrument_info
+            )
+
+        raise RuntimeError(
+            f"Undefined instruction for uuid={uuid} timeslot={timeslot_index}"
+        )
+
+    instr_timeline_list: List[Tuple[int, int]] = list(
+        _flatten_dict(cached_schedule.port_timeline_dict[output.port])
+    )
+    instr_timeline_list = filter(filter_uuid, instr_timeline_list)
+    instr_timeline_iter = iter(instr_timeline_list)
+
+    current_instr: zhinst.Instruction = zhinst.Instruction.default()
+    previous_instr: zhinst.Instruction = get_instruction(*next(instr_timeline_iter))
+
+    logger.debug(zhinst.Wave.__header__())
+    logger.debug(repr(previous_instr))
+
+    instructions: List[zhinst.Instruction] = [previous_instr]
+    new_timeslot_uuids: List[int] = [previous_instr.uuid]
+
+    for (timeslot_index, uuid) in instr_timeline_iter:
+        current_instr = get_instruction(timeslot_index, uuid)
+
+        logger.debug(repr(current_instr))
+
+        if previous_instr.timeslot_index != current_instr.timeslot_index:
+            cached_schedule.port_timeline_dict[output.port][
+                previous_instr.timeslot_index
+            ] = new_timeslot_uuids
+            new_timeslot_uuids = list()
+
+        new_timeslot_uuids.append(current_instr.uuid)
+        instructions.append(current_instr)
+        previous_instr = current_instr
+
+    # Rectify the last timeslot uuid list
+    cached_schedule.port_timeline_dict[output.port][
+        current_instr.timeslot_index
+    ] = new_timeslot_uuids
+
+    return instructions
 
 
 def setup_zhinst_backend(
@@ -178,18 +439,7 @@ def setup_zhinst_backend(
     supported_devices: List[str] = ["HDAWG", "UHFQA"]
 
     # Create the context
-    context: _Context = _Context()
-
-    pulseid_waveformfn_dict: Dict[
-        int, waveform_helpers.GetWaveformPartial
-    ] = waveform_helpers.get_waveform_by_pulseid(schedule)
-    pulseid_pulseinfo_dict: Dict[
-        int, Dict[str, Any]
-    ] = schedule_helpers.get_pulse_info_by_uuid(schedule)
-    port_timeline_dict: Dict[
-        str, Dict[int, List[int]]
-    ] = schedule_helpers.get_port_timeline(schedule)
-    acqid_acqinfo_dict = schedule_helpers.get_acq_info_by_uuid(schedule)
+    devices: Dict[str, Tuple[zhinst.Device, ZIBaseInstrument]] = dict()
 
     # Parse json hardware config and find qcodes instruments
     for device_dict in hardware_map["devices"]:
@@ -204,32 +454,22 @@ def setup_zhinst_backend(
             )
 
         device.type = zhinst.DeviceType(qinstrument_classname)
-        context.add_device(device, qinstrument)
+        devices[device.name] = (device, qinstrument)
 
     acq_channel_resolvers_map: Dict[int, Callable] = dict()
+    cached_schedule = schedule_helpers.CachedSchedule(schedule)
 
     # Program devices
-    for (device, instrument) in context.devices:
+    for (device, instrument) in devices.values():
         if device.type == zhinst.DeviceType.HDAWG:
             _program_hdawg(
                 instrument,
                 device,
-                schedule,
-                pulseid_pulseinfo_dict,
-                pulseid_waveformfn_dict,
-                port_timeline_dict,
+                cached_schedule,
             )
         elif device.type == zhinst.DeviceType.UHFQA:
             acq_channel_resolvers_map.update(
-                _program_uhfqa(
-                    instrument,
-                    device,
-                    schedule,
-                    pulseid_pulseinfo_dict,
-                    acqid_acqinfo_dict,
-                    pulseid_waveformfn_dict,
-                    port_timeline_dict,
-                )
+                _program_uhfqa(instrument, device, cached_schedule)
             )
 
     return acq_channel_resolvers_map
@@ -289,8 +529,7 @@ def _set_waveforms(
     awg: Union[HDAWG_CORE, UHFQA_CORE],
     waveforms_dict: Dict[int, np.ndarray],
     commandtable_map: Dict[int, int],
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]],
-    destination: _WaveformDestination,
+    destination: zhinst.WaveformDestination,
 ) -> None:
     """
     Sets the waveforms to WaveformDestination.
@@ -312,10 +551,6 @@ def _set_waveforms(
 
     for pulse_id, commandtable_index in commandtable_map.items():
         array: np.ndarray = waveforms_dict[pulse_id]
-        pulse_info = pulseid_pulseinfo_dict[pulse_id]
-        logger.debug(
-            f"[{awg.name}] wave={pulse_info['wf_func']} I.length={len(array.real)} Q.length={len(array.imag)}"
-        )
 
         # https://www.zhinst.com/sites/default/files/documents/2020-08/LabOneProgrammingManual_20.07.0.pdf
         # page 229
@@ -329,13 +564,13 @@ def _set_waveforms(
         # elif signal_mode_type == enums.SignalModeType.REAL:
         # waveform_data = array.real
 
-        logger.debug(waveform_data)
+        # logger.debug(waveform_data)
 
-        if destination == _WaveformDestination.WAVEFORM_TABLE:
+        if destination == zhinst.WaveformDestination.WAVEFORM_TABLE:
             zi_helpers.set_wave_vector(
                 instrument, awg._awg._index, commandtable_index, waveform_data
             )
-        elif destination == _WaveformDestination.CSV:
+        elif destination == zhinst.WaveformDestination.CSV:
             csv_file = csv_data_dir.joinpath(
                 f"{instrument._serial}_wave{commandtable_index}.csv"
             )
@@ -346,10 +581,7 @@ def _set_waveforms(
 def _program_hdawg(
     hdawg: HDAWG,
     device: zhinst.Device,
-    schedule: types.Schedule,
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]],
-    pulseid_waveformfn_dict: Dict[int, waveform_helpers.GetWaveformPartial],
-    port_timeline_dict: Dict[str, Dict[int, List[int]]],
+    cached_schedule: schedule_helpers.CachedSchedule,
 ) -> None:
     """
     Programs the HDAWG ZI Instrument.
@@ -371,19 +603,17 @@ def _program_hdawg(
     ----------
     hdawg :
     device :
-    schedule :
-    pulseid_pulseinfo_dict :
-    pulseid_waveformfn_dict :
-    port_timeline_dict :
+    cached_schedule :
 
     Raises
     ------
     ValueError
     """
-
+    instrument_info = zhinst.InstrumentInfo(
+        zi_helpers.get_clock_rate(device.type), 8, WAVEFORM_GRANULARITY[device.type]
+    )
     devtype: str = hdawg.features.parameters["devtype"]()
     awg_count: int = 4 if devtype == "HDAWG8" else 2
-    clock_rate = zi_helpers.get_clock_rate(device.type)
 
     enabled_outputs: Dict[int, zhinst.Output] = dict()
 
@@ -421,81 +651,57 @@ def _program_hdawg(
     for i, output in enabled_outputs.items():
         awg = hdawg.awgs[i]
 
-        if output.port not in port_timeline_dict:
+        if output.port not in cached_schedule.port_timeline_dict:
             logging.warning(
                 f"[{awg.name}] Skipping! Missing pulses for port={output.port}."
             )
             continue
 
-        # Create a dictionary containing unique waveforms by pulse_id
-        waveforms_dict: Dict[int, np.ndarray] = dict()
-        pulses_timeline_dict = port_timeline_dict[output.port]
-
-        # Gets a list of unique pulse ids for this output
-        pulse_ids: List[int] = sorted(
-            {x for v in pulses_timeline_dict.values() for x in v}
+        instructions = get_execution_table(
+            cached_schedule,
+            instrument_info,
+            output,
         )
+        pulse_ids: List[int] = list(map(lambda i: i.uuid, instructions))
 
         # Gets a dictionary of pulse_id by commandtable_indexes
         commandtable_map: Dict[int, int] = zi_helpers.get_commandtable_map(
-            pulse_ids, pulseid_pulseinfo_dict
+            pulse_ids, cached_schedule.pulseid_pulseinfo_dict
         )
-
-        # Execute partial functions to get the actual waveform
-        for pulse_id in commandtable_map.keys():
-            if pulse_id in waveforms_dict:
-                # The unique waveform is already added to the dictionary.
-                continue
-
-            waveforms_dict[pulse_id] = waveform_helpers.exec_waveform_partial(
-                pulse_id, pulseid_waveformfn_dict, clock_rate
-            )
 
         # Step 1: Generate and compile sequencer program AND
         # Step 2: Set CommandTable JSON vector
         _program_sequences_hdawg(
             hdawg,
             awg,
-            schedule,
+            cached_schedule,
             device,
+            instrument_info,
             output,
             commandtable_map,
-            waveforms_dict,
-            port_timeline_dict,
-            pulses_timeline_dict,
-            pulseid_pulseinfo_dict,
-        )
-
-        # Apply modulation to waveforms
-        _program_modulation(awg, device, output, waveforms_dict, pulseid_pulseinfo_dict)
-
-        # Resize the waveforms
-        waveform_helpers.resize_waveforms(
-            waveforms_dict, WAVEFORM_GRANULARITY[device.type]
+            instructions,
         )
 
         # Step 3: Upload waveforms to AWG CommandTable
+        waveforms_dict = dict(map(lambda i: (i.uuid, i.waveform), instructions))
         _set_waveforms(
             hdawg,
             awg,
             waveforms_dict,
             commandtable_map,
-            pulseid_pulseinfo_dict,
-            _WaveformDestination.WAVEFORM_TABLE,
+            zhinst.WaveformDestination.WAVEFORM_TABLE,
         )
 
 
 def _program_sequences_hdawg(
     hdawg: HDAWG,
     awg: HDAWG_CORE,
-    schedule: types.Schedule,
+    cached_schedule: schedule_helpers.CachedSchedule,
     device: zhinst.Device,
+    instrument_info: zhinst.InstrumentInfo,
     output: zhinst.Output,
     commandtable_map: Dict[int, int],
-    waveforms_dict: Dict[int, np.ndarray],
-    port_timeline_dict: Dict[str, Dict[int, List[int]]],
-    pulses_timeline_dict: Dict[int, List[int]],
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]],
+    instructions: List[zhinst.Instruction],
 ) -> None:
     """
     Assembles a new sequence program for the HDAWG.
@@ -508,30 +714,27 @@ def _program_sequences_hdawg(
     ----------
     hdawg :
     awg :
-    schedule :
+    cached_schedule :
     device :
+    instrument_info :
     output :
     commandtable_map :
-    waveforms_dict :
-    port_timeline_dict :
-    pulses_timeline_dict :
-    pulseid_pulseinfo_dict :
+    instructions :
     """
-    command_table_entries: List[zhinst.CommandTableEntry] = list()
-    command_table_index: int = 0
-    granularity = WAVEFORM_GRANULARITY[device.type]
 
     seqc_gen = seqc_il_generator.SeqcILGenerator()
-    clock_rate = zi_helpers.get_clock_rate(device.type)
-
     seqc_info = seqc_il_generator.SeqcInfo(
-        clock_rate,
-        SEQUENCE_DEAD_TIME,
-        output.line_trigger_delay,
-        schedule,
-        port_timeline_dict,
-        pulses_timeline_dict,
+        cached_schedule,
+        output,
+        instrument_info.low_res_clock,
     )
+
+    dead_time_in_clocks = (
+        seqc_info.schedule_offset_in_clocks
+        if seqc_info.schedule_offset_in_seconds > 0
+        else SEQUENCE_DEAD_TIME
+    )
+
     seqc_il_generator.add_seqc_info(seqc_gen, seqc_info)
 
     is_master_awg: bool = awg.index == 0
@@ -550,37 +753,39 @@ def _program_sequences_hdawg(
     current_clock: int = 0
 
     # Declare sequence variables
-    seqc_gen.declare_var("__repetitions__", schedule.repetitions)
-
+    seqc_gen.declare_var("__repetitions__", cached_schedule.schedule.repetitions)
+    wave_instructions_dict: Dict[int, zhinst.Wave] = dict(
+        (i.uuid, i) for i in instructions if isinstance(i, zhinst.Wave)
+    )
+    command_table_entries: List[zhinst.CommandTableEntry] = list()
     for pulse_id, waveform_index in commandtable_map.items():
-
+        instruction = wave_instructions_dict[pulse_id]
+        waveform_index = commandtable_map[instruction.uuid]
         name: str = f"w{waveform_index}"
-        wave_size: int = len(waveforms_dict[pulse_id])
-        if wave_size % granularity != 0:
-            wave_size = math.closest_number_ceil(wave_size, granularity)
 
         # Create and add variables to the Sequence program
         # aswell as assign the variables with operations
         seqc_gen.declare_wave(name)
-        seqc_gen.assign_placeholder(name, wave_size)
+        seqc_gen.assign_placeholder(name, len(instruction.waveform))
         seqc_gen.emit_assign_wave_index(name, name, index=waveform_index)
 
         # Do bookkeeping for the CommandTable
         command_table_entry = zhinst.CommandTableEntry(
-            index=command_table_index,
-            waveform=zhinst.CommandTableEntryIndex(waveform_index),
+            index=len(command_table_entries),
+            waveform=zhinst.CommandTableWaveform(
+                waveform_index, instruction.n_samples_scaled
+            ),
         )
         command_table_entries.append(command_table_entry)
-        command_table_index += 1
 
     # Reset marker
     if is_marker_source:
-        seqc_gen.emit_set_trigger(0)
+        seqc_il_generator.add_set_trigger(seqc_gen, 0, device.type)
 
     seqc_gen.emit_begin_repeat("__repetitions__")
 
     if is_marker_source:
-        seqc_gen.emit_set_trigger(" + ".join(output.markers))
+        seqc_il_generator.add_set_trigger(seqc_gen, output.markers, device.type)
 
     if is_trigger_source:
         seqc_gen.emit_wait_dig_trigger(
@@ -593,116 +798,95 @@ def _program_sequences_hdawg(
         seqc_il_generator.add_wait(
             seqc_gen,
             seqc_info.line_trigger_delay_in_clocks,
+            device.type,
             comment=f"clock={current_clock}",
         )
 
-    logger.debug(
-        "%-20s | %-16s | %-16s | %-16s | %-16s | %-14s | %-18s | %-6s",
-        "pulse_id",
-        "pulse_t0",
-        "abs_time",
-        "t0",
-        "duration",
-        "start (clocks)",
-        "duration (clocks)",
-        "waveform size",
-    )
+    instructions_iter = iter(instructions)
+    current_instr: zhinst.Wave = zhinst.Instruction.default()
+    previous_instr: zhinst.Wave = next(instructions_iter)
 
-    current_pulse = _Pulse(0, 0, 0, 0, 0, 0, 0)
-    previous_pulse = _Pulse(-1, -1, -1, -1, -1, -1, -1)
+    for instruction in instructions_iter:
+        current_instr = cast(zhinst.Wave, instruction)
+        previous_instr_end = (
+            previous_instr.start_in_clocks + previous_instr.duration_in_clocks
+        )
+        current_instr_offset = seqc_il_generator.SEQC_INSTR_CLOCKS[device.type][
+            seqc_il_generator.SeqcInstructions.EXECUTE_TABLE_ENTRY
+        ]
 
-    for timeslot_index, pulse_ids in pulses_timeline_dict.items():
-        # Create the operations section of the Sequence program.
-        t_constr = schedule.timing_constraints[timeslot_index]
-        abs_time = t_constr["abs_time"]
+        current_clock += seqc_il_generator.add_execute_table_entry(
+            seqc_gen,
+            commandtable_map[previous_instr.uuid],
+            device.type,
+            f"clock={current_clock}",
+        )
 
-        for pulse_id in pulse_ids:
-            pulse_info = pulseid_pulseinfo_dict[pulse_id]
+        remaining_clocks = max(
+            current_instr.start_in_clocks - previous_instr_end,
+            current_instr.start_in_clocks - current_clock,
+        )
 
-            t0 = abs_time + pulse_info["t0"] - seqc_info.schedule_offset_in_seconds
-            duration = pulse_info["duration"]
-            start_in_clocks = seqc_info.to_clocks(t0)
-            n_samples: int = _get_waveform_size(waveforms_dict[pulse_id], granularity)
+        clock_cycles_to_wait: int = remaining_clocks - current_instr_offset
 
-            duration_in_seconds = (1 / clock_rate) * n_samples
-            duration_in_clocks = seqc_info.to_clocks(duration_in_seconds)
+        current_clock += seqc_il_generator.add_wait(
+            seqc_gen,
+            clock_cycles_to_wait,
+            device.type,
+            comment=f"\t clock={current_clock}",
+        )
 
-            current_pulse = _Pulse(
-                pulse_id,
-                abs_time - seqc_info.schedule_offset_in_seconds,
-                pulse_info["t0"],
-                duration,
-                start_in_clocks,
-                duration_in_clocks,
-                n_samples,
-            )
+        previous_instr = current_instr
 
-            logger.debug(repr(current_pulse))
+    clock_start: int = current_clock
 
-            if previous_pulse.id == -1:
-                previous_pulse = current_pulse
-                continue
-
-            elapsed_clocks: int = (
-                current_pulse.start_in_clocks - previous_pulse.start_in_clocks
-            )
-
-            n_assembly_instructions = seqc_il_generator.SEQC_INSTR_CLOCKS[
-                seqc_il_generator.SeqcInstructions.EXECUTE_TABLE_ENTRY
-            ]
-            waveform_index = commandtable_map[previous_pulse.id]
-            seqc_gen.emit_execute_table_entry(
-                waveform_index,
-                comment=f"\t// clock={current_clock} pulse={waveform_index} n_instr={n_assembly_instructions}",
-            )
-
-            if elapsed_clocks == previous_pulse.duration_in_clocks:
-                n_assembly_instructions += seqc_il_generator.SEQC_INSTR_CLOCKS[
-                    seqc_il_generator.SeqcInstructions.WAIT_WAVE
-                ]
-                seqc_gen.emit_wait_wave(comment=f"\t// clock={current_clock}")
-                current_clock += previous_pulse.duration_in_clocks
-            else:
-                n_assembly_instructions = seqc_il_generator.SEQC_INSTR_CLOCKS[
-                    seqc_il_generator.SeqcInstructions.WAIT
-                ]
-                seqc_il_generator.add_wait(
-                    seqc_gen,
-                    elapsed_clocks - n_assembly_instructions,
-                    comment=f"\t// clock={current_clock}",
-                )
-                current_clock += elapsed_clocks
-
-            previous_pulse = current_pulse
-
-    # Adds the last pulse
-    waveform_index = commandtable_map[current_pulse.id]
-    seqc_gen.emit_execute_table_entry(
-        waveform_index,
-        comment=f"\t// clock={current_clock} pulse={waveform_index}",
-    )
-    seqc_gen.emit_wait_wave(comment=f"\t// clock={current_clock}")
-    current_clock += current_pulse.duration_in_clocks
+    if previous_instr.uuid != -1:
+        previous_instr_end = (
+            previous_instr.start_in_clocks + previous_instr.duration_in_clocks
+        )
+        # Adds the last pulse
+        current_clock += seqc_il_generator.add_execute_table_entry(
+            seqc_gen,
+            commandtable_map[previous_instr.uuid],
+            device.type,
+            f"clock={current_clock}",
+        )
 
     # Reset trigger each iteration
     if is_marker_source:
-        seqc_gen.emit_set_trigger(0, comment=f"\t// clock={current_clock}")
-        current_clock += seqc_il_generator.SEQC_INSTR_CLOCKS[
-            seqc_il_generator.SeqcInstructions.SET_TRIGGER
-        ]
+        current_clock += seqc_il_generator.add_set_trigger(
+            seqc_gen, 0, device.type, comment=f"clock={current_clock}"
+        )
 
-    seqc_gen.emit_comment("Dead time")
-    seqc_il_generator.add_wait(
-        seqc_gen,
-        (seqc_info.schedule_duration_in_clocks - current_clock)
-        + seqc_info.dead_time_in_clocks,
-    )
+    if previous_instr.uuid != -1:
+        seqc_gen.emit_comment("Dead time")
+        remaining_clocks = max(
+            previous_instr.start_in_clocks - previous_instr_end,
+            previous_instr.start_in_clocks - current_clock,
+        )
+
+        current_clock += seqc_il_generator.add_wait(
+            seqc_gen,
+            remaining_clocks + (current_clock - clock_start) + dead_time_in_clocks,
+            device.type,
+            comment=f"\t// clock={current_clock}",
+        )
+    else:
+        seqc_gen.emit_comment("Dead time")
+        current_clock += seqc_il_generator.add_wait(
+            seqc_gen,
+            dead_time_in_clocks,
+            device.type,
+            comment=f"\t// clock={current_clock}",
+        )
 
     seqc_gen.emit_end_repeat()
 
     # Reset trigger
     if is_marker_source:
-        seqc_gen.emit_set_trigger(0)
+        seqc_il_generator.add_set_trigger(
+            seqc_gen, 0, device.type, comment=f"\t// clock={current_clock}"
+        )
 
     seqc_program = seqc_gen.generate()
     seqc_path: Path = zi_helpers.write_seqc_file(awg, seqc_program, f"{awg.name}.seqc")
@@ -722,11 +906,7 @@ def _program_sequences_hdawg(
 def _program_uhfqa(
     uhfqa: UHFQA,
     device: zhinst.Device,
-    schedule: types.Schedule,
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]],
-    acqid_acqinfo_dict: Dict[int, Dict[str, Any]],
-    pulseid_waveformfn_dict: Dict[int, waveform_helpers.GetWaveformPartial],
-    port_timeline_dict: Dict[str, Dict[int, List[int]]],
+    cached_schedule: schedule_helpers.CachedSchedule,
 ) -> Dict[int, Callable]:
     """
     Initialize programming the UHFQA ZI Instrument.
@@ -738,13 +918,11 @@ def _program_uhfqa(
     ----------
     uhfqa :
     device :
-    schedule :
-    pulseid_pulseinfo_dict :
-    acqid_acqinfo_dict :
-    pulseid_waveformfn_dict :
-    port_timeline_dict :
+    cached_schedule :
     """
-    clock_rate = zi_helpers.get_clock_rate(device.type)
+    instrument_info = zhinst.InstrumentInfo(
+        zi_helpers.get_clock_rate(device.type), 8, WAVEFORM_GRANULARITY[device.type]
+    )
     channels = device.channels
     channels = list(filter(lambda c: c.mode == enums.SignalModeType.REAL, channels))
 
@@ -757,87 +935,61 @@ def _program_uhfqa(
 
     uhfqa.disable_readout_channels()
 
-    # Create a dictionary containing unique waveforms by pulse_id
-    waveforms_dict: Dict[int, np.ndarray] = dict()
+    channel = channels[0]
+    logger.debug(f"[{awg.name}] channel={str(channel)}")
 
-    for channel in channels:
-        logger.debug(f"[{awg.name}] channel={str(channel)}")
+    instructions = get_execution_table(
+        cached_schedule,
+        instrument_info,
+        channel,
+    )
 
-        # Build a list of unique pulse ids for all channels
-        pulse_ids: List[int] = list()
-        channel_timeline_dict = port_timeline_dict[channel.port]
-        for timeslot_uuids in channel_timeline_dict.values():
-            for uuid in timeslot_uuids:
-                if uuid in acqid_acqinfo_dict:
-                    # Skip acquisition protocols
-                    continue
+    # Build a list of unique pulse ids for all channels
+    wave_instructions_dict: Dict[int, zhinst.Wave] = dict(
+        (i.uuid, i) for i in instructions if isinstance(i, zhinst.Wave)
+    )
+    pulse_ids: List[int] = wave_instructions_dict.keys()
 
-                pulse_ids.append(uuid)
+    # Gets a dictionary of pulse_id by commandtable_indexes
+    commandtable_map: Dict[int, int] = zi_helpers.get_commandtable_map(
+        pulse_ids, cached_schedule.pulseid_pulseinfo_dict
+    )
+    waveforms_dict: Dict[int, np.ndarray] = dict(
+        (k, v.waveform) for k, v in wave_instructions_dict.items()
+    )
 
-        # Gets a dictionary of pulse_id by commandtable_indexes
-        commandtable_map: Dict[int, int] = zi_helpers.get_commandtable_map(
-            pulse_ids, pulseid_pulseinfo_dict
-        )
+    measure_instructions_dict: Dict[int, zhinst.Measure] = dict(
+        (i.uuid, i) for i in instructions if isinstance(i, zhinst.Measure)
+    )
 
-        # Execute partial functions to get the actual waveform
-        for pulse_id in commandtable_map:
-            if pulse_id in waveforms_dict:
-                # The unique waveform is already added to the dictionary.
-                continue
-
-            waveforms_dict[pulse_id] = waveform_helpers.exec_waveform_partial(
-                pulse_id, pulseid_waveformfn_dict, clock_rate
-            )
-
-        # Execute partial functions to get acquisition weights.
-        # Note that weights are threated the same as pulses.
-        for acq_info in acqid_acqinfo_dict.values():
-            acq_pulse_infos = acq_info["waveforms"]
-            for pulse_info in acq_pulse_infos:
-                pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)
-                waveforms_dict[pulse_id] = waveform_helpers.exec_waveform_partial(
-                    pulse_id, pulseid_waveformfn_dict, clock_rate
-                )
-
-        # Apply modulation to waveforms
-        _program_modulation(
-            awg, device, channel, waveforms_dict, pulseid_pulseinfo_dict
-        )
-
-        # Resize the waveforms
-        waveform_helpers.resize_waveforms(
-            waveforms_dict, WAVEFORM_GRANULARITY[device.type]
-        )
-
-        # Apply waveforms to AWG
-        _set_waveforms(
-            uhfqa,
-            awg,
-            waveforms_dict,
-            commandtable_map,
-            pulseid_pulseinfo_dict,
-            _WaveformDestination.CSV,
-        )
+    # Apply waveforms to AWG
+    _set_waveforms(
+        uhfqa,
+        awg,
+        waveforms_dict,
+        commandtable_map,
+        zhinst.WaveformDestination.CSV,
+    )
 
     # Get a list of all acquisition protocol channels
     acq_channel_resolvers_map: Dict[int, Callable] = dict()
     readout_channel_index: int = 0
 
-    for acq_info in acqid_acqinfo_dict.values():
-        acq_pulse_infos = acq_info["waveforms"]
+    for acq_uuid, acq_info in cached_schedule.acqid_acqinfo_dict.items():
         acq_protocol: str = acq_info["protocol"]
         acq_duration: float = acq_info["duration"]
         acq_channel: int = acq_info["acq_channel"]
 
-        integration_length = round(acq_duration * clock_rate)
+        integration_length = round(acq_duration * instrument_info.clock_rate)
         logger.debug(
-            f"[{uhfqa.name}] acq_info={acq_info} acq_duration={acq_duration} integration_length={integration_length}"
+            f"[{uhfqa.name}] acq_info={acq_info} "
+            + f" acq_duration={acq_duration} integration_length={integration_length}"
         )
 
         zi_helpers.set_qas_parameters(
             uhfqa,
             integration_length,
-            zhinst.QAS_IntegrationMode.NORMAL,
+            zhinst.QasIntegrationMode.NORMAL,
         )
 
         if acq_protocol == "trace":
@@ -869,21 +1021,20 @@ def _program_uhfqa(
             weights_i = [0] * 4096
             weights_q = [0] * 4096
 
-            for i, pulse_info in enumerate(acq_pulse_infos):
-                pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)
-                waveform: np.ndarray = waveforms_dict[pulse_id]
+            measure_instruction: zhinst.Measure = measure_instructions_dict[acq_uuid]
 
-                # Combine a reset and setting acq weights
-                # by slicing the length of the waveform I and Q values.
-                # This overwrites 0..length with new values.
-                # The waveform is slightly larger then the integration_length
-                # because of the waveform granularity. This is irrelevant
-                # due to the waveform being appended with zeros. Theirfore
-                # avoiding an extra slice of waveform[0:integration_length]
-                if i % 2 == 0:
-                    weights_i[0 : len(waveform)] = np.real(waveform)
-                else:
-                    weights_q[0 : len(waveform)] = np.imag(waveform)
+            # Combine a reset and setting acq weights
+            # by slicing the length of the waveform I and Q values.
+            # This overwrites 0..length with new values.
+            # The waveform is slightly larger then the integration_length
+            # because of the waveform granularity. This is irrelevant
+            # due to the waveform being appended with zeros. Theirfore
+            # avoiding an extra slice of waveform[0:integration_length]
+            waveform_i = measure_instruction.weights_i
+            waveform_q = measure_instruction.weights_q
+
+            weights_i[0 : len(waveform_i)] = np.real(waveform_i)
+            weights_q[0 : len(waveform_q)] = np.imag(waveform_q)
 
             zi_helpers.set_integration_weights(
                 uhfqa, readout_channel_index, weights_i, weights_q
@@ -902,15 +1053,12 @@ def _program_uhfqa(
     _program_sequences_uhfqa(
         uhfqa,
         awg,
-        schedule,
+        cached_schedule,
         device,
+        instrument_info,
         device.channel_0,
         commandtable_map,
-        waveforms_dict,
-        port_timeline_dict,
-        channel_timeline_dict,
-        pulseid_pulseinfo_dict,
-        acqid_acqinfo_dict,
+        instructions,
     )
 
     return acq_channel_resolvers_map
@@ -919,15 +1067,12 @@ def _program_uhfqa(
 def _program_sequences_uhfqa(
     uhfqa: UHFQA,
     awg: UHFQA_CORE,
-    schedule: types.Schedule,
+    cached_schedule: schedule_helpers.CachedSchedule,
     device: zhinst.Device,
+    instrument_info: zhinst.InstrumentInfo,
     output: zhinst.Output,
     commandtable_map: Dict[int, int],
-    waveforms_dict: Dict[int, np.ndarray],
-    port_timeline_dict: Dict[str, Dict[int, List[int]]],
-    pulses_timeline_dict: Dict[int, List[int]],
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]],
-    acqid_acqinfo_dict: Dict[int, Dict[str, Any]],
+    instructions: List[zhinst.Instruction],
 ) -> None:
     """
     Assembles a new sequence program for the UHFQA.
@@ -940,40 +1085,44 @@ def _program_sequences_uhfqa(
     ----------
     uhfqa :
     awg :
-    schedule :
+    cached_schedule :
     device :
+    instrument_info:
     output :
     commandtable_map :
-    waveforms_dict :
-    port_timeline_dict :
-    pulses_timeline_dict :
-    pulseid_pulseinfo_dict :
-    acqid_acqinfo_dict :
+    instructions :
     """
-    granularity = WAVEFORM_GRANULARITY[device.type]
 
     seqc_gen = seqc_il_generator.SeqcILGenerator()
-    clock_rate = zi_helpers.get_clock_rate(device.type)
-
     seqc_info = seqc_il_generator.SeqcInfo(
-        clock_rate,
-        SEQUENCE_DEAD_TIME,
-        output.line_trigger_delay,
-        schedule,
-        port_timeline_dict,
-        pulses_timeline_dict,
+        cached_schedule,
+        output,
+        instrument_info.low_res_clock,
+    )
+
+    dead_time_in_clocks = (
+        seqc_info.schedule_offset_in_clocks
+        if seqc_info.schedule_offset_in_seconds > 0
+        else SEQUENCE_DEAD_TIME
     )
     seqc_il_generator.add_seqc_info(seqc_gen, seqc_info)
-
+    acquisition_triggers = [
+        "AWG_INTEGRATION_ARM",
+        "AWG_INTEGRATION_TRIGGER",
+        "AWG_MONITOR_TRIGGER",
+    ]
     has_triggers: bool = len(output.triggers) > 0
     is_trigger_source = (
         device.ref == enums.ReferenceSourceType.EXTERNAL and has_triggers
     )
+    is_marker_source = device.ref == enums.ReferenceSourceType.INTERNAL and has_triggers
 
     current_clock: int = 0
 
     # Declare sequence variables
-    seqc_gen.declare_var("__repetitions__", schedule.repetitions)
+    seqc_gen.declare_var("__repetitions__", cached_schedule.schedule.repetitions)
+    seqc_gen.declare_var("integration_trigger", acquisition_triggers)
+
     seqc_il_generator.add_csv_waveform_variables(
         seqc_gen, uhfqa._serial, commandtable_map
     )
@@ -989,145 +1138,112 @@ def _program_sequences_uhfqa(
         seqc_il_generator.add_wait(
             seqc_gen,
             seqc_info.line_trigger_delay_in_clocks,
+            device.type,
             comment=f"clock={current_clock}",
         )
 
-    logger.debug(  # pylint: disable=logging-too-many-args
-        "%-20s | %-16s | %-16s | %-16s | %-16s | %-14s | %-18s | %-6s",
-        "pulse_id",
-        "pulse_t0",
-        "abs_time",
-        "t0",
-        "duration",
-        "start (clocks)",
-        "duration (clocks)",
-        "waveform size",
-    )
-
     if seqc_info.timeline_start_in_clocks > 0:
         current_clock += seqc_il_generator.add_wait(
-            seqc_gen, seqc_info.timeline_start_in_clocks, f"clock={current_clock}"
+            seqc_gen,
+            seqc_info.timeline_start_in_clocks,
+            device.type,
+            f"clock={current_clock}",
         )
 
-    current_pulse = _Pulse(0, 0, 0, 0, 0, 0, 0)
-    previous_pulse = _Pulse(-1, 0, 0, 0, current_clock, 0, 0)
+    instructions_iter = iter(instructions)
+    current_instr: zhinst.Instruction = zhinst.Instruction.default()
+    previous_instr: zhinst.Instruction = next(instructions_iter)
 
-    for timeslot_index, timeslot_uuids in pulses_timeline_dict.items():
-        t_constr = schedule.timing_constraints[timeslot_index]
-        abs_time = t_constr["abs_time"]
+    for instruction in instructions_iter:
+        current_instr = instruction
+        previous_instr_end = (
+            previous_instr.start_in_clocks + previous_instr.duration_in_clocks
+        )
+        current_instr_offset = (
+            seqc_il_generator.SEQC_INSTR_CLOCKS[device.type][
+                seqc_il_generator.SeqcInstructions.ARM_INTEGRATION
+            ]
+            if isinstance(current_instr, zhinst.Measure)
+            else seqc_il_generator.SEQC_INSTR_CLOCKS[device.type][
+                seqc_il_generator.SeqcInstructions.PLAY_WAVE
+            ]
+        )
 
-        for uuid in timeslot_uuids:
-            is_acq: bool = uuid in acqid_acqinfo_dict
-            info_dict = (
-                acqid_acqinfo_dict[uuid] if is_acq else pulseid_pulseinfo_dict[uuid]
+        if isinstance(previous_instr, zhinst.Measure):
+            current_clock += seqc_il_generator.add_set_trigger(
+                seqc_gen,
+                "integration_trigger",
+                device.type,
+                comment=f"clock={current_clock}",
+            )
+        else:
+            current_clock += seqc_il_generator.add_play_wave(
+                seqc_gen,
+                f"w{commandtable_map[previous_instr.uuid]:d}",
+                device.type,
+                comment=f"clock={current_clock}",
             )
 
-            t0 = abs_time + info_dict["t0"] - seqc_info.schedule_offset_in_seconds
-            duration = info_dict["duration"]
-
-            start_in_clocks = seqc_info.to_clocks(t0)
-            duration_in_clocks: int = 0
-            n_samples: int = 0
-            if is_acq:
-                duration_in_clocks = seqc_info.to_clocks(duration)
-            else:
-                n_samples: int = _get_waveform_size(waveforms_dict[uuid], granularity)
-                duration_in_sec = (1 / clock_rate) * n_samples
-                duration_in_clocks = seqc_info.to_clocks(duration_in_sec)
-
-            current_pulse = _Pulse(
-                uuid,
-                abs_time - seqc_info.schedule_offset_in_seconds,
-                info_dict["t0"],
-                duration,
-                start_in_clocks,
-                duration_in_clocks,
-                n_samples,
+        remaining_clocks = max(
+            current_instr.start_in_clocks - previous_instr_end,
+            current_instr.start_in_clocks - current_clock,
+        )
+        clock_cycles_to_wait: int = remaining_clocks - current_instr_offset
+        if clock_cycles_to_wait > 0:
+            # UHFQA wait instruction uses a 1 based number of clock-cycles
+            current_clock += seqc_il_generator.add_wait(
+                seqc_gen,
+                clock_cycles_to_wait,
+                device.type,
+                comment=f"\t// clock={current_clock}",
             )
 
-            if previous_pulse.id == -1:
-                logger.debug(repr(current_pulse))
-                previous_pulse = current_pulse
-                continue
-
-            was_acq: bool = previous_pulse.id in acqid_acqinfo_dict
-
-            instruction_offset_in_clocks: int = (
-                current_pulse.start_in_clocks - previous_pulse.start_in_clocks
-            )
-            elapsed_clocks = max(
-                previous_pulse.start_in_clocks - current_clock,
-                instruction_offset_in_clocks,
-            )
-            logger.debug(repr(current_pulse))
-
-            n_assembly_instructions: int = 0
-
-            if was_acq:
-                n_assembly_instructions = seqc_il_generator.SEQC_INSTR_CLOCKS[
-                    seqc_il_generator.SeqcInstructions.ARM_INTEGRATION
-                ]
-                seqc_gen.emit_set_trigger(
-                    seqc_il_generator.SeqcInstructions.ARM_INTEGRATION.value,
-                    comment=f"\t// clock={current_clock} n_instr={n_assembly_instructions}",
-                )
-            else:
-                n_assembly_instructions = seqc_il_generator.SEQC_INSTR_CLOCKS[
-                    seqc_il_generator.SeqcInstructions.PLAY_WAVE
-                ]
-                seqc_gen.emit_play_wave(
-                    f"w{commandtable_map[previous_pulse.id]:d}",
-                    comment=f"\t// clock={current_clock} n_instr={n_assembly_instructions}",
-                )
-
-            if (
-                elapsed_clocks != 0
-                and elapsed_clocks
-                >= seqc_il_generator.SEQC_INSTR_CLOCKS[
-                    seqc_il_generator.SeqcInstructions.WAIT
-                ]
-            ):
-                seqc_il_generator.add_wait(
-                    seqc_gen,
-                    elapsed_clocks - n_assembly_instructions,
-                    comment=f"clock={current_clock}",
-                )
-                current_clock += elapsed_clocks
-
-            previous_pulse = current_pulse
+        previous_instr = current_instr
 
     # Add the last operation to the sequencer program.
-    was_acq: bool = previous_pulse.id in acqid_acqinfo_dict
-    n_assembly_instructions: int = 0
-
-    if was_acq:
-        n_assembly_instructions = seqc_il_generator.SEQC_INSTR_CLOCKS[
-            seqc_il_generator.SeqcInstructions.ARM_INTEGRATION
-        ]
-        seqc_gen.emit_set_trigger(
-            seqc_il_generator.SeqcInstructions.ARM_INTEGRATION.value,
-            comment=f"\t// clock={current_clock} n_instr={n_assembly_instructions}",
-        )
-    else:
-        n_assembly_instructions = seqc_il_generator.SEQC_INSTR_CLOCKS[
-            seqc_il_generator.SeqcInstructions.PLAY_WAVE
-        ]
-        seqc_gen.emit_play_wave(
-            f"w{commandtable_map[previous_pulse.id]:d}",
-            comment=f"\t// clock={current_clock} n_instr={n_assembly_instructions}",
+    clock_start: int = current_clock
+    if previous_instr.uuid != -1:
+        previous_instr_end = (
+            previous_instr.start_in_clocks + previous_instr.duration_in_clocks
         )
 
-    elapsed_clocks = previous_pulse.duration_in_clocks
+        if isinstance(previous_instr, zhinst.Measure):
+            current_clock += seqc_il_generator.add_set_trigger(
+                seqc_gen,
+                "integration_trigger",
+                device.type,
+                comment=f"clock={current_clock}",
+            )
+        else:
+            current_clock += seqc_il_generator.add_play_wave(
+                seqc_gen,
+                f"w{commandtable_map[previous_instr.uuid]:d}",
+                device.type,
+                comment=f"clock={current_clock}",
+            )
 
-    wait_duration: int = (
-        elapsed_clocks
-        - seqc_il_generator.SEQC_INSTR_CLOCKS[seqc_il_generator.SeqcInstructions.WAIT]
-    ) + seqc_info.dead_time_in_clocks
-    current_clock += elapsed_clocks
+        remaining_clocks = max(
+            previous_instr.start_in_clocks - previous_instr_end,
+            previous_instr.start_in_clocks - current_clock,
+        )
 
-    # Wait with additional dead-time
-    seqc_gen.emit_comment("Final wait + dead time")
-    seqc_gen.emit_wait(wait_duration, comment=f"\t// clock={current_clock}")
+        if is_marker_source:
+            # Wait with additional dead-time
+            seqc_gen.emit_comment("Final wait + dead time")
+
+            current_clock += seqc_il_generator.add_wait(
+                seqc_gen,
+                remaining_clocks + (current_clock - clock_start) + dead_time_in_clocks,
+                device.type,
+                comment=f"\t// clock={current_clock}",
+            )
+    elif is_marker_source:
+        current_clock += seqc_il_generator.add_wait(
+            seqc_gen,
+            dead_time_in_clocks,
+            device.type,
+            comment=f"\t// clock={current_clock}",
+        )
 
     seqc_gen.emit_end_repeat()
 
