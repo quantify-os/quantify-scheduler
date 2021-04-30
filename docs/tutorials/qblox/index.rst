@@ -38,7 +38,7 @@ is done through
 Please visit the `Qblox instruments documentation <https://qblox-qblox-instruments.readthedocs-hosted.com>`_
 for more information.
 
-How to
+How to use
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. toctree::
