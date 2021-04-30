@@ -162,8 +162,6 @@ def _assign_frequencies(
                     assign_frequency = getattr(
                         device_compilers[dev_name], "assign_modulation_frequency"
                     )
-                    # FIXME getattr should probably be removed in favour of inheritance.
-                    #  Though this would require an additional layer in structure
                     assign_frequency((port, clock), interm_freq)
                     lo_obj.assign_frequency(cl_freq - interm_freq)
         else:  # lo_freq given
