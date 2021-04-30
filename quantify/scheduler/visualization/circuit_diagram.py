@@ -295,7 +295,7 @@ def circuit_diagram_matplotlib(
             idxs: List[int]
             try:
                 idxs = [
-                    qubit_map[_locate_qubit_in_address(qubit_map, pulse_info["port"])]
+                    qubit_map[_locate_qubit_in_address(qubit_map, acq_info["port"])]
                     for acq_info in op["acquisition_info"]
                 ]
             except ValueError:
