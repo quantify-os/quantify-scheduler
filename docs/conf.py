@@ -106,7 +106,13 @@ pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-autoclass_content = "both"
+
+# Document __init__ docstring together with class doctring (when __init__ is present)
+napoleon_include_init_with_doc = True
+# NB the line below could be used for a similar result
+# BUT the line below ALWAYS includes the parent class __init__ docstring
+# which is undesired for analysis subclasses, for example.
+# autoclass_content = "both"
 
 
 # -- Options for HTML output -------------------------------------------
