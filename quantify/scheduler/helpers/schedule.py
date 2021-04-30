@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import quantify.utilities.general as general
@@ -174,33 +174,23 @@ def get_total_duration(schedule: types.Schedule) -> float:
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
-    t_constr = schedule.timing_constraints[-1]
-    operation = schedule.operations[t_constr["operation_hash"]]
+    def _get_operation_end(pair: Tuple[int, dict]) -> float:
+        """Returns the operations end time in seconds."""
+        (timeslot_index, _) = pair
+        return get_operation_end(
+            schedule,
+            timeslot_index,
+        )
 
-    t0 = t_constr["abs_time"]
-    duration = 0
-
-    pulse_info: dict = (
-        operation["pulse_info"][-1]
-        if len(operation["pulse_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-    acq_info: dict = (
-        operation["acquisition_info"][-1]
-        if len(operation["acquisition_info"]) > 0
-        else {"t0": -1, "duration": 0}
+    operations_ends = map(
+        _get_operation_end,
+        enumerate(schedule.timing_constraints),
     )
 
-    if acq_info["t0"] != -1 and acq_info["t0"] > pulse_info["t0"]:
-        t0 += acq_info["t0"]
-        duration = acq_info["duration"]
-    elif pulse_info["t0"] >= 0:
-        t0 += pulse_info["t0"]
-        duration = pulse_info["duration"]
-    else:
-        raise ValueError("Undefined 't0' in pulse_info or acquisition_info!")
-
-    return t0 + duration
+    return max(
+        operations_ends,
+        default=0,
+    )
 
 
 def get_operation_start(
@@ -268,27 +258,10 @@ def get_operation_end(
         return 0.0
 
     t_constr = schedule.timing_constraints[timeslot_index]
-    operation = schedule.operations[t_constr["operation_hash"]]
+    operation: types.Operation = schedule.operations[t_constr["operation_hash"]]
+    t0: float = t_constr["abs_time"]
 
-    t0: float = get_operation_start(schedule, timeslot_index)
-
-    pulse_info: dict = (
-        operation["pulse_info"][-1]
-        if len(operation["pulse_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-    acq_info: dict = (
-        operation["acquisition_info"][-1]
-        if len(operation["acquisition_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-
-    if acq_info["t0"] != -1 and acq_info["t0"] > pulse_info["t0"]:
-        t0 += acq_info["duration"]
-    elif pulse_info["t0"] >= 0:
-        t0 += pulse_info["duration"]
-
-    return t0
+    return t0 + operation.duration
 
 
 def get_port_timeline(
