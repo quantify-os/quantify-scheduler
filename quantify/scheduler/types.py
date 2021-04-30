@@ -7,7 +7,6 @@ from uuid import uuid4
 from collections import UserDict
 from typing_extensions import Literal
 import jsonschema
-import numpy as np
 from quantify.utilities import general
 from quantify.scheduler import resources
 
