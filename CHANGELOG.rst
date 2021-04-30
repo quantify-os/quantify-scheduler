@@ -10,6 +10,8 @@ Merged branches and closed issues
 
 * [Docs] pinned scanpydoc==0.6 due to conflicting docs dependencies (!84)
 * Added utility for decomposing long square pulses (!83)
+* Refactored Qblox backend (!81)
+* Added Qblox backend documentation (91!)
 
 0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
 ---------------------------------------------------------
