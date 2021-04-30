@@ -50,7 +50,8 @@ Here we specify a setup containing only a `Pulsar QCM <https://www.qblox.com/pul
 The first few entries in the dictionary contain settings and information for the entire device.
 For example :code:`"type": "Pulsar_QCM"` specifies that this device is a `Pulsar QCM <https://www.qblox.com/pulsar>`_,
 and :code:`"ref": "int"` sets the reference source to internal (as opposed to :code:`"ext"`). Under the entries
-:code:`complex_output_0` and :code:`complex_output_1`, we set the parameters that are configurable per output.
+:code:`complex_output_0` (corresponding to O\ :sup:`1/2`) and :code:`complex_output_1` (corresponding to O\ :sup:`3/4`),
+we set all the parameters that are configurable per output.
 
 Output settings
 ^^^^^^^^^^^^^^^
