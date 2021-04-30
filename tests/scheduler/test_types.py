@@ -1,3 +1,6 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 import pytest
 import numpy as np
 from quantify.scheduler import Schedule, Operation
@@ -14,6 +17,7 @@ from quantify.scheduler.gate_library import (
     Y90,
     CZ,
 )
+from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.scheduler.pulse_library import SquarePulse
 
 
@@ -143,3 +147,34 @@ def test_type_properties():
     gate.add_pulse(SquarePulse(1.0, 20e-9, "q0", clock="cl0.baseband"))
     assert gate.valid_gate
     assert gate.valid_pulse
+
+
+def test_operation_duration():
+    # Arrange
+    square_pulse_duration = 20e-9
+    acquisition_duration = 300e-9
+
+    # Act
+    empty_measure = Measure("q0")
+    empty_x_gate = X("q0")
+
+    pulse = SquarePulse(1.0, square_pulse_duration, "q0", clock="cl0.baseband")
+
+    x_gate = X("q0")
+    x_gate.add_pulse(pulse)
+
+    measure = Measure("q0")
+    measure.add_acquisition(
+        SSBIntegrationComplex(
+            port="q0:res",
+            clock="q0.ro",
+            duration=acquisition_duration,
+        )
+    )
+
+    # Assert
+    assert empty_measure.duration == 0
+    assert empty_x_gate.duration == 0
+    assert pulse.duration == square_pulse_duration
+    assert x_gate.duration == square_pulse_duration
+    assert measure.duration == acquisition_duration

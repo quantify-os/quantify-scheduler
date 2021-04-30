@@ -22,6 +22,7 @@ from quantify.scheduler.helpers.schedule import (
     get_total_duration,
 )
 from quantify.scheduler.types import Schedule
+from quantify.scheduler.schedules import spectroscopy_schedules
 
 
 def test_get_info_by_uuid_empty(empty_schedule: Schedule):
@@ -243,20 +244,51 @@ def test_get_port_timeline_with_acquisition(
 def test_get_total_duration(
     empty_schedule: Schedule,
     schedule_with_pulse_info: Schedule,
-    T1_experiment: Schedule,
     create_schedule_with_pulse_info,
 ):
+    # Arrange
+    spec_pulse_duration = 16e-9
+    ro_acquisition_delay = 10e-9
+    ro_pulse_delay = 2e-9
+    ro_integration_time = 500e-9
+    ro_pulse_duration = 150e-9
+    init_duration = 1e-5
+
     # Act
     duration0: float = get_total_duration(empty_schedule)
     duration1: float = get_total_duration(schedule_with_pulse_info)
     duration2: float = get_total_duration(
-        create_schedule_with_pulse_info(T1_experiment)
+        create_schedule_with_pulse_info(
+            spectroscopy_schedules.two_tone_spec_sched(
+                spec_pulse_amp=0.6e-0,
+                spec_pulse_duration=spec_pulse_duration,
+                spec_pulse_frequency=6.02e9,
+                spec_pulse_port="q0:mw",
+                spec_pulse_clock="q0.01",
+                ro_pulse_amp=0.5e-3,
+                ro_pulse_duration=ro_pulse_duration,
+                ro_pulse_delay=ro_pulse_delay,
+                ro_pulse_port="q0:res",
+                ro_pulse_clock="q0.ro",
+                ro_pulse_frequency=7.04e9,
+                ro_acquisition_delay=ro_acquisition_delay,
+                ro_integration_time=ro_integration_time,
+                buffer_time=init_duration,
+            )
+        )
     )
 
     # Assert
     assert duration0 == 0.0
     assert duration1 == 1.6e-08
-    assert duration2 == 0.0016889139999999997
+    assert (
+        duration2
+        == init_duration
+        + spec_pulse_duration
+        + ro_pulse_delay
+        + ro_integration_time
+        + ro_acquisition_delay
+    )
 
 
 def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_pulse_info):
@@ -290,6 +322,10 @@ def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_puls
 
 def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_info):
     # Arrange
+    mw_duration = 16e-9
+    ro_acquisition_delay = 120e-9
+    ro_integration_time = 300e-9
+
     schedule0 = Schedule("my-schedule")
     schedule0.add(X90("q0"))
     schedule0.add(Measure("q0"))
@@ -311,10 +347,10 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
 
     # Assert
     assert end_empty == 0.0
-    assert endt0_x90 == 1.6e-08
-    assert end0_measure == 3.1599999999999997e-07
-    assert end1_measure == 3e-07
-    assert end1_x90 == 3.1599999999999997e-07
+    assert endt0_x90 == mw_duration
+    assert end0_measure == mw_duration + ro_acquisition_delay + ro_integration_time
+    assert end1_measure == ro_acquisition_delay + ro_integration_time
+    assert end1_x90 == ro_acquisition_delay + ro_integration_time + mw_duration
 
 
 def test_get_schedule_time_offset(
