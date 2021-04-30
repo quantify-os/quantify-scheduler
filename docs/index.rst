@@ -22,6 +22,7 @@ Tutorials
    :caption: Tutorials
 
    tutorials/Tutorial 1. basic experiment
+   tutorials/qblox/index
    tutorials/zhinst/index
 
 API Reference
