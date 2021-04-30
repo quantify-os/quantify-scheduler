@@ -42,6 +42,7 @@ def test_hybrid_circuit_diagram_baseband_matplotlib():
 
 @pytest.mark.mpl_image_compare(style="default", savefig_kwargs={"dpi": 300})
 def test_hybrid_circuit_acquisitions_matplotlib():
+    """Tests drawing acquisitions"""
     schedule = Schedule("Test experiment")
 
     q0, q1 = ("q0", "q1")
