@@ -15,8 +15,8 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
-    from typing import Dict, Any, Callable
+
+    from typing import Dict, Any
     import logging
     import json
     import numpy as np
@@ -48,7 +48,7 @@ Requirements
 .. code-block:: python
     :linenos:
     :emphasize-lines: 22,33-35,41,49-51
-    
+
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
         import quantify.scheduler.schemas.examples as es
         import os, inspect
@@ -58,7 +58,7 @@ Requirements
         config_file_path = os.path.abspath(os.path.join(examples_path, '..', filename))
 
         return json.loads(Path(config_file_path).read_text())
-    
+
     # Load example configuration from quantify.scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
@@ -125,7 +125,7 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
+
     # Run the backend setup
     acq_channel_resolvers_map = zhinst_backend.setup_zhinst_backend(schedule, zhinst_hardware_map)
 
@@ -140,7 +140,7 @@ Requirements
 
     # Start the HDAWG AWG(s)
     hdawg.awgs[0].run()
-    
+
     # Await the experiment
     hdawg.awgs[0].wait_done()
     uhfqa.awg.wait_done()
@@ -161,9 +161,9 @@ Requirements
         labels.append(f"acq_channel #{i} complex")
         real_vals = [val.real for val in result]
         imag_vals = [val.imag for val in result]
-        
+
         print(result)
-        
+
         plt.scatter(real_vals, imag_vals)
-        
+
     plt.legend(labels)
