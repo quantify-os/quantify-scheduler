@@ -32,7 +32,7 @@ def soft_square(t, amp):
     return signal.convolve(sq, window, mode="same") / sum(window)
 
 
-def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float):
+def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:
     r"""
     Produces a linear chirp signal. The frequency is determined according to the
     relation:
@@ -57,7 +57,7 @@ def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float):
         End frequency of the Chirp.
     Returns
     -------
-
+        The complex waveform
     """
     chirp_rate = (end_freq - start_freq) / (t[-1] - t[0])
     return amp * np.exp(1.0j * 2 * np.pi * (chirp_rate * t / 2 + start_freq) * t)
