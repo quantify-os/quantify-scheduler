@@ -7,7 +7,7 @@ This tutorial describes how to use quantify-schedule to generate pulses and acqu
 also visualized in the Quantum Analyzer Result tab of LabOne, using the UHFQA's AWG.
 
 For this tutorial lets use :func:`~quantify.scheduler.schedules.acquisition.ssb_integration_complex_schedule` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify.scheduler.acquisition_library.SSBIntegrationComplex` 
+pulse level Schedule. This utility function is used for debugging :class:`~quantify.scheduler.acquisition_library.SSBIntegrationComplex`
 acquisition with pulses of a large fixed duration.
 
 Requirements
@@ -41,10 +41,10 @@ Requirements
     # The `ssb_integration_complex_schedule` is a Schedule defined on pulse-level.
     # This schedule should only be used for testing UHFQA output.
     schedule = ssb_integration_complex_schedule(
-        port="q0:res", 
-        clock="q0.ro", 
-        integration_time=1e-6, 
-        spec_pulse_amp=1, 
+        port="q0:res",
+        clock="q0.ro",
+        integration_time=1e-6,
+        spec_pulse_amp=1,
         frequency=7.04e9
     )
     schedule.repetitions = 1
@@ -62,7 +62,7 @@ Requirements
         config_file_path = os.path.abspath(os.path.join(examples_path, '..', filename))
 
         return json.loads(Path(config_file_path).read_text())
-    
+
     # Load example configuration from quantify.scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
@@ -105,7 +105,7 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
+
     # Run the backend setup
     acq_channel_resolvers_map = zhinst_backend.setup_zhinst_backend(schedule, zhinst_hardware_map)
 
@@ -120,7 +120,7 @@ Requirements
     uhfqa.awg.wait_done()
 
     # Resolve the results by querying the UHFQA monitor nodes
-    acq_channel_results: Dict[int, Callable] = dict()
+    acq_channel_results: Dict[int, Callable[..., Any]] = dict()
     for acq_channel, resolve in acq_channel_resolvers_map.items():
         acq_channel_results[acq_channel] = resolve()
 
@@ -133,9 +133,9 @@ Requirements
         labels.append(f"acq_channel #{i} complex")
         real_vals = [val.real for val in result]
         imag_vals = [val.imag for val in result]
-        
+
         print(result)
-        
+
         plt.scatter(real_vals, imag_vals)
-        
+
     plt.legend(labels)

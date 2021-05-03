@@ -410,7 +410,7 @@ def get_execution_table(
 
 def setup_zhinst_backend(
     schedule: types.Schedule, hardware_map: Dict[str, Any]
-) -> Dict[int, Callable]:
+) -> Dict[int, Callable[..., Any]]:
     """
     Initialize setting up Schedule for Zurich Instruments hardware.
 
@@ -425,7 +425,7 @@ def setup_zhinst_backend(
 
     Returns
     -------
-    Dict[int, Callable]
+    :
         The acquisition channel resolvers mapping.
 
     Raises
@@ -456,7 +456,7 @@ def setup_zhinst_backend(
         device.type = zhinst.DeviceType(qinstrument_classname)
         devices[device.name] = (device, qinstrument)
 
-    acq_channel_resolvers_map: Dict[int, Callable] = dict()
+    acq_channel_resolvers_map: Dict[int, Callable[..., Any]] = dict()
     cached_schedule = schedule_helpers.CachedSchedule(schedule)
 
     # Program devices
@@ -907,7 +907,7 @@ def _program_uhfqa(
     uhfqa: UHFQA,
     device: zhinst.Device,
     cached_schedule: schedule_helpers.CachedSchedule,
-) -> Dict[int, Callable]:
+) -> Dict[int, Callable[..., Any]]:
     """
     Initialize programming the UHFQA ZI Instrument.
 
@@ -972,7 +972,7 @@ def _program_uhfqa(
     )
 
     # Get a list of all acquisition protocol channels
-    acq_channel_resolvers_map: Dict[int, Callable] = dict()
+    acq_channel_resolvers_map: Dict[int, Callable[..., Any]] = dict()
     readout_channel_index: int = 0
 
     for acq_uuid, acq_info in cached_schedule.acqid_acqinfo_dict.items():

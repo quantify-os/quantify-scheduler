@@ -13,8 +13,8 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
-    from typing import Dict, Any, Callable
+
+    from typing import Dict, Any
     import logging
     import json
     import numpy as np
@@ -45,7 +45,7 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
+
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
         import quantify.scheduler.schemas.examples as es
         import os, inspect
@@ -55,7 +55,7 @@ Requirements
         config_file_path = os.path.abspath(os.path.join(examples_path, '..', filename))
 
         return json.loads(Path(config_file_path).read_text())
-    
+
     # Load example configuration from quantify.scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
@@ -99,7 +99,7 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
+
     # Run the backend setup
     zhinst_backend.setup_zhinst_backend(schedule, zhinst_hardware_map)
 
