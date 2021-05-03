@@ -19,13 +19,9 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
 import quantify.scheduler.visualization.pulse_diagram as pd
+from quantify.scheduler.visualization import constants as cnst
 
 logger = logging.getLogger(__name__)
-
-COLOR_BLUE = "#5296dd"
-COLOR_LAZURE = "#92bddf"
-COLOR_GREY = "#d7d7d7"
-COLOR_ORANGE = "#ff6314"
 
 
 def new_pulse_fig(
@@ -88,7 +84,7 @@ def mwPulse(
     label: Optional[str] = None,
     phase=0,
     label_height: float = 1.3,
-    color: str = COLOR_ORANGE,
+    color: str = cnst.COLOR_ORANGE,
     modulation: str = "normal",
     **plot_kws,
 ) -> float:
@@ -157,7 +153,7 @@ def fluxPulse(
     amp: float = 1.5,
     label: Optional[str] = None,
     label_height: float = 1.7,
-    color: str = COLOR_ORANGE,
+    color: str = cnst.COLOR_ORANGE,
     **plot_kws,
 ) -> float:
     """
@@ -218,7 +214,7 @@ def ramZPulse(
     s: float = 0.1,
     amp: float = 1.5,
     sep: float = 1.5,
-    color: str = COLOR_ORANGE,
+    color: str = cnst.COLOR_ORANGE,
 ) -> float:
     """
     Draw a Ram-Z flux pulse, i.e. only part of the pulse is shaded, to indicate
@@ -362,6 +358,8 @@ def meter(
 
     color :
 
+    framewidth:
+
     fillcolor :
 
 
@@ -386,10 +384,10 @@ def meter(
     )
     ax.add_patch(p1)
     p0 = matplotlib.patches.Wedge(
-        (x0, y0 - height / 1.40 + y_offs),
-        0.4,
-        theta1=50,
-        theta2=180 - 50,
+        (x0, y0 - height / cnst.METER_WEDGE_HEIGHT_SCALING + y_offs),
+        cnst.METER_WEDGE_RADIUS,
+        theta1=cnst.METER_WEDGE_ANGLE,
+        theta2=180 - cnst.METER_WEDGE_ANGLE,
         color=color,
         lw=1.5,
         width=0.01,
@@ -399,9 +397,9 @@ def meter(
     arrow_len = height / 2.0
     ax.arrow(
         x0,
-        y0 - height / 3 + y_offs,
-        dx=arrow_len * np.cos(np.deg2rad(70)),
-        dy=arrow_len * np.sin(np.deg2rad(70)),
+        y0 - height / cnst.METER_ARROW_HEIGHT_SCALING + y_offs,
+        dx=arrow_len * np.cos(np.deg2rad(cnst.METER_ARROW_ANGLE)),
+        dy=arrow_len * np.sin(np.deg2rad(cnst.METER_ARROW_ANGLE)),
         width=0.025,
         color=color,
         zorder=5,

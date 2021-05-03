@@ -11,11 +11,7 @@ from quantify.scheduler.compilation import determine_absolute_timing
 
 # pylint: disable=no-name-in-module
 from quantify.utilities.general import import_func_from_string
-
-COLOR_BLUE = "#5296dd"
-COLOR_LAZURE = "#92bddf"
-COLOR_GREY = "#d7d7d7"
-COLOR_ORANGE = "#ff6314"
+from quantify.scheduler.visualization import constants as cnst
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -39,7 +35,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             x0=time,
             y0=qubit_idx,
             text=text,
-            fillcolor=COLOR_LAZURE,
+            fillcolor=cnst.COLOR_LAZURE,
             width=0.8,
             height=0.5,
             **kw
@@ -108,7 +104,7 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             ax,
             x0=time,
             y0=qubit_idx,
-            fillcolor=COLOR_GREY,
+            fillcolor=cnst.COLOR_GREY,
             y_offs=0,
             width=0.8,
             height=0.5,
@@ -117,6 +113,20 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
 
 def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
+    """
+    Variation of the meter to depict a acquisition.
+
+    Parameters
+    ----------
+    ax :
+
+    time :
+
+    qubit_idxs :
+
+    text :
+
+    """
     for qubit_idx in qubit_idxs:
         ps.meter(
             ax,
@@ -126,8 +136,7 @@ def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             y_offs=0.0,
             width=0.8,
             height=0.5,
-            framewidth=0.5,
-            # color=COLOR_BLUE,
+            framewidth=cnst.ACQ_METER_LINEWIDTH,
             **kw
         )
 
@@ -147,7 +156,7 @@ def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     text :
 
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=COLOR_BLUE)
+    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=cnst.COLOR_BLUE)
     ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
 
 
@@ -166,7 +175,7 @@ def cz(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     text :
 
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=COLOR_BLUE)
+    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=cnst.COLOR_BLUE)
 
 
 def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -176,11 +185,11 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     Parameters
     ----------
     ax :
-
+        matplotlib axis object.
     time :
-
+        x position to draw the reset on
     qubit_idxs :
-
+        indices of the qubits that the reset is performed on.
     text :
 
     """
