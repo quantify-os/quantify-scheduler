@@ -12,6 +12,11 @@ from quantify.scheduler.compilation import determine_absolute_timing
 # pylint: disable=no-name-in-module
 from quantify.utilities.general import import_func_from_string
 
+COLOR_BLUE = "#5296dd"
+COLOR_LAZURE = "#92bddf"
+COLOR_GREY = "#d7d7d7"
+COLOR_ORANGE = "#ff6314"
+
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
@@ -34,7 +39,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             x0=time,
             y0=qubit_idx,
             text=text,
-            fillcolor="C0",
+            fillcolor=COLOR_LAZURE,
             width=0.8,
             height=0.5,
             **kw
@@ -103,10 +108,26 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             ax,
             x0=time,
             y0=qubit_idx,
-            fillcolor="C4",
+            fillcolor=COLOR_GREY,
             y_offs=0,
             width=0.8,
             height=0.5,
+            **kw
+        )
+
+
+def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
+    for qubit_idx in qubit_idxs:
+        ps.meter(
+            ax,
+            x0=time,
+            y0=qubit_idx,
+            fillcolor="white",
+            y_offs=0.0,
+            width=0.8,
+            height=0.5,
+            framewidth=0.5,
+            # color=COLOR_BLUE,
             **kw
         )
 
@@ -126,7 +147,7 @@ def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     text :
 
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color="C1")
+    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=COLOR_BLUE)
     ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
 
 
@@ -145,7 +166,7 @@ def cz(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     text :
 
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color="C1")
+    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=COLOR_BLUE)
 
 
 def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -254,8 +275,9 @@ def circuit_diagram_matplotlib(
     ax.set_aspect("equal")
 
     ax.set_ylim(-0.5, len(qubit_map) - 0.5)
+    ax.axhline(0, color="0.1", linewidth=0.9)
     for q in qubits:
-        ax.axhline(qubit_map[q], color=".75")
+        ax.axhline(qubit_map[q], color="0.1", linewidth=0.9)
 
     # plot the qubit names on the y-axis
     ax.set_yticks(list(qubit_map.values()))
@@ -303,8 +325,8 @@ def circuit_diagram_matplotlib(
                 # move this pulse to the 'other' timeline
                 idxs = [0]
 
-            for acq_info in op["acquisition_info"]:
-                meter(ax, time=time, qubit_idxs=idxs, text=op.name)
+            for _ in op["acquisition_info"]:
+                acq_meter(ax, time=time, qubit_idxs=idxs, text=op.name)
         else:
             raise ValueError("Unknown operation")
 

@@ -22,6 +22,11 @@ import quantify.scheduler.visualization.pulse_diagram as pd
 
 logger = logging.getLogger(__name__)
 
+COLOR_BLUE = "#5296dd"
+COLOR_LAZURE = "#92bddf"
+COLOR_GREY = "#d7d7d7"
+COLOR_ORANGE = "#ff6314"
+
 
 def new_pulse_fig(
     figsize: Optional[Tuple[int, int]] = None
@@ -83,7 +88,7 @@ def mwPulse(
     label: Optional[str] = None,
     phase=0,
     label_height: float = 1.3,
-    color: str = "C0",
+    color: str = COLOR_ORANGE,
     modulation: str = "normal",
     **plot_kws,
 ) -> float:
@@ -152,7 +157,7 @@ def fluxPulse(
     amp: float = 1.5,
     label: Optional[str] = None,
     label_height: float = 1.7,
-    color: str = "C1",
+    color: str = COLOR_ORANGE,
     **plot_kws,
 ) -> float:
     """
@@ -213,7 +218,7 @@ def ramZPulse(
     s: float = 0.1,
     amp: float = 1.5,
     sep: float = 1.5,
-    color: str = "C1",
+    color: str = COLOR_ORANGE,
 ) -> float:
     """
     Draw a Ram-Z flux pulse, i.e. only part of the pulse is shaded, to indicate
@@ -335,6 +340,7 @@ def meter(
     width: float = 1.1,
     height: float = 0.8,
     color: str = "black",
+    framewidth: float = 0.0,
     fillcolor: Optional[str] = None,
 ) -> None:
     """
@@ -376,26 +382,27 @@ def meter(
         edgecolor=color,
         fill=fill,
         zorder=5,
+        linewidth=framewidth,
     )
     ax.add_patch(p1)
     p0 = matplotlib.patches.Wedge(
-        (x0, y0 - height / 1.75 + y_offs),
+        (x0, y0 - height / 1.40 + y_offs),
         0.4,
-        theta1=40,
-        theta2=180 - 40,
+        theta1=50,
+        theta2=180 - 50,
         color=color,
-        lw=2,
+        lw=1.5,
         width=0.01,
         zorder=5,
     )
     ax.add_patch(p0)
-    arrow_len = height / 2.2
+    arrow_len = height / 2.0
     ax.arrow(
         x0,
-        y0 - height / 5 + y_offs,
+        y0 - height / 3 + y_offs,
         dx=arrow_len * np.cos(np.deg2rad(70)),
         dy=arrow_len * np.sin(np.deg2rad(70)),
-        width=0.03,
+        width=0.025,
         color=color,
         zorder=5,
     )
@@ -455,12 +462,20 @@ def box_text(
         facecolor=fillcolor,
         edgecolor=color,
         fill=fill,
+        linewidth=0,
         zorder=5,
     )
     ax.add_patch(p1)
 
     ax.text(
-        x0, y0, text, ha="center", va="center", zorder=6, size=fontsize, color=textcolor
+        x0,
+        y0,
+        text,
+        ha="center",
+        va="center",
+        zorder=6,
+        size=fontsize,
+        color=textcolor,
     ).set_clip_on(True)
 
 
