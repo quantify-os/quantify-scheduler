@@ -33,8 +33,34 @@ def soft_square(t, amp):
 
 
 def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float):
-    freqs = np.linspace(start_freq, end_freq, len(t))
-    return amp * np.exp(1.0j * 2 * np.pi * freqs * t)
+    r"""
+    Produces a linear chirp signal. The frequency is determined according to the
+    relation:
+
+    .. math:
+
+        f(t) = ct + f_0,
+        c = \frac{f_1 - f_0}{T}
+
+    The waveform is produced simply by multiplying with a complex exponential.
+
+    Parameters
+    ----------
+    t :
+        Times at which to evaluate the function
+    amp
+        Amplitude of the envelope.
+    start_freq
+        Start frequency of the Chirp. Note that this is the frequency at which the
+        waveform is calculated, this may differ from the clock frequency.
+    end_freq
+        End frequency of the Chirp.
+    Returns
+    -------
+
+    """
+    chirp_rate = (end_freq - start_freq) / (t[-1] - t[0])
+    return amp * np.exp(1.0j * 2 * np.pi * (chirp_rate * t / 2 + start_freq) * t)
 
 
 def drag(
