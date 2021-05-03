@@ -24,6 +24,7 @@ package_path = os.path.abspath("..")
 sys.path.insert(0, package_path)
 
 # -- General configuration ---------------------------------------------
+# pylint: disable=invalid-name
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
