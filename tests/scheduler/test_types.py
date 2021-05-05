@@ -120,6 +120,16 @@ def test_gates_valid():
     assert Operation.is_valid(measure)
 
 
+def test_operation_equality():
+    xa = X("q0")
+    xb = X("q0")
+    assert xa == xb
+    # we now modify the contents of xa.data
+    # this does not change the repr but does change the content of the operation
+    xa.data["custom_key"] = 5
+    assert xa != xb
+
+
 def test_pulses_valid():
     sqp = SquarePulse(0.35, duration=12e-9, port="q0:fl", clock="cl0.baseband")
     assert Operation.is_valid(sqp)
