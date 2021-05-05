@@ -188,7 +188,19 @@ class QASMProgram:
         self.auto_play_pulse(pulse, idx0, idx1)
 
     def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
-        register = "R2"
+        """
+        Stitches multiple square pulses together to form one long square pulse.
+
+        Parameters
+        ----------
+        pulse
+            The pulse to play
+        idx0
+            Index in the awg_dict corresponding to the waveform for the I channel
+        idx1
+            Index in the awg_dict corresponding to the waveform for the Q channel
+        """
+        register = "R2"  # for the loops
         rep = int(pulse.duration // PULSE_STITCHING_DURATION)
 
         if rep > 0:
@@ -217,6 +229,19 @@ class QASMProgram:
         self.elapsed_time += pulse_time_rem
 
     def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+        """
+        Generates the instructions to play a pulse and updates the timing. Automatically
+        takes care of custom pulse behavior.
+
+        Parameters
+        ----------
+        pulse
+            The pulse to play
+        idx0
+            Index in the awg_dict corresponding to the waveform for the I channel
+        idx1
+            Index in the awg_dict corresponding to the waveform for the Q channel
+        """
         reserved_pulse_mapping = {"stitched_square_pulse": self.play_stitched_pulse}
         if pulse.uuid in reserved_pulse_mapping:
             func = reserved_pulse_mapping[pulse.uuid]
@@ -239,10 +264,6 @@ class QASMProgram:
         idx1:
             Index corresponding to the Q channel of the acquisition weights in the acq
             dict.
-
-        Returns
-        -------
-
         """
         self.wait_till_start_operation(acquisition)
         self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, GRID_TIME)
