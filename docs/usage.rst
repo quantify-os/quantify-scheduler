@@ -9,7 +9,11 @@ User guide
 
 Introduction
 ------------
-Quantify-scheduler is a python module for writing hybrid quantum programs. It extends the circuit model from quantum information processing with device-agnostic control pulse sequences or schedules. Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit. From an experimentalist point of view, a gate-operation is represented by an experiment sent to the quantum processor with synchronized pulse sequences or schedules. Thus, a quantum circuit is made up of schedules of experiments. This module is then designed to fit both the needs of the quantum algorithm designer as well as experimentalists. For the algorithm designer, this module allows better control over the pulse shapes sent to the QPU when performing a noisy variational algorithm. For the experimentalists, this module allows them to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
+Quantify-scheduler is a python module for writing (hybrid) quantum programs.
+It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations. Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
+
+This module is then designed to fit both the needs of the quantum algorithm designer as well as experimentalists.
+For the algorithm designer, this module allows better control over the pulse shapes sent to the QPU when performing a noisy variational algorithms, while for an experimentalist this combination of fine pulse-level control and the more abstract gate-level control allows them to easily define complex experiments.
 
 Quantify-scheduler can be understood by understanding the following concepts.
 
