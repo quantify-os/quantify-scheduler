@@ -33,8 +33,9 @@ from quantify.scheduler.compilation import (
 from quantify.scheduler.helpers.schedule import get_total_duration
 
 from quantify.scheduler.backends.qblox.helpers import (
-    modulate_waveform,
     generate_waveform_data,
+    find_inner_dicts_containing_key,
+    find_all_port_clock_combinations,
 )
 from quantify.scheduler.backends import qblox_backend as qb
 from quantify.scheduler.backends.types.qblox import (
@@ -214,20 +215,6 @@ def gate_only_schedule():
 
 
 # --------- Test utility functions ---------
-def test_modulate_waveform():
-    number_of_points = 1000
-    freq = 10e6
-    t0 = 50e-9
-    t = np.linspace(0, 1e-6, number_of_points)
-    envelope = np.ones(number_of_points)
-    mod_wf = modulate_waveform(t, envelope, freq, t0)
-    test_re = np.cos(2 * np.pi * freq * (t + t0))
-    test_imag = np.sin(2 * np.pi * freq * (t + t0))
-    assert np.allclose(mod_wf.real, test_re)
-    assert np.allclose(test_re, mod_wf.real)
-
-    assert np.allclose(mod_wf.imag, test_imag)
-    assert np.allclose(test_imag, mod_wf.imag)
 
 
 def test_apply_mixer_corrections():
@@ -324,7 +311,7 @@ def test_find_inner_dicts_containing_key():
         "list": [{"key": 1, "hello": "world", "other_key": "other_value"}, 4, "12"],
         "nested": {"hello": "world", "other_key": "other_value"},
     }
-    dicts_found = qb.find_inner_dicts_containing_key(test_dict, "hello")
+    dicts_found = find_inner_dicts_containing_key(test_dict, "hello")
     assert len(dicts_found) == 2
     for inner_dict in dicts_found:
         assert inner_dict["hello"] == "world"
@@ -332,7 +319,7 @@ def test_find_inner_dicts_containing_key():
 
 
 def test_find_all_port_clock_combinations():
-    portclocks = qb.find_all_port_clock_combinations(HARDWARE_MAPPING)
+    portclocks = find_all_port_clock_combinations(HARDWARE_MAPPING)
     portclocks = set(portclocks)
     portclocks.discard((None, None))
     answer = {

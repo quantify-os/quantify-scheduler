@@ -20,11 +20,12 @@ from quantify.data.handling import (
     gen_tuid,
 )
 
+from quantify.scheduler.helpers.waveforms import modulate_waveform
+
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     _generate_waveform_dict,
-    modulate_waveform,
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
     find_all_port_clock_combinations,

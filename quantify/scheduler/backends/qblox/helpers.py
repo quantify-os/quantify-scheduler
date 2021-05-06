@@ -126,39 +126,6 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     return port_clocks
 
 
-def modulate_waveform(
-    t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
-) -> np.ndarray:
-    """
-    Generates a (single sideband) modulated waveform from a given envelope by
-    multiplying it with a complex exponential.
-
-    .. math::
-        z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
-
-    The signs are chosen such that the frequencies follow the relation RF = LO + IF for
-    LO, IF > 0.
-
-    Parameters
-    ----------
-    t:
-        A numpy array with time values
-    envelope:
-        The complex-valued envelope of the modulated waveform
-    freq:
-        The frequency of the modulation
-    t0:
-        Time offset for the modulation
-
-    Returns
-    -------
-    :
-        The modulated waveform
-    """
-    modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
-    return envelope * modulation
-
-
 def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
     """
     Generates an array using the parameters specified in `data_dict`.
