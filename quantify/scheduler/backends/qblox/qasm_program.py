@@ -290,7 +290,7 @@ class QASMProgram:
         :
             The integer valued nanosecond time
         """
-        time_ns = int(np.round(time * 1e9))
+        time_ns = int(round(time * 1e9))
         if time_ns % GRID_TIME != 0:
             raise ValueError(
                 f"Attempting to use a time interval of {time_ns} ns. "
@@ -314,7 +314,8 @@ class QASMProgram:
         """
         try:
             return columnar(self.instructions, headers=None, no_borders=True)
-        # running in a sphinx environment can trigger a TableOverFlowError
+        # running in a sphinx environment can trigger a TableOverF
+        # lowError
         except TableOverflowError:
             return columnar(
                 self.instructions, headers=None, no_borders=True, terminal_width=120

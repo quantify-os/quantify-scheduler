@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import json
-import os
+from os import path, makedirs
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List
@@ -119,13 +119,14 @@ class InstrumentCompiler(ABC):
     @property
     def portclocks_with_data(self) -> Set[Tuple[str, str]]:
         """
-        All the port-clock combinations associated with at least one pulse or
+        All the port-clock combinations associated with at least one pulse and/or
         acquisition.
 
         Returns
         -------
         :
-            A set containing all the port-clock combinations
+            A set containing all the port-clock combinations that are used by this
+            InstrumentCompiler.
         """
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
@@ -642,14 +643,14 @@ class PulsarSequencerBase(ABC):
             The full absolute path where the json file is stored.
         """
         data_dir = get_datadir()
-        folder = os.path.join(data_dir, "schedules")
-        os.makedirs(folder, exist_ok=True)
+        folder = path.join(data_dir, "schedules")
+        makedirs(folder, exist_ok=True)
 
         filename = (
             f"{gen_tuid()}.json" if label is None else f"{gen_tuid()}_{label}.json"
         )
         filename = sanitize_filename(filename)
-        file_path = os.path.join(folder, filename)
+        file_path = path.join(folder, filename)
 
         with open(file_path, "w") as file:
             json.dump(wf_and_pr_dict, file, cls=NumpyJSONEncoder, indent=4)
@@ -702,9 +703,10 @@ class PulsarSequencerBase(ABC):
 
 class PulsarBase(InstrumentCompiler, ABC):
     """
-    `InstrumentCompiler` level compiler object for a pulsar. The class is defined as an
+    Pulsar specific implementation of`InstrumentCompiler`. The class is defined as an
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
-    implementations are defined in subclasses.
+    implementations are defined in subclasses. Effectively, this base class contains the
+    functionality shared by the Pulsar QRM and Pulsar QCM.
 
     Attributes
     ----------
@@ -823,14 +825,13 @@ class PulsarBase(InstrumentCompiler, ABC):
 
             if len(port_clocks) > 0:
                 port_clock = port_clocks[0]
-                try:
-                    mapping[port_clock] = f"seq{output_to_seq[io]}"
-                except KeyError as e:
+                if io not in output_to_seq:
                     raise NotImplementedError(
                         f"Attempting to use non-supported output {io}. "
                         f"Supported output types: "
                         f"{(str(t) for t in output_to_seq)}"
-                    ) from e
+                    )
+                mapping[port_clock] = f"seq{output_to_seq[io]}"
         return mapping
 
     def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:
