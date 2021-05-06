@@ -1,4 +1,3 @@
-# pylint: disable=duplicate-code
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
