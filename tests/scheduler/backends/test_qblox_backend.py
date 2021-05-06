@@ -419,6 +419,14 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     assert iterations == 10
 
 
+def test_qcm_acquisition_error():
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm._acquisitions[0] = 0
+
+    with pytest.raises(RuntimeError):
+        qcm._distribute_data()
+
+
 # --------- Test QASMProgram class ---------
 
 
@@ -439,6 +447,8 @@ def test_auto_wait():
     qasm.auto_wait(70000)
     assert len(qasm.instructions) == 3  # since it should split the waits
     assert qasm.elapsed_time == 70120
+    with pytest.raises(ValueError):
+        qasm.auto_wait(-120)
 
 
 def test_wait_till_start_then_play():
@@ -453,6 +463,12 @@ def test_wait_till_start_then_play():
     assert qasm.instructions[0][1] == q1asm_instructions.WAIT
     assert qasm.instructions[1][1] == q1asm_instructions.SET_AWG_GAIN
     assert qasm.instructions[2][1] == q1asm_instructions.PLAY
+
+    pulse = qb.OpInfo(
+        uuid=0, data=minimal_pulse_data, timing=1e-9, pulse_settings=runtime_settings
+    )
+    with pytest.raises(ValueError):
+        qasm.wait_till_start_then_play(pulse, 0, 1)
 
 
 def test_wait_till_start_then_acquire():
