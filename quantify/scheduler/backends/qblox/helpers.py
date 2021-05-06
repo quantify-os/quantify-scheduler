@@ -34,12 +34,15 @@ def verify_qblox_instruments_version():
     """
     if driver_version is None:
         raise DriverVersionError(
-            "qblox-instruments version check could not be "
+            "Qblox DriverVersionError: qblox-instruments version check could not be "
             "performed. Either the package is not installed "
             "correctly or a version < 0.3.2 was found."
         )
     if driver_version not in SUPPORTED_DRIVER_VERSIONS:
-        message = f"Installed driver version {driver_version} not supported by backend."
+        message = (
+            f"Qblox DriverVersionError: Installed driver version {driver_version}"
+            f" not supported by backend."
+        )
         message += (
             f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
             if len(SUPPORTED_DRIVER_VERSIONS) == 1
