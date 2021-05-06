@@ -109,7 +109,7 @@ class X(Rxy):
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
 
     def __repr__(self):
-        return f'X("{self.qubit}")'
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class X90(Rxy):
@@ -130,7 +130,7 @@ class X90(Rxy):
         self.data["gate_info"]["tex"] = r"$X_{\pi/2}$"
 
     def __repr__(self):
-        return f'X90("{self.qubit}")'
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class Y(Rxy):
@@ -158,7 +158,7 @@ class Y(Rxy):
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
     def __repr__(self):
-        return f'Y("{self.qubit}")'
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class Y90(Rxy):
@@ -178,7 +178,7 @@ class Y90(Rxy):
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
     def __repr__(self):
-        return f'Y90("{self.qubit}")'
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class CNOT(Operation):
@@ -218,7 +218,7 @@ class CNOT(Operation):
         super().__init__(f"CNOT ({qC}, {qT})", data=data)
 
     def __repr__(self):
-        return f'CNOT("{self.qC}", "{self.qT}")'
+        return f'{self.__class__.__name__}("{self.qC}", "{self.qT}")'
 
 
 class CZ(Operation):
@@ -258,7 +258,7 @@ class CZ(Operation):
         super().__init__(f"CZ ({qC}, {qT})", data=data)
 
     def __repr__(self):
-        return f'CZ("{self.qC}", "{self.qT}")'
+        return f'{self.__class__.__name__}("{self.qC}", "{self.qT}")'
 
 
 class Reset(Operation):
@@ -285,7 +285,7 @@ class Reset(Operation):
         super().__init__(f"Reset {qubits}", data=data)
 
     def __repr__(self):
-        return f"Reset(*{self._qubits})"
+        return f"{self.__class__.__name__}(*{self._qubits})"
 
 
 class Measure(Operation):
@@ -346,6 +346,6 @@ class Measure(Operation):
 
     def __repr__(self):
         return (
-            f"Measure(*{self._qubits}, acq_channel={self._acq_channel}, "
-            + f"acq_index={self._acq_index})"
+            f"{self.__class__.__name__}(*{self._qubits}, "
+            f"acq_channel={self._acq_channel}, acq_index={self._acq_index})"
         )

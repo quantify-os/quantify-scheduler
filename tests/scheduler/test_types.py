@@ -121,13 +121,13 @@ def test_gates_valid():
 
 
 def test_operation_equality():
-    xa = X("q0")
-    xb = X("q0")
-    assert xa == xb
-    # we now modify the contents of xa.data
+    xa_q0 = X("q0")
+    xb_q0 = X("q0")
+    assert xa_q0 == xb_q0
+    # we now modify the contents of xa_q0.data
     # this does not change the repr but does change the content of the operation
-    xa.data["custom_key"] = 5
-    assert xa != xb
+    xa_q0.data["custom_key"] = 5
+    assert xa_q0 != xb_q0
 
 
 def test_pulses_valid():

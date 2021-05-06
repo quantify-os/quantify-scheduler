@@ -26,6 +26,8 @@ def check_repr_equal(thing):
     Asserts that evaulating the representation of a thing is identical to the thing
     itself.
     """
+    # eval should be avoided for security reasons.
+    # However, it is impossible to test this property using the safer ast.literal_eval
     assert eval(repr(thing)) == thing
 
 
