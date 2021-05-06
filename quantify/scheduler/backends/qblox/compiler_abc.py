@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import os
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List
 
@@ -45,7 +45,7 @@ from quantify.scheduler.backends.types.qblox import (
 from quantify.scheduler.helpers.waveforms import normalize_waveform_data
 
 
-class InstrumentCompiler(metaclass=ABCMeta):
+class InstrumentCompiler(ABC):
     """
     Abstract base class that defines a generic instrument compiler. The subclasses that
     inherit from this are meant to implement the compilation steps needed to compile the
@@ -153,7 +153,7 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
 
 # pylint: disable=too-many-instance-attributes
-class PulsarSequencerBase(metaclass=ABCMeta):
+class PulsarSequencerBase(ABC):
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
@@ -700,7 +700,7 @@ class PulsarSequencerBase(metaclass=ABCMeta):
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
+class PulsarBase(InstrumentCompiler, ABC):
     """
     `InstrumentCompiler` level compiler object for a pulsar. The class is defined as an
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
