@@ -51,7 +51,7 @@ from quantify.scheduler.backends.qblox.compiler_abc import (
 )
 from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify.scheduler.backends.qblox import q1asm_instructions
-from quantify.scheduler.backends.qblox.constants import IMMEDIATE_SZ
+from quantify.scheduler.backends.qblox import constants
 
 import quantify.scheduler.schemas.examples as es
 
@@ -484,10 +484,14 @@ def test_wait_till_start_then_acquire():
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
-    expanded_val = QASMProgram._expand_from_normalised_range(1, "test_param", acq)
-    assert expanded_val == IMMEDIATE_SZ // 2
+    expanded_val = QASMProgram._expand_from_normalised_range(
+        1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
+    )
+    assert expanded_val == constants.IMMEDIATE_SZ_WAIT // 2
     with pytest.raises(ValueError):
-        QASMProgram._expand_from_normalised_range(10, "test_param", acq)
+        QASMProgram._expand_from_normalised_range(
+            10, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
+        )
 
 
 def test_to_pulsar_time():
