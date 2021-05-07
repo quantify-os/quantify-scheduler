@@ -13,10 +13,7 @@ from quantify.utilities.general import (
     without,
 )
 
-from quantify.scheduler.backends.qblox.helpers import (
-    find_inner_dicts_containing_key,
-    find_all_port_clock_combinations,
-)
+from quantify.scheduler.backends.qblox import helpers
 from quantify.scheduler.backends.qblox import instrument_compilers
 from quantify.scheduler.backends.qblox.instrument_compilers import (
     LocalOscillator,
@@ -49,7 +46,7 @@ def generate_ext_local_oscillators(
         objects for the local oscillators as values.
     """
     all_lo_objs = dict()
-    lo_dicts = find_inner_dicts_containing_key(hardware_cfg, "lo_name")
+    lo_dicts = helpers.find_inner_dicts_containing_key(hardware_cfg, "lo_name")
     for lo_dict in lo_dicts:
         lo_name = lo_dict["lo_name"]
         if lo_name not in all_lo_objs:
@@ -94,7 +91,7 @@ def generate_port_clock_to_device_map(
         if not isinstance(device_info, dict):
             continue
 
-        portclocks = find_all_port_clock_combinations(device_info)
+        portclocks = helpers.find_all_port_clock_combinations(device_info)
 
         for portclock in portclocks:
             portclock_map[portclock] = device_name
@@ -138,11 +135,11 @@ def _assign_frequencies(
     -------
 
     """
-    lo_info_dicts = find_inner_dicts_containing_key(hw_mapping, "lo_name")
+    lo_info_dicts = helpers.find_inner_dicts_containing_key(hw_mapping, "lo_name")
     los_used = set()
     for lo_info_dict in lo_info_dicts:
         lo_obj = lo_compilers[lo_info_dict["lo_name"]]
-        associated_portclock_dicts = find_inner_dicts_containing_key(
+        associated_portclock_dicts = helpers.find_inner_dicts_containing_key(
             lo_info_dict, "port"
         )
 

@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 import json
-import os
-from abc import ABCMeta, abstractmethod
+from os import path, makedirs
+from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List
 
@@ -20,11 +20,12 @@ from quantify.data.handling import (
     gen_tuid,
 )
 
+from quantify.scheduler.helpers.waveforms import modulate_waveform
+
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     _generate_waveform_dict,
-    modulate_waveform,
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
     find_all_port_clock_combinations,
@@ -45,7 +46,7 @@ from quantify.scheduler.backends.types.qblox import (
 from quantify.scheduler.helpers.waveforms import normalize_waveform_data
 
 
-class InstrumentCompiler(metaclass=ABCMeta):
+class InstrumentCompiler(ABC):
     """
     Abstract base class that defines a generic instrument compiler. The subclasses that
     inherit from this are meant to implement the compilation steps needed to compile the
@@ -119,13 +120,14 @@ class InstrumentCompiler(metaclass=ABCMeta):
     @property
     def portclocks_with_data(self) -> Set[Tuple[str, str]]:
         """
-        All the port-clock combinations associated with at least one pulse or
+        All the port-clock combinations associated with at least one pulse and/or
         acquisition.
 
         Returns
         -------
         :
-            A set containing all the port-clock combinations
+            A set containing all the port-clock combinations that are used by this
+            InstrumentCompiler.
         """
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
@@ -153,7 +155,7 @@ class InstrumentCompiler(metaclass=ABCMeta):
 
 
 # pylint: disable=too-many-instance-attributes
-class PulsarSequencerBase(metaclass=ABCMeta):
+class PulsarSequencerBase(ABC):
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
@@ -642,14 +644,14 @@ class PulsarSequencerBase(metaclass=ABCMeta):
             The full absolute path where the json file is stored.
         """
         data_dir = get_datadir()
-        folder = os.path.join(data_dir, "schedules")
-        os.makedirs(folder, exist_ok=True)
+        folder = path.join(data_dir, "schedules")
+        makedirs(folder, exist_ok=True)
 
         filename = (
             f"{gen_tuid()}.json" if label is None else f"{gen_tuid()}_{label}.json"
         )
         filename = sanitize_filename(filename)
-        file_path = os.path.join(folder, filename)
+        file_path = path.join(folder, filename)
 
         with open(file_path, "w") as file:
             json.dump(wf_and_pr_dict, file, cls=NumpyJSONEncoder, indent=4)
@@ -700,11 +702,12 @@ class PulsarSequencerBase(metaclass=ABCMeta):
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
+class PulsarBase(InstrumentCompiler, ABC):
     """
-    `InstrumentCompiler` level compiler object for a pulsar. The class is defined as an
+    Pulsar specific implementation of`InstrumentCompiler`. The class is defined as an
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
-    implementations are defined in subclasses.
+    implementations are defined in subclasses. Effectively, this base class contains the
+    functionality shared by the Pulsar QRM and Pulsar QCM.
 
     Attributes
     ----------
@@ -823,14 +826,13 @@ class PulsarBase(InstrumentCompiler, metaclass=ABCMeta):
 
             if len(port_clocks) > 0:
                 port_clock = port_clocks[0]
-                try:
-                    mapping[port_clock] = f"seq{output_to_seq[io]}"
-                except KeyError as e:
+                if io not in output_to_seq:
                     raise NotImplementedError(
                         f"Attempting to use non-supported output {io}. "
                         f"Supported output types: "
                         f"{(str(t) for t in output_to_seq)}"
-                    ) from e
+                    )
+                mapping[port_clock] = f"seq{output_to_seq[io]}"
         return mapping
 
     def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:

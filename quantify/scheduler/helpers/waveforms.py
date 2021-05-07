@@ -340,17 +340,13 @@ def exec_custom_waveform_function(
     # select the arguments for the waveform function that are present
     # in pulse info
     par_map = inspect.signature(function).parameters
-    data_dict_keys = set(pulse_info.keys())
-    parameters_supplied = data_dict_keys.intersection(set(par_map))
-
-    kwargs = {key: pulse_info[key] for key in parameters_supplied}
+    wf_kwargs = {}
+    for kw in par_map.keys():
+        if kw in pulse_info:
+            wf_kwargs[kw] = pulse_info[kw]
 
     # Calculate the numerical waveform using the wf_func
-    wf_data = function(t=t, **kwargs)
-    if not isinstance(wf_data, np.ndarray):
-        wf_data = np.array(wf_data)
-
-    return wf_data
+    return function(t=t, **wf_kwargs)
 
 
 def apply_mixer_skewness_corrections(
@@ -404,6 +400,39 @@ def apply_mixer_skewness_corrections(
     corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
     corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
     return corrected_re + 1.0j * corrected_im
+
+
+def modulate_waveform(
+    t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
+) -> np.ndarray:
+    """
+    Generates a (single sideband) modulated waveform from a given envelope by
+    multiplying it with a complex exponential.
+
+    .. math::
+        z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
+
+    The signs are chosen such that the frequencies follow the relation RF = LO + IF for
+    LO, IF > 0.
+
+    Parameters
+    ----------
+    t:
+        A numpy array with time values
+    envelope:
+        The complex-valued envelope of the modulated waveform
+    freq:
+        The frequency of the modulation
+    t0:
+        Time offset for the modulation
+
+    Returns
+    -------
+    :
+        The modulated waveform
+    """
+    modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
+    return envelope * modulation
 
 
 def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]:

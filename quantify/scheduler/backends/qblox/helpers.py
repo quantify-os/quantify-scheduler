@@ -34,12 +34,15 @@ def verify_qblox_instruments_version():
     """
     if driver_version is None:
         raise DriverVersionError(
-            "qblox-instruments version check could not be "
+            "Qblox DriverVersionError: qblox-instruments version check could not be "
             "performed. Either the package is not installed "
             "correctly or a version < 0.3.2 was found."
         )
     if driver_version not in SUPPORTED_DRIVER_VERSIONS:
-        message = f"Installed driver version {driver_version} not supported by backend."
+        message = (
+            f"Qblox DriverVersionError: Installed driver version {driver_version}"
+            f" not supported by backend."
+        )
         message += (
             f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
             if len(SUPPORTED_DRIVER_VERSIONS) == 1
@@ -121,39 +124,6 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
             clock = inner_dict["clock"]
             port_clocks.append((port, clock))
     return port_clocks
-
-
-def modulate_waveform(
-    t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
-) -> np.ndarray:
-    """
-    Generates a (single sideband) modulated waveform from a given envelope by
-    multiplying it with a complex exponential.
-
-    .. math::
-        z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
-
-    The signs are chosen such that the frequencies follow the relation RF = LO + IF for
-    LO, IF > 0.
-
-    Parameters
-    ----------
-    t:
-        A numpy array with time values
-    envelope:
-        The complex-valued envelope of the modulated waveform
-    freq:
-        The frequency of the modulation
-    t0:
-        Time offset for the modulation
-
-    Returns
-    -------
-    :
-        The modulated waveform
-    """
-    modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
-    return envelope * modulation
 
 
 def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
