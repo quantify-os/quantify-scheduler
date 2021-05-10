@@ -258,7 +258,7 @@ class TestRamseySched:
     def setup_class(cls):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
-            "times": np.linspace(0, 80e-6, 21),
+            "times": np.linspace(4.0e-6, 80e-6, 20),
             "qubit": "q0",
         }
 
@@ -302,7 +302,7 @@ class TestEchoSched:
     def setup_class(cls):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
-            "times": np.linspace(0, 80e-6, 21),
+            "times": np.linspace(4.0e-6, 80e-6, 20),
             "qubit": "q0",
         }
 

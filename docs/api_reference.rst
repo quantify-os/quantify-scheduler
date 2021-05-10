@@ -96,10 +96,10 @@ backends
 .. automodule:: quantify.scheduler.backends
     :members:
 
-pulsar_backend
+qblox_backend
 ~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.backends.pulsar_backend
+.. automodule:: quantify.scheduler.backends.qblox_backend
     :members:
 
 zhinst_backend
@@ -111,8 +111,30 @@ zhinst_backend
 types
 ~~~~~
 
+.. automodule:: quantify.scheduler.backends.types.qblox
+    :members:
+
 .. automodule:: quantify.scheduler.backends.types.zhinst
     :members:
+
+Qblox
+~~~~~~
+
+.. automodule:: quantify.scheduler.backends.qblox.helpers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.compilers_abc
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.constants
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.q1asm_instructions
+    :members:
+
 
 zhinst
 ~~~~~~
@@ -154,6 +176,7 @@ pulse_diagram
 ~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
+
 =======
 
 miscellaneous
