@@ -238,6 +238,11 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             # read info from config
             q_cfg = device_cfg["qubits"][q]
 
+            # G_amp is the gaussian amplitude introduced in
+            # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
+            # 180 refers to the normalization, theta is in degrees, and
+            # mw_amp180 is the amplitude necessary to get the
+            # maximum 180 degree theta (experimentally)
             G_amp = q_cfg["params"]["mw_amp180"] * op["gate_info"]["theta"] / 180
             D_amp = G_amp * q_cfg["params"]["mw_motzoi"]
 
