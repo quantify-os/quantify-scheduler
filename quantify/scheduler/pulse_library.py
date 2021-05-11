@@ -85,12 +85,15 @@ class SteppedRampPulse(Operation):
         t0: float = 0,
     ):
         """
-        A real valued ramp pulse.
+        A real valued ramp pulse, which reaches it's final amplitude in discrete steps.
+        In between it will maintain a plateau.
 
         Parameters
         ------------
         amp : float
             Final amplitude of the ramp envelope function.
+        num_steps: int
+            The number of plateaus
         duration : float
             Duration of the pulse in seconds.
         port : str
