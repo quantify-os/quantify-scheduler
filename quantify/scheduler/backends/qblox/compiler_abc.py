@@ -168,7 +168,7 @@ class PulsarSequencerBase(ABC):
         parent: PulsarBase,
         name: str,
         portclock: Tuple[str, str],
-        modulation_freq: Optional[float] = None,
+        seq_settings: dict,
     ):
         """
         Constructor for the sequencer compiler.
@@ -192,6 +192,16 @@ class PulsarSequencerBase(ABC):
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
+        modulation_freq = (
+            None if "interm_freq" in seq_settings else seq_settings["interm_freq"]
+        )
+
+        self.special_pulse_behavior_enabled = False
+        # if "special_pulse_behavior_enabled" in seq_settings:
+        #     self.special_pulse_behavior_enabled = seq_settings[
+        #         "special_pulse_behavior_enabled"
+        #     ]
+
         self._settings = SequencerSettings(
             nco_en=False, sync_en=True, modulation_freq=modulation_freq
         )
@@ -668,8 +678,24 @@ class PulsarSequencerBase(ABC):
 
         return file_path
 
-    @staticmethod
-    def _check_reserved_pulses(pulse: OpInfo) -> Optional[str]:
+    def _check_reserved_pulses(self, pulse: OpInfo) -> Optional[str]:
+        """
+        Checks whether the function should be evaluated generically or has special
+        treatment.
+
+        Parameters
+        ----------
+        pulse
+            The pulse to check
+
+        Returns
+        -------
+            A str with a special identifier representing which pulse behavior to use,
+            or None if it needs to be treated generically.
+        """
+        if not self.special_pulse_behavior_enabled:
+            return None
+
         def _check_square_pulse_stitching() -> bool:
             reserved_wf_func = "quantify.scheduler.waveforms.square"
             if pulse.data["clock"] == BasebandClockResource.IDENTITY:
@@ -888,14 +914,11 @@ class PulsarBase(InstrumentCompiler, ABC):
                 )
             portclock_dict = portclock_dicts[0]
             portclock = portclock_dict["port"], portclock_dict["clock"]
-            freq = (
-                None
-                if "interm_freq" in portclock_dict
-                else portclock_dict["interm_freq"]
-            )
 
             seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = self.sequencer_type(self, seq_name, portclock, freq)
+            sequencers[seq_name] = self.sequencer_type(
+                self, seq_name, portclock, portclock_dict
+            )
             if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
                     io_cfg["mixer_corrections"]

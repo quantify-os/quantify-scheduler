@@ -91,7 +91,12 @@ def hardware_cfg_baseband():
                 "line_gain_db": 0,
                 "lo_name": "lo0",
                 "lo_freq": None,
-                "seq0": {"port": "q0:mw", "clock": "cl0.baseband", "interm_freq": 50e6},
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "cl0.baseband",
+                    "special_pulse_behavior_enabled": True,
+                    "interm_freq": 50e6,
+                },
             },
             "complex_output_1": {
                 "line_gain_db": 0,
