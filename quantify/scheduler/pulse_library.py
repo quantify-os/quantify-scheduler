@@ -216,12 +216,30 @@ class ChirpPulse(Operation):
         duration: float,
         port: str,
         clock: str,
+        start_freq: float,
         end_freq: float,
-        start_freq: float = 0.0,
         t0: float = 0,
     ):
         """
-        chirp
+        A linear chirp signal. A sinusoid that ramps up in frequency
+
+        Parameters
+        ----------
+        amp
+            Amplitude of the envelope.
+        duration
+            Duration of the pulse
+        port
+            The port of the pulse
+        clock
+            Clock used to modulate the pulse.
+        start_freq
+            Start frequency of the Chirp. Note that this is the frequency at which the
+            waveform is calculated, this may differ from the clock frequency.
+        end_freq
+            End frequency of the Chirp.
+        t0
+            Shift of the start time wrt the start of the operation
         """
         data = {
             "name": "ChirpPulse",
