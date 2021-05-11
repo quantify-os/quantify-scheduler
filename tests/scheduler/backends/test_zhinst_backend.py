@@ -562,8 +562,8 @@ def test_uhfqa_sequence1(
     // Schedule offset: 0.000200000s 45000 clocks
     // Schedule duration: 0.000000436s 98 clocks
     // Sequence start: 0.000000016s 4 clocks
-    // Sequence duration: 0.000000300s 67 clocks
-    // Sequence end: 0.000000316s 71 clocks
+    // Sequence duration: 0.000000420s 94 clocks
+    // Sequence end: 0.000000436s 98 clocks
     // Line delay: -1.000000000s 0 clocks
     repeat(__repetitions__)
     {
@@ -712,7 +712,7 @@ def test_uhfqa_sequence3(
     wave w1 = "dev2299_wave1";\n
     // Operations
     // Schedule offset: 0.000001000s 225 clocks
-    // Schedule duration: 0.000001200s 270 clocks
+    // Schedule duration: 0.000001600s 360 clocks
     // Sequence start: 0.000000000s 0 clocks
     // Sequence duration: 0.000001200s 270 clocks
     // Sequence end: 0.000001200s 270 clocks

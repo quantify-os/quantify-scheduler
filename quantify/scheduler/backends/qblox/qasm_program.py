@@ -8,11 +8,7 @@ import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from quantify.scheduler.backends.qblox import q1asm_instructions
-from quantify.scheduler.backends.qblox.constants import (
-    IMMEDIATE_SZ,
-    GRID_TIME,
-    PULSE_STITCHING_DURATION,
-)
+from quantify.scheduler.backends.qblox import constants
 from quantify.scheduler.backends.types.qblox import OpInfo
 
 
@@ -125,12 +121,14 @@ class QASMProgram:
         elif wait_time == 0:
             return
 
-        if wait_time > IMMEDIATE_SZ:
-            for _ in range(wait_time // IMMEDIATE_SZ):
+        if wait_time > constants.IMMEDIATE_SZ_WAIT:
+            for _ in range(wait_time // constants.IMMEDIATE_SZ_WAIT):
                 self.emit(
-                    q1asm_instructions.WAIT, IMMEDIATE_SZ, comment="auto generated wait"
+                    q1asm_instructions.WAIT,
+                    constants.IMMEDIATE_SZ_WAIT,
+                    comment="auto generated wait",
                 )
-            time_left = wait_time % IMMEDIATE_SZ
+            time_left = wait_time % constants.IMMEDIATE_SZ_WAIT
         else:
             time_left = int(wait_time)
 
@@ -161,7 +159,7 @@ class QASMProgram:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
                 f"ns before {repr(operation)}. Please note that a wait time of at least"
-                f" {GRID_TIME} ns is required between "
+                f" {constants.GRID_TIME} ns is required between "
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
@@ -201,7 +199,7 @@ class QASMProgram:
             Index in the awg_dict corresponding to the waveform for the Q channel
         """
         register = "R2"  # for the loops
-        rep = int(pulse.duration // PULSE_STITCHING_DURATION)
+        rep = int(pulse.duration // constants.PULSE_STITCHING_DURATION)
 
         if rep > 0:
             with self.loop(
@@ -213,11 +211,15 @@ class QASMProgram:
                     q1asm_instructions.PLAY,
                     idx0,
                     idx1,
-                    self.to_pulsar_time(PULSE_STITCHING_DURATION),
+                    self.to_pulsar_time(constants.PULSE_STITCHING_DURATION),
                 )
-                self.elapsed_time += rep * self.to_pulsar_time(PULSE_STITCHING_DURATION)
+                self.elapsed_time += rep * self.to_pulsar_time(
+                    constants.PULSE_STITCHING_DURATION
+                )
 
-        pulse_time_rem = self.to_pulsar_time(pulse.duration % PULSE_STITCHING_DURATION)
+        pulse_time_rem = self.to_pulsar_time(
+            pulse.duration % constants.PULSE_STITCHING_DURATION
+        )
         if pulse_time_rem > 0:
             self.emit(q1asm_instructions.PLAY, idx0, idx1, pulse_time_rem)
             self.emit(
@@ -247,8 +249,8 @@ class QASMProgram:
             func = reserved_pulse_mapping[pulse.uuid]
             func(pulse, idx0, idx1)
         else:
-            self.emit(q1asm_instructions.PLAY, idx0, idx1, GRID_TIME)
-            self.elapsed_time += GRID_TIME
+            self.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
+            self.elapsed_time += constants.GRID_TIME
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -266,8 +268,8 @@ class QASMProgram:
             dict.
         """
         self.wait_till_start_operation(acquisition)
-        self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, GRID_TIME)
-        self.elapsed_time += GRID_TIME
+        self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, constants.GRID_TIME)
+        self.elapsed_time += constants.GRID_TIME
 
     def update_runtime_settings(self, operation: OpInfo):
         """
@@ -290,10 +292,16 @@ class QASMProgram:
             raise RuntimeError(f"No real-time settings found for {repr(operation)}.")
 
         awg_gain_path0 = self._expand_from_normalised_range(
-            operation.pulse_settings.awg_gain_0, "awg_gain_0", operation
+            operation.pulse_settings.awg_gain_0,
+            constants.IMMEDIATE_SZ_GAIN,
+            "awg_gain_0",
+            operation,
         )
         awg_gain_path1 = self._expand_from_normalised_range(
-            operation.pulse_settings.awg_gain_1, "awg_gain_1", operation
+            operation.pulse_settings.awg_gain_1,
+            constants.IMMEDIATE_SZ_GAIN,
+            "awg_gain_1",
+            operation,
         )
         self.emit(
             q1asm_instructions.SET_AWG_GAIN,
@@ -304,7 +312,10 @@ class QASMProgram:
 
     @staticmethod
     def _expand_from_normalised_range(
-        val: float, param: Optional[str] = None, operation: Optional[OpInfo] = None
+        val: float,
+        immediate_size: int,
+        param: Optional[str] = None,
+        operation: Optional[OpInfo] = None,
     ):
         """
         Takes a the value of a parameter in normalized form (abs(param) <= 1.0), and
@@ -336,7 +347,7 @@ class QASMProgram:
                 f"{param} is set to {val}. Parameter must be in the range "
                 f"-1.0 <= param <= 1.0 for {repr(operation)}."
             )
-        return int(val * IMMEDIATE_SZ // 2)
+        return int(val * immediate_size // 2)
 
     @staticmethod
     def to_pulsar_time(time: float) -> int:
@@ -354,12 +365,12 @@ class QASMProgram:
         :
             The integer valued nanosecond time
         """
-        time_ns = int(np.round(time * 1e9))
-        if time_ns % GRID_TIME != 0:
+        time_ns = int(round(time * 1e9))
+        if time_ns % constants.GRID_TIME != 0:
             raise ValueError(
                 f"Attempting to use a time interval of {time_ns} ns. "
                 f"Please ensure that the durations of and wait times between "
-                f"operations are multiples of {GRID_TIME} ns."
+                f"operations are multiples of {constants.GRID_TIME} ns."
             )
         return time_ns
 

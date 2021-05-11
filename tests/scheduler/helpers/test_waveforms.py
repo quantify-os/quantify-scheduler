@@ -21,6 +21,7 @@ from quantify.scheduler.helpers.waveforms import (
     get_waveform_by_pulseid,
     resize_waveform,
     shift_waveform,
+    modulate_waveform,
 )
 from quantify.scheduler.types import Schedule
 
@@ -184,6 +185,22 @@ def test_exec_waveform_function_with_custom(wf_func: str, mocker):
     # Assert
     wavefn_stub.assert_called()
     assert waveform == []
+
+
+def test_modulate_waveform():
+    number_of_points = 1000
+    freq = 10e6
+    t0 = 50e-9
+    t = np.linspace(0, 1e-6, number_of_points)
+    envelope = np.ones(number_of_points)
+    mod_wf = modulate_waveform(t, envelope, freq, t0)
+    test_re = np.cos(2 * np.pi * freq * (t + t0))
+    test_imag = np.sin(2 * np.pi * freq * (t + t0))
+    assert np.allclose(mod_wf.real, test_re)
+    assert np.allclose(test_re, mod_wf.real)
+
+    assert np.allclose(mod_wf.imag, test_imag)
+    assert np.allclose(test_imag, mod_wf.imag)
 
 
 def test_exec_custom_waveform_function(mocker):

@@ -157,7 +157,7 @@ class Pulsar_QCM(PulsarBase):
         RuntimeError
             Pulsar_QCM._acquisitions is not empty
         """
-        if self._acquisitions:
+        if len(self._acquisitions) > 0:
             raise RuntimeError(
                 f"Attempting to add acquisitions to {self.__class__} {self.name}, "
                 f"which is not supported by hardware."

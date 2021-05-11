@@ -7,7 +7,6 @@ from uuid import uuid4
 from collections import UserDict
 from typing_extensions import Literal
 import jsonschema
-import numpy as np
 from quantify.utilities import general
 from quantify.scheduler import resources
 
@@ -16,7 +15,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
     how to represent the operation on the Gate, Pulse and/or Logical level.
-    It also contains information on the :class:`~quantify.scheduler.resources.Resource` s used.
+    It also contains information on the :class:`~quantify.scheduler.resources.Resource`s
+    used.
 
     An operation always has the following attributes
 
@@ -34,7 +34,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
 
     .. note::
 
-        Two different Operations containing the same information generate the same hash and are considered identical.
+        Two different Operations containing the same information generate the
+        same hash and are considered identical.
     """
 
     def __init__(self, name: str, data: dict = None):
@@ -45,41 +46,63 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         self.data["pulse_info"] = []
         self.data["acquisition_info"] = []
         self.data["logic_info"] = {}
+        self._duration: float = 0
 
         if name is not None:
             self.data["name"] = name
         if data is not None:
             self.data.update(data)
+            self._update()
+
+    def __eq__(self, other):
+        """
+        Two operations are considered equal if the contents of the "data" attribute
+        are identical.
+
+        This is tested through the :code:`.hash` attribute.
+        """
+        return self.hash == other.hash
+
+    def _update(self) -> None:
+        """Update the Operation's internals."""
+
+        def _get_operation_end(info) -> float:
+            """Return the operation end in seconds."""
+            return info["t0"] + info["duration"]
+
+        # Iterate over the data and take longest duration
+        self._duration = max(
+            map(
+                _get_operation_end,
+                self.data["pulse_info"] + self.data["acquisition_info"],
+            ),
+            default=0,
+        )
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the operation."""
         return self.data["name"]
 
     @property
-    def duration(self):
+    def duration(self) -> float:
         """
-        Determine the duration of the operation based on the pulses described in pulse_info.
+        Determine the duration of the operation based on the pulses described in
+        pulse_info.
 
-        If the operation contains no pulse info, it is assumed to be ideal and have zero duration.
+        If the operation contains no pulse info, it is assumed to be ideal and
+        have zero duration.
         """
-        durations = list()
-
-        durations.extend([p["duration"] + p["t0"] for p in self.data["pulse_info"]])
-        durations.extend(
-            [a["duration"] + a["t0"] for a in self.data["acquisition_info"]]
-        )
-
-        return np.max(durations) if len(durations) > 0 else 0
+        return self._duration
 
     @property
-    def hash(self):
+    def hash(self) -> int:
         """
         A hash based on the contents of the Operation.
         """
         return general.make_hash(self.data)
 
-    def add_gate_info(self, gate_operation: Operation):
+    def add_gate_info(self, gate_operation: Operation) -> None:
         """
         Updates self.data['gate_info'] with contents of gate_operation.
 
@@ -90,7 +113,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
 
-    def add_pulse(self, pulse_operation: Operation):
+    def add_pulse(self, pulse_operation: Operation) -> None:
         """
         Adds pulse_info of pulse_operation Operation to this Operation.
 
@@ -100,8 +123,9 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
+        self._update()
 
-    def add_acquisition(self, acquisition_operation: Operation):
+    def add_acquisition(self, acquisition_operation: Operation) -> None:
         """
         Adds acquisition_info of acquisition_operation Operation to this Operation.
 
@@ -111,9 +135,10 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             an operation containing acquisition_info.
         """
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
+        self._update()
 
     @classmethod
-    def is_valid(cls, operation):
+    def is_valid(cls, operation) -> bool:
         """Checks if the operation is valid according to its schema."""
         scheme = general.load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
@@ -121,7 +146,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         return True  # if not exception was raised during validation
 
     @property
-    def valid_gate(self):
+    def valid_gate(self) -> bool:
         """
         An operation is a valid gate if it contains information on how
         to represent the operation on the gate level.
@@ -131,7 +156,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         return False
 
     @property
-    def valid_pulse(self):
+    def valid_pulse(self) -> bool:
         """
         An operation is a valid pulse if it contains information on how
         to represent the operation on the pulse level.
@@ -159,9 +184,10 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     The Schedule data structure is based on a dictionary.
     This dictionary contains:
 
-        - `operation_dict`     : a hash table containing the unique :class:`~Operation` s added to the schedule.
-        - `timing_constraints` : a list of all timing constraints added between operations.
-
+        - `operation_dict`     : a hash table containing the unique
+            :class:`~Operation` s added to the schedule.
+        - `timing_constraints` : a list of all timing constraints added between
+            operations.
 
     .. jsonschema:: schemas/schedule.json
 
@@ -235,12 +261,14 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
 
-        The keys correspond to the :attr:`~Operation.hash` and values are instances of :class:`~Operation`.
+        The keys correspond to the :attr:`~Operation.hash` and values are instances
+        of :class:`~Operation`.
         """
         return self.data["operation_dict"]
 
     @property
     def timing_constraints(self):
+        # pylint: disable=line-too-long
         """
         A list of dictionaries describing timing constraints between operations.
 

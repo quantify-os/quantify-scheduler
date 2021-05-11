@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import quantify.utilities.general as general
@@ -174,15 +174,23 @@ def get_total_duration(schedule: types.Schedule) -> float:
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
-    end_times = list()
-    for time_constraint in schedule.timing_constraints:
-        pulse_id = time_constraint["operation_hash"]
-        operation = schedule.operations[pulse_id]
-        end_time = operation.duration + time_constraint["abs_time"]
+    def _get_operation_end(pair: Tuple[int, dict]) -> float:
+        """Returns the operations end time in seconds."""
+        (timeslot_index, _) = pair
+        return get_operation_end(
+            schedule,
+            timeslot_index,
+        )
 
-        end_times.append(end_time)
+    operations_ends = map(
+        _get_operation_end,
+        enumerate(schedule.timing_constraints),
+    )
 
-    return np.max(end_times)
+    return max(
+        operations_ends,
+        default=0,
+    )
 
 
 def get_operation_start(
@@ -250,27 +258,10 @@ def get_operation_end(
         return 0.0
 
     t_constr = schedule.timing_constraints[timeslot_index]
-    operation = schedule.operations[t_constr["operation_hash"]]
+    operation: types.Operation = schedule.operations[t_constr["operation_hash"]]
+    t0: float = t_constr["abs_time"]
 
-    t0: float = get_operation_start(schedule, timeslot_index)
-
-    pulse_info: dict = (
-        operation["pulse_info"][-1]
-        if len(operation["pulse_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-    acq_info: dict = (
-        operation["acquisition_info"][-1]
-        if len(operation["acquisition_info"]) > 0
-        else {"t0": -1, "duration": 0}
-    )
-
-    if acq_info["t0"] != -1 and acq_info["t0"] > pulse_info["t0"]:
-        t0 += acq_info["duration"]
-    elif pulse_info["t0"] >= 0:
-        t0 += pulse_info["duration"]
-
-    return t0
+    return t0 + operation.duration
 
 
 def get_port_timeline(
