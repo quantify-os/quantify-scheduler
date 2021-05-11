@@ -182,28 +182,14 @@ class QASMProgram:
 
         """
         self.wait_till_start_operation(pulse)
-        self.update_runtime_settings(pulse)
         self.auto_play_pulse(pulse, idx0, idx1)
 
-    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
-        """
-        Stitches multiple square pulses together to form one long square pulse.
-
-        Parameters
-        ----------
-        pulse
-            The pulse to play
-        idx0
-            Index in the awg_dict corresponding to the waveform for the I channel
-        idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel
-        """
-        register = "R2"  # for the loops
-        rep = int(pulse.duration // constants.PULSE_STITCHING_DURATION)
+    def _stitched_pulse(self, duration: float, loop_reg: str, idx0: int, idx1: int):
+        rep = int(duration // constants.PULSE_STITCHING_DURATION)
 
         if rep > 0:
             with self.loop(
-                register=register,
+                register=loop_reg,
                 label=f"stitch{len(self.instructions)}",
                 repetitions=rep,
             ):
@@ -218,7 +204,7 @@ class QASMProgram:
                 )
 
         pulse_time_rem = self.to_pulsar_time(
-            pulse.duration % constants.PULSE_STITCHING_DURATION
+            duration % constants.PULSE_STITCHING_DURATION
         )
         if pulse_time_rem > 0:
             self.emit(q1asm_instructions.PLAY, idx0, idx1, pulse_time_rem)
@@ -229,6 +215,63 @@ class QASMProgram:
                 comment="zero as workaround",
             )
         self.elapsed_time += pulse_time_rem
+
+    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+        """
+        Stitches multiple square pulses together to form one long square pulse.
+
+        Parameters
+        ----------
+        pulse
+            The pulse to play
+        idx0
+            Index in the awg_dict corresponding to the waveform for the I channel
+        idx1
+            Index in the awg_dict corresponding to the waveform for the Q channel
+        """
+        self.update_runtime_settings(pulse)
+        self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
+
+    def play_stepped_ramp(self, pulse: OpInfo, idx0: int, idx1: int):
+        """
+
+        Parameters
+        ----------
+        pulse
+            the pulse to play
+        idx0
+            not used
+        idx1
+            not used
+        """
+        num_steps = pulse.data["num_steps"]
+        final_amp = pulse.data["amp"]
+        step_duration = self.to_pulsar_time(pulse.duration / num_steps)
+
+        amp_step = final_amp / num_steps
+        amp_step_imm = self._expand_from_normalised_range(
+            amp_step, constants.IMMEDIATE_SZ_OFFSET, "offset_awg_path0", pulse
+        )
+        self.emit(
+            q1asm_instructions.SET_AWG_GAIN,
+            constants.IMMEDIATE_SZ_GAIN,
+            constants.IMMEDIATE_SZ_GAIN,
+            comment="set gain to known val",
+        )
+
+        offs_reg = "R3"
+        offs_reg_zero = "R4"
+        self.emit(q1asm_instructions.MOVE, amp_step_imm, offs_reg, comment="")
+        self.emit(q1asm_instructions.MOVE, 0, offs_reg_zero, comment="")
+        with self.loop("R2", f"ramp{len(self.instructions)}", repetitions=num_steps):
+            self.emit(
+                q1asm_instructions.SET_AWG_OFFSET,
+                offs_reg,
+                offs_reg_zero,
+            )
+            self.emit(q1asm_instructions.ADD, offs_reg, amp_step_imm, offs_reg)
+            self.auto_wait(step_duration)
+            self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
 
     def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
         """
@@ -244,11 +287,15 @@ class QASMProgram:
         idx1
             Index in the awg_dict corresponding to the waveform for the Q channel
         """
-        reserved_pulse_mapping = {"stitched_square_pulse": self.play_stitched_pulse}
+        reserved_pulse_mapping = {
+            "stitched_square_pulse": self.play_stitched_pulse,
+            "stepped_ramp": self.play_stepped_ramp,
+        }
         if pulse.uuid in reserved_pulse_mapping:
             func = reserved_pulse_mapping[pulse.uuid]
             func(pulse, idx0, idx1)
         else:
+            self.update_runtime_settings(pulse)
             self.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
             self.elapsed_time += constants.GRID_TIME
 

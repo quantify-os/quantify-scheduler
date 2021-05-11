@@ -703,8 +703,16 @@ class PulsarSequencerBase(ABC):
                     return True
             return False
 
+        def _check_stepped_ramp() -> bool:
+            reserved_wf_func = "quantify.scheduler.waveforms.stepped_ramp"
+            if pulse.data["clock"] == BasebandClockResource.IDENTITY:
+                if pulse.data["wf_func"] == reserved_wf_func:
+                    return True
+            return False
+
         reserved_pulse_mapping = {
-            "stitched_square_pulse": _check_square_pulse_stitching
+            "stitched_square_pulse": _check_square_pulse_stitching,
+            "stepped_ramp": _check_stepped_ramp,
         }
         for key, checking_func in reserved_pulse_mapping.items():
             if checking_func():

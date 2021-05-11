@@ -79,6 +79,7 @@ class SteppedRampPulse(Operation):
     def __init__(
         self,
         amp: float,
+        num_steps: int,
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
@@ -111,6 +112,7 @@ class SteppedRampPulse(Operation):
                 {
                     "wf_func": "quantify.scheduler.waveforms.stepped_ramp",
                     "amp": amp,
+                    "num_steps": num_steps,
                     "duration": duration,
                     "t0": t0,
                     "clock": clock,

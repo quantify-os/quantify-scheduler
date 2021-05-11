@@ -23,7 +23,12 @@ from quantify.data.handling import set_datadir
 
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, X
-from quantify.scheduler.pulse_library import DRAGPulse, RampPulse, SquarePulse
+from quantify.scheduler.pulse_library import (
+    DRAGPulse,
+    RampPulse,
+    SquarePulse,
+    SteppedRampPulse,
+)
 from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.compilation import (
     qcompile,
@@ -576,6 +581,26 @@ def test_pulse_stitching_qasm_prog():
     qasm = QASMProgram()
     qasm.wait_till_start_then_play(pulse, 0, 1)
     assert qasm.instructions[2][2] == "20,R2"
+
+
+def test_stepped_ramp_qasm_prog():
+    final_amp = 1.6
+    s_ramp_pulse = SteppedRampPulse(final_amp, 10, 12.4e-6, "q0:mw")
+    runtime_settings = QASMRuntimeSettings(1, 1)
+    pulse = qb.OpInfo(
+        uuid="stepped_ramp",
+        data=s_ramp_pulse.data["pulse_info"][0],
+        timing=4e-9,
+        pulse_settings=runtime_settings,
+    )
+    qasm = QASMProgram()
+    qasm.wait_till_start_then_play(pulse, 0, 1)
+
+    amp_step_used = int(qasm.instructions[7][2].split(",")[1])
+    steps_taken = int(qasm.instructions[4][2].split(",")[0])
+    final_amp_imm = amp_step_used * steps_taken
+    final_amp_volt = 2 * final_amp_imm / constants.IMMEDIATE_SZ_OFFSET
+    assert pytest.approx(final_amp_volt, final_amp)
 
 
 def test_to_pulsar_time():
