@@ -347,3 +347,113 @@ def exec_custom_waveform_function(
 
     # Calculate the numerical waveform using the wf_func
     return function(t=t, **wf_kwargs)
+
+
+def apply_mixer_skewness_corrections(
+    waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
+) -> np.ndarray:
+    """
+    Takes a waveform and applies a correction for amplitude imbalances and
+    phase errors when using an IQ mixer from previously calibrated values.
+
+    Phase correction is done using:
+
+    .. math::
+        Re(z_{corrected}) (t) = Re(z (t)) + Im(z (t)) \tan(\phi)
+        Im(z_{corrected}) (t) = Im(z (t)) / \cos(\phi)
+
+    The amplitude correction is achieved by rescaling the waveforms back to their
+    original amplitudes and multiplying or dividing the I and Q signals respectively by
+    the square root of the amplitude ratio.
+
+    Parameters
+    ----------
+    waveform: np.ndarray
+        The complex valued waveform on which the correction will be applied.
+    amplitude_ratio: float
+        The ratio between the amplitudes of I and Q that is used to correct
+        for amplitude imbalances between the different paths in the IQ mixer.
+    phase_shift: float
+        The phase error (in deg) used to correct the phase between I and Q.
+
+    Returns
+    -------
+        np.ndarray
+            The complex valued waveform with the applied phase and amplitude
+            corrections.
+    """
+
+    def calc_corrected_re(wvfm: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(wvfm.real))
+        wf_re = wvfm.real + wvfm.imag * np.tan(phi)
+        new_amp = np.max(np.abs(wf_re))
+        wf_re = wf_re / new_amp if new_amp != 0 else np.zeros(wf_re.shape)
+        return wf_re * original_amp * np.sqrt(alpha)
+
+    def calc_corrected_im(wvfm: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(wvfm.imag))
+        wf_im = wvfm.imag / np.cos(phi)
+        new_amp = np.max(np.abs(wf_im))
+        wf_im = wf_im / new_amp if new_amp != 0 else np.zeros(wf_im.shape)
+        return wf_im * original_amp / np.sqrt(alpha)
+
+    corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    return corrected_re + 1.0j * corrected_im
+
+
+def modulate_waveform(
+    t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
+) -> np.ndarray:
+    """
+    Generates a (single sideband) modulated waveform from a given envelope by
+    multiplying it with a complex exponential.
+
+    .. math::
+        z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
+
+    The signs are chosen such that the frequencies follow the relation RF = LO + IF for
+    LO, IF > 0.
+
+    Parameters
+    ----------
+    t:
+        A numpy array with time values
+    envelope:
+        The complex-valued envelope of the modulated waveform
+    freq:
+        The frequency of the modulation
+    t0:
+        Time offset for the modulation
+
+    Returns
+    -------
+    :
+        The modulated waveform
+    """
+    modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
+    return envelope * modulation
+
+
+def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]:
+    """
+    Rescales the waveform data so that the maximum amplitude is abs(amp) == 1.
+
+    Parameters
+    ----------
+    data: np.ndarray
+        The waveform data to rescale.
+
+    Returns
+    -------
+    np.ndarray
+        The rescaled data.
+    float
+        The original amplitude of the real part.
+    float
+        The original amplitude of the imaginary part.
+    """
+    amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
+    norm_data_r = data.real / amp_real if amp_real != 0.0 else np.zeros(data.real.shape)
+    norm_data_i = data.imag / amp_imag if amp_imag != 0.0 else np.zeros(data.imag.shape)
+    return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
