@@ -26,6 +26,43 @@ def ramp(t, amp) -> np.ndarray:
     return np.linspace(0, amp, len(t))
 
 
+def stepped_ramp(
+    t: Union[np.ndarray, List[float]], amp: Union[float, complex], num_steps: int
+) -> np.ndarray:
+    """
+    Ramps from zero to a finite value in discrete steps.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function
+    amp
+        Final amplitude to reach on the last step
+    num_steps
+        Number of steps to reach final value
+
+    Returns
+    -------
+        The real valued waveform
+    """
+    amp_step = amp / num_steps
+    t_arr_plateau_len = int(len(t) // num_steps)
+
+    waveform = np.array([])
+    for i in range(num_steps):
+        t_current_plateau = t[i * t_arr_plateau_len : (i + 1) * t_arr_plateau_len]
+        waveform = np.append(
+            waveform,
+            square(
+                t_current_plateau,
+                (i + 1) * amp_step,
+            ),
+        )
+    t_rem = t[num_steps * t_arr_plateau_len :]
+    waveform = np.append(waveform, square(t_rem, amp))
+    return waveform
+
+
 def soft_square(t, amp):
     sq = square(t, amp)
     window = signal.windows.hann(int(len(t) / 2))

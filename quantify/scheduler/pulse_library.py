@@ -75,6 +75,49 @@ class RampPulse(Operation):
         super().__init__(name=data["name"], data=data)
 
 
+class SteppedRampPulse(Operation):
+    def __init__(
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str = BasebandClockResource.IDENTITY,
+        t0: float = 0,
+    ):
+        """
+        A real valued ramp pulse.
+
+        Parameters
+        ------------
+        amp : float
+            Final amplitude of the ramp envelope function.
+        duration : float
+            Duration of the pulse in seconds.
+        port : str
+            Port of the pulse.
+        clock : str
+            Clock used to modulate the pulse, by default a BasebandClock is used.
+        t0 : float
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        """
+
+        data = {
+            "name": "SteppedRampPulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.stepped_ramp",
+                    "amp": amp,
+                    "duration": duration,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+
+
 class SquarePulse(Operation):
     def __init__(
         self,
