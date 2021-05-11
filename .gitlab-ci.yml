@@ -4,7 +4,7 @@ workflow:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "external_pull_request_event"'
 
-.shared_windows_runners:
+.shared-windows-runners:
   tags:
   - shared-windows
   - windows
@@ -128,15 +128,18 @@ stages:
     - *upgrade_pip
     - *pip_install_and_freeze
 
+.pytest-command: &pytest_command
+  - pytest -n 2 --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
+
 .unix-run-pytest:
   script:
-    - pytest -n 2 --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
+    - *pytest_command
     # send the coverage.xml file to codacy
     - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
 
 .win-run-pytest:
   script:
-    - pytest -n 2 --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
+    - *pytest_command
 
 # ######################################################################################
 # Test Unix
