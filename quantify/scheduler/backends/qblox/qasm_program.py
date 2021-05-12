@@ -255,9 +255,6 @@ class QASMProgram:
         final_amp = pulse.data["final_amp"]
         step_duration = self.to_pulsar_time(pulse.duration / num_steps)
 
-        # if final_amp >= self.parent.awg_output_volt:
-        #     raise ValueError(f'Attempting to play a staircase with final amplitude {final_amp}')
-
         amp_step = (final_amp - start_amp) / (num_steps - 1)
         amp_step_imm = self._expand_from_normalised_range(
             amp_step / self.parent.awg_output_volt,

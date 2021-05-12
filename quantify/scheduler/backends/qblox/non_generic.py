@@ -45,6 +45,18 @@ def check_reserved_pulse_id(pulse: OpInfo) -> Optional[str]:
 def generate_reserved_waveform_data(
     reserved_pulse_id: str, data_dict: dict, sampling_rate: float
 ) -> np.ndarray:
+    """
+    Generates the waveform data for the pulses that get special treatment.
+
+    Parameters
+    ----------
+    reserved_pulse_id
+        The id returned by `check_reserved_pulse_id`
+    data_dict
+        The pulse.data dict
+    sampling_rate
+        Sampling rate of the device.
+    """
     func_mapping = {
         "stitched_square_pulse": _stitched_square_pulse_waveform_data,
         "staircase": _staircase_waveform_data,
@@ -55,12 +67,29 @@ def generate_reserved_waveform_data(
 
 
 def _check_square_pulse_stitching(pulse: OpInfo) -> bool:
+    """
+    Checks if the pulse satisfies the criteria for pulse stitching.
+
+    Parameters
+    ----------
+    pulse
+        The pulse to check
+    """
     reserved_wf_func = "quantify.scheduler.waveforms.square"
     if pulse.data["clock"] == BasebandClockResource.IDENTITY:
         return pulse.data["wf_func"] == reserved_wf_func
 
 
 def _check_staircase(pulse: OpInfo) -> bool:
+    """
+    Checks if the pulse satisfies the criteria for generating a staircase through
+    sequencer instructions.
+
+    Parameters
+    ----------
+    pulse
+        The pulse to check
+    """
     reserved_wf_func = "quantify.scheduler.waveforms.staircase"
     if pulse.data["clock"] == BasebandClockResource.IDENTITY:
         return pulse.data["wf_func"] == reserved_wf_func
@@ -69,6 +98,17 @@ def _check_staircase(pulse: OpInfo) -> bool:
 def _staircase_waveform_data(
     data_dict: dict, sampling_rate: float
 ) -> Tuple[None, float, float]:
+    """
+    Generates the waveform data for the staircase pulses, since only sequencer
+    instructions are used, None is returned but the amplitude is calculated normally.
+
+    Parameters
+    ----------
+    data_dict
+        The pulse.data dict
+    sampling_rate
+        Sampling rate of the device.
+    """
     time_duration = PULSE_STITCHING_DURATION
     t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
     wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
@@ -80,6 +120,17 @@ def _staircase_waveform_data(
 def _stitched_square_pulse_waveform_data(
     data_dict: dict, sampling_rate: float
 ) -> Tuple[np.ndarray, float, float]:
+    """
+    Generates the waveform data for the stitched pulses. This will always have length
+    `PULSE_STITCHING_DURATION`
+
+    Parameters
+    ----------
+    data_dict
+        The pulse.data dict
+    sampling_rate
+        Sampling rate of the device.
+    """
     time_duration = PULSE_STITCHING_DURATION
     t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
     wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
