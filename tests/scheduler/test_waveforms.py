@@ -4,7 +4,7 @@ import pytest
 from quantify.scheduler.waveforms import (
     square,
     drag,
-    stepped_ramp,
+    staircase,
     modulate_wave,
     rotate_wave,
 )
@@ -21,29 +21,29 @@ def test_square_wave():
 
 def test_stepped_ramp():
     t = np.linspace(0, 1e-6, 20)
-    sig = stepped_ramp(t, 10, 4)
+    sig = staircase(t, -1, 2, 4)
     answer = np.array(
         [
-            2.5,
-            2.5,
-            2.5,
-            2.5,
-            2.5,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            7.5,
-            7.5,
-            7.5,
-            7.5,
-            7.5,
-            10.0,
-            10.0,
-            10.0,
-            10.0,
-            10.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
         ]
     )
     npt.assert_array_equal(sig, answer)

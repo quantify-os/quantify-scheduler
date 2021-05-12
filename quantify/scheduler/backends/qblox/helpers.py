@@ -7,12 +7,8 @@ from collections import UserDict
 
 import numpy as np
 
-from quantify.scheduler.waveforms import square
-from quantify.scheduler.helpers.waveforms import (
-    exec_waveform_function,
-    normalize_waveform_data,
-)
-from quantify.scheduler.backends.qblox.constants import PULSE_STITCHING_DURATION
+from quantify.scheduler.helpers.waveforms import exec_waveform_function
+
 
 try:
     from qblox_instruments.build import __version__ as driver_version
@@ -154,41 +150,6 @@ def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
     wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
 
     return wf_data
-
-
-def generate_reserved_waveform_data(
-    reserved_pulse_id: str, data_dict: dict, sampling_rate: float
-) -> np.ndarray:
-    func_mapping = {
-        "stitched_square_pulse": _stitched_square_pulse_waveform_data,
-        "stepped_ramp": _stepped_ramp_waveform_data,
-    }
-    func: Callable = func_mapping[reserved_pulse_id]
-
-    return func(data_dict, sampling_rate)
-
-
-def _stepped_ramp_waveform_data(
-    data_dict: dict, sampling_rate: float
-) -> Tuple[np.ndarray, float, float]:
-    time_duration = PULSE_STITCHING_DURATION
-    t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
-    wf_data = data_dict["amp"] * np.ones(len(t))
-    wf_data, amp_i, amp_q = normalize_waveform_data(wf_data)
-
-    return wf_data, amp_i, amp_q
-
-
-def _stitched_square_pulse_waveform_data(
-    data_dict: dict, sampling_rate: float
-) -> Tuple[np.ndarray, float, float]:
-    time_duration = PULSE_STITCHING_DURATION
-    t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
-    wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
-    wf_data, amp_i, amp_q = normalize_waveform_data(wf_data)
-    if np.sum(wf_data) < 0:
-        wf_data, amp_i, amp_q = -wf_data, -amp_i, -amp_q
-    return wf_data, amp_i, amp_q
 
 
 def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:

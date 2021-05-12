@@ -75,10 +75,11 @@ class RampPulse(Operation):
         super().__init__(name=data["name"], data=data)
 
 
-class SteppedRampPulse(Operation):
+class StaircasePulse(Operation):
     def __init__(
         self,
-        amp: float,
+        start_amp: float,
+        final_amp: float,
         num_steps: int,
         duration: float,
         port: str,
@@ -86,13 +87,15 @@ class SteppedRampPulse(Operation):
         t0: float = 0,
     ):
         """
-        A real valued ramp pulse, which reaches it's final amplitude in discrete steps.
+        A real valued staircase pulse, which reaches it's final amplitude in discrete steps.
         In between it will maintain a plateau.
 
         Parameters
         ------------
-        amp : float
-            Final amplitude of the ramp envelope function.
+        start_amp : float
+            Starting amplitude of the staircase envelope function.
+        final_amp : float
+            Final amplitude of the staircase envelope function.
         num_steps: int
             The number of plateaus
         duration : float
@@ -107,11 +110,12 @@ class SteppedRampPulse(Operation):
         """
 
         data = {
-            "name": "SteppedRampPulse",
+            "name": "StaircasePulse",
             "pulse_info": [
                 {
-                    "wf_func": "quantify.scheduler.waveforms.stepped_ramp",
-                    "amp": amp,
+                    "wf_func": "quantify.scheduler.waveforms.staircase",
+                    "start_amp": start_amp,
+                    "final_amp": final_amp,
                     "num_steps": num_steps,
                     "duration": duration,
                     "t0": t0,

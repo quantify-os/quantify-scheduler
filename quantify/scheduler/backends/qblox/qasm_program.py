@@ -1,15 +1,20 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """QASM program class for Qblox backend."""
+from __future__ import annotations
 from contextlib import contextmanager
 from typing import List, Union, Optional
 
 import numpy as np
+from typing import TYPE_CHECKING
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox import constants
 from quantify.scheduler.backends.types.qblox import OpInfo
+
+if TYPE_CHECKING:
+    from quantify.scheduler.backends.qblox.compiler_abc import PulsarSequencerBase
 
 
 class QASMProgram:
@@ -21,6 +26,8 @@ class QASMProgram:
 
     Attributes
     ----------
+    parent:
+        A reference to the sequencer for which we are compiling this program.
     elapsed_time:
         The time elapsed after finishing the program in its current form. This is used
         to keep track of the overall timing and necessary waits.
@@ -28,7 +35,8 @@ class QASMProgram:
         A list containing the instructions added to the program
     """
 
-    def __init__(self):
+    def __init__(self, parent: PulsarSequencerBase):
+        self.parent = parent
         self.elapsed_time: int = 0
         self.instructions: List[list] = list()
 
@@ -104,9 +112,6 @@ class QASMProgram:
         wait_time:
             Time to wait in ns.
 
-        Returns
-        -------
-
         Raises
         ------
         ValueError
@@ -176,10 +181,6 @@ class QASMProgram:
             Index corresponding to the I channel of the pulse in the awg dict.
         idx1:
             Index corresponding to the Q channel of the pulse in the awg dict.
-
-        Returns
-        -------
-
         """
         self.wait_till_start_operation(pulse)
         self.auto_play_pulse(pulse, idx0, idx1)
@@ -232,8 +233,9 @@ class QASMProgram:
         self.update_runtime_settings(pulse)
         self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
 
-    def play_stepped_ramp(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int):
         """
+        Generates a staircase through offset instructions.
 
         Parameters
         ----------
@@ -244,34 +246,84 @@ class QASMProgram:
         idx1
             not used
         """
-        num_steps = pulse.data["num_steps"]
-        final_amp = pulse.data["amp"]
-        step_duration = self.to_pulsar_time(pulse.duration / num_steps)
-
-        amp_step = final_amp / num_steps
-        amp_step_imm = self._expand_from_normalised_range(
-            amp_step, constants.IMMEDIATE_SZ_OFFSET, "offset_awg_path0", pulse
-        )
-        self.emit(
-            q1asm_instructions.SET_AWG_GAIN,
-            constants.IMMEDIATE_SZ_GAIN,
-            constants.IMMEDIATE_SZ_GAIN,
-            comment="set gain to known val",
-        )
-
+        loop_reg = "R2"
         offs_reg = "R3"
         offs_reg_zero = "R4"
-        self.emit(q1asm_instructions.MOVE, amp_step_imm, offs_reg, comment="")
-        self.emit(q1asm_instructions.MOVE, 0, offs_reg_zero, comment="")
-        with self.loop("R2", f"ramp{len(self.instructions)}", repetitions=num_steps):
+
+        num_steps = pulse.data["num_steps"]
+        start_amp = pulse.data["start_amp"]
+        final_amp = pulse.data["final_amp"]
+        step_duration = self.to_pulsar_time(pulse.duration / num_steps)
+
+        # if final_amp >= self.parent.awg_output_volt:
+        #     raise ValueError(f'Attempting to play a staircase with final amplitude {final_amp}')
+
+        amp_step = (final_amp - start_amp) / (num_steps - 1)
+        amp_step_imm = self._expand_from_normalised_range(
+            amp_step / self.parent.awg_output_volt,
+            constants.IMMEDIATE_SZ_OFFSET,
+            "offset_awg_path0",
+            pulse,
+        )
+        start_amp_imm = self._expand_from_normalised_range(
+            start_amp / self.parent.awg_output_volt,
+            constants.IMMEDIATE_SZ_OFFSET,
+            "offset_awg_path0",
+            pulse,
+        )
+        if start_amp_imm < 0:
+            start_amp_imm += constants.REGISTER_SIZE  # since registers are unsigned
+
+        self.emit(
+            q1asm_instructions.SET_AWG_GAIN,
+            constants.IMMEDIATE_SZ_GAIN // 2,
+            constants.IMMEDIATE_SZ_GAIN // 2,
+            comment="set gain to known val",
+        )
+        self.emit(
+            q1asm_instructions.MOVE,
+            start_amp_imm,
+            offs_reg,
+            comment="keeps track of the offs",
+        )
+        self.emit(
+            q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
+        )
+        self.emit(q1asm_instructions.NEW_LINE)
+        with self.loop(
+            loop_reg, f"ramp{len(self.instructions)}", repetitions=num_steps
+        ):
+            self.emit(q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero)
             self.emit(
-                q1asm_instructions.SET_AWG_OFFSET,
-                offs_reg,
-                offs_reg_zero,
+                q1asm_instructions.UPDATE_PARAMETERS,
+                constants.GRID_TIME,
             )
-            self.emit(q1asm_instructions.ADD, offs_reg, amp_step_imm, offs_reg)
-            self.auto_wait(step_duration)
-            self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
+            self.elapsed_time += constants.GRID_TIME
+            if amp_step_imm >= 0:
+                self.emit(
+                    q1asm_instructions.ADD,
+                    offs_reg,
+                    amp_step_imm,
+                    offs_reg,
+                    comment=f"next incr offs by {amp_step_imm}",
+                )
+            else:
+                self.emit(
+                    q1asm_instructions.SUB,
+                    offs_reg,
+                    -amp_step_imm,
+                    offs_reg,
+                    comment=f"next incr offs by {amp_step_imm}",
+                )
+            self.auto_wait(step_duration - constants.GRID_TIME)
+        self.emit(q1asm_instructions.NEW_LINE)
+
+        self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
+        self.emit(
+            q1asm_instructions.UPDATE_PARAMETERS,
+            constants.GRID_TIME,
+        )
+        self.elapsed_time += constants.GRID_TIME
 
     def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
         """
@@ -289,7 +341,7 @@ class QASMProgram:
         """
         reserved_pulse_mapping = {
             "stitched_square_pulse": self.play_stitched_pulse,
-            "stepped_ramp": self.play_stepped_ramp,
+            "staircase": self.play_staircase,
         }
         if pulse.uuid in reserved_pulse_mapping:
             func = reserved_pulse_mapping[pulse.uuid]
@@ -326,9 +378,6 @@ class QASMProgram:
         ----------
         operation:
             The pulse to prepare the settings for.
-
-        Returns
-        -------
 
         Notes
         -----

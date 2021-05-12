@@ -22,11 +22,10 @@ from quantify.data.handling import (
 
 from quantify.scheduler.helpers.waveforms import modulate_waveform
 
-from quantify.scheduler.resources import BasebandClockResource
+from quantify.scheduler.backends.qblox import non_generic
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
-    generate_reserved_waveform_data,
     _generate_waveform_dict,
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
@@ -196,11 +195,11 @@ class PulsarSequencerBase(ABC):
             None if "interm_freq" in seq_settings else seq_settings["interm_freq"]
         )
 
-        self.special_pulse_behavior_enabled = False
-        # if "special_pulse_behavior_enabled" in seq_settings:
-        #     self.special_pulse_behavior_enabled = seq_settings[
-        #         "special_pulse_behavior_enabled"
-        #     ]
+        self.instruction_generated_pulses_enabled = False
+        if "instruction_generated_pulses_enabled" in seq_settings:
+            self.instruction_generated_pulses_enabled = seq_settings[
+                "instruction_generated_pulses_enabled"
+            ]
 
         self._settings = SequencerSettings(
             nco_en=False, sync_en=True, modulation_freq=modulation_freq
@@ -341,9 +340,7 @@ class PulsarSequencerBase(ABC):
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
-            reserved_pulse_id = self._check_reserved_pulses(
-                pulse
-            )  # FIXME: this is nicer in a separate function
+            reserved_pulse_id = non_generic.check_reserved_pulse_id(pulse)
             if reserved_pulse_id is None:
                 raw_wf_data = generate_waveform_data(
                     pulse.data, sampling_rate=SAMPLING_RATE
@@ -354,7 +351,7 @@ class PulsarSequencerBase(ABC):
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
             else:
                 pulse.uuid = reserved_pulse_id
-                raw_wf_data, amp_i, amp_q = generate_reserved_waveform_data(
+                raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
                     reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
                 )
 
@@ -378,7 +375,7 @@ class PulsarSequencerBase(ABC):
                 awg_gain_0=amp_i / self.awg_output_volt,
                 awg_gain_1=amp_q / self.awg_output_volt,
             )
-            if pulse.uuid not in waveforms_complex:
+            if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return _generate_waveform_dict(waveforms_complex)
 
@@ -483,14 +480,10 @@ class PulsarSequencerBase(ABC):
             )
 
     # pylint: disable=too-many-locals
-    # pylint: disable=too-many-arguments
-    @classmethod
     def generate_qasm_program(
-        cls,
+        self,
         total_sequence_time: float,
-        pulses: Optional[List[OpInfo]] = None,
         awg_dict: Optional[Dict[str, Any]] = None,
-        acquisitions: Optional[List[OpInfo]] = None,
         acq_dict: Optional[Dict[str, Any]] = None,
         repetitions: Optional[int] = 1,
     ) -> str:
@@ -545,14 +538,14 @@ class PulsarSequencerBase(ABC):
         loop_label = "start"
         loop_register = "R0"
 
-        qasm = QASMProgram()
+        qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
         qasm.emit(q1asm_instructions.SET_MARKER, 1)
 
         # program body
-        pulses = list() if pulses is None else pulses
-        acquisitions = list() if acquisitions is None else acquisitions
+        pulses = list() if self.pulses is None else self.pulses
+        acquisitions = list() if self.acquisitions is None else self.acquisitions
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
 
@@ -563,10 +556,10 @@ class PulsarSequencerBase(ABC):
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
                 if operation.is_acquisition:
-                    idx0, idx1 = cls.get_indices_from_wf_dict(operation.uuid, acq_dict)
+                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, acq_dict)
                     qasm.wait_till_start_then_acquire(operation, idx0, idx1)
                 else:
-                    idx0, idx1 = cls.get_indices_from_wf_dict(operation.uuid, awg_dict)
+                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
             end_time = qasm.to_pulsar_time(total_sequence_time)
@@ -607,7 +600,9 @@ class PulsarSequencerBase(ABC):
             Index of the Q waveform.
         """
         name_real, name_imag = generate_waveform_names_from_uuid(uuid)
-        return wf_dict[name_real]["index"], wf_dict[name_imag]["index"]
+        idx_real = None if name_real not in wf_dict else wf_dict[name_real]["index"]
+        idx_imag = None if name_imag not in wf_dict else wf_dict[name_imag]["index"]
+        return idx_real, idx_imag
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -678,47 +673,6 @@ class PulsarSequencerBase(ABC):
 
         return file_path
 
-    def _check_reserved_pulses(self, pulse: OpInfo) -> Optional[str]:
-        """
-        Checks whether the function should be evaluated generically or has special
-        treatment.
-
-        Parameters
-        ----------
-        pulse
-            The pulse to check
-
-        Returns
-        -------
-            A str with a special identifier representing which pulse behavior to use,
-            or None if it needs to be treated generically.
-        """
-        if not self.special_pulse_behavior_enabled:
-            return None
-
-        def _check_square_pulse_stitching() -> bool:
-            reserved_wf_func = "quantify.scheduler.waveforms.square"
-            if pulse.data["clock"] == BasebandClockResource.IDENTITY:
-                if pulse.data["wf_func"] == reserved_wf_func:
-                    return True
-            return False
-
-        def _check_stepped_ramp() -> bool:
-            reserved_wf_func = "quantify.scheduler.waveforms.stepped_ramp"
-            if pulse.data["clock"] == BasebandClockResource.IDENTITY:
-                if pulse.data["wf_func"] == reserved_wf_func:
-                    return True
-            return False
-
-        reserved_pulse_mapping = {
-            "stitched_square_pulse": _check_square_pulse_stitching,
-            "stepped_ramp": _check_stepped_ramp,
-        }
-        for key, checking_func in reserved_pulse_mapping.items():
-            if checking_func():
-                return key
-        return None
-
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
@@ -744,9 +698,7 @@ class PulsarSequencerBase(ABC):
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
-            self.pulses,
             awg_dict,
-            self.acquisitions,
             acq_dict,
             repetitions=repetitions,
         )

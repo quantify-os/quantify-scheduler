@@ -26,8 +26,11 @@ def ramp(t, amp) -> np.ndarray:
     return np.linspace(0, amp, len(t))
 
 
-def stepped_ramp(
-    t: Union[np.ndarray, List[float]], amp: Union[float, complex], num_steps: int
+def staircase(
+    t: Union[np.ndarray, List[float]],
+    start_amp: Union[float, complex],
+    final_amp: Union[float, complex],
+    num_steps: int,
 ) -> np.ndarray:
     """
     Ramps from zero to a finite value in discrete steps.
@@ -36,7 +39,9 @@ def stepped_ramp(
     ----------
     t
         Times at which to evaluate the function
-    amp
+    start_amp
+        Starting amplitude
+    final_amp
         Final amplitude to reach on the last step
     num_steps
         Number of steps to reach final value
@@ -45,7 +50,7 @@ def stepped_ramp(
     -------
         The real valued waveform
     """
-    amp_step = amp / num_steps
+    amp_step = (final_amp - start_amp) / (num_steps - 1)
     t_arr_plateau_len = int(len(t) // num_steps)
 
     waveform = np.array([])
@@ -55,11 +60,12 @@ def stepped_ramp(
             waveform,
             square(
                 t_current_plateau,
-                (i + 1) * amp_step,
-            ),
+                i * amp_step,
+            )
+            + start_amp,
         )
     t_rem = t[num_steps * t_arr_plateau_len :]
-    waveform = np.append(waveform, square(t_rem, amp))
+    waveform = np.append(waveform, square(t_rem, final_amp))
     return waveform
 
 
