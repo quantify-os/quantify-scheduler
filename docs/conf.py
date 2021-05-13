@@ -208,6 +208,7 @@ blockdiag_html_image_format = "SVG"
 qualname_overrides = {
     "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
     "zhinst.qcodes.uhfqa.UHFQA": "zhinst.qcodes.UHFQA",
+    "zhinst.qcodes.hdawg.HDAWG": "zhinst.qcodes.HDAWG",
 }
 
 numfig = True
