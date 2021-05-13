@@ -3,7 +3,7 @@
 Tutorial 3. HDAWG
 =================
 
-This tutorial describes how to use quantify-schedule to generate pulses using the HDAWG.
+This tutorial describes how to use :mod:`quantify.scheduler` to generate pulses using the HDAWG.
 
 Requirements
 ^^^^^^^^^^^^

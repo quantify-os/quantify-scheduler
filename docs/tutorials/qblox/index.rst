@@ -9,7 +9,7 @@ Qblox Backend
 Introduction
 ^^^^^^^^^^^^
 
-:mod:`quantify-scheduler` provides a modular system: :mod:`~quantify.scheduler.backends.qblox_backend`,
+:mod:`quantify.scheduler` provides a modular system: :mod:`~quantify.scheduler.backends.qblox_backend`,
 that abstracts the full experimental setup using `Qblox <https://www.qblox.com>`_ hardware for
 experiments in a modern and automated fashion.
 
@@ -25,7 +25,7 @@ Functionality included in this backend:
 - Flexible configuration via JSON data structures.
 
 No special configuration is required to use this backend. Simply specify :func:`quantify.scheduler.backends.qblox_backend.hardware_compile`
-in the hardware configuration to use this backend or call the function directly. Please visit :ref:`Usage of the backend <sec-qblox-how-to-configure>`
+in the hardware configuration to use this backend or call the function directly. Please see :ref:`Usage of the backend <sec-qblox-how-to-configure>`
 for information on how to set this up.
 After generation of the compiled program, uploading to the hardware can be done using the usual
 `qblox-instruments <https://pypi.org/project/qblox-instruments/>`_ drivers. Installation of these drivers

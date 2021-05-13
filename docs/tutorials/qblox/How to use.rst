@@ -6,7 +6,7 @@ Usage of the backend
 Configuring the backend specifying a python dictionary (or loading it from a JSON file)
 that describes your experimental setup. An example of such a config:
 
-.. code-block:: jupyter-execute
+.. jupyter-execute::
     :linenos:
 
     {

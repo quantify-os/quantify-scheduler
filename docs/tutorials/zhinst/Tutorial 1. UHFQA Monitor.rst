@@ -3,7 +3,7 @@
 Tutorial 1. UHFQA Monitor
 =========================
 
-This tutorial describes how to use quantify-schedule to generate pulses and acquire monitor data,
+This tutorial describes how to use :mod:`quantify.scheduler` to generate pulses and acquire monitor data,
 also visualized in the Quantum Analyzer Input tab of LabOne, using the UHFQA's AWG.
 
 For this tutorial lets use :func:`~quantify.scheduler.schedules.acquisition.raw_trace_schedule` to create a

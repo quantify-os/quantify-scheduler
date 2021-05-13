@@ -84,8 +84,7 @@ def _validate_schedule(schedule: types.Schedule) -> None:
 
     Parameters
     ----------
-    schedule :
-        The :class:`~quantify.scheduler.types.Schedule`
+    schedule
 
     Raises
     ------
@@ -93,7 +92,9 @@ def _validate_schedule(schedule: types.Schedule) -> None:
         The validation error.
     """
     if len(schedule.timing_constraints) == 0:
-        raise ValueError(f"Undefined timing contraints for schedule '{schedule.name}'!")
+        raise ValueError(
+            f"Undefined timing constraints for schedule '{schedule.name}'!"
+        )
 
     for t_constr in schedule.timing_constraints:
 
@@ -118,15 +119,11 @@ def apply_waveform_corrections(
 
     Parameters
     ----------
-    output :
-    waveform :
-    start_and_duration_in_seconds :
-    instrument_info :
-    is_pulse :
-
-    Returns
-    -------
-    Tuple[int, int, np.ndarray]
+    output
+    waveform
+    start_and_duration_in_seconds
+    instrument_info
+    is_pulse
     """
 
     (start_in_seconds, duration_in_seconds) = start_and_duration_in_seconds
@@ -162,11 +159,7 @@ def _flatten_dict(collection: Dict[Any, Any]) -> Iterable[Tuple[Any, Any]]:
 
     Parameters
     ----------
-    collection : Dict[Any, Any]
-
-    Returns
-    -------
-    Iterable[Tuple[Any, Any]]
+    collection
     """
 
     def expand(key, obj):
@@ -198,15 +191,11 @@ def get_wave_instruction(
 
     Parameters
     ----------
-    uuid :
-    timeslot_index :t
-    output :
-    cached_schedule :
-    instrument_info :
-
-    Returns
-    -------
-    zhinst._Wave
+    uuid
+    timeslot_index
+    output
+    cached_schedule
+    instrument_info
     """
     pulse_info = cached_schedule.pulseid_pulseinfo_dict[uuid]
 
@@ -268,19 +257,13 @@ def get_measure_instruction(
     """
     Returns the measurement sequence instruction.
 
-    This
-
     Parameters
     ----------
-    uuid :
-    timeslot_index :
-    output :
-    cached_schedule :
-    instrument_info :
-
-    Returns
-    -------
-    zhinst._Measure
+    uuid
+    timeslot_index
+    output
+    cached_schedule
+    instrument_info
     """
     acq_info = cached_schedule.acqid_acqinfo_dict[uuid]
     abs_time = (
@@ -330,13 +313,9 @@ def get_execution_table(
 
     Parameters
     ----------
-    cached_schedule :
-    instrument_info :
-    output :
-
-    Returns
-    -------
-    List[zhinst._Instruction]
+    cached_schedule
+    instrument_info
+    output
 
     Raises
     ------
@@ -420,8 +399,8 @@ def setup_zhinst_backend(
 
     Parameters
     ----------
-    schedule :
-    hardware_map :
+    schedule
+    hardware_map
 
     Returns
     -------
@@ -489,11 +468,11 @@ def _program_modulation(
 
     Parameters
     ----------
-    awg :
-    device :
-    output :
-    waveforms_dict :
-    pulseid_pulseinfo_dict :
+    awg
+    device
+    output
+    waveforms_dict
+    pulseid_pulseinfo_dict
     """
 
     if output.modulation == enums.ModulationModeType.PREMODULATE:
@@ -539,12 +518,12 @@ def _set_waveforms(
 
     Parameters
     ----------
-    instrument :
-    awg :
-    waveforms_dict :
-    commandtable_map :
-    pulseid_pulseinfo_dict :
-    destination :
+    instrument
+    awg
+    waveforms_dict
+    commandtable_map
+    pulseid_pulseinfo_dict
+    destination
     """
     awg_directory = awg._awg._module.get_string("directory")
     csv_data_dir = Path(awg_directory).joinpath("awg", "waves")
@@ -593,6 +572,7 @@ def _program_hdawg(
     section: 3.3.6. Memory-efficient Sequencing with the Command Table, page 74
 
     .. note::
+
         The following sequential steps are required
         in order to utilize the commandtable.
         1: Compile seqc program
@@ -601,9 +581,9 @@ def _program_hdawg(
 
     Parameters
     ----------
-    hdawg :
-    device :
-    cached_schedule :
+    hdawg
+    device
+    cached_schedule
 
     Raises
     ------
@@ -712,14 +692,14 @@ def _program_sequences_hdawg(
 
     Parameters
     ----------
-    hdawg :
-    awg :
-    cached_schedule :
-    device :
-    instrument_info :
-    output :
-    commandtable_map :
-    instructions :
+    hdawg
+    awg
+    cached_schedule
+    device
+    instrument_info
+    output
+    commandtable_map
+    instructions
     """
 
     seqc_gen = seqc_il_generator.SeqcILGenerator()
@@ -916,9 +896,9 @@ def _program_uhfqa(
 
     Parameters
     ----------
-    uhfqa :
-    device :
-    cached_schedule :
+    uhfqa
+    device
+    cached_schedule
     """
     instrument_info = zhinst.InstrumentInfo(
         zi_helpers.get_clock_rate(device.type), 8, WAVEFORM_GRANULARITY[device.type]
@@ -1028,7 +1008,7 @@ def _program_uhfqa(
             # This overwrites 0..length with new values.
             # The waveform is slightly larger then the integration_length
             # because of the waveform granularity. This is irrelevant
-            # due to the waveform being appended with zeros. Theirfore
+            # due to the waveform being appended with zeros. Therefore
             # avoiding an extra slice of waveform[0:integration_length]
             waveform_i = measure_instruction.weights_i
             waveform_q = measure_instruction.weights_q
@@ -1083,14 +1063,14 @@ def _program_sequences_uhfqa(
 
     Parameters
     ----------
-    uhfqa :
-    awg :
-    cached_schedule :
-    device :
-    instrument_info:
-    output :
-    commandtable_map :
-    instructions :
+    uhfqa
+    awg
+    cached_schedule
+    device
+    instrument_info
+    output
+    commandtable_map
+    instructions
     """
 
     seqc_gen = seqc_il_generator.SeqcILGenerator()

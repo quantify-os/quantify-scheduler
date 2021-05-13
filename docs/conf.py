@@ -207,6 +207,7 @@ blockdiag_html_image_format = "SVG"
 # used by scanpydoc.elegant_typehints to correctly link to external docs
 qualname_overrides = {
     "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
+    "zhinst.qcodes.uhfqa.UHFQA": "zhinst.qcodes.UHFQA",
 }
 
 numfig = True

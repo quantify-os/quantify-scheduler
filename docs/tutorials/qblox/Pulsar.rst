@@ -5,7 +5,7 @@ Pulsar QCM/QRM
 
 Each device in the setup can be individually configured using the entry in the config. For instance:
 
-.. code-block:: jupyter-execute
+.. jupyter-execute::
     :linenos:
 
     {
