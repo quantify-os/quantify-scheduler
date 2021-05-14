@@ -117,7 +117,7 @@ types
 .. automodule:: quantify.scheduler.backends.types.zhinst
     :members:
 
-Qblox
+qblox
 ~~~~~~
 
 .. automodule:: quantify.scheduler.backends.qblox.helpers
@@ -126,7 +126,7 @@ Qblox
 .. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
     :members:
 
-.. automodule:: quantify.scheduler.backends.qblox.compilers_abc
+.. automodule:: quantify.scheduler.backends.qblox.compiler_abc
     :members:
 
 .. automodule:: quantify.scheduler.backends.qblox.constants
@@ -176,6 +176,7 @@ pulse_diagram
 ~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
+    :members:
 
 =======
 

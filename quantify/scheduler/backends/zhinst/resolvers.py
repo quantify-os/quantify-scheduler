@@ -18,12 +18,8 @@ def monitor_acquisition_resolver(
 
     Parameters
     ----------
-    uhfqa :
-    monitor_nodes :
-
-    Returns
-    -------
-    np.ndarray
+    uhfqa
+    monitor_nodes
     """
     (node_i, node_q) = monitor_nodes
     results_i = zi_helpers.get_value(uhfqa, node_i)
@@ -37,11 +33,7 @@ def result_acquisition_resolver(uhfqa: qcodes.UHFQA, result_node: str) -> np.nda
 
     Parameters
     ----------
-    uhfqa :
-    result_node :
-
-    Returns
-    -------
-    np.ndarray
+    uhfqa
+    result_node
     """
     return zi_helpers.get_value(uhfqa, result_node)
