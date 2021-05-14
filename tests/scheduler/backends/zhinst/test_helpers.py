@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Tests for Zurich Instruments backend.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 import json
 from pathlib import Path
 from typing import Any, Dict, List
@@ -16,46 +14,57 @@ from quantify.scheduler.backends.types.zhinst import DeviceType, QasIntegrationM
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 
 
-def test_get(mocker):
+@pytest.mark.parametrize(
+    "node",
+    [
+        ("awgs/0/commandtable/data"),
+        ("/dev1234/awgs/0/commandtable/data"),
+    ],
+)
+def test_get_value(mocker, node: str):
     # Arrange
     return_value = '{"header": {"version": "0.2", "partial": false}, "table": []}'
-    mock_controller = mocker.Mock(**{"_get.return_value": return_value})
+    controller = mocker.Mock(**{"_get.return_value": return_value})
 
     instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=ZIBaseInstrument)
-    instrument._controller = mock_controller
-    node: str = "awgs/0/commandtable/data"
+    instrument._controller = controller
 
     # Act
     value = zi_helpers.get_value(instrument, node)
 
     # Assert
     assert value == return_value
-    mock_controller._get.assert_called_with("/dev1234/awgs/0/commandtable/data")
+    controller._get.assert_called_with("/dev1234/awgs/0/commandtable/data")
 
 
-def test_set(mocker):
+@pytest.mark.parametrize(
+    "node",
+    [
+        ("qas/0/integration/mode"),
+        ("/dev1234/qas/0/integration/mode"),
+    ],
+)
+def test_set_value(mocker, node: str):
     # Arrange
-    mock_controller = mocker.Mock()
+    controller = mocker.Mock()
 
     instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=ZIBaseInstrument)
-    instrument._controller = mock_controller
-    node: str = "qas/0/integration/mode"
+    instrument._controller = controller
 
     # Act
     zi_helpers.set_value(instrument, node, value=1)
 
     # Assert
-    mock_controller._set.assert_called_with("/dev1234/qas/0/integration/mode", 1)
+    controller._set.assert_called_with("/dev1234/qas/0/integration/mode", 1)
 
 
 def test_set_wave_vector(mocker):
     # Arrange
-    serial = "dev1234"
+    set_vector = mocker.patch.object(zi_helpers, "set_vector")
+    instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": "dev1234"})
+
     awg_index = 0
     wave_index = 1
-
-    mock_set_vector = mocker.patch.object(zi_helpers, "set_vector")
-    instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": serial})
 
     expected_node: str = f"awgs/{awg_index}/waveform/waves/{wave_index}"
     vector = np.zeros(16)
@@ -64,29 +73,63 @@ def test_set_wave_vector(mocker):
     zi_helpers.set_wave_vector(instrument, awg_index, wave_index, vector)
 
     # Assert
-    mock_set_vector.assert_called_with(instrument, expected_node, vector)
+    set_vector.assert_called_with(instrument, expected_node, vector)
 
 
-def test_set_vector(mocker):
+@pytest.mark.parametrize(
+    "node",
+    [
+        ("awgs/0/commandtable/data"),
+        ("/dev1234/awgs/0/commandtable/data"),
+    ],
+)
+def test_set_vector(mocker, node: str):
     # Arrange
     return_value = '{"header": {"version": "0.2", "partial": false}, "table": []}'
-    mock_controller = mocker.Mock(
+    controller = mocker.Mock(
         **{"_controller._connection._daq.setVector.return_value": return_value}
     )
 
     instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": "dev1234"})
-    instrument._controller = mock_controller
+    instrument._controller = controller
     expected_node: str = "/dev1234/awgs/0/commandtable/data"
 
     # Act
-    node: str = "awgs/0/commandtable/data"
     vector = '{"foo": "bar"}'
     zi_helpers.set_vector(instrument, node, vector)
 
     # Assert
-    mock_controller._controller._connection._daq.setVector.assert_called_with(
+    controller._controller._connection._daq.setVector.assert_called_with(
         expected_node, vector
     )
+
+
+@pytest.mark.parametrize(
+    "n_awgs,node",
+    [
+        (1, "compiler/sourcestring"),
+        (3, "compiler/sourcestring"),
+    ],
+)
+def test_set_awg_value(mocker, n_awgs: int, node: str):
+    # Arrange
+    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=ZIBaseInstrument)
+    awg = mocker.Mock()
+    awg._awg._module = mocker.Mock()
+    if n_awgs > 1:
+        instrument.awgs = [awg]
+    else:
+        instrument.awg = awg
+
+    expected_node = "compiler/sourcestring"
+    awg_index = 0
+    value = "foo"
+
+    # Act
+    zi_helpers.set_awg_value(instrument, awg_index, node, value)
+
+    # Assert
+    awg._awg._module.set.assert_called_with(expected_node, value)
 
 
 @pytest.mark.parametrize(
@@ -100,7 +143,7 @@ def test_set_commandtable_data(mocker, json_data):
     # Arrange
     awg_index = 0
 
-    mock_set_vector = mocker.patch.object(zi_helpers, "set_vector")
+    set_vector = mocker.patch.object(zi_helpers, "set_vector")
     instrument = mocker.Mock(spec=ZIBaseInstrument)
 
     expected_node: str = f"awgs/{awg_index}/commandtable/data"
@@ -112,16 +155,16 @@ def test_set_commandtable_data(mocker, json_data):
     zi_helpers.set_commandtable_data(instrument, awg_index, json_data)
 
     # Assert
-    mock_set_vector.assert_called_with(instrument, expected_node, expected_json_data)
+    set_vector.assert_called_with(instrument, expected_node, expected_json_data)
 
 
 def test_get_directory(mocker):
     # Arrange
-    mock_awg_core = mocker.Mock(**{"_awg._module.get_string.return_value": "./foo/"})
+    awg_core = mocker.Mock(**{"_awg._module.get_string.return_value": "./foo/"})
     expected = Path("./foo/")
 
     # Act
-    path: Path = zi_helpers.get_directory(mock_awg_core)
+    path: Path = zi_helpers.get_directory(awg_core)
 
     # Assert
     assert path == expected
@@ -129,11 +172,11 @@ def test_get_directory(mocker):
 
 def test_get_src_directory(mocker):
     # Arrange
-    mock_awg_core = mocker.Mock(**{"_awg._module.get_string.return_value": "./foo/"})
+    awg_core = mocker.Mock(**{"_awg._module.get_string.return_value": "./foo/"})
     expected = Path("./foo/awg/src")
 
     # Act
-    path: Path = zi_helpers.get_src_directory(mock_awg_core)
+    path: Path = zi_helpers.get_src_directory(awg_core)
 
     # Assert
     assert path == expected
@@ -141,11 +184,11 @@ def test_get_src_directory(mocker):
 
 def test_get_waves_directory(mocker):
     # Arrange
-    mock_awg_core = mocker.Mock(**{"_awg._module.get_string.return_value": "./foo/"})
+    awg_core = mocker.Mock(**{"_awg._module.get_string.return_value": "./foo/"})
     expected = Path("./foo/awg/waves")
 
     # Act
-    path: Path = zi_helpers.get_waves_directory(mock_awg_core)
+    path: Path = zi_helpers.get_waves_directory(awg_core)
 
     # Assert
     assert path == expected
@@ -171,9 +214,9 @@ def test_get_clock_rate(device_type, expected):
 
 def test_write_seqc_file(mocker):
     # Arrange
-    mock_get_src_directory = mocker.patch.object(zi_helpers, "get_src_directory")
-    mock_get_src_directory.return_value = Path("./foo/awg/src/")
-    mock_write_text = mocker.patch.object(Path, "write_text")
+    get_src_directory = mocker.patch.object(zi_helpers, "get_src_directory")
+    get_src_directory.return_value = Path("./foo/awg/src/")
+    write_text = mocker.patch.object(Path, "write_text")
 
     contents: str = '{ "foo": "bar" }'
 
@@ -182,7 +225,7 @@ def test_write_seqc_file(mocker):
 
     # Assert
     assert path == Path("./foo/awg/src/awg0.seqc")
-    mock_write_text.assert_called_with(contents)
+    write_text.assert_called_with(contents)
 
 
 @pytest.mark.parametrize(
@@ -232,7 +275,7 @@ def test_get_commandtable_map(
 
 def test_set_qas_parameters(mocker):
     # Arrange
-    mock_set = mocker.patch.object(zi_helpers, "set_value")
+    set_value = mocker.patch.object(zi_helpers, "set_value")
     instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": "dev1234"})
 
     expected_calls = [
@@ -245,12 +288,12 @@ def test_set_qas_parameters(mocker):
     zi_helpers.set_qas_parameters(instrument, 1024, QasIntegrationMode.NORMAL, 0)
 
     # Assert
-    assert mock_set.mock_calls == expected_calls
+    assert set_value.mock_calls == expected_calls
 
 
 def test_set_integration_weights(mocker):
     # Arrange
-    mock_set = mocker.patch.object(zi_helpers, "set_vector")
+    set_value = mocker.patch.object(zi_helpers, "set_vector")
     instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": "dev1234"})
 
     channel_index = 0
@@ -266,8 +309,8 @@ def test_set_integration_weights(mocker):
     zi_helpers.set_integration_weights(instrument, channel_index, weights_i, weights_q)
 
     # Assert
-    assert mock_set.call_args_list == expected_calls
-    for i, call_args in enumerate(mock_set.call_args_list):
+    assert set_value.call_args_list == expected_calls
+    for i, call_args in enumerate(set_value.call_args_list):
         args, _ = call_args
 
         assert isinstance(args[2], (np.ndarray, np.generic))

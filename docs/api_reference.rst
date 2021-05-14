@@ -178,8 +178,6 @@ pulse_diagram
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
     :members:
 
-=======
-
 miscellaneous
 -------------
 
