@@ -27,7 +27,7 @@ def get_value(instrument: qcodes.ZIBaseInstrument, node: str) -> str:
 
     Returns
     -------
-    str
+    :
         The node value.
     """
     path = f"/{instrument._serial}/{node}"
@@ -138,7 +138,7 @@ def get_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path of this directory.
     """
     return Path(awg._awg._module.get_string("directory"))
@@ -155,7 +155,7 @@ def get_src_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path to the source directory.
     """
     return get_directory(awg).joinpath("awg", "src")
@@ -172,7 +172,7 @@ def get_waves_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path to the waves directory.
     """
     return get_directory(awg).joinpath("awg", "waves")
@@ -189,7 +189,7 @@ def get_clock_rate(device_type: types.DeviceType) -> int:
 
     Returns
     -------
-    int
+    :
         The number of clocks (GSa/s).
     """
     # clock_rate = awg._awg.sequence_params["sequence_parameters"]["clock_rate"]
@@ -217,7 +217,7 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
 
     Returns
     -------
-    Path
+    :
         Returns the path which was written.
     """
     path = get_src_directory(awg).joinpath(filename)
@@ -242,7 +242,7 @@ def get_commandtable_map(
 
     Returns
     -------
-    Dict[int, int]
+    :
         The command table map.
     """
     commandtable_map: Dict[int, int] = dict()
@@ -311,7 +311,7 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
 
     Returns
     -------
-    str
+    :
         The channel bitmask.
     """
     assert readout_channels_count <= 10

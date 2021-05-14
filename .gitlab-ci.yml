@@ -231,7 +231,6 @@ docs-unix-make-html-3.7:
     - .unix-before-script
     - .docs-unix-and-artifacts
     - .run-for-develop-only
-  allow_failure: true  # temporarily allowed to fail, see issue #100
 
 docs-unix-make-html-3.8:
   stage: Docs build
@@ -240,7 +239,6 @@ docs-unix-make-html-3.8:
     - .unix-before-script
     - .docs-unix-and-artifacts
     - .run-for-develop-only
-  allow_failure: true  # temporarily allowed to fail, see issue #100
 
 docs-unix-make-html-latest:
   stage: Docs build
@@ -263,7 +261,6 @@ docs-win-make-html-3.7.9:
     - .win-before-script-3.7.9
     - .docs-win-and-artifacts
     - .run-for-develop-only
-  allow_failure: true
 
 docs-win-make-html-3.8.9:
   stage: Docs build
