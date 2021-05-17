@@ -1,17 +1,24 @@
 {
-  "backend": "quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend",
+  "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
   "devices": [
     {
       "name": "hdawg0",
+      "type": "HDAWG4",
+      "clock_select": 0,
       "ref": "int",
       "channelgrouping": 0,
       "channel_0": {
         "port": "q0:mw",
         "clock": "q0.01",
         "mode": "complex",
-        "modulation": "premod",
-        "lo_freq": 4.8e9,
-        "interm_freq": -50e6,
+        "modulation": {
+          "type": "premod",
+          "interm_freq": -50e6
+        },
+        "local_oscillator": {
+          "name": "lo0",
+          "frequency": 4.8e9
+        },
         "line_trigger_delay": 5e-9,
         "markers": [
           "AWG_MARKER1",
@@ -22,9 +29,14 @@
         "port": "q1:mw",
         "clock": "q1.01",
         "mode": "complex",
-        "modulation": "premod",
-        "lo_freq": 4.8e9,
-        "interm_freq": -50e6,
+        "modulation": {
+          "type": "premod",
+          "interm_freq": -50e6
+        },
+        "local_oscillator": {
+          "name": "lo0",
+          "frequency": 4.8e9
+        },
         "line_trigger_delay": 5e-9,
         "triggers": [
           1
@@ -33,13 +45,21 @@
     },
     {
       "name": "uhfqa0",
+      "type": "UHFQA",
+      "clock_select": 0,
       "ref": "ext",
       "channel_0": {
         "port": "q0:res",
         "clock": "q0.ro",
         "mode": "real",
-        "lo_freq": 4.8e9,
-        "interm_freq": -50e6,
+        "modulation": {
+          "type": "premod",
+          "interm_freq": -50e6
+        },
+        "local_oscillator": {
+          "name": "lo0",
+          "frequency": 4.8e9
+        },
         "line_trigger_delay": 5e-9,
         "triggers": [
           2

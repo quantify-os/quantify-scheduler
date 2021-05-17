@@ -3,7 +3,7 @@
 Tutorial 3. HDAWG
 =================
 
-This tutorial describes how to use quantify-schedule to generate pulses using the HDAWG.
+This tutorial describes how to use :mod:`quantify.scheduler` to generate pulses using the HDAWG.
 
 Requirements
 ^^^^^^^^^^^^
@@ -23,11 +23,8 @@ Requirements
 
     from zhinst.qcodes import HDAWG
 
-    from quantify.scheduler.types import Schedule
-    from quantify.scheduler.gate_library import Rxy, X, X90, Reset, Measure, CZ
-
+    from quantify.scheduler.schedules.timedomain_schedules import t1_sched
     from quantify.scheduler.compilation import qcompile
-    import quantify.scheduler.backends.zhinst_backend as zhinst_backend
 
     # Debug only
     # logging.getLogger().setLevel(logging.DEBUG)
@@ -35,37 +32,29 @@ Requirements
 .. code-block:: python
     :linenos:
 
-    # Create a schedule
-    schedule = Schedule("T1 Experiment", repetitions=1)
-    times = np.arange(0, 100e-6, 3e-6)
-    for tau in times:
-        schedule.add(Reset("q0"))
-        schedule.add(X("q0"), ref_pt="start")
-        schedule.add(Measure("q0"), rel_time=tau)
+    # Create a T1 Schedule
+    schedule = t1_sched(np.arange(0, 100e-6, 3e-6), "q0")
+    schedule.repetitions = 1
 
 .. code-block:: python
     :linenos:
 
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
-        import quantify.scheduler.schemas.examples as es
-        import os, inspect
-        import json
-
-        examples_path:str = inspect.getfile(es)
-        config_file_path = os.path.abspath(os.path.join(examples_path, '..', filename))
-
-        return json.loads(Path(config_file_path).read_text())
-
+        import quantify.scheduler.schemas.examples as examples
+        path = Path(examples.__file__).parent.joinpath(filename)
+        return json.loads(path.read_text())
+    
     # Load example configuration from quantify.scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
     zhinst_hardware_map: Dict[str, Any] = json.loads(
     """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.create_pulsar_backend",
+      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "hdawg0",
+          "type": "HDAWG4",
           "ref": "none",
           "channelgrouping": 0,
           "channel_0": {
@@ -73,7 +62,6 @@ Requirements
             "clock": "q0.01",
             "mode": "complex",
             "modulation": "none",
-            "line_gain_db": 0,
             "lo_freq": 4.8e9,
             "interm_freq": -50e6
           }
@@ -87,7 +75,7 @@ Requirements
     :linenos:
 
     # Compile schedule with configurations
-    schedule = qcompile(schedule, device_config_map, zhinst_hardware_map)
+    zi_backend = qcompile(schedule, device_config_map, zhinst_hardware_map)
 
 .. code-block:: python
     :linenos:
@@ -99,9 +87,18 @@ Requirements
 
 .. code-block:: python
     :linenos:
+    
+    # Configure the Instruments
+    for instrument_name, settings_builder in zi_backend.settings.items():
+        instrument = Instrument.find_instrument(instrument_name)
+        zi_settings = settings_builder.build(instrument)
 
-    # Run the backend setup
-    zhinst_backend.setup_zhinst_backend(schedule, zhinst_hardware_map)
+        # Apply settings to the Instrument
+        zi_settings.apply()
+
+        # Optionally serialize the settings to file storage
+        root = Path('.')
+        zi_settings.serialize(root)
 
 .. code-block:: python
     :linenos:

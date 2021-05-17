@@ -2,7 +2,7 @@ Zurich Instruments Backend
 ==========================
 
 .. warning::
-    The :mod:`quantify.scheduler.backends.zhinst_backend` is still under development. 
+    The :mod:`quantify.scheduler.backends.zhinst_backend` is still under development.
     Breaking changes at this stage are not excluded.
 
 Please read this `Gitlab Issue <https://gitlab.com/quantify-os/quantify-scheduler/-/issues/88>`_ for open issues.
@@ -10,21 +10,21 @@ Please read this `Gitlab Issue <https://gitlab.com/quantify-os/quantify-schedule
 Introduction
 ^^^^^^^^^^^^
 
-:mod:`quantify-scheduler` provides a stateless module: :mod:`~quantify.scheduler.backends.zhinst_backend`, 
-that abstracts the complexity of setting up `Zurich Instruments <https://www.zhinst.com>`_ for 
-experiments in a modern and automated fashion. :mod:`quantify-scheduler` combines Quantum Device- 
-and Instrument properties with the :ref:`Schedule<sec-schedule>` during compilation to generate waveforms 
-and sequencing instructions specifically for Zurich Instruments hardware. More information about 
-`complilation` can be found in the :ref:`User Guide<sec-user-guide>`.
+:mod:`quantify.scheduler` provides a stateless module: :mod:`~quantify.scheduler.backends.zhinst_backend`,
+that abstracts the complexity of setting up `Zurich Instruments <https://www.zhinst.com>`_ for
+experiments in a modern and automated fashion. :mod:`quantify.scheduler` combines Quantum Device-
+and Instrument properties with the :ref:`Schedule <sec-schedule>` during compilation to generate waveforms
+and sequencing instructions specifically for Zurich Instruments hardware. More information about
+`complilation` can be found in the :ref:`User Guide <sec-user-guide>`.
 
-Using existing programming interfaces provided via :mod:`zhinst-qcodes` and :mod:`zhinst-toolkit`,
-:mod:`quantify-scheduler` prepares the instruments that are present in the 
-:ref:`hardware configuration file<Hardware configuration file>`. See more on how to configure the 
-:mod:`~quantify.scheduler.backends.zhinst_backend` in the :ref:`How to configure<sec-zhinst-how-to-configure>` 
+Using existing programming interfaces provided via :doc:`zhinst-qcodes <zhinst-qcodes:index>` and :doc:`zhinst-toolkit <zhinst-toolkit:index>`,
+:mod:`quantify.scheduler` prepares the instruments that are present in the
+:ref:`hardware configuration file <Hardware configuration file>`. See more on how to configure the
+:mod:`~quantify.scheduler.backends.zhinst_backend` in the :ref:`How to configure <sec-zhinst-how-to-configure>`
 page.
 
-Finnaly, after configuring and running :func:`~quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend` 
-successfully the instruments are prepared for execution. 
+Finally, after configuring and running :func:`~quantify.scheduler.backends.zhinst_backend.compile_backend`
+successfully the instruments are prepared for execution.
 
 The Zurich Instruments backend provides:
 

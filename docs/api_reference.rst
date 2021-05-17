@@ -71,10 +71,10 @@ timedomain_schedules
 .. automodule:: quantify.scheduler.schedules.timedomain_schedules
     :members:
 
-acquisition
-~~~~~~~~~~~
+timedomain_schedules
+~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.schedules.acquisition
+.. automodule:: quantify.scheduler.schedules.trace_schedules
     :members:
 
 compilation
@@ -111,13 +111,16 @@ zhinst_backend
 types
 ~~~~~
 
+.. automodule:: quantify.scheduler.backends.types.common
+    :members:
+
 .. automodule:: quantify.scheduler.backends.types.qblox
     :members:
 
 .. automodule:: quantify.scheduler.backends.types.zhinst
     :members:
 
-Qblox
+qblox
 ~~~~~~
 
 .. automodule:: quantify.scheduler.backends.qblox.helpers
@@ -126,7 +129,7 @@ Qblox
 .. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
     :members:
 
-.. automodule:: quantify.scheduler.backends.qblox.compilers_abc
+.. automodule:: quantify.scheduler.backends.qblox.compiler_abc
     :members:
 
 .. automodule:: quantify.scheduler.backends.qblox.constants
@@ -146,6 +149,9 @@ zhinst
     :members:
 
 .. automodule:: quantify.scheduler.backends.zhinst.seqc_il_generator
+    :members:
+
+.. automodule:: quantify.scheduler.backends.zhinst.settings
     :members:
 
 helpers
@@ -176,8 +182,7 @@ pulse_diagram
 ~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
-
-=======
+    :members:
 
 miscellaneous
 -------------

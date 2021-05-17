@@ -214,12 +214,12 @@ class MixerCorrections(DataClassJsonMixin):
 
         Parameters
         ----------
-        waveform: np.ndarray
+        waveform:
             The (complex-valued) waveform before correction.
 
         Returns
         -------
-        np.ndarray
+        :
             The complex-valued waveform after correction.
         """
         return apply_mixer_skewness_corrections(

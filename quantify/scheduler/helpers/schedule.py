@@ -36,10 +36,6 @@ class CachedSchedule:
     def schedule(self) -> types.Schedule:
         """
         Returns schedule.
-
-        Returns
-        -------
-        types.Schedule
         """
         return self._schedule
 
@@ -47,10 +43,6 @@ class CachedSchedule:
     def pulseid_pulseinfo_dict(self) -> Dict[int, Dict[str, Any]]:
         """
         Returns the pulse info lookup table.
-
-        Returns
-        -------
-        Dict[int, Dict[str, Any]]
         """
         return self._pulseid_pulseinfo_dict
 
@@ -58,10 +50,6 @@ class CachedSchedule:
     def pulseid_waveformfn_dict(self) -> Dict[int, waveform_helpers.GetWaveformPartial]:
         """
         Returns waveform function lookup table.
-
-        Returns
-        -------
-        Dict[int, waveform_helpers.GetWaveformPartial]
         """
         return self._pulseid_waveformfn_dict
 
@@ -69,10 +57,6 @@ class CachedSchedule:
     def acqid_acqinfo_dict(self) -> Dict[int, Dict[str, Any]]:
         """
         Returns the acquisition info lookup table.
-
-        Returns
-        -------
-        Dict[int, Dict[str, Any]]
         """
         return self._acqid_acqinfo_dict
 
@@ -80,10 +64,6 @@ class CachedSchedule:
     def port_timeline_dict(self) -> Dict[str, Dict[int, List[int]]]:
         """
         Returns the timeline per port lookup dictionary.
-
-        Returns
-        -------
-        Dict[str, Dict[int, List[int]]]
         """
         return self._port_timeline_dict
 
@@ -93,10 +73,6 @@ class CachedSchedule:
         Returns the schedule start offset in seconds.
         The start offset is determined by a Reset operation
         at the start of one of the ports.
-
-        Returns
-        -------
-        float
         """
         if self._start_offset_in_seconds is None:
             self._start_offset_in_seconds = get_schedule_time_offset(
@@ -109,10 +85,6 @@ class CachedSchedule:
     def total_duration_in_seconds(self) -> float:
         """
         Returns the schedule total duration in seconds.
-
-        Returns
-        -------
-        float
         """
         if self._total_duration_in_seconds is None:
             self._total_duration_in_seconds = get_total_duration(self.schedule)
@@ -126,12 +98,12 @@ def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> in
 
     Parameters
     ----------
-    pulse_info :
+    pulse_info
         The pulse information dictionary.
 
     Returns
     -------
-    int
+    :
         The uuid hash.
     """
     if excludes is None:
@@ -146,12 +118,12 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
 
     Parameters
     ----------
-    acq_info :
+    acq_info
         The acquisition information dictionary.
 
     Returns
     -------
-    int
+    :
         The uuid hash.
     """
     return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
@@ -163,12 +135,12 @@ def get_total_duration(schedule: types.Schedule) -> float:
 
     Parameters
     ----------
-    schedule :
+    schedule
         The schedule.
 
     Returns
     -------
-    float
+    :
         Duration in seconds.
     """
     if len(schedule.timing_constraints) == 0:
@@ -202,12 +174,12 @@ def get_operation_start(
 
     Parameters
     ----------
-    schedule :
-    timeslot_index :
+    schedule
+    timeslot_index
 
     Returns
     -------
-    float
+    :
         The Operation start time in Seconds.
     """
     if len(schedule.timing_constraints) == 0:
@@ -246,12 +218,12 @@ def get_operation_end(
 
     Parameters
     ----------
-    schedule :
-    timeslot_index :
+    schedule
+    timeslot_index
 
     Returns
     -------
-    float
+    :
         The Operation start time in Seconds.
     """
     if len(schedule.timing_constraints) == 0:
@@ -271,25 +243,35 @@ def get_port_timeline(
     Returns a new dictionary containing the timeline of
     pulses, readout- and acquisition pulses of a port.
 
-    Example:
-    ```
-    print(port_timeline_dict)
-    # { {'q0:mw', {0, [123456789]}},
-    # ... }
-    ```
+    Using iterators on this collection enables sorting.
+
+    .. code-block::
+
+        print(port_timeline_dict)
+        # { {'q0:mw', {0, [123456789]}},
+        # ... }
+
+        # Sorted items.
+        print(port_timeline_dict.items())
 
     Parameters
     ----------
-    schedule :
+    schedule
         The schedule.
-
-    Returns
-    -------
-    Dict[str, Dict[int, List[int]]]
     """
     port_timeline_dict: Dict[str, Dict[int, List[int]]] = dict()
 
-    for timeslot_index, t_constr in enumerate(schedule.timing_constraints):
+    # Sort timing containts based on abs_time and keep the original index.
+    timing_constrains_map = dict(
+        sorted(
+            map(
+                lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints)
+            ),
+            key=lambda pair: pair[1]["abs_time"],
+        )
+    )
+
+    for timeslot_index, t_constr in timing_constrains_map.items():
         operation = schedule.operations[t_constr["operation_hash"]]
         abs_time = t_constr["abs_time"]
 
@@ -302,7 +284,7 @@ def get_port_timeline(
             operation["acquisition_info"],
         )
 
-        # Sort pulses and acquisitions on time.
+        # Sort pulses and acquisitions within an operation.
         for uuid, info in sorted(
             chain(pulse_info_iter, acq_info_iter),
             key=lambda pair: abs_time  # pylint: disable=cell-var-from-loop
@@ -330,12 +312,12 @@ def get_schedule_time_offset(
 
     Parameters
     ----------
-    schedule :
-    port_timeline_dict :
+    schedule
+    port_timeline_dict
 
     Returns
     -------
-    float
+    :
         The operation t0 in seconds.
     """
     return min(
@@ -359,12 +341,8 @@ def get_pulse_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]
 
     Parameters
     ----------
-    schedule :
+    schedule
         The schedule.
-
-    Returns
-    -------
-    Dict[int, Dict[str, Any]]
     """
     pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = dict()
     for t_constr in schedule.timing_constraints:
@@ -396,12 +374,8 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
 
     Parameters
     ----------
-    schedule :
+    schedule
         The schedule.
-
-    Returns
-    -------
-    Dict[int, Dict[str, Any]]
     """
     acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = dict()
     for t_constr in schedule.timing_constraints:
@@ -410,7 +384,7 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
         for acq_info in operation["acquisition_info"]:
             acq_id = get_acq_uuid(acq_info)
             if acq_id in acqid_acqinfo_dict:
-                # Unique acquition info already populated in the dictionary.
+                # Unique acquisition info already populated in the dictionary.
                 continue
 
             acqid_acqinfo_dict[acq_id] = acq_info

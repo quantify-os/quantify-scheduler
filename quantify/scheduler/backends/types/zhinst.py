@@ -8,6 +8,7 @@ from typing import List, Optional, Union
 import numpy as np
 from dataclasses_json import DataClassJsonMixin
 from quantify.scheduler import enums
+from quantify.scheduler.backends.types import common
 
 
 @unique
@@ -39,20 +40,13 @@ class Output(DataClassJsonMixin):
     mode :
         The output mode type.
     modulation :
-        The optional modulation mode type is only required when the SignalModeType
-        is set to COMPLEX.
-    lo_freq :
-        The local oscillator (LO) frequency in Hz. default is 0.
-    interm_freq :
-        The inter-modulation frequency (IF) in Hz. default is 0.
-    phase_shift :
-        The IQ modulation phase shift in Degrees. default is 0.
+        The modulation settings.
+    local_oscillator :
+        The LocalOscillator settings.
     gain1 :
         The output1 IQ modulation gain (value between -1 and + 1). default is 0.
     gain2 :
         The output2 IQ modulation gain (value between -1 and + 1). default is 0.
-    line_gain_db :
-        The cable line gain in Decibel. default = 0
     line_trigger_delay :
         The ZI Instrument output triggers. default is -1.
     triggers :
@@ -64,13 +58,10 @@ class Output(DataClassJsonMixin):
     port: str
     clock: str
     mode: enums.SignalModeType
-    modulation: enums.ModulationModeType
-    lo_freq: float = 0
-    interm_freq: float = 0
-    phase_shift: float = 0
+    modulation: common.Modulation
+    local_oscillator: common.LocalOscillator
     gain1: int = 0
     gain2: int = 0
-    line_gain_db: float = 0
     line_trigger_delay: float = -1
     triggers: List[int] = field(default_factory=lambda: [])
     markers: List[Union[str, int]] = field(default_factory=lambda: [])
@@ -88,7 +79,9 @@ class Device(DataClassJsonMixin):
     ----------
     name :
         The QCodes Instrument name.
-
+    type :
+        The instrument model type.
+        For example: 'UHFQA', 'HDAWG4', 'HDAWG8'
     ref :
         The reference source type.
     channels :
@@ -103,20 +96,37 @@ class Device(DataClassJsonMixin):
         The fourth physical channel properties.
     channelgrouping :
         The HDAWG channelgrouping property. (default = 0)
-    type :
+    clock_select :
+        The clock rate divisor which will be used to get
+        the instruments clock rate from the lookup dictionary in
+        quantify.scheduler.backends.zhinst_backend.DEVICE_CLOCK_RATES.
+
+        For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
+        Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
+    device_type :
         The Zurich Instruments hardware type. (default = DeviceType.NONE)
-        This field is automatically set by the backend.
+        This field is automatically populated.
+    clock_rate :
+        The Instruments clock rate.
+        This field is automatically populated.
+    n_channels :
+        The number of physical channels of this ZI Instrument.
+        This field is automatically populated.
     """
 
     name: str
+    type: str
     ref: enums.ReferenceSourceType
     channels: List[Output] = field(init=False)
     channel_0: Output
     channel_1: Optional[Output] = None
     channel_2: Optional[Output] = None
     channel_3: Optional[Output] = None
+    clock_select: Optional[int] = 0
     channelgrouping: int = 0
-    type: DeviceType = DeviceType.NONE
+    device_type: DeviceType = DeviceType.NONE
+    clock_rate: Optional[int] = field(init=False)
+    n_channels: int = field(init=False)
 
     def __post_init__(self):
         """Initializes fields after initializing object."""
@@ -127,6 +137,15 @@ class Device(DataClassJsonMixin):
             self.channels.append(self.channel_2)
         if self.channel_3 is not None:
             self.channels.append(self.channel_3)
+
+        if self.type[-1].isdigit():
+            digit = int(self.type[-1])
+            self.n_channels = digit
+            device_type = self.type[: len(self.type) - 1]
+            self.device_type = DeviceType(device_type)
+        else:
+            self.device_type = DeviceType(self.type)
+            self.n_channels = 1
 
 
 @dataclass
@@ -197,6 +216,26 @@ class QasIntegrationMode(Enum):
 
     NORMAL = 0
     SPECTROSCOPY = 1
+
+
+@unique
+class QasResultMode(Enum):
+    """UHFQA QAS result mode."""
+
+    CYCLIC = 0
+    SEQUENTIAL = 1
+
+
+@unique
+class QasResultSource(Enum):
+    """UHFQA QAS result source."""
+
+    CROSSTALK = 0
+    THRESHOLD = 1
+    ROTATION = 3
+    CROSSTALK_CORRELATION = 4
+    THRESHOLD_CORRELATION = 5
+    INTEGRATION = 7
 
 
 class WaveformDestination(Enum):

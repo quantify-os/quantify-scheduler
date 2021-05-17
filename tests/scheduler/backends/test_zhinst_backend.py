@@ -2,15 +2,10 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
-# -----------------------------------------------------------------------------
-# Description:    Tests for Zurich Instruments backend.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# pylint: disable=too-many-locals
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List
 from unittest.mock import ANY, call
@@ -23,23 +18,16 @@ from zhinst.toolkit.control import drivers
 
 import quantify.scheduler.backends.zhinst_backend as zhinst_backend
 import quantify.scheduler.waveforms as waveforms
-from quantify.scheduler.backends.types import zhinst
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
-from quantify.scheduler.enums import ModulationModeType
-from quantify.scheduler.gate_library import X90, Measure, Reset, X
-from quantify.scheduler.helpers.schedule import (
-    CachedSchedule,
-    get_pulse_info_by_uuid,
-)
-from quantify.scheduler.helpers.waveforms import (
-    GetWaveformPartial,
-    get_waveform_by_pulseid,
-)
-from quantify.scheduler.schedules.acquisition import (
-    raw_trace_schedule,
-    ssb_integration_complex_schedule,
-)
-from quantify.scheduler.types import Schedule
+from quantify.scheduler import enums
+from quantify.scheduler.helpers import waveforms as waveform_helpers
+from quantify.scheduler.helpers import schedule as schedule_helpers
+
+from quantify.scheduler.backends.types import zhinst, common
+from quantify.scheduler.backends.zhinst import settings
+from quantify.scheduler.gate_library import X90, Measure, Reset
+from quantify.scheduler.schedules import trace_schedules
+from quantify.scheduler.schedules import spectroscopy_schedules
+from quantify.scheduler import types
 
 
 @pytest.fixture
@@ -47,18 +35,24 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
     return json.loads(
         """
         {
-          "backend": "quantify.scheduler.backends.zhinst_backend.create_pulsar_backend",
+          "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
           "devices": [
             {
               "name": "uhfqa0",
+              "type": "UHFQA",
               "ref": "ext",
               "channel_0": {
                 "port": "q0:res",
                 "clock": "q0.ro",
                 "mode": "real",
-                "modulation": "premod",
-                "lo_freq": 4.8e9,
-                "interm_freq": -50e6,
+                "modulation": {
+                  "type": "premod",
+                  "interm_freq": -50e6
+                },
+                "local_oscillator": {
+                  "name": "lo0",
+                  "frequency": 4.8e9
+                },
                 "triggers": [
                   2
                 ]
@@ -75,19 +69,25 @@ def hdawg_hardware_map() -> Dict[str, Any]:
     return json.loads(
         """
         {
-          "backend": "quantify.scheduler.backends.zhinst_backend.create_pulsar_backend",
+          "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
           "devices": [
             {
               "name": "hdawg0",
+              "type": "HDAWG4",
               "ref": "int",
               "channelgrouping": 0,
               "channel_0": {
                 "port": "q0:mw",
                 "clock": "q0.01",
                 "mode": "complex",
-                "modulation": "premod",
-                "lo_freq": 4.8e9,
-                "interm_freq": -50e6,
+                "modulation": {
+                  "type": "premod",
+                  "interm_freq": -50e6
+                },
+                "local_oscillator": {
+                  "name": "lo0",
+                  "frequency": 4.8e9
+                },
                 "markers": [
                   "AWG_MARKER1",
                   "AWG_MARKER2"
@@ -97,9 +97,14 @@ def hdawg_hardware_map() -> Dict[str, Any]:
                 "port": "q1:mw",
                 "clock": "q1.01",
                 "mode": "complex",
-                "modulation": "premod",
-                "lo_freq": 4.8e9,
-                "interm_freq": -50e6,
+                "modulation": {
+                  "type": "premod",
+                  "interm_freq": -50e6
+                },
+                "local_oscillator": {
+                  "name": "lo0",
+                  "frequency": 4.8e9
+                },
                 "triggers": [
                   1
                 ]
@@ -249,34 +254,56 @@ def create_hdawg_mock(mocker):
     yield _create_hdawg_mock
 
 
+@pytest.fixture
+def make_schedule(create_schedule_with_pulse_info):
+    def _make_schedule() -> types.Schedule:
+        q0 = "q0"
+        schedule = types.Schedule("test")
+        schedule.add(Reset(q0))
+        schedule.add(X90(q0))
+        schedule.add(Measure(q0))
+        return create_schedule_with_pulse_info(schedule)
+
+    yield _make_schedule
+
+
 @pytest.mark.parametrize(
     "unsupported_device_type", [(zhinst.DeviceType.UHFLI), (zhinst.DeviceType.MFLI)]
 )
-def test_setup_zhinst_backend_supported_devices(
+def test_compile_backend_unsupported_devices(
     mocker, unsupported_device_type: zhinst.DeviceType, create_schedule_with_pulse_info
 ):
     # Arrange
-    zhinst_hardware_map = json.loads(
+    hardware_map_str = (
         """
-        {
-          "backend": "quantify.scheduler.backends.zhinst_backend.create_pulsar_backend",
-          "devices": [
+    {
+        "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "devices": [
             {
-              "name": "device_name",
-              "ref": "none",
-              "channel_0": {
-                "port": "q0:mw",
-                "clock": "q0.ro",
-                "mode": "real",
-                "modulation": "none",
-                "lo_freq": 4.8e9,
-                "interm_freq": -50e6
-              }
+                "name": "device_name",
+                "type": """
+        + f'"{unsupported_device_type.value}",'
+        + """
+                "ref": "none",
+                "channel_0": {
+                    "port": "q0:mw",
+                    "clock": "q0.ro",
+                    "mode": "real",
+                    "modulation": {
+                      "type": "none",
+                      "interm_freq": -50e6
+                    },
+                    "local_oscillator": {
+                      "name": "lo0",
+                      "frequency": 4.8e9
+                    }
+                }
             }
-          ]
-        }
-        """
+        ]
+    }
+    """
     )
+    zhinst_hardware_map = json.loads(hardware_map_str)
 
     if unsupported_device_type == zhinst.DeviceType.UHFLI:
         instrument = mocker.create_autospec(uhfli.UHFLI, instance=True)
@@ -290,7 +317,7 @@ def test_setup_zhinst_backend_supported_devices(
 
     # Act
     with pytest.raises(NotImplementedError) as execinfo:
-        zhinst_backend.setup_zhinst_backend(
+        zhinst_backend.compile_backend(
             create_schedule_with_pulse_info(), zhinst_hardware_map
         )
 
@@ -301,98 +328,159 @@ def test_setup_zhinst_backend_supported_devices(
     )
 
 
-def test_setup_zhinst_backend_hdawg4_successfully(
+def test_compile_hardware_hdawg4_successfully(
     mocker,
-    create_hdawg_mock,
     create_schedule_with_pulse_info,
     hdawg_hardware_map: Dict[str, Any],
 ) -> None:
     # Arrange
     (q0, q1) = ("q0", "q1")
-    schedule = Schedule("test")
+    schedule = types.Schedule("test")
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
     schedule = create_schedule_with_pulse_info(schedule)
+    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=hdawg.HDAWG)
 
-    hdawg_mock: hdawg.HDAWG = create_hdawg_mock(4)
-    mocker.patch(
-        "qcodes.instrument.base.Instrument.find_instrument",
-        return_value=hdawg_mock,
-    )
-    mocker.patch.object(zi_helpers, "set_value")
     modulate_wave_spy = mocker.patch.object(
         waveforms, "modulate_wave", wraps=waveforms.modulate_wave
     )
-    set_wave_vector_mock = mocker.patch.object(zi_helpers, "set_wave_vector")
-    set_commandtable_data_mock = mocker.patch.object(
-        zi_helpers, "set_commandtable_data"
-    )
-    write_seqc_file_mock = mocker.patch.object(
-        zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
-    )
+    settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
+    mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
+
+    expected_settings = {
+        "/dev1234/sigouts/*/on": 0,
+        "/dev1234/awgs/*/single": 1,
+        "/dev1234/system/awg/channelgrouping": 0,
+        "/dev1234/awgs/0/time": 0,
+        "/dev1234/awgs/1/time": 0,
+        "/dev1234/sigouts/0/on": 1,
+        "/dev1234/sigouts/1/on": 1,
+        "/dev1234/sigouts/2/on": 1,
+        "/dev1234/sigouts/3/on": 1,
+        "/dev1234/awgs/0/commandtable/data": ANY,
+        "/dev1234/awgs/0/waveform/waves/0": ANY,
+        "/dev1234/awgs/1/commandtable/data": ANY,
+        "/dev1234/awgs/1/waveform/waves/0": ANY,
+        "compiler/sourcestring": ANY,
+    }
 
     # Act
-    zhinst_backend.setup_zhinst_backend(schedule, hdawg_hardware_map)
+    zi_backend = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
 
     # Assert
-    modulate_wave_spy.assert_called()
-    set_wave_vector_mock.assert_called()
-    set_commandtable_data_mock.assert_called()
-    write_seqc_file_mock.assert_called()
+    assert "hdawg0" in zi_backend.settings
+    zi_settings = zi_backend.settings["hdawg0"].build(instrument)
+    collection = zi_settings.as_dict()
 
-    expected_call = [call(hdawg_mock, 0, 0, ANY), call(hdawg_mock, 1, 0, ANY)]
+    for key, expected_value in expected_settings.items():
+        assert key in collection
+        if isinstance(expected_value, type(ANY)):
+            continue
+        assert collection[key] == expected_value
+
+    modulate_wave_spy.assert_called()
+
+    expected_call = [call(0, 0, ANY), call(1, 0, ANY)]
     expected_lengths = [96, 128]
-    assert set_wave_vector_mock.call_args_list == expected_call
+    assert settings_builder.with_wave_vector.call_args_list == expected_call
+
     # Assert waveform sizes
-    for i, call_args in enumerate(set_wave_vector_mock.call_args_list):
+    for i, call_args in enumerate(settings_builder.with_wave_vector.call_args_list):
         args, _ = call_args
-        waveform_data = args[3]
+        waveform_data = args[2]
         assert isinstance(waveform_data, (np.ndarray, np.generic))
         assert len(waveform_data) == (expected_lengths[i])
 
-    expected_call = [call(hdawg_mock, 0, ANY), call(hdawg_mock, 1, ANY)]
-    assert set_commandtable_data_mock.call_args_list == expected_call
+    expected_call = [call(0, ANY), call(1, ANY)]
+    assert settings_builder.with_commandtable_data.call_args_list == expected_call
 
-    expected_call = [call(hdawg_mock, 0, ANY), call(hdawg_mock, 1, ANY)]
-    assert set_commandtable_data_mock.call_args_list == expected_call
+    expected_call = [call(0, ANY), call(1, ANY)]
+    assert settings_builder.with_compiler_sourcestring.call_args_list == expected_call
 
-    expected_call = [
-        call(hdawg_mock.awgs[0], ANY, "hdawg_awg-0.seqc"),
-        call(hdawg_mock.awgs[1], ANY, "hdawg_awg-1.seqc"),
-    ]
-    assert write_seqc_file_mock.call_args_list == expected_call
+
+def test_compile_hardware_uhfqa_successfully(
+    mocker,
+    make_schedule,
+    uhfqa_hardware_map: Dict[str, Any],
+) -> None:
+    # Arrange
+    schedule = make_schedule()
+
+    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=uhfqa.UHFQA)
+
+    settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
+    mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
+
+    expected_settings = {
+        "/dev1234/awgs/0/single": 1,
+        "/dev1234/qas/0/integration/weights/0/real": ANY,
+        "/dev1234/qas/0/integration/weights/0/imag": ANY,
+        "/dev1234/qas/0/integration/weights/1/real": ANY,
+        "/dev1234/qas/0/integration/weights/1/imag": ANY,
+        "/dev1234/qas/0/integration/weights/2/real": ANY,
+        "/dev1234/qas/0/integration/weights/2/imag": ANY,
+        "/dev1234/qas/0/integration/weights/3/real": ANY,
+        "/dev1234/qas/0/integration/weights/3/imag": ANY,
+        "/dev1234/qas/0/integration/weights/4/real": ANY,
+        "/dev1234/qas/0/integration/weights/4/imag": ANY,
+        "/dev1234/qas/0/integration/weights/5/real": ANY,
+        "/dev1234/qas/0/integration/weights/5/imag": ANY,
+        "/dev1234/qas/0/integration/weights/6/real": ANY,
+        "/dev1234/qas/0/integration/weights/6/imag": ANY,
+        "/dev1234/qas/0/integration/weights/7/real": ANY,
+        "/dev1234/qas/0/integration/weights/7/imag": ANY,
+        "/dev1234/qas/0/integration/weights/8/real": ANY,
+        "/dev1234/qas/0/integration/weights/8/imag": ANY,
+        "/dev1234/qas/0/integration/weights/9/real": ANY,
+        "/dev1234/qas/0/integration/weights/9/imag": ANY,
+        "/dev1234/qas/0/rotations/*": (1 + 0j),
+        "/dev1234/sigouts/0/on": 1,
+        "/dev1234/sigouts/1/on": 1,
+        "/dev1234/awgs/0/time": 0,
+        "/dev1234/awgs/0/waveform/waves/0": ANY,
+        "/dev1234/qas/0/integration/mode": 0,
+        "/dev1234/qas/0/integration/length": 540,
+        "/dev1234/qas/0/result/enable": 1,
+        "/dev1234/qas/0/monitor/enable": 0,
+        "/dev1234/qas/0/delay": 0,
+        "/dev1234/qas/0/result/mode": 0,
+        "/dev1234/qas/0/result/source": 7,
+        "/dev1234/qas/0/result/length": 540,
+        "/dev1234/qas/0/rotations/0": (1 + 0j),
+        "/dev1234/qas/0/rotations/1": (1 + 0j),
+        "/dev1234/qas/0/rotations/2": (1 + 0j),
+        "/dev1234/qas/0/rotations/3": (1 + 0j),
+        "/dev1234/qas/0/rotations/4": (1 + 0j),
+        "/dev1234/qas/0/rotations/5": (1 + 0j),
+        "/dev1234/qas/0/rotations/6": (1 + 0j),
+        "/dev1234/qas/0/rotations/7": (1 + 0j),
+        "/dev1234/qas/0/rotations/8": (1 + 0j),
+        "/dev1234/qas/0/rotations/9": (1 + 0j),
+        "compiler/sourcestring": ANY,
+    }
+
+    # Act
+    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+
+    # Assert
+    assert "uhfqa0" in zi_backend.settings
+    zi_settings = zi_backend.settings["uhfqa0"].build(instrument)
+    collection = zi_settings.as_dict()
+
+    for key, expected_value in expected_settings.items():
+        assert key in collection
+        if isinstance(expected_value, type(ANY)):
+            continue
+        assert collection[key] == expected_value
 
 
 def test_hdawg4_sequence(
-    mocker,
-    create_hdawg_mock,
-    create_schedule_with_pulse_info,
     hdawg_hardware_map: Dict[str, Any],
+    make_schedule,
 ) -> None:
     # Arrange
-    schedule = Schedule("test")
-    schedule.add(Reset("q0"))
-    schedule.add(X("q0"))
-    schedule.add(Measure("q0"))
-    schedule = create_schedule_with_pulse_info(schedule)
-
-    hdawg_mock: hdawg.HDAWG = create_hdawg_mock(4)
-    mocker.patch(
-        "qcodes.instrument.base.Instrument.find_instrument",
-        return_value=hdawg_mock,
-    )
-    mocker.patch.object(zi_helpers, "set_value")
-    modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
-    )
-    set_wave_vector_mock = mocker.patch.object(zi_helpers, "set_wave_vector")
-    set_commandtable_data_mock = mocker.patch.object(
-        zi_helpers, "set_commandtable_data"
-    )
-    write_seqc_file_mock = mocker.patch.object(
-        zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
-    )
+    schedule = make_schedule()
 
     expected_seqc = dedent(
         """\
@@ -404,8 +492,8 @@ def test_hdawg4_sequence(
     // Schedule offset: 0.000200000s 60000 clocks
     // Schedule duration: 0.000000436s 131 clocks
     // Sequence start: 0.000000000s 0 clocks
-    // Sequence duration: 0.000000000s 0 clocks
-    // Sequence end: 0.000000000s 0 clocks
+    // Sequence duration: 0.000000016s 5 clocks
+    // Sequence end: 0.000000016s 5 clocks
     // Line delay: -1.000000000s 0 clocks
     assignWaveIndex(w0, w0, 0);
     setTrigger(0);	//  n_instr=1
@@ -415,99 +503,72 @@ def test_hdawg4_sequence(
       executeTableEntry(0);	// clock=0 pulse=0 n_instr=0
       setTrigger(0);	// clock=0 n_instr=1
       // Dead time
-      wait(59997);	// 	// clock=1 n_instr=3
+      wait(60123);	// 	// clock=1 n_instr=3
     }
-    setTrigger(0);	// 	// clock=60001 n_instr=1
+    setTrigger(0);	// 	// clock=60127 n_instr=1
     """
     ).lstrip("\n")
 
     # Act
-    zhinst_backend.setup_zhinst_backend(schedule, hdawg_hardware_map)
+    zi_backend = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
 
     # Assert
-    modulate_wave_spy.assert_called()
-    set_wave_vector_mock.assert_called()
-    set_commandtable_data_mock.assert_called()
-    write_seqc_file_mock.assert_called()
-    # Note: Assert inner variable for better error messsage
-    args, _ = write_seqc_file_mock.call_args
-    assert args[1] == expected_seqc
-    write_seqc_file_mock.assert_called_with(
-        hdawg_mock.awgs[0], expected_seqc, "hdawg_awg-0.seqc"
-    )
+    assert "hdawg0" in zi_backend.settings
+    settings_builder = zi_backend.settings["hdawg0"]
+    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
+    assert zi_setting.value == expected_seqc
 
 
-@pytest.mark.parametrize(
-    "channels,channelgrouping,enabled_channels", [(4, 0, [0, 1]), (4, 1, [0])]
-)
+@pytest.mark.parametrize("channelgrouping,enabled_channels", [(0, [0, 1]), (1, [0])])
 def test__program_hdawg4_channelgrouping(
     mocker,
-    create_hdawg_mock,
     create_device,
     create_schedule_with_pulse_info,
     hdawg_hardware_map,
-    channels: int,
     channelgrouping: int,
     enabled_channels: List[int],
 ):
     # Arrange
     (q0, q1) = ("q0", "q1")
-    schedule = Schedule("test")
+    schedule = types.Schedule("test")
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
     schedule = create_schedule_with_pulse_info(schedule)
-    schedule = CachedSchedule(schedule)
-
-    hdawg_mock: hdawg.HDAWG = create_hdawg_mock(channels)
+    schedule = schedule_helpers.CachedSchedule(schedule)
 
     device: zhinst.Device = create_device(hdawg_hardware_map)
-    device.type = zhinst.DeviceType.HDAWG
     device.channelgrouping = channelgrouping
+    device.clock_rate = int(2.4e9)
 
-    channels_list = list(range(int(channels / 2)))
-    disabled_channels = list(set(channels_list) - set(enabled_channels))
+    settings_builder = settings.ZISettingsBuilder()
 
-    mocker.patch.object(zhinst_backend, "_program_sequences_hdawg")
-    mocker.patch.object(zhinst_backend, "_program_modulation")
-    mocker.patch("quantify.scheduler.helpers.waveforms.resize_waveforms")
-    mocker.patch.object(zhinst_backend, "_set_waveforms")
-    zhinsthelper_set_mock = mocker.patch.object(zi_helpers, "set_value")
+    mocker.patch.object(zhinst_backend, "_add_wave_nodes")
+    with_sigouts = mocker.patch.object(settings.ZISettingsBuilder, "with_sigouts")
+    with_system_channelgrouping = mocker.patch.object(
+        settings.ZISettingsBuilder, "with_system_channelgrouping"
+    )
 
     # Act
-    zhinst_backend._program_hdawg(
-        hdawg_mock,
-        device,
-        schedule,
-    )
+    zhinst_backend._compile_for_hdawg(device, schedule, settings_builder)
 
     # Assert
-    zhinsthelper_set_mock.assert_called_with(
-        hdawg_mock, "system/awg/channelgrouping", channelgrouping
-    )
-
-    expected_output_calls = [call("off"), call("on")]
-    for i in enabled_channels:
-        assert hdawg_mock.awgs[i].output1.mock_calls == expected_output_calls
-        assert hdawg_mock.awgs[i].output2.mock_calls == expected_output_calls
-
-    expected_output_calls = [call("off")]
-    for i in disabled_channels:
-        assert hdawg_mock.awgs[i].output1.mock_calls == expected_output_calls
-        assert hdawg_mock.awgs[i].output2.mock_calls == expected_output_calls
+    with_system_channelgrouping.assert_called_with(channelgrouping)
+    calls = list(map(lambda i: call(i, (1, 1)), enabled_channels))
+    assert with_sigouts.call_args_list == calls
 
 
 def test_validate_schedule(
-    empty_schedule: Schedule,
-    basic_schedule: Schedule,
-    schedule_with_pulse_info: Schedule,
+    empty_schedule: types.Schedule,
+    basic_schedule: types.Schedule,
+    schedule_with_pulse_info: types.Schedule,
 ):
     with pytest.raises(ValueError) as execinfo:
         zhinst_backend._validate_schedule(empty_schedule)
 
     assert (
         str(execinfo.value)
-        == "Undefined timing contraints for schedule 'Empty Experiment'!"
+        == "Undefined timing constraints for schedule 'Empty Experiment'!"
     )
 
     with pytest.raises(ValueError) as execinfo:
@@ -521,35 +582,137 @@ def test_validate_schedule(
     zhinst_backend._validate_schedule(schedule_with_pulse_info)
 
 
-def test_uhfqa_sequence1(
+@pytest.mark.parametrize(
+    "is_pulse,modulation_type,expected_modulated",
+    [
+        (True, enums.ModulationModeType.PREMODULATE, True),
+        (False, enums.ModulationModeType.PREMODULATE, False),
+        (False, enums.ModulationModeType.NONE, False),
+    ],
+)
+def test_apply_waveform_corrections(
     mocker,
-    create_uhfqa_mock,
-    create_schedule_with_pulse_info,
+    is_pulse: bool,
+    modulation_type: enums.ModulationModeType,
+    expected_modulated: bool,
+):
+    # Arrange
+    wave = np.ones(48)
+
+    modulate_wave = mocker.patch.object(waveforms, "modulate_wave", return_value=wave)
+    shift_waveform = mocker.patch.object(
+        waveform_helpers, "shift_waveform", return_value=(0, wave)
+    )
+    resize_waveform = mocker.patch.object(
+        waveform_helpers, "resize_waveform", return_value=wave
+    )
+
+    channel = zhinst.Output(
+        "port",
+        "clock",
+        enums.SignalModeType.COMPLEX,
+        common.Modulation(modulation_type),
+        common.LocalOscillator("lo0", 6.02e9),
+    )
+    instrument_info = zhinst.InstrumentInfo(2.4e9, 8, 16)
+
+    # Act
+    result = zhinst_backend.apply_waveform_corrections(
+        channel, wave, (0, 16e-9), instrument_info, is_pulse
+    )
+
+    # Assert
+    assert (0, 48, wave) == result
+    if expected_modulated:
+        modulate_wave.assert_called()
+    else:
+        modulate_wave.assert_not_called()
+    shift_waveform.assert_called()
+    resize_waveform.assert_called()
+
+
+def test__flatten_dict():
+    # Arrange
+    collection = {0: [0, 1, 2]}
+
+    # Act
+    result = zhinst_backend._flatten_dict(collection)
+
+    # Assert
+    assert list(result) == [
+        (0, 0),
+        (0, 1),
+        (0, 2),
+    ]
+
+
+def test_get_wave_instruction(mocker, create_schedule_with_pulse_info):
+    # Arrange
+
+    q0 = "q0"
+    schedule = types.Schedule("test")
+    schedule.add(X90(q0))
+    schedule = create_schedule_with_pulse_info(schedule)
+    schedule = schedule_helpers.CachedSchedule(schedule)
+
+    uuid = next(iter(schedule.pulseid_pulseinfo_dict.keys()))
+    output = mocker.create_autospec(zhinst.Output, instance=True)
+    instrument_info = zhinst.InstrumentInfo(2.4e9, 8, 16)
+
+    wave = np.concatenate([np.zeros(9), np.ones(39)])
+    mocker.patch.object(
+        zhinst_backend, "apply_waveform_corrections", return_value=(1, 9, wave)
+    )
+
+    get_pulse_uuid = mocker.patch.object(
+        schedule_helpers, "get_pulse_uuid", return_value="new_pulse"
+    )
+
+    # Act
+    instruction = zhinst_backend.get_wave_instruction(
+        uuid, 0, output, schedule, instrument_info
+    )
+
+    # Assert
+    get_pulse_uuid.assert_called()
+    assert isinstance(instruction, zhinst.Wave)
+    assert instruction.uuid == "new_pulse"
+    assert instruction.n_samples_scaled == 9
+
+
+def test_get_measure_instruction(mocker, create_schedule_with_pulse_info):
+    # Arrange
+    q0 = "q0"
+    schedule = types.Schedule("test")
+    schedule.add(Measure(q0))
+    schedule = create_schedule_with_pulse_info(schedule)
+    schedule = schedule_helpers.CachedSchedule(schedule)
+
+    uuid = next(iter(schedule.acqid_acqinfo_dict.keys()))
+    output = mocker.create_autospec(zhinst.Output, instance=True)
+    instrument_info = zhinst.InstrumentInfo(1.8e9, 8, 16)
+
+    wave = np.concatenate([np.zeros(9), np.ones(39)])
+    mocker.patch.object(
+        zhinst_backend, "apply_waveform_corrections", return_value=(1, 9, wave)
+    )
+
+    # Act
+    instruction = zhinst_backend.get_measure_instruction(
+        uuid, 0, output, schedule, instrument_info
+    )
+
+    # Assert
+    assert isinstance(instruction, zhinst.Measure)
+
+
+def test_uhfqa_sequence1(
+    make_schedule,
     uhfqa_hardware_map: Dict[str, Any],
 ) -> None:
     # Arrange
-    schedule = Schedule("test")
-    schedule.add(Reset("q0"))
-    schedule.add(X("q0"))
-    schedule.add(Measure("q0"))
-    schedule = create_schedule_with_pulse_info(schedule)
+    schedule = make_schedule()
 
-    uhfqa_mock: uhfqa.UHFQA = create_uhfqa_mock()
-    mocker.patch(
-        "qcodes.instrument.base.Instrument.find_instrument",
-        return_value=uhfqa_mock,
-    )
-    mocker.patch.object(zi_helpers, "set_value")
-    modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
-    )
-    set_integration_weights_mock = mocker.patch.object(
-        zi_helpers, "set_integration_weights"
-    )
-    np_savetext_mock = mocker.patch.object(np, "savetxt")
-    write_seqc_file_mock = mocker.patch.object(
-        zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
-    )
     # pylint: disable=line-too-long
     expected_seqc = dedent(
         """\
@@ -557,7 +720,8 @@ def test_uhfqa_sequence1(
     // Variables
     var __repetitions__ = 1;
     var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
-    wave w0 = "dev2299_wave0";\n
+    var reset_integration_trigger = AWG_INTEGRATION_ARM;
+    wave w0 = placeholder(304);\n
     // Operations
     // Schedule offset: 0.000200000s 45000 clocks
     // Schedule duration: 0.000000436s 98 clocks
@@ -565,66 +729,48 @@ def test_uhfqa_sequence1(
     // Sequence duration: 0.000000420s 94 clocks
     // Sequence end: 0.000000436s 98 clocks
     // Line delay: -1.000000000s 0 clocks
+    assignWaveIndex(w0, w0, 0);
     repeat(__repetitions__)
     {
+      setTrigger(reset_integration_trigger);	// Arm QAResult n_instr=1
       waitDigTrigger(2, 1);	// clock=0
       wait(4);	// clock=0 n_instr=4
       playWave(w0);	// clock=4 n_instr=0
-      wait(23);	// 	// clock=4 n_instr=23
-      setTrigger(integration_trigger);	// clock=27 n_instr=2
+      wait(25);	// 	// clock=4 n_instr=25
+      setTrigger(integration_trigger);	// clock=29 n_instr=1
     }
+    setTrigger(0);	// Reset triggers n_instr=1
     """
     ).lstrip("\n")
     # pylint: enable=line-too-long
 
     # Act
-    zhinst_backend.setup_zhinst_backend(schedule, uhfqa_hardware_map)
+    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    modulate_wave_spy.assert_called()
-    set_integration_weights_mock.assert_called()
-    np_savetext_mock.assert_called()
-    write_seqc_file_mock.assert_called()
-    # Note: Assert inner variable for better error messsage
-    args, _ = write_seqc_file_mock.call_args
-    assert args[1] == expected_seqc
-    write_seqc_file_mock.assert_called_with(
-        uhfqa_mock.awg, expected_seqc, "uhfqa_awg.seqc"
-    )
+    assert "uhfqa0" in zi_backend.settings
+    settings_builder = zi_backend.settings["uhfqa0"]
+    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
+    assert zi_setting.value == expected_seqc
 
 
 def test_uhfqa_sequence2(
-    mocker,
-    create_uhfqa_mock,
     create_schedule_with_pulse_info,
     uhfqa_hardware_map: Dict[str, Any],
 ) -> None:
     # Arrange
-    schedule = raw_trace_schedule(
+    schedule = trace_schedules.trace_schedule(
+        pulse_amp=1,
+        pulse_duration=16e-9,
+        pulse_delay=0,
+        frequency=7.04e9,
+        acquisition_delay=0,
+        integration_time=1e-6,
         port="q0:res",
         clock="q0.ro",
-        integration_time=1e-6,
-        spec_pulse_amp=1,
-        frequency=7.04e9,
+        init_duration=1e-5,
     )
     schedule = create_schedule_with_pulse_info(schedule)
-
-    uhfqa_mock: uhfqa.UHFQA = create_uhfqa_mock()
-    mocker.patch(
-        "qcodes.instrument.base.Instrument.find_instrument",
-        return_value=uhfqa_mock,
-    )
-    mocker.patch.object(zi_helpers, "set_value")
-    modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
-    )
-    set_integration_weights_mock = mocker.patch.object(
-        zi_helpers, "set_integration_weights"
-    )
-    np_savetext_mock = mocker.patch.object(np, "savetxt")
-    write_seqc_file_mock = mocker.patch.object(
-        zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
-    )
 
     # pylint: disable=line-too-long
     expected_seqc = dedent(
@@ -633,73 +779,62 @@ def test_uhfqa_sequence2(
     // Variables
     var __repetitions__ = 1;
     var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
-    wave w0 = "dev2299_wave0";\n
+    var reset_integration_trigger = AWG_INTEGRATION_ARM;
+    wave w0 = placeholder(32);\n
     // Operations
-    // Schedule offset: 0.000001000s 225 clocks
-    // Schedule duration: 0.000001600s 360 clocks
+    // Schedule offset: 0.000010000s 2250 clocks
+    // Schedule duration: 0.000001000s 225 clocks
     // Sequence start: 0.000000000s 0 clocks
-    // Sequence duration: 0.000001600s 360 clocks
-    // Sequence end: 0.000001600s 360 clocks
+    // Sequence duration: 0.000001000s 225 clocks
+    // Sequence end: 0.000001000s 225 clocks
     // Line delay: -1.000000000s 0 clocks
+    assignWaveIndex(w0, w0, 0);
     repeat(__repetitions__)
     {
+      setTrigger(reset_integration_trigger);	// Arm QAResult n_instr=1
       waitDigTrigger(2, 1);	// clock=0
-      setTrigger(integration_trigger);	// clock=0 n_instr=2
-      wait(335);	// 	// clock=2 n_instr=335
-      playWave(w0);	// clock=337 n_instr=0
+      playWave(w0);	// clock=0 n_instr=0
+      setTrigger(integration_trigger);	// clock=0 n_instr=1
     }
+    setTrigger(0);	// Reset triggers n_instr=1
     """
     ).lstrip("\n")
     # pylint: enable=line-too-long
 
     # Act
-    zhinst_backend.setup_zhinst_backend(schedule, uhfqa_hardware_map)
+    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    modulate_wave_spy.assert_called()
-    set_integration_weights_mock.assert_called()
-    np_savetext_mock.assert_called()
-    write_seqc_file_mock.assert_called()
-    # Note: Assert inner variable for better error messsage
-    args, _ = write_seqc_file_mock.call_args
-    assert args[1] == expected_seqc
-    write_seqc_file_mock.assert_called_with(
-        uhfqa_mock.awg, expected_seqc, "uhfqa_awg.seqc"
-    )
+    assert "uhfqa0" in zi_backend.settings
+    settings_builder = zi_backend.settings["uhfqa0"]
+    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
+    assert zi_setting.value == expected_seqc
 
 
 def test_uhfqa_sequence3(
-    mocker,
-    create_uhfqa_mock,
     create_schedule_with_pulse_info,
     uhfqa_hardware_map: Dict[str, Any],
 ) -> None:
     # Arrange
-    schedule = ssb_integration_complex_schedule(
-        port="q0:res",
-        clock="q0.ro",
-        integration_time=1e-6,
-        spec_pulse_amp=1,
-        frequency=7.04e9,
+    ro_acquisition_delay = -16e-9
+    ro_pulse_delay = 2e-9
+    schedule = spectroscopy_schedules.two_tone_spec_sched(
+        spec_pulse_amp=0.6e-0,
+        spec_pulse_duration=16e-9,
+        spec_pulse_frequency=6.02e9,
+        spec_pulse_port="q0:mw",
+        spec_pulse_clock="q0.01",
+        ro_pulse_amp=0.5e-3,
+        ro_pulse_duration=150e-9,
+        ro_pulse_delay=ro_pulse_delay,
+        ro_pulse_port="q0:res",
+        ro_pulse_clock="q0.ro",
+        ro_pulse_frequency=7.04e9,
+        ro_acquisition_delay=ro_acquisition_delay,
+        ro_integration_time=500e-9,
+        buffer_time=1e-5,
     )
     schedule = create_schedule_with_pulse_info(schedule)
-
-    uhfqa_mock: uhfqa.UHFQA = create_uhfqa_mock()
-    mocker.patch(
-        "qcodes.instrument.base.Instrument.find_instrument",
-        return_value=uhfqa_mock,
-    )
-    mocker.patch.object(zi_helpers, "set_value")
-    modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
-    )
-    set_integration_weights_mock = mocker.patch.object(
-        zi_helpers, "set_integration_weights"
-    )
-    np_savetext_mock = mocker.patch.object(np, "savetxt")
-    write_seqc_file_mock = mocker.patch.object(
-        zi_helpers, "write_seqc_file", return_value=Path("awg-0.seqc")
-    )
 
     # pylint: disable=line-too-long
     expected_seqc = dedent(
@@ -708,167 +843,47 @@ def test_uhfqa_sequence3(
     // Variables
     var __repetitions__ = 1;
     var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
-    wave w0 = "dev2299_wave0";
-    wave w1 = "dev2299_wave1";\n
+    var reset_integration_trigger = AWG_INTEGRATION_ARM;
+    wave w0 = placeholder(272);\n
     // Operations
-    // Schedule offset: 0.000001000s 225 clocks
-    // Schedule duration: 0.000001600s 360 clocks
-    // Sequence start: 0.000000000s 0 clocks
-    // Sequence duration: 0.000001200s 270 clocks
-    // Sequence end: 0.000001200s 270 clocks
+    // Schedule offset: 0.000010000s 2250 clocks
+    // Schedule duration: 0.000000502s 113 clocks
+    // Sequence start: 0.000000002s 0 clocks
+    // Sequence duration: 0.000000166s 38 clocks
+    // Sequence end: 0.000000168s 38 clocks
     // Line delay: -1.000000000s 0 clocks
+    assignWaveIndex(w0, w0, 0);
     repeat(__repetitions__)
     {
+      setTrigger(reset_integration_trigger);	// Arm QAResult n_instr=1
       waitDigTrigger(2, 1);	// clock=0
-      setTrigger(integration_trigger);	// clock=0 n_instr=2
-      wait(110);	// 	// clock=2 n_instr=110
-      playWave(w0);	// clock=112 n_instr=0
-      wait(20);	// 	// clock=112 n_instr=20
-      setTrigger(integration_trigger);	// clock=132 n_instr=2
-      wait(113);	// 	// clock=134 n_instr=113
-      playWave(w1);	// clock=247 n_instr=0
+      setTrigger(integration_trigger);	// clock=0 n_instr=1
+      wait(3);	// 	// clock=1 n_instr=3
+      playWave(w0);	// clock=4 n_instr=0
     }
+    setTrigger(0);	// Reset triggers n_instr=1
     """
     ).lstrip("\n")
     # pylint: enable=line-too-long
 
     # Act
-    zhinst_backend.setup_zhinst_backend(schedule, uhfqa_hardware_map)
+    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    modulate_wave_spy.assert_called()
-    set_integration_weights_mock.assert_called()
-    np_savetext_mock.assert_called()
-    write_seqc_file_mock.assert_called()
-    # Note: Assert inner variable for better error messsage
-    args, _ = write_seqc_file_mock.call_args
-    assert args[1] == expected_seqc
-    write_seqc_file_mock.assert_called_with(
-        uhfqa_mock.awg, expected_seqc, "uhfqa_awg.seqc"
-    )
+    assert "uhfqa0" in zi_backend.settings
+    settings_builder = zi_backend.settings["uhfqa0"]
+    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
+    assert zi_setting.value == expected_seqc
 
 
-def test__program_modulation_type_is_premodulate(
-    mocker,
-    uhfqa_hardware_map: Dict[str, Any],
-    create_device,
-    create_uhfqa_mock,
-    create_schedule_with_pulse_info,
-):
+def test__add_wave_nodes(mocker):
     # Arrange
-    uhfqa = create_uhfqa_mock()
-    device: zhinst.Device = create_device(uhfqa_hardware_map)
-    device.type = zhinst.DeviceType.UHFQA
-    device.channel_0.modulation = ModulationModeType.PREMODULATE
-
-    schedule: Schedule = create_schedule_with_pulse_info()
-
-    clock_rate = uhfqa.awg._awg.sequence_params["sequence_parameters"]["clock_rate"]
-    pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
-    pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = get_waveform_by_pulseid(
-        schedule
-    )
-    waveforms_dict: Dict[int, np.ndarray] = dict()
-    for pulse_id, waveform_partial_fn in pulseid_waveformfn_dict.items():
-        waveforms_dict[pulse_id] = waveform_partial_fn(sampling_rate=clock_rate)
-
-    modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
-    )
-
-    # Act
-    zhinst_backend._program_modulation(
-        uhfqa.awg, device, device.channel_0, waveforms_dict, pulseid_pulseinfo_dict
-    )
-
-    # Assert
-    modulate_wave_spy.assert_called()
-
-
-@pytest.mark.parametrize(
-    "device_type", [(zhinst.DeviceType.UHFQA), (zhinst.DeviceType.HDAWG)]
-)
-def test__program_modulation_type_is_modulate(
-    device_type: zhinst.DeviceType,
-    uhfqa_hardware_map: Dict[str, Any],
-    hdawg_hardware_map: Dict[str, Any],
-    create_device,
-    create_uhfqa_mock,
-    create_hdawg_mock,
-):
-    # Arrange
-    if device_type == zhinst.DeviceType.HDAWG:
-        instrument = create_hdawg_mock(4)
-        device: zhinst.Device = create_device(hdawg_hardware_map)
-        device.type = device_type
-        awg = instrument.awgs[0]
-    elif device_type == zhinst.DeviceType.UHFQA:
-        instrument = create_uhfqa_mock()
-        device: zhinst.Device = create_device(uhfqa_hardware_map)
-        device.type = device_type
-        awg = instrument.awg
-
-    device.channel_0.modulation = ModulationModeType.MODULATE
-
-    # Act
-    zhinst_backend._program_modulation(awg, device, device.channel_0, dict(), dict())
-
-    # Assert
-    if device_type == zhinst.DeviceType.HDAWG:
-        output = device.channel_0
-        awg.enable_iq_modulation.assert_called()
-        awg.modulation_freq.assert_called_with(output.lo_freq + output.interm_freq)
-        awg.modulation_phase_shift.assert_called_with(output.phase_shift)
-        awg.gain1.assert_called_with(output.gain1)
-        awg.gain2.assert_called_with(output.gain2)
-    else:
-        assert hasattr(awg, "enable_iq_modulation") is False
-
-
-@pytest.mark.parametrize(
-    "device_type", [(zhinst.DeviceType.UHFQA), (zhinst.DeviceType.HDAWG)]
-)
-def test__program_modulation_type_is_none(
-    device_type: zhinst.DeviceType,
-    uhfqa_hardware_map: Dict[str, Any],
-    hdawg_hardware_map: Dict[str, Any],
-    create_device,
-    create_uhfqa_mock,
-    create_hdawg_mock,
-):
-    # Arrange
-    if device_type == zhinst.DeviceType.HDAWG:
-        instrument = create_hdawg_mock(4)
-        device: zhinst.Device = create_device(hdawg_hardware_map)
-        device.type = device_type
-        awg = instrument.awgs[0]
-    elif device_type == zhinst.DeviceType.UHFQA:
-        instrument = create_uhfqa_mock()
-        device: zhinst.Device = create_device(uhfqa_hardware_map)
-        device.type = device_type
-        awg = instrument.awg
-
-    device.channel_0.modulation = ModulationModeType.NONE
-
-    # Act
-    zhinst_backend._program_modulation(awg, device, device.channel_0, dict(), dict())
-
-    # Assert
-    if device_type == zhinst.DeviceType.HDAWG:
-        awg.disable_iq_modulation.assert_called()
-    else:
-        assert hasattr(awg, "disable_iq_modulation") is False
-
-
-def test__set_waveforms_destination_is_waveformtable(mocker, create_hdawg_mock):
-    # Arrange
-    instrument = create_hdawg_mock(4)
-    awg = instrument.awgs[0]
     waveform = np.vectorize(complex)(np.zeros(1024), np.ones(1024))
     waveforms_dict = {0: waveform}
-    commandtable_map = {0: 0}
+    waveform_table = {0: 0}
 
-    set_wave_vector_mock = mocker.patch.object(zi_helpers, "set_wave_vector")
+    awg_index: int = 0
+    settings_builder = mocker.Mock(spec=settings.ZISettingsBuilder)
 
     _data = np.zeros((2, 1024))
     _data[0] = np.real(waveform)
@@ -876,50 +891,13 @@ def test__set_waveforms_destination_is_waveformtable(mocker, create_hdawg_mock):
     expected_data = (_data.reshape((-2,), order="F") * (2 ** 15 - 1)).astype("int16")
 
     # Act
-    zhinst_backend._set_waveforms(
-        instrument,
-        awg,
-        waveforms_dict,
-        commandtable_map,
-        zhinst.WaveformDestination.WAVEFORM_TABLE,
+    zhinst_backend._add_wave_nodes(
+        awg_index, waveforms_dict, waveform_table, settings_builder
     )
 
     # Assert
-    expected_call = [call(instrument, awg._awg._index, 0, ANY)]
-    assert set_wave_vector_mock.call_args_list == expected_call
-    args, _ = set_wave_vector_mock.call_args
-    np.testing.assert_array_equal(args[3], expected_data)
+    expected_call = [call(awg_index, 0, ANY)]
+    assert settings_builder.with_wave_vector.call_args_list == expected_call
 
-
-def test__set_waveforms_destination_is_csv(mocker, create_hdawg_mock):
-    # Arrange
-    instrument = create_hdawg_mock(4)
-    awg = instrument.awgs[0]
-    waveform = np.vectorize(complex)(np.zeros(1024), np.ones(1024))
-    waveforms_dict = {0: waveform}
-    commandtable_map = {0: 0}
-
-    np_savetext_mock = mocker.patch.object(np, "savetxt")
-    expected_path = Path(".").joinpath(
-        "awg", "waves", f"{instrument._serial}_wave{commandtable_map[0]}.csv"
-    )
-    _data = np.zeros((2, 1024))
-    _data[0] = np.real(waveform)
-    _data[1] = np.imag(waveform)
-    _scaled_data = (_data.reshape((-2,), order="F") * (2 ** 15 - 1)).astype("int16")
-    expected_data = np.reshape(_scaled_data, (1024, -1))
-
-    # Act
-    zhinst_backend._set_waveforms(
-        instrument,
-        awg,
-        waveforms_dict,
-        commandtable_map,
-        zhinst.WaveformDestination.CSV,
-    )
-
-    # Assert
-    expected_call = [call(expected_path, ANY, delimiter=";")]
-    assert np_savetext_mock.call_args_list == expected_call
-    args, _ = np_savetext_mock.call_args
-    np.testing.assert_array_equal(args[1], expected_data)
+    args, _ = settings_builder.with_wave_vector.call_args
+    np.testing.assert_array_equal(args[2], expected_data)

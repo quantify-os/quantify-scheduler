@@ -26,7 +26,7 @@ A Device describes the type of Zurich Instruments and the physical setup.
     :linenos:
 
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend",
+      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         
       ]
@@ -40,6 +40,11 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
 * In order for the backend to find the QCodes Instrument it is required that the
   :class:`~quantify.scheduler.backends.types.zhinst.Device`'s `name` must be equal to 
   the name given to the QCodes Instrument during instantiation. 
+
+* The `type` property defines the instrument's model. The :enum:`~quantify.scheduler.backends.types.zhinst.DeviceType`
+  is parsed from the string as well as the number of channels.
+    
+    * Example: "HDAWG8"
 
 * The `ref` property describes if the instrument uses Markers (`int`), Triggers (`ext`) or `none`.
 
@@ -58,7 +63,7 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
     :emphasize-lines: 5,17
 
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend",
+      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "hdawg0",
@@ -114,7 +119,7 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
     :linenos:
 
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend",
+      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "hdawg0",

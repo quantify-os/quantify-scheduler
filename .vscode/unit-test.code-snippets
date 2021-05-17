@@ -1,0 +1,6 @@
+{
+    "Tripple (AAA) unit test": {
+        "prefix": "AAA",
+        "body": ["# Arrange\n$0", "# Act\n", "# Assert\n"]
+    }
+}

@@ -19,6 +19,7 @@ from quantify.scheduler.helpers.waveforms import (
     exec_waveform_function,
     get_waveform,
     get_waveform_by_pulseid,
+    get_waveform_size,
     resize_waveform,
     shift_waveform,
     modulate_waveform,
@@ -269,3 +270,21 @@ def test_shift_waveform_aligned():
     # Assert
     assert clock == 1
     np.testing.assert_array_equal(shifted_waveform, waveform)
+
+
+@pytest.mark.parametrize(
+    "size,granularity,expected",
+    [
+        (0, 16, 16),
+        (10, 16, 16),
+        (16, 16, 16),
+        (30, 16, 32),
+        (33, 16, 48),
+    ],
+)
+def test_get_waveform_size(size: int, granularity: int, expected: int):
+    # Act
+    new_size = get_waveform_size(np.ones(size), granularity)
+
+    # Assert
+    assert expected == new_size

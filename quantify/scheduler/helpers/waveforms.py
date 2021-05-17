@@ -22,7 +22,7 @@ from quantify.scheduler.helpers import schedule as schedule_helpers
 from quantify.scheduler import math
 from quantify.scheduler import types
 
-
+# pylint: disable=too-few-public-methods
 class GetWaveformPartial(Protocol):  # typing.Protocol
     """
     Protocol type definition class for the get_waveform
@@ -35,12 +35,12 @@ class GetWaveformPartial(Protocol):  # typing.Protocol
 
         Parameters
         ----------
-        sampling_rate :
+        sampling_rate
             The waveform sampling rate.
 
         Returns
         -------
-        np.ndarray
+        :
             The waveform array.
         """
 
@@ -52,18 +52,16 @@ def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
 
     Parameters
     ----------
-    waveform :
-    granularity : int
+    waveform
 
-    Returns
-    -------
-    int
+    granularity
+
     """
     size: int = len(waveform)
     if size % granularity != 0:
         size = math.closest_number_ceil(size, granularity)
 
-    return size
+    return max(size, granularity)
 
 
 def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) -> None:
@@ -73,9 +71,9 @@ def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) ->
 
     Parameters
     ----------
-    waveforms_dict :
+    waveforms_dict
         The waveforms dictionary.
-    granularity :
+    granularity
         The granularity.
     """
     # Modify the list while iterating to avoid copies
@@ -91,16 +89,16 @@ def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
 
     Parameters
     ----------
-    waveform :
+    waveform
         The waveform array.
-    granularity :
+    granularity
         The waveform granularity.
 
     Returns
     -------
-    np.array
+    :
         The resized waveform with a length equal to
-            `mod(len(waveform), granularity) == 0`.
+        `mod(len(waveform), granularity) == 0`.
     """
     size: int = len(waveform)
     if size == 0:
@@ -140,15 +138,14 @@ def shift_waveform(
 
     Parameters
     ----------
-    waveform : np.ndarray
-    start_in_seconds : float
-    clock_rate : int
-    resolution : int
-        The sequencer resolution.
+    waveform
 
-    Returns
-    -------
-    Tuple[int, np.ndarray]
+    start_in_seconds
+
+    clock_rate
+
+    resolution
+        The sequencer resolution.
     """
 
     start_in_clocks = round(start_in_seconds * clock_rate)
@@ -170,14 +167,14 @@ def get_waveform(
 
     Parameters
     ----------
-    pulse_info :
+    pulse_info
         The pulse_info dictionary.
-    sampling_rate :
+    sampling_rate
         The sample rate of the waveform.
 
     Returns
     -------
-    np.ndarray
+    :
         The waveform.
     """
     t: np.ndarray = np.arange(0, 0 + pulse_info["duration"], 1 / sampling_rate)
@@ -194,18 +191,13 @@ def get_waveform_by_pulseid(
     Returns a lookup dictionary of pulse_id and
     respectively its partial waveform function.
 
-    The keys are pulse info ids while the values are partial functions of
-    :func:`~quantify.scheduler.helpers.schedule.get_waveform`. Executing
+    The keys are pulse info ids while the values are partial functions. Executing
     the waveform will return a :class:`numpy.ndarray`.
 
     Parameters
     ----------
-    schedule :
+    schedule
         The schedule.
-
-    Returns
-    -------
-    Dict[int, GetWaveformPartial]
     """
     pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = dict()
     for t_constr in schedule.timing_constraints:
@@ -240,16 +232,16 @@ def exec_waveform_partial(
 
     Parameters
     ----------
-    pulse_id :
+    pulse_id
         The pulse uuid.
-    pulseid_waveformfn_dict :
+    pulseid_waveformfn_dict
         The partial waveform lookup dictionary.
-    sampling_rate :
+    sampling_rate
         The sampling rate.
 
     Returns
     -------
-    np.ndarray
+    :
         The waveform array.
     """
     # Execute partial function get_waveform that already has
@@ -269,20 +261,20 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
 
     If the wf_func is defined outside quantify-scheduler then the
     wf_func is dynamically loaded and executed using
-    :func:`~quantify.schedule.helpers.schedule.exec_custom_waveform_function`.
+    :func:`~quantify.scheduler.helpers.waveforms.exec_custom_waveform_function`.
 
     Parameters
     ----------
-    wf_func :
+    wf_func
         The custom waveform function path.
-    t :
+    t
         The linear timespace.
-    pulse_info :
+    pulse_info
         The dictionary containing pulse information.
 
     Returns
     -------
-    np.ndarray
+    :
         Returns the computed waveform.
     """
     whitelist: List[str] = ["square", "ramp", "soft_square", "drag"]
@@ -322,16 +314,16 @@ def exec_custom_waveform_function(
 
     Parameters
     ----------
-    wf_func :
+    wf_func
         The custom waveform function path.
-    t :
+    t
         The linear timespace.
-    pulse_info :
+    pulse_info
         The dictionary containing pulse information.
 
     Returns
     -------
-    np.ndarray
+    :
         Returns the computed waveform.
     """
     # Load the waveform function from string
@@ -352,13 +344,14 @@ def exec_custom_waveform_function(
 def apply_mixer_skewness_corrections(
     waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
 ) -> np.ndarray:
-    """
+    r"""
     Takes a waveform and applies a correction for amplitude imbalances and
     phase errors when using an IQ mixer from previously calibrated values.
 
     Phase correction is done using:
 
     .. math::
+
         Re(z_{corrected}) (t) = Re(z (t)) + Im(z (t)) \tan(\phi)
         Im(z_{corrected}) (t) = Im(z (t)) / \cos(\phi)
 
@@ -368,19 +361,19 @@ def apply_mixer_skewness_corrections(
 
     Parameters
     ----------
-    waveform: np.ndarray
+    waveform
         The complex valued waveform on which the correction will be applied.
-    amplitude_ratio: float
+    amplitude_ratio
         The ratio between the amplitudes of I and Q that is used to correct
         for amplitude imbalances between the different paths in the IQ mixer.
-    phase_shift: float
+    phase_shift
         The phase error (in deg) used to correct the phase between I and Q.
 
     Returns
     -------
-        np.ndarray
-            The complex valued waveform with the applied phase and amplitude
-            corrections.
+    :
+        The complex valued waveform with the applied phase and amplitude
+        corrections.
     """
 
     def calc_corrected_re(wvfm: np.ndarray, alpha: float, phi: float):
@@ -405,11 +398,12 @@ def apply_mixer_skewness_corrections(
 def modulate_waveform(
     t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
 ) -> np.ndarray:
-    """
+    r"""
     Generates a (single sideband) modulated waveform from a given envelope by
     multiplying it with a complex exponential.
 
     .. math::
+
         z_{mod} (t) = z (t) \cdot e^{2\pi i f (t+t_0)}
 
     The signs are chosen such that the frequencies follow the relation RF = LO + IF for
@@ -417,13 +411,13 @@ def modulate_waveform(
 
     Parameters
     ----------
-    t:
+    t
         A numpy array with time values
-    envelope:
+    envelope
         The complex-valued envelope of the modulated waveform
-    freq:
+    freq
         The frequency of the modulation
-    t0:
+    t0
         Time offset for the modulation
 
     Returns
@@ -441,19 +435,20 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
 
     Parameters
     ----------
-    data: np.ndarray
+    data
         The waveform data to rescale.
 
     Returns
     -------
-    np.ndarray
+    rescaled_data
         The rescaled data.
-    float
+    amp_real
         The original amplitude of the real part.
-    float
+    amp_imag
         The original amplitude of the imaginary part.
     """
     amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
     norm_data_r = data.real / amp_real if amp_real != 0.0 else np.zeros(data.real.shape)
     norm_data_i = data.imag / amp_imag if amp_imag != 0.0 else np.zeros(data.imag.shape)
-    return norm_data_r + 1.0j * norm_data_i, amp_real, amp_imag
+    rescaled_data = norm_data_r + 1.0j * norm_data_i
+    return rescaled_data, amp_real, amp_imag
