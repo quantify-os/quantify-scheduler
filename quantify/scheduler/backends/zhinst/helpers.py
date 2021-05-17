@@ -8,11 +8,9 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-import numpy as np
 from zhinst.qcodes import base
 from zhinst import qcodes
 
-from quantify.scheduler.backends.types import zhinst as types
 
 logger = logging.getLogger()
 
@@ -72,6 +70,8 @@ def set_vector(
     ----------
     instrument :
         The instrument.
+    awg_index :
+        The awg to configure.
     node :
         The node path.
     value :
@@ -208,29 +208,6 @@ def get_waves_directory(awg: qcodes.hdawg.AWG) -> Path:
     return get_directory(awg).joinpath("awg", "waves")
 
 
-def get_clock_rate(device_type: types.DeviceType) -> int:
-    """
-    Returns the clock rate of a Device.
-
-    Parameters
-    ----------
-    device_type :
-        The type of device.
-
-    Returns
-    -------
-    :
-        The number of clocks (GSa/s).
-    """
-    # clock_rate = awg._awg.sequence_params["sequence_parameters"]["clock_rate"]
-    clock_rate = 0
-    if device_type == types.DeviceType.HDAWG:
-        clock_rate = 2400000000  # 2.4e9 GSa/s
-    elif device_type == types.DeviceType.UHFQA:
-        clock_rate = 1800000000  # 1.8e9 GSa/s
-    return clock_rate
-
-
 def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path:
     """
     Writes the contents of to the source directory
@@ -256,7 +233,7 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
     return path
 
 
-def get_commandtable_map(
+def get_waveform_table(
     pulse_ids: List[int], pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]]
 ) -> Dict[int, int]:
     """
@@ -273,12 +250,12 @@ def get_commandtable_map(
     Returns
     -------
     :
-        The command table map.
+        The waveform table dictionary.
     """
-    commandtable_map: Dict[int, int] = dict()
+    waveform_table: Dict[int, int] = dict()
     index = 0
     for pulse_id in pulse_ids:
-        if pulse_id in commandtable_map:
+        if pulse_id in waveform_table:
             # Skip duplicate pulses.
             continue
 
@@ -287,44 +264,10 @@ def get_commandtable_map(
             # Skip pulses without a port. Such as the IdlePulse.
             continue
 
-        commandtable_map[pulse_id] = index
+        waveform_table[pulse_id] = index
         index += 1
 
-    return commandtable_map
-
-
-def set_qas_parameters(
-    instrument: base.ZIBaseInstrument,
-    integration_length: int,
-    mode: types.QasIntegrationMode = types.QasIntegrationMode.NORMAL,
-    delay: int = 0,
-):
-    assert integration_length <= 4096
-
-    node = "qas/0/integration/length"
-    set_value(instrument, node, integration_length)
-
-    node = "qas/0/integration/mode"
-    set_value(instrument, node, mode.value)
-
-    node = "qas/0/delay"
-    set_value(instrument, node, delay)
-
-
-def set_integration_weights(
-    instrument: base.ZIBaseInstrument,
-    channel_index: int,
-    weights_i: List[int],
-    weights_q: List[int],
-):
-    assert channel_index < 10
-    assert len(weights_i) <= 4096
-    assert len(weights_q) <= 4096
-
-    node = "qas/0/integration/weights/"
-
-    set_vector(instrument, f"{node}{channel_index}/real", np.array(weights_i))
-    set_vector(instrument, f"{node}{channel_index}/imag", np.array(weights_q))
+    return waveform_table
 
 
 def get_readout_channel_bitmask(readout_channels_count: int) -> str:
@@ -353,3 +296,27 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
     bitmask = format(mask, "b").zfill(10)
 
     return f"0b{bitmask}"
+
+
+def get_clock_rates(base_clock: float) -> Dict[int, int]:
+    """
+    Returns the allowed clock rate values.
+    See zhinst User manuals, section /DEV..../AWGS/n/TIME
+
+    Parameters
+    ----------
+    base_clock :
+        The Instruments base clock rate.
+    Returns
+    -------
+    Dict[int, int]
+        The node and clock rate values.
+    """
+    return dict(
+        map(
+            lambda i: (i, int(base_clock))
+            if i == 0
+            else (i, int(base_clock / pow(2, i))),
+            range(14),
+        )
+    )

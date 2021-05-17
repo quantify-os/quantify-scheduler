@@ -6,8 +6,8 @@ Tutorial 1. UHFQA Monitor
 This tutorial describes how to use :mod:`quantify.scheduler` to generate pulses and acquire monitor data,
 also visualized in the Quantum Analyzer Input tab of LabOne, using the UHFQA's AWG.
 
-For this tutorial lets use :func:`~quantify.scheduler.schedules.acquisition.raw_trace_schedule` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify.scheduler.acquisition_library.Trace`
+For this tutorial lets use :func:`~quantify.scheduler.schedules.trace_schedules.trace_schedule` to create a
+pulse level Schedule. This utility function is used for debugging :class:`~quantify.scheduler.acquisition_library.Trace` 
 acquisition with pulses of a large fixed duration.
 
 Requirements
@@ -18,18 +18,18 @@ Requirements
 .. code-block:: python
     :linenos:
 
-    from typing import Dict, Any, Callable
+    from typing import Dict, Any
     import logging
     import json
     import numpy as np
     import matplotlib.pyplot as plt
     from pathlib import Path
 
+    from qcodes.instrument.base import Instrument
     from zhinst.qcodes import UHFQA
 
-    from quantify.scheduler.schedules.acquisition import raw_trace_schedule
+    from quantify.scheduler.schedules.trace_schedules import trace_schedule
     from quantify.scheduler.compilation import qcompile
-    import quantify.scheduler.backends.zhinst_backend as zhinst_backend
 
     # Debug only
     # logging.getLogger().setLevel(logging.DEBUG)
@@ -38,14 +38,18 @@ Requirements
     :linenos:
 
     # Create a schedule using the `Trace` acquisition protocol
-    # The `raw_trace_schedule` is a Schedule defined on pulse-level.
+    # The `trace_schedule` is a Schedule defined on pulse-level.
     # This schedule should only be used for testing UHFQA monitor output.
-    schedule = raw_trace_schedule(
-        port="q0:res",
-        clock="q0.ro",
+    schedule = trace_schedule(
+        pulse_amp=1,
+        pulse_duration=16e-9,
+        pulse_delay=0,
+        frequency=7.04e9,
+        acquisition_delay=2e-9,
         integration_time=1e-6,
-        spec_pulse_amp=1,
-        frequency=7.04e9
+        port="q0:res", 
+        clock="q0.ro", 
+        init_duration=1e-5,
     )
     schedule.repetitions = 1
 
@@ -54,15 +58,10 @@ Requirements
     :emphasize-lines: 24
 
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
-        import quantify.scheduler.schemas.examples as es
-        import os, inspect
-        import json
-
-        examples_path:str = inspect.getfile(es)
-        config_file_path = os.path.abspath(os.path.join(examples_path, '..', filename))
-
-        return json.loads(Path(config_file_path).read_text())
-
+        import quantify.scheduler.schemas.examples as examples
+        path = Path(examples.__file__).parent.joinpath(filename)
+        return json.loads(path.read_text())
+    
     # Load example configuration from quantify.scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
@@ -71,10 +70,11 @@ Requirements
     zhinst_hardware_map: Dict[str, Any] = json.loads(
     """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.create_pulsar_backend",
+      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "uhfqa0",
+          "type": "UHFQA", 
           "ref": "none",
           "channel_0": {
             "port": "q0:res",
@@ -92,8 +92,8 @@ Requirements
 .. code-block:: python
     :linenos:
 
-    # Compile schedule with configurations
-    schedule = qcompile(schedule, device_config_map, zhinst_hardware_map)
+    # Compile schedule for the backend configuration
+    zi_backend = qcompile(schedule, device_config_map, zhinst_hardware_map)
 
 .. code-block:: python
     :linenos:
@@ -105,9 +105,19 @@ Requirements
 
 .. code-block:: python
     :linenos:
+    
+    # Configure the Instruments
+    for instrument_name, settings_builder in zi_backend.settings.items():
+        instrument = Instrument.find_instrument(instrument_name)
+        zi_settings = settings_builder.build(instrument)
 
-    # Run the backend setup
-    acq_channel_resolvers_map = zhinst_backend.setup_zhinst_backend(schedule, zhinst_hardware_map)
+        # Apply settings to the Instrument
+        zi_settings.apply()
+
+        # Optionally serialize the settings to file storage
+        root = Path('.')
+        zi_settings.serialize(root)
+
 
 .. code-block:: python
     :linenos:
@@ -117,7 +127,7 @@ Requirements
     uhfqa.awg.wait_done()
 
     # Resolve the results by querying the UHFQA monitor nodes
-    acq_channel_results: Dict[int, Callable[..., Any]] = dict()
+    acq_channel_results = dict()
     for acq_channel, resolve in acq_channel_resolvers_map.items():
         acq_channel_results[acq_channel] = resolve()
 

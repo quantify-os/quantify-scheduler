@@ -31,7 +31,7 @@ class ZISetting:
 
         Returns
         -------
-        Dict[str, Any]
+        :
         """
         return {self.node: self.value}
 
@@ -70,6 +70,23 @@ class ZISettings:
         """Returns a list of enabled AWG indexes."""
         return self._awg_indexes
 
+    def as_dict(self) -> Dict[str, Any]:
+        """
+        Returns the ZISettings as a dictionary.
+
+        Returns
+        -------
+        :
+        """
+        collection = dict()
+        for setting in self._daq_settings:
+            collection = {**collection, **setting.as_dict()}
+
+        for (_, setting) in self._awg_settings:
+            collection = {**collection, **setting.as_dict()}
+
+        return collection
+
     def apply(self) -> None:
         """Apply all settings to the instrument."""
         for setting in self._daq_settings:
@@ -84,7 +101,7 @@ class ZISettings:
 
         Returns
         -------
-        Path
+        :
         """
         collection = dict()
         _tmp_daq_list = deepcopy(self._daq_settings)
@@ -168,7 +185,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         self._daq_settings[setting.node] = setting
         return self
@@ -184,7 +201,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         self._awg_settings[f"{awg_index}/{setting.node}"] = (awg_index, setting)
         return self
@@ -201,7 +218,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         for (node, value) in defaults:
             self._set_daq(ZISetting(node, value, zi_helpers.set_value))
@@ -222,7 +239,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -246,7 +263,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         if not isinstance(json_data, str):
             json_data = json.dumps(json_data)
@@ -274,7 +291,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         assert clock_rate_index < 14
 
@@ -294,7 +311,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -315,7 +332,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -336,7 +353,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -357,7 +374,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -378,7 +395,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -401,7 +418,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -422,7 +439,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         assert n_samples <= 4096
         return self._set_daq(
@@ -447,7 +464,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -475,7 +492,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         assert len(weights_i) <= 4096
         assert len(weights_q) <= 4096
@@ -509,7 +526,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -529,7 +546,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -549,7 +566,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -572,7 +589,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         complex_value = np.exp(1j * np.deg2rad(degrees))
         channels_list = [channels] if isinstance(channels, int) else channels
@@ -597,7 +614,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_daq(
             ZISetting(
@@ -621,7 +638,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         onoff_0, onoff_1 = outputs
         channel_0 = awg_index * 2
@@ -647,7 +664,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettingsBuilder
+        :
         """
         return self._set_awg(
             awg_index,
@@ -668,7 +685,7 @@ class ZISettingsBuilder:
 
         Returns
         -------
-        ZISettings
+        :
         """
         return ZISettings(
             instrument, self._daq_settings.values(), self._awg_settings.values()

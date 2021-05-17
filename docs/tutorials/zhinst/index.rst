@@ -23,7 +23,7 @@ Using existing programming interfaces provided via :doc:`zhinst-qcodes <zhinst-q
 :mod:`~quantify.scheduler.backends.zhinst_backend` in the :ref:`How to configure <sec-zhinst-how-to-configure>`
 page.
 
-Finally, after configuring and running :func:`~quantify.scheduler.backends.zhinst_backend.setup_zhinst_backend`
+Finally, after configuring and running :func:`~quantify.scheduler.backends.zhinst_backend.compile_backend`
 successfully the instruments are prepared for execution.
 
 The Zurich Instruments backend provides:
