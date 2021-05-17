@@ -199,6 +199,26 @@ class QasIntegrationMode(Enum):
     SPECTROSCOPY = 1
 
 
+@unique
+class QasResultMode(Enum):
+    """UHFQA QAS result mode."""
+
+    CYCLIC = 0
+    SEQUENTIAL = 1
+
+
+@unique
+class QasResultSource(Enum):
+    """UHFQA QAS result source."""
+
+    CROSSTALK = 0
+    THRESHOLD = 1
+    ROTATION = 3
+    CROSSTALK_CORRELATION = 4
+    THRESHOLD_CORRELATION = 5
+    INTEGRATION = 7
+
+
 class WaveformDestination(Enum):
     """The waveform destination enum type."""
 

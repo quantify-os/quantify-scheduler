@@ -15,14 +15,14 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
     how to represent the operation on the Gate, Pulse and/or Logical level.
-    It also contains information on the :class:`~quantify.scheduler.resources.Resource`s
-    used.
+    It also contains information on the
+    :class:`~quantify.scheduler.resources.Resource` s used.
 
-    An operation always has the following attributes
+    An operation always has the following attributes:
 
-    - duration  (float) : duration of the operation in seconds (can be 0)
-    - hash      (str)   : an auto generated unique identifier.
-    - name      (str)   : a readable identifier, does not have to be unique
+    - duration (float): duration of the operation in seconds (can be 0).
+    - hash (str): an auto generated unique identifier.
+    - name (str): a readable identifier, does not have to be unique.
 
     An Operation can contain information  on several levels of abstraction.
     This information is used when different representations. Note that when

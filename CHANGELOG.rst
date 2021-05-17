@@ -8,8 +8,12 @@ Unreleased
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* [Docs] pinned scanpydoc==0.6 due to conflicting docs dependencies (!84)
-* Added utility for decomposing long square pulses (!83)
+* Added utility for decomposing long square pulses. (!83)
+* Pulsar backend version change. (!82)
+* Qblox-Instruments version changed to 0.3.2. (!88)
+* Refactored Qblox backend. (!81)
+* Added representation to gates in gate library. Also defined the equality operation. (!101)
+* Added Zurich Instruments backend (!49)
 
 0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
 ---------------------------------------------------------

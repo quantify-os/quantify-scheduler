@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 import numpy as np
+from zhinst.qcodes import base
 from zhinst import qcodes
 
 from quantify.scheduler.backends.types import zhinst as types
@@ -16,7 +17,7 @@ from quantify.scheduler.backends.types import zhinst as types
 logger = logging.getLogger()
 
 
-def get_value(instrument: qcodes.ZIBaseInstrument, node: str) -> str:
+def get_value(instrument: base.ZIBaseInstrument, node: str) -> str:
     """
     Gets the value of a ZI node.
 
@@ -27,16 +28,17 @@ def get_value(instrument: qcodes.ZIBaseInstrument, node: str) -> str:
 
     Returns
     -------
-    str
+    :
         The node value.
     """
-    path = f"/{instrument._serial}/{node}"
-    logger.debug(path)
-    return instrument._controller._get(path)
+    if not node.startswith(f"/{instrument._serial}"):
+        node = f"/{instrument._serial}/{node}"
+    logger.debug(node)
+    return instrument._controller._get(node)
 
 
 def set_value(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     node: str,
     value,
 ) -> None:
@@ -52,15 +54,16 @@ def set_value(
     value :
         The new node value.
     """
-    path = f"/{instrument._serial}/{node}"
-    logger.debug(path)
-    instrument._controller._set(path, value)
+    if not node.startswith(f"/{instrument._serial}"):
+        node = f"/{instrument._serial}/{node}"
+    logger.debug(node)
+    instrument._controller._set(node, value)
 
 
 def set_vector(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     node: str,
-    vector: Union[List, str],
+    value: Union[List, str],
 ) -> None:
     """
     Sets the vector value of a ZI node.
@@ -71,16 +74,43 @@ def set_vector(
         The instrument.
     node :
         The node path.
+    value :
+        The new node vector value.
+    """
+    if not node.startswith(f"/{instrument._serial}"):
+        node = f"/{instrument._serial}/{node}"
+    logger.debug(node)
+    instrument._controller._controller._connection._daq.setVector(node, value)
+
+
+def set_awg_value(
+    instrument: base.ZIBaseInstrument,
+    awg_index: int,
+    node: str,
+    value: Union[int, str],
+) -> None:
+    """
+    Sets the vector value of a ZI node.
+
+    Parameters
+    ----------
+    instrument :
+        The instrument.
+    awg_index :
+        The awg to configure.
+    node :
+        The node path.
     vector :
         The new node vector value.
     """
-    path = f"/{instrument._serial}/{node}"
-    logger.debug(path)
-    instrument._controller._controller._connection._daq.setVector(path, vector)
+    logger.debug(node)
+
+    awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
+    awgs[awg_index]._awg._module.set(node, value)
 
 
 def set_wave_vector(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     awg_index: int,
     wave_index: int,
     vector: Union[List, str],
@@ -104,7 +134,7 @@ def set_wave_vector(
 
 
 def set_commandtable_data(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     awg_index: int,
     json_data: Union[Dict[str, Any], str],
 ) -> None:
@@ -138,7 +168,7 @@ def get_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path of this directory.
     """
     return Path(awg._awg._module.get_string("directory"))
@@ -155,7 +185,7 @@ def get_src_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path to the source directory.
     """
     return get_directory(awg).joinpath("awg", "src")
@@ -172,7 +202,7 @@ def get_waves_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path to the waves directory.
     """
     return get_directory(awg).joinpath("awg", "waves")
@@ -189,7 +219,7 @@ def get_clock_rate(device_type: types.DeviceType) -> int:
 
     Returns
     -------
-    int
+    :
         The number of clocks (GSa/s).
     """
     # clock_rate = awg._awg.sequence_params["sequence_parameters"]["clock_rate"]
@@ -217,7 +247,7 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
 
     Returns
     -------
-    Path
+    :
         Returns the path which was written.
     """
     path = get_src_directory(awg).joinpath(filename)
@@ -242,7 +272,7 @@ def get_commandtable_map(
 
     Returns
     -------
-    Dict[int, int]
+    :
         The command table map.
     """
     commandtable_map: Dict[int, int] = dict()
@@ -264,7 +294,7 @@ def get_commandtable_map(
 
 
 def set_qas_parameters(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     integration_length: int,
     mode: types.QasIntegrationMode = types.QasIntegrationMode.NORMAL,
     delay: int = 0,
@@ -282,7 +312,7 @@ def set_qas_parameters(
 
 
 def set_integration_weights(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     channel_index: int,
     weights_i: List[int],
     weights_q: List[int],
@@ -311,7 +341,7 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
 
     Returns
     -------
-    str
+    :
         The channel bitmask.
     """
     assert readout_channels_count <= 10
