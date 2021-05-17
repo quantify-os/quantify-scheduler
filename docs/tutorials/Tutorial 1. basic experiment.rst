@@ -20,7 +20,7 @@ Tutorial 1. Basic experiments
 
 The benefit of allowing the user to mix the high-level gate description of a circuit with the lower-level pulse description can be understood through an example.
 Below we first give an example of basic usage using `Bell violations`.
-We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.Schedule`.
+We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.types.Schedule`.
 
 Basics: The Bell experiment
 ---------------------------
@@ -55,7 +55,7 @@ Bell circuit
 We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
 
 
-We start by initializing an empty :class:`~quantify.scheduler.Schedule`
+We start by initializing an empty :class:`~quantify.scheduler.types.Schedule`
 
 .. jupyter-execute::
 
@@ -67,7 +67,7 @@ We start by initializing an empty :class:`~quantify.scheduler.Schedule`
     sched = Schedule('Bell experiment')
     sched
 
-Under the hood, the :class:`~quantify.scheduler.Schedule` is based on a dictionary that can be serialized
+Under the hood, the :class:`~quantify.scheduler.types.Schedule` is based on a dictionary that can be serialized
 
 .. jupyter-execute::
 
@@ -117,7 +117,7 @@ And we can use this to create a default visualization:
 
 Datastructure internals
 ~~~~~~~~~~~~~~~~~~~~~~~
-Let's take a look at the internals of the :class:`~quantify.scheduler.Schedule`.
+Let's take a look at the internals of the :class:`~quantify.scheduler.types.Schedule`.
 
 .. jupyter-execute::
 

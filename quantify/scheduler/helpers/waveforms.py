@@ -61,7 +61,7 @@ def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
     if size % granularity != 0:
         size = math.closest_number_ceil(size, granularity)
 
-    return size
+    return max(size, granularity)
 
 
 def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) -> None:

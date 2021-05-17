@@ -51,6 +51,25 @@ def test_zi_settings(mocker):
     assert apply_fn.call_args_list == calls
 
 
+def test_zi_settings_as_dict(mocker):
+    # Arrange
+    instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
+    instrument._serial = "dev1234"
+    apply_fn = mocker.Mock()
+    daq_settings = [settings.ZISetting("daq/foo/bar", 0, apply_fn)]
+    awg_settings = [(0, settings.ZISetting("awg/foo/bar", 1, apply_fn))]
+
+    # Act
+    zi_settings = settings.ZISettings(instrument, daq_settings, awg_settings)
+    collection = zi_settings.as_dict()
+
+    # Assert
+    assert collection == {
+        "/dev1234/daq/foo/bar": 0,
+        "awg/foo/bar": 1,
+    }
+
+
 def test_zi_settings_serialize_wave(mocker):
     # Arrange
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)

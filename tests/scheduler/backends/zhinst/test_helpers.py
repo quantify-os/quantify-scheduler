@@ -4,13 +4,11 @@
 import json
 from pathlib import Path
 from typing import Any, Dict, List
-from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
 from zhinst.qcodes.base import ZIBaseInstrument
 
-from quantify.scheduler.backends.types.zhinst import DeviceType, QasIntegrationMode
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 
 
@@ -194,24 +192,6 @@ def test_get_waves_directory(mocker):
     assert path == expected
 
 
-@pytest.mark.parametrize(
-    "device_type, expected",
-    [
-        (DeviceType.HDAWG, 2400000000),
-        (DeviceType.UHFQA, 1800000000),
-        (DeviceType.UHFLI, 0),
-        (DeviceType.MFLI, 0),
-        (DeviceType.PQSC, 0),
-    ],
-)
-def test_get_clock_rate(device_type, expected):
-    # Act
-    clock_rate: int = zi_helpers.get_clock_rate(device_type)
-
-    # Assert
-    assert clock_rate == expected
-
-
 def test_write_seqc_file(mocker):
     # Arrange
     get_src_directory = mocker.patch.object(zi_helpers, "get_src_directory")
@@ -265,60 +245,12 @@ def test_get_commandtable_map(
     expected,
 ):
     # Act
-    commandtable_map: Dict[int, int] = zi_helpers.get_commandtable_map(
+    commandtable_map: Dict[int, int] = zi_helpers.get_waveform_table(
         pulse_ids, pulseid_pulseinfo_dict
     )
 
     # Assert
     assert commandtable_map == expected
-
-
-def test_set_qas_parameters(mocker):
-    # Arrange
-    set_value = mocker.patch.object(zi_helpers, "set_value")
-    instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": "dev1234"})
-
-    expected_calls = [
-        call(instrument, "qas/0/integration/length", 1024),
-        call(instrument, "qas/0/integration/mode", 0),
-        call(instrument, "qas/0/delay", 0),
-    ]
-
-    # Act
-    zi_helpers.set_qas_parameters(instrument, 1024, QasIntegrationMode.NORMAL, 0)
-
-    # Assert
-    assert set_value.mock_calls == expected_calls
-
-
-def test_set_integration_weights(mocker):
-    # Arrange
-    set_value = mocker.patch.object(zi_helpers, "set_vector")
-    instrument = mocker.Mock(spec=ZIBaseInstrument, **{"_serial": "dev1234"})
-
-    channel_index = 0
-    weights_i = np.ones(4096)
-    weights_q = np.zeros(4096)
-
-    expected_calls = [
-        call(instrument, f"qas/0/integration/weights/{channel_index}/real", ANY),
-        call(instrument, f"qas/0/integration/weights/{channel_index}/imag", ANY),
-    ]
-
-    # Act
-    zi_helpers.set_integration_weights(instrument, channel_index, weights_i, weights_q)
-
-    # Assert
-    assert set_value.call_args_list == expected_calls
-    for i, call_args in enumerate(set_value.call_args_list):
-        args, _ = call_args
-
-        assert isinstance(args[2], (np.ndarray, np.generic))
-
-        if i % 2 == 0:
-            assert args[2].tolist() == weights_i.tolist()
-        else:
-            assert args[2].tolist() == weights_q.tolist()
 
 
 @pytest.mark.parametrize(
@@ -336,3 +268,55 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
 
     # Assert
     assert bitmask == expected
+
+
+@pytest.mark.parametrize(
+    "base_clock,expected",
+    [
+        (
+            2.4e9,
+            {
+                0: 2400000000,  # 2.4 GHz
+                1: 1200000000,  # 1.2 GHz
+                2: 600000000,  # 600 MHz
+                3: 300000000,  # 300 MHz
+                4: 150000000,  # 150 MHz
+                5: 75000000,  # 75 MHz
+                6: 37500000,  # 37.50 MHz
+                7: 18750000,  # 18.75 MHz
+                8: 9375000,  # 9.38 MHz
+                9: 4687500,  # 4.69 MHz
+                10: 2343750,  # 2.34 MHz
+                11: 1171875,  # 1.17 MHz
+                12: 585937,  # 585.94 kHz
+                13: 292968,  # 292.97 kHz
+            },
+        ),
+        (
+            1.8e9,
+            {
+                0: 1800000000,  # 1.80 GHz
+                1: 900000000,  # 900 MHz
+                2: 450000000,  # 450 MHz
+                3: 225000000,  # 225 MHz
+                4: 112500000,  # 112.5 MHz
+                5: 56250000,  # 56.25 MHz
+                6: 28125000,  # 28.12 MHz
+                7: 14062500,  # 14.06 MHz
+                8: 7031250,  # 7.03 MHz
+                9: 3515625,  # 3.52 MHz
+                10: 1757812,  # 1.76 MHz
+                11: 878906,  # 878.91 kHz
+                12: 439453,  # 439.45 kHz
+                13: 219726,  # 219.73 kHz
+            },
+        ),
+    ],
+)
+def test_get_clock_rates(base_clock: float, expected: Dict[int, int]):
+
+    # Act
+    values = zi_helpers.get_clock_rates(base_clock)
+
+    # Assert
+    assert values == expected

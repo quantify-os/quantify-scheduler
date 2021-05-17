@@ -71,10 +71,10 @@ timedomain_schedules
 .. automodule:: quantify.scheduler.schedules.timedomain_schedules
     :members:
 
-acquisition
-~~~~~~~~~~~
+timedomain_schedules
+~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.schedules.acquisition
+.. automodule:: quantify.scheduler.schedules.trace_schedules
     :members:
 
 compilation
@@ -111,6 +111,9 @@ zhinst_backend
 types
 ~~~~~
 
+.. automodule:: quantify.scheduler.backends.types.common
+    :members:
+
 .. automodule:: quantify.scheduler.backends.types.qblox
     :members:
 
@@ -146,6 +149,9 @@ zhinst
     :members:
 
 .. automodule:: quantify.scheduler.backends.zhinst.seqc_il_generator
+    :members:
+
+.. automodule:: quantify.scheduler.backends.zhinst.settings
     :members:
 
 helpers
