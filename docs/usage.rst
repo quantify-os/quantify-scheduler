@@ -34,7 +34,7 @@ The following table shows an overview of the different concepts and how these ar
      - Gate-level description
      - Pulse-level description
    * - When
-     - :class:`~quantify.scheduler.Schedule`
+     - :class:`~quantify.scheduler.types.Schedule`
      - --
      - --
    * - What
@@ -105,19 +105,19 @@ A second compilation step uses the :ref:`hardware configuration (file)<sec-hardw
 Schedule
 --------
 
-The :class:`~quantify.scheduler.Schedule` is a data structure that is at the core of the Quantify-scheduler.
-The :class:`~quantify.scheduler.Schedule` contains information on *when* operations should be performed.
+The :class:`~quantify.scheduler.types.Schedule` is a data structure that is at the core of the Quantify-scheduler.
+The :class:`~quantify.scheduler.types.Schedule` contains information on *when* operations should be performed.
 
-When adding an :class:`~quantify.scheduler.types.Operation` to a :class:`~quantify.scheduler.Schedule` using the :meth:`~quantify.scheduler.Schedule.add` method, it is possible to specify precisely *when* to perform this operation using timing constraints.
+When adding an :class:`~quantify.scheduler.types.Operation` to a :class:`~quantify.scheduler.types.Schedule` using the :meth:`~quantify.scheduler.types.Schedule.add` method, it is possible to specify precisely *when* to perform this operation using timing constraints.
 However, at this point it is not required to specify how to represent this :class:`~quantify.scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many (calibration) experiments.
 An example of such an experiment is shown in :ref:`Tutorial 1 <sec-tutorial1>`.
 
 
-The :class:`~quantify.scheduler.Schedule` contains information on the :attr:`~quantify.scheduler.Schedule.operations` and :attr:`~quantify.scheduler.Schedule.timing_constraints`.
-The :attr:`~quantify.scheduler.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
-The :attr:`~quantify.scheduler.Schedule.timing_constraints` is a list of dictionaries describing timing constraints between operations, i.e. when to apply an operation.
+The :class:`~quantify.scheduler.types.Schedule` contains information on the :attr:`~quantify.scheduler.types.Schedule.operations` and :attr:`~quantify.scheduler.types.Schedule.timing_constraints`.
+The :attr:`~quantify.scheduler.types.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
+The :attr:`~quantify.scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing constraints between operations, i.e. when to apply an operation.
 
 
 .. _sec-operation:
@@ -144,7 +144,7 @@ The :mod:`~quantify.scheduler.gate_library` contains common gates (including the
   Strictly speaking a measurement is not a gate as it cannot be described by a unitary. However, it is a fundamental building block of circuit diagrams and therefore included at this level of abstraction.
 
 
-A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify.scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A :class:`~quantify.scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify.scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 An example of such a visualization is shown below.
 
 .. jupyter-execute::
@@ -185,7 +185,7 @@ To specify *where* an operation is applied, the pulse-level description needs to
 The location on chip is denoted by a *port* while the frequency is set using a *clock*, both are represented as strings.
 These resources are described in detail in :ref:`the next section<sec-resources>`.
 
-A :class:`~quantify.scheduler.Schedule` containing operations can be visualized using as a pulse diagram using :func:`quantify.scheduler.visualization.pulse_scheme.pulse_diagram_plotly`.
+A :class:`~quantify.scheduler.types.Schedule` containing operations can be visualized using as a pulse diagram using :func:`quantify.scheduler.visualization.pulse_scheme.pulse_diagram_plotly`.
 An example of such a visualization is shown below:
 
 
@@ -285,7 +285,7 @@ In the first compilation step, pulse information is added to all operations that
 A second compilation step takes the schedule at the pulse level and translates this for use on a hardware backend.
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`hardware configuration file<sec-hardware-config>`.
 
-Both compilation steps can be triggered by passing a :class:`~quantify.scheduler.Schedule` and the appropriate configuration files to :func:`~quantify.scheduler.compilation.qcompile`.
+Both compilation steps can be triggered by passing a :class:`~quantify.scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify.scheduler.compilation.qcompile`.
 
 
 .. _sec-device-config:

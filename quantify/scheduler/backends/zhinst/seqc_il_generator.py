@@ -39,7 +39,7 @@ SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
     zhinst.DeviceType.UHFQA: {
         SeqcInstructions.WAIT: 0,
         SeqcInstructions.PLAY_WAVE: 0,
-        SeqcInstructions.SET_TRIGGER: 2,
+        SeqcInstructions.SET_TRIGGER: 1,
         SeqcInstructions.ARM_INTEGRATION: 3,
     },
 }
