@@ -24,16 +24,16 @@ Functionality included in this backend:
 - Correction of the mixer errors using specified correction parameters.
 - Flexible configuration via JSON data structures.
 
-No special configuration is required to use this backend. Simply specify :func:`quantify.scheduler.backends.qblox_backend.hardware_compile`
+No special configuration is required to use this backend. Simply specify :obj:`quantify.scheduler.backends.qblox_backend.hardware_compile`
 in the hardware configuration to use this backend or call the function directly. Please see :ref:`Usage of the backend <sec-qblox-how-to-configure>`
 for information on how to set this up.
-After generation of the compiled program, uploading to the hardware can be done using the usual
+After a schedule is compiled into a program, uploading to the hardware can be done using the usual
 `qblox-instruments <https://pypi.org/project/qblox-instruments/>`_ drivers. Installation of these drivers
 is done through
 
 .. code-block:: console
 
-    pip install qblox-instruments
+    $ pip install qblox-instruments
 
 Please visit the `Qblox instruments documentation <https://qblox-qblox-instruments.readthedocs-hosted.com>`_
 for more information.
