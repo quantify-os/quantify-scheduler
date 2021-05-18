@@ -77,12 +77,6 @@ trace_schedules
 .. automodule:: quantify.scheduler.schedules.trace_schedules
     :members:
 
-acquisition
-~~~~~~~~~~~
-
-.. automodule:: quantify.scheduler.schedules.acquisition
-    :members:
-
 compilation
 -----------
 
