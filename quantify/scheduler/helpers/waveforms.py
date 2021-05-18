@@ -361,12 +361,12 @@ def apply_mixer_skewness_corrections(
 
     Parameters
     ----------
-    waveform
+    waveform:
         The complex valued waveform on which the correction will be applied.
-    amplitude_ratio
+    amplitude_ratio:
         The ratio between the amplitudes of I and Q that is used to correct
         for amplitude imbalances between the different paths in the IQ mixer.
-    phase_shift
+    phase_shift:
         The phase error (in deg) used to correct the phase between I and Q.
 
     Returns
@@ -376,22 +376,31 @@ def apply_mixer_skewness_corrections(
         corrections.
     """
 
-    def calc_corrected_re(wvfm: np.ndarray, alpha: float, phi: float):
-        original_amp = np.max(np.abs(wvfm.real))
-        wf_re = wvfm.real + wvfm.imag * np.tan(phi)
-        new_amp = np.max(np.abs(wf_re))
-        wf_re = wf_re / new_amp if new_amp != 0 else np.zeros(wf_re.shape)
-        return wf_re * original_amp * np.sqrt(alpha)
+    def skew_real(_waveform: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(_waveform.real))
+        intermediate_wf = _waveform.real + _waveform.imag * np.tan(phi)
+        new_amp = np.max(np.abs(intermediate_wf))
+        intermediate_wf = (
+            intermediate_wf / new_amp
+            if new_amp != 0
+            else np.zeros(intermediate_wf.shape)
+        )
+        return intermediate_wf * original_amp * np.sqrt(alpha)
 
-    def calc_corrected_im(wvfm: np.ndarray, alpha: float, phi: float):
-        original_amp = np.max(np.abs(wvfm.imag))
-        wf_im = wvfm.imag / np.cos(phi)
-        new_amp = np.max(np.abs(wf_im))
-        wf_im = wf_im / new_amp if new_amp != 0 else np.zeros(wf_im.shape)
-        return wf_im * original_amp / np.sqrt(alpha)
+    def skew_imag(_waveform: np.ndarray, alpha: float, phi: float):
+        original_amp = np.max(np.abs(_waveform.imag))
+        intermediate_wf = _waveform.imag / np.cos(phi)
+        new_amp = np.max(np.abs(intermediate_wf))
+        intermediate_wf = (
+            intermediate_wf / new_amp
+            if new_amp != 0
+            else np.zeros(intermediate_wf.shape)
+        )
+        return intermediate_wf * original_amp / np.sqrt(alpha)
 
-    corrected_re = calc_corrected_re(waveform, amplitude_ratio, np.deg2rad(phase_shift))
-    corrected_im = calc_corrected_im(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    corrected_re = skew_real(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+    corrected_im = skew_imag(waveform, amplitude_ratio, np.deg2rad(phase_shift))
+
     return corrected_re + 1.0j * corrected_im
 
 

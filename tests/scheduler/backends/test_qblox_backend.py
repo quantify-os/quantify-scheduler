@@ -40,7 +40,6 @@ from quantify.scheduler.backends.qblox.helpers import (
 from quantify.scheduler.backends import qblox_backend as qb
 from quantify.scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
-    apply_mixer_skewness_corrections,
 )
 from quantify.scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
@@ -215,28 +214,6 @@ def gate_only_schedule():
 
 
 # --------- Test utility functions ---------
-
-
-def test_apply_mixer_corrections():
-    number_of_points = 1000
-    freq = 10e6
-    t = np.linspace(0, 1e-6, number_of_points)
-    amp_ratio = 2.1234
-
-    test_re = np.cos(2 * np.pi * freq * t)
-    test_imag = np.sin(2 * np.pi * freq * t)
-    corrected_wf = apply_mixer_skewness_corrections(
-        test_re + 1.0j * test_imag, amp_ratio, 90
-    )
-
-    amp_ratio_after = np.max(np.abs(corrected_wf.real)) / np.max(
-        np.abs(corrected_wf.imag)
-    )
-    assert pytest.approx(amp_ratio_after, amp_ratio)
-
-    re_normalized = corrected_wf.real / np.max(np.abs(corrected_wf.real))
-    im_normalized = corrected_wf.imag / np.max(np.abs(corrected_wf.imag))
-    assert np.allclose(re_normalized, im_normalized)
 
 
 def function_for_test_generate_waveform_data(t, x, y):
