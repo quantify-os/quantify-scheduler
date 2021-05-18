@@ -74,10 +74,10 @@ specifies the intermediate frequency to use for I/Q modulation (in Hz).
 I/Q modulation
 ^^^^^^^^^^^^^^
 
-To perform upconversion using an I/Q mixer and an external local oscillator, simply specify a local oscillator in the config
-using the :code:`lo_name` entry. The example above, :code:`complex_output_0` is connected to a local oscillator named
-:code:`lo0` and :code:`complex_output_1` to :code:`lo1`. Since the Quantify-Scheduler aim is to only specify the final RF frequency
-when the signal arrives at the chip, rather than any parameters related to I/Q modulation, we specify this information here.
+To perform upconversion using an I/Q mixer and an external local oscillator, simply specify a local oscillator in the config using the :code:`lo_name` entry.
+:code:`complex_output_0` is connected to a local oscillator instrument named
+:code:`lo0` and :code:`complex_output_1` to :code:`lo1`.
+Since the Quantify-Scheduler aim is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation, we specify this information here.
 
 The backend assumes that upconversion happens according to the relation
 
