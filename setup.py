@@ -34,7 +34,7 @@ setup_requirements = [
     "pytest-runner",
 ]
 
-version = "0.2.0"
+version = "0.3.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",
