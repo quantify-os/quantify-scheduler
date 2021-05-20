@@ -2,8 +2,17 @@
 Changelog
 ===========
 
-Unreleased
-----------
+
+0.3.0 Multiple backends support (2021-05-20)
+------------------------------------------------
+* Added support for both Qblox and Zurich Instrument backends.
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Major refactor of the Qblox backend. (For example, it's now `quantify.backends.qblox_backend` instead of the previous `quantify.backends.pulsar_backend`)
+* Qblox backend requires strictly v0.3.2 of the qblox-instruments package.
+
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,6 +23,8 @@ Merged branches and closed issues
 * Refactored Qblox backend. (!81)
 * Added representation to gates in gate library. Also defined the equality operation. (!101)
 * Added Zurich Instruments backend (!49)
+
+
 
 0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
 ---------------------------------------------------------
