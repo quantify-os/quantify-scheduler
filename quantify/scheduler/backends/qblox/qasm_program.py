@@ -313,14 +313,10 @@ class QASMProgram:
                     comment=f"next incr offs by {amp_step_imm}",
                 )
             self.auto_wait(step_duration - constants.GRID_TIME)
-        self.emit(q1asm_instructions.NEW_LINE)
+        self.elapsed_time += step_duration * (num_steps - 1) if num_steps > 1 else 0
 
         self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
-        self.emit(
-            q1asm_instructions.UPDATE_PARAMETERS,
-            constants.GRID_TIME,
-        )
-        self.elapsed_time += constants.GRID_TIME
+        self.emit(q1asm_instructions.NEW_LINE)
 
     def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
         """
