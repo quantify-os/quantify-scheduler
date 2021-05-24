@@ -6,7 +6,7 @@ Changelog
 0.3.0 Multiple backends support (2021-05-20)
 ------------------------------------------------
 * Added support for both Qblox and Zurich Instrument backends.
-* Added convenience vscode IDE and pylintrc configuration files.
+* Added convenience pylintrc configuration file.
 * Added examples for timedomain and spectroscopy schedules.
 
 
