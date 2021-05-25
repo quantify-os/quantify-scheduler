@@ -72,11 +72,6 @@ timedomain_schedules
     :members:
 
 
-acquisition
-~~~~~~~~~~~
-.. automodule:: quantify.scheduler.schedules.acquisition
-    :members:
-
 
 device_elements
 ---------------
