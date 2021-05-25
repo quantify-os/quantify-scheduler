@@ -157,7 +157,7 @@ class TransmonElement(Instrument):
         """
         Generates part of the device configuration specific to a single qubit.
 
-        This method is intended to be used when the this object is part of a
+        This method is intended to be used when this object is part of a
         device object containing multiple elements.
         """
         qubit_config = {
