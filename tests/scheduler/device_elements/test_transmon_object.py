@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
 import pytest
 from quantify.scheduler.compilation import validate_config
 from quantify.scheduler.device_elements.transmon_element import TransmonElement
