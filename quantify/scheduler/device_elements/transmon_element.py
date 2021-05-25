@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 from typing import Dict, Any
 from qcodes.instrument.base import Instrument
-from qcodes.instrument.parameter import ManualParameter
+from qcodes.instrument.parameter import ManualParameter, Parameter
 from qcodes.utils import validators as val
 
 
@@ -60,38 +60,46 @@ class TransmonElement(Instrument):
         )
 
         self.add_parameter(
-            "mw_port", initial_value=f"{self.name}:mw", parameter_class=ManualParameter
+            "mw_port",
+            initial_cache_value=f"{self.name}:mw",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.mw_port._settable = False
 
         self.add_parameter(
-            "fl_port", initial_value=f"{self.name}:fl", parameter_class=ManualParameter
+            "fl_port",
+            initial_cache_value=f"{self.name}:fl",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.fl_port._settable = False
 
         self.add_parameter(
-            "ro_port", initial_value=f"{self.name}:res", parameter_class=ManualParameter
+            "ro_port",
+            initial_cache_value=f"{self.name}:res",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.ro_port._settable = False
 
         self.add_parameter(
             "mw_01_clock",
-            initial_value=f"{self.name}.01",
-            parameter_class=ManualParameter,
+            initial_cache_value=f"{self.name}.01",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.mw_01_clock._settable = False
 
         self.add_parameter(
             "mw_12_clock",
-            initial_value=f"{self.name}.12",
-            parameter_class=ManualParameter,
+            initial_cache_value=f"{self.name}.12",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.mw_12_clock._settable = False
 
         self.add_parameter(
-            "ro_clock", initial_value=f"{self.name}.ro", parameter_class=ManualParameter
+            "ro_clock",
+            initial_cache_value=f"{self.name}.ro",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.ro_clock._settable = False
 
         self.add_parameter(
             "freq_01",
@@ -184,10 +192,10 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "spec_pulse_clock",
-            initial_value=f"{self.name}.01",
-            parameter_class=ManualParameter,
+            initial_cache_value=f"{self.name}.01",
+            parameter_class=Parameter,
+            set_cmd=False,
         )
-        self.spec_pulse_clock._settable = False
 
         self.add_parameter(
             "acquisition",
