@@ -175,7 +175,7 @@ class TransmonElement(Instrument):
                     "ro_pulse_duration": self.ro_pulse_duration(),
                     "ro_acq_delay": self.ro_acq_delay(),
                     "ro_acq_integration_time": self.ro_acq_integration_time(),
-                    "ro_acq_weigth_type": "SSB",
+                    "ro_acq_weight_type": "SSB",
                     "init_duration": self.init_duration(),
                 },
             }
