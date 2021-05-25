@@ -197,15 +197,19 @@ class TransmonElement(Instrument):
             set_cmd=False,
         )
 
+        acquisition_validator = val.Enum("SSBIntegrationComplex")
         self.add_parameter(
             "acquisition",
             initial_value="SSBIntegrationComplex",
             parameter_class=ManualParameter,
+            vals=acquisition_validator,
         )
+        ro_acq_weight_type_validator = val.Enum("SSB")
         self.add_parameter(
             "ro_acq_weight_type",
             initial_value="SSB",
             parameter_class=ManualParameter,
+            vals=ro_acq_weight_type_validator,
         )
 
     def generate_qubit_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
