@@ -29,12 +29,17 @@ class TestTransmonElement:
     def test_generate_qubit_config(self):
 
         # set some values
+        self.q0.mw_port("port")
+        self.q0.ro_pulse_type("square")
+        self.q0.ro_pulse_duration(400e-9)
 
         q_cfg = self.q0.generate_qubit_config()
 
         # assert values in right place in config.
+        assert q_cfg["q0"]["resources"]["port_mw"] == "port"
+        assert q_cfg["q0"]["params"]["ro_pulse_type"] == "square"
+        assert q_cfg["q0"]["params"]["ro_pulse_duration"] == 400e-9
 
     def test_generate_device_config(self):
         dev_cfg = self.q0.generate_device_config()
-        validate_config(dev_cfg, scheme_fn="transmon_cfg.json")
-        # assert it is a valid configuration.
+        assert validate_config(dev_cfg, scheme_fn="transmon_cfg.json")
