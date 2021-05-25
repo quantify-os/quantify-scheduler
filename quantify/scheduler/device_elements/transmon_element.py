@@ -11,7 +11,7 @@ class TransmonElement(Instrument):
     readout resonator.
 
     This object can be used to generate configuration files compatible with the
-    :func:`quantify.scheduler.compilation.add_pulse_information_transmon` backend.
+    :func:`quantify.scheduler.compilation.add_pulse_information_transmon` function.
 
     """
 
@@ -192,7 +192,7 @@ class TransmonElement(Instrument):
     def generate_device_config(self) -> dict:
         """
         Generates a valid device config for the quantify scheduler making use of the
-        :func:`quantify.scheduler.compilation.add_pulse_information_transmon` backend.
+        :func:`quantify.scheduler.compilation.add_pulse_information_transmon` function.
 
         This enables the settings of this qubit to be used in isolation.
 

@@ -5,9 +5,6 @@
 from quantify.scheduler.compilation import validate_config
 from quantify.scheduler.device_elements.transmon_element import TransmonElement
 
-# import qitt_experiments.init.mock_setup_initialization as mi
-# cls.mi = mi
-
 
 class TestTransmonElement:
     @classmethod
