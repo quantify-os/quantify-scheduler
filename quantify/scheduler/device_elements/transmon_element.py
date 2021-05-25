@@ -16,14 +16,14 @@ class TransmonElement(Instrument):
     """
 
     def __init__(self, name, **kw):
+        """
+        Initializes the parent class and adds
+        :class:`~qcodes.instrument.parameter.ManualParameter` s to it.
+        """
         super().__init__(name, **kw)
         self._add_device_parameters()
 
     def _add_device_parameters(self):
-        """
-        Adds parameters used to generate a device configuration file
-        """
-
         self.add_parameter(
             "init_duration",
             initial_value=200e-6,
