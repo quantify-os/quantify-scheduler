@@ -62,30 +62,36 @@ class TransmonElement(Instrument):
         self.add_parameter(
             "mw_port", initial_value=f"{self.name}:mw", parameter_class=ManualParameter
         )
+        self.mw_port._settable = False
 
         self.add_parameter(
             "fl_port", initial_value=f"{self.name}:fl", parameter_class=ManualParameter
         )
+        self.fl_port._settable = False
 
         self.add_parameter(
             "ro_port", initial_value=f"{self.name}:res", parameter_class=ManualParameter
         )
+        self.ro_port._settable = False
 
         self.add_parameter(
             "mw_01_clock",
             initial_value=f"{self.name}.01",
             parameter_class=ManualParameter,
         )
+        self.mw_01_clock._settable = False
 
         self.add_parameter(
             "mw_12_clock",
             initial_value=f"{self.name}.12",
             parameter_class=ManualParameter,
         )
+        self.mw_12_clock._settable = False
 
         self.add_parameter(
             "ro_clock", initial_value=f"{self.name}.ro", parameter_class=ManualParameter
         )
+        self.ro_clock._settable = False
 
         self.add_parameter(
             "freq_01",
