@@ -56,13 +56,16 @@ class TransmonElement(Instrument):
             "ro_port", initial_value=f"{self.name}:res", parameter_class=ManualParameter
         )
 
-
         self.add_parameter(
-            "mw_01_clock", initial_value=f"{self.name}.01", parameter_class=ManualParameter
+            "mw_01_clock",
+            initial_value=f"{self.name}.01",
+            parameter_class=ManualParameter,
         )
 
         self.add_parameter(
-            "mw_12_clock", initial_value=f"{self.name}.12", parameter_class=ManualParameter
+            "mw_12_clock",
+            initial_value=f"{self.name}.12",
+            parameter_class=ManualParameter,
         )
 
         self.add_parameter(
@@ -103,8 +106,11 @@ class TransmonElement(Instrument):
         )  # TODO add enum validator
 
         self.add_parameter(
-            "ro_pulse_delay",  label='Readout pulse delay',
-            initial_value=300e-9, unit="s", parameter_class=ManualParameter
+            "ro_pulse_delay",
+            label="Readout pulse delay",
+            initial_value=300e-9,
+            unit="s",
+            parameter_class=ManualParameter,
         )
 
         self.add_parameter(
@@ -139,7 +145,6 @@ class TransmonElement(Instrument):
             initial_value=f"{self.name}.01",
             parameter_class=ManualParameter,
         )
-
 
     def generate_qubit_config(self) -> dict:
         """
