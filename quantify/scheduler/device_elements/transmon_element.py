@@ -1,5 +1,6 @@
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import ManualParameter
+from qcodes.utils.validators import Enum
 
 
 class TransmonElement(Instrument):
@@ -101,9 +102,13 @@ class TransmonElement(Instrument):
             parameter_class=ManualParameter,
         )
 
+        pulse_types = Enum("square")
         self.add_parameter(
-            "ro_pulse_type", initial_value="square", parameter_class=ManualParameter
-        )  # TODO add enum validator
+            "ro_pulse_type",
+            initial_value="square",
+            parameter_class=ManualParameter,
+            vals=pulse_types,
+        )
 
         self.add_parameter(
             "ro_pulse_delay",
