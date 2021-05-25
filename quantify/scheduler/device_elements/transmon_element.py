@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+from typing import Dict, Any
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as val
@@ -12,7 +13,6 @@ class TransmonElement(Instrument):
 
     This object can be used to generate configuration files compatible with the
     :func:`quantify.scheduler.compilation.add_pulse_information_transmon` function.
-
     """
 
     def __init__(self, name, **kw):
@@ -159,6 +159,7 @@ class TransmonElement(Instrument):
             initial_value=1e-6,
             unit="s",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
             "spec_pulse_duration",
@@ -186,8 +187,20 @@ class TransmonElement(Instrument):
             initial_value=f"{self.name}.01",
             parameter_class=ManualParameter,
         )
+        self.spec_pulse_clock._settable = False
 
-    def generate_qubit_config(self) -> dict:
+        self.add_parameter(
+            "acquisition",
+            initial_value="SSBIntegrationComplex",
+            parameter_class=ManualParameter,
+        )
+        self.add_parameter(
+            "ro_acq_weight_type",
+            initial_value="SSB",
+            parameter_class=ManualParameter,
+        )
+
+    def generate_qubit_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
         """
         Generates part of the device configuration specific to a single qubit.
 
@@ -204,7 +217,7 @@ class TransmonElement(Instrument):
                     "clock_ro": self.ro_clock(),
                 },
                 "params": {
-                    "acquisition": "SSBIntegrationComplex",
+                    "acquisition": self.acquisition(),
                     "mw_freq": self.freq_01(),
                     "mw_amp180": self.mw_amp180(),
                     "mw_motzoi": self.mw_motzoi(),
@@ -216,14 +229,14 @@ class TransmonElement(Instrument):
                     "ro_pulse_duration": self.ro_pulse_duration(),
                     "ro_acq_delay": self.ro_acq_delay(),
                     "ro_acq_integration_time": self.ro_acq_integration_time(),
-                    "ro_acq_weight_type": "SSB",
+                    "ro_acq_weight_type": self.ro_acq_weight_type(),
                     "init_duration": self.init_duration(),
                 },
             }
         }
         return qubit_config
 
-    def generate_device_config(self) -> dict:
+    def generate_device_config(self) -> Dict[str, Any]:
         """
         Generates a valid device config for the quantify scheduler making use of the
         :func:`quantify.scheduler.compilation.add_pulse_information_transmon` function.
