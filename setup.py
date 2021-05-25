@@ -25,15 +25,16 @@ requirements = [
     "jsonschema",
     "dataclasses-json",
     "zhinst-qcodes",
+    "pathvalidate",
     "quantify-core>=0.3.1",
-    "qblox-instruments>=0.2.3",
+    "qblox-instruments==0.3.2",
 ]
 
 setup_requirements = [
     "pytest-runner",
 ]
 
-version = "0.2.0"
+version = "0.3.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",

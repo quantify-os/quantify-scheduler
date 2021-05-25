@@ -20,7 +20,7 @@ Tutorial 1. Basic experiments
 
 The benefit of allowing the user to mix the high-level gate description of a circuit with the lower-level pulse description can be understood through an example.
 Below we first give an example of basic usage using `Bell violations`.
-We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.Schedule`.
+We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.types.Schedule`.
 
 Basics: The Bell experiment
 ---------------------------
@@ -55,7 +55,7 @@ Bell circuit
 We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
 
 
-We start by initializing an empty :class:`~quantify.scheduler.Schedule`
+We start by initializing an empty :class:`~quantify.scheduler.types.Schedule`
 
 .. jupyter-execute::
 
@@ -67,7 +67,7 @@ We start by initializing an empty :class:`~quantify.scheduler.Schedule`
     sched = Schedule('Bell experiment')
     sched
 
-Under the hood, the :class:`~quantify.scheduler.Schedule` is based on a dictionary that can be serialized
+Under the hood, the :class:`~quantify.scheduler.types.Schedule` is based on a dictionary that can be serialized
 
 .. jupyter-execute::
 
@@ -117,7 +117,7 @@ And we can use this to create a default visualization:
 
 Datastructure internals
 ~~~~~~~~~~~~~~~~~~~~~~~
-Let's take a look at the internals of the :class:`~quantify.scheduler.Schedule`.
+Let's take a look at the internals of the :class:`~quantify.scheduler.types.Schedule`.
 
 .. jupyter-execute::
 
@@ -212,7 +212,7 @@ Compilation of pulses onto physical hardware
 
 The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file <sec-hardware-config>`.
 
-Here we will use the :class:`~quantify.scheduler.backends.pulsar_backend.pulsar_assembler_backend` made for the Qblox pulsar series hardware.
+Here we will use the :class:`~quantify.scheduler.backends.qblox_backend.hardware_compile` made for the Qblox pulsar series hardware.
 
 .. jupyter-execute::
 
@@ -236,23 +236,23 @@ also use for demonstration purposes as part of this tutorial:
     from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
 
     qcm0 = pulsar_qcm_dummy('qcm0')
-    qcm1 = pulsar_qcm_dummy('qcm1')
     qrm0 = pulsar_qrm_dummy('qrm0')
 
 
 .. jupyter-execute::
 
-    from quantify.scheduler.backends.pulsar_backend import pulsar_assembler_backend, configure_pulsars
+    from quantify.scheduler.backends.qblox_backend import hardware_compile
     from pulsar_qcm.pulsar_qcm import pulsar_qcm
     from qcodes import Instrument
 
-    sched, config = pulsar_assembler_backend(sched, qblox_test_mapping)
+    config = hardware_compile(sched, qblox_test_mapping)
 
-The compiled schedule can be uploaded to the hardware using the following command.
+The compiled schedule can be uploaded to the hardware using the following commands.
 
 .. jupyter-execute::
 
-    #configure_pulsars(config, qblox_test_mapping)
+    seq_fn = config['qrm0']['seq0']['seq_fn']
+    qrm0.sequencer0_waveforms_and_program(seq_fn)
 
 
 At this point, the assembler on the device will load the waveforms into memory and verify the program can be executed. We must next arm and then start the device:
@@ -261,11 +261,9 @@ At this point, the assembler on the device will load the waveforms into memory a
 .. jupyter-execute::
 
     qcm0.arm_sequencer()
-    qcm1.arm_sequencer()
     qrm0.arm_sequencer()
 
     qcm0.start_sequencer()
-    qcm1.start_sequencer()
     qrm0.start_sequencer()
 
 
@@ -295,7 +293,7 @@ between X gates on a pair of qubits.
     from quantify.scheduler.resources import ClockResource
 
     sched = Schedule("Chevron Experiment")
-    for duration in np.linspace(20e-9, 40e-9, 5):
+    for duration in np.linspace(20e-9, 60e-9, 6): # NB multiples of 4 ns need to be used due to limitations of the pulsars
         for amp in np.linspace(0.1, 1.0, 10):
             begin = sched.add(Reset('q0', 'q1'))
             sched.add(X('q0'), ref_op=begin, ref_pt='start')
@@ -321,4 +319,4 @@ We can also quickly compile using the :func:`!qcompile` function and associate m
 .. jupyter-execute::
 
     from quantify.scheduler.compilation import qcompile
-    sched, cfg = qcompile(sched, transmon_test_config, qblox_test_mapping)
+    cfg = qcompile(sched, transmon_test_config, qblox_test_mapping)

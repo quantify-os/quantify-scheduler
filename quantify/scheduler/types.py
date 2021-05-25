@@ -1,29 +1,28 @@
-# -----------------------------------------------------------------------------
-# Description:    Module containing the core concepts of the scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
-from collections import UserDict
 from uuid import uuid4
-
+from collections import UserDict
+from typing_extensions import Literal
 import jsonschema
 from quantify.utilities import general
 from quantify.scheduler import resources
 
 
-class Operation(UserDict):
+class Operation(UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
     how to represent the operation on the Gate, Pulse and/or Logical level.
-    It also contains information on the :class:`~quantify.scheduler.resources.Resource` s used.
+    It also contains information on the
+    :class:`~quantify.scheduler.resources.Resource` s used.
 
-    An operation always has the following attributes
+    An operation always has the following attributes:
 
-    - duration  (float) : duration of the operation in seconds (can be 0)
-    - hash      (str)   : an auto generated unique identifier.
-    - name      (str)   : a readable identifier, does not have to be unique
+    - duration (float): duration of the operation in seconds (can be 0).
+    - hash (str): an auto generated unique identifier.
+    - name (str): a readable identifier, does not have to be unique.
 
     An Operation can contain information  on several levels of abstraction.
     This information is used when different representations. Note that when
@@ -35,7 +34,8 @@ class Operation(UserDict):
 
     .. note::
 
-        Two different Operations containing the same information generate the same hash and are considered identical.
+        Two different Operations containing the same information generate the
+        same hash and are considered identical.
     """
 
     def __init__(self, name: str, data: dict = None):
@@ -46,41 +46,63 @@ class Operation(UserDict):
         self.data["pulse_info"] = []
         self.data["acquisition_info"] = []
         self.data["logic_info"] = {}
+        self._duration: float = 0
 
         if name is not None:
             self.data["name"] = name
         if data is not None:
             self.data.update(data)
+            self._update()
+
+    def __eq__(self, other):
+        """
+        Two operations are considered equal if the contents of the "data" attribute
+        are identical.
+
+        This is tested through the :code:`.hash` attribute.
+        """
+        return self.hash == other.hash
+
+    def _update(self) -> None:
+        """Update the Operation's internals."""
+
+        def _get_operation_end(info) -> float:
+            """Return the operation end in seconds."""
+            return info["t0"] + info["duration"]
+
+        # Iterate over the data and take longest duration
+        self._duration = max(
+            map(
+                _get_operation_end,
+                self.data["pulse_info"] + self.data["acquisition_info"],
+            ),
+            default=0,
+        )
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Return the name of the operation."""
         return self.data["name"]
 
     @property
-    def duration(self):
+    def duration(self) -> float:
         """
-        Determine the duration of the operation based on the pulses described in pulse_info.
+        Determine the duration of the operation based on the pulses described in
+        pulse_info.
 
-        If the operation contains no pulse info, it is assumed to be ideal and have zero duration.
+        If the operation contains no pulse info, it is assumed to be ideal and
+        have zero duration.
         """
-        duration = 0  # default to zero duration if no pulse content is specified.
-
-        # Iterate over all pulses and take longest duration
-        for p in self.data["pulse_info"]:
-            d = p["duration"] + p["t0"]
-            if d > duration:
-                duration = d
-
-        return duration
+        return self._duration
 
     @property
-    def hash(self):
+    def hash(self) -> int:
         """
         A hash based on the contents of the Operation.
         """
         return general.make_hash(self.data)
 
-    def add_gate_info(self, gate_operation: Operation):
+    def add_gate_info(self, gate_operation: Operation) -> None:
         """
         Updates self.data['gate_info'] with contents of gate_operation.
 
@@ -91,7 +113,7 @@ class Operation(UserDict):
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
 
-    def add_pulse(self, pulse_operation: Operation):
+    def add_pulse(self, pulse_operation: Operation) -> None:
         """
         Adds pulse_info of pulse_operation Operation to this Operation.
 
@@ -101,8 +123,9 @@ class Operation(UserDict):
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
+        self._update()
 
-    def add_acquisition(self, acquisition_operation: Operation):
+    def add_acquisition(self, acquisition_operation: Operation) -> None:
         """
         Adds acquisition_info of acquisition_operation Operation to this Operation.
 
@@ -112,16 +135,18 @@ class Operation(UserDict):
             an operation containing acquisition_info.
         """
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
+        self._update()
 
     @classmethod
-    def is_valid(cls, operation):
+    def is_valid(cls, operation) -> bool:
+        """Checks if the operation is valid according to its schema."""
         scheme = general.load_json_schema(__file__, "operation.json")
         jsonschema.validate(operation.data, scheme)
         _ = operation.hash  # test that the hash property evaluates
         return True  # if not exception was raised during validation
 
     @property
-    def valid_gate(self):
+    def valid_gate(self) -> bool:
         """
         An operation is a valid gate if it contains information on how
         to represent the operation on the gate level.
@@ -131,7 +156,7 @@ class Operation(UserDict):
         return False
 
     @property
-    def valid_pulse(self):
+    def valid_pulse(self) -> bool:
         """
         An operation is a valid pulse if it contains information on how
         to represent the operation on the pulse level.
@@ -151,7 +176,7 @@ class Operation(UserDict):
         return False
 
 
-class Schedule(UserDict):
+class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     """
     A collection of :class:`~Operation` objects and timing constraints
     that define relations between the operations.
@@ -159,9 +184,10 @@ class Schedule(UserDict):
     The Schedule data structure is based on a dictionary.
     This dictionary contains:
 
-        - `operation_dict`     : a hash table containing the unique :class:`~Operation` s added to the schedule.
-        - `timing_constraints` : a list of all timing constraints added between operations.
-
+        - `operation_dict`     : a hash table containing the unique
+            :class:`~Operation` s added to the schedule.
+        - `timing_constraints` : a list of all timing constraints added between
+            operations.
 
     .. jsonschema:: schemas/schedule.json
 
@@ -209,6 +235,7 @@ class Schedule(UserDict):
 
     @property
     def name(self) -> str:
+        """Returns the name of the schedule."""
         return self.data["name"]
 
     @property
@@ -234,12 +261,14 @@ class Schedule(UserDict):
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
 
-        The keys correspond to the :attr:`~Operation.hash` and values are instances of :class:`~Operation`.
+        The keys correspond to the :attr:`~Operation.hash` and values are instances
+        of :class:`~Operation`.
         """
         return self.data["operation_dict"]
 
     @property
     def timing_constraints(self):
+        # pylint: disable=line-too-long
         """
         A list of dictionaries describing timing constraints between operations.
 
@@ -261,9 +290,10 @@ class Schedule(UserDict):
         """
         return self.data["resource_dict"]
 
-    def add_resources(self, resources: list):
-        for r in resources:
-            self.add_resource(r)
+    def add_resources(self, resources_list: list):
+        """Add wrapper for adding multiple resources"""
+        for resource in resources_list:
+            self.add_resource(resource)
 
     def add_resource(self, resource):
         """
@@ -272,8 +302,8 @@ class Schedule(UserDict):
         assert resources.Resource.is_valid(resource)
         if resource.name in self.data["resource_dict"]:
             raise ValueError("Key {} is already present".format(resource.name))
-        else:
-            self.data["resource_dict"][resource.name] = resource
+
+        self.data["resource_dict"][resource.name] = resource
 
     def __repr__(self):
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
@@ -284,36 +314,53 @@ class Schedule(UserDict):
 
     @classmethod
     def is_valid(cls, schedule):
+        """
+        Checks the schedule validity according to its schema.
+        """
         scheme = general.load_json_schema(__file__, "schedule.json")
         jsonschema.validate(schedule.data, scheme)
         return True  # if not exception was raised during validation
 
+    # pylint: disable=too-many-arguments
     def add(
         self,
         operation: Operation,
         rel_time: float = 0,
         ref_op: str = None,
-        ref_pt: str = "end",
-        ref_pt_new: str = "start",
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
     ) -> str:
         """
         Add an :class:`~Operation` to the schedule and specify timing constraints.
+
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference operation and the added operation.
+        The time can be specified with respect to the "start", "center", or "end" of
+        the operations.
+        The reference operation (:code:`"ref_op"`) is specified using its label
+        property.
 
         Parameters
         ----------
         operation :
             The operation to add to the schedule
         rel_time :
-            relative time between the the reference operation and added operation.
+            relative time between the reference operation and the added operation.
+            the time is the time between the "ref_pt" in the reference operation and
+            "ref_pt_new" of the operation that is added.
         ref_op :
-            specifies the reference operation.
+            label of the reference operation. If set to :code:`None`, will default
+            to the last added operation.
         ref_pt :
-            reference point in reference operation must be one of ('start', 'center', 'end').
+            reference point in reference operation must be one of
+            ('start', 'center', 'end').
         ref_pt_new :
-            reference point in added operation must be one of ('start', 'center', 'end').
+            reference point in added operation must be one of
+            ('start', 'center', 'end').
         label :
-            a label that can be used as an identifier when adding more operations.
+            a unique string that can be used as an identifier when adding operations.
+            if set to None, a random hash will be generated instead.
         Returns
         -------
         :

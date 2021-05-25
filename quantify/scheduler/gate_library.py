@@ -1,8 +1,7 @@
-# -----------------------------------------------------------------------------
-# Description:    Library containing a standard gateset for use with the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+# pylint: disable=invalid-name
+"""Standard gateset for use with the quantify.scheduler."""
 from typing import Tuple, Union
 
 import numpy as np
@@ -10,7 +9,9 @@ import numpy as np
 from .types import Operation
 
 
+# pylint: disable=too-many-ancestors
 class Rxy(Operation):
+    # pylint: disable=line-too-long
     """
     A single qubit rotation around an axis in the equator of the Bloch sphere.
 
@@ -38,8 +39,10 @@ class Rxy(Operation):
         qubit : str
             the target qubit
         """
-        qubit = qubit
         name = "Rxy({:.2f}, {:.2f}) {}".format(theta, phi, qubit)
+        self.qubit = qubit
+        self._theta = theta
+        self._phi = phi
 
         theta_r = np.deg2rad(theta)
         phi_r = np.deg2rad(phi)
@@ -74,6 +77,9 @@ class Rxy(Operation):
         }
         super().__init__(name, data=data)
 
+    def __repr__(self):
+        return f'Rxy({self._theta}, {self._phi}, "{self.qubit}")'
+
 
 class X(Rxy):
     """
@@ -98,8 +104,12 @@ class X(Rxy):
             the target qubit
         """
         super().__init__(theta=180, phi=0, qubit=qubit)
+        self.qubit = qubit
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class X90(Rxy):
@@ -115,8 +125,12 @@ class X90(Rxy):
             the target qubit
         """
         super().__init__(theta=90, phi=0, qubit=qubit)
+        self.qubit = qubit
         self.data["name"] = f"X_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi/2}$"
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class Y(Rxy):
@@ -143,6 +157,9 @@ class Y(Rxy):
         self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.qubit}")'
+
 
 class Y90(Rxy):
     """
@@ -159,6 +176,9 @@ class Y90(Rxy):
         super().__init__(theta=90, phi=90, qubit=qubit)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.qubit}")'
 
 
 class CNOT(Operation):
@@ -181,6 +201,9 @@ class CNOT(Operation):
     """
 
     def __init__(self, qC: str, qT: str):
+        self.qC = qC
+        self.qT = qT
+
         data = {
             "gate_info": {
                 "unitary": np.array(
@@ -193,6 +216,9 @@ class CNOT(Operation):
             }
         }
         super().__init__(f"CNOT ({qC}, {qT})", data=data)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.qC}", "{self.qT}")'
 
 
 class CZ(Operation):
@@ -215,6 +241,9 @@ class CZ(Operation):
     """
 
     def __init__(self, qC: str, qT: str):
+        self.qC = qC
+        self.qT = qT
+
         data = {
             "gate_info": {
                 "unitary": np.array(
@@ -228,6 +257,9 @@ class CZ(Operation):
         }
         super().__init__(f"CZ ({qC}, {qT})", data=data)
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.qC}", "{self.qT}")'
+
 
 class Reset(Operation):
     """
@@ -240,6 +272,7 @@ class Reset(Operation):
     """
 
     def __init__(self, *qubits: str):
+        self._qubits = qubits
         data = {
             "gate_info": {
                 "unitary": None,
@@ -250,6 +283,9 @@ class Reset(Operation):
             }
         }
         super().__init__(f"Reset {qubits}", data=data)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(*{self._qubits})"
 
 
 class Measure(Operation):
@@ -281,6 +317,9 @@ class Measure(Operation):
         acq_index
             Index of the register where the measurement is stored.
         """
+        self._qubits = qubits
+        self._acq_channel = acq_channel
+        self._acq_index = acq_index
 
         if isinstance(acq_index, int):
             acq_index = (acq_index,)
@@ -304,3 +343,9 @@ class Measure(Operation):
             }
         }
         super().__init__(f"Measure {qubits}", data=data)
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(*{self._qubits}, "
+            f"acq_channel={self._acq_channel}, acq_index={self._acq_index})"
+        )

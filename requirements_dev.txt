@@ -6,7 +6,6 @@ wheel==0.33.6
 watchdog==0.9.0
 coverage
 sphinx>=2 # jupyter_sphinx requires sphinx>=2
-nbsphinx
 sphinx-rtd-theme==0.5.0rc2
 sphinxcontrib-blockdiag
 jupyter_sphinx>=0.3.2
@@ -14,8 +13,6 @@ sphinx-jsonschema>=1.15
 sphinx-autobuild
 sphinx-togglebutton
 sphinx-autodoc-typehints
-sphinx-toolbox
-enum_tools
 twine==1.14.0
 pytest
 pytest-runner
@@ -27,8 +24,11 @@ pygments==2.6.1
 black
 pylint
 pre-commit
-scanpydoc
+scanpydoc==0.6 # pinned because 0.7 is made for sphinx-autodoc-typehints==1.12.0 but sphinx-toolbox requires sphinx-autodoc-typehints==1.11.1
+docutils<0.17 # pinned due to issue #175 (quantify-core)
 
 # scheduler-only
 
 pytest-mpl
+sphinx-toolbox  # required by enum_tools when building the docs, 2.4.1 requires sphinx==3.3.1
+enum_tools # requires sphinx-toolbox when building docs

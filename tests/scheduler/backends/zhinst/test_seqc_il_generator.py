@@ -1,12 +1,10 @@
-# -----------------------------------------------------------------------------
-# Description:    Tests for Zurich Instruments backend.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 from textwrap import dedent
 
 import pytest
-
+from quantify.scheduler.backends.types.zhinst import DeviceType
 from quantify.scheduler.backends.zhinst.seqc_il_generator import (
     SEQC_INSTR_CLOCKS,
     SeqcILGenerator,
@@ -206,23 +204,42 @@ def test_generate_uninitalized_var():
 
 
 @pytest.mark.parametrize(
-    "delay,expected_wait,expected_elapsed",
+    "delay,expected_wait,device_type,expected_elapsed",
     [
-        (0, 0, SEQC_INSTR_CLOCKS[SeqcInstructions.WAIT]),
-        (3, 0, 3),
-        (6, 3, 6),
+        (
+            0,
+            0,
+            DeviceType.HDAWG,
+            SEQC_INSTR_CLOCKS[DeviceType.HDAWG][SeqcInstructions.WAIT],
+        ),
+        (3, 0, DeviceType.HDAWG, 3),
+        (6, 3, DeviceType.HDAWG, 6),
+        (
+            0,
+            0,
+            DeviceType.UHFQA,
+            SEQC_INSTR_CLOCKS[DeviceType.UHFQA][SeqcInstructions.WAIT],
+        ),
+        (3, 3, DeviceType.UHFQA, 3),
+        (6, 6, DeviceType.UHFQA, 6),
     ],
 )
-def test_add_wait(delay: int, expected_wait: int, expected_elapsed: int):
+def test_add_wait(
+    delay: int, expected_wait: int, device_type: DeviceType, expected_elapsed: int
+):
     # Arrange
     gen = SeqcILGenerator()
-    if delay - SEQC_INSTR_CLOCKS[SeqcInstructions.WAIT] < 0:
-        expected_instruction = f"wait({expected_wait});\t//  n_instr=3 <--"
-    else:
-        expected_instruction = f"wait({expected_wait});\t//  n_instr=3"
+    n_instr = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.WAIT]
+    if device_type == DeviceType.HDAWG:
+        if delay - n_instr < 0:
+            expected_instruction = f"wait({expected_wait});\t//  n_instr={n_instr} <--"
+        else:
+            expected_instruction = f"wait({expected_wait});\t//  n_instr={n_instr}"
+    elif device_type == DeviceType.UHFQA:
+        expected_instruction = f"wait({expected_wait});\t//  n_instr={delay}"
 
     # Act
-    elapsed_clocks = add_wait(gen, delay)
+    elapsed_clocks = add_wait(gen, delay, device_type)
 
     # Assert
     assert elapsed_clocks == expected_elapsed

@@ -1,12 +1,10 @@
-# -----------------------------------------------------------------------------
-# Description:    Compiler for the quantify.scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Compiler for the quantify.scheduler."""
 from __future__ import annotations
-from typing_extensions import Literal
 import importlib
 import logging
+from typing_extensions import Literal
 
 import jsonschema
 from quantify.utilities.general import load_json_schema
@@ -29,9 +27,9 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~quantify.scheduler.Schedule.timing_constraints`. It does this by:
+    :attr:`~quantify.scheduler.types.Schedule.timing_constraints`. It does this by:
 
-        1. iterating over all and elements in the :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+        1. iterating over all and elements in the :attr:`~quantify.scheduler.types.Schedule.timing_constraints`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -240,6 +238,11 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             # read info from config
             q_cfg = device_cfg["qubits"][q]
 
+            # G_amp is the gaussian amplitude introduced in
+            # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
+            # 180 refers to the normalization, theta is in degrees, and
+            # mw_amp180 is the amplitude necessary to get the
+            # maximum 180 degree theta (experimentally)
             G_amp = q_cfg["params"]["mw_amp180"] * op["gate_info"]["theta"] / 180
             D_amp = G_amp * q_cfg["params"]["mw_motzoi"]
 

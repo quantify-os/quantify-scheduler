@@ -1,24 +1,24 @@
-# -----------------------------------------------------------------------------
-# Description:    Module containing functions for drawing pulse schemes and circuit diagrams using matplotlib.
-# Repository:     https://gitlab.com/qblox/packages/software/quantify/
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""
+Module containing functions for drawing pulse schemes and circuit diagrams
+using matplotlib.
+"""
+# pylint: disable=too-many-arguments
 from __future__ import annotations
-from typing import Tuple, Union, List, Dict, Optional
+from typing import Tuple, Union, List, Optional
+import warnings
 import logging
-import inspect
 import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib.patches
+
+# For type hints, import modules to avoid circular dependencies
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-from plotly.subplots import make_subplots
-import plotly.express as px
-import plotly.graph_objects as go
-from quantify.scheduler.types import Schedule
-from quantify.scheduler.waveforms import modulate_wave
-from quantify.utilities.general import import_func_from_string
+
+import quantify.scheduler.visualization.pulse_diagram as pd
 
 logger = logging.getLogger(__name__)
 
@@ -332,8 +332,8 @@ def meter(
     x0: float,
     y0: float,
     y_offs: float = 0.0,
-    w: float = 1.1,
-    h: float = 0.8,
+    width: float = 1.1,
+    height: float = 0.8,
     color: str = "black",
     fillcolor: Optional[str] = None,
 ) -> None:
@@ -350,9 +350,9 @@ def meter(
 
     y_offs :
 
-    w :
+    width :
 
-    h :
+    height :
 
     color :
 
@@ -369,9 +369,9 @@ def meter(
     else:
         fill = True
     p1 = matplotlib.patches.Rectangle(
-        (x0 - w / 2, y0 - h / 2 + y_offs),
-        w,
-        h,
+        (x0 - width / 2, y0 - height / 2 + y_offs),
+        width,
+        height,
         facecolor=fillcolor,
         edgecolor=color,
         fill=fill,
@@ -379,7 +379,7 @@ def meter(
     )
     ax.add_patch(p1)
     p0 = matplotlib.patches.Wedge(
-        (x0, y0 - h / 1.75 + y_offs),
+        (x0, y0 - height / 1.75 + y_offs),
         0.4,
         theta1=40,
         theta2=180 - 40,
@@ -389,12 +389,12 @@ def meter(
         zorder=5,
     )
     ax.add_patch(p0)
-    r0 = h / 2.2
+    arrow_len = height / 2.2
     ax.arrow(
         x0,
-        y0 - h / 5 + y_offs,
-        dx=r0 * np.cos(np.deg2rad(70)),
-        dy=r0 * np.sin(np.deg2rad(70)),
+        y0 - height / 5 + y_offs,
+        dx=arrow_len * np.cos(np.deg2rad(70)),
+        dy=arrow_len * np.sin(np.deg2rad(70)),
         width=0.03,
         color=color,
         zorder=5,
@@ -406,8 +406,8 @@ def box_text(
     x0: float,
     y0: float,
     text: str = "",
-    w: float = 1.1,
-    h: float = 0.8,
+    width: float = 1.1,
+    height: float = 0.8,
     color: str = "black",
     fillcolor: Optional[str] = None,
     textcolor: str = "black",
@@ -426,9 +426,9 @@ def box_text(
 
     text :
 
-    w :
+    width :
 
-    h :
+    height :
 
     color :
 
@@ -449,9 +449,9 @@ def box_text(
     else:
         fill = True
     p1 = matplotlib.patches.Rectangle(
-        (x0 - w / 2, y0 - h / 2),
-        w,
-        h,
+        (x0 - width / 2, y0 - height / 2),
+        width,
+        height,
         facecolor=fillcolor,
         edgecolor=color,
         fill=fill,
@@ -464,203 +464,16 @@ def box_text(
     ).set_clip_on(True)
 
 
-def pulse_diagram_plotly(
-    schedule: Schedule,
-    port_list: Optional[List[str]] = None,
-    fig_ch_height: float = 150,
-    fig_width: float = 1000,
-    modulation: str = "off",
-    modulation_if: float = 0,
-    sampling_rate: int = 1e9,
-) -> go.Figure:
+def pulse_diagram_plotly(*args, **kwargs):
     """
-    Produce a plotly visualization of the pulses used in the schedule.
-
-    Parameters
-    ------------
-    schedule :
-        The schedule to render.
-    port_list :
-        A list of ports to show. if set to `None` will use the first
-        8 ports it encounters in the sequence.
-    fig_ch_height :
-        Height for each channel subplot in px.
-    fig_width :
-        Width for the figure in px.
-    modulation :
-        Determines if modulation is included in the visualization. Options are "off", "if", "clock".
-    modulation_if :
-        Modulation frequency used when modulation is set to "if".
-    sampling_rate :
-        The time resolution used in the visualization.
-
-    Returns
-    -------
-    :class:`!plotly.graph_objects.Figure` :
-        the plot
+    Deprecated import use
+    :func:`~quantify.scheduler.visualization.pulse_diagram.pulse_diagram_plotly`
     """
-
-    port_map: Dict[str, int] = dict()
-    ports_length: int = 8
-    auto_map: bool = True if port_list is None else False
-
-    def _populate_port_mapping(portmap: Dict[str, int]) -> None:
-        """
-        Dynammically add up to 8 ports to the port_map dictionary.
-        """
-        offset_idx: int = 0
-
-        for t_constr in schedule.timing_constraints:
-            operation = schedule.operations[t_constr["operation_hash"]]
-            for pulse_info in operation["pulse_info"]:
-                if offset_idx == ports_length:
-                    return
-
-                port = pulse_info["port"]
-                if port is None:
-                    continue
-
-                if port not in portmap:
-                    portmap[port] = offset_idx
-                    offset_idx += 1
-
-    if auto_map is False:
-        ports_length = len(port_list)
-        port_map = dict(zip(port_list, range(len(port_list))))
-    else:
-        _populate_port_mapping(port_map)
-        ports_length = len(port_map)
-
-    nrows = ports_length
-    fig = make_subplots(rows=nrows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
-    fig.update_layout(
-        height=fig_ch_height * nrows,
-        width=fig_width,
-        title=schedule.data["name"],
-        showlegend=False,
-    )
-    colors = px.colors.qualitative.Plotly
-    col_idx: int = 0
-
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_hash"]]
-
-        for pulse_info in operation["pulse_info"]:
-            if pulse_info["port"] not in port_map:
-                # Do not draw pulses for this port
-                continue
-
-            if pulse_info["port"] is None:
-                logger.warning(
-                    f"Unable to draw pulse for pulse_info due to missing 'port' for \
-                        operation name={operation['name']} \
-                        id={t_constr['operation_hash']} pulse_info={pulse_info}"
-                )
-                continue
-
-            if pulse_info["wf_func"] is None:
-                logger.warning(
-                    f"Unable to draw pulse for pulse_info due to missing 'wf_func' for \
-                        operation name={operation['name']} \
-                        id={t_constr['operation_hash']} pulse_info={pulse_info}"
-                )
-                continue
-
-            # port to map the waveform too
-            port: Optional[str] = pulse_info["port"]
-
-            # function to generate waveform
-            wf_func: Optional[str] = import_func_from_string(pulse_info["wf_func"])
-
-            # iterate through the colors in the color map
-            col_idx = (col_idx + 1) % len(colors)
-
-            # times at which to evaluate waveform
-            t0 = t_constr["abs_time"] + pulse_info["t0"]
-            t = np.arange(t0, t0 + pulse_info["duration"], 1 / sampling_rate)
-
-            # select the arguments for the waveform function that are present in pulse info
-            par_map = inspect.signature(wf_func).parameters
-            wf_kwargs = {}
-            for kw in par_map.keys():
-                if kw in pulse_info.keys():
-                    wf_kwargs[kw] = pulse_info[kw]
-
-            # Calculate the numerical waveform using the wf_func
-            wf = wf_func(t=t, **wf_kwargs)
-
-            # optionally adds some modulation
-            if modulation == "clock":
-                # apply modulation to the waveforms
-                wf = modulate_wave(
-                    t, wf, schedule.resources[pulse_info["clock"]]["freq"]
-                )
-
-            if modulation == "if":
-                # apply modulation to the waveforms
-                wf = modulate_wave(t, wf, modulation_if)
-
-            row: int = port_map[port] + 1
-            # FIXME properly deal with complex waveforms.
-            for i in range(2):
-                showlegend = i == 0
-                label = operation["name"]
-                fig.add_trace(
-                    go.Scatter(
-                        x=t,
-                        y=wf.imag,
-                        mode="lines",
-                        name=label,
-                        legendgroup=pls_idx,
-                        showlegend=showlegend,
-                        line_color="lightgrey",
-                    ),
-                    row=row,
-                    col=1,
-                )
-                fig.add_trace(
-                    go.Scatter(
-                        x=t,
-                        y=wf.real,
-                        mode="lines",
-                        name=label,
-                        legendgroup=pls_idx,
-                        showlegend=showlegend,
-                        line_color=colors[col_idx],
-                    ),
-                    row=row,
-                    col=1,
-                )
-
-            fig.update_xaxes(
-                row=row,
-                col=1,
-                tickformat=".2s",
-                hoverformat=".3s",
-                ticksuffix="s",
-                showgrid=True,
-            )
-            fig.update_yaxes(
-                row=row,
-                col=1,
-                tickformat=".2s",
-                hoverformat=".3s",
-                ticksuffix="V",
-                title=port,
-                range=[-1.1, 1.1],
-            )
-
-    fig.update_xaxes(
-        row=ports_length,
-        col=1,
-        title="Time",
-        tickformatstops=[
-            dict(dtickrange=[None, 1e-9], value=".10s"),
-            dict(dtickrange=[1e-9, 1e-6], value=".7s"),
-            dict(dtickrange=[1e-6, 1e-3], value=".4s"),
-        ],
-        ticksuffix="s",
-        rangeslider_visible=True,
+    warnings.warn(
+        "`pulse_diagram_plotly` will be removed from this module in quantify 1.0.0.\n"
+        "Import as follows instead:\n"
+        "",
+        ImportWarning,
     )
 
-    return fig
+    return pd.pulse_diagram_plotly(*args, **kwargs)

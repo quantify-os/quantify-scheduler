@@ -1,22 +1,14 @@
-# -----------------------------------------------------------------------------
-# Description:    Backend for Zurich Instruments.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 from __future__ import annotations
 
 import logging
 import textwrap
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from quantify.scheduler.helpers.schedule import (
-    get_operation_end,
-    get_operation_start,
-    get_schedule_time_offset,
-    get_total_duration,
-)
-from quantify.scheduler.types import Schedule
+from quantify.scheduler.backends.types import zhinst
+from quantify.scheduler.helpers import schedule as schedule_helpers
 
 logger = logging.getLogger()
 
@@ -36,13 +28,20 @@ class SeqcInstructions(Enum):
     EXECUTE_TABLE_ENTRY = "executeTableEntry"
 
 
-SEQC_INSTR_CLOCKS: Dict[SeqcInstructions, int] = {
-    SeqcInstructions.PLAY_WAVE: 3,
-    SeqcInstructions.SET_TRIGGER: 1,
-    SeqcInstructions.WAIT: 3,
-    SeqcInstructions.WAIT_WAVE: 3,
-    SeqcInstructions.ARM_INTEGRATION: 3,
-    SeqcInstructions.EXECUTE_TABLE_ENTRY: 1,
+SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
+    zhinst.DeviceType.HDAWG: {
+        SeqcInstructions.PLAY_WAVE: 3,
+        SeqcInstructions.SET_TRIGGER: 1,
+        SeqcInstructions.WAIT: 3,
+        SeqcInstructions.WAIT_WAVE: 3,
+        SeqcInstructions.EXECUTE_TABLE_ENTRY: 0,
+    },
+    zhinst.DeviceType.UHFQA: {
+        SeqcInstructions.WAIT: 0,
+        SeqcInstructions.PLAY_WAVE: 0,
+        SeqcInstructions.SET_TRIGGER: 1,
+        SeqcInstructions.ARM_INTEGRATION: 3,
+    },
 }
 
 
@@ -52,94 +51,166 @@ class SeqcInfo:
     offsets, pulses and clocks.
     """
 
-    clock_rate: int
     sequencer_clock: float
-    dead_time_in_sec: float
 
     def __init__(
         self,
-        clock_rate: int,
-        dead_time_in_seconds: float,
-        line_trigger_delay_in_seconds: float,
-        schedule: Schedule,
-        port_timeline_dict: Dict[str, Dict[int, List[int]]],
-        pulses_timeline_dict: Dict[int, List[int]],
+        cached_schedule: schedule_helpers.CachedSchedule,
+        output: zhinst.Output,
+        low_res_clock: float,
     ) -> None:
-        self.clock_rate = clock_rate
-        self.sequencer_clock = 8 / clock_rate
-        self._dead_time_in_seconds = dead_time_in_seconds
-        self._line_trigger_delay_in_seconds = line_trigger_delay_in_seconds
+        self.sequencer_clock = low_res_clock
+        self._line_trigger_delay_in_seconds = output.line_trigger_delay
 
-        self._schedule_offset_in_seconds: float = get_schedule_time_offset(
-            schedule, port_timeline_dict
-        )
+        self._schedule_offset_in_seconds = cached_schedule.start_offset_in_seconds
         self._schedule_duration_in_seconds: float = (
-            get_total_duration(schedule) - self.schedule_offset_in_seconds
+            cached_schedule.total_duration_in_seconds - self._schedule_offset_in_seconds
         )
-        timeslot_indexes: List[int] = list(pulses_timeline_dict.keys())
+        timeslot_indexes: List[int] = list(
+            cached_schedule.port_timeline_dict[output.port].keys()
+        )
         self._timeline_start_in_seconds: float = (
-            get_operation_start(
-                schedule,
+            schedule_helpers.get_operation_start(
+                cached_schedule.schedule,
                 timeslot_index=timeslot_indexes[0],
             )
             - self.schedule_offset_in_seconds
         )
         self._timeline_end_in_seconds: float = (
-            get_operation_end(schedule, timeslot_index=timeslot_indexes[-1])
+            schedule_helpers.get_operation_end(
+                cached_schedule.schedule, timeslot_index=timeslot_indexes[-1]
+            )
             - self.schedule_offset_in_seconds
         )
 
     def to_clocks(self, seconds: float) -> int:
+        """
+        Returns the converted value in clocks.
+
+        Parameters
+        ----------
+        seconds : float
+
+        Returns
+        -------
+        int
+        """
         if seconds <= 0:
             return 0
         return round(seconds / self.sequencer_clock)
 
     @property
     def schedule_offset_in_seconds(self) -> float:
+        """
+        Returns the schedule start offset in seconds.
+        The offset is determined by the Reset Operation.
+
+        Returns
+        -------
+        float
+        """
         return self._schedule_offset_in_seconds
 
     @property
     def schedule_offset_in_clocks(self) -> int:
+        """
+        Returns the schedule start offset in clocks.
+        The offset is determined by the Reset Operation.
+
+        Returns
+        -------
+        int
+        """
         return self.to_clocks(self.schedule_offset_in_seconds)
 
     @property
     def schedule_duration_in_seconds(self) -> float:
+        """
+        Returns the total schedule duration in seconds.
+
+        Returns
+        -------
+        float
+        """
         return self._schedule_duration_in_seconds
 
     @property
     def schedule_duration_in_clocks(self) -> int:
+        """
+        Returns the total schedule duration in clocks.
+
+        Returns
+        -------
+        int
+        """
         return self.to_clocks(self.schedule_duration_in_seconds)
 
     @property
     def timeline_start_in_seconds(self) -> float:
+        """
+        Returns the port timeline start in seconds.
+
+        Returns
+        -------
+        float
+        """
         return self._timeline_start_in_seconds
 
     @property
     def timeline_start_in_clocks(self) -> int:
+        """
+        Returns the port timeline start in clocks.
+
+        Returns
+        -------
+        float
+        """
         return self.to_clocks(self.timeline_start_in_seconds)
 
     @property
     def timeline_end_in_seconds(self) -> float:
+        """
+        Returns the port timeline end in seconds.
+
+        Returns
+        -------
+        float
+        """
         return self._timeline_end_in_seconds
 
     @property
     def timeline_end_in_clocks(self) -> int:
+        """
+        Returns the port timeline start in clocks.
+
+        Returns
+        -------
+        float
+        """
         return self.to_clocks(self.timeline_end_in_seconds)
 
     @property
-    def dead_time_in_seconds(self) -> int:
-        return self._dead_time_in_seconds
-
-    @property
-    def dead_time_in_clocks(self) -> int:
-        return self.to_clocks(self.dead_time_in_seconds)
-
-    @property
     def line_trigger_delay_in_seconds(self) -> float:
+        """
+        Returns the configured line delay when using
+        triggers in seconds.
+
+        Returns
+        -------
+        float
+        """
         return self._line_trigger_delay_in_seconds
 
     @property
     def line_trigger_delay_in_clocks(self) -> int:
+        """
+        Returns the configured line delay when using
+        triggers in clocks.
+
+        Returns
+        -------
+        int
+        """
         return self.to_clocks(self.line_trigger_delay_in_seconds)
 
 
@@ -249,7 +320,11 @@ class SeqcILGenerator(object):
         """
         self._declare_local("var", name)
         if value is not None:
-            self.assign_var(name, value)
+            if isinstance(value, list):
+                values = " + ".join(value)
+                self._assign_local(name, f"{values};")
+            else:
+                self.assign_var(name, value)
 
     def declare_wave(self, name: str, value: Optional[str] = None) -> None:
         """
@@ -260,7 +335,7 @@ class SeqcILGenerator(object):
         ----------
             name :
                 The variable name.
-            value: Optional[str]
+            value:
                 The variable value. (optional)
         """
         self._declare_local("wave", name)
@@ -293,7 +368,7 @@ class SeqcILGenerator(object):
         """
         self._assign_local(name, f"placeholder({size});")
 
-    def assign_var(self, name: str, value: Union[str, int]) -> None:
+    def assign_var(self, name: str, value: Union[str, int, List[Any]]) -> None:
         """
         Assign a value to a variable by name.
 
@@ -313,7 +388,7 @@ class SeqcILGenerator(object):
             value :
                 The new value.
         """
-        if isinstance(value, int):
+        if isinstance(value, (int, list)):
             self._assign_local(name, f"{value};")
         else:
             self._assign_local(name, f'"{value}";')
@@ -532,7 +607,12 @@ class SeqcILGenerator(object):
         return program
 
 
-def add_wait(seqc_gen: SeqcILGenerator, delay: int, comment: str = "") -> int:
+def add_wait(
+    seqc_gen: SeqcILGenerator,
+    delay: int,
+    device_type: zhinst.DeviceType,
+    comment: str = "",
+) -> int:
     """
     Add a wait instruction to the SeqcILGenerator with the specified delay.
 
@@ -541,6 +621,7 @@ def add_wait(seqc_gen: SeqcILGenerator, delay: int, comment: str = "") -> int:
     seqc_gen :
     delay :
         The delay in clocks.
+    device_type :
     comment :
         An optional comment to the instruction, by default ""
 
@@ -554,8 +635,12 @@ def add_wait(seqc_gen: SeqcILGenerator, delay: int, comment: str = "") -> int:
     elapsed_clocks: int = 0
 
     # Add the timeline start offset. Consider the trigger as clock=0.
-    n_assembly_instructions = SEQC_INSTR_CLOCKS[SeqcInstructions.WAIT]
-    cycles_to_wait = delay - n_assembly_instructions
+    if device_type == zhinst.DeviceType.UHFQA:
+        n_assembly_instructions = delay
+        cycles_to_wait = delay
+    elif device_type == zhinst.DeviceType.HDAWG:
+        n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.WAIT]
+        cycles_to_wait = delay - n_assembly_instructions
 
     if cycles_to_wait < 0:
         logger.warning("Minimum number of clocks to wait must at least be 3!")
@@ -573,6 +658,120 @@ def add_wait(seqc_gen: SeqcILGenerator, delay: int, comment: str = "") -> int:
     return elapsed_clocks
 
 
+def add_play_wave(
+    seqc_gen: SeqcILGenerator,
+    variable: str,
+    device_type: zhinst.DeviceType,
+    comment: str = "",
+) -> int:
+    """
+    Adds a playWave instruction to the
+    seqc program.
+
+    Parameters
+    ----------
+    seqc_gen :
+    variable :
+    device_type :
+    comment :
+
+    Returns
+    -------
+    int
+        Elapsed number of clock cycles.
+    """
+    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.PLAY_WAVE]
+    seqc_gen.emit_play_wave(
+        variable,
+        comment=f"\t// {comment} n_instr={n_assembly_instructions}",
+    )
+    return n_assembly_instructions
+
+
+def add_execute_table_entry(
+    seqc_gen: SeqcILGenerator,
+    index: int,
+    device_type: zhinst.DeviceType,
+    comment: str = "",
+) -> int:
+    """
+    Adds an executeTableEntry instruction to
+    seqc program.
+
+    Parameters
+    ----------
+    seqc_gen :
+    index :
+    device_type :
+    comment :
+
+    Returns
+    -------
+    int
+        Elapsed number of clock cycles.
+
+    Raises
+    ------
+    AttributeError
+        Raised when the DeviceType not equals HDAWG.
+    """
+    if device_type != zhinst.DeviceType.HDAWG:
+        raise AttributeError(
+            "Unsupported sequencer instruction "
+            + f"'{SeqcInstructions.EXECUTE_TABLE_ENTRY}'"
+        )
+
+    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][
+        SeqcInstructions.EXECUTE_TABLE_ENTRY
+    ]
+
+    seqc_gen.emit_execute_table_entry(
+        index,
+        comment=f"\t// {comment} pulse={index} n_instr={n_assembly_instructions}",
+    )
+
+    return n_assembly_instructions
+
+
+def add_set_trigger(
+    seqc_gen: SeqcILGenerator,
+    value: Union[List[str], int, str],
+    device_type: zhinst.DeviceType,
+    comment: str = "",
+) -> int:
+    """
+    Adds a setTrigger instruction to the seqc
+    program.
+
+    Parameters
+    ----------
+    seqc_gen :
+    value :
+    device_type :
+    comment :
+
+    Returns
+    -------
+    int
+        Elapsed number of clock cycles.
+    """
+    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][
+        SeqcInstructions.SET_TRIGGER
+    ]
+
+    if isinstance(value, list):
+        trigger = " + ".join(value)
+        n_assembly_instructions += min(len(value) - 1, 2)
+    else:
+        trigger = value
+
+    seqc_gen.emit_set_trigger(
+        trigger, comment=f"\t// {comment} n_instr={n_assembly_instructions}"
+    )
+
+    return n_assembly_instructions
+
+
 def add_seqc_info(seqc_gen: SeqcILGenerator, seqc_info: SeqcInfo):
     """
     Add Sequence Information to the SeqcILGenerator using comments.
@@ -583,34 +782,52 @@ def add_seqc_info(seqc_gen: SeqcILGenerator, seqc_info: SeqcInfo):
     seqc_info :
     """
     seqc_gen.emit_comment(
-        f"Schedule offset: {seqc_info.schedule_offset_in_seconds}s {seqc_info.schedule_offset_in_clocks} clocks"
+        f"Schedule offset: {seqc_info.schedule_offset_in_seconds:.9f}s "
+        + f"{seqc_info.schedule_offset_in_clocks:d} clocks"
     )
     seqc_gen.emit_comment(
-        f"Schedule duration: {seqc_info.schedule_duration_in_seconds}s {seqc_info.schedule_duration_in_clocks} clocks"
+        f"Schedule duration: {seqc_info.schedule_duration_in_seconds:.9f}s "
+        + f"{seqc_info.schedule_duration_in_clocks:d} clocks"
     )
     seqc_gen.emit_comment(
-        f"Sequence start: {seqc_info.timeline_start_in_seconds}s {seqc_info.timeline_start_in_clocks} clocks"
+        f"Sequence start: {seqc_info.timeline_start_in_seconds:.9f}s "
+        + f"{seqc_info.timeline_start_in_clocks:d} clocks"
+    )
+    seq_duration_in_seconds = (
+        seqc_info.timeline_end_in_seconds - seqc_info.timeline_start_in_seconds
+    )
+    seq_duration_in_clocks = (
+        seqc_info.timeline_end_in_clocks - seqc_info.timeline_start_in_clocks
     )
     seqc_gen.emit_comment(
-        f"Sequence duration: {seqc_info.timeline_end_in_seconds - seqc_info.timeline_start_in_seconds}s "
-        + f"{seqc_info.timeline_end_in_clocks - seqc_info.timeline_start_in_clocks} clocks"
+        f"Sequence duration: {seq_duration_in_seconds:.9f}s "
+        + f"{seq_duration_in_clocks:d} clocks"
     )
     seqc_gen.emit_comment(
-        f"Sequence end: {seqc_info.timeline_end_in_seconds}s {seqc_info.timeline_end_in_clocks} clocks"
+        f"Sequence end: {seqc_info.timeline_end_in_seconds:.9f}s "
+        + f"{seqc_info.timeline_end_in_clocks:d} clocks"
     )
     seqc_gen.emit_comment(
-        f"Dead time: {seqc_info.dead_time_in_seconds}s {seqc_info.dead_time_in_clocks} clocks"
-    )
-    seqc_gen.emit_comment(
-        f"Line delay: {seqc_info.line_trigger_delay_in_seconds}s {seqc_info.line_trigger_delay_in_clocks} clocks"
+        f"Line delay: {seqc_info.line_trigger_delay_in_seconds:.9f}s "
+        + f"{seqc_info.line_trigger_delay_in_clocks:d} clocks"
     )
 
 
 def add_csv_waveform_variables(
-    seqc_gen,
+    seqc_gen: SeqcILGenerator,
     device_serial: str,
     commandtable_map: Dict[int, int],
 ):
+    """
+    Adds wave variables in form of a
+    CSV filename to the seqc file.
+
+    Parameters
+    ----------
+    seqc_gen :
+    device_serial :
+    commandtable_map :
+    """
     for waveform_index in commandtable_map.values():
         # Declare new placeholder and assign wave index
         name: str = f"w{waveform_index:d}"

@@ -89,7 +89,6 @@ ENV/
 .mypy_cache/
 
 # IDE settings
-.vscode/
 *.sublime-*
 
 # System files

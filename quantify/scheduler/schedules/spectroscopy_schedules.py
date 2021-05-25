@@ -1,3 +1,5 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 """
 Module containing schedules for common spectroscopy experiments.
 """
@@ -7,7 +9,7 @@ from quantify.scheduler.pulse_library import SquarePulse, IdlePulse
 from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.scheduler.resources import ClockResource
 
-
+# pylint: disable=too-many-arguments
 def heterodyne_spec_sched(
     pulse_amp: float,
     pulse_duration: float,
@@ -44,7 +46,9 @@ def heterodyne_spec_sched(
     sched = Schedule("Heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequency))
 
-    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is released
+    # pylint: disable=fixme
+    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is
+    # released. See #99
     # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
     # wait time between different repetitions of the schedule.
     sched.add(
@@ -78,6 +82,8 @@ def heterodyne_spec_sched(
     return sched
 
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 def two_tone_spec_sched(
     spec_pulse_amp: float,
     spec_pulse_duration: float,
@@ -114,7 +120,8 @@ def two_tone_spec_sched(
     ro_pulse_duration
         duration of the readout (spectroscopy) pulse in seconds.
     ro_pulse_delay
-        time between the end of the spectroscopy pulse and the start of the readout (spectroscopy) pulse.
+        time between the end of the spectroscopy pulse and the start of the readout
+        (spectroscopy) pulse.
     ro_pulse_port
         location on the device where the readout (spectroscopy) pulse should be applied.
     ro_pulse_clock
@@ -122,8 +129,8 @@ def two_tone_spec_sched(
     ro_pulse_frequency
         frequency of the spectroscopy pulse and of the data acquisition in Hertz.
     ro_acquisition_delay
-        start of the data acquisition with respect to the start of the spectroscopy pulse
-        in seconds.
+        start of the data acquisition with respect to the start of the spectroscopy
+        pulse in seconds.
     ro_integration_time
         integration time of the data acquisition in seconds.
     buffer_time
@@ -133,7 +140,9 @@ def two_tone_spec_sched(
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
     sched.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
-    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is released
+    # pylint: disable=fixme
+    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware
+    # is released. See #99
     # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
     # wait time between different repetitions of the schedule.
     sched.add(

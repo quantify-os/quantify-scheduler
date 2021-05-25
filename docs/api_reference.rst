@@ -88,11 +88,18 @@ device_elements
     :members:
 
 
+trace_schedules
+~~~~~~~~~~~~~~~
+
+.. automodule:: quantify.scheduler.schedules.trace_schedules
+    :members:
+
 compilation
 -----------
 
 .. automodule:: quantify.scheduler.compilation
     :members:
+
 
 frontends
 ---------
@@ -106,10 +113,10 @@ backends
 .. automodule:: quantify.scheduler.backends
     :members:
 
-pulsar_backend
+qblox_backend
 ~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.backends.pulsar_backend
+.. automodule:: quantify.scheduler.backends.qblox_backend
     :members:
 
 zhinst_backend
@@ -121,8 +128,33 @@ zhinst_backend
 types
 ~~~~~
 
+.. automodule:: quantify.scheduler.backends.types.common
+    :members:
+
+.. automodule:: quantify.scheduler.backends.types.qblox
+    :members:
+
 .. automodule:: quantify.scheduler.backends.types.zhinst
     :members:
+
+qblox
+~~~~~~
+
+.. automodule:: quantify.scheduler.backends.qblox.helpers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.compiler_abc
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.constants
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.q1asm_instructions
+    :members:
+
 
 zhinst
 ~~~~~~
@@ -134,6 +166,9 @@ zhinst
     :members:
 
 .. automodule:: quantify.scheduler.backends.zhinst.seqc_il_generator
+    :members:
+
+.. automodule:: quantify.scheduler.backends.zhinst.settings
     :members:
 
 helpers
@@ -160,6 +195,11 @@ circuit_diagram
 .. automodule:: quantify.scheduler.visualization.circuit_diagram
     :members:
 
+pulse_diagram
+~~~~~~~~~~~~~
+
+.. automodule:: quantify.scheduler.visualization.pulse_diagram
+    :members:
 
 miscellaneous
 -------------

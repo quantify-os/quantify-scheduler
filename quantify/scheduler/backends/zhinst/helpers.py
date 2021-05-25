@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Backend for Zurich Instruments.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Helpers for Zurich Instruments."""
 from __future__ import annotations
 
 import json
@@ -10,15 +8,14 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-import numpy as np
+from zhinst.qcodes import base
 from zhinst import qcodes
 
-from quantify.scheduler.backends.types import zhinst as types
 
 logger = logging.getLogger()
 
 
-def get_value(instrument: qcodes.ZIBaseInstrument, node: str) -> str:
+def get_value(instrument: base.ZIBaseInstrument, node: str) -> str:
     """
     Gets the value of a ZI node.
 
@@ -29,16 +26,17 @@ def get_value(instrument: qcodes.ZIBaseInstrument, node: str) -> str:
 
     Returns
     -------
-    str
+    :
         The node value.
     """
-    path = f"/{instrument._serial}/{node}"
-    logger.debug(path)
-    return instrument._controller._get(path)
+    if not node.startswith(f"/{instrument._serial}"):
+        node = f"/{instrument._serial}/{node}"
+    logger.debug(node)
+    return instrument._controller._get(node)
 
 
 def set_value(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     node: str,
     value,
 ) -> None:
@@ -54,15 +52,16 @@ def set_value(
     value :
         The new node value.
     """
-    path = f"/{instrument._serial}/{node}"
-    logger.debug(path)
-    instrument._controller._set(path, value)
+    if not node.startswith(f"/{instrument._serial}"):
+        node = f"/{instrument._serial}/{node}"
+    logger.debug(node)
+    instrument._controller._set(node, value)
 
 
 def set_vector(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     node: str,
-    vector: Union[List, str],
+    value: Union[List, str],
 ) -> None:
     """
     Sets the vector value of a ZI node.
@@ -71,18 +70,47 @@ def set_vector(
     ----------
     instrument :
         The instrument.
+    awg_index :
+        The awg to configure.
+    node :
+        The node path.
+    value :
+        The new node vector value.
+    """
+    if not node.startswith(f"/{instrument._serial}"):
+        node = f"/{instrument._serial}/{node}"
+    logger.debug(node)
+    instrument._controller._controller._connection._daq.setVector(node, value)
+
+
+def set_awg_value(
+    instrument: base.ZIBaseInstrument,
+    awg_index: int,
+    node: str,
+    value: Union[int, str],
+) -> None:
+    """
+    Sets the vector value of a ZI node.
+
+    Parameters
+    ----------
+    instrument :
+        The instrument.
+    awg_index :
+        The awg to configure.
     node :
         The node path.
     vector :
         The new node vector value.
     """
-    path = f"/{instrument._serial}/{node}"
-    logger.debug(path)
-    instrument._controller._controller._connection._daq.setVector(path, vector)
+    logger.debug(node)
+
+    awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
+    awgs[awg_index]._awg._module.set(node, value)
 
 
 def set_wave_vector(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     awg_index: int,
     wave_index: int,
     vector: Union[List, str],
@@ -106,7 +134,7 @@ def set_wave_vector(
 
 
 def set_commandtable_data(
-    instrument: qcodes.ZIBaseInstrument,
+    instrument: base.ZIBaseInstrument,
     awg_index: int,
     json_data: Union[Dict[str, Any], str],
 ) -> None:
@@ -140,7 +168,7 @@ def get_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path of this directory.
     """
     return Path(awg._awg._module.get_string("directory"))
@@ -157,7 +185,7 @@ def get_src_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path to the source directory.
     """
     return get_directory(awg).joinpath("awg", "src")
@@ -174,33 +202,10 @@ def get_waves_directory(awg: qcodes.hdawg.AWG) -> Path:
 
     Returns
     -------
-    Path
+    :
         The path to the waves directory.
     """
     return get_directory(awg).joinpath("awg", "waves")
-
-
-def get_clock_rate(device_type: types.DeviceType) -> int:
-    """
-    Returns the clock rate of a Device.
-
-    Parameters
-    ----------
-    device_type :
-        The type of device.
-
-    Returns
-    -------
-    int
-        The number of clocks (GSa/s).
-    """
-    # clock_rate = awg._awg.sequence_params["sequence_parameters"]["clock_rate"]
-    clock_rate = 0
-    if device_type == types.DeviceType.HDAWG:
-        clock_rate = 2400000000  # 2.4e9 GSa/s
-    elif device_type == types.DeviceType.UHFQA:
-        clock_rate = 1800000000  # 1.8e9 GSa/s
-    return clock_rate
 
 
 def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path:
@@ -219,7 +224,7 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
 
     Returns
     -------
-    Path
+    :
         Returns the path which was written.
     """
     path = get_src_directory(awg).joinpath(filename)
@@ -228,7 +233,7 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
     return path
 
 
-def get_commandtable_map(
+def get_waveform_table(
     pulse_ids: List[int], pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]]
 ) -> Dict[int, int]:
     """
@@ -244,13 +249,13 @@ def get_commandtable_map(
 
     Returns
     -------
-    Dict[int, int]
-        The command table map.
+    :
+        The waveform table dictionary.
     """
-    commandtable_map: Dict[int, int] = dict()
+    waveform_table: Dict[int, int] = dict()
     index = 0
     for pulse_id in pulse_ids:
-        if pulse_id in commandtable_map:
+        if pulse_id in waveform_table:
             # Skip duplicate pulses.
             continue
 
@@ -259,44 +264,10 @@ def get_commandtable_map(
             # Skip pulses without a port. Such as the IdlePulse.
             continue
 
-        commandtable_map[pulse_id] = index
+        waveform_table[pulse_id] = index
         index += 1
 
-    return commandtable_map
-
-
-def set_qas_parameters(
-    instrument: qcodes.ZIBaseInstrument,
-    integration_length: int,
-    mode: types.QAS_IntegrationMode = types.QAS_IntegrationMode.NORMAL,
-    delay: int = 0,
-):
-    assert integration_length <= 4096
-
-    node = "qas/0/integration/length"
-    set_value(instrument, node, integration_length)
-
-    node = "qas/0/integration/mode"
-    set_value(instrument, node, mode.value)
-
-    node = "qas/0/delay"
-    set_value(instrument, node, delay)
-
-
-def set_integration_weights(
-    instrument: qcodes.ZIBaseInstrument,
-    channel_index: int,
-    weights_i: List[int],
-    weights_q: List[int],
-):
-    assert channel_index < 10
-    assert len(weights_i) <= 4096
-    assert len(weights_q) <= 4096
-
-    node = "qas/0/integration/weights/"
-
-    set_vector(instrument, f"{node}{channel_index}/real", np.array(weights_i))
-    set_vector(instrument, f"{node}{channel_index}/imag", np.array(weights_q))
+    return waveform_table
 
 
 def get_readout_channel_bitmask(readout_channels_count: int) -> str:
@@ -313,7 +284,7 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
 
     Returns
     -------
-    str
+    :
         The channel bitmask.
     """
     assert readout_channels_count <= 10
@@ -325,3 +296,27 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
     bitmask = format(mask, "b").zfill(10)
 
     return f"0b{bitmask}"
+
+
+def get_clock_rates(base_clock: float) -> Dict[int, int]:
+    """
+    Returns the allowed clock rate values.
+    See zhinst User manuals, section /DEV..../AWGS/n/TIME
+
+    Parameters
+    ----------
+    base_clock :
+        The Instruments base clock rate.
+    Returns
+    -------
+    Dict[int, int]
+        The node and clock rate values.
+    """
+    return dict(
+        map(
+            lambda i: (i, int(base_clock))
+            if i == 0
+            else (i, int(base_clock / pow(2, i))),
+            range(14),
+        )
+    )
