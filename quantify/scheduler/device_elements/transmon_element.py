@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import ManualParameter
-from qcodes.utils.validators import Enum
+from qcodes.utils import validators as val
 
 
 class TransmonElement(Instrument):
@@ -29,23 +29,35 @@ class TransmonElement(Instrument):
             initial_value=200e-6,
             unit="s",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
             "mw_amp180",
             label=r"$\pi-pulse amplitude$",
             unit="V",
             parameter_class=ManualParameter,
+            vals=val.Numbers(),
         )
         self.add_parameter(
-            "mw_motzoi", initial_value=0, unit="", parameter_class=ManualParameter
+            "mw_motzoi",
+            initial_value=0,
+            unit="",
+            parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "mw_pulse_duration",
             initial_value=20e-9,
             unit="s",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
-        self.add_parameter("mw_ef_amp180", unit="V", parameter_class=ManualParameter)
+        self.add_parameter(
+            "mw_ef_amp180",
+            unit="V",
+            parameter_class=ManualParameter,
+            vals=val.Numbers(),
+        )
 
         self.add_parameter(
             "mw_port", initial_value=f"{self.name}:mw", parameter_class=ManualParameter
@@ -80,12 +92,14 @@ class TransmonElement(Instrument):
             label="Qubit frequency",
             unit="Hz",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
             "freq_12",
             label="Frequency of the 12 transition",
             unit="Hz",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
 
         self.add_parameter(
@@ -93,18 +107,24 @@ class TransmonElement(Instrument):
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
-            "ro_pulse_amp", initial_value=0.5, unit="V", parameter_class=ManualParameter
+            "ro_pulse_amp",
+            initial_value=0.5,
+            unit="V",
+            parameter_class=ManualParameter,
+            vals=val.Numbers(),
         )
         self.add_parameter(
             "ro_pulse_duration",
             initial_value=300e-9,
             unit="s",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
 
-        pulse_types = Enum("square")
+        pulse_types = val.Enum("square")
         self.add_parameter(
             "ro_pulse_type",
             initial_value="square",
@@ -118,10 +138,15 @@ class TransmonElement(Instrument):
             initial_value=300e-9,
             unit="s",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
 
         self.add_parameter(
-            "ro_acq_delay", initial_value=0, unit="s", parameter_class=ManualParameter
+            "ro_acq_delay",
+            initial_value=0,
+            unit="s",
+            parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
             "ro_acq_integration_time",
@@ -134,18 +159,21 @@ class TransmonElement(Instrument):
             initial_value=8e-6,
             unit="s",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
             "spec_pulse_frequency",
             initial_value=4.715e9,
             unit="Hz",
             parameter_class=ManualParameter,
+            vals=val.Numbers(min_value=0),
         )
         self.add_parameter(
             "spec_pulse_amp",
             initial_value=0.5,
             unit="V",
             parameter_class=ManualParameter,
+            vals=val.Numbers(),
         )
         self.add_parameter(
             "spec_pulse_clock",
