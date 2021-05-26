@@ -12,15 +12,27 @@ class TransmonElement(Instrument):
     readout resonator.
 
     This object can be used to generate configuration files compatible with the
-    :func:`quantify.scheduler.compilation.add_pulse_information_transmon` function.
+    :func:`~quantify.scheduler.compilation.add_pulse_information_transmon` function.
     """
 
-    def __init__(self, name, **kw):
+    def __init__(self, name: str, **kwargs):
         """
         Initializes the parent class and adds
+        :class:`~qcodes.instrument.parameter.Parameter` s /
         :class:`~qcodes.instrument.parameter.ManualParameter` s to it.
+
+        The list of all parameters and their latest (cached) value can be listed as
+        follows:
+
+        .. jupyter-execute::
+
+            from quantify.scheduler.device_elements import transmon_element
+            q0 = transmon_element.TransmonElement("q0")
+
+            q0.print_readable_snapshot()
+
         """
-        super().__init__(name, **kw)
+        super().__init__(name, **kwargs)
         self._add_device_parameters()
 
     def _add_device_parameters(self):
@@ -197,7 +209,7 @@ class TransmonElement(Instrument):
             set_cmd=False,
         )
 
-        acquisition_validator = val.Enum("SSBIntegrationComplex")
+        acquisition_validator = val.Enum("SSBIntegrationComplex", "Trace")
         self.add_parameter(
             "acquisition",
             initial_value="SSBIntegrationComplex",
