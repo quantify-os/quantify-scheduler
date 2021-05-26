@@ -235,7 +235,7 @@ class TransmonElement(Instrument):
             vals=device_cfg_backend_validator,
         )
 
-    def generate_qubit_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
+    def generate_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
         """
         Generates part of the device configuration specific to a single qubit.
 
@@ -284,7 +284,7 @@ class TransmonElement(Instrument):
         """
         dev_cfg = {
             "backend": self.device_cfg_backend(),
-            "qubits": self.generate_qubit_config(),
+            "qubits": self.generate_config(),
             "edges": {},
         }
         return dev_cfg

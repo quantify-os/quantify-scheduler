@@ -21,13 +21,13 @@ def test_qubit_name(q_0: TransmonElement):
     assert q_0.name == "q0"
 
 
-def test_generate_qubit_config(q_0: TransmonElement):
+def test_generate_config(q_0: TransmonElement):
 
     # set some values
     q_0.ro_pulse_type("square")
     q_0.ro_pulse_duration(400e-9)
 
-    q_cfg = q_0.generate_qubit_config()
+    q_cfg = q_0.generate_config()
 
     # assert values in right place in config.
     assert q_cfg["q0"]["resources"]["port_mw"] == "q0:mw"
