@@ -228,7 +228,9 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "device_cfg_backend",
-            initial_value="quantify.scheduler.compilation.add_pulse_information_transmon",
+            initial_value=(
+                "quantify.scheduler.compilation.add_pulse_information_transmon"
+            ),
             parameter_class=ManualParameter,
             vals=device_cfg_backend_validator,
         )
