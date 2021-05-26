@@ -3,7 +3,7 @@
 from typing import Dict, Any
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import ManualParameter, Parameter
-from qcodes.utils import validators as val
+from qcodes.utils import validators
 
 
 class TransmonElement(Instrument):
@@ -41,34 +41,34 @@ class TransmonElement(Instrument):
             initial_value=200e-6,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "mw_amp180",
             label=r"$\pi-pulse amplitude$",
             unit="V",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=-10, max_value=10),
+            vals=validators.Numbers(min_value=-10, max_value=10),
         )
         self.add_parameter(
             "mw_motzoi",
             initial_value=0,
             unit="",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "mw_pulse_duration",
             initial_value=20e-9,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "mw_ef_amp180",
             unit="V",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=-10, max_value=10),
+            vals=validators.Numbers(min_value=-10, max_value=10),
         )
 
         self.add_parameter(
@@ -118,14 +118,14 @@ class TransmonElement(Instrument):
             label="Qubit frequency",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1e12),
+            vals=validators.Numbers(min_value=0, max_value=1e12),
         )
         self.add_parameter(
             "freq_12",
             label="Frequency of the 12 transition",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1e12),
+            vals=validators.Numbers(min_value=0, max_value=1e12),
         )
 
         self.add_parameter(
@@ -133,24 +133,24 @@ class TransmonElement(Instrument):
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1e12),
+            vals=validators.Numbers(min_value=0, max_value=1e12),
         )
         self.add_parameter(
             "ro_pulse_amp",
             initial_value=0.5,
             unit="V",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=-10, max_value=10),
+            vals=validators.Numbers(min_value=-10, max_value=10),
         )
         self.add_parameter(
             "ro_pulse_duration",
             initial_value=300e-9,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
 
-        pulse_types = val.Enum("square")
+        pulse_types = validators.Enum("square")
         self.add_parameter(
             "ro_pulse_type",
             initial_value="square",
@@ -164,7 +164,7 @@ class TransmonElement(Instrument):
             initial_value=300e-9,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
 
         self.add_parameter(
@@ -172,35 +172,35 @@ class TransmonElement(Instrument):
             initial_value=0,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "ro_acq_integration_time",
             initial_value=1e-6,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "spec_pulse_duration",
             initial_value=8e-6,
             unit="s",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         self.add_parameter(
             "spec_pulse_frequency",
             initial_value=4.715e9,
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1e12),
+            vals=validators.Numbers(min_value=0, max_value=1e12),
         )
         self.add_parameter(
             "spec_pulse_amp",
             initial_value=0.5,
             unit="V",
             parameter_class=ManualParameter,
-            vals=val.Numbers(min_value=0, max_value=1e12),
+            vals=validators.Numbers(min_value=0, max_value=1e12),
         )
         self.add_parameter(
             "spec_pulse_clock",
@@ -209,19 +209,28 @@ class TransmonElement(Instrument):
             set_cmd=False,
         )
 
-        acquisition_validator = val.Enum("SSBIntegrationComplex", "Trace")
+        acquisition_validator = validators.Enum("SSBIntegrationComplex", "Trace")
         self.add_parameter(
             "acquisition",
             initial_value="SSBIntegrationComplex",
             parameter_class=ManualParameter,
             vals=acquisition_validator,
         )
-        ro_acq_weight_type_validator = val.Enum("SSB")
+        ro_acq_weight_type_validator = validators.Enum("SSB")
         self.add_parameter(
             "ro_acq_weight_type",
             initial_value="SSB",
             parameter_class=ManualParameter,
             vals=ro_acq_weight_type_validator,
+        )
+        device_cfg_backend_validator = validators.Enum(
+            "quantify.scheduler.compilation.add_pulse_information_transmon"
+        )
+        self.add_parameter(
+            "device_cfg_backend",
+            initial_value="quantify.scheduler.compilation.add_pulse_information_transmon",
+            parameter_class=ManualParameter,
+            vals=device_cfg_backend_validator,
         )
 
     def generate_qubit_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
@@ -272,7 +281,7 @@ class TransmonElement(Instrument):
             This config is only valid for single qubit experiments.
         """
         dev_cfg = {
-            "backend": "quantify.scheduler.compilation.add_pulse_information_transmon",
+            "backend": self.device_cfg_backend(),
             "qubits": self.generate_qubit_config(),
             "edges": {},
         }
