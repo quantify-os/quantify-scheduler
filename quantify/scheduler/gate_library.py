@@ -2,17 +2,16 @@
 # Licensed according to the LICENCE file on the master branch
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify.scheduler."""
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
-
 from .types import Operation
 
 
 # pylint: disable=too-many-ancestors
 class Rxy(Operation):
     # pylint: disable=line-too-long
-    """
+    r"""
     A single qubit rotation around an axis in the equator of the Bloch sphere.
 
 
@@ -26,59 +25,72 @@ class Rxy(Operation):
 
     """
 
-    def __init__(self, theta: float, phi: float, qubit: str):
+    def __init__(
+        self, theta: float, phi: float, qubit: str, data: Optional[dict] = None
+    ):
         """
         A single qubit rotation around an axis in the equator of the Bloch sphere.
 
         Parameters
         ----------
-        theta : float
+        theta :
             rotation angle in degrees
-        phi : float
+        phi :
             phase of the rotation axis
-        qubit : str
+        qubit :
             the target qubit
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        name = "Rxy({:.2f}, {:.2f}) {}".format(theta, phi, qubit)
-        self.qubit = qubit
-        self._theta = theta
-        self._phi = phi
+        if not isinstance(theta, float):
+            theta = float(theta)
+        if not isinstance(phi, float):
+            phi = float(phi)
 
-        theta_r = np.deg2rad(theta)
-        phi_r = np.deg2rad(phi)
+        if data is None:
+            tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
+            plot_func = "quantify.scheduler.visualization.circuit_diagram.gate_box"
+            theta_r = np.deg2rad(theta)
+            phi_r = np.deg2rad(phi)
 
-        # not all operations have a valid unitary description
-        # (e.g., measure and init)
-        unitary = np.array(
-            [
+            # not all operations have a valid unitary description
+            # (e.g., measure and init)
+            unitary = np.array(
                 [
-                    np.cos(theta_r / 2),
-                    -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
-                ],
-                [
-                    -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
-                    np.cos(theta_r / 2),
-                ],
-            ]
-        )
+                    [
+                        np.cos(theta_r / 2),
+                        -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
+                    ],
+                    [
+                        -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
+                        np.cos(theta_r / 2),
+                    ],
+                ]
+            )
 
-        tex = r"$R_{xy}^{" + "{:.0f}, {:.0f}".format(theta, phi) + "}$"
-        data = {
-            "name": name,
-            "gate_info": {
-                "unitary": unitary,
-                "tex": tex,
-                "plot_func": "quantify.scheduler.visualization.circuit_diagram.gate_box",
-                "qubits": [qubit],
-                "operation_type": "Rxy",
-                "theta": theta,
-                "phi": phi,
-            },
-        }
-        super().__init__(name, data=data)
+            data = {
+                "name": f"Rxy({theta:.2f}, {phi:.2f}, '{qubit}')",
+                "gate_info": {
+                    "unitary": unitary,
+                    "tex": tex,
+                    "plot_func": plot_func,
+                    "qubits": [qubit],
+                    "operation_type": "Rxy",
+                    "theta": theta,
+                    "phi": phi,
+                },
+            }
 
-    def __repr__(self):
-        return f'Rxy({self._theta}, {self._phi}, "{self.qubit}")'
+        super().__init__(data["name"], data=data)
+
+    def __str__(self) -> str:
+        gate_info = self.data["gate_info"]
+        theta = gate_info["theta"]
+        phi = gate_info["phi"]
+        qubit = gate_info["qubits"][0]
+        return f"{self.__class__.__name__}(theta={theta}, phi={phi}, qubit='{qubit}')"
 
 
 class X(Rxy):
@@ -96,20 +108,24 @@ class X(Rxy):
 
     """
 
-    def __init__(self, qubit: str):
+    def __init__(self, qubit: str, data: Optional[dict] = None):
         """
         Parameters
         ----------
-        qubit : str
+        qubit :
             the target qubit
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        super().__init__(theta=180, phi=0, qubit=qubit)
-        self.qubit = qubit
+        super().__init__(theta=180, phi=0, qubit=qubit, data=data)
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}("{self.qubit}")'
+    def __str__(self) -> str:
+        qubit = self.data["gate_info"]["qubits"][0]
+        return f"{self.__class__.__name__}(qubit='{qubit}')"
 
 
 class X90(Rxy):
@@ -117,20 +133,27 @@ class X90(Rxy):
     A single qubit rotation of 90 degrees around the X-axis.
     """
 
-    def __init__(self, qubit: str):
+    def __init__(self, qubit: str, data: Optional[dict] = None):
         """
+        Create a new instance of X90.
+
         Parameters
         ----------
-        qubit : str
-            the target qubit
+        qubit :
+            The target qubit.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        super().__init__(theta=90, phi=0, qubit=qubit)
+        super().__init__(theta=90.0, phi=0.0, qubit=qubit, data=data)
         self.qubit = qubit
         self.data["name"] = f"X_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi/2}$"
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}("{self.qubit}")'
+    def __str__(self) -> str:
+        qubit = self.data["gate_info"]["qubits"][0]
+        return f"{self.__class__.__name__}(qubit='{qubit}')"
 
 
 class Y(Rxy):
@@ -146,19 +169,29 @@ class Y(Rxy):
 
     """
 
-    def __init__(self, qubit: str):
+    def __init__(self, qubit: str, data: Optional[dict] = None):
         """
+        Create a new instance of Y.
+
+        The Y gate corresponds to a rotation of 180 degrees around the y-axis in the
+        single-qubit Bloch sphere.
+
         Parameters
         ----------
-        qubit : str
-            the target qubit
+        qubit :
+            The target qubit.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        super().__init__(theta=180, phi=90, qubit=qubit)
+        super().__init__(theta=180.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}("{self.qubit}")'
+    def __str__(self) -> str:
+        qubit = self.data["gate_info"]["qubits"][0]
+        return f"{self.__class__.__name__}(qubit='{qubit}')"
 
 
 class Y90(Rxy):
@@ -166,23 +199,42 @@ class Y90(Rxy):
     A single qubit rotation of 90 degrees around the Y-axis.
     """
 
-    def __init__(self, qubit: str):
+    def __init__(self, qubit: str, data: Optional[dict] = None):
         """
+        Create a new instance of Y90.
+
+        The Y gate corresponds to a rotation of 90 degrees around the y-axis in the
+        single-qubit Bloch sphere.
+
         Parameters
         ----------
-        qubit : str
-            the target qubit
+        qubit :
+            The target qubit.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        super().__init__(theta=90, phi=90, qubit=qubit)
+        super().__init__(theta=90.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}("{self.qubit}")'
+    def __str__(self) -> str:
+        """
+        Returns a concise string represenation
+        which can be evaluated into a new instance
+        using `eval(str(operation))` only when the
+        data dictionary has not been modified.
+
+        This representation is guaranteed to be
+        unique.
+        """
+        qubit = self.data["gate_info"]["qubits"][0]
+        return f"{self.__class__.__name__}(qubit='{qubit}')"
 
 
 class CNOT(Operation):
-    """
+    r"""
     Conditional-NOT gate, a common entangling gate.
 
     Performs an X gate on the target qubit qT conditional on the state
@@ -200,25 +252,45 @@ class CNOT(Operation):
 
     """
 
-    def __init__(self, qC: str, qT: str):
-        self.qC = qC
-        self.qT = qT
+    def __init__(self, qC: str, qT: str, data: Optional[dict] = None):
+        """
+        Create a new instance of the two-qubit CNOT or Controlled-NOT gate.
 
-        data = {
-            "gate_info": {
-                "unitary": np.array(
-                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
-                ),
-                "tex": r"CNOT",
-                "plot_func": "quantify.scheduler.visualization.circuit_diagram.cnot",
-                "qubits": [qC, qT],
-                "operation_type": "CNOT",
+        The CNOT gate performs an X gate on the target qubit(qT) conditional on the
+        state of the control qubit(qC).
+
+        Parameters
+        ----------
+        qC :
+            The control qubit.
+        qT :
+            The target qubit
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            plot_func = "quantify.scheduler.visualization.circuit_diagram.cnot"
+            data = {
+                "name": f"CNOT ({qC}, {qT})",
+                "gate_info": {
+                    "unitary": np.array(
+                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
+                    ),
+                    "tex": r"CNOT",
+                    "plot_func": plot_func,
+                    "qubits": [qC, qT],
+                    "operation_type": "CNOT",
+                },
             }
-        }
-        super().__init__(f"CNOT ({qC}, {qT})", data=data)
+        super().__init__(data["name"], data=data)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}("{self.qC}", "{self.qT}")'
+    def __str__(self) -> str:
+        gate_info = self.data["gate_info"]
+        qC = gate_info["qubits"][0]
+        qT = gate_info["qubits"][1]
+        return f"{self.__class__.__name__}(qC='{qC}',qT='{qT}')"
 
 
 class CZ(Operation):
@@ -240,52 +312,91 @@ class CZ(Operation):
 
     """
 
-    def __init__(self, qC: str, qT: str):
-        self.qC = qC
-        self.qT = qT
+    def __init__(self, qC: str, qT: str, data: Optional[dict] = None):
+        """
+        Create a new instance of the two-qubit CZ or conditional-phase gate.
 
-        data = {
-            "gate_info": {
-                "unitary": np.array(
-                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-                ),
-                "tex": r"CZ",
-                "plot_func": "quantify.scheduler.visualization.circuit_diagram.cz",
-                "qubits": [qC, qT],
-                "operation_type": "CZ",
+        The CZ gate performs an Z gate on the target qubit(qT) conditional on the
+        state of the control qubit(qC).
+
+        Parameters
+        ----------
+        qC :
+            The control qubit.
+        qT :
+            The target qubit
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            plot_func = "quantify.scheduler.visualization.circuit_diagram.cz"
+            data = {
+                "name": f"CZ ({qC}, {qT})",
+                "gate_info": {
+                    "unitary": np.array(
+                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
+                    ),
+                    "tex": r"CZ",
+                    "plot_func": plot_func,
+                    "qubits": [qC, qT],
+                    "operation_type": "CZ",
+                },
             }
-        }
-        super().__init__(f"CZ ({qC}, {qT})", data=data)
+        super().__init__(data["name"], data=data)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}("{self.qC}", "{self.qT}")'
+    def __str__(self) -> str:
+        gate_info = self.data["gate_info"]
+        qC = gate_info["qubits"][0]
+        qT = gate_info["qubits"][1]
+
+        return f"{self.__class__.__name__}(qC='{qC}',qT='{qT}')"
 
 
 class Reset(Operation):
     """
     Reset a qubit to the :math:`|0\\rangle` state.
 
+    The Reset gate is an idle operation that is used to initialize a qubit.
+
     .. note::
-        strictly speaking this is not a gate as it can not
+
+        Strictly speaking this is not a gate as it can not
         be described by a unitary.
 
     """
 
-    def __init__(self, *qubits: str):
-        self._qubits = qubits
-        data = {
-            "gate_info": {
-                "unitary": None,
-                "tex": r"$|0\rangle$",
-                "plot_func": "quantify.scheduler.visualization.circuit_diagram.reset",
-                "qubits": list(qubits),
-                "operation_type": "reset",
-            }
-        }
-        super().__init__(f"Reset {qubits}", data=data)
+    def __init__(self, *qubits: str, data: Optional[dict] = None):
+        """
+        Create a new instance of Reset operation that is used to initialize a qubit.
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}(*{self._qubits})"
+        Parameters
+        ----------
+        qubits :
+            The qubits to reset.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            plot_func = "quantify.scheduler.visualization.circuit_diagram.reset"
+            data = {
+                "name": f"Reset {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "tex": r"$|0\rangle$",
+                    "plot_func": plot_func,
+                    "qubits": list(qubits),
+                    "operation_type": "reset",
+                },
+            }
+        super().__init__(data["name"], data=data)
+
+    def __str__(self) -> str:
+        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
+        return f'{self.__class__.__name__}(*{",".join(qubits)})'
 
 
 class Measure(Operation):
@@ -293,8 +404,10 @@ class Measure(Operation):
     A projective measurement in the Z-basis.
 
     .. note::
-        strictly speaking this is not a gate as it can not
+
+        Strictly speaking this is not a gate as it can not
         be described by a unitary.
+
     """
 
     def __init__(
@@ -302,24 +415,27 @@ class Measure(Operation):
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
+        data: Optional[dict] = None,
     ):
         """
         Gate level description for a measurement.
 
-        The measurement is compiled according to what is specified in the config.
+        The measurement is compiled according to the type of acquisition specified
+        in the device configuration.
 
         Parameters
         ----------
-        qubits
+        qubits :
             The qubits you want to measure
-        acq_channel
+        acq_channel :
             Acquisition channel on which the measurement is performed
-        acq_index
+        acq_index :
             Index of the register where the measurement is stored.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        self._qubits = qubits
-        self._acq_channel = acq_channel
-        self._acq_index = acq_index
 
         if isinstance(acq_index, int):
             acq_index = (acq_index,)
@@ -331,21 +447,27 @@ class Measure(Operation):
         elif acq_channel is None:
             acq_channel = tuple(i for i in range(len(qubits)))
 
-        data = {
-            "gate_info": {
-                "unitary": None,
-                "plot_func": "quantify.scheduler.visualization.circuit_diagram.meter",
-                "tex": r"$\langle0|$",
-                "qubits": list(qubits),
-                "acq_channel": acq_channel,
-                "acq_index": acq_index,
-                "operation_type": "measure",
+        if data is None:
+            plot_func = "quantify.scheduler.visualization.circuit_diagram.meter"
+            data = {
+                "name": f"Measure {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": plot_func,
+                    "tex": r"$\langle0|$",
+                    "qubits": list(qubits),
+                    "acq_channel": acq_channel,
+                    "acq_index": acq_index,
+                    "operation_type": "measure",
+                },
             }
-        }
-        super().__init__(f"Measure {qubits}", data=data)
+        super().__init__(data["name"], data=data)
 
-    def __repr__(self):
+    def __str__(self) -> str:
+        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
+        acq_channel = self.data["gate_info"]["acq_channel"]
+        acq_index = self.data["gate_info"]["acq_index"]
         return (
-            f"{self.__class__.__name__}(*{self._qubits}, "
-            f"acq_channel={self._acq_channel}, acq_index={self._acq_index})"
+            f'{self.__class__.__name__}(*{",".join(qubits)},'
+            + f"acq_channel={acq_channel},acq_index={acq_index})"
         )
