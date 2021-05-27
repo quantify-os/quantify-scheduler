@@ -2,37 +2,61 @@
 # Licensed according to the LICENCE file on the master branch
 """Standard pulses for use with the quantify.scheduler."""
 from __future__ import annotations
+
+from typing import Optional
 from qcodes import validators
 from quantify.scheduler.types import Operation
 from quantify.scheduler.resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
-    def __init__(self, duration):
+    """
+    The IdlePulse Operation is a placeholder for a specified duration of time.
+    """
+
+    def __init__(self, duration: float, data: Optional[dict] = None):
         """
-        An idle pulse performing no actions for a certain duration.
+        Create a new instance of IdlePulse.
+
+        The IdlePulse Operation is a placeholder for a specified duration
+        of time.
 
         Parameters
         ------------
-        duration : float
-            Duration of the idling in seconds.
+        duration :
+            The duration of idle time in seconds.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        data = {
-            "name": "Idle",
-            "pulse_info": [
-                {
-                    "wf_func": None,
-                    "t0": 0,
-                    "duration": duration,
-                    "clock": BasebandClockResource.IDENTITY,
-                    "port": None,
-                }
-            ],
-        }
+
+        if data is None:
+            data = {
+                "name": "Idle",
+                "pulse_info": [
+                    {
+                        "wf_func": None,
+                        "t0": 0,
+                        "duration": duration,
+                        "clock": BasebandClockResource.IDENTITY,
+                        "port": None,
+                    }
+                ],
+            }
         super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
 
 
 class RampPulse(Operation):
+    """
+    The RampPulse Operation is a real-valued pulse that ramps from zero
+    to the specified amplitude during the duration of the pulse.
+    """
+
     def __init__(
         self,
         amp: float,
@@ -40,42 +64,61 @@ class RampPulse(Operation):
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
         t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
-        A real valued ramp pulse.
+        Create a new instance of RampPulse.
+
+        The RampPulse Operation is a real-valued pulse that ramps from zero
+        to the specified amplitude during the duration of the pulse.
 
         Parameters
         ------------
-        amp : float
+        amp :
             Final amplitude of the ramp envelope function.
-        duration : float
-            Duration of the pulse in seconds.
-        port : str
+        duration :
+            The pulse duration in seconds.
+        port :
             Port of the pulse.
-        clock : str
-            Clock used to modulate the pulse, by default a BasebandClock is used.
-        t0 : float
-            Time in seconds when to start the pulses relative to the start time
+        clock :
+            Clock used to modulate the pulse, by default a
+            BasebandClock is used.
+        t0 :
+            Time in seconds when to start the pulses relative
+            to the start time
             of the Operation in the Schedule.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-
-        data = {
-            "name": "RampPulse",
-            "pulse_info": [
-                {
-                    "wf_func": "quantify.scheduler.waveforms.ramp",
-                    "amp": amp,
-                    "duration": duration,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                }
-            ],
-        }
+        if data is None:
+            data = {
+                "name": "RampPulse",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify.scheduler.waveforms.ramp",
+                        "amp": amp,
+                        "duration": duration,
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                    }
+                ],
+            }
         super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
 
 
 class SquarePulse(Operation):
+    """
+    The SquarePulse Operation is a real-valued pulse with the specified
+    amplitude during the pulse.
+    """
+
     def __init__(
         self,
         amp: float,
@@ -84,45 +127,60 @@ class SquarePulse(Operation):
         clock: str,
         phase: float = 0,
         t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
-        A real valued square pulse.
+        Create a new instance of SquarePulse.
+
+        The SquarePulse Operation is a real-valued pulse with the specified
+        amplitude during the pulse.
 
         Parameters
         ------------
-        amp : float
+        amp :
             Amplitude of the envelope.
-        duration : float
-            Duration of the pulse in seconds.
-        port : str
+        duration :
+            The pulse duration in seconds.
+        port :
             Port of the pulse, must be capable of playing a complex waveform.
-        clock : str
+        clock :
             Clock used to modulate the pulse.
-        phase : float
+        phase :
             Phase of the pulse in degrees.
-        t0 : float
+        t0 :
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to the waveform separate from the clock.
+            # FIXME: need to be able to add phases to
+            # the waveform separate from the clock.
             raise NotImplementedError
 
-        data = {
-            "name": "ModSquarePulse",
-            "pulse_info": [
-                {
-                    "wf_func": "quantify.scheduler.waveforms.square",
-                    "amp": amp,
-                    "duration": duration,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                }
-            ],
-        }
+        if data is None:
+            data = {
+                "name": "ModSquarePulse",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify.scheduler.waveforms.square",
+                        "amp": amp,
+                        "duration": duration,
+                        "phase": phase,
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                    }
+                ],
+            }
         super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
 
 
 def decompose_long_square_pulse(
@@ -173,49 +231,74 @@ def decompose_long_square_pulse(
 
 
 class SoftSquarePulse(Operation):
+    """
+    The SoftSquarePulse Operation is a real valued square pulse convolved with
+    a Hann window for smoothing.
+    """
+
     def __init__(
-        self, amp: float, duration: float, port: str, clock: str, t0: float = 0
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str,
+        t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
-        A real valued square pulse convolved with a hann window in order to smoothen it.
+        Create a new instance of SoftSquarePulse.
+
+        The SoftSquarePulse Operation is a real valued square pulse convolved with
+        a Hann window for smoothing.
 
         Parameters
         ------------
-        amp : float
+        amp :
             Amplitude of the envelope.
-        duration : float
-            Duration of the pulse in seconds.
-        port : str
+        duration :
+            The pulse duration in seconds.
+        port :
             Port of the pulse, must be capable of playing a complex waveform.
-        clock : str
+        clock :
             Clock used to modulate the pulse.
-        t0 : float
+        t0 :
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-        data = {
-            "name": "SoftSquarePulse",
-            "pulse_info": [
-                {
-                    "wf_func": "quantify.scheduler.waveforms.soft_square",
-                    "amp": amp,
-                    "duration": duration,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                }
-            ],
-        }
+        if data is None:
+            data = {
+                "name": "SoftSquarePulse",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify.scheduler.waveforms.soft_square",
+                        "amp": amp,
+                        "duration": duration,
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                    }
+                ],
+            }
         super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
 
 
 class DRAGPulse(Operation):
-    """
+    # pylint: disable=line-too-long
+    r"""
     DRAG pulse intended for single qubit gates in transmon based systems.
 
-    A DRAG pulse is a gaussian pulse with a derivative component added to the out-of-phase channel to
-    reduce unwanted excitations of the :math:`|1\\rangle - |2\\rangle` transition.
-
+    A DRAG pulse is a gaussian pulse with a
+    derivative component added to the out-of-phase
+    channel to reduce unwanted excitations of
+    the :math:`|1\\rangle - |2\\rangle` transition.
 
     The waveform is generated using :func:`.waveforms.drag` .
 
@@ -235,6 +318,7 @@ class DRAGPulse(Operation):
         .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
            Phys. Rev. Lett. 103, 110501 (2009).*
     """
+    # pylint: enable=line-too-long
 
     def __init__(
         self,
@@ -245,42 +329,53 @@ class DRAGPulse(Operation):
         duration: float,
         port: str,
         t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
+        Create a new instance of DRAGPulse.
+
         Parameters
         ------------
-        G_amp : float
+        G_amp :
             Amplitude of the Gaussian envelope.
-        D_amp : float
+        D_amp :
             Amplitude of the derivative component, the DRAG-pulse parameter.
-        duration : float
-            Duration of the pulse in seconds.
-        phase : float
+        duration :
+            The pulse duration in seconds.
+        phase :
             Phase of the pulse in degrees.
-        clock : str
+        clock :
             Clock used to modulate the pulse.
-        port : str
+        port :
             Port of the pulse, must be capable of carrying a complex waveform.
-        t0 : float
+        t0 :
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        data :
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
 
-        data = {
-            "name": "DRAG",
-            "pulse_info": [
-                {
-                    "wf_func": "quantify.scheduler.waveforms.drag",
-                    "G_amp": G_amp,
-                    "D_amp": D_amp,
-                    "duration": duration,
-                    "phase": phase,
-                    "nr_sigma": 4,
-                    "clock": clock,
-                    "port": port,
-                    "t0": t0,
-                }
-            ],
-        }
-
+        if data is None:
+            data = {
+                "name": "DRAG",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify.scheduler.waveforms.drag",
+                        "G_amp": G_amp,
+                        "D_amp": D_amp,
+                        "duration": duration,
+                        "phase": phase,
+                        "nr_sigma": 4,
+                        "clock": clock,
+                        "port": port,
+                        "t0": t0,
+                    }
+                ],
+            }
         super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)

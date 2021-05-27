@@ -161,8 +161,10 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             for p in op["pulse_info"]:
                 if p["clock"] not in schedule.resources:
                     raise ValueError(
-                        "Operation '{}' contains an unknown clock '{}'; ensure this resource has been "
-                        "added to the schedule.".format(op.hash, p["clock"])
+                        "Operation '{}' contains an unknown clock '{}'; ensure "
+                        "this resource has been added to the schedule.".format(
+                            str(op), p["clock"]
+                        )
                     )
             continue
 
