@@ -359,3 +359,33 @@ Example Zurich Instruments hardware configuration file
   json_data = json.loads(path.read_text())
   print(json.dumps(json_data, indent=4, sort_keys=True))
 
+Device element
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A device element is a QCoDeS instrument which provides an abstract representation of a quantum device, and can be used to to generate a device
+configuration file. For example, the :class:`~quantify.scheduler.device_elements.transmon_element.TransmonElement` is a device element which 
+represents a single transmon qubit, and contains parameters necessary to implement single-transmon experiments. Using the 
+:func:`~quantify.scheduler.device_elements.transmon_element.TransmonElement.generate_device_config()` method, we are able to generate a 
+valid device configuration file for a single transmon. In addition to being used to generate device configurations, a device element is also 
+useful for storing paramaters during experiments, and can be supplied as an argument to a measurement function, for example, as a convenient 
+way of specifying all the relevant parameter settings for the experiment.
+
+Example transmon element and config file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Here we show a basic example of the initialisation of a transmon element and its use in generating a device configuration file.
+
+.. jupyter-execute::
+
+  import json
+  from quantify.scheduler.device_elements.transmon_element import TransmonElement
+
+  # Initialise transmon element
+  q0 = TransmonElement("q0")
+
+  # Set a transmon element paramater
+  q0.ro_freq(4.21e9)
+
+  # Generate device config file
+  config = q0.generate_device_config()
+  print(json.dumps(config, indent=4, sort_keys=True))
+
