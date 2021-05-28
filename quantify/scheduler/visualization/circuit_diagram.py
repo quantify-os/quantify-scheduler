@@ -237,6 +237,15 @@ def circuit_diagram_matplotlib(
                     qubit_map[key] += 1
                 qubit_map["other"] = 0
                 break
+        if op.valid_acquisition:
+            try:
+                for acq_info in op["acquisition_info"]:
+                    _locate_qubit_in_address(qubit_map, acq_info["port"])
+            except ValueError:
+                for key in qubit_map:
+                    qubit_map[key] += 1
+                qubit_map["other"] = 0
+                break
 
     if figsize is None:
         figsize = (10, len(qubit_map))
@@ -282,6 +291,20 @@ def circuit_diagram_matplotlib(
                     pulse_baseband(ax, time=time, qubit_idxs=idxs, text=op.name)
                 else:
                     pulse_modulated(ax, time=time, qubit_idxs=idxs, text=op.name)
+        elif op.valid_acquisition:
+            idxs: List[int]
+            try:
+                idxs = [
+                    qubit_map[_locate_qubit_in_address(qubit_map, acq_info["port"])]
+                    for acq_info in op["acquisition_info"]
+                ]
+            except ValueError:
+                # The pulse port was not found in the qubit_map
+                # move this pulse to the 'other' timeline
+                idxs = [0]
+
+            for acq_info in op["acquisition_info"]:
+                meter(ax, time=time, qubit_idxs=idxs, text=op.name)
         else:
             raise ValueError("Unknown operation")
 

@@ -2,6 +2,14 @@
 Changelog
 ===========
 
+Unreleased
+----------
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Added acquisitions to circuit diagram (!93)
+
 
 0.3.0 Multiple backends support (2021-05-20)
 ------------------------------------------------
