@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Standard pulses for use with the quantify.scheduler."""
+# pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
 from typing import Optional
@@ -217,7 +218,7 @@ class SquarePulse(Operation):
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to
+            # FIXME: need to be able to add phases to # pylint: disable=fixme
             # the waveform separate from the clock.
             raise NotImplementedError
 
@@ -352,7 +353,7 @@ class SoftSquarePulse(Operation):
 
 class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
     """
-    A linear chirp signal. A sinusoid that ramps up in frequency.
+    A linear chirp signal. A sinusoidal signal that ramps up in frequency.
     """
 
     def __init__(
@@ -384,7 +385,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         end_freq
             End frequency of the Chirp.
         t0
-            Shift of the start time wrt the start of the operation
+            Shift of the start time with respect to the start of the operation.
         """
         data = {
             "name": "ChirpPulse",
@@ -409,7 +410,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
 
 
 class DRAGPulse(Operation):
-    # pylint: disable=line-too-long
+    # pylint: disable=line-too-long, too-many-ancestors
     r"""
     DRAG pulse intended for single qubit gates in transmon based systems.
 
@@ -435,8 +436,7 @@ class DRAGPulse(Operation):
 
         .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
            Phys. Rev. Lett. 103, 110501 (2009).*
-    """
-    # pylint: enable=line-too-long
+    """  # pylint: enable=line-too-long
 
     def __init__(
         self,
