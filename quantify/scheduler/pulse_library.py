@@ -113,7 +113,7 @@ class RampPulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class StaircasePulse(Operation):
+class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
     def __init__(
         self,
         start_amp: float,
@@ -343,7 +343,7 @@ class SoftSquarePulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class ChirpPulse(Operation):
+class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
     def __init__(
         self,
         amp: float,
