@@ -22,7 +22,7 @@ def test_square_wave():
     npt.assert_array_equal(amped_sq_iq.imag, np.linspace(0, 0, 20))
 
 
-def test_stepped_ramp():
+def test_staircase():
     t = np.linspace(0, 1e-6, 20)
     sig = staircase(t, -1, 2, 4)
     answer = np.array(
