@@ -181,11 +181,8 @@ class PulsarSequencerBase(ABC):
         portclock:
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
-        modulation_freq:
-            The frequency used for modulation. This can either be passed in the
-            constructor, or assigned in a later stage using `assign_frequency`.
         seq_settings:
-            Sequencer settings dictionary
+            Sequencer settings dictionary.
         """
         self.parent = parent
         self._name = name
