@@ -203,6 +203,9 @@ def _generate_waveform_dict(
 
         complex_waveforms = {12345: np.array([1, 2])}
         _generate_waveform_dict(complex_waveforms)
+
+        # {'12345_I': {'data': [1, 2], 'index': 0},
+        # '12345_Q': {'data': [0, 0], 'index': 1}}
     """
     wf_dict = dict()
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
