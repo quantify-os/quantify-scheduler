@@ -48,6 +48,7 @@ def staircase(
 
     Returns
     -------
+    :
         The real valued waveform
     """
     amp_step = (final_amp - start_amp) / (num_steps - 1)
@@ -98,8 +99,10 @@ def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.n
         waveform is calculated, this may differ from the clock frequency.
     end_freq
         End frequency of the Chirp.
+
     Returns
     -------
+    :
         The complex waveform
     """
     chirp_rate = (end_freq - start_freq) / (t[-1] - t[0])
