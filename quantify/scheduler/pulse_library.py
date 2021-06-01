@@ -22,10 +22,10 @@ class IdlePulse(Operation):
         of time.
 
         Parameters
-        ------------
-        duration :
+        ----------
+        duration
             The duration of idle time in seconds.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -73,21 +73,21 @@ class RampPulse(Operation):
         to the specified amplitude during the duration of the pulse.
 
         Parameters
-        ------------
-        amp :
+        ----------
+        amp
             Final amplitude of the ramp envelope function.
-        duration :
+        duration
             The pulse duration in seconds.
-        port :
+        port
             Port of the pulse.
-        clock :
+        clock
             Clock used to modulate the pulse, by default a
             BasebandClock is used.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative
             to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -133,20 +133,20 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         Constructor for a staircase.
 
         Parameters
-        ------------
-        start_amp : float
+        ----------
+        start_amp
             Starting amplitude of the staircase envelope function.
-        final_amp : float
+        final_amp
             Final amplitude of the staircase envelope function.
-        num_steps: int
+        num_steps
             The number of plateaus
-        duration : float
+        duration
             Duration of the pulse in seconds.
-        port : str
+        port
             Port of the pulse.
-        clock : str
+        clock
             Clock used to modulate the pulse, by default a BasebandClock is used.
-        t0 : float
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         """
@@ -196,21 +196,21 @@ class SquarePulse(Operation):
         amplitude during the pulse.
 
         Parameters
-        ------------
-        amp :
+        ----------
+        amp
             Amplitude of the envelope.
-        duration :
+        duration
             The pulse duration in seconds.
-        port :
+        port
             Port of the pulse, must be capable of playing a complex waveform.
-        clock :
+        clock
             Clock used to modulate the pulse.
-        phase :
+        phase
             Phase of the pulse in degrees.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -312,19 +312,19 @@ class SoftSquarePulse(Operation):
         a Hann window for smoothing.
 
         Parameters
-        ------------
-        amp :
+        ----------
+        amp
             Amplitude of the envelope.
-        duration :
+        duration
             The pulse duration in seconds.
-        port :
+        port
             Port of the pulse, must be capable of playing a complex waveform.
-        clock :
+        clock
             Clock used to modulate the pulse.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -412,7 +412,7 @@ class DRAGPulse(Operation):
     A DRAG pulse is a gaussian pulse with a
     derivative component added to the out-of-phase
     channel to reduce unwanted excitations of
-    the :math:`|1\\rangle - |2\\rangle` transition.
+    the :math:`|1\rangle - |2\rangle` transition.
 
     The waveform is generated using :func:`.waveforms.drag` .
 
@@ -449,23 +449,23 @@ class DRAGPulse(Operation):
         Create a new instance of DRAGPulse.
 
         Parameters
-        ------------
-        G_amp :
+        ----------
+        G_amp
             Amplitude of the Gaussian envelope.
-        D_amp :
+        D_amp
             Amplitude of the derivative component, the DRAG-pulse parameter.
-        duration :
+        duration
             The pulse duration in seconds.
-        phase :
+        phase
             Phase of the pulse in degrees.
-        clock :
+        clock
             Clock used to modulate the pulse.
-        port :
+        port
             Port of the pulse, must be capable of carrying a complex waveform.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
