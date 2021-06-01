@@ -246,6 +246,8 @@ class QASMProgram:
         idx1
             not used
         """
+        del idx0, idx1  # not used
+
         loop_reg = "R2"
         offs_reg = "R3"
         offs_reg_zero = "R4"
