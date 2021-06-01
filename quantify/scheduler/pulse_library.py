@@ -168,6 +168,10 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         }
         super().__init__(name=data["name"], data=data)
 
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
 
 class SquarePulse(Operation):
     """
