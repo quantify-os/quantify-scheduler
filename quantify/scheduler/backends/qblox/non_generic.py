@@ -78,6 +78,7 @@ def _check_square_pulse_stitching(pulse: OpInfo) -> bool:
     reserved_wf_func = "quantify.scheduler.waveforms.square"
     if pulse.data["clock"] == BasebandClockResource.IDENTITY:
         return pulse.data["wf_func"] == reserved_wf_func
+    return False
 
 
 def _check_staircase(pulse: OpInfo) -> bool:
@@ -93,6 +94,7 @@ def _check_staircase(pulse: OpInfo) -> bool:
     reserved_wf_func = "quantify.scheduler.waveforms.staircase"
     if pulse.data["clock"] == BasebandClockResource.IDENTITY:
         return pulse.data["wf_func"] == reserved_wf_func
+    return False
 
 
 def _staircase_waveform_data(
