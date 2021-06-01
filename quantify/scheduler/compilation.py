@@ -27,9 +27,9 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~quantify.scheduler.Schedule.timing_constraints`. It does this by:
+    :attr:`~quantify.scheduler.types.Schedule.timing_constraints`. It does this by:
 
-        1. iterating over all and elements in the :attr:`~quantify.scheduler.Schedule.timing_constraints`.
+        1. iterating over all and elements in the :attr:`~quantify.scheduler.types.Schedule.timing_constraints`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -161,8 +161,10 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             for p in op["pulse_info"]:
                 if p["clock"] not in schedule.resources:
                     raise ValueError(
-                        "Operation '{}' contains an unknown clock '{}'; ensure this resource has been "
-                        "added to the schedule.".format(op.hash, p["clock"])
+                        "Operation '{}' contains an unknown clock '{}'; ensure "
+                        "this resource has been added to the schedule.".format(
+                            str(op), p["clock"]
+                        )
                     )
             continue
 

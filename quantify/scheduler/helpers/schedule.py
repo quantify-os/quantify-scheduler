@@ -243,12 +243,16 @@ def get_port_timeline(
     Returns a new dictionary containing the timeline of
     pulses, readout- and acquisition pulses of a port.
 
-    Example:
-    ```
-    print(port_timeline_dict)
-    # { {'q0:mw', {0, [123456789]}},
-    # ... }
-    ```
+    Using iterators on this collection enables sorting.
+
+    .. code-block::
+
+        print(port_timeline_dict)
+        # { {'q0:mw', {0, [123456789]}},
+        # ... }
+
+        # Sorted items.
+        print(port_timeline_dict.items())
 
     Parameters
     ----------
@@ -257,7 +261,17 @@ def get_port_timeline(
     """
     port_timeline_dict: Dict[str, Dict[int, List[int]]] = dict()
 
-    for timeslot_index, t_constr in enumerate(schedule.timing_constraints):
+    # Sort timing containts based on abs_time and keep the original index.
+    timing_constrains_map = dict(
+        sorted(
+            map(
+                lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints)
+            ),
+            key=lambda pair: pair[1]["abs_time"],
+        )
+    )
+
+    for timeslot_index, t_constr in timing_constrains_map.items():
         operation = schedule.operations[t_constr["operation_hash"]]
         abs_time = t_constr["abs_time"]
 
@@ -270,7 +284,7 @@ def get_port_timeline(
             operation["acquisition_info"],
         )
 
-        # Sort pulses and acquisitions on time.
+        # Sort pulses and acquisitions within an operation.
         for uuid, info in sorted(
             chain(pulse_info_iter, acq_info_iter),
             key=lambda pair: abs_time  # pylint: disable=cell-var-from-loop

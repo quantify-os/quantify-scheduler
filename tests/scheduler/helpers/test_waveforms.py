@@ -19,8 +19,10 @@ from quantify.scheduler.helpers.waveforms import (
     exec_waveform_function,
     get_waveform,
     get_waveform_by_pulseid,
+    get_waveform_size,
     resize_waveform,
     shift_waveform,
+    apply_mixer_skewness_corrections,
     modulate_waveform,
 )
 from quantify.scheduler.types import Schedule
@@ -187,28 +189,14 @@ def test_exec_waveform_function_with_custom(wf_func: str, mocker):
     assert waveform == []
 
 
-def test_modulate_waveform():
-    number_of_points = 1000
-    freq = 10e6
-    t0 = 50e-9
-    t = np.linspace(0, 1e-6, number_of_points)
-    envelope = np.ones(number_of_points)
-    mod_wf = modulate_waveform(t, envelope, freq, t0)
-    test_re = np.cos(2 * np.pi * freq * (t + t0))
-    test_imag = np.sin(2 * np.pi * freq * (t + t0))
-    assert np.allclose(mod_wf.real, test_re)
-    assert np.allclose(test_re, mod_wf.real)
-
-    assert np.allclose(mod_wf.imag, test_imag)
-    assert np.allclose(test_imag, mod_wf.imag)
-
-
 def test_exec_custom_waveform_function(mocker):
     # Arrange
     t = np.arange(0, 10, 1)
     pulse_info_mock = {"duration": 1.4e-9, "t0": 0}
 
-    def custom_function(t: int, duration: float, t0: float):
+    def custom_function(
+        t: int, duration: float, t0: float
+    ):  # pylint: disable=unused-argument
         pass
 
     mock = mocker.Mock()
@@ -269,3 +257,63 @@ def test_shift_waveform_aligned():
     # Assert
     assert clock == 1
     np.testing.assert_array_equal(shifted_waveform, waveform)
+
+
+def test_apply_mixer_skewness_corrections():
+    # Arrange
+    frequency = 10e6
+    t = np.linspace(0, 1e-6, 1000)
+
+    amplitude_ratio: float = 2.1234
+    phase_shift: float = 90
+
+    real = np.cos(2 * np.pi * frequency * t)
+    imag = np.sin(2 * np.pi * frequency * t)
+    waveform = real + 1.0j * imag
+
+    # Act
+    waveform = apply_mixer_skewness_corrections(waveform, amplitude_ratio, phase_shift)
+    amp_ratio_after = np.max(np.abs(waveform.real)) / np.max(np.abs(waveform.imag))
+
+    # Assert
+    assert isinstance(waveform, (np.ndarray, np.generic))
+    assert pytest.approx(amp_ratio_after, amplitude_ratio)
+    normalized_real = waveform.real / np.max(np.abs(waveform.real))
+    normalized_imag = waveform.imag / np.max(np.abs(waveform.imag))
+    assert np.allclose(normalized_real, normalized_imag)
+
+
+def test_modulate_waveform():
+    # Arrange
+    frequency = 10e6
+    t0 = 50e-9
+    t = np.linspace(0, 1e-6, 1000)
+    envelope = np.ones(len(t))
+
+    expected_real = np.cos(2 * np.pi * frequency * (t + t0))
+    expected_imag = np.sin(2 * np.pi * frequency * (t + t0))
+
+    # Act
+    waveform = modulate_waveform(t, envelope, frequency, t0)
+
+    # Assert
+    assert np.allclose(waveform.real, expected_real)
+    assert np.allclose(waveform.imag, expected_imag)
+
+
+@pytest.mark.parametrize(
+    "size,granularity,expected",
+    [
+        (0, 16, 16),
+        (10, 16, 16),
+        (16, 16, 16),
+        (30, 16, 32),
+        (33, 16, 48),
+    ],
+)
+def test_get_waveform_size(size: int, granularity: int, expected: int):
+    # Act
+    new_size = get_waveform_size(np.ones(size), granularity)
+
+    # Assert
+    assert expected == new_size

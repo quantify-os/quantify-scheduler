@@ -8,12 +8,55 @@ Unreleased
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Added utility for decomposing long square pulses. (!83)
-* Pulsar backend version change. (!82)
-* Qblox-Instruments version changed to 0.3.2. (!88)
-* Refactored Qblox backend. (!81)
-* Added representation to gates in gate library. Also defined the equality operation. (!101)
-* Added Zurich Instruments backend (!49)
+* Added acquisitions to circuit diagram (!93)
+
+
+0.3.0 Multiple backends support (2021-05-20)
+------------------------------------------------
+* Added support for both Qblox and Zurich Instrument backends.
+* Added convenience pylintrc configuration file.
+* Added examples for timedomain and spectroscopy schedules.
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Major refactor of the Qblox backend. (For example, it's now `quantify.backends.qblox_backend` instead of the previous `quantify.backends.pulsar_backend`)
+* Qblox backend requires strictly v0.3.2 of the qblox-instruments package.
+
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Add mixer skewness corrections helper function. (!102)
+* Added Qblox backend support. (!81)
+* Compile backend with ZISettingsBuilder. (!87)
+* Add vscode IDE config files. (!100)
+* Add ZISettingsBuilder class. (!86)
+* Added representation to gates in gate library and defined equality operation. (!101)
+* Fix/operation duration. Fixes #107. (!89)
+* Feat/long pulses fix validators name. (!90)
+* Implemented long square pulses unrolling (for waveform-memory-limited devices). (!83)
+* Changed Qblox-Instruments version to 0.3.2. (!88)
+* Feature: Improve overall zhinst backend timing. (!77)
+* Plotly cleanup. (!69)
+* Pulsar backend version bump. (!82)
+* Added zhinst backend support. (!49)
+* Added example timedomain programs. (!71)
+* Added example spectroscopy programs. (!64)
+* Added pylintrc configuration file. (!55)
+* Added repetitions property to Schedule. (!56)
+* Added Acquisition Protocols. (!51)
+* Hotfix for filename sanitization pulsar backend. (!61)
+* Pulsar backend function sanitization. (!60)
+* Potential fix time-out pulsar. (!58)
+* Updated Pulsar backend version to v0.2.3.. (!57)
+* Fixed datadir related bugs. (!54)
+* Added Station implementation. (!52)
+* Pulsar backend v0.2.2 check. (!48)
+* Fix for issue with acq delay . (!45)
+* Fix for issue #52. (!44)
+
+
 
 0.2.0 Hybrid pulse- gate-level control model (2021-01-14)
 ---------------------------------------------------------

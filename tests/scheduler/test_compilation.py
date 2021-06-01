@@ -1,3 +1,6 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 import os
 import inspect
 import pytest
@@ -177,12 +180,14 @@ def test_pulse_and_clock():
     op_hash = next(op for op in sched.timing_constraints if op["label"] == op_label)[
         "operation_hash"
     ]
-    with pytest.raises(
-        ValueError,
-        match="Operation '{}' contains an unknown clock '{}'; ensure this resource has "
-        "been added to the schedule.".format(op_hash, mystery_clock),
-    ):
+    with pytest.raises(ValueError) as execinfo:
         add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
+
+    assert str(execinfo.value) == (
+        "Operation '{}' contains an unknown clock '{}'; ensure this resource has "
+        "been added to the schedule.".format(op_hash, mystery_clock)
+    )
+
     sched.add_resources([ClockResource(mystery_clock, 6e9)])
     add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
 

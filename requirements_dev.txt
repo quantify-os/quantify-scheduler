@@ -29,6 +29,8 @@ docutils<0.17 # pinned due to issue #175 (quantify-core)
 
 # scheduler-only
 
+cachecontrol # see issue quantify-scheduler#129
+lockfile # see issue quantify-scheduler#129
 pytest-mpl
 sphinx-toolbox  # required by enum_tools when building the docs, 2.4.1 requires sphinx==3.3.1
 enum_tools # requires sphinx-toolbox when building docs
