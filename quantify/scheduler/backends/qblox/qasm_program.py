@@ -117,14 +117,14 @@ class QASMProgram:
         ValueError
             If `wait_time` <= 0
         """
+        if wait_time == 0:
+            return
         if wait_time < 0:
             raise ValueError(
                 f"Invalid wait time. Attempting to wait "
                 f"for {wait_time} ns at t={self.elapsed_time}"
                 f" ns."
             )
-        elif wait_time == 0:
-            return
 
         if wait_time > constants.IMMEDIATE_SZ_WAIT:
             for _ in range(wait_time // constants.IMMEDIATE_SZ_WAIT):
