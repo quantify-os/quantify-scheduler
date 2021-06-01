@@ -125,8 +125,9 @@ class StaircasePulse(Operation):
         t0: float = 0,
     ):
         """
-        A real valued staircase pulse, which reaches it's final amplitude in discrete steps.
-        In between it will maintain a plateau.
+        A real valued staircase pulse, which reaches it's final
+        amplitude in discrete steps. In between it will maintain
+        a plateau.
 
         Parameters
         ------------
