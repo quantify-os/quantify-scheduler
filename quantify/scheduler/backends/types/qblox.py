@@ -16,27 +16,20 @@ class QASMRuntimeSettings:
     """
     Settings that can be changed dynamically by the sequencer during execution of the
     schedule. This is in contrast to the relatively static `SequencerSettings`.
-
-    Attributes
-    ----------
-    awg_gain_0: float
-        Gain set to the AWG output path 0. Value should be in the range -1.0 < param <
-        1.0. Else an exception will be raised during compilation.
-    awg_gain_1: float
-        Gain set to the AWG output path 1. Value should be in the range -1.0 < param <
-        1.0. Else an exception will be raised during compilation.
-    awg_offset_0: float
-        Offset applied to the AWG output path 0. Value should be in the range -1.0 <
-        param < 1.0. Else an exception will be raised during compilation.
-    awg_offset_1: float
-        Offset applied to the AWG output path 1. Value should be in the range -1.0 <
-        param < 1.0. Else an exception will be raised during compilation.
     """
 
     awg_gain_0: float
+    """Gain set to the AWG output path 0. Value should be in the range -1.0 < param <
+    1.0. Else an exception will be raised during compilation."""
     awg_gain_1: float
+    """Gain set to the AWG output path 1. Value should be in the range -1.0 < param <
+    1.0. Else an exception will be raised during compilation."""
     awg_offset_0: float = 0.0
+    """Offset applied to the AWG output path 0. Value should be in the range -1.0 <
+    param < 1.0. Else an exception will be raised during compilation."""
     awg_offset_1: float = 0.0
+    """Offset applied to the AWG output path 1. Value should be in the range -1.0 <
+    param < 1.0. Else an exception will be raised during compilation."""
 
 
 @dataclass
@@ -44,31 +37,24 @@ class OpInfo(DataClassJsonMixin):
     """
     Data structure containing all the information describing a pulse or acquisition
     needed to play it.
-
-    Attributes
-    ----------
-    uuid: int
-        A unique identifier for this pulse/acquisition.
-    data: dict
-        The pulse/acquisition info taken from the `data` property of the
-        pulse/acquisition in the schedule.
-    timing: float
-        The start time of this pulse/acquisition.
-        Note that this is a combination of the start time "t_abs" of the schedule
-        operation, and the t0 of the pulse/acquisition which specifies a time relative
-        to "t_abs".
-    pulse_settings: Optional[QASMRuntimeSettings]
-        Settings that are to be set by the sequencer before playing this
-        pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
-        parameter to change the pulse amplitude, instead of changing the waveform. This
-        allows to reuse the same waveform multiple times despite a difference in
-        amplitude.
     """
 
     uuid: str
+    """A unique identifier for this pulse/acquisition."""
     data: dict
+    """The pulse/acquisition info taken from the `data` property of the
+    pulse/acquisition in the schedule."""
     timing: float
+    """The start time of this pulse/acquisition.
+    Note that this is a combination of the start time "t_abs" of the schedule
+    operation, and the t0 of the pulse/acquisition which specifies a time relative
+    to "t_abs"."""
     pulse_settings: Optional[QASMRuntimeSettings] = None
+    """Settings that are to be set by the sequencer before playing this
+    pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
+    parameter to change the pulse amplitude, instead of changing the waveform. This
+    allows to reuse the same waveform multiple times despite a difference in
+    amplitude."""
 
     @property
     def duration(self) -> float:
@@ -133,12 +119,7 @@ class PulsarSettings(DataClassJsonMixin):
 
         Parameters
         ----------
-        mapping: Dict[str, Any]
-
-
-        Returns
-        -------
-
+        mapping
         """
         ref: str = mapping["ref"]
         return PulsarSettings(ref=ref)
