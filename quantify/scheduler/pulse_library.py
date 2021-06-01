@@ -114,6 +114,11 @@ class RampPulse(Operation):
 
 
 class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
+    """
+    A real valued staircase pulse, which reaches it's final amplitude in discrete
+    steps. In between it will maintain a plateau.
+    """
+
     def __init__(
         self,
         start_amp: float,
@@ -125,9 +130,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         t0: float = 0,
     ):
         """
-        A real valued staircase pulse, which reaches it's final
-        amplitude in discrete steps. In between it will maintain
-        a plateau.
+        Constructor for a staircase.
 
         Parameters
         ------------
@@ -344,6 +347,10 @@ class SoftSquarePulse(Operation):
 
 
 class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
+    """
+    A linear chirp signal. A sinusoid that ramps up in frequency.
+    """
+
     def __init__(
         self,
         amp: float,
@@ -355,7 +362,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         t0: float = 0,
     ):
         """
-        A linear chirp signal. A sinusoid that ramps up in frequency
+        Constructor for a chirp pulse.
 
         Parameters
         ----------
