@@ -139,13 +139,13 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         final_amp
             Final amplitude of the staircase envelope function.
         num_steps
-            The number of plateaus
+            The number of plateaus.
         duration
             Duration of the pulse in seconds.
         port
             Port of the pulse.
         clock
-            Clock used to modulate the pulse, by default a BasebandClock is used.
+            Clock used to modulate the pulse.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -373,9 +373,9 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         amp
             Amplitude of the envelope.
         duration
-            Duration of the pulse
+            Duration of the pulse.
         port
-            The port of the pulse
+            The port of the pulse.
         clock
             Clock used to modulate the pulse.
         start_freq
@@ -402,6 +402,10 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
             ],
         }
         super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
 
 
 class DRAGPulse(Operation):
