@@ -65,9 +65,9 @@ def find_inner_dicts_containing_key(d: Union[dict], key: Any) -> List[dict]:
 
     Parameters
     ----------
-    d:
+    d
         The dictionary to traverse.
-    key:
+    key
         The key to search for.
 
     Returns
@@ -104,7 +104,7 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
 
     Parameters
     ----------
-    d:
+    d
         The dictionary to traverse.
 
     Returns
@@ -133,16 +133,16 @@ def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
 
     Parameters
     ----------
-    data_dict:
+    data_dict
         The dictionary that contains the values needed to parameterize the
         waveform. `data_dict['wf_func']` is then called to calculate the values.
-    sampling_rate:
+    sampling_rate
         The sampling rate used to generate the time axis values.
 
     Returns
     -------
     :
-        The (possibly complex) values of the generated waveform
+        The (possibly complex) values of the generated waveform.
     """
     time_duration = data_dict["duration"]
     t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
@@ -164,9 +164,9 @@ def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
 
     Returns
     -------
-    :
+    uuid_I:
         Name for the I waveform.
-    :
+    uuid_Q:
         Name for the Q waveform.
     """
     return f"{str(uuid)}_I", f"{str(uuid)}_Q"
@@ -181,7 +181,7 @@ def _generate_waveform_dict(
 
     Parameters
     ----------
-    waveforms_complex:
+    waveforms_complex
         Dictionary containing the complex waveforms. Keys correspond to a unique
         identifier, value is the complex waveform.
 
@@ -196,14 +196,13 @@ def _generate_waveform_dict(
     Examples
     --------
 
-    .. code-block::
+    .. jupyter-execute::
+
+        import numpy as np
+        from quantify.scheduler.backends.qblox.helpers import _generate_waveform_dict
 
         complex_waveforms = {12345: np.array([1, 2])}
         _generate_waveform_dict(complex_waveforms)
-        {
-            "12345_I": {"data": [1, 2], "index": 0},
-            "12345_Q": {"data": [0, 0], "index": 1}
-        }
     """
     wf_dict = dict()
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
