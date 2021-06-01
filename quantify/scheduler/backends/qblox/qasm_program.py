@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from typing import List, Union, Optional
 
 if TYPE_CHECKING:
-    from quantify.scheduler.backends.qblox.compiler_abc import PulsarSequencerBase
+    from quantify.scheduler.backends.qblox import compiler_abc
 
 import numpy as np
 from columnar import columnar
@@ -35,7 +35,7 @@ class QASMProgram:
         A list containing the instructions added to the program
     """
 
-    def __init__(self, parent: PulsarSequencerBase):
+    def __init__(self, parent: compiler_abc.PulsarSequencerBase):
         self.parent = parent
         self.elapsed_time: int = 0
         self.instructions: List[list] = list()
