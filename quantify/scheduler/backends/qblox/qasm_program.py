@@ -3,18 +3,18 @@
 """QASM program class for Qblox backend."""
 from __future__ import annotations
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 from typing import List, Union, Optional
 
+if TYPE_CHECKING:
+    from quantify.scheduler.backends.qblox.compiler_abc import PulsarSequencerBase
+
 import numpy as np
-from typing import TYPE_CHECKING
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox import constants
 from quantify.scheduler.backends.types.qblox import OpInfo
-
-if TYPE_CHECKING:
-    from quantify.scheduler.backends.qblox.compiler_abc import PulsarSequencerBase
 
 
 class QASMProgram:
