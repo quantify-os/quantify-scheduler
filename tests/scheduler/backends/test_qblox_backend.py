@@ -493,6 +493,9 @@ def test_auto_wait():
     qasm.auto_wait(70000)
     assert len(qasm.instructions) == 3  # since it should split the waits
     assert qasm.elapsed_time == 70120
+    qasm.auto_wait(700000)
+    assert qasm.elapsed_time == 770120
+    assert len(qasm.instructions) == 8  # now loops are used
     with pytest.raises(ValueError):
         qasm.auto_wait(-120)
 

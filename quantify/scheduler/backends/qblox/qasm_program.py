@@ -127,12 +127,24 @@ class QASMProgram:
             )
 
         if wait_time > constants.IMMEDIATE_SZ_WAIT:
-            for _ in range(wait_time // constants.IMMEDIATE_SZ_WAIT):
-                self.emit(
-                    q1asm_instructions.WAIT,
-                    constants.IMMEDIATE_SZ_WAIT,
-                    comment="auto generated wait",
-                )
+            repetitions = wait_time // constants.IMMEDIATE_SZ_WAIT
+            instr_number_using_loop = 4
+            if repetitions > instr_number_using_loop:
+                loop_reg = "R2"
+                loop_label = f"wait{len(self.instructions)}"
+                with self.loop(loop_reg, loop_label, repetitions):
+                    self.emit(
+                        q1asm_instructions.WAIT,
+                        constants.IMMEDIATE_SZ_WAIT,
+                        comment="auto generated wait",
+                    )
+            else:
+                for _ in range(repetitions):
+                    self.emit(
+                        q1asm_instructions.WAIT,
+                        constants.IMMEDIATE_SZ_WAIT,
+                        comment="auto generated wait",
+                    )
             time_left = wait_time % constants.IMMEDIATE_SZ_WAIT
         else:
             time_left = int(wait_time)
