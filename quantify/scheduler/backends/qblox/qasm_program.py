@@ -6,15 +6,15 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING
 from typing import List, Union, Optional
 
-if TYPE_CHECKING:
-    from quantify.scheduler.backends.qblox import compiler_abc
-
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox import constants
 from quantify.scheduler.backends.types.qblox import OpInfo
+
+if TYPE_CHECKING:
+    from quantify.scheduler.backends.qblox import compiler_abc
 
 
 class QASMProgram:
@@ -23,22 +23,16 @@ class QASMProgram:
 
     Apart from this the class holds some convenience functions that auto generate
     certain instructions with parameters, as well as update the elapsed time.
-
-    Attributes
-    ----------
-    parent:
-        A reference to the sequencer for which we are compiling this program.
-    elapsed_time:
-        The time elapsed after finishing the program in its current form. This is used
-        to keep track of the overall timing and necessary waits.
-    instructions:
-        A list containing the instructions added to the program
     """
 
     def __init__(self, parent: compiler_abc.PulsarSequencerBase):
         self.parent = parent
+        """A reference to the sequencer for which we are compiling this program."""
         self.elapsed_time: int = 0
+        """The time elapsed after finishing the program in its current form. This is
+        used  to keep track of the overall timing and necessary waits."""
         self.instructions: List[list] = list()
+        """A list containing the instructions added to the program"""
 
     @staticmethod
     def get_instruction_as_list(
@@ -53,14 +47,14 @@ class QASMProgram:
 
         Parameters
         ----------
-        instruction:
+        instruction
             The instruction to use. This should be one specified in `PulsarInstructions`
             or the assembler will raise an exception.
-        args:
+        args
             Arguments to be passed.
-        label:
+        label
             Adds a label to the line. Used for jumps and loops.
-        comment:
+        comment
             Optionally add a comment to the instruction.
 
         Returns
@@ -70,7 +64,7 @@ class QASMProgram:
             program.
 
         Raises
-        -------
+        ------
         SyntaxError
             More arguments passed than the sequencer allows.
         """
@@ -92,9 +86,9 @@ class QASMProgram:
 
         Parameters
         ----------
-        args:
+        args
             All arguments to pass to `get_instruction_as_list`.
-        kwargs:
+        **kwargs
             All keyword arguments to pass to `get_instruction_as_list`.
         """
         self.instructions.append(self.get_instruction_as_list(*args, **kwargs))
@@ -109,13 +103,13 @@ class QASMProgram:
 
         Parameters
         ----------
-        wait_time:
+        wait_time
             Time to wait in ns.
 
         Raises
         ------
         ValueError
-            If `wait_time` <= 0
+            If `wait_time` <= 0.
         """
         if wait_time == 0:
             return
@@ -160,13 +154,13 @@ class QASMProgram:
 
         Parameters
         ----------
-        operation:
+        operation
             The pulse or acquisition that we want to wait for.
 
         Raises
         ------
         ValueError
-            If wait time < 0
+            If wait time < 0.
         """
         start_time = self.to_pulsar_time(operation.timing)
         wait_time = start_time - self.elapsed_time
@@ -187,11 +181,11 @@ class QASMProgram:
 
         Parameters
         ----------
-        pulse:
+        pulse
             The pulse to play.
-        idx0:
+        idx0
             Index corresponding to the I channel of the pulse in the awg dict.
-        idx1:
+        idx1
             Index corresponding to the Q channel of the pulse in the awg dict.
         """
         self.wait_till_start_operation(pulse)
@@ -236,11 +230,11 @@ class QASMProgram:
         Parameters
         ----------
         pulse
-            The pulse to play
+            The pulse to play.
         idx0
-            Index in the awg_dict corresponding to the waveform for the I channel
+            Index in the awg_dict corresponding to the waveform for the I channel.
         idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel
+            Index in the awg_dict corresponding to the waveform for the Q channel.
         """
         self.update_runtime_settings(pulse)
         self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
@@ -252,11 +246,11 @@ class QASMProgram:
         Parameters
         ----------
         pulse
-            the pulse to play
+            The pulse to play.
         idx0
-            not used
+            Not used.
         idx1
-            not used
+            Not used.
         """
         del idx0, idx1  # not used
 
@@ -340,11 +334,11 @@ class QASMProgram:
         Parameters
         ----------
         pulse
-            The pulse to play
+            The pulse to play.
         idx0
-            Index in the awg_dict corresponding to the waveform for the I channel
+            Index in the awg_dict corresponding to the waveform for the I channel.
         idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel
+            Index in the awg_dict corresponding to the waveform for the Q channel.
         """
         reserved_pulse_mapping = {
             "stitched_square_pulse": self.play_stitched_pulse,
@@ -364,12 +358,12 @@ class QASMProgram:
 
         Parameters
         ----------
-        acquisition:
+        acquisition
             The pulse to perform.
-        idx0:
+        idx0
             Index corresponding to the I channel of the acquisition weights in the acq
             dict.
-        idx1:
+        idx1
             Index corresponding to the Q channel of the acquisition weights in the acq
             dict.
         """
@@ -383,7 +377,7 @@ class QASMProgram:
 
         Parameters
         ----------
-        operation:
+        operation
             The pulse to prepare the settings for.
 
         Notes
@@ -426,12 +420,12 @@ class QASMProgram:
 
         Parameters
         ----------
-        val:
+        val
             The value of the parameter to expand.
-        param:
+        param
             The name of the parameter, to make a possible exception message more
             descriptive.
-        operation:
+        operation
             The operation this value is expanded for, to make a possible exception
             message more descriptive.
 
@@ -460,7 +454,7 @@ class QASMProgram:
 
         Parameters
         ----------
-        time:
+        time
             The time to convert
 
         Returns
@@ -508,11 +502,11 @@ class QASMProgram:
 
         Parameters
         ----------
-        register:
+        register
             The register to use for the loop iterator.
-        label:
+        label
             The label to use for the jump.
-        repetitions:
+        repetitions
             The amount of iterations to perform.
 
         Returns
@@ -520,15 +514,16 @@ class QASMProgram:
 
         Examples
         --------
-        .. jupyter-execute::
-
-            from quantify.scheduler.backends.qblox.instrument_compilers import QASMProgram #pylint: disable=line-too-long
-
-            qasm = QASMProgram()
-            with qasm.loop(register='R0', label='repeat', repetitions=10):
-                qasm.auto_wait(100)
 
         This adds a loop to the program that loops 10 times over a wait of 100 ns.
+
+        .. jupyter-execute::
+
+            # from quantify.scheduler.backends.qblox.qasm_program import QASMProgram #pylint: disable=line-too-long
+
+            # qasm = QASMProgram()
+            # with qasm.loop(register='R0', label='repeat', repetitions=10):
+            #     qasm.auto_wait(100)
         """
         comment = f"iterator for loop with label {label}"
 

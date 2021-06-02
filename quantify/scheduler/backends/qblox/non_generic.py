@@ -25,10 +25,11 @@ def check_reserved_pulse_id(pulse: OpInfo) -> Optional[str]:
     Parameters
     ----------
     pulse
-        The pulse to check
+        The pulse to check.
 
     Returns
     -------
+    :
         A str with a special identifier representing which pulse behavior to use
     """
 
@@ -51,9 +52,9 @@ def generate_reserved_waveform_data(
     Parameters
     ----------
     reserved_pulse_id
-        The id returned by `check_reserved_pulse_id`
+        The id returned by `check_reserved_pulse_id`.
     data_dict
-        The pulse.data dict
+        The pulse.data dict.
     sampling_rate
         Sampling rate of the device.
     """
@@ -73,7 +74,7 @@ def _check_square_pulse_stitching(pulse: OpInfo) -> bool:
     Parameters
     ----------
     pulse
-        The pulse to check
+        The pulse to check.
     """
     reserved_wf_func = "quantify.scheduler.waveforms.square"
     if pulse.data["clock"] == BasebandClockResource.IDENTITY:
@@ -89,7 +90,7 @@ def _check_staircase(pulse: OpInfo) -> bool:
     Parameters
     ----------
     pulse
-        The pulse to check
+        The pulse to check.
     """
     reserved_wf_func = "quantify.scheduler.waveforms.staircase"
     if pulse.data["clock"] == BasebandClockResource.IDENTITY:
@@ -107,7 +108,7 @@ def _staircase_waveform_data(
     Parameters
     ----------
     data_dict
-        The pulse.data dict
+        The pulse.data dict.
     sampling_rate
         Sampling rate of the device.
     """
@@ -129,7 +130,7 @@ def _stitched_square_pulse_waveform_data(
     Parameters
     ----------
     data_dict
-        The pulse.data dict
+        The pulse.data dict.
     sampling_rate
         Sampling rate of the device.
     """
