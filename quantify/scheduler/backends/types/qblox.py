@@ -94,22 +94,16 @@ class PulsarSettings(DataClassJsonMixin):
     Global settings for the pulsar to be set in the control stack component. This is
     kept separate from the settings that can be set on a per sequencer basis, which are
     specified in `SequencerSettings`.
-
-    Attributes
-    ----------
-    ref: str
-        The reference source. Should either be "internal" or "external", will raise an
-        exception in the cs component otherwise.
-    hardware_averages: int
-        The number of repetitions of the Schedule.
-    acq_mode: str
-        The acquisition mode the Pulsar operates in. This setting will most likely
-        change in the future.
     """
 
     ref: str
+    """The reference source. Should either be "internal" or "external", will raise an
+    exception in the cs component otherwise."""
     hardware_averages: int = 1
+    """The number of repetitions of the Schedule."""
     acq_mode: str = "SSBIntegrationComplex"
+    """The acquisition mode the Pulsar operates in. This setting will most likely
+    change in the future."""
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
@@ -133,32 +127,22 @@ class SequencerSettings(DataClassJsonMixin):
     once at the start and will remain unchanged after. Meaning that these correspond to
     the "slow" QCoDeS parameters and not settings that are changed dynamically by the
     sequencer.
-
-    Attributes
-    ----------
-    nco_en: bool
-        Specifies whether the nco will be used or not.
-    sync_en: bool
-        Enables party-line synchronization.
-    modulation_freq: float
-        Specifies the frequency of the modulation.
-    awg_offset_path_0: float
-        Sets the DC offset on path 0. This is used e.g. for calibration of lo leakage
-        when using IQ mixers.
-    awg_offset_path_1: float
-        Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
-        when using IQ mixers.
-    duration: int
-        Duration of the acquisition. This is a temporary addition for not yet merged the
-        ControlStack to function properly. This will be removed in a later version!
     """
 
     nco_en: bool
+    """Specifies whether the NCO will be used or not."""
     sync_en: bool
+    """Enables party-line synchronization."""
     modulation_freq: float = None
+    """Specifies the frequency of the modulation."""
     awg_offset_path_0: float = 0.0
+    """Sets the DC offset on path 0. This is used e.g. for calibration of lo leakage."""
     awg_offset_path_1: float = 0.0
+    """Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
+    when using IQ mixers."""
     duration: int = 0
+    """Duration of the acquisition. This is a temporary addition for not yet merged the
+    ControlStack to function properly. This will be removed in a later version!"""
 
 
 @dataclass
@@ -167,24 +151,17 @@ class MixerCorrections(DataClassJsonMixin):
     Data structure that holds all the mixer correction parameters to compensate for
     skewness/lo feed-through. This class is used to correct the waveforms to compensate
     for skewness and to set the `SequencerSettings`.
-
-    Attributes
-    ----------
-    amp_ratio: float
-        Amplitude ratio between the I and Q paths to correct for the imbalance in the
-        two path in the IQ mixer.
-    phase_error: float
-        Phase shift used to compensate for quadrature errors.
-    offset_I: float
-        DC offset on the I path used to compensate for lo feed-through.
-    offset_Q: float
-        DC offset on the Q path used to compensate for lo feed-through.
     """
 
     amp_ratio: float = 1.0
+    """Amplitude ratio between the I and Q paths to correct for the imbalance in the
+    two path in the IQ mixer."""
     phase_error: float = 0.0
+    """Phase shift used to compensate for quadrature errors."""
     offset_I: float = 0.0  # pylint: disable=invalid-name
+    """DC offset on the I path used to compensate for lo feed-through."""
     offset_Q: float = 0.0  # pylint: disable=invalid-name
+    """DC offset on the Q path used to compensate for lo feed-through."""
 
     def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
         """
