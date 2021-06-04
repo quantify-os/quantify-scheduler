@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Module for handling special pulses that get special treatment in the backend."""
 
-from typing import Optional, Tuple, Callable
+from typing import Union, Tuple, Callable
 
 import numpy as np
 
@@ -17,7 +17,7 @@ from quantify.scheduler.backends.types.qblox import OpInfo
 from quantify.scheduler.backends.qblox.constants import PULSE_STITCHING_DURATION
 
 
-def check_reserved_pulse_id(pulse: OpInfo) -> Optional[str]:
+def check_reserved_pulse_id(pulse: OpInfo) -> Union[str, None]:
     """
     Checks whether the function should be evaluated generically or has special
     treatment.
@@ -125,7 +125,7 @@ def _stitched_square_pulse_waveform_data(
 ) -> Tuple[np.ndarray, float, float]:
     """
     Generates the waveform data for the stitched pulses. This will always have length
-    `PULSE_STITCHING_DURATION`
+    `PULSE_STITCHING_DURATION`.
 
     Parameters
     ----------

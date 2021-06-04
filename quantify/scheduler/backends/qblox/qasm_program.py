@@ -192,13 +192,13 @@ class QASMProgram:
         self.auto_play_pulse(pulse, idx0, idx1)
 
     def _stitched_pulse(self, duration: float, loop_reg: str, idx0: int, idx1: int):
-        rep = int(duration // constants.PULSE_STITCHING_DURATION)
+        repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
-        if rep > 0:
+        if repetitions > 0:
             with self.loop(
                 register=loop_reg,
                 label=f"stitch{len(self.instructions)}",
-                repetitions=rep,
+                repetitions=repetitions,
             ):
                 self.emit(
                     q1asm_instructions.PLAY,
@@ -206,22 +206,22 @@ class QASMProgram:
                     idx1,
                     self.to_pulsar_time(constants.PULSE_STITCHING_DURATION),
                 )
-                self.elapsed_time += rep * self.to_pulsar_time(
+                self.elapsed_time += repetitions * self.to_pulsar_time(
                     constants.PULSE_STITCHING_DURATION
                 )
 
-        pulse_time_rem = self.to_pulsar_time(
+        pulse_time_remaining = self.to_pulsar_time(
             duration % constants.PULSE_STITCHING_DURATION
         )
-        if pulse_time_rem > 0:
-            self.emit(q1asm_instructions.PLAY, idx0, idx1, pulse_time_rem)
+        if pulse_time_remaining > 0:
+            self.emit(q1asm_instructions.PLAY, idx0, idx1, pulse_time_remaining)
             self.emit(
                 q1asm_instructions.SET_AWG_GAIN,
                 0,
                 0,
                 comment="zero as workaround",
             )
-        self.elapsed_time += pulse_time_rem
+        self.elapsed_time += pulse_time_remaining
 
     def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
         """
@@ -264,32 +264,32 @@ class QASMProgram:
         step_duration = self.to_pulsar_time(pulse.duration / num_steps)
 
         amp_step = (final_amp - start_amp) / (num_steps - 1)
-        amp_step_imm = self._expand_from_normalised_range(
+        amp_step_immediate = self._expand_from_normalised_range(
             amp_step / self.parent.awg_output_volt,
             constants.IMMEDIATE_SZ_OFFSET,
             "offset_awg_path0",
             pulse,
         )
-        start_amp_imm = self._expand_from_normalised_range(
+        start_amp_immediate = self._expand_from_normalised_range(
             start_amp / self.parent.awg_output_volt,
             constants.IMMEDIATE_SZ_OFFSET,
             "offset_awg_path0",
             pulse,
         )
-        if start_amp_imm < 0:
-            start_amp_imm += constants.REGISTER_SIZE  # since registers are unsigned
+        if start_amp_immediate < 0:
+            start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
 
         self.emit(
             q1asm_instructions.SET_AWG_GAIN,
             constants.IMMEDIATE_SZ_GAIN // 2,
             constants.IMMEDIATE_SZ_GAIN // 2,
-            comment="set gain to known val",
+            comment="set gain to known value",
         )
         self.emit(
             q1asm_instructions.MOVE,
-            start_amp_imm,
+            start_amp_immediate,
             offs_reg,
-            comment="keeps track of the offs",
+            comment="keeps track of the offsets",
         )
         self.emit(
             q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
@@ -304,21 +304,21 @@ class QASMProgram:
                 constants.GRID_TIME,
             )
             self.elapsed_time += constants.GRID_TIME
-            if amp_step_imm >= 0:
+            if amp_step_immediate >= 0:
                 self.emit(
                     q1asm_instructions.ADD,
                     offs_reg,
-                    amp_step_imm,
+                    amp_step_immediate,
                     offs_reg,
-                    comment=f"next incr offs by {amp_step_imm}",
+                    comment=f"next incr offs by {amp_step_immediate}",
                 )
             else:
                 self.emit(
                     q1asm_instructions.SUB,
                     offs_reg,
-                    -amp_step_imm,
+                    -amp_step_immediate,
                     offs_reg,
-                    comment=f"next incr offs by {amp_step_imm}",
+                    comment=f"next incr offs by {amp_step_immediate}",
                 )
             self.auto_wait(step_duration - constants.GRID_TIME)
         self.elapsed_time += step_duration * (num_steps - 1) if num_steps > 1 else 0

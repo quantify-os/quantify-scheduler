@@ -194,11 +194,9 @@ class PulsarSequencerBase(ABC):
             None if "interm_freq" in seq_settings else seq_settings["interm_freq"]
         )
 
-        self.instruction_generated_pulses_enabled = False
-        if "instruction_generated_pulses_enabled" in seq_settings:
-            self.instruction_generated_pulses_enabled = seq_settings[
-                "instruction_generated_pulses_enabled"
-            ]
+        self.instruction_generated_pulses_enabled = seq_settings.get(
+            "instruction_generated_pulses_enabled", False
+        )
 
         self._settings = SequencerSettings(
             nco_en=False, sync_en=True, modulation_freq=modulation_freq
@@ -305,7 +303,7 @@ class PulsarSequencerBase(ABC):
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
-        Generates the dictionary that corresponds that contains the awg waveforms in the
+        Generates the dictionary that contains the awg waveforms in the
         format accepted by the driver.
 
         Notes
