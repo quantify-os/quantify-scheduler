@@ -519,12 +519,29 @@ class QASMProgram:
 
         .. jupyter-execute::
 
-            # from quantify.scheduler.backends.qblox.qasm_program import QASMProgram #pylint: disable=line-too-long
+            import inspect, os, json
+            from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
+            import quantify.scheduler.schemas.examples as es
+            import quantify.scheduler.backends.qblox.instrument_compilers
 
-            # qasm = QASMProgram()
-            # with qasm.loop(register='R0', label='repeat', repetitions=10):
-            #     qasm.auto_wait(100)
-        """
+            esp = inspect.getfile(es)
+            map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
+            with open(map_f, "r") as f:
+                HARDWARE_MAPPING = json.load(f)
+
+
+            qcm = instrument_compilers.Pulsar_QCM(
+                "qcm0",
+                total_play_time=10,
+                hw_mapping=HARDWARE_MAPPING["qcm0"]
+            )
+            qasm = QASMProgram(qcm.sequencers["seq0"])
+
+            with qasm.loop(register='R0', label='repeat', repetitions=10):
+                qasm.auto_wait(100)
+
+            qasm.instructions
+        """  # FIXME replace json.load() quantify-scheduler#132 #pylint: disable=fixme
         comment = f"iterator for loop with label {label}"
 
         def gen_start():
