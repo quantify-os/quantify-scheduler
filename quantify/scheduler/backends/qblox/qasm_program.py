@@ -522,7 +522,7 @@ class QASMProgram:
             import inspect, os, json
             from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
             import quantify.scheduler.schemas.examples as es
-            import quantify.scheduler.backends.qblox.instrument_compilers
+            from quantify.scheduler.backends.qblox import instrument_compilers
 
             esp = inspect.getfile(es)
             map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
