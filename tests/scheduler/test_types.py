@@ -1,24 +1,27 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-import pytest
-import numpy as np
-from quantify.scheduler import Schedule, Operation
+# pylint: disable=eval-used
+import json
 
-from quantify.scheduler.resources import ClockResource, BasebandClockResource
+import numpy as np
+import pytest
+from quantify.scheduler import Operation, Schedule
+from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.scheduler.gate_library import (
-    Reset,
-    Measure,
     CNOT,
+    CZ,
+    X90,
+    Y90,
+    Measure,
+    Reset,
     Rxy,
     X,
-    X90,
     Y,
-    Y90,
-    CZ,
 )
-from quantify.scheduler.acquisition_library import SSBIntegrationComplex
 from quantify.scheduler.pulse_library import SquarePulse
+from quantify.scheduler.resources import BasebandClockResource, ClockResource
+from quantify.scheduler.schedules import timedomain_schedules
 
 
 def test_schedule_properties():
@@ -41,7 +44,7 @@ def test_schedule_adding_double_resource():
         sched.add_resource(ClockResource("mystery", 6e9))
 
 
-def test_schedule_Bell():
+def test_schedule_bell():
     # Create an empty schedule
     sched = Schedule("Bell experiment")
     assert Schedule.is_valid(sched)
@@ -98,26 +101,26 @@ def test_schedule_add_timing_constraints():
 
 def test_gates_valid():
     init_all = Reset("q0", "q1")  # instantiates
-    x90_q0 = Rxy(theta=124, phi=23.9, qubit="q5")
-    x = X("q0")
-    x90 = X90("q1")
-    y = Y("q0")
-    y90 = Y90("q1")
+    rxy_operation = Rxy(theta=124, phi=23.9, qubit="q5")
+    x_operation = X("q0")
+    x90_operation = X90("q1")
+    y_operation = Y("q0")
+    y90_operation = Y90("q1")
 
-    cz = CZ("q0", "q1")
-    cnot = CNOT("q0", "q6")
+    cz_operation = CZ("q0", "q1")
+    cnot_operation = CNOT("q0", "q6")
 
-    measure = Measure("q0", "q9")
+    measure_operation = Measure("q0", "q9")
 
     assert Operation.is_valid(init_all)
-    assert Operation.is_valid(x90_q0)
-    assert Operation.is_valid(x)
-    assert Operation.is_valid(x90)
-    assert Operation.is_valid(y)
-    assert Operation.is_valid(y90)
-    assert Operation.is_valid(cz)
-    assert Operation.is_valid(cnot)
-    assert Operation.is_valid(measure)
+    assert Operation.is_valid(rxy_operation)
+    assert Operation.is_valid(x_operation)
+    assert Operation.is_valid(x90_operation)
+    assert Operation.is_valid(y_operation)
+    assert Operation.is_valid(y90_operation)
+    assert Operation.is_valid(cz_operation)
+    assert Operation.is_valid(cnot_operation)
+    assert Operation.is_valid(measure_operation)
 
 
 def test_operation_equality():
@@ -130,17 +133,11 @@ def test_operation_equality():
     assert xa_q0 != xb_q0
 
 
-def test_pulses_valid():
-    sqp = SquarePulse(0.35, duration=12e-9, port="q0:fl", clock="cl0.baseband")
-    assert Operation.is_valid(sqp)
-    sqp.hash
-
-
 def test_type_properties():
-    op = Operation("blank op")
-    assert not op.valid_gate
-    assert not op.valid_pulse
-    assert op.name == "blank op"
+    operation = Operation("blank op")
+    assert not operation.valid_gate
+    assert not operation.valid_pulse
+    assert operation.name == "blank op"
 
     gate = X("q0")
     assert gate.valid_gate
@@ -188,3 +185,24 @@ def test_operation_duration():
     assert pulse.duration == square_pulse_duration
     assert x_gate.duration == square_pulse_duration
     assert measure.duration == acquisition_duration
+
+
+def test___repr__():
+    operation = Operation("test", {"gate_info": {"clock": "q0.01"}})
+    assert eval(repr(operation)) == operation
+
+
+def test___str__():
+    operation = Operation("test")
+    assert eval(str(operation)) == operation
+
+
+def test_schedule_to_json():
+    # Arrange
+    schedule = timedomain_schedules.t1_sched(np.zeros(1), "q0")
+
+    # Act
+    json_data = schedule.to_json()
+
+    # Assert
+    json.loads(json_data)

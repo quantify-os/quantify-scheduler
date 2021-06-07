@@ -3,12 +3,19 @@
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
-from uuid import uuid4
+import inspect
+from ast import literal_eval
 from collections import UserDict
-from typing_extensions import Literal
+from copy import deepcopy
+import json
+from typing import Any, Dict
+from uuid import uuid4
+
 import jsonschema
-from quantify.utilities import general
+import numpy as np
+from typing_extensions import Literal
 from quantify.scheduler import resources
+from quantify.utilities import general
 
 
 class Operation(UserDict):  # pylint: disable=too-many-ancestors
@@ -42,26 +49,59 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         super().__init__()
 
         # ensure keys exist
+        self.data["name"] = name
         self.data["gate_info"] = {}
         self.data["pulse_info"] = []
         self.data["acquisition_info"] = []
         self.data["logic_info"] = {}
         self._duration: float = 0
 
-        if name is not None:
-            self.data["name"] = name
         if data is not None:
             self.data.update(data)
+            self._deserialize()
             self._update()
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """
-        Two operations are considered equal if the contents of the "data" attribute
-        are identical.
+        Returns the equality of two instances based on its content :code:`self.data`.
 
-        This is tested through the :code:`.hash` attribute.
+        Parameters
+        ----------
+        other :
+
+        Returns
+        -------
+        :
         """
-        return self.hash == other.hash
+        return repr(self) == repr(other)
+
+    def __str__(self) -> str:
+        """
+        Returns a concise string represenation which can be evaluated into a new
+        instance using `eval(str(operation))` only when the data dictionary has
+        not been modified.
+
+        This representation is guaranteed to be unique.
+        """
+        return f"{self.__class__.__name__}('{self.name}')"
+
+    def __repr__(self) -> str:
+        """
+        Returns the string representation  of this instance.
+
+        This represenation can always be evalued to create a new instance.
+
+        .. code-block::
+
+            eval(repr(operation))
+
+        Returns
+        -------
+        :
+        """
+        _data = self._serialize()
+        data_str = f"{str(self)[:-1]}, data={_data})"
+        return data_str
 
     def _update(self) -> None:
         """Update the Operation's internals."""
@@ -102,6 +142,46 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         """
         return general.make_hash(self.data)
 
+    @classmethod
+    def _get_signature(cls, parameters: dict) -> str:
+        """
+        Returns the constructor call signature of this instance for serialization.
+
+        The string constructor representation can be used to recreate the object
+        using eval(signature).
+
+        Parameters
+        ----------
+        parameters : dict
+            The current data dictionary.
+
+        Returns
+        -------
+        :
+        """
+        signature = inspect.signature(cls)
+
+        def to_kwarg(key) -> str:
+            """
+            Returns a key-value pair in string format of a keyword argument.
+
+            Parameters
+            ----------
+            key :
+
+            Returns
+            -------
+            :
+            """
+            value = parameters[key]
+            value = f"'{value}'" if isinstance(value, str) else value
+            return f"{key}={value}"
+
+        required_params = list(signature.parameters.keys())[:-1]
+        kwargs_list = map(to_kwarg, required_params)
+
+        return f'{cls.__name__}({",".join(kwargs_list)})'
+
     def add_gate_info(self, gate_operation: Operation) -> None:
         """
         Updates self.data['gate_info'] with contents of gate_operation.
@@ -137,6 +217,33 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
         self._update()
 
+    def _serialize(self) -> Dict[str, Any]:
+        """
+        Serializes the data dictionary.
+
+        Returns
+        -------
+        :
+        """
+        _data = deepcopy(self.data)
+        if "unitary" in _data["gate_info"] and isinstance(
+            _data["gate_info"]["unitary"], (np.generic, np.ndarray)
+        ):
+            _data["gate_info"]["unitary"] = np.array2string(
+                _data["gate_info"]["unitary"], separator=", ", precision=9
+            )
+
+        return _data
+
+    def _deserialize(self) -> None:
+        """Deserializes the data dictionary."""
+        if "unitary" in self.data["gate_info"] and isinstance(
+            self.data["gate_info"]["unitary"], str
+        ):
+            self.data["gate_info"]["unitary"] = np.array(
+                literal_eval(self.data["gate_info"]["unitary"])
+            )
+
     @classmethod
     def is_valid(cls, operation) -> bool:
         """Checks if the operation is valid according to its schema."""
@@ -148,8 +255,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     @property
     def valid_gate(self) -> bool:
         """
-        An operation is a valid gate if it contains information on how
-        to represent the operation on the gate level.
+        An operation is a valid gate if it contains information on how to represent
+        the operation on the gate level.
         """
         if self.data["gate_info"]:
             return True
@@ -158,8 +265,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     @property
     def valid_pulse(self) -> bool:
         """
-        An operation is a valid pulse if it contains information on how
-        to represent the operation on the pulse level.
+        An operation is a valid pulse if it contains information on how to represent
+        the operation on the pulse level.
         """
         if self.data["pulse_info"]:
             return True
@@ -168,8 +275,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     @property
     def valid_acquisition(self) -> bool:
         """
-        An operation is a valid acquisition if it contains information on how
-        to represent the operation as a acquisition on the pulse level.
+        An operation is a valid acquisition if it contains information on how to
+        represent the operation as a acquisition on the pulse level.
         """
         if len(self.data["acquisition_info"]) > 0:
             return True
@@ -290,6 +397,46 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         """
         return self.data["resource_dict"]
 
+    def to_json(self) -> str:
+        """
+        Converts the Schedule data structure to a JSON string.
+
+        Returns
+        -------
+        :
+            The json string result.
+        """
+
+        class ScheduleJSONEncoder(json.JSONEncoder):
+            """
+            Custom JSON Encorder which encodes the quantify Schedule to to valid
+            JSON format.
+            """
+
+            def default(self, o):
+                """
+                Overloads the json.JSONEncoder default method that returns a
+                serializable object.
+                """
+                if isinstance(o, Operation):
+                    return repr(o)
+                if hasattr(o, "__dict__"):
+                    return o.__dict__
+
+                # Let the base class default method raise the TypeError
+                return json.JSONEncoder.default(self, o)
+
+        return json.dumps(self.data, cls=ScheduleJSONEncoder)
+
+    # @classmethod
+    # def from_json(cls, data) -> Schedule:
+    #     class JSONDecoder(json.JSONDecoder):
+    #         def __init__(self, *args, **kwargs) -> None:
+    #             super().__init__(object_hook=self.object_hook, *args, **kwargs)
+
+    #         def object_hook(self, o):
+    #             pass
+
     def add_resources(self, resources_list: list):
         """Add wrapper for adding multiple resources"""
         for resource in resources_list:
@@ -368,8 +515,6 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         """
         assert isinstance(operation, Operation)
 
-        operation_hash = operation.hash
-
         if label is None:
             label = str(uuid4())
 
@@ -405,14 +550,15 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
                     'Reference "{}" does not exist in schedule.'.format(ref_op)
                 )
 
-        self.data["operation_dict"][operation_hash] = operation
+        operation_id = str(operation)
+        self.data["operation_dict"][operation_id] = operation
         timing_constr = {
             "label": label,
             "rel_time": rel_time,
             "ref_op": ref_op,
             "ref_pt_new": ref_pt_new,
             "ref_pt": ref_pt,
-            "operation_hash": operation_hash,
+            "operation_hash": operation_id,
         }
         self.data["timing_constraints"].append(timing_constr)
 

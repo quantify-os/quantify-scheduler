@@ -71,11 +71,25 @@ timedomain_schedules
 .. automodule:: quantify.scheduler.schedules.timedomain_schedules
     :members:
 
-timedomain_schedules
-~~~~~~~~~~~~~~~~~~~~
+trace_schedules
+~~~~~~~~~~~~~~~
 
 .. automodule:: quantify.scheduler.schedules.trace_schedules
     :members:
+
+
+device_elements
+---------------
+
+.. automodule:: quantify.scheduler.device_elements
+    :members:
+    :show-inheritance:
+
+.. automodule:: quantify.scheduler.device_elements.transmon_element
+    :members:
+    :show-inheritance:
+
+
 
 compilation
 -----------
