@@ -11,6 +11,7 @@ from quantify.scheduler.compilation import determine_absolute_timing
 
 # pylint: disable=no-name-in-module
 from quantify.utilities.general import import_func_from_string
+from quantify.scheduler.visualization import constants
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -19,14 +20,10 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+    time
+    qubit_idxs
+    text
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
@@ -34,7 +31,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             x0=time,
             y0=qubit_idx,
             text=text,
-            fillcolor="C0",
+            fillcolor=constants.COLOR_LAZURE,
             width=0.8,
             height=0.5,
             **kw
@@ -43,18 +40,15 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
 def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
-    Adds a visual indicator for a Baseband pulse to the `mathplotlib.axes.Axis` instance.
+    Adds a visual indicator for a Baseband pulse to the `mathplotlib.axes.Axis`
+    instance.
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+    time
+    qubit_idxs
+    text
     """
     for qubit_idx in qubit_idxs:
         ps.fluxPulse(
@@ -65,45 +59,39 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw
 
 def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
-    Adds a visual indicator for a Modulated pulse to the `mathplotlib.axes.Axis` instance.
+    Adds a visual indicator for a Modulated pulse to the `mathplotlib.axes.Axis`
+    instance.
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+    time
+    qubit_idxs
+    text
     """
     for qubit_idx in qubit_idxs:
         ps.mwPulse(ax, pos=time, y_offs=qubit_idx, width=0.4, amp=0.33, **kw)
         ax.text(time + 0.2, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
+# pylint: disable=unused-argument
 def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     A simple meter to depict a measurement.
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+    time
+    qubit_idxs
+    text
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
             ax,
             x0=time,
             y0=qubit_idx,
-            fillcolor="C4",
+            fillcolor=constants.COLOR_GREY,
             y_offs=0,
             width=0.8,
             height=0.5,
@@ -111,41 +99,65 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
         )
 
 
+# pylint: disable=unused-argument
+def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
+    """
+    Variation of the meter to depict a acquisition.
+
+    Parameters
+    ----------
+    ax
+    time
+    qubit_idxs
+    text
+    """
+    for qubit_idx in qubit_idxs:
+        ps.meter(
+            ax,
+            x0=time,
+            y0=qubit_idx,
+            fillcolor="white",
+            y_offs=0.0,
+            width=0.8,
+            height=0.5,
+            framewidth=constants.ACQ_METER_LINEWIDTH,
+            **kw
+        )
+
+
+# pylint: disable=unused-argument
 def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     Markers to denote a CNOT gate between two qubits.
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+    time
+    qubit_idxs
+    text
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color="C1")
+    ax.plot(
+        [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
+    )
     ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
 
 
+# pylint: disable=unused-argument, invalid-name
 def cz(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
     Markers to denote a CZ gate between two qubits.
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+    time
+    qubit_idxs
+    text
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color="C1")
+    ax.plot(
+        [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
+    )
 
 
 def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -154,14 +166,13 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax :
-
-    time :
-
-    qubit_idxs :
-
-    text :
-
+    ax
+        matplotlib axis object.
+    time
+        x position to draw the reset on
+    qubit_idxs
+        indices of the qubits that the reset is performed on.
+    text
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
@@ -187,36 +198,38 @@ def _locate_qubit_in_address(qubit_map, address):
     raise ValueError("Could not resolve address '{}'".format(address))
 
 
+# pylint disabled because func was implemented before pylint was adopted
+# pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def circuit_diagram_matplotlib(
     schedule: Schedule, figsize: Tuple[int, int] = None
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
 
-    For this visualization backend to work, the schedule must contain a value for `abs_time` for each element in the
-    timing_constraints.
+    For this visualization backend to work, the schedule must contain a value for
+    `abs_time` for each element in the timing_constraints.
 
     Parameters
     ----------
-    schedule :
+    schedule
         the schedule to render.
-    figsize :
+    figsize
         matplotlib figsize.
 
     Returns
     -------
-    fig :
+    fig
         matplotlib figure object.
-    ax :
+    ax
         matplotlib axis object.
     """
     schedule = determine_absolute_timing(schedule, "ideal")
 
     qubit_map: Dict[str, int] = dict()
     qubits: List[str] = set()
-    for _, op in schedule.operations.items():
-        if op.valid_gate:
-            qubits.update(op.data["gate_info"]["qubits"])
+    for _, operation in schedule.operations.items():
+        if operation.valid_gate:
+            qubits.update(operation.data["gate_info"]["qubits"])
 
     for index, qubit in enumerate(sorted(qubits)):
         qubit_map[qubit] = index
@@ -227,19 +240,19 @@ def circuit_diagram_matplotlib(
     # Note: needs to be done be done before creating figure and axhline
     # in order to avoid unnecessary redraws.
     for t_constr in schedule.timing_constraints:
-        op = schedule.operations[t_constr["operation_hash"]]
-        if op.valid_pulse:
+        operation = schedule.operations[t_constr["operation_hash"]]
+        if operation.valid_pulse:
             try:
-                for pulse_info in op["pulse_info"]:
+                for pulse_info in operation["pulse_info"]:
                     _locate_qubit_in_address(qubit_map, pulse_info["port"])
             except ValueError:
                 for key in qubit_map:
                     qubit_map[key] += 1
                 qubit_map["other"] = 0
                 break
-        if op.valid_acquisition:
+        if operation.valid_acquisition:
             try:
-                for acq_info in op["acquisition_info"]:
+                for acq_info in operation["acquisition_info"]:
                     _locate_qubit_in_address(qubit_map, acq_info["port"])
             except ValueError:
                 for key in qubit_map:
@@ -254,8 +267,9 @@ def circuit_diagram_matplotlib(
     ax.set_aspect("equal")
 
     ax.set_ylim(-0.5, len(qubit_map) - 0.5)
-    for q in qubits:
-        ax.axhline(qubit_map[q], color=".75")
+    ax.axhline(0, color="0.1", linewidth=0.9)
+    for qubit in qubits:
+        ax.axhline(qubit_map[qubit], color="0.1", linewidth=0.9)
 
     # plot the qubit names on the y-axis
     ax.set_yticks(list(qubit_map.values()))
@@ -263,48 +277,50 @@ def circuit_diagram_matplotlib(
 
     total_duration = 0
     for t_constr in schedule.timing_constraints:
-        op = schedule.operations[t_constr["operation_hash"]]
+        operation = schedule.operations[t_constr["operation_hash"]]
 
         time = t_constr["abs_time"]
         total_duration = total_duration if total_duration > time else time
 
-        if op.valid_gate:
-            plot_func = import_func_from_string(op["gate_info"]["plot_func"])
-            idxs = [qubit_map[q] for q in op["gate_info"]["qubits"]]
-            plot_func(ax, time=time, qubit_idxs=idxs, text=op["gate_info"]["tex"])
-        elif op.valid_pulse:
+        if operation.valid_gate:
+            plot_func = import_func_from_string(operation["gate_info"]["plot_func"])
+            idxs = [qubit_map[qubit] for qubit in operation["gate_info"]["qubits"]]
+            plot_func(
+                ax, time=time, qubit_idxs=idxs, text=operation["gate_info"]["tex"]
+            )
+        elif operation.valid_pulse:
             idxs: List[int]
             try:
                 idxs = [
                     qubit_map[_locate_qubit_in_address(qubit_map, pulse_info["port"])]
-                    for pulse_info in op["pulse_info"]
+                    for pulse_info in operation["pulse_info"]
                 ]
             except ValueError:
                 # The pulse port was not found in the qubit_map
                 # move this pulse to the 'other' timeline
                 idxs = [0]
 
-            for pulse_info in op["pulse_info"]:
+            for pulse_info in operation["pulse_info"]:
                 clock_id: str = pulse_info["clock"]
                 clock_resource: dict = schedule.data["resource_dict"][clock_id]
                 if clock_resource["freq"] == 0:
-                    pulse_baseband(ax, time=time, qubit_idxs=idxs, text=op.name)
+                    pulse_baseband(ax, time=time, qubit_idxs=idxs, text=operation.name)
                 else:
-                    pulse_modulated(ax, time=time, qubit_idxs=idxs, text=op.name)
-        elif op.valid_acquisition:
+                    pulse_modulated(ax, time=time, qubit_idxs=idxs, text=operation.name)
+        elif operation.valid_acquisition:
             idxs: List[int]
             try:
                 idxs = [
                     qubit_map[_locate_qubit_in_address(qubit_map, acq_info["port"])]
-                    for acq_info in op["acquisition_info"]
+                    for acq_info in operation["acquisition_info"]
                 ]
             except ValueError:
                 # The pulse port was not found in the qubit_map
                 # move this pulse to the 'other' timeline
                 idxs = [0]
 
-            for acq_info in op["acquisition_info"]:
-                meter(ax, time=time, qubit_idxs=idxs, text=op.name)
+            for _ in operation["acquisition_info"]:
+                acq_meter(ax, time=time, qubit_idxs=idxs, text=operation.name)
         else:
             raise ValueError("Unknown operation")
 

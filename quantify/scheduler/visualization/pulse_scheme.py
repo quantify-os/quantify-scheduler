@@ -18,7 +18,7 @@ import matplotlib.patches
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
-import quantify.scheduler.visualization.pulse_diagram as pd
+from quantify.scheduler.visualization import pulse_diagram, constants
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ def mwPulse(
     label: Optional[str] = None,
     phase=0,
     label_height: float = 1.3,
-    color: str = "C0",
+    color: str = constants.COLOR_ORANGE,
     modulation: str = "normal",
     **plot_kws,
 ) -> float:
@@ -152,7 +152,7 @@ def fluxPulse(
     amp: float = 1.5,
     label: Optional[str] = None,
     label_height: float = 1.7,
-    color: str = "C1",
+    color: str = constants.COLOR_ORANGE,
     **plot_kws,
 ) -> float:
     """
@@ -213,7 +213,7 @@ def ramZPulse(
     s: float = 0.1,
     amp: float = 1.5,
     sep: float = 1.5,
-    color: str = "C1",
+    color: str = constants.COLOR_ORANGE,
 ) -> float:
     """
     Draw a Ram-Z flux pulse, i.e. only part of the pulse is shaded, to indicate
@@ -335,6 +335,7 @@ def meter(
     width: float = 1.1,
     height: float = 0.8,
     color: str = "black",
+    framewidth: float = 0.0,
     fillcolor: Optional[str] = None,
 ) -> None:
     """
@@ -356,6 +357,8 @@ def meter(
 
     color :
 
+    framewidth:
+
     fillcolor :
 
 
@@ -376,26 +379,27 @@ def meter(
         edgecolor=color,
         fill=fill,
         zorder=5,
+        linewidth=framewidth,
     )
     ax.add_patch(p1)
     p0 = matplotlib.patches.Wedge(
-        (x0, y0 - height / 1.75 + y_offs),
-        0.4,
-        theta1=40,
-        theta2=180 - 40,
+        (x0, y0 - height / constants.METER_WEDGE_HEIGHT_SCALING + y_offs),
+        constants.METER_WEDGE_RADIUS,
+        theta1=constants.METER_WEDGE_ANGLE,
+        theta2=180 - constants.METER_WEDGE_ANGLE,
         color=color,
-        lw=2,
+        lw=1.5,
         width=0.01,
         zorder=5,
     )
     ax.add_patch(p0)
-    arrow_len = height / 2.2
+    arrow_len = height / 2.0
     ax.arrow(
         x0,
-        y0 - height / 5 + y_offs,
-        dx=arrow_len * np.cos(np.deg2rad(70)),
-        dy=arrow_len * np.sin(np.deg2rad(70)),
-        width=0.03,
+        y0 - height / constants.METER_ARROW_HEIGHT_SCALING + y_offs,
+        dx=arrow_len * np.cos(np.deg2rad(constants.METER_ARROW_ANGLE)),
+        dy=arrow_len * np.sin(np.deg2rad(constants.METER_ARROW_ANGLE)),
+        width=0.025,
         color=color,
         zorder=5,
     )
@@ -455,12 +459,20 @@ def box_text(
         facecolor=fillcolor,
         edgecolor=color,
         fill=fill,
+        linewidth=0,
         zorder=5,
     )
     ax.add_patch(p1)
 
     ax.text(
-        x0, y0, text, ha="center", va="center", zorder=6, size=fontsize, color=textcolor
+        x0,
+        y0,
+        text,
+        ha="center",
+        va="center",
+        zorder=6,
+        size=fontsize,
+        color=textcolor,
     ).set_clip_on(True)
 
 
@@ -476,4 +488,4 @@ def pulse_diagram_plotly(*args, **kwargs):
         ImportWarning,
     )
 
-    return pd.pulse_diagram_plotly(*args, **kwargs)
+    return pulse_diagram.pulse_diagram_plotly(*args, **kwargs)
