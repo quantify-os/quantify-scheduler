@@ -18,8 +18,7 @@ import matplotlib.patches
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
-import quantify.scheduler.visualization.pulse_diagram as pd
-from quantify.scheduler.visualization import constants as cnst
+from quantify.scheduler.visualization import pulse_diagram, constants
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ def mwPulse(
     label: Optional[str] = None,
     phase=0,
     label_height: float = 1.3,
-    color: str = cnst.COLOR_ORANGE,
+    color: str = constants.COLOR_ORANGE,
     modulation: str = "normal",
     **plot_kws,
 ) -> float:
@@ -153,7 +152,7 @@ def fluxPulse(
     amp: float = 1.5,
     label: Optional[str] = None,
     label_height: float = 1.7,
-    color: str = cnst.COLOR_ORANGE,
+    color: str = constants.COLOR_ORANGE,
     **plot_kws,
 ) -> float:
     """
@@ -214,7 +213,7 @@ def ramZPulse(
     s: float = 0.1,
     amp: float = 1.5,
     sep: float = 1.5,
-    color: str = cnst.COLOR_ORANGE,
+    color: str = constants.COLOR_ORANGE,
 ) -> float:
     """
     Draw a Ram-Z flux pulse, i.e. only part of the pulse is shaded, to indicate
@@ -384,10 +383,10 @@ def meter(
     )
     ax.add_patch(p1)
     p0 = matplotlib.patches.Wedge(
-        (x0, y0 - height / cnst.METER_WEDGE_HEIGHT_SCALING + y_offs),
-        cnst.METER_WEDGE_RADIUS,
-        theta1=cnst.METER_WEDGE_ANGLE,
-        theta2=180 - cnst.METER_WEDGE_ANGLE,
+        (x0, y0 - height / constants.METER_WEDGE_HEIGHT_SCALING + y_offs),
+        constants.METER_WEDGE_RADIUS,
+        theta1=constants.METER_WEDGE_ANGLE,
+        theta2=180 - constants.METER_WEDGE_ANGLE,
         color=color,
         lw=1.5,
         width=0.01,
@@ -397,9 +396,9 @@ def meter(
     arrow_len = height / 2.0
     ax.arrow(
         x0,
-        y0 - height / cnst.METER_ARROW_HEIGHT_SCALING + y_offs,
-        dx=arrow_len * np.cos(np.deg2rad(cnst.METER_ARROW_ANGLE)),
-        dy=arrow_len * np.sin(np.deg2rad(cnst.METER_ARROW_ANGLE)),
+        y0 - height / constants.METER_ARROW_HEIGHT_SCALING + y_offs,
+        dx=arrow_len * np.cos(np.deg2rad(constants.METER_ARROW_ANGLE)),
+        dy=arrow_len * np.sin(np.deg2rad(constants.METER_ARROW_ANGLE)),
         width=0.025,
         color=color,
         zorder=5,
@@ -489,4 +488,4 @@ def pulse_diagram_plotly(*args, **kwargs):
         ImportWarning,
     )
 
-    return pd.pulse_diagram_plotly(*args, **kwargs)
+    return pulse_diagram.pulse_diagram_plotly(*args, **kwargs)

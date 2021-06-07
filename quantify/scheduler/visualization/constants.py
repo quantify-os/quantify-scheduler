@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Constants used for drawing the figures."""
+"""Constants used for drawing figures."""
 
 # draw circuit diagram mpl color scheme
 COLOR_BLUE = "#5296dd"
