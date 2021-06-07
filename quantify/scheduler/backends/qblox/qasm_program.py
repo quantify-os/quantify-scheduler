@@ -219,7 +219,7 @@ class QASMProgram:
                 q1asm_instructions.SET_AWG_GAIN,
                 0,
                 0,
-                comment="zero as workaround",
+                comment="set to 0 at end of pulse",
             )
         self.elapsed_time += pulse_time_remaining
 
