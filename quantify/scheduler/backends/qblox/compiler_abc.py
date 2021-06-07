@@ -22,6 +22,7 @@ from quantify.data.handling import (
 
 from quantify.scheduler.helpers.waveforms import modulate_waveform
 
+from quantify.scheduler.backends.qblox import non_generic
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
@@ -68,14 +69,14 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
-        name:
+        name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time:
+        total_play_time
             Total time execution of the schedule should go on for. This parameter is
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping:
+        hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
@@ -91,11 +92,11 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
-        port:
+        port
             The port the pulse needs to be sent to.
-        clock:
+        clock
             The clock for modulation of the pulse. Can be a BasebandClock.
-        pulse_info:
+        pulse_info
             Data structure containing all the information regarding this specific pulse
             operation.
         """
@@ -107,11 +108,11 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
-        port:
+        port
             The port the pulse needs to be sent to.
-        clock:
+        clock
             The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info:
+        acq_info
             Data structure containing all the information regarding this specific
             acquisition operation.
         """
@@ -143,8 +144,8 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
-        repetitions:
-            Number of times execution the schedule is repeated
+        repetitions
+            Number of times execution the schedule is repeated.
 
         Returns
         -------
@@ -166,23 +167,22 @@ class PulsarSequencerBase(ABC):
         parent: PulsarBase,
         name: str,
         portclock: Tuple[str, str],
-        modulation_freq: Optional[float] = None,
+        seq_settings: dict,
     ):
         """
         Constructor for the sequencer compiler.
 
         Parameters
         ----------
-        parent:
+        parent
             A reference to the parent instrument this sequencer belongs to.
-        name:
+        name
             Name of the sequencer. This is supposed to match "seq{index}".
-        portclock:
+        portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
-        modulation_freq:
-            The frequency used for modulation. This can either be passed in the
-            constructor, or assigned in a later stage using `assign_frequency`.
+        seq_settings
+            Sequencer settings dictionary.
         """
         self.parent = parent
         self._name = name
@@ -190,6 +190,14 @@ class PulsarSequencerBase(ABC):
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
+        modulation_freq = (
+            None if "interm_freq" in seq_settings else seq_settings["interm_freq"]
+        )
+
+        self.instruction_generated_pulses_enabled = seq_settings.get(
+            "instruction_generated_pulses_enabled", False
+        )
+
         self._settings = SequencerSettings(
             nco_en=False, sync_en=True, modulation_freq=modulation_freq
         )
@@ -203,7 +211,7 @@ class PulsarSequencerBase(ABC):
         Returns
         -------
         :
-            The portclock
+            The portclock.
         """
         return self.port, self.clock
 
@@ -215,7 +223,7 @@ class PulsarSequencerBase(ABC):
         Returns
         -------
         :
-            The frequency
+            The frequency.
         """
         return self._settings.modulation_freq
 
@@ -275,7 +283,7 @@ class PulsarSequencerBase(ABC):
 
         Parameters
         ----------
-        freq:
+        freq
             The frequency to be used for modulation.
 
         Raises
@@ -295,7 +303,7 @@ class PulsarSequencerBase(ABC):
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
-        Generates the dictionary that corresponds that contains the awg waveforms in the
+        Generates the dictionary that contains the awg waveforms in the
         format accepted by the driver.
 
         Notes
@@ -320,7 +328,7 @@ class PulsarSequencerBase(ABC):
         Returns
         -------
         :
-            The awg dictionary
+            The awg dictionary.
 
         Raises
         ------
@@ -329,15 +337,21 @@ class PulsarSequencerBase(ABC):
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
-            # FIXME: Most of this is unnecessary but requires
-            #  that we change how we deal with QASMRuntimeSettings
-            raw_wf_data = generate_waveform_data(
-                pulse.data, sampling_rate=SAMPLING_RATE
-            )
-            raw_wf_data = self._apply_corrections_to_waveform(
-                raw_wf_data, pulse.duration, pulse.timing
-            )
-            raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
+            reserved_pulse_id = non_generic.check_reserved_pulse_id(pulse)
+            if reserved_pulse_id is None:
+                raw_wf_data = generate_waveform_data(
+                    pulse.data, sampling_rate=SAMPLING_RATE
+                )
+                raw_wf_data = self._apply_corrections_to_waveform(
+                    raw_wf_data, pulse.duration, pulse.timing
+                )
+                raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
+            else:
+                pulse.uuid = reserved_pulse_id
+                raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
+                    reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
+                )
+
             if np.abs(amp_i) > self.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
@@ -358,7 +372,7 @@ class PulsarSequencerBase(ABC):
                 awg_gain_0=amp_i / self.awg_output_volt,
                 awg_gain_1=amp_q / self.awg_output_volt,
             )
-            if pulse.uuid not in waveforms_complex:
+            if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return _generate_waveform_dict(waveforms_complex)
 
@@ -389,7 +403,7 @@ class PulsarSequencerBase(ABC):
         Returns
         -------
         :
-            The acq dictionary
+            The acq dictionary.
 
         Raises
         ------
@@ -429,11 +443,11 @@ class PulsarSequencerBase(ABC):
 
         Parameters
         ----------
-        waveform_data:
+        waveform_data
             The data to correct.
-        time_duration:
+        time_duration
             Total time is seconds that the waveform is used.
-        t0:
+        t0
             The start time of the pulse/acquisition. This is used for instance to make
             the make the phase change continuously when the start time is not zero.
 
@@ -463,14 +477,10 @@ class PulsarSequencerBase(ABC):
             )
 
     # pylint: disable=too-many-locals
-    # pylint: disable=too-many-arguments
-    @classmethod
     def generate_qasm_program(
-        cls,
+        self,
         total_sequence_time: float,
-        pulses: Optional[List[OpInfo]] = None,
         awg_dict: Optional[Dict[str, Any]] = None,
-        acquisitions: Optional[List[OpInfo]] = None,
         acq_dict: Optional[Dict[str, Any]] = None,
         repetitions: Optional[int] = 1,
     ) -> str:
@@ -498,23 +508,23 @@ class PulsarSequencerBase(ABC):
 
         Parameters
         ----------
-        total_sequence_time:
+        total_sequence_time
             Total time the program needs to play for. If the sequencer would be done
             before this time, a wait is added at the end to ensure synchronization.
-        pulses:
+        pulses
             A list containing all the pulses that are to be played.
-        awg_dict:
+        awg_dict
             Dictionary containing the pulse waveform data and the index that is assigned
             to the I and Q waveforms, as generated by the `generate_awg_dict` function.
             This is used to extract the relevant indexes when adding a play instruction.
-        acquisitions:
+        acquisitions
             A list containing all the acquisitions that are to be performed.
-        acq_dict:
+        acq_dict
             Dictionary containing the acquisition waveform data and the index that is
             assigned to the I and Q waveforms, as generated by the `generate_acq_dict`
             function. This is used to extract the relevant indexes when adding an
             acquire instruction.
-        repetitions:
+        repetitions
             Number of times to repeat execution of the schedule.
 
         Returns
@@ -525,14 +535,14 @@ class PulsarSequencerBase(ABC):
         loop_label = "start"
         loop_register = "R0"
 
-        qasm = QASMProgram()
+        qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
         qasm.emit(q1asm_instructions.SET_MARKER, 1)
 
         # program body
-        pulses = list() if pulses is None else pulses
-        acquisitions = list() if acquisitions is None else acquisitions
+        pulses = list() if self.pulses is None else self.pulses
+        acquisitions = list() if self.acquisitions is None else self.acquisitions
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
 
@@ -543,15 +553,15 @@ class PulsarSequencerBase(ABC):
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
                 if operation.is_acquisition:
-                    idx0, idx1 = cls.get_indices_from_wf_dict(operation.uuid, acq_dict)
+                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, acq_dict)
                     qasm.wait_till_start_then_acquire(operation, idx0, idx1)
                 else:
-                    idx0, idx1 = cls.get_indices_from_wf_dict(operation.uuid, awg_dict)
+                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
             end_time = qasm.to_pulsar_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
-            if wait_time <= 0:
+            if wait_time < 0:
                 raise RuntimeError(
                     f"Invalid timing detected, attempting to insert wait "
                     f"of {wait_time} ns. The total duration of the "
@@ -567,16 +577,16 @@ class PulsarSequencerBase(ABC):
         return str(qasm)
 
     @staticmethod
-    def get_indices_from_wf_dict(uuid: int, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
+    def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
         """
         Takes a awg_dict or acq_dict and extracts the waveform indices based off of the
         uuid of the pulse/acquisition.
 
         Parameters
         ----------
-        uuid:
+        uuid
             The unique identifier of the pulse/acquisition.
-        wf_dict:
+        wf_dict
             The awg or acq dict that holds the waveform data and indices.
 
         Returns
@@ -587,7 +597,9 @@ class PulsarSequencerBase(ABC):
             Index of the Q waveform.
         """
         name_real, name_imag = generate_waveform_names_from_uuid(uuid)
-        return wf_dict[name_real]["index"], wf_dict[name_imag]["index"]
+        idx_real = None if name_real not in wf_dict else wf_dict[name_real]["index"]
+        idx_imag = None if name_imag not in wf_dict else wf_dict[name_imag]["index"]
+        return idx_real, idx_imag
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -602,12 +614,12 @@ class PulsarSequencerBase(ABC):
 
         Parameters
         ----------
-        program:
+        program
             The compiled QASM program as a string.
-        awg_dict:
+        awg_dict
             The dictionary containing all the awg data and indices. This is expected to
             be of the form generated by the `generate_awg_dict` method.
-        acq_dict:
+        acq_dict
             The dictionary containing all the acq data and indices. This is expected to
             be of the form generated by the `generate_acq_dict` method.
 
@@ -633,9 +645,9 @@ class PulsarSequencerBase(ABC):
 
         Parameters
         ----------
-        wf_and_pr_dict:
+        wf_and_pr_dict
             The dict to dump as a json file.
-        label:
+        label
             A label that is appended to the filename.
 
         Returns
@@ -683,9 +695,7 @@ class PulsarSequencerBase(ABC):
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
-            self.pulses,
             awg_dict,
-            self.acquisitions,
             acq_dict,
             repetitions=repetitions,
         )
@@ -708,16 +718,14 @@ class PulsarBase(InstrumentCompiler, ABC):
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
     implementations are defined in subclasses. Effectively, this base class contains the
     functionality shared by the Pulsar QRM and Pulsar QCM.
-
-    Attributes
-    ----------
-    output_to_sequencer_idx:
-        Dictionary that maps output names to specific sequencer indices. This
-        implementation is temporary and will change when multiplexing is supported by
-        the hardware.
     """
 
     output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
+    """
+    Dictionary that maps output names to specific sequencer indices. This
+    implementation is temporary and will change when multiplexing is supported by
+    the hardware.
+    """
 
     def __init__(
         self,
@@ -730,14 +738,14 @@ class PulsarBase(InstrumentCompiler, ABC):
 
         Parameters
         ----------
-        name:
+        name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time:
+        total_play_time
             Total time execution of the schedule should go on for. This parameter is
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping:
+        hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
@@ -780,9 +788,9 @@ class PulsarBase(InstrumentCompiler, ABC):
 
         Parameters
         ----------
-        portclock:
+        portclock
             A tuple with the port as first element and clock as second.
-        freq:
+        freq
             The modulation frequency to assign to the portclock.
         """
         seq_name = self.portclock_map[portclock]
@@ -861,14 +869,11 @@ class PulsarBase(InstrumentCompiler, ABC):
                 )
             portclock_dict = portclock_dicts[0]
             portclock = portclock_dict["port"], portclock_dict["clock"]
-            freq = (
-                None
-                if "interm_freq" in portclock_dict
-                else portclock_dict["interm_freq"]
-            )
 
             seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = self.sequencer_type(self, seq_name, portclock, freq)
+            sequencers[seq_name] = self.sequencer_type(
+                self, seq_name, portclock, portclock_dict
+            )
             if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
                     io_cfg["mixer_corrections"]
@@ -905,8 +910,8 @@ class PulsarBase(InstrumentCompiler, ABC):
 
         Parameters
         ----------
-        repetitions:
-            Number of times execution the schedule is repeated
+        repetitions
+            Number of times execution the schedule is repeated.
 
         Returns
         -------

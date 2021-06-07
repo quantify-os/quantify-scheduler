@@ -32,14 +32,14 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
-        name:
+        name
             QCoDeS name of the device it compiles for.
-        total_play_time:
+        total_play_time
             Total time execution of the schedule should go on for. This parameter is
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        lo_freq:
+        lo_freq
             LO frequency it needs to be set to. Either this is passed to the constructor
             or set later in the compilation process, in case the LO frequency is not
             initially given and needs to be calculated.
@@ -54,11 +54,8 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
-        freq:
+        freq
             The frequency to set it to.
-
-        Returns
-        -------
 
         Raises
         -------
@@ -83,7 +80,7 @@ class LocalOscillator(InstrumentCompiler):
         Returns
         -------
         :
-            The current frequency
+            The current frequency.
         """
         return self._lo_freq
 
@@ -93,8 +90,8 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
-        repetitions:
-            Number of times execution the schedule is repeated
+        repetitions
+            Number of times execution the schedule is repeated.
 
         Returns
         -------
@@ -112,28 +109,20 @@ class QCMSequencer(PulsarSequencerBase):
     """
     Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
     specific to a Pulsar QCM sequencer.
-
-    Attributes
-    ----------
-    awg_output_volt:
-        Voltage range of the awg output paths.
     """
 
     awg_output_volt = 2.5
+    """Voltage range of the awg output paths."""
 
 
 class QRMSequencer(PulsarSequencerBase):
     """
     Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
     specific to a Pulsar QRM sequencer.
-
-    Attributes
-    ----------
-    awg_output_volt:
-        Voltage range of the awg output paths.
     """
 
     awg_output_volt = 0.5
+    """Voltage range of the awg output paths."""
 
 
 # pylint: disable=invalid-name
@@ -155,7 +144,7 @@ class Pulsar_QCM(PulsarBase):
         Raises
         ------
         RuntimeError
-            Pulsar_QCM._acquisitions is not empty
+            Pulsar_QCM._acquisitions is not empty.
         """
         if len(self._acquisitions) > 0:
             raise RuntimeError(
@@ -171,21 +160,18 @@ class Pulsar_QCM(PulsarBase):
 
         Parameters
         ----------
-        port:
+        port
             The port the pulse needs to be sent to.
-        clock:
+        clock
             The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info:
+        acq_info
             Data structure containing all the information regarding this specific
             acquisition operation.
-
-        Returns
-        -------
 
         Raises
         ------
         RuntimeError
-            Always
+            Always.
         """
         raise RuntimeError(
             f"Pulsar QCM {self.name} does not support acquisitions. "
@@ -201,4 +187,6 @@ class Pulsar_QRM(PulsarBase):
     """
 
     sequencer_type = QRMSequencer
+    """The type of the sequencer."""
     max_sequencers: int = 1
+    """Maximum number of sequencer available in the instrument."""

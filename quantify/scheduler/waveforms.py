@@ -26,12 +26,98 @@ def ramp(t, amp) -> np.ndarray:
     return np.linspace(0, amp, len(t))
 
 
+def staircase(
+    t: Union[np.ndarray, List[float]],
+    start_amp: Union[float, complex],
+    final_amp: Union[float, complex],
+    num_steps: int,
+) -> np.ndarray:
+    """
+    Ramps from zero to a finite value in discrete steps.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    start_amp
+        Starting amplitude.
+    final_amp
+        Final amplitude to reach on the last step.
+    num_steps
+        Number of steps to reach final value.
+
+    Returns
+    -------
+    :
+        The real valued waveform.
+    """
+    amp_step = (final_amp - start_amp) / (num_steps - 1)
+    t_arr_plateau_len = int(len(t) // num_steps)
+
+    waveform = np.array([])
+    for i in range(num_steps):
+        t_current_plateau = t[i * t_arr_plateau_len : (i + 1) * t_arr_plateau_len]
+        waveform = np.append(
+            waveform,
+            square(
+                t_current_plateau,
+                i * amp_step,
+            )
+            + start_amp,
+        )
+    t_rem = t[num_steps * t_arr_plateau_len :]
+    waveform = np.append(waveform, square(t_rem, final_amp))
+    return waveform
+
+
 def soft_square(t, amp):
-    sq = square(t, amp)
+    """A softened square pulse.
+
+    Parameters
+    ----------
+    t
+
+    amp
+
+    """
+    square_ = square(t, amp)
     window = signal.windows.hann(int(len(t) / 2))
-    return signal.convolve(sq, window, mode="same") / sum(window)
+    return signal.convolve(square_, window, mode="same") / sum(window)
 
 
+def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:
+    r"""
+    Produces a linear chirp signal. The frequency is determined according to the
+    relation:
+
+    .. math:
+
+        f(t) = ct + f_0,
+        c = \frac{f_1 - f_0}{T}
+
+    The waveform is produced simply by multiplying with a complex exponential.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    amp
+        Amplitude of the envelope.
+    start_freq
+        Start frequency of the Chirp.
+    end_freq
+        End frequency of the Chirp.
+
+    Returns
+    -------
+    :
+        The complex waveform.
+    """
+    chirp_rate = (end_freq - start_freq) / (t[-1] - t[0])
+    return amp * np.exp(1.0j * 2 * np.pi * (chirp_rate * t / 2 + start_freq) * t)
+
+
+# pylint: disable=too-many-arguments
 def drag(
     t: np.ndarray,
     G_amp: float,
@@ -42,7 +128,8 @@ def drag(
     subtract_offset: str = "average",
 ) -> np.ndarray:
     r"""
-    Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a Derivative :math:`D` as the Q-component.
+    Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a
+    Derivative :math:`D` as the Q-component.
 
     All inputs are in s and Hz.
     phases are in degree.
@@ -53,32 +140,35 @@ def drag(
 
     .. note:
 
-        One would expect a factor :math:`1/\sigma^2` in the prefactor of :math:`1/\sigma^2`, we absorb this
-        in the scaling factor :math:`D_{amp}` to ensure the derivative component is scale invariant with the duration of
+        One would expect a factor :math:`1/\sigma^2` in the prefactor of
+        :math:`1/\sigma^2`, we absorb this in the scaling factor :math:`D_{amp}` to
+        ensure the derivative component is scale invariant with the duration of
         the pulse.
 
 
     Parameters
     ----------
-    t :
-        times at which to evaluate the function
-    G_amp :
+    t
+        Times at which to evaluate the function.
+    G_amp
         Amplitude of the Gaussian envelope.
-    D_amp :
+    D_amp
         Amplitude of the derivative component, the DRAG-pulse parameter.
-    duration :
+    duration
         Duration of the pulse in seconds.
-    nr_sigma :
+    nr_sigma
         After how many sigma the Gaussian is cut off.
-    phase :
+    phase
         Phase of the pulse in degrees.
-    subtract_offset :
-        Instruction on how to subtract the offset in order to avoid jumps in the waveform due to the cut-off.
+    subtract_offset
+        Instruction on how to subtract the offset in order to avoid jumps in the
+        waveform due to the cut-off.
 
         - 'average': subtract the average of the first and last point.
         - 'first': subtract the value of the waveform at the first sample.
         - 'last': subtract the value of the waveform at the last sample.
         - 'none', None: don't subtract any offset.
+
     Returns
     -------
     :
@@ -100,7 +190,7 @@ def drag(
         .. |citation-2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm Phys. Rev. Lett. 103, 110501 (2009).*
 
         .. _citation-2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
-    """
+    """  # pylint: disable=line-too-long
     mu = t[0] + duration / 2
 
     sigma = duration / (2 * nr_sigma)
@@ -148,15 +238,15 @@ def rotate_wave(wave: np.ndarray, phase: float) -> np.ndarray:
 
     Parameters
     ----------
-    wave :
-        complex waveform, real component corresponds to I, imag component to Q.
-    phase :
-        rotation angle in degrees
+    wave
+        Complex waveform, real component corresponds to I, imaginary component to Q.
+    phase
+        Rotation angle in degrees.
 
     Returns
     -------
     :
-        rotated complex waveform.
+        Rotated complex waveform.
     """
     angle = np.deg2rad(phase)
 
@@ -175,11 +265,11 @@ def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarra
     Parameters
     ----------
     t :
-        times at which to determine the modulation.
+        Times at which to determine the modulation.
     wave :
-        complex waveform, real component corresponds to I, imag component to Q.
+        Complex waveform, real component corresponds to I, imaginary component to Q.
     freq_mod :
-        modulation frequency in Hz.
+        Modulation frequency in Hz.
 
 
     Returns

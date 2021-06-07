@@ -9,6 +9,7 @@ Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Added acquisitions to circuit diagram (!93)
+* Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
 
 
 0.3.0 Multiple backends support (2021-05-20)

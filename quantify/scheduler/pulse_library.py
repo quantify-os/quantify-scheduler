@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Standard pulses for use with the quantify.scheduler."""
+# pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
 from typing import Optional
@@ -22,10 +23,10 @@ class IdlePulse(Operation):
         of time.
 
         Parameters
-        ------------
-        duration :
+        ----------
+        duration
             The duration of idle time in seconds.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -73,21 +74,21 @@ class RampPulse(Operation):
         to the specified amplitude during the duration of the pulse.
 
         Parameters
-        ------------
-        amp :
+        ----------
+        amp
             Final amplitude of the ramp envelope function.
-        duration :
+        duration
             The pulse duration in seconds.
-        port :
+        port
             Port of the pulse.
-        clock :
+        clock
             Clock used to modulate the pulse, by default a
             BasebandClock is used.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative
             to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -106,6 +107,66 @@ class RampPulse(Operation):
                     }
                 ],
             }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
+class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
+    """
+    A real valued staircase pulse, which reaches it's final amplitude in discrete
+    steps. In between it will maintain a plateau.
+    """
+
+    def __init__(
+        self,
+        start_amp: float,
+        final_amp: float,
+        num_steps: int,
+        duration: float,
+        port: str,
+        clock: str = BasebandClockResource.IDENTITY,
+        t0: float = 0,
+    ):
+        """
+        Constructor for a staircase.
+
+        Parameters
+        ----------
+        start_amp
+            Starting amplitude of the staircase envelope function.
+        final_amp
+            Final amplitude of the staircase envelope function.
+        num_steps
+            The number of plateaus.
+        duration
+            Duration of the pulse in seconds.
+        port
+            Port of the pulse.
+        clock
+            Clock used to modulate the pulse.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        """
+
+        data = {
+            "name": "StaircasePulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.staircase",
+                    "start_amp": start_amp,
+                    "final_amp": final_amp,
+                    "num_steps": num_steps,
+                    "duration": duration,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
@@ -136,28 +197,28 @@ class SquarePulse(Operation):
         amplitude during the pulse.
 
         Parameters
-        ------------
-        amp :
+        ----------
+        amp
             Amplitude of the envelope.
-        duration :
+        duration
             The pulse duration in seconds.
-        port :
+        port
             Port of the pulse, must be capable of playing a complex waveform.
-        clock :
+        clock
             Clock used to modulate the pulse.
-        phase :
+        phase
             Phase of the pulse in degrees.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to
+            # FIXME: need to be able to add phases to # pylint: disable=fixme
             # the waveform separate from the clock.
             raise NotImplementedError
 
@@ -252,19 +313,19 @@ class SoftSquarePulse(Operation):
         a Hann window for smoothing.
 
         Parameters
-        ------------
-        amp :
+        ----------
+        amp
             Amplitude of the envelope.
-        duration :
+        duration
             The pulse duration in seconds.
-        port :
+        port
             Port of the pulse, must be capable of playing a complex waveform.
-        clock :
+        clock
             Clock used to modulate the pulse.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -290,15 +351,73 @@ class SoftSquarePulse(Operation):
         return self._get_signature(pulse_info)
 
 
+class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
+    """
+    A linear chirp signal. A sinusoidal signal that ramps up in frequency.
+    """
+
+    def __init__(
+        self,
+        amp: float,
+        duration: float,
+        port: str,
+        clock: str,
+        start_freq: float,
+        end_freq: float,
+        t0: float = 0,
+    ):
+        """
+        Constructor for a chirp pulse.
+
+        Parameters
+        ----------
+        amp
+            Amplitude of the envelope.
+        duration
+            Duration of the pulse.
+        port
+            The port of the pulse.
+        clock
+            Clock used to modulate the pulse.
+        start_freq
+            Start frequency of the Chirp. Note that this is the frequency at which the
+            waveform is calculated, this may differ from the clock frequency.
+        end_freq
+            End frequency of the Chirp.
+        t0
+            Shift of the start time with respect to the start of the operation.
+        """
+        data = {
+            "name": "ChirpPulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify.scheduler.waveforms.chirp",
+                    "amp": amp,
+                    "duration": duration,
+                    "start_freq": start_freq,
+                    "end_freq": end_freq,
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 class DRAGPulse(Operation):
-    # pylint: disable=line-too-long
+    # pylint: disable=line-too-long, too-many-ancestors
     r"""
     DRAG pulse intended for single qubit gates in transmon based systems.
 
     A DRAG pulse is a gaussian pulse with a
     derivative component added to the out-of-phase
     channel to reduce unwanted excitations of
-    the :math:`|1\\rangle - |2\\rangle` transition.
+    the :math:`|1\rangle - |2\rangle` transition.
 
     The waveform is generated using :func:`.waveforms.drag` .
 
@@ -317,8 +436,7 @@ class DRAGPulse(Operation):
 
         .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
            Phys. Rev. Lett. 103, 110501 (2009).*
-    """
-    # pylint: enable=line-too-long
+    """  # pylint: enable=line-too-long
 
     def __init__(
         self,
@@ -335,23 +453,23 @@ class DRAGPulse(Operation):
         Create a new instance of DRAGPulse.
 
         Parameters
-        ------------
-        G_amp :
+        ----------
+        G_amp
             Amplitude of the Gaussian envelope.
-        D_amp :
+        D_amp
             Amplitude of the derivative component, the DRAG-pulse parameter.
-        duration :
+        duration
             The pulse duration in seconds.
-        phase :
+        phase
             Phase of the pulse in degrees.
-        clock :
+        clock
             Clock used to modulate the pulse.
-        port :
+        port
             Port of the pulse, must be capable of carrying a complex waveform.
-        t0 :
+        t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.

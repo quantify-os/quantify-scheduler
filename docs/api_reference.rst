@@ -152,6 +152,12 @@ qblox
 .. automodule:: quantify.scheduler.backends.qblox.q1asm_instructions
     :members:
 
+.. automodule:: quantify.scheduler.backends.qblox.qasm_program
+    :members:
+
+.. automodule:: quantify.scheduler.backends.qblox.non_generic
+    :members:
+
 
 zhinst
 ~~~~~~

@@ -23,8 +23,13 @@ from quantify.data.handling import set_datadir
 
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.gate_library import Reset, Measure, X
-from quantify.scheduler.pulse_library import DRAGPulse, RampPulse
-from quantify.scheduler.resources import ClockResource
+from quantify.scheduler.pulse_library import (
+    DRAGPulse,
+    RampPulse,
+    SquarePulse,
+    StaircasePulse,
+)
+from quantify.scheduler.resources import ClockResource, BasebandClockResource
 from quantify.scheduler.compilation import (
     qcompile,
     determine_absolute_timing,
@@ -43,6 +48,7 @@ from quantify.scheduler.backends.types.qblox import (
 )
 from quantify.scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
+    Pulsar_QRM,
     QCMSequencer,
 )
 from quantify.scheduler.backends.qblox.compiler_abc import (
@@ -74,6 +80,37 @@ except ImportError:
     PULSAR_ASSEMBLER = False
 
 # --------- Test fixtures ---------
+
+
+@pytest.fixture
+def hardware_cfg_baseband():
+    yield {
+        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "name": "qcm0",
+            "type": "Pulsar_QCM",
+            "mode": "complex",
+            "ref": "int",
+            "IP address": "192.168.0.2",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "lo_freq": None,
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "cl0.baseband",
+                    "instruction_generated_pulses_enabled": True,
+                    "interm_freq": 50e6,
+                },
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "lo_name": "lo1",
+                "lo_freq": 7.2e9,
+                "seq0": {"port": "q1:mw", "clock": "q1.01", "interm_freq": None},
+            },
+        },
+    }
 
 
 @pytest.fixture
@@ -210,6 +247,22 @@ def gate_only_schedule():
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def baseband_square_pulse_schedule():
+    sched = Schedule("baseband_square_pulse_schedule")
+    sched.add(Reset("q0"))
+    sched.add(
+        SquarePulse(
+            amp=2.0,
+            duration=2.5e-6,
+            port="q0:mw",
+            clock=BasebandClockResource.IDENTITY,
+            t0=1e-6,
+        )
+    )
     return sched
 
 
@@ -396,6 +449,20 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     assert iterations == 10
 
 
+def test_compile_with_pulse_stitching(
+    dummy_pulsars, hardware_cfg_baseband, baseband_square_pulse_schedule
+):
+    sched = baseband_square_pulse_schedule
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched.repetitions = 11
+    full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
+    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+
+    qcm0 = dummy_pulsars[0]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+
+
 def test_qcm_acquisition_error():
     qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
     qcm._acquisitions[0] = 0
@@ -408,7 +475,8 @@ def test_qcm_acquisition_error():
 
 
 def test_emit():
-    qasm = QASMProgram()
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qasm = QASMProgram(qcm)
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
@@ -418,12 +486,16 @@ def test_emit():
 
 
 def test_auto_wait():
-    qasm = QASMProgram()
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.auto_wait(120)
     assert len(qasm.instructions) == 1
     qasm.auto_wait(70000)
     assert len(qasm.instructions) == 3  # since it should split the waits
     assert qasm.elapsed_time == 70120
+    qasm.auto_wait(700000)
+    assert qasm.elapsed_time == 770120
+    assert len(qasm.instructions) == 8  # now loops are used
     with pytest.raises(ValueError):
         qasm.auto_wait(-120)
 
@@ -432,9 +504,13 @@ def test_wait_till_start_then_play():
     minimal_pulse_data = {"duration": 20e-9}
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
-        uuid=0, data=minimal_pulse_data, timing=4e-9, pulse_settings=runtime_settings
+        uuid="test_pulse",
+        data=minimal_pulse_data,
+        timing=4e-9,
+        pulse_settings=runtime_settings,
     )
-    qasm = QASMProgram()
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.wait_till_start_then_play(pulse, 0, 1)
     assert len(qasm.instructions) == 3
     assert qasm.instructions[0][1] == q1asm_instructions.WAIT
@@ -442,7 +518,10 @@ def test_wait_till_start_then_play():
     assert qasm.instructions[2][1] == q1asm_instructions.PLAY
 
     pulse = qb.OpInfo(
-        uuid=0, data=minimal_pulse_data, timing=1e-9, pulse_settings=runtime_settings
+        uuid="test_pulse",
+        data=minimal_pulse_data,
+        timing=1e-9,
+        pulse_settings=runtime_settings,
     )
     with pytest.raises(ValueError):
         qasm.wait_till_start_then_play(pulse, 0, 1)
@@ -450,8 +529,9 @@ def test_wait_till_start_then_play():
 
 def test_wait_till_start_then_acquire():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
-    qasm = QASMProgram()
+    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    qrm = Pulsar_QRM("qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"])
+    qasm = QASMProgram(qrm.sequencers["seq0"])
     qasm.wait_till_start_then_acquire(acq, 0, 1)
     assert len(qasm.instructions) == 2
     assert qasm.instructions[0][1] == q1asm_instructions.WAIT
@@ -460,7 +540,7 @@ def test_wait_till_start_then_acquire():
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid=0, data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
     expanded_val = QASMProgram._expand_from_normalised_range(
         1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
     )
@@ -469,6 +549,55 @@ def test_expand_from_normalised_range():
         QASMProgram._expand_from_normalised_range(
             10, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
         )
+
+
+def test_pulse_stitching_qasm_prog():
+    minimal_pulse_data = {
+        "wf_func": "quantify.scheduler.waveforms.square",
+        "duration": 20.5e-6,
+    }
+    runtime_settings = QASMRuntimeSettings(1, 1)
+    pulse = qb.OpInfo(
+        uuid="stitched_square_pulse",
+        data=minimal_pulse_data,
+        timing=4e-9,
+        pulse_settings=runtime_settings,
+    )
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qasm = QASMProgram(qcm.sequencers["seq0"])
+    qasm.wait_till_start_then_play(pulse, 0, 1)
+    assert qasm.instructions[2][2] == "20,R2"
+
+
+def test_staircase_qasm_prog():
+
+    start_amp = -1.1
+    final_amp = 2.1
+
+    s_ramp_pulse = StaircasePulse(start_amp, final_amp, 10, 12.4e-6, "q0:mw")
+
+    runtime_settings = QASMRuntimeSettings(1, 1)
+    pulse = qb.OpInfo(
+        uuid="staircase",
+        data=s_ramp_pulse.data["pulse_info"][0],
+        timing=4e-9,
+        pulse_settings=runtime_settings,
+    )
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qasm = QASMProgram(qcm.sequencers["seq0"])
+    qasm.wait_till_start_then_play(pulse, 0, 1)
+
+    amp_step_used = int(qasm.instructions[9][2].split(",")[1])
+    steps_taken = int(qasm.instructions[5][2].split(",")[0])
+    init_amp = int(qasm.instructions[2][2].split(",")[0])
+    if init_amp > constants.IMMEDIATE_SZ_OFFSET:
+        init_amp = init_amp - constants.REGISTER_SIZE
+
+    final_amp_imm = amp_step_used * (steps_taken - 1) + init_amp
+    awg_output_volt = qcm.sequencers["seq0"].awg_output_volt
+
+    final_amp_volt = 2 * final_amp_imm / constants.IMMEDIATE_SZ_OFFSET * awg_output_volt
+    assert final_amp_volt == pytest.approx(final_amp, 1e-3)
 
 
 def test_to_pulsar_time():
@@ -482,7 +611,8 @@ def test_loop():
     num_rep = 10
     reg = "R0"
 
-    qasm = QASMProgram()
+    qcm = Pulsar_QCM("qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
     with qasm.loop(reg, "this_loop", repetitions=num_rep):
         qasm.emit(q1asm_instructions.WAIT, 20)
