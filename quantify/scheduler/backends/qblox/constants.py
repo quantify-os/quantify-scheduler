@@ -3,19 +3,19 @@
 """Constants for compilation to Qblox hardware."""
 
 IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
-"""Size of gain instruction immediates in Q1ASM programs"""
+"""Size of gain instruction immediates in Q1ASM programs."""
 IMMEDIATE_SZ_WAIT = pow(2, 16) - 1
-"""Size of wait instruction immediates in Q1ASM programs"""
+"""Size of wait instruction immediates in Q1ASM programs."""
 IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
-"""Size of offset instruction immediates in Q1ASM programs"""
+"""Size of offset instruction immediates in Q1ASM programs."""
 REGISTER_SIZE = pow(2, 32) - 1
-"""Size of registers in Q1ASM programs"""
+"""Size of registers in Q1ASM programs."""
 
 GRID_TIME = 4  # ns
 """
 Clock period of the sequencers. All time intervals used must be multiples of this value.
 """
 SAMPLING_RATE = 1_000_000_000  # 1GS/s
-"""Sampling rate of the Qblox Pulsar series instruments"""
+"""Sampling rate of the Qblox Pulsar series instruments."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
