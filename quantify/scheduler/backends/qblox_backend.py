@@ -108,7 +108,7 @@ def _assign_pulse_and_acq_info_to_devices(
             port = pulse_data["port"]
             clock = pulse_data["clock"]
             if port is None:
-                continue  # ignore idle pulse
+                continue  # ignore idle pulses
 
             uuid = make_hash(without(pulse_data, "t0"))
             combined_data = OpInfo(data=pulse_data, timing=pulse_start_time, uuid=uuid)
