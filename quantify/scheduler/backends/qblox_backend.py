@@ -88,7 +88,6 @@ def _assign_pulse_and_acq_info_to_devices(
         This exception is raised then the function encountered an operation that has no
         pulse or acquisition info assigned to it.
     """
-    # for op_hash, op_data in schedule.operations.items():
     for op_timing_constraint in schedule.timing_constraints:
         op_hash = op_timing_constraint["operation_hash"]
         op_data = schedule.operations[op_hash]
