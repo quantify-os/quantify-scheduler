@@ -3,7 +3,7 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-from typing import Dict, Any, Tuple, Callable
+from typing import Dict, Any, Tuple, Callable, Union
 
 from quantify.scheduler.helpers.schedule import get_total_duration
 
@@ -97,87 +97,6 @@ def generate_port_clock_to_device_map(
 
 
 # pylint: disable=too-many-locals
-def _assign_frequencies(
-    device_compilers: Dict[str, InstrumentCompiler],
-    lo_compilers: Dict[str, instrument_compilers.LocalOscillator],
-    hw_mapping: Dict[str, Any],
-    portclock_mapping: Dict[Tuple[str, str], str],
-    schedule_resources: Dict[str, Any],
-):
-    """
-    Determines the IF or LO frequency based on the clock frequency and assigns it to
-    the `InstrumentCompiler`. If the IF is specified the LO frequency is calculated
-    based on the constraint `clock_freq = interm_freq + lo_freq`, and vice versa.
-
-    Function removes LOs from lo_compilers if not used by any devices.
-
-    Parameters
-    ----------
-    device_compilers:
-        A dictionary containing all the `InstrumentCompiler` objects for which IQ
-        modulation is used. The keys correspond to the QCoDeS names of the instruments.
-    lo_compilers:
-        A dictionary containing all the `LocalOscillator` objects that are used. The
-        keys correspond to the QCoDeS names of the instruments.
-    hw_mapping:
-        The hardware mapping dictionary describing the whole setup.
-    portclock_mapping:
-        A dictionary that maps tuples containing a port and a clock to names of
-        instruments. The port and clock combinations are unique, but multiple portclocks
-        can point to the same instrument.
-    schedule_resources:
-        The schedule resources containing all the clocks.
-
-    Returns
-    -------
-
-    """
-    lo_info_dicts = helpers.find_inner_dicts_containing_key(hw_mapping, "lo_name")
-    los_used = set()
-    for lo_info_dict in lo_info_dicts:
-        lo_obj = lo_compilers[lo_info_dict["lo_name"]]
-        associated_portclock_dicts = helpers.find_inner_dicts_containing_key(
-            lo_info_dict, "port"
-        )
-
-        lo_freq = None
-        if "lo_freq" in lo_info_dict:
-            lo_freq = lo_info_dict["lo_freq"]
-        if lo_freq is None:
-            for portclock_dict in associated_portclock_dicts:
-                port, clock = portclock_dict["port"], portclock_dict["clock"]
-                interm_freq = portclock_dict["interm_freq"]
-                if clock in schedule_resources:
-                    cl_freq = schedule_resources[clock]["freq"]
-
-                    dev_name = portclock_mapping[(port, clock)]
-                    if (port, clock) in device_compilers[dev_name].portclocks_with_data:
-                        los_used.add(lo_obj.name)
-                    assign_frequency = getattr(
-                        device_compilers[dev_name], "assign_modulation_frequency"
-                    )
-                    assign_frequency((port, clock), interm_freq)
-                    lo_obj.assign_frequency(cl_freq - interm_freq)
-        else:  # lo_freq given
-            lo_obj.assign_frequency(lo_freq)
-            for portclock_dict in associated_portclock_dicts:
-                port, clock = portclock_dict["port"], portclock_dict["clock"]
-                dev_name = portclock_mapping[(port, clock)]
-                if (port, clock) in device_compilers[dev_name].portclocks_with_data:
-                    los_used.add(lo_obj.name)
-                assign_frequency = getattr(
-                    device_compilers[dev_name], "assign_modulation_frequency"
-                )
-                if clock in schedule_resources:
-                    cl_freq = schedule_resources[clock]["freq"]
-                    assign_frequency((port, clock), cl_freq - lo_freq)
-
-    unused_los = set(lo_compilers.keys()).difference(los_used)
-    for lo_name in unused_los:
-        lo_compilers.pop(lo_name)
-
-
-# pylint: disable=too-many-locals
 def _assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],
@@ -257,43 +176,49 @@ def _assign_pulse_and_acq_info_to_devices(
             device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
 
 
-def _construct_compiler_objects(
-    total_play_time: float,
-    mapping: Dict[str, Any],
-) -> Dict[str, InstrumentCompiler]:
-    """
-    Traverses the hardware mapping dictionary and instantiates the appropriate
-    instrument compiler objects for all the devices that make up the setup. Local
-    oscillators are excluded from this step due to them being defined implicitly in the
-    hardware mapping.
+class CompilerContainer:
+    def __init__(self, total_play_time: float):
+        self.total_play_time = total_play_time
+        self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
 
-    Parameters
-    ----------
-    total_play_time:
-        Total time that it takes to execute a single repetition of the schedule with the
-        current hardware setup as defined in the mapping.
-    mapping:
-        The hardware mapping dictionary.
+    def compile(self, repetitions):
+        compiled_schedule = dict()
+        for name, compiler in self.instrument_compilers.items():
+            compiled_dev_program = compiler.compile(repetitions=repetitions)
 
-    Returns
-    -------
-    :
-        A dictionary with an `InstrumentCompiler` as value and the QCoDeS name of the
-        instrument the compiler compiles for as key.
-    """
-    device_compilers = dict()
-    for device, dev_cfg in mapping.items():
-        if not isinstance(dev_cfg, dict):
-            continue
-        device_type = dev_cfg["type"]
+            if compiled_dev_program is not None:
+                compiled_schedule[name] = compiled_dev_program
+        return compiled_schedule
 
-        device_compiler: Callable = getattr(instrument_compilers, device_type)
-        device_compilers[device] = device_compiler(
-            device,
-            total_play_time,
-            mapping[device],
-        )
-    return device_compilers
+    def add_instrument_compiler(
+        self, name: str, instrument: Union[str, type], mapping: Dict[str, Any]
+    ):
+        if isinstance(instrument, type):
+            self._add_from_type(name, instrument, mapping)
+        elif isinstance(instrument, str):
+            self._add_from_str(name, instrument, mapping)
+
+    def _add_from_str(self, name: str, instrument: str, mapping: Dict[str, Any]):
+        compiler: type = getattr(instrument_compilers, instrument)
+        self._add_from_type(name, compiler, mapping)
+
+    def _add_from_type(self, name: str, instrument: type, mapping: Dict[str, Any]):
+        compiler = instrument(name, self.total_play_time, mapping)
+        self.instrument_compilers[name] = compiler
+
+    @classmethod
+    def from_mapping(cls, total_play_time: float, mapping: dict) -> CompilerContainer:
+        composite = cls(total_play_time)
+        for instr_name, instr_cfg in mapping.items():
+            if not isinstance(instr_cfg, dict):
+                continue
+
+            device_type = instr_cfg["instrument_type"]
+            composite.add_instrument_compiler(
+                instr_name, device_type, mapping[instr_name]
+            )
+
+        return composite
 
 
 def hardware_compile(
@@ -327,31 +252,11 @@ def hardware_compile(
 
     portclock_map = generate_port_clock_to_device_map(hardware_map)
 
-    device_compilers = _construct_compiler_objects(
-        total_play_time=total_play_time,
-        mapping=hardware_map,
-    )
+    compiler_container = CompilerContainer.from_mapping(total_play_time, hardware_map)
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
-        device_compilers=device_compilers,
+        device_compilers=compiler_container.instrument_compilers,
         portclock_mapping=portclock_map,
     )
 
-    lo_compilers = generate_ext_local_oscillators(total_play_time, hardware_map)
-    _assign_frequencies(
-        device_compilers,
-        lo_compilers,
-        hw_mapping=hardware_map,
-        portclock_mapping=portclock_map,
-        schedule_resources=schedule.resources,
-    )
-    device_compilers.update(lo_compilers)
-
-    compiled_schedule = dict()
-    for name, compiler in device_compilers.items():
-        compiled_dev_program = compiler.compile(repetitions=schedule.repetitions)
-
-        if compiled_dev_program is not None:
-            compiled_schedule[name] = compiled_dev_program
-
-    return compiled_schedule
+    return compiler_container.compile(repetitions=schedule.repetitions)
