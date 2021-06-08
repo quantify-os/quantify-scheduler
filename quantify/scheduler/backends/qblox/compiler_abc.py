@@ -353,6 +353,9 @@ class PulsarSequencerBase(ABC):
         self._settings.modulation_freq = freq
 
     def assign_frequencies(self):
+        if self.clock not in self.parent.parent.resources:
+            return
+
         clk_freq = self.parent.parent.resources[self.clock]["freq"]
         lo_compiler = self.parent.parent.instrument_compilers.get(
             self._associated_ext_lo, None
