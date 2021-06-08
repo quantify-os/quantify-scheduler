@@ -6,6 +6,13 @@ User guide
 .. jupyter-kernel::
   :id: Scheduler user guide
 
+.. jupyter-execute::
+    :hide-code:
+
+    # Make output easier to read
+    from rich import pretty
+    pretty.install()
+
 
 Introduction
 ------------
@@ -26,25 +33,25 @@ The following table shows an overview of the different concepts and how these ar
 
 
 .. list-table:: Overview of concepts and their representation at different levels of abstraction
-   :widths: 25 25 25 25
-   :header-rows: 0
+    :widths: 25 25 25 25
+    :header-rows: 0
 
-   * -
-     - Concept
-     - Gate-level description
-     - Pulse-level description
-   * - When
-     - :class:`~quantify.scheduler.types.Schedule`
-     - --
-     - --
-   * - What
-     - :class:`~quantify.scheduler.types.Operation`
-     - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
-     - parameterized waveforms
-   * - Where
-     - :class:`~quantify.scheduler.Resource`
-     - qubits (:code:`str`)
-     - ports (:code:`str`) & clocks  (:class:`~quantify.scheduler.resources.ClockResource`)
+    * -
+      - Concept
+      - Gate-level description
+      - Pulse-level description
+    * - When
+      - :class:`~quantify.scheduler.types.Schedule`
+      - --
+      - --
+    * - What
+      - :class:`~quantify.scheduler.types.Operation`
+      - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
+      - parameterized waveforms
+    * - Where
+      - :class:`~quantify.scheduler.Resource`
+      - qubits (:code:`str`)
+      - ports (:code:`str`) & clocks  (:class:`~quantify.scheduler.resources.ClockResource`)
 
 
 
@@ -56,33 +63,33 @@ A schedule can be created using the quantify API (shown in :ref:`Tutorial 1 <sec
     :scale: 150
 
     blockdiag scheduler {
-      orientation = portrait
+        orientation = portrait
 
-      qf_input [label="quantify API"];
-      hw_bck [label="Hardware\nbackends", stacked];
-      gt_lvl [label="Gate-level"];
+        qf_input [label="quantify API"];
+        hw_bck [label="Hardware\nbackends", stacked];
+        gt_lvl [label="Gate-level"];
 
-      qf_input -> gt_lvl;
-      qf_input -> Pulse-level;
-      gt_lvl -> Pulse-level [label="d. config", fontsize=8];
-      Pulse-level -> hw_bck [label="h. config", fontsize=8];
-      group {
-        label= "Input formats";
-        qf_input
-        color="#90EE90"
+        qf_input -> gt_lvl;
+        qf_input -> Pulse-level;
+        gt_lvl -> Pulse-level [label="d. config", fontsize=8];
+        Pulse-level -> hw_bck [label="h. config", fontsize=8];
+        group {
+            label= "Input formats";
+            qf_input
+            color="#90EE90"
         }
 
-      group {
-        gt_lvl
-        Pulse-level
-        color=cyan
-        label="Schedule"
+        group {
+            gt_lvl
+            Pulse-level
+            color=cyan
+            label="Schedule"
         }
 
-      group {
-        label = "";
-        color = orange;
-        hw_bck
+        group {
+            label = "";
+            color = orange;
+            hw_bck
         }
     }
 
@@ -126,7 +133,7 @@ Operation
 ---------
 
 
-The :class:`~quantify.scheduler.types.Operation` object is a datastructure that describes the operation that should be performed, it also contains information on *where* it should be applied.
+The :class:`~quantify.scheduler.types.Operation` object is a data structure that describes the operation that should be performed, it also contains information on *where* it should be applied.
 An operation can be represented at different levels of abstraction such as the (quantum) :ref:`Gate-level description` and the :ref:`Pulse-level description`.
 The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_library` and the :mod:`quantify.scheduler.pulse_library` , both containing common operations.
 
@@ -141,30 +148,30 @@ The :mod:`~quantify.scheduler.gate_library` contains common gates (including the
 
 
 .. note::
-  Strictly speaking a measurement is not a gate as it cannot be described by a unitary. However, it is a fundamental building block of circuit diagrams and therefore included at this level of abstraction.
+    Strictly speaking a measurement is not a gate as it cannot be described by a unitary. However, it is a fundamental building block of circuit diagrams and therefore included at this level of abstraction.
 
 
 A :class:`~quantify.scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify.scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 An example of such a visualization is shown below.
 
 .. jupyter-execute::
-  :hide-code:
+    :hide-code:
 
-  from quantify.scheduler import Schedule
-  from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-  from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
+    from quantify.scheduler import Schedule
+    from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+    from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
 
-  sched = Schedule('Bell experiment')
-  sched
-  q0, q1 = ('q0', 'q1')
+    sched = Schedule('Bell experiment')
+    sched
+    q0, q1 = ('q0', 'q1')
 
-  sched.add(Reset(q0, q1))
-  sched.add(Rxy(theta=90, phi=0, qubit=q0))
-  sched.add(Rxy(theta=90, phi=0, qubit=q1), ref_pt='start')
-  sched.add(CZ(qC=q0, qT=q1))
-  sched.add(Rxy(theta=23, phi=0, qubit=q0))
-  sched.add(Measure(q0, q1, acq_index=(0, 1)))
-  f, ax = circuit_diagram_matplotlib(sched)
+    sched.add(Reset(q0, q1))
+    sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Rxy(theta=90, phi=0, qubit=q1), ref_pt='start')
+    sched.add(CZ(qC=q0, qT=q1))
+    sched.add(Rxy(theta=23, phi=0, qubit=q0))
+    sched.add(Measure(q0, q1, acq_index=(0, 1)))
+    f, ax = circuit_diagram_matplotlib(sched)
 
 To summarize:
 
@@ -190,29 +197,28 @@ An example of such a visualization is shown below:
 
 
 .. jupyter-execute::
-  :hide-code:
+    :hide-code:
 
 
-  import json
-  import pprint
-  import os, inspect
-  from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
-  from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
+    import json
+    import os, inspect
+    from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
+    from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
 
 
-  import quantify.scheduler.schemas.examples as es
+    import quantify.scheduler.schemas.examples as es
 
-  esp = inspect.getfile(es)
-  cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+    esp = inspect.getfile(es)
+    cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
 
 
-  with open(cfg_f, 'r') as f:
+    with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 
 
-  add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-  determine_absolute_timing(schedule=sched)
-  pulse_diagram_plotly(sched, port_list=["q0:mw", "q1:mw", "q0:fl", "q1:fl", "q0:res" ], modulation_if = 10e6, sampling_rate = 1e9)
+    add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+    determine_absolute_timing(schedule=sched)
+    pulse_diagram_plotly(sched, port_list=["q0:mw", "q1:mw", "q0:fl", "q1:fl", "q0:res" ], modulation_if = 10e6, sampling_rate = 1e9)
 
 In this visualization, the different rows correspond to different ports to which the pulses are applied, the clocks are used to modulate the respective signals, and time is shown on the x-axis.
 
@@ -233,15 +239,15 @@ Here we explain these concept using a simple cQED device shown in :numref:`resou
 These concepts should be easy to generalize to other devices and systems.
 
 .. figure:: /images/Device_ports_clocks.svg
-  :width: 800
-  :name: resources_fig
+    :width: 800
+    :name: resources_fig
 
-  Resources are used to indicate *where* operations are applied.
-  (a) Ports (purple) indicate a location on a device.
-  By prefixing the name of a qubit in a port name (separated by a colon :code:`:`) a port can be associated with a qubit (red), but this is not required.
-  (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition.
-  By prefixing the name of a qubit in a clock name (separated by a colon :code:`:`) a clock can be associated with a qubit (red), but this is not required.
-  Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
+    Resources are used to indicate *where* operations are applied.
+    (a) Ports (purple) indicate a location on a device.
+    By prefixing the name of a qubit in a port name (separated by a colon :code:`:`) a port can be associated with a qubit (red), but this is not required.
+    (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition.
+    By prefixing the name of a qubit in a clock name (separated by a colon :code:`:`) a clock can be associated with a qubit (red), but this is not required.
+    Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
 
 
 Qubits
@@ -310,15 +316,15 @@ Example device configuration file
 Here we show an example of such a device configuration file:
 
 .. jupyter-execute::
-  :hide-code:
+    :hide-code:
 
-  from pathlib import Path
-  import json
-  import quantify.scheduler.schemas.examples as examples
+    from pathlib import Path
+    import json
+    import quantify.scheduler.schemas.examples as examples
 
-  path = Path(examples.__file__).parent.joinpath('transmon_test_config.json')
-  json_data = json.loads(path.read_text())
-  print(json.dumps(json_data, indent=4, sort_keys=True))
+    path = Path(examples.__file__).parent / 'transmon_test_config.json'
+    json_data = json.loads(path.read_text())
+    json_data
 
 .. _sec-hardware-config:
 
@@ -334,30 +340,30 @@ Example Qblox hardware configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. jupyter-execute::
-  :hide-code:
+    :hide-code:
 
-  from pathlib import Path
-  import json
-  import quantify.scheduler.schemas.examples as examples
+    from pathlib import Path
+    import json
+    import quantify.scheduler.schemas.examples as examples
 
-  path = Path(examples.__file__).parent.joinpath('qblox_test_mapping.json')
-  json_data = json.loads(path.read_text())
-  print(json.dumps(json_data, indent=4, sort_keys=True))
+    path = Path(examples.__file__).parent / 'qblox_test_mapping.json'
+    json_data = json.loads(path.read_text())
+    json_data
 
 
 Example Zurich Instruments hardware configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. jupyter-execute::
-  :hide-code:
+    :hide-code:
 
-  from pathlib import Path
-  import json
-  import quantify.scheduler.schemas.examples as examples
+    from pathlib import Path
+    import json
+    import quantify.scheduler.schemas.examples as examples
 
-  path = Path(examples.__file__).parent.joinpath('zhinst_test_mapping.json')
-  json_data = json.loads(path.read_text())
-  print(json.dumps(json_data, indent=4, sort_keys=True))
+    path = Path(examples.__file__).parent / 'zhinst_test_mapping.json'
+    json_data = json.loads(path.read_text())
+    json_data
 
 Device element
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -367,25 +373,25 @@ configuration file. For example, the :class:`~quantify.scheduler.device_elements
 represents a single transmon qubit, and contains parameters necessary to implement single-transmon experiments. Using the 
 :func:`~quantify.scheduler.device_elements.transmon_element.TransmonElement.generate_device_config()` method, we are able to generate a 
 valid device configuration file for a single transmon. In addition to being used to generate device configurations, a device element is also 
-useful for storing paramaters during experiments, and can be supplied as an argument to a measurement function, for example, as a convenient 
+useful for storing parameters during experiments, and can be supplied as an argument to a measurement function, for example, as a convenient
 way of specifying all the relevant parameter settings for the experiment.
 
 Example transmon element and config file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we show a basic example of the initialisation of a transmon element and its use in generating a device configuration file.
+Here we show a basic example of the initialization of a transmon element and its use in generating a device configuration file.
 
 .. jupyter-execute::
 
-  import json
-  from quantify.scheduler.device_elements.transmon_element import TransmonElement
+    import json
+    from quantify.scheduler.device_elements.transmon_element import TransmonElement
 
-  # Initialise transmon element
-  q0 = TransmonElement("q0")
+    # Initialize transmon element
+    q0 = TransmonElement("q0")
 
-  # Set a transmon element paramater
-  q0.ro_freq(4.21e9)
+    # Set a transmon element parameter
+    q0.ro_freq(4.21e9)
 
-  # Generate device config file
-  config = q0.generate_device_config()
-  print(json.dumps(config, indent=4, sort_keys=True))
+    # Generate device config file
+    config = q0.generate_device_config()
+    config
 
