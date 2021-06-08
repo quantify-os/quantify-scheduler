@@ -11,7 +11,7 @@ from quantify.utilities.general import (
     without,
 )
 
-from quantify.scheduler.backends.qblox import helpers
+from quantify.scheduler.backends.qblox import helpers, compiler_container
 from quantify.scheduler.backends.types.qblox import OpInfo
 
 from quantify.scheduler.types import Schedule
@@ -162,11 +162,13 @@ def hardware_compile(
     """
     portclock_map = generate_port_clock_to_device_map(hardware_map)
 
-    compiler_container = CompilerContainer.from_mapping(schedule, hardware_map)
+    container = compiler_container.CompilerContainer.from_mapping(
+        schedule, hardware_map
+    )
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
-        device_compilers=compiler_container.instrument_compilers,
+        device_compilers=container.instrument_compilers,
         portclock_mapping=portclock_map,
     )
 
-    return compiler_container.compile(repetitions=schedule.repetitions)
+    return container.compile(repetitions=schedule.repetitions)
