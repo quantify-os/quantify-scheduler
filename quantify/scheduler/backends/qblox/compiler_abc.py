@@ -252,18 +252,6 @@ class PulsarSequencerBase(ABC):
         return self.port, self.clock
 
     @property
-    def modulation_freq(self) -> float:
-        """
-        The frequency used for modulation of the pulses.
-
-        Returns
-        -------
-        :
-            The frequency.
-        """
-        return self._settings.modulation_freq
-
-    @property
     def settings(self) -> SequencerSettings:
         """
         Gives the current settings.
@@ -313,7 +301,20 @@ class PulsarSequencerBase(ABC):
         """
         return len(self.acquisitions) > 0 or len(self.pulses) > 0
 
-    def assign_frequency(self, freq: float):
+    @property
+    def frequency(self) -> float:
+        """
+        The frequency used for modulation of the pulses.
+
+        Returns
+        -------
+        :
+            The frequency.
+        """
+        return self._settings.modulation_freq
+
+    @frequency.setter
+    def frequency(self, freq: float):
         """
         Assigns a modulation frequency to the sequencer.
 
@@ -336,6 +337,32 @@ class PulsarSequencerBase(ABC):
                     f"to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
+
+    def assign_frequencies(self):
+        clk_freq = self.parent.parent.resources[self.clock]["freq"]
+        lo_compiler = self.parent.parent.instrument_compilers.get(
+            self._associated_ext_lo, None
+        )
+        if lo_compiler is None:
+            self.frequency = clk_freq
+            return
+
+        if_freq = self.frequency
+        lo_freq = lo_compiler.frequency
+
+        if lo_freq is None and if_freq is None:
+            raise ValueError(
+                f"Frequency settings underconstraint for sequencer {self.name} with "
+                f"port {self.port} and clock {self.clock}. When using an external "
+                f'local oscillator it is required to either supply an "lo_freq" or '
+                f'an "interm_freq". Neither was given.'
+            )
+
+        if if_freq is not None:
+            lo_compiler.frequency = clk_freq - if_freq
+
+        if lo_freq is not None:
+            self.frequency = clk_freq - lo_freq
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
