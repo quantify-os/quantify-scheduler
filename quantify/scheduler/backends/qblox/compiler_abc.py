@@ -534,7 +534,7 @@ class PulsarSequencerBase(ABC):
             The waveform data after applying all the transformations.
         """
         t = np.linspace(t0, time_duration + t0, int(time_duration * SAMPLING_RATE))
-        corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
+        corrected_wf = modulate_waveform(t, waveform_data, self.frequency)
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
         return corrected_wf
