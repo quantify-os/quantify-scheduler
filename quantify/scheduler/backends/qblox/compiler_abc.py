@@ -816,22 +816,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             The maximum amount of sequencers
         """
 
-    def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
-        """
-        Sets the modulation frequency for a certain portclock belonging to this
-        instrument.
-
-        Parameters
-        ----------
-        portclock
-            A tuple with the port as first element and clock as second.
-        freq
-            The modulation frequency to assign to the portclock.
-        """
-        seq_name = self.portclock_map[portclock]
-        seq = self.sequencers[seq_name]
-        seq.assign_frequency(freq)
-
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
         """
         Generates a mapping from portclock tuples to sequencer names.
