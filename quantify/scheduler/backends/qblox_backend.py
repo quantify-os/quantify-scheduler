@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Dict, Any, Tuple, Callable, Union
 
+from quantify.scheduler import types
 from quantify.scheduler.helpers.schedule import get_total_duration
 
 # pylint: disable=no-name-in-module
@@ -138,8 +139,9 @@ def _assign_pulse_and_acq_info_to_devices(
 
 
 class CompilerContainer:
-    def __init__(self, total_play_time: float):
-        self.total_play_time = total_play_time
+    def __init__(self, schedule: types.Schedule):
+        self.total_play_time = get_total_duration(schedule)
+        self.resources = schedule.resources
         self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
 
     def compile(self, repetitions):
@@ -168,8 +170,8 @@ class CompilerContainer:
         self.instrument_compilers[name] = compiler
 
     @classmethod
-    def from_mapping(cls, total_play_time: float, mapping: dict) -> CompilerContainer:
-        composite = cls(total_play_time)
+    def from_mapping(cls, schedule: types.Schedule, mapping: dict) -> CompilerContainer:
+        composite = cls(schedule)
         for instr_name, instr_cfg in mapping.items():
             if not isinstance(instr_cfg, dict):
                 continue
@@ -209,11 +211,9 @@ def hardware_compile(
     :
         The compiled program
     """
-    total_play_time = get_total_duration(schedule)
-
     portclock_map = generate_port_clock_to_device_map(hardware_map)
 
-    compiler_container = CompilerContainer.from_mapping(total_play_time, hardware_map)
+    compiler_container = CompilerContainer.from_mapping(schedule, hardware_map)
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
         device_compilers=compiler_container.instrument_compilers,
