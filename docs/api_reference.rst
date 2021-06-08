@@ -1,6 +1,5 @@
-
 quantify.scheduler
-====================
+==================
 
 .. automodule:: quantify.scheduler
     :members:
@@ -203,6 +202,26 @@ pulse_diagram
 
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
     :members:
+
+
+controlstack
+-------------
+
+.. automodule:: quantify.scheduler.controlstack
+    :members:
+
+station
+~~~~~~~
+
+.. automodule:: quantify.scheduler.controlstack.station
+    :members:
+
+base
+~~~~
+
+.. automodule:: quantify.scheduler.controlstack.components.base
+    :members:
+
 
 miscellaneous
 -------------
