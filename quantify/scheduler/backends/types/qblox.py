@@ -89,6 +89,18 @@ class OpInfo(DataClassJsonMixin):
 
 
 @dataclass
+class LOSettings(DataClassJsonMixin):
+    power: float
+    """Power of the LO source."""
+    lo_freq: Optional[float]
+    """The frequency to set the LO to."""
+
+    @classmethod
+    def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
+        return cls(power=mapping["power"], lo_freq=mapping["lo_freq"])
+
+
+@dataclass
 class PulsarSettings(DataClassJsonMixin):
     """
     Global settings for the pulsar to be set in the control stack component. This is
