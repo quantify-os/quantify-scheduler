@@ -3,10 +3,7 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-from typing import Dict, Any, Tuple, Callable, Union
-
-from quantify.scheduler import types
-from quantify.scheduler.helpers.schedule import get_total_duration
+from typing import Dict, Any, Tuple
 
 # pylint: disable=no-name-in-module
 from quantify.utilities.general import (
@@ -15,8 +12,6 @@ from quantify.utilities.general import (
 )
 
 from quantify.scheduler.backends.qblox import helpers
-from quantify.scheduler.backends.qblox import instrument_compilers
-from quantify.scheduler.backends.qblox.compiler_abc import InstrumentCompiler
 from quantify.scheduler.backends.types.qblox import OpInfo
 
 from quantify.scheduler.types import Schedule
@@ -136,52 +131,6 @@ def _assign_pulse_and_acq_info_to_devices(
             combined_data = OpInfo(data=acq_data, timing=acq_start_time, uuid=uuid)
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
-
-
-class CompilerContainer:
-    def __init__(self, schedule: types.Schedule):
-        self.total_play_time = get_total_duration(schedule)
-        self.resources = schedule.resources
-        self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
-
-    def compile(self, repetitions):
-        compiled_schedule = dict()
-        for name, compiler in self.instrument_compilers.items():
-            compiled_dev_program = compiler.compile(repetitions=repetitions)
-
-            if compiled_dev_program is not None:
-                compiled_schedule[name] = compiled_dev_program
-        return compiled_schedule
-
-    def add_instrument_compiler(
-        self, name: str, instrument: Union[str, type], mapping: Dict[str, Any]
-    ):
-        if isinstance(instrument, type):
-            self._add_from_type(name, instrument, mapping)
-        elif isinstance(instrument, str):
-            self._add_from_str(name, instrument, mapping)
-
-    def _add_from_str(self, name: str, instrument: str, mapping: Dict[str, Any]):
-        compiler: type = getattr(instrument_compilers, instrument)
-        self._add_from_type(name, compiler, mapping)
-
-    def _add_from_type(self, name: str, instrument: type, mapping: Dict[str, Any]):
-        compiler = instrument(name, self.total_play_time, mapping)
-        self.instrument_compilers[name] = compiler
-
-    @classmethod
-    def from_mapping(cls, schedule: types.Schedule, mapping: dict) -> CompilerContainer:
-        composite = cls(schedule)
-        for instr_name, instr_cfg in mapping.items():
-            if not isinstance(instr_cfg, dict):
-                continue
-
-            device_type = instr_cfg["instrument_type"]
-            composite.add_instrument_compiler(
-                instr_name, device_type, mapping[instr_name]
-            )
-
-        return composite
 
 
 def hardware_compile(
