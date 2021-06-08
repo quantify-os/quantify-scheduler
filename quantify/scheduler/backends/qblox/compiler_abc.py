@@ -203,6 +203,7 @@ class PulsarSequencerBase(ABC):
         name: str,
         portclock: Tuple[str, str],
         seq_settings: dict,
+        lo_name: Optional[str] = None,
     ):
         """
         Constructor for the sequencer compiler.
@@ -225,16 +226,16 @@ class PulsarSequencerBase(ABC):
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
-        modulation_freq = (
-            None if "interm_freq" in seq_settings else seq_settings["interm_freq"]
-        )
+        self._associated_ext_lo = lo_name
 
         self.instruction_generated_pulses_enabled = seq_settings.get(
             "instruction_generated_pulses_enabled", False
         )
 
         self._settings = SequencerSettings(
-            nco_en=False, sync_en=True, modulation_freq=modulation_freq
+            nco_en=False,
+            sync_en=True,
+            modulation_freq=seq_settings.get("interm_freq", None),
         )
         self.mixer_corrections = None
 
@@ -878,6 +879,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             if not isinstance(io_cfg, dict):
                 continue
 
+            lo_name = io_cfg.get("lo_name", None)
             portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
             if len(portclock_dicts) > 1:
                 raise NotImplementedError(
@@ -891,7 +893,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
             seq_name = f"seq{self.output_to_sequencer_idx[io]}"
             sequencers[seq_name] = self.sequencer_type(
-                self, seq_name, portclock, portclock_dict
+                self, seq_name, portclock, portclock_dict, lo_name
             )
             if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
@@ -942,6 +944,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self._distribute_data()
         program = dict()
         for seq_name, seq in self.sequencers.items():
+            seq.assign_frequencies()
             seq_program = seq.compile(repetitions=repetitions)
             if seq_program is not None:
                 program[seq_name] = seq_program
