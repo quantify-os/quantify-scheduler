@@ -35,9 +35,9 @@ def determine_absolute_timing(
 
     Parameters
     ----------
-    schedule :
+    schedule
         The schedule for which to determine timings.
-    time_unit :
+    time_unit
         Whether to use physical units to determine the absolute time or ideal time.
         When :code:`time_unit == 'physical'` the duration attribute is used.
         When :code:`time_unit == 'ideal'` the duration attribute is ignored and treated
@@ -46,8 +46,9 @@ def determine_absolute_timing(
     Returns
     -------
     :
-        a new schedule object where the absolute time for each operation has been determined.
-    """
+        a new schedule object where the absolute time for each operation has been
+        determined.
+    """  # pylint: disable=line-too-long
     if len(schedule.timing_constraints) == 0:
         raise ValueError("schedule '{}' contains no operations".format(schedule.name))
 
@@ -110,12 +111,11 @@ def determine_absolute_timing(
 def _find_edge(device_cfg, q0, q1, op_name):
     try:
         edge_cfg = device_cfg["edges"]["{}-{}".format(q0, q1)]
-    except KeyError:
+    except KeyError as e:
         raise ValueError(
-            "Attempting operation '{}' on qubits {} and {} which lack a connective edge.".format(
-                op_name, q0, q1
-            )
-        )
+            f"Attempting operation '{op_name}' on qubits {q0} and {q1} which lack a"
+            " connective edge."
+        ) from e
     return edge_cfg
 
 
@@ -125,10 +125,10 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     Parameters
     ------------
-    schedule :
+    schedule
         The schedule for which to add pulse information.
 
-    device_cfg :
+    device_cfg
         A dictionary specifying the required pulse information.
 
 
@@ -215,6 +215,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             clock=q_cfg["resources"]["clock_ro"],
                         )
                     )
+                    # pylint: disable=fixme
                     op.add_acquisition(  # TODO protocol hardcoded
                         Trace(
                             duration=q_cfg["params"]["ro_acq_integration_time"],
@@ -279,6 +280,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             )
 
         elif op["gate_info"]["operation_type"] == "CZ":
+            # pylint: disable=fixme
             # todo mock implementation, needs a proper version before release
             q0 = op["gate_info"]["qubits"][0]
             q1 = op["gate_info"]["qubits"][1]
@@ -289,12 +291,14 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             except ValueError:
                 try:
                     edge_cfg = _find_edge(device_cfg, q1, q0, "CZ")
-                except ValueError:
-                    raise
+                except ValueError as e:
+                    raise e
 
             amp = edge_cfg["params"]["flux_amp_control"]
 
-            # FIXME: placeholder. currently puts a soft square pulse on the designated port of both qubits
+            # pylint: disable=fixme
+            # FIXME: placeholder. currently puts a soft square pulse on the designated
+            # port of both qubits
             pulse = SoftSquarePulse(
                 amp=amp,
                 duration=edge_cfg["params"]["flux_duration"],
@@ -335,9 +339,9 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
     Parameters
     ----------
-    config :
+    config
         The configuration to validate
-    scheme_fn :
+    scheme_fn
         The name of a json schema in the quantify.scheduler.schemas folder.
 
     Returns
@@ -358,19 +362,20 @@ def qcompile(
 
     Parameters
     ----------
-    schedule :
-        To be compiled
-    device_cfg :
+    schedule
+        To be compiled.
+    device_cfg
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
-    hardware_mapping:
-        hardware mapping, defines the compilation step from
+    hardware_mapping
+        Hardware mapping, defines the compilation step from
         the pulse-level to a hardware backend.
 
     Returns
     -------
     :
-        The prepared schedule if no backend is provided, otherwise whatever object returned by the backend
+        The prepared schedule if no backend is provided, otherwise whatever object
+        returned by the backend
 
 
     .. rubric:: Configuration specification
@@ -390,10 +395,11 @@ def qcompile(
         (mod, cls) = bck_name.rsplit(".", 1)
         # compile using the appropriate hardware backend
         hardware_compile = getattr(importlib.import_module(mod), cls)
+        # pylint: disable=fixme
         # FIXME: still contains a hardcoded argument in the kwargs
         return hardware_compile(schedule, hardware_map=hardware_mapping, **kwargs)
-    else:
-        return schedule
+
+    return schedule
 
 
 def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
@@ -402,9 +408,9 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
 
     Parameters
     ----------
-    schedule :
-        To be compiled
-    device_cfg :
+    schedule
+        To be compiled.
+    device_cfg
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
 

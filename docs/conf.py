@@ -194,10 +194,10 @@ man_pages = [(master_doc, "quantify", "quantify Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "Quantify-scheduler",
-        "Quantify-scheduler Documentation",
+        "Quantify-Scheduler",
+        "Quantify-Scheduler Documentation",
         author,
-        "Quantify-scheduler",
+        "Quantify-Scheduler",
         "One line description of project.",
         "Miscellaneous",
     ),
