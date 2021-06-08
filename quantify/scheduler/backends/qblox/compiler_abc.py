@@ -747,7 +747,7 @@ class PulsarSequencerBase(ABC):
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class PulsarBase(InstrumentCompiler, ABC):
+class PulsarBase(ControlDeviceCompiler, ABC):
     """
     Pulsar specific implementation of`InstrumentCompiler`. The class is defined as an
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
