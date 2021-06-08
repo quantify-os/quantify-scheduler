@@ -10,9 +10,10 @@ from dataclasses_json import DataClassJsonMixin
 from quantify.scheduler import enums
 from quantify.scheduler.backends.types import common
 
-
+# Warning, treated as error:
+# <unknown>:1:py:class reference target not found: builtins.str
 @unique
-class DeviceType(str, Enum):
+class DeviceType(Enum):
     """Enum of device types."""
 
     HDAWG = "HDAWG"
