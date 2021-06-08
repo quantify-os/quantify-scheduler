@@ -37,6 +37,7 @@ from quantify.scheduler.backends.qblox.constants import (
     SAMPLING_RATE,
 )
 from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify.scheduler.backends.qblox import compiler_container
 from quantify.scheduler.backends.types.qblox import (
     OpInfo,
     SequencerSettings,
@@ -58,7 +59,13 @@ class InstrumentCompiler(ABC):
     `InstrumentCompiler` should be implemented.
     """
 
-    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
+    def __init__(
+        self,
+        parent: compiler_container.CompilerContainer,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
         """
         Constructor for an InstrumentCompiler object.
 
@@ -75,6 +82,7 @@ class InstrumentCompiler(ABC):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
+        self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
