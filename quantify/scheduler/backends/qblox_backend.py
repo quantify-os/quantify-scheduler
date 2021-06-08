@@ -21,44 +21,6 @@ from quantify.scheduler.backends.types.qblox import OpInfo
 from quantify.scheduler.types import Schedule
 
 
-def generate_ext_local_oscillators(
-    total_play_time: float, hardware_cfg: Dict[str, Any]
-) -> Dict[str, instrument_compilers.LocalOscillator]:
-    """
-    Traverses the `hardware_cfg` dict and extracts the used local oscillators.
-    `LocalOscillator` objects are instantiated for each LO and the `lo_freq` is
-    assigned if specified.
-
-    Parameters
-    ----------
-    total_play_time:
-        Total time the schedule is played for, not counting repetitions.
-    hardware_cfg:
-        Hardware mapping dictionary
-
-    Returns
-    -------
-    :
-        A dictionary with the names of the devices as keys and compiler
-        objects for the local oscillators as values.
-    """
-    all_lo_objs = dict()
-    lo_dicts = helpers.find_inner_dicts_containing_key(hardware_cfg, "lo_name")
-    for lo_dict in lo_dicts:
-        lo_name = lo_dict["lo_name"]
-        if lo_name not in all_lo_objs:
-            lo_obj = instrument_compilers.LocalOscillator(
-                lo_name,
-                total_play_time,
-            )
-            all_lo_objs[lo_name] = lo_obj
-
-        if "lo_freq" in lo_dict:
-            all_lo_objs[lo_name].assign_frequency(lo_dict["lo_freq"])
-
-    return all_lo_objs
-
-
 def generate_port_clock_to_device_map(
     mapping: Dict[str, Any]
 ) -> Dict[Tuple[str, str], str]:
