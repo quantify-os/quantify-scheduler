@@ -41,7 +41,7 @@ class CompilerContainer:
         self._add_from_type(name, compiler, mapping)
 
     def _add_from_type(self, name: str, instrument: type, mapping: Dict[str, Any]):
-        compiler = instrument(name, self.total_play_time, mapping)
+        compiler = instrument(self, name, self.total_play_time, mapping)
         self.instrument_compilers[name] = compiler
 
     @classmethod
