@@ -108,7 +108,13 @@ class InstrumentCompiler(ABC):
 
 
 class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
-    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
+    def __init__(
+        self,
+        parent: compiler_container.CompilerContainer,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
         """
         Constructor for an InstrumentCompiler object.
 
@@ -125,7 +131,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
-        super().__init__(name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping)
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
@@ -800,6 +806,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     def __init__(
         self,
+        parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -820,7 +827,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
-        super().__init__(name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping)
         verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()

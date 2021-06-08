@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
+from quantify.scheduler.backends.qblox import compiler_container
 from quantify.scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
     PulsarSequencerBase,
@@ -21,7 +22,13 @@ class LocalOscillator(InstrumentCompiler):
     pulses and acquisitions.
     """
 
-    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
+    def __init__(
+        self,
+        parent: compiler_container.CompilerContainer,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
         """
         Constructor for a local oscillator compiler.
 
@@ -39,7 +46,7 @@ class LocalOscillator(InstrumentCompiler):
             or set later in the compilation process, in case the LO frequency is not
             initially given and needs to be calculated.
         """
-        super().__init__(name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = LOSettings.from_mapping(hw_mapping)
 
     @property
