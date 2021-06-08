@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from os import path, makedirs
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List
 
@@ -58,12 +58,7 @@ class InstrumentCompiler(ABC):
     `InstrumentCompiler` should be implemented.
     """
 
-    def __init__(
-        self,
-        name: str,
-        total_play_time: float,
-        hw_mapping: Optional[Dict[str, Any]] = None,
-    ):
+    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
         """
         Constructor for an InstrumentCompiler object.
 
@@ -83,6 +78,46 @@ class InstrumentCompiler(ABC):
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
+
+    @abstractmethod
+    def compile(self, repetitions):
+        """
+        An abstract method that should be overridden by a subclass to implement the
+        actual compilation. Method turns the pulses and acquisitions added to the device
+        into device specific instructions.
+
+        Parameters
+        ----------
+        repetitions
+            Number of times execution the schedule is repeated.
+
+        Returns
+        -------
+        :
+            A data structure representing the compiled program. The type is
+            dependent on implementation.
+        """
+
+
+class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
+    def __init__(self, name: str, total_play_time: float, hw_mapping: Dict[str, Any]):
+        """
+        Constructor for an InstrumentCompiler object.
+
+        Parameters
+        ----------
+        name
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time
+            Total time execution of the schedule should go on for. This parameter is
+            used to ensure that the different devices, potentially with different clock
+            rates, can work in a synchronized way when performing multiple executions of
+            the schedule.
+        hw_mapping
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
+        super().__init__(name, total_play_time, hw_mapping)
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
