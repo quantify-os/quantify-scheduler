@@ -111,6 +111,11 @@ class InstrumentCompiler(ABC):
 
 
 class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
+    """
+    Abstract class for any device requiring logic for acquisition and playback of
+    pulses.
+    """
+
     def __init__(
         self,
         parent: compiler_container.CompilerContainer,
@@ -119,7 +124,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         hw_mapping: Dict[str, Any],
     ):
         """
-        Constructor for an InstrumentCompiler object.
+        Constructor for an ControlDeviceCompiler object.
 
         Parameters
         ----------
