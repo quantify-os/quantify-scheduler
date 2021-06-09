@@ -34,6 +34,8 @@ class LocalOscillator(InstrumentCompiler):
 
         Parameters
         ----------
+        parent
+            Reference to the parent container object.
         name
             QCoDeS name of the device it compiles for.
         total_play_time
@@ -41,10 +43,8 @@ class LocalOscillator(InstrumentCompiler):
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        lo_freq
-            LO frequency it needs to be set to. Either this is passed to the constructor
-            or set later in the compilation process, in case the LO frequency is not
-            initially given and needs to be calculated.
+        hw_mapping
+            The hardware mapping dict for this instrument.
         """
         super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = LOSettings.from_mapping(hw_mapping)
