@@ -31,7 +31,7 @@ class CompilerContainer:
         self.resources = schedule.resources
         self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
 
-    def compile(self, repetitions):
+    def compile(self, repetitions: int):
         """
         Performs the compilation for all the individual instruments.
 
