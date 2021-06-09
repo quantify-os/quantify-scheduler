@@ -59,10 +59,13 @@ We start by initializing an empty :class:`~quantify.scheduler.types.Schedule`
 
 .. jupyter-execute::
 
+    # Make output easier to read
+    from rich import pretty
+    pretty.install()
+
     from pathlib import Path
-    from os.path import join
     from quantify.data.handling import set_datadir
-    set_datadir(join(Path.home(), 'quantify-data'))
+    set_datadir(Path.home() / 'quantify-data')
     from quantify.scheduler import Schedule
     sched = Schedule('Bell experiment')
     sched
@@ -134,10 +137,9 @@ This allows efficient loading of pulses or gates to memory and also enables effi
 
 .. jupyter-execute::
 
-    from pprint import pprint
     from itertools import islice
     # showing the first 5 elements of the operation dict
-    pprint(dict(islice(sched.data['operation_dict'].items(), 5)))
+    dict(islice(sched.data['operation_dict'].items(), 5))
 
 The timing constraints are stored as a list of pulses.
 
@@ -151,7 +153,7 @@ Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also
 .. jupyter-execute::
 
     rxy_theta = Rxy(theta=theta, phi=0, qubit=q0)
-    pprint(rxy_theta.data)
+    rxy_theta.data
 
 
 Compilation of a circuit diagram into pulses
@@ -164,18 +166,17 @@ Here we will use a configuration file for a transmon based system that is part o
 .. jupyter-execute::
 
     import json
-    import pprint
     import os, inspect
     import quantify.scheduler.schemas.examples as es
 
     esp = inspect.getfile(es)
-    cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+    cfg_f = Path(esp).parent / 'transmon_test_config.json'
 
 
     with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 
-    pprint.pprint(transmon_test_config)
+    transmon_test_config
 
 
 .. jupyter-execute::
@@ -216,14 +217,12 @@ Here we will use the :class:`~quantify.scheduler.backends.qblox_backend.hardware
 
 .. jupyter-execute::
 
-    import pprint
-
-    cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+    cfg_f = Path(esp).parent / 'qblox_test_mapping.json'
 
     with open(cfg_f, 'r') as f:
       qblox_test_mapping = json.load(f)
 
-    pprint.pprint(qblox_test_mapping)
+    qblox_test_mapping
 
 
 The Pulsar QCM provides a QCoDeS based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will

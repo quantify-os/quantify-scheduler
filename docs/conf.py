@@ -70,6 +70,10 @@ intersphinx_mapping = {
         None,
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "qblox-instruments": (
+        "https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/",
+        None,
+    ),
     "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
     "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
 }
@@ -190,10 +194,10 @@ man_pages = [(master_doc, "quantify", "quantify Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "Quantify-scheduler",
-        "Quantify-scheduler Documentation",
+        "Quantify-Scheduler",
+        "Quantify-Scheduler Documentation",
         author,
-        "Quantify-scheduler",
+        "Quantify-Scheduler",
         "One line description of project.",
         "Miscellaneous",
     ),
