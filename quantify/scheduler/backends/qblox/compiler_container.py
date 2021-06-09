@@ -60,3 +60,6 @@ class CompilerContainer:
             )
 
         return composite
+
+    def get_instrument_compiler(self, name: str):
+        return self.instrument_compilers[name]
