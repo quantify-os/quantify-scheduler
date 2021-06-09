@@ -90,6 +90,10 @@ class OpInfo(DataClassJsonMixin):
 
 @dataclass
 class LOSettings(DataClassJsonMixin):
+    """
+    Dataclass containing all the settings for a generic LO instrument.
+    """
+
     power: float
     """Power of the LO source."""
     lo_freq: Optional[float]
