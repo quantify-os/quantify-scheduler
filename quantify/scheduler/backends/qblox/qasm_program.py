@@ -523,7 +523,7 @@ class QASMProgram:
             from quantify.scheduler.types import Schedule
             from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
             import quantify.scheduler.schemas.examples as es
-            from quantify.scheduler.backends.qblox import instrument_compilers, compiler_container
+            from quantify.scheduler.backends.qblox import instrument_compilers, compiler_container #pylint: disable=line-too-long
 
             esp = inspect.getfile(es)
             map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
