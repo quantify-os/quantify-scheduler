@@ -35,7 +35,6 @@ from quantify.scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
 )
-from quantify.scheduler.helpers.schedule import get_total_duration
 
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
@@ -51,7 +50,6 @@ from quantify.scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QRM,
     QCMSequencer,
 )
-from quantify.scheduler.backends.qblox import compiler_container
 from quantify.scheduler.backends.qblox.compiler_abc import (
     PulsarBase,
 )
