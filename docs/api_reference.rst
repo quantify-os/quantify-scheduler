@@ -140,6 +140,9 @@ qblox
 .. automodule:: quantify.scheduler.backends.qblox.helpers
     :members:
 
+.. automodule:: quantify.scheduler.backends.qblox.compiler_container
+    :members:
+
 .. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
     :members:
 
