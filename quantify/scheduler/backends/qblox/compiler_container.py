@@ -38,10 +38,16 @@ class CompilerContainer:
             self._add_from_type(name, instrument, mapping)
         elif isinstance(instrument, str):
             self._add_from_str(name, instrument, mapping)
+        else:
+            raise ValueError(
+                f"{instrument} is not a valid compiler. {self.__class__} "
+                f"expects either a string or a type. But {type(instrument)} was "
+                f"passed."
+            )
 
     def _add_from_str(self, name: str, instrument: str, mapping: Dict[str, Any]):
         compiler: type = getattr(instrument_compilers, instrument)
-        self._add_from_type(name, compiler, mapping)
+        self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(self, name: str, instrument: type, mapping: Dict[str, Any]):
         compiler = instrument(self, name, self.total_play_time, mapping)
