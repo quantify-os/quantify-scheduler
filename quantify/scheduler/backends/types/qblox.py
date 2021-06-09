@@ -101,6 +101,19 @@ class LOSettings(DataClassJsonMixin):
 
     @classmethod
     def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
+        """
+        Factory method for the LOSettings from a mapping dict/
+
+        Parameters
+        ----------
+        mapping
+            The part of the mapping dict relevant for this instrument.
+
+        Returns
+        -------
+        :
+            Instantiated LOSettings from the mapping dict.
+        """
         return cls(power=mapping["power"], lo_freq=mapping["lo_freq"])
 
 
