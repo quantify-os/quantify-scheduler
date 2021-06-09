@@ -51,6 +51,7 @@ from quantify.scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QRM,
     QCMSequencer,
 )
+from quantify.scheduler.backends.qblox import compiler_container
 from quantify.scheduler.backends.qblox.compiler_abc import (
     PulsarBase,
 )
@@ -149,6 +150,27 @@ def pulse_only_schedule():
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def pulse_only_schedule_no_lo():
+    sched = Schedule("pulse_only_schedule_no_lo")
+    sched.add(Reset("q0"))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q1:res",
+            duration=20e-9,
+            clock="q1.ro",
+            t0=4e-9,
+        )
+    )
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q1.ro", freq=100e6)])
     determine_absolute_timing(sched)
     return sched
 
@@ -259,6 +281,7 @@ def baseband_square_pulse_schedule():
             t0=1e-6,
         )
     )
+    determine_absolute_timing(sched)
     return sched
 
 
@@ -607,3 +630,55 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     qrm = container.instrument_compilers["qrm0"]
     assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
     assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+
+
+# @pytest.mark.parametrize(
+#     "sched, cfg",
+#     [
+#         ("pulse_only_schedule", HARDWARE_MAPPING),
+#         (
+#             pytest.getfixturevalue("baseband_square_pulse_schedule"),
+#             hardware_cfg_baseband,
+#         ),
+#     ],
+#     indirect=["sched"],
+# )
+def test_container_prepare(pulse_only_schedule):
+    container = compiler_container.CompilerContainer.from_mapping(
+        pulse_only_schedule, HARDWARE_MAPPING
+    )
+    for instr in container.instrument_compilers.values():
+        instr.prepare()
+
+    assert (
+        container.get_instrument_compiler("qcm0").sequencers["seq0"].frequency
+        is not None
+    )
+    assert container.get_instrument_compiler("lo0").frequency is not None
+
+
+def test_container_prepare_baseband(
+    baseband_square_pulse_schedule, hardware_cfg_baseband
+):
+    container = compiler_container.CompilerContainer.from_mapping(
+        baseband_square_pulse_schedule, hardware_cfg_baseband
+    )
+    for instr in container.instrument_compilers.values():
+        instr.prepare()
+
+    assert (
+        container.get_instrument_compiler("qcm0").sequencers["seq0"].frequency
+        is not None
+    )
+    assert container.get_instrument_compiler("lo0").frequency is not None
+
+
+def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
+    container = compiler_container.CompilerContainer.from_mapping(
+        pulse_only_schedule_no_lo, HARDWARE_MAPPING
+    )
+    container.compile(10)
+
+    assert (
+        container.get_instrument_compiler("qrm1").sequencers["seq0"].frequency == 100e6
+    )

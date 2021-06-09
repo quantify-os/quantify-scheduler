@@ -50,15 +50,12 @@
     "ref": "ext",
     "complex_output_0": {
       "line_gain_db": 0,
-      "lo_name": "lo2",
       "seq0": {
         "port": "q1:res",
-        "clock": "q1.ro",
-        "interm_freq": 100e6
+        "clock": "q1.ro"
         }
       }
     },
   "lo0": {"instrument_type": "LocalOscillator", "lo_freq": null, "power": 1},
-  "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1},
-  "lo2": {"instrument_type": "LocalOscillator", "lo_freq": null, "power": 1}
+  "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
 }
