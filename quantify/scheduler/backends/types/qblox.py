@@ -102,7 +102,7 @@ class LOSettings(DataClassJsonMixin):
     @classmethod
     def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
         """
-        Factory method for the LOSettings from a mapping dict/
+        Factory method for the LOSettings from a mapping dict.
 
         Parameters
         ----------
