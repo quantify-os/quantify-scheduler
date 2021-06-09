@@ -88,7 +88,11 @@ class InstrumentCompiler(ABC):
         self.hw_mapping = hw_mapping
 
     def prepare(self):
-        return
+        """
+        Method that can be overridden to implement logic before the main compilation
+        starts. This step is to align all settings between different devices that
+        which needs to happen after instantiation but before compilation.
+        """
 
     @abstractmethod
     def compile(self, repetitions):
