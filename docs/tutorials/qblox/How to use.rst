@@ -37,10 +37,10 @@ that describes your experimental setup. An example of such a config:
                     "clock": "q1.01",
                     "interm_freq": None
                 }
+            },
         },
         "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
         "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
-        },
     }
 
 Here the entry :code:`"backend": "quantify.scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
