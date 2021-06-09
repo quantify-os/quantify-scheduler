@@ -3,7 +3,7 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from quantify.scheduler.backends.qblox import compiler_container
 from quantify.scheduler.backends.qblox.compiler_abc import (
@@ -88,7 +88,7 @@ class LocalOscillator(InstrumentCompiler):
                 )
         self._settings.lo_freq = value
 
-    def compile(self, repetitions: int = 1) -> Dict[str, Any]:
+    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Compiles the program for the LO control stack component.
 
@@ -103,6 +103,8 @@ class LocalOscillator(InstrumentCompiler):
             Dictionary containing all the information the cs component needs to set the
             parameters appropriately.
         """
+        if self.frequency is None:
+            return None
         return self._settings.to_dict()
 
 
