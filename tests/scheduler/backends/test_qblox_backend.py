@@ -632,17 +632,6 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
 
 
-# @pytest.mark.parametrize(
-#     "sched, cfg",
-#     [
-#         ("pulse_only_schedule", HARDWARE_MAPPING),
-#         (
-#             pytest.getfixturevalue("baseband_square_pulse_schedule"),
-#             hardware_cfg_baseband,
-#         ),
-#     ],
-#     indirect=["sched"],
-# )
 def test_container_prepare(pulse_only_schedule):
     container = compiler_container.CompilerContainer.from_mapping(
         pulse_only_schedule, HARDWARE_MAPPING
