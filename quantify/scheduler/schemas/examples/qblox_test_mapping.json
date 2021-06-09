@@ -16,7 +16,7 @@
       "line_gain_db": 0,
       "lo_name": "lo1",
       "lo_freq": 7.2e9,
-      "seq0": {
+      "seq1": {
         "port": "q1:mw",
         "clock": "q1.01",
         "interm_freq": null
