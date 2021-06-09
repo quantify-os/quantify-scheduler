@@ -693,3 +693,13 @@ def test_container__add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container._add_from_str("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
+
+
+def test_from_mapping(pulse_only_schedule):
+    container = compiler_container.CompilerContainer.from_mapping(
+        pulse_only_schedule, HARDWARE_MAPPING
+    )
+    for instr_name in HARDWARE_MAPPING.keys():
+        if instr_name == "backend":
+            continue
+        assert instr_name in container.instrument_compilers
