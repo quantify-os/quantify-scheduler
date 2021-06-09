@@ -20,6 +20,9 @@ class CompilerContainer:
         self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
 
     def compile(self, repetitions):
+        for compiler in self.instrument_compilers.values():
+            compiler.prepare()
+
         compiled_schedule = dict()
         for name, compiler in self.instrument_compilers.items():
             compiled_dev_program = compiler.compile(repetitions=repetitions)

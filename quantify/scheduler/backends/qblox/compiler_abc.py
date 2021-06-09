@@ -87,6 +87,9 @@ class InstrumentCompiler(ABC):
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
 
+    def prepare(self):
+        return
+
     @abstractmethod
     def compile(self, repetitions):
         """
@@ -968,6 +971,11 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
+    def prepare(self):
+        self._distribute_data()
+        for seq in self.sequencers.values():
+            seq.assign_frequencies()
+
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this pulsar, by calling the sequencer
@@ -986,10 +994,8 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
-        self._distribute_data()
         program = dict()
         for seq_name, seq in self.sequencers.items():
-            seq.assign_frequencies()
             seq_program = seq.compile(repetitions=repetitions)
             if seq_program is not None:
                 program[seq_name] = seq_program
