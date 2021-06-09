@@ -1,7 +1,6 @@
 {
   "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
   "qcm0": {
-    "name": "qcm0",
     "instrument_type": "Pulsar_QCM",
     "ref": "int",
     "complex_output_0": {
@@ -25,7 +24,6 @@
     }
   },
   "qrm0": {
-    "name": "qrm0",
     "instrument_type": "Pulsar_QRM",
     "ref": "ext",
     "complex_output_0": {
@@ -45,7 +43,6 @@
     }
   },
   "qrm1": {
-    "name": "qrm1",
     "instrument_type": "Pulsar_QRM",
     "ref": "ext",
     "complex_output_0": {
