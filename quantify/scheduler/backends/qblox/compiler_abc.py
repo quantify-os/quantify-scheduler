@@ -365,6 +365,18 @@ class PulsarSequencerBase(ABC):
         self._settings.modulation_freq = freq
 
     def assign_frequencies(self):
+        """
+        Sets the frequencies so that the LO and IF frequencies for the relation:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise and error is thrown.
+
+        Raises
+        ------
+        ValueError
+            Neither the LO or IF frequency has been set and thus contain `None` values.
+        """
         if self.clock not in self.parent.parent.resources:
             return
 
