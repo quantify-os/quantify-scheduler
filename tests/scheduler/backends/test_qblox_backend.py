@@ -556,10 +556,8 @@ def test_pulse_stitching_qasm_prog():
     assert qasm.instructions[2][2] == "20,R2"
 
 
-def test_staircase_qasm_prog():
-
-    start_amp = -1.1
-    final_amp = 2.1
+@pytest.mark.parametrize("start_amp, final_amp", [(-1.1, 2.1), (1.23456, -2)])
+def test_staircase_qasm_prog(start_amp, final_amp):
 
     s_ramp_pulse = StaircasePulse(start_amp, final_amp, 10, 12.4e-6, "q0:mw")
 
@@ -577,6 +575,8 @@ def test_staircase_qasm_prog():
     qasm.wait_till_start_then_play(pulse, 0, 1)
 
     amp_step_used = int(qasm.instructions[9][2].split(",")[1])
+    if final_amp < start_amp:
+        amp_step_used = -amp_step_used
     steps_taken = int(qasm.instructions[5][2].split(",")[0])
     init_amp = int(qasm.instructions[2][2].split(",")[0])
     if init_amp > constants.IMMEDIATE_SZ_OFFSET:
