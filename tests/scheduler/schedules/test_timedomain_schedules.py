@@ -3,24 +3,21 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=no-self-use
 
-from pathlib import Path
-import json
 import tempfile
 import pytest
 import numpy as np
-import quantify.scheduler.schemas.examples as es
 from quantify.scheduler.schedules import timedomain_schedules as ts
 from quantify.scheduler.compilation import determine_absolute_timing, qcompile
 from quantify.data.handling import set_datadir
+from quantify.scheduler.schemas.examples import utils
+
 
 # FIXME to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
 
-path = Path(es.__file__).parent.joinpath("transmon_test_config.json")
-DEVICE_CFG = json.loads(path.read_text())
-
-path = Path(es.__file__).parent.joinpath("qblox_test_mapping.json")
-HARDWARE_MAPPING = json.loads(path.read_text())
+DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 class TestRabiPulse:
@@ -65,14 +62,14 @@ class TestRabiPulse:
 
     def test_compiles_device_cfg_only(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG)
+        qcompile(self.sched, DEVICE_CONFIG)
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestRabiSched:
@@ -89,7 +86,7 @@ class TestRabiSched:
         }
 
         cls.sched = ts.rabi_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -118,7 +115,7 @@ class TestRabiSched:
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, DEVICE_CFG)
+        sched = qcompile(sched, DEVICE_CONFIG)
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
@@ -143,7 +140,7 @@ class TestRabiSched:
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, DEVICE_CFG)
+        sched = qcompile(sched, DEVICE_CONFIG)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -171,7 +168,7 @@ class TestRabiSched:
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, DEVICE_CFG)
+        sched = qcompile(sched, DEVICE_CONFIG)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -202,10 +199,11 @@ class TestRabiSched:
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestT1Sched:
@@ -218,7 +216,7 @@ class TestT1Sched:
         }
 
         cls.sched = ts.t1_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -240,17 +238,18 @@ class TestT1Sched:
         }
 
         sched = ts.t1_sched(**sched_kwargs)
-        sched = qcompile(sched, DEVICE_CFG)
+        sched = qcompile(sched, DEVICE_CONFIG)
 
     def test_operations(self):
         assert len(self.sched.operations) == 3  # init, pi and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestRamseySched:
@@ -263,7 +262,7 @@ class TestRamseySched:
         }
 
         cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -283,7 +282,7 @@ class TestRamseySched:
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
-        sched = qcompile(sched, DEVICE_CFG)
+        sched = qcompile(sched, DEVICE_CONFIG)
 
     def test_operations(self):
         # 4 for a regular Ramsey, more with artificial detuning
@@ -291,10 +290,10 @@ class TestRamseySched:
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestEchoSched:
@@ -307,7 +306,7 @@ class TestEchoSched:
         }
 
         cls.sched = ts.echo_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
 
     # pylint: disable=no-self-use
     def test_sched_float_times(self):
@@ -317,7 +316,7 @@ class TestEchoSched:
         }
 
         sched = ts.echo_sched(**sched_kwargs)
-        sched = qcompile(sched, DEVICE_CFG)
+        sched = qcompile(sched, DEVICE_CONFIG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -337,10 +336,11 @@ class TestEchoSched:
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestAllXYSched:
@@ -352,7 +352,7 @@ class TestAllXYSched:
         }
 
         cls.sched = ts.allxy_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CFG)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -369,7 +369,8 @@ class TestAllXYSched:
     @pytest.mark.xfail  # see #89
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
