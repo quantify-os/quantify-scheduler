@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 import inspect
+import json
 from ast import literal_eval
 from collections import UserDict
 from copy import deepcopy
-import json
+from enum import Enum
 from typing import Any, Dict
 from uuid import uuid4
 
@@ -15,6 +16,7 @@ import jsonschema
 import numpy as np
 from typing_extensions import Literal
 from quantify.scheduler import resources
+from quantify.scheduler.enums import BinMode
 from quantify.utilities import general
 
 
@@ -174,6 +176,9 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             :
             """
             value = parameters[key]
+            if isinstance(value, Enum):
+                enum_value = value.value
+                value = enum_value
             value = f"'{value}'" if isinstance(value, str) else value
             return f"{key}={value}"
 
@@ -233,6 +238,20 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
                 _data["gate_info"]["unitary"], separator=", ", precision=9
             )
 
+        for acq_info in _data["acquisition_info"]:
+            if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], BinMode):
+                acq_info["bin_mode"] = acq_info["bin_mode"].value
+
+            for waveform in acq_info["waveforms"]:
+                if "t" in waveform:
+                    waveform["t"] = np.array2string(
+                        waveform["t"], separator=", ", precision=9
+                    )
+                if "weights" in waveform:
+                    waveform["weights"] = np.array2string(
+                        waveform["weights"], separator=", ", precision=9
+                    )
+
         return _data
 
     def _deserialize(self) -> None:
@@ -243,6 +262,16 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             self.data["gate_info"]["unitary"] = np.array(
                 literal_eval(self.data["gate_info"]["unitary"])
             )
+
+        for acq_info in self.data["acquisition_info"]:
+            if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
+                acq_info["bin_mode"] = BinMode(acq_info["bin_mode"])
+
+            for waveform in acq_info["waveforms"]:
+                if "t" in waveform and isinstance(waveform["t"], str):
+                    waveform["t"] = np.array(literal_eval(waveform["t"]))
+                if "weights" in waveform and isinstance(waveform["weights"], str):
+                    waveform["weights"] = np.array(literal_eval(waveform["weights"]))
 
     @classmethod
     def is_valid(cls, operation) -> bool:
