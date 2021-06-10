@@ -320,14 +320,13 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     The Schedule data structure is based on a dictionary.
     This dictionary contains:
 
-        - `operation_dict`     : a hash table containing the unique
-            :class:`~Operation` s added to the schedule.
-        - `timing_constraints` : a list of all timing constraints added between
-            operations.
+    - `operation_dict` - a hash table containing the unique :class:`~Operation` s added to the schedule.
+    - `timing_constraints` - a list of all timing constraints added between operations.
 
     .. jsonschema:: schemas/schedule.json
 
-    """
+
+    """  # pylint: disable=line-too-long
 
     def __init__(self, name: str, repetitions: int = 1, data: dict = None):
         """
