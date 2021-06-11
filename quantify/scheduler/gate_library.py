@@ -396,7 +396,7 @@ class Reset(Operation):
 
     def __str__(self) -> str:
         qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
-        return f'{self.__class__.__name__}(*{",".join(qubits)})'
+        return f'{self.__class__.__name__}({",".join(qubits)})'
 
 
 class Measure(Operation):
@@ -468,6 +468,6 @@ class Measure(Operation):
         acq_channel = self.data["gate_info"]["acq_channel"]
         acq_index = self.data["gate_info"]["acq_index"]
         return (
-            f'{self.__class__.__name__}(*{",".join(qubits)},'
+            f'{self.__class__.__name__}({",".join(qubits)},'
             + f"acq_channel={acq_channel},acq_index={acq_index})"
         )

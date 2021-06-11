@@ -206,3 +206,15 @@ def test_schedule_to_json():
 
     # Assert
     json.loads(json_data)
+
+
+def test_schedule_from_json():
+    # Arrange
+    schedule = timedomain_schedules.t1_sched(np.zeros(1), "q0")
+
+    # Act
+    json_data = schedule.to_json()
+    result = Schedule.from_json(json_data)
+
+    # Assert
+    assert schedule == result

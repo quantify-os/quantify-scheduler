@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import inspect
 import json
-from ast import literal_eval
+import ast
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
 from typing import Any, Dict
 from uuid import uuid4
+import re
 
 import jsonschema
 import numpy as np
@@ -18,6 +19,7 @@ from typing_extensions import Literal
 from quantify.scheduler import resources
 from quantify.scheduler.enums import BinMode
 from quantify.utilities import general
+from quantify.scheduler.helpers import inspect as inspect_helpers
 
 
 class Operation(UserDict):  # pylint: disable=too-many-ancestors
@@ -85,7 +87,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
 
         This representation is guaranteed to be unique.
         """
-        return f"{self.__class__.__name__}('{self.name}')"
+        return f"{self.__class__.__name__}(name='{self.name}')"
 
     def __repr__(self) -> str:
         """
@@ -260,7 +262,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             self.data["gate_info"]["unitary"], str
         ):
             self.data["gate_info"]["unitary"] = np.array(
-                literal_eval(self.data["gate_info"]["unitary"])
+                ast.literal_eval(self.data["gate_info"]["unitary"])
             )
 
         for acq_info in self.data["acquisition_info"]:
@@ -269,9 +271,11 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
-                    waveform["t"] = np.array(literal_eval(waveform["t"]))
+                    waveform["t"] = np.array(ast.literal_eval(waveform["t"]))
                 if "weights" in waveform and isinstance(waveform["weights"], str):
-                    waveform["weights"] = np.array(literal_eval(waveform["weights"]))
+                    waveform["weights"] = np.array(
+                        ast.literal_eval(waveform["weights"])
+                    )
 
     @classmethod
     def is_valid(cls, operation) -> bool:
@@ -367,7 +371,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
             self.data["name"] = name
 
         if data is not None:
-            raise NotImplementedError
+            self.data.update(data)
 
     @property
     def name(self) -> str:
@@ -447,7 +451,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
                 Overloads the json.JSONEncoder default method that returns a
                 serializable object.
                 """
-                if isinstance(o, Operation):
+                if isinstance(o, (Operation, resources.Resource)):
                     return repr(o)
                 if hasattr(o, "__dict__"):
                     return o.__dict__
@@ -457,14 +461,84 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
         return json.dumps(self.data, cls=ScheduleJSONEncoder)
 
-    # @classmethod
-    # def from_json(cls, data) -> Schedule:
-    #     class JSONDecoder(json.JSONDecoder):
-    #         def __init__(self, *args, **kwargs) -> None:
-    #             super().__init__(object_hook=self.object_hook, *args, **kwargs)
+    @classmethod
+    def from_json(cls, data: str) -> Schedule:
+        """
+        Converts the JSON data to a Schedule.
 
-    #         def object_hook(self, o):
-    #             pass
+        For better security and to avoid the execution of malicious code
+        this function uses ast.literal_eval to evaluate the JSON data
+        and convert it to an instance of Schedule.
+
+        Parameters
+        ----------
+        data :
+            The JSON data.
+
+        Returns
+        -------
+        :
+            The Schedule object.
+        """
+        # Import known classes for better security to
+        # avoid `eval` running malicious code
+        from quantify.scheduler import gate_library
+        from quantify.scheduler import pulse_library
+        from quantify.scheduler import acquisition_library
+        from quantify.scheduler import resources
+
+        classes = inspect_helpers.get_classes(
+            gate_library, pulse_library, acquisition_library, resources
+        )
+        ctor_regex = r"^(\w+)\(.*\)$"
+
+        class ScheduleJSONDecoder(json.JSONDecoder):
+            def __init__(self, *args, **kwargs) -> None:
+                super().__init__(
+                    object_hook=self.object_hook,
+                    *args,
+                    **kwargs,
+                )
+
+            def decode_dict(self, obj: Dict[str, Any]) -> object:
+                for key in obj:
+                    value = obj[key]
+                    if isinstance(value, str):
+                        if not re.match(ctor_regex, value):
+                            return obj
+                        obj[key] = self.decode_quantify_type(value)
+                return obj
+
+            def decode_quantify_type(self, obj: str) -> object:
+                kwargs = dict()
+                args = list()
+                ast_tree = ast.parse(obj)
+                for node in ast.walk(ast_tree):
+                    if isinstance(node, ast.Load):
+                        break
+                    elif isinstance(node, ast.Call):
+                        class_name = node.func.id
+                    elif isinstance(node, ast.Constant):
+                        args.append(node.value)
+                    elif isinstance(node, ast.keyword):
+                        kwargs[node.arg] = ast.literal_eval(node.value)
+
+                if not class_name in classes:
+                    return obj
+
+                class_type: type = classes[class_name]
+                return class_type(*args, **kwargs)
+
+            def object_hook(self, obj: object) -> object:
+                if isinstance(obj, dict):
+                    return self.decode_dict(obj)
+
+                return obj
+
+        schedule_data = ScheduleJSONDecoder().decode(data)
+        name = schedule_data["name"]
+
+        return Schedule(name, data=schedule_data)
 
     def add_resources(self, resources_list: list):
         """Add wrapper for adding multiple resources"""
