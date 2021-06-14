@@ -194,8 +194,8 @@ def test_pulse_and_clock():
 
 def test_resource_resolution():
     sched = Schedule("resource_resolution")
-    qcm0_s0 = Resource({"name": "qcm0.s0", "type": "qcm"})
-    qrm0_s0 = Resource({"name": "qrm0.s0", "type": "qrm"})
+    qcm0_s0 = Resource("qcm0.s0", {"name": "qcm0.s0", "type": "qcm"})
+    qrm0_s0 = Resource("qrm0.s0", {"name": "qrm0.s0", "type": "qrm"})
 
     sched.add(Rxy(90, 0, "q0"))
     sched.add(SquarePulse(0.6, 20e-9, "q0:mw_ch", clock=BasebandClockResource.IDENTITY))
