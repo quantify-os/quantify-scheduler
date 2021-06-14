@@ -60,12 +60,12 @@ def determine_absolute_timing(
 
     # iterate over the objects in the schedule.
     last_constr = schedule.timing_constraints[0]
-    last_op = schedule.operations[last_constr["operation_hash"]]
+    last_op = schedule.operations[last_constr["operation_repr"]]
 
     last_constr["abs_time"] = 0
 
     for t_constr in schedule.data["timing_constraints"][1:]:
-        curr_op = schedule.operations[t_constr["operation_hash"]]
+        curr_op = schedule.operations[t_constr["operation_repr"]]
         if t_constr["ref_op"] is None:
             ref_constr = last_constr
             ref_op = last_op
@@ -76,7 +76,7 @@ def determine_absolute_timing(
                 for item in schedule.timing_constraints
                 if item["label"] == t_constr["ref_op"]
             )
-            ref_op = schedule.operations[ref_constr["operation_hash"]]
+            ref_op = schedule.operations[ref_constr["operation_repr"]]
 
         # duration = 1 is useful when e.g., drawing a circuit diagram.
         duration_ref_op = ref_op.duration if time_unit == "physical" else 1

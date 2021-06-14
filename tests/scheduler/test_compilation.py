@@ -182,7 +182,7 @@ def test_pulse_and_clock():
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
     op_hash = next(op for op in sched.timing_constraints if op["label"] == op_label)[
-        "operation_hash"
+        "operation_repr"
     ]
     with pytest.raises(ValueError) as execinfo:
         add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
