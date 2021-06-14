@@ -15,6 +15,18 @@ class Resource(UserDict):
     """
 
     def __init__(self, name: str, data: Optional[dict] = None):
+        """
+        Create a new instance of Resource.
+
+        A resource corresponds to a physical resource such as a port or a clock.
+
+        Parameters
+        ----------
+        name :
+            The resource name.
+        data :
+            The resource data dictionary, by default None
+        """
         super().__init__()
 
         self.data["name"] = name
@@ -24,12 +36,36 @@ class Resource(UserDict):
 
     @classmethod
     def is_valid(cls, operation):
+        """
+        Validates the Resource agains the schemas/resource.json jsonschema.
+
+        Parameters
+        ----------
+        operation :
+
+        Raises
+        ------
+        ValidationError
+            The json validation error.
+
+        Returns
+        -------
+        bool
+            If the validation was successfull.
+        """
         scheme = load_json_schema(__file__, "resource.json")
         jsonschema.validate(operation.data, scheme)
         return True  # if not exception was raised during validation
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """
+        Returns the name of the Resource.
+
+        Returns
+        -------
+        :
+        """
         return self.data["name"]
 
     def __eq__(self, other: object) -> bool:
@@ -74,6 +110,10 @@ class Resource(UserDict):
 
 
 class ClockResource(Resource):
+    """
+    The ClockResource corresponds to a physical clock used to modulate pulses.
+    """
+
     def __init__(
         self, name: str, freq: float, phase: float = 0, data: Optional[dict] = None
     ):
@@ -105,7 +145,6 @@ class ClockResource(Resource):
 
 
 class BasebandClockResource(Resource):
-
     """
     Global identity for a virtual baseband clock
     """
