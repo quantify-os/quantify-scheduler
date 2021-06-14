@@ -418,8 +418,8 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :code:`['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_repr']`
 
         The `label` is used as a unique identifier that can be used as a reference for
-        other operations, the `operation_repr` refers to the hash of a unique operation
-        in :attr:`~Schedule.operations`.
+        other operations, the `operation_repr` refers to the string representation of a
+        operation in :attr:`~Schedule.operations`.
         """
         return self.data["timing_constraints"]
 
