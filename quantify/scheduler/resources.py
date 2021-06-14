@@ -37,7 +37,7 @@ class Resource(UserDict):
     @classmethod
     def is_valid(cls, operation):
         """
-        Validates the Resource agains the schemas/resource.json jsonschema.
+        Validates the Resource against the schemas/resource.json jsonschema.
 
         Parameters
         ----------
