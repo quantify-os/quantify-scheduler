@@ -6,20 +6,24 @@ from __future__ import annotations
 import inspect
 import json
 import ast
+import re
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict
+from types import ModuleType
+from typing import Any, Dict, List, Type
 from uuid import uuid4
-import re
 
 import jsonschema
 import numpy as np
 from typing_extensions import Literal
-from quantify.scheduler import resources
-from quantify.scheduler.enums import BinMode
 from quantify.utilities import general
 from quantify.scheduler.helpers import inspect as inspect_helpers
+from quantify.scheduler import resources
+from quantify.scheduler import enums
+from quantify.scheduler import acquisition_library
+from quantify.scheduler import gate_library
+from quantify.scheduler import pulse_library
 
 
 class Operation(UserDict):  # pylint: disable=too-many-ancestors
@@ -241,7 +245,9 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             )
 
         for acq_info in _data["acquisition_info"]:
-            if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], BinMode):
+            if "bin_mode" in acq_info and isinstance(
+                acq_info["bin_mode"], enums.BinMode
+            ):
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
             for waveform in acq_info["waveforms"]:
@@ -267,7 +273,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
 
         for acq_info in self.data["acquisition_info"]:
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
-                acq_info["bin_mode"] = BinMode(acq_info["bin_mode"])
+                acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
@@ -439,36 +445,12 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :
             The json string result.
         """
-
-        class ScheduleJSONEncoder(json.JSONEncoder):
-            """
-            Custom JSON Encorder which encodes the quantify Schedule to to valid
-            JSON format.
-            """
-
-            def default(self, o):
-                """
-                Overloads the json.JSONEncoder default method that returns a
-                serializable object.
-                """
-                if isinstance(o, (Operation, resources.Resource)):
-                    return repr(o)
-                if hasattr(o, "__dict__"):
-                    return o.__dict__
-
-                # Let the base class default method raise the TypeError
-                return json.JSONEncoder.default(self, o)
-
         return json.dumps(self.data, cls=ScheduleJSONEncoder)
 
     @classmethod
     def from_json(cls, data: str) -> Schedule:
         """
         Converts the JSON data to a Schedule.
-
-        For better security and to avoid the execution of malicious code
-        this function uses ast.literal_eval to evaluate the JSON data
-        and convert it to an instance of Schedule.
 
         Parameters
         ----------
@@ -480,61 +462,6 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :
             The Schedule object.
         """
-        # Import known classes for better security to
-        # avoid `eval` running malicious code
-        from quantify.scheduler import gate_library
-        from quantify.scheduler import pulse_library
-        from quantify.scheduler import acquisition_library
-        from quantify.scheduler import resources
-
-        classes = inspect_helpers.get_classes(
-            gate_library, pulse_library, acquisition_library, resources
-        )
-        ctor_regex = r"^(\w+)\(.*\)$"
-
-        class ScheduleJSONDecoder(json.JSONDecoder):
-            def __init__(self, *args, **kwargs) -> None:
-                super().__init__(
-                    object_hook=self.object_hook,
-                    *args,
-                    **kwargs,
-                )
-
-            def decode_dict(self, obj: Dict[str, Any]) -> object:
-                for key in obj:
-                    value = obj[key]
-                    if isinstance(value, str):
-                        if not re.match(ctor_regex, value):
-                            return obj
-                        obj[key] = self.decode_quantify_type(value)
-                return obj
-
-            def decode_quantify_type(self, obj: str) -> object:
-                kwargs = dict()
-                args = list()
-                ast_tree = ast.parse(obj)
-                for node in ast.walk(ast_tree):
-                    if isinstance(node, ast.Load):
-                        break
-                    elif isinstance(node, ast.Call):
-                        class_name = node.func.id
-                    elif isinstance(node, ast.Constant):
-                        args.append(node.value)
-                    elif isinstance(node, ast.keyword):
-                        kwargs[node.arg] = ast.literal_eval(node.value)
-
-                if not class_name in classes:
-                    return obj
-
-                class_type: type = classes[class_name]
-                return class_type(*args, **kwargs)
-
-            def object_hook(self, obj: object) -> object:
-                if isinstance(obj, dict):
-                    return self.decode_dict(obj)
-
-                return obj
-
         schedule_data = ScheduleJSONDecoder().decode(data)
         name = schedule_data["name"]
 
@@ -666,3 +593,150 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         self.data["timing_constraints"].append(timing_constr)
 
         return label
+
+
+class ScheduleJSONDecoder(json.JSONDecoder):
+    """
+    The Quantify Schedule JSONDecoder.
+
+    The ScheduleJSONDecoder is used to convert a string with JSON content into a
+    :class:`~quantify.scheduler.types.Schedule`.
+
+    To avoid the execution of malicious code ScheduleJSONDecoder uses
+    :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance
+    of Schedule.
+    """
+
+    classes: Dict[str, Type[Any]]
+
+    def __init__(self, *args, **kwargs) -> None:
+        """
+        Create new instance of ScheduleJSONDecoder to decode a string into a Schedule.
+
+        The list of serializable classes can be extended with custom classes by
+        providing the `modules` keyword argument. These classes have to overload the
+        :func:`__str__` and :func:`__repr__` functions in order to serialize and
+        deserialize domain objects into a valid JSON-format.
+
+        Keyword Arguments
+        -----------------
+        modules : List[ModuleType], optional
+            A list of custom modules containing serializable classes, by default []
+        """
+        extended_modules: List[ModuleType] = kwargs.pop("modules", list())
+        assert all(isinstance(o, ModuleType) for o in extended_modules)
+
+        super().__init__(
+            object_hook=self.custom_object_hook,
+            *args,
+            **kwargs,
+        )
+
+        self._modules: List[ModuleType] = [
+            gate_library,
+            pulse_library,
+            acquisition_library,
+            resources,
+        ] + extended_modules
+        self.classes = inspect_helpers.get_classes(*self._modules)
+
+    def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Returns the deserialized JSON dictionary.
+
+        Parameters
+        ----------
+        obj :
+            The dictionary to deserialize.
+
+        Returns
+        -------
+        :
+            The deserialized result.
+        """
+        for key in obj:
+            value = obj[key]
+            if isinstance(value, str):
+                # Check if the string has a signature of a constructor
+                # example: Reset('q0', data={...})
+                if not re.match(r"^(\w+)\(.*\)$", value):
+                    return obj
+                obj[key] = self.decode_quantify_type(value)
+        return obj
+
+    def decode_quantify_type(self, obj: str) -> object:
+        """
+        Returns the deserialized result of a possible known type stored in the
+        :attr:`~.ScheduleJSONDecoder.classes` property.
+
+        For better security the usage of `eval` has been replaced in favour of
+        :func:`ast.literal_eval`.
+
+        Parameters
+        ----------
+        obj : str
+            The value of dictionary pair to deserialize.
+
+        Returns
+        -------
+        :
+            The decoded result.
+        """
+        kwargs = dict()
+        args = list()
+        ast_tree = ast.parse(obj)
+        class_name: str = ""
+        for node in ast.walk(ast_tree):
+            if isinstance(node, ast.Load):
+                break
+            elif isinstance(node, ast.Call):
+                class_name = node.func.id
+            elif isinstance(node, ast.Constant):
+                args.append(node.value)
+            elif isinstance(node, ast.keyword):
+                kwargs[node.arg] = ast.literal_eval(node.value)
+
+        if class_name not in self.classes:
+            return obj
+
+        class_type: type = self.classes[class_name]
+        return class_type(*args, **kwargs)
+
+    def custom_object_hook(self, obj: object) -> object:
+        """
+        The `object_hook` hook will be called with the result of every JSON object
+        decoded and its return value will be used in place of the given ``dict``.
+
+        Parameters
+        ----------
+        obj :
+            A pair of JSON objects.
+
+        Returns
+        -------
+        :
+            The deserialized result.
+        """
+        if isinstance(obj, dict):
+            return self.decode_dict(obj)
+        return obj
+
+
+class ScheduleJSONEncoder(json.JSONEncoder):
+    """
+    Custom JSONEncoder which encodes the quantify Schedule into a JSON file format
+    string.
+    """
+
+    def default(self, o):
+        """
+        Overloads the json.JSONEncoder default method that returns a serializable
+        object.
+        """
+        if isinstance(o, (Operation, resources.Resource)):
+            return repr(o)
+        if hasattr(o, "__dict__"):
+            return o.__dict__
+
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, o)
