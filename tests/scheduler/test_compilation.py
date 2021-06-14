@@ -1,24 +1,24 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-import os
 import inspect
-import pytest
-import numpy as np
 import json
-import quantify.scheduler.schemas.examples as examples
-from quantify.scheduler.resources import Resource, ClockResource, BasebandClockResource
-from quantify.scheduler.types import Operation
-from quantify.scheduler import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, CZ
-from quantify.scheduler.pulse_library import SquarePulse
-from quantify.scheduler.compilation import (
-    determine_absolute_timing,
-    validate_config,
-    add_pulse_information_transmon,
-    qcompile,
-)
+import os
 
+import numpy as np
+import pytest
+import quantify.scheduler.schemas.examples as examples
+from quantify.scheduler import Schedule
+from quantify.scheduler.compilation import (
+    add_pulse_information_transmon,
+    determine_absolute_timing,
+    qcompile,
+    validate_config,
+)
+from quantify.scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
+from quantify.scheduler.pulse_library import SquarePulse
+from quantify.scheduler.resources import BasebandClockResource, ClockResource, Resource
+from quantify.scheduler.types import Operation
 
 esp = inspect.getfile(examples)
 
@@ -137,7 +137,10 @@ def test_missing_edge():
     sched.add(operation=CZ(qC=q0, qT=q1))
     with pytest.raises(
         ValueError,
-        match="Attempting operation 'CZ' on qubits q1 and q0 which lack a connective edge.",
+        match=(
+            "Attempting operation 'CZ' on qubits q1 "
+            "and q0 which lack a connective edge."
+        ),
     ):
         add_pulse_information_transmon(sched, device_cfg=bad_cfg)
 
@@ -151,13 +154,14 @@ def test_empty_sched():
 def test_bad_gate():
     class NotAGate(Operation):
         def __init__(self, q):
+            plot_func = "quantify.scheduler.visualization.circuit_diagram.cnot"
             data = {
                 "gate_info": {
                     "unitary": np.array(
                         [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]
                     ),
                     "tex": r"bad",
-                    "plot_func": "quantify.scheduler.visualization.circuit_diagram.cnot",
+                    "plot_func": plot_func,
                     "qubits": q,
                     "operation_type": "bad",
                 }
