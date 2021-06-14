@@ -218,3 +218,4 @@ def test_schedule_from_json():
 
     # Assert
     assert schedule == result
+    assert schedule.data == result.data
