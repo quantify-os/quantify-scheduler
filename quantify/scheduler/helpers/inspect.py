@@ -4,17 +4,27 @@
 from types import ModuleType
 import inspect
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Type
 
 
-def get_classes(*module: ModuleType) -> Dict[str, Any]:
+def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
     """
-    Returns the classes of a module.
+    Returns a dictionary of class names by class types of the
+    modules given as arguments.
+
+    .. code-block::
+
+        from quantify.scheduler.helpers import inspect
+        from my_module import foo
+
+        class_dict: Dict[str, type] = inspect.get_classes(foo)
+        print(class_dict)
+        // { 'Bar': my_module.foo.Bar }
 
     Parameters
     ----------
-    module :
-        The imported module.
+    modules :
+        Variable length of modules.
 
     Returns
     -------
@@ -22,9 +32,11 @@ def get_classes(*module: ModuleType) -> Dict[str, Any]:
         A dictionary containing the class names by class reference.
     """
     classes = list()
-    for m in module:
+    for module in modules:
+        module_name: str = module.__name__
         classes += inspect.getmembers(
-            sys.modules[m.__name__],
-            lambda member: inspect.isclass(member) and member.__module__ == m.__name__,
+            sys.modules[module_name],
+            lambda member: inspect.isclass(member)
+            and member.__module__ == module_name,  # pylint: disable=cell-var-from-loop
         )
     return dict(classes)
