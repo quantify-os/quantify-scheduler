@@ -16,7 +16,7 @@ import jsonschema
 import numpy as np
 from typing_extensions import Literal
 from quantify.utilities import general
-from quantify.scheduler import json as json_helpers
+from quantify.scheduler import json_utils
 from quantify.scheduler import resources
 from quantify.scheduler import enums
 
@@ -440,7 +440,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :
             The json string result.
         """
-        return json.dumps(self.data, cls=json_helpers.ScheduleJSONEncoder)
+        return json.dumps(self.data, cls=json_utils.ScheduleJSONEncoder)
 
     @classmethod
     def from_json(cls, data: str) -> Schedule:
@@ -457,7 +457,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :
             The Schedule object.
         """
-        schedule_data = json_helpers.ScheduleJSONDecoder().decode(data)
+        schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
         name = schedule_data["name"]
 
         return Schedule(name, data=schedule_data)
