@@ -45,9 +45,9 @@ class Resource(UserDict):
 
         Raises
         ------
-        :class:`jsonschema.exceptions.ValidationError`
+        jsonschema.exceptions.ValidationError
             if the instance is invalid
-        :class:`jsonschema.exceptions.SchemaError`
+        jsonschema.exceptions.SchemaError
             if the schema itself is invalid
 
         Returns
