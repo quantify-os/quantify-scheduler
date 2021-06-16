@@ -79,8 +79,8 @@ def test_get_waveform_by_pulseid(
     schedule_with_pulse_info: Schedule,
 ):
     # Arrange
-    operation_hash = schedule_with_pulse_info.timing_constraints[0]["operation_hash"]
-    pulse_info_0 = schedule_with_pulse_info.operations[operation_hash]["pulse_info"][0]
+    operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
+    pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
 
@@ -102,8 +102,8 @@ def test_get_waveform_by_pulseid_are_unique(
     schedule.add(X90("q0"))
     create_schedule_with_pulse_info(schedule)
 
-    operation_hash = schedule.timing_constraints[0]["operation_hash"]
-    pulse_info_0 = schedule.operations[operation_hash]["pulse_info"][0]
+    operation_repr = schedule.timing_constraints[0]["operation_repr"]
+    pulse_info_0 = schedule.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
 

@@ -99,7 +99,7 @@ class TestRabiSched:
             assert constr["abs_time"] == abs_times[i]
 
     def test_rabi_pulse_ops(self):
-        rabi_op_hash = self.sched.timing_constraints[1]["operation_hash"]
+        rabi_op_hash = self.sched.timing_constraints[1]["operation_repr"]
         rabi_pulse = self.sched.operations[rabi_op_hash]["pulse_info"][0]
         assert rabi_pulse["G_amp"] == 0.2
         assert rabi_pulse["D_amp"] == 0
@@ -123,7 +123,7 @@ class TestRabiSched:
         for i, constr in enumerate(sched.timing_constraints):
             assert constr["label"] == labels[i]
 
-        rabi_op_hash = sched.timing_constraints[1]["operation_hash"]
+        rabi_op_hash = sched.timing_constraints[1]["operation_repr"]
         rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
         assert rabi_pulse["G_amp"] == 0.5
         assert rabi_pulse["D_amp"] == 0
@@ -151,7 +151,7 @@ class TestRabiSched:
             assert constr["label"] == labels[i]
 
         for i, exp_amp in enumerate(amps):
-            rabi_op_hash = sched.timing_constraints[3 * i + 1]["operation_hash"]
+            rabi_op_hash = sched.timing_constraints[3 * i + 1]["operation_repr"]
             rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
             assert rabi_pulse["G_amp"] == exp_amp
             assert rabi_pulse["D_amp"] == 0
@@ -192,7 +192,7 @@ class TestRabiSched:
 
     def test_correct_inference_of_port_clock(self):
         # operation 1 is tested in test_timing to be the Rabi pulse
-        op_name = self.sched.timing_constraints[1]["operation_hash"]
+        op_name = self.sched.timing_constraints[1]["operation_repr"]
         rabi_op = self.sched.operations[op_name]
         assert rabi_op["pulse_info"][0]["port"] == "q0:mw"
         assert rabi_op["pulse_info"][0]["clock"] == "q0.01"
