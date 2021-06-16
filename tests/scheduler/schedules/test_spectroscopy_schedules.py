@@ -2,28 +2,24 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-from pathlib import Path
-import json
 import tempfile
-import quantify.scheduler.schemas.examples as es
 from quantify.scheduler.schedules import spectroscopy_schedules as sps
 from quantify.scheduler.compilation import determine_absolute_timing, qcompile
 from quantify.data.handling import set_datadir
+from quantify.scheduler.schemas.examples import utils
 
 
 # TODO to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
-path = Path(es.__file__).parent.joinpath("transmon_test_config.json")
-DEVICE_CFG = json.loads(path.read_text())
 
-path = Path(es.__file__).parent.joinpath("qblox_test_mapping.json")
-HARDWARE_MAPPING = json.loads(path.read_text())
+DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 class TestHeterodynceSpecSchedule:
     @classmethod
     def setup_class(cls):
-
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
             "pulse_amp": 0.15,
@@ -54,14 +50,15 @@ class TestHeterodynceSpecSchedule:
 
     def test_compiles_device_cfg_only(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG)
+        qcompile(self.sched, DEVICE_CONFIG)
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestPulsedSpecSchedule:
@@ -107,11 +104,12 @@ class TestPulsedSpecSchedule:
 
     def test_compiles_device_cfg_only(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG)
+        qcompile(self.sched, DEVICE_CONFIG)
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
