@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import json
-from ast import literal_eval
+import ast
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
@@ -15,9 +15,10 @@ from uuid import uuid4
 import jsonschema
 import numpy as np
 from typing_extensions import Literal
-from quantify.scheduler import resources
-from quantify.scheduler.enums import BinMode
 from quantify.utilities import general
+from quantify.scheduler import json_utils
+from quantify.scheduler import resources
+from quantify.scheduler import enums
 
 if TYPE_CHECKING:
     from quantify.scheduler.resources import Resource
@@ -88,7 +89,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
 
         This representation is guaranteed to be unique.
         """
-        return f"{self.__class__.__name__}('{self.name}')"
+        return f"{self.__class__.__name__}(name='{self.name}')"
 
     def __repr__(self) -> str:
         """
@@ -242,7 +243,9 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             )
 
         for acq_info in _data["acquisition_info"]:
-            if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], BinMode):
+            if "bin_mode" in acq_info and isinstance(
+                acq_info["bin_mode"], enums.BinMode
+            ):
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
             for waveform in acq_info["waveforms"]:
@@ -263,18 +266,20 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             self.data["gate_info"]["unitary"], str
         ):
             self.data["gate_info"]["unitary"] = np.array(
-                literal_eval(self.data["gate_info"]["unitary"])
+                ast.literal_eval(self.data["gate_info"]["unitary"])
             )
 
         for acq_info in self.data["acquisition_info"]:
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
-                acq_info["bin_mode"] = BinMode(acq_info["bin_mode"])
+                acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
-                    waveform["t"] = np.array(literal_eval(waveform["t"]))
+                    waveform["t"] = np.array(ast.literal_eval(waveform["t"]))
                 if "weights" in waveform and isinstance(waveform["weights"], str):
-                    waveform["weights"] = np.array(literal_eval(waveform["weights"]))
+                    waveform["weights"] = np.array(
+                        ast.literal_eval(waveform["weights"])
+                    )
 
     @classmethod
     def is_valid(cls, operation) -> bool:
@@ -369,7 +374,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
             self.data["name"] = name
 
         if data is not None:
-            raise NotImplementedError
+            self.data.update(data)
 
     @property
     def name(self) -> str:
@@ -438,36 +443,27 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :
             The json string result.
         """
+        return json.dumps(self.data, cls=json_utils.ScheduleJSONEncoder)
 
-        class ScheduleJSONEncoder(json.JSONEncoder):
-            """
-            Custom JSON Encorder which encodes the quantify Schedule to to valid
-            JSON format.
-            """
+    @classmethod
+    def from_json(cls, data: str) -> Schedule:
+        """
+        Converts the JSON data to a Schedule.
 
-            def default(self, o):
-                """
-                Overloads the json.JSONEncoder default method that returns a
-                serializable object.
-                """
-                if isinstance(o, Operation):
-                    return repr(o)
-                if hasattr(o, "__dict__"):
-                    return o.__dict__
+        Parameters
+        ----------
+        data :
+            The JSON data.
 
-                # Let the base class default method raise the TypeError
-                return json.JSONEncoder.default(self, o)
+        Returns
+        -------
+        :
+            The Schedule object.
+        """
+        schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
+        name = schedule_data["name"]
 
-        return json.dumps(self.data, cls=ScheduleJSONEncoder)
-
-    # @classmethod
-    # def from_json(cls, data) -> Schedule:
-    #     class JSONDecoder(json.JSONDecoder):
-    #         def __init__(self, *args, **kwargs) -> None:
-    #             super().__init__(object_hook=self.object_hook, *args, **kwargs)
-
-    #         def object_hook(self, o):
-    #             pass
+        return Schedule(name, data=schedule_data)
 
     def add_resources(self, resources_list: list) -> None:
         """Add wrapper for adding multiple resources"""
