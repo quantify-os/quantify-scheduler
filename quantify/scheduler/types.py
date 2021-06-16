@@ -418,9 +418,8 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
             ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_repr']
 
-
-        The `label` is used as a unique identifier that can be used as a reference for
-        other operations, the `operation_repr` refers to the string representation of a
+        The label is used as a unique identifier that can be used as a reference for
+        other operations, the operation_repr refers to the string representation of a
         operation in :attr:`~Schedule.operations`.
         """
         return self.data["timing_constraints"]
@@ -429,7 +428,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     def resources(self) -> Dict[str, Resource]:
         """
         A dictionary containing resources. Keys are names (str),
-        values are instances of :class:`~quantify.scheduler.resources.Resource` .
+        values are instances of :class:`~quantify.scheduler.resources.Resource`.
         """
         return self.data["resource_dict"]
 
