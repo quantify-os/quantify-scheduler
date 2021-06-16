@@ -115,7 +115,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         for node in ast.walk(ast_tree):
             if isinstance(node, ast.Load):
                 break
-            elif isinstance(node, ast.Call):
+            if isinstance(node, ast.Call):
                 class_name = node.func.id
             elif isinstance(node, ast.Constant):
                 args.append(node.value)
