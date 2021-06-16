@@ -5,19 +5,23 @@ from __future__ import annotations
 
 import inspect
 import json
-from ast import literal_eval
+import ast
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List, TYPE_CHECKING
 from uuid import uuid4
 
 import jsonschema
 import numpy as np
 from typing_extensions import Literal
-from quantify.scheduler import resources
-from quantify.scheduler.enums import BinMode
 from quantify.utilities import general
+from quantify.scheduler import json_utils
+from quantify.scheduler import resources
+from quantify.scheduler import enums
+
+if TYPE_CHECKING:
+    from quantify.scheduler.resources import Resource
 
 
 class Operation(UserDict):  # pylint: disable=too-many-ancestors
@@ -47,7 +51,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         same hash and are considered identical.
     """
 
-    def __init__(self, name: str, data: dict = None):
+    def __init__(self, name: str, data: dict = None) -> None:
         super().__init__()
 
         # ensure keys exist
@@ -85,7 +89,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
 
         This representation is guaranteed to be unique.
         """
-        return f"{self.__class__.__name__}('{self.name}')"
+        return f"{self.__class__.__name__}(name='{self.name}')"
 
     def __repr__(self) -> str:
         """
@@ -239,7 +243,9 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             )
 
         for acq_info in _data["acquisition_info"]:
-            if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], BinMode):
+            if "bin_mode" in acq_info and isinstance(
+                acq_info["bin_mode"], enums.BinMode
+            ):
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
             for waveform in acq_info["waveforms"]:
@@ -260,18 +266,20 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             self.data["gate_info"]["unitary"], str
         ):
             self.data["gate_info"]["unitary"] = np.array(
-                literal_eval(self.data["gate_info"]["unitary"])
+                ast.literal_eval(self.data["gate_info"]["unitary"])
             )
 
         for acq_info in self.data["acquisition_info"]:
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
-                acq_info["bin_mode"] = BinMode(acq_info["bin_mode"])
+                acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
-                    waveform["t"] = np.array(literal_eval(waveform["t"]))
+                    waveform["t"] = np.array(ast.literal_eval(waveform["t"]))
                 if "weights" in waveform and isinstance(waveform["weights"], str):
-                    waveform["weights"] = np.array(literal_eval(waveform["weights"]))
+                    waveform["weights"] = np.array(
+                        ast.literal_eval(waveform["weights"])
+                    )
 
     @classmethod
     def is_valid(cls, operation) -> bool:
@@ -328,7 +336,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
     """  # pylint: disable=line-too-long
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None):
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
         """
         Initialize a new instance of Schedule.
 
@@ -366,7 +374,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
             self.data["name"] = name
 
         if data is not None:
-            raise NotImplementedError
+            self.data.update(data)
 
     @property
     def name(self) -> str:
@@ -391,7 +399,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         self.data["repetitions"] = int(value)
 
     @property
-    def operations(self):
+    def operations(self) -> Dict[str, Operation]:
         """
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
@@ -402,14 +410,15 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         return self.data["operation_dict"]
 
     @property
-    def timing_constraints(self):
-        # pylint: disable=line-too-long
+    def timing_constraints(self) -> List[Dict[str, Any]]:
         """
         A list of dictionaries describing timing constraints between operations.
 
         Each item in the list is a dictionary with the following keys:
 
-        :code:`['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_hash']`
+        :code:`
+            ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_hash']
+        `
 
         The `label` is used as a unique identifier that can be used as a reference for
         other operations, the `operation_hash` refers to the hash of a unique operation
@@ -418,7 +427,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         return self.data["timing_constraints"]
 
     @property
-    def resources(self):
+    def resources(self) -> Dict[str, Resource]:
         """
         A dictionary containing resources. Keys are names (str),
         values are instances of :class:`~quantify.scheduler.resources.Resource` .
@@ -434,43 +443,34 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         :
             The json string result.
         """
+        return json.dumps(self.data, cls=json_utils.ScheduleJSONEncoder)
 
-        class ScheduleJSONEncoder(json.JSONEncoder):
-            """
-            Custom JSON Encorder which encodes the quantify Schedule to to valid
-            JSON format.
-            """
+    @classmethod
+    def from_json(cls, data: str) -> Schedule:
+        """
+        Converts the JSON data to a Schedule.
 
-            def default(self, o):
-                """
-                Overloads the json.JSONEncoder default method that returns a
-                serializable object.
-                """
-                if isinstance(o, Operation):
-                    return repr(o)
-                if hasattr(o, "__dict__"):
-                    return o.__dict__
+        Parameters
+        ----------
+        data :
+            The JSON data.
 
-                # Let the base class default method raise the TypeError
-                return json.JSONEncoder.default(self, o)
+        Returns
+        -------
+        :
+            The Schedule object.
+        """
+        schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
+        name = schedule_data["name"]
 
-        return json.dumps(self.data, cls=ScheduleJSONEncoder)
+        return Schedule(name, data=schedule_data)
 
-    # @classmethod
-    # def from_json(cls, data) -> Schedule:
-    #     class JSONDecoder(json.JSONDecoder):
-    #         def __init__(self, *args, **kwargs) -> None:
-    #             super().__init__(object_hook=self.object_hook, *args, **kwargs)
-
-    #         def object_hook(self, o):
-    #             pass
-
-    def add_resources(self, resources_list: list):
+    def add_resources(self, resources_list: list) -> None:
         """Add wrapper for adding multiple resources"""
         for resource in resources_list:
             self.add_resource(resource)
 
-    def add_resource(self, resource):
+    def add_resource(self, resource) -> None:
         """
         Add a resource such as a channel or qubit to the schedule.
         """
@@ -480,7 +480,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
         self.data["resource_dict"][resource.name] = resource
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
             self.data["name"],
             len(self.data["operation_dict"]),
@@ -488,7 +488,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         )
 
     @classmethod
-    def is_valid(cls, schedule):
+    def is_valid(cls, schedule) -> bool:
         """
         Checks the schedule validity according to its schema.
         """
