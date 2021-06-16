@@ -45,8 +45,10 @@ class Resource(UserDict):
 
         Raises
         ------
-        ValidationError
-            The json validation error.
+        jsonschema.exceptions.ValidationError
+            if the instance is invalid
+        jsonschema.exceptions.SchemaError
+            if the schema itself is invalid
 
         Returns
         -------
