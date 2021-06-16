@@ -41,7 +41,7 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
   :class:`~quantify.scheduler.backends.types.zhinst.Device`'s `name` must be equal to 
   the name given to the QCodes Instrument during instantiation. 
 
-* The `type` property defines the instrument's model. The :enum:`~quantify.scheduler.backends.types.zhinst.DeviceType`
+* The `type` property defines the instrument's model. The :class:`~quantify.scheduler.backends.types.zhinst.DeviceType`
   is parsed from the string as well as the number of channels.
     
     * Example: "HDAWG8"
