@@ -51,7 +51,7 @@ extensions = [
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
     "scanpydoc.elegant_typehints",
-    "enum_tools.autoenum",
+    # "enum_tools.autoenum",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
