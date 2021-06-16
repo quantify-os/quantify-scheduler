@@ -9,7 +9,7 @@ from ast import literal_eval
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List, TYPE_CHECKING
 from uuid import uuid4
 
 import jsonschema
@@ -18,6 +18,9 @@ from typing_extensions import Literal
 from quantify.scheduler import resources
 from quantify.scheduler.enums import BinMode
 from quantify.utilities import general
+
+if TYPE_CHECKING:
+    from quantify.scheduler.resources import Resource
 
 
 class Operation(UserDict):  # pylint: disable=too-many-ancestors
@@ -47,7 +50,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         same hash and are considered identical.
     """
 
-    def __init__(self, name: str, data: dict = None):
+    def __init__(self, name: str, data: dict = None) -> None:
         super().__init__()
 
         # ensure keys exist
@@ -328,7 +331,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
     """  # pylint: disable=line-too-long
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None):
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
         """
         Initialize a new instance of Schedule.
 
@@ -391,7 +394,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         self.data["repetitions"] = int(value)
 
     @property
-    def operations(self):
+    def operations(self) -> Dict[str, Operation]:
         """
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
@@ -402,14 +405,15 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         return self.data["operation_dict"]
 
     @property
-    def timing_constraints(self):
-        # pylint: disable=line-too-long
+    def timing_constraints(self) -> List[Dict[str, Any]]:
         """
         A list of dictionaries describing timing constraints between operations.
 
         Each item in the list is a dictionary with the following keys:
 
-        :code:`['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_hash']`
+        :code:`
+            ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_hash']
+        `
 
         The `label` is used as a unique identifier that can be used as a reference for
         other operations, the `operation_hash` refers to the hash of a unique operation
@@ -418,7 +422,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         return self.data["timing_constraints"]
 
     @property
-    def resources(self):
+    def resources(self) -> Dict[str, Resource]:
         """
         A dictionary containing resources. Keys are names (str),
         values are instances of :class:`~quantify.scheduler.resources.Resource` .
@@ -465,12 +469,12 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     #         def object_hook(self, o):
     #             pass
 
-    def add_resources(self, resources_list: list):
+    def add_resources(self, resources_list: list) -> None:
         """Add wrapper for adding multiple resources"""
         for resource in resources_list:
             self.add_resource(resource)
 
-    def add_resource(self, resource):
+    def add_resource(self, resource) -> None:
         """
         Add a resource such as a channel or qubit to the schedule.
         """
@@ -480,7 +484,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
         self.data["resource_dict"][resource.name] = resource
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
             self.data["name"],
             len(self.data["operation_dict"]),
@@ -488,7 +492,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         )
 
     @classmethod
-    def is_valid(cls, schedule):
+    def is_valid(cls, schedule) -> bool:
         """
         Checks the schedule validity according to its schema.
         """
