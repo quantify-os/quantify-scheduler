@@ -207,6 +207,10 @@ def get_wave_instruction(
     )
     n_samples = len(waveform)
 
+    if instrument_info.mode == enums.InstrumentOperationMode.CALIBRATING:
+        # Set all the numeric pulse values to one in calibration mode.
+        waveform = np.ones(n_samples)
+
     (
         corrected_start_in_clocks,
         n_samples_shifted,
@@ -596,9 +600,7 @@ def _compile_for_hdawg(
     ValueError
     """
     instrument_info = zhinst.InstrumentInfo(
-        device.clock_rate,
-        8,
-        WAVEFORM_GRANULARITY[device.device_type],
+        device.clock_rate, 8, WAVEFORM_GRANULARITY[device.device_type], device.mode
     )
     n_awgs: int = int(device.n_channels / 2)
     settings_builder.with_defaults(

@@ -648,7 +648,6 @@ def test__flatten_dict():
 
 def test_get_wave_instruction(mocker, create_schedule_with_pulse_info):
     # Arrange
-
     q0 = "q0"
     schedule = types.Schedule("test")
     schedule.add(X90(q0))
@@ -678,6 +677,49 @@ def test_get_wave_instruction(mocker, create_schedule_with_pulse_info):
     assert isinstance(instruction, zhinst.Wave)
     assert instruction.uuid == "new_pulse"
     assert instruction.n_samples_scaled == 9
+
+
+def test_get_wave_instruction_mode_is_calibrating(
+    mocker, create_schedule_with_pulse_info
+):
+    # Arrange
+    q0 = "q0"
+    schedule = types.Schedule("test")
+    schedule.add(X90(q0))
+    schedule = create_schedule_with_pulse_info(schedule)
+    schedule = schedule_helpers.CachedSchedule(schedule)
+
+    uuid = next(iter(schedule.pulseid_pulseinfo_dict.keys()))
+    output = mocker.create_autospec(zhinst.Output, instance=True)
+    instrument_info = zhinst.InstrumentInfo(
+        2.4e9, 8, 16, enums.InstrumentOperationMode.CALIBRATING
+    )
+
+    def apply_waveform_corrections(  # pylint: disable=unused-argument
+        output,
+        waveform,
+        start_and_duration_in_seconds,
+        instrument_info,
+        is_pulse,
+    ):
+        return (start_and_duration_in_seconds[0], len(waveform), waveform)
+
+    mocker.patch.object(
+        zhinst_backend,
+        "apply_waveform_corrections",
+        side_effect=apply_waveform_corrections,
+    )
+
+    # Act
+    instruction = zhinst_backend.get_wave_instruction(
+        uuid, 0, output, schedule, instrument_info
+    )
+
+    # Assert
+    assert isinstance(instruction, zhinst.Wave)
+    np.testing.assert_array_equal(
+        instruction.waveform, np.ones(len(instruction.waveform))
+    )
 
 
 def test_get_measure_instruction(mocker, create_schedule_with_pulse_info):
