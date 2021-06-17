@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 from zhinst.qcodes.base import ZIBaseInstrument
-
+from quantify.scheduler.helpers import time
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 
 
@@ -320,3 +320,101 @@ def test_get_clock_rates(base_clock: float, expected: Dict[int, int]):
 
     # Assert
     assert values == expected
+
+
+def test_set_and_compile_awg_seqc_successfully(mocker):
+    # Arrange
+    awg_module = mocker.Mock()
+    awg_module.get_int.side_effect = [0, 1, 1]
+    awg_module.get_double.side_effect = [1.0]
+    awg = mocker.Mock()
+    awg._awg._module = awg_module
+    instrument = mocker.create_autospec(ZIBaseInstrument, instance=True)
+    instrument.awg = awg
+
+    mocker.patch.object(time, "sleep")
+    set_awg_value = mocker.patch.object(zi_helpers, "set_awg_value")
+
+    awg_index = 0
+    node: str = "compiler/sourcestring"
+    value: str = "abc"
+
+    # Act
+    zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
+
+    # Assert
+    set_awg_value.assert_called_with(instrument, awg_index, node, value)
+
+
+def test_set_and_compile_awg_seqc_upload_failed(mocker):
+    # Arrange
+    awg_module = mocker.Mock()
+    awg_module.get_int.side_effect = [1]
+    awg_module.get_string.side_effect = ["Some error occured"]
+    awg = mocker.Mock()
+    awg._awg._module = awg_module
+    instrument = mocker.create_autospec(ZIBaseInstrument, instance=True)
+    instrument.awg = awg
+
+    mocker.patch.object(time, "sleep")
+
+    awg_index = 0
+    node: str = "compiler/sourcestring"
+    value: str = "abc"
+
+    # Act
+    with pytest.raises(Exception) as execinfo:
+        zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
+
+    # Assert
+    assert str(execinfo.value) == "Upload failed: \nSome error occured"
+
+
+def test_set_and_compile_awg_seqc_compiled_with_warning(mocker):
+    # Arrange
+    awg_module = mocker.Mock()
+    awg_module.get_int.side_effect = [2]
+    awg_module.get_string.side_effect = ["Some warning occured"]
+    awg = mocker.Mock()
+    awg._awg._module = awg_module
+    instrument = mocker.create_autospec(ZIBaseInstrument, instance=True)
+    instrument.awg = awg
+
+    mocker.patch.object(time, "sleep")
+
+    awg_index = 0
+    node: str = "compiler/sourcestring"
+    value: str = "abc"
+
+    # Act
+    with pytest.raises(Warning) as execinfo:
+        zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
+
+    # Assert
+    assert str(execinfo.value) == "Compiled with warning: \nSome warning occured"
+
+
+def test_set_and_compile_awg_seqc_upload_timeout(mocker):
+    # Arrange
+    awg_module = mocker.Mock()
+    awg_module.get_int.side_effect = [0, 0, 1]
+    awg_module.get_double.side_effect = [0.9]
+    awg = mocker.Mock()
+    awg._awg._module = awg_module
+    instrument = mocker.create_autospec(ZIBaseInstrument, instance=True)
+    instrument.awg = awg
+
+    mocker.patch.object(time, "sleep")
+
+    awg_index = 0
+    node: str = "compiler/sourcestring"
+    value: str = "abc"
+
+    # Act
+    with mocker.patch.object(
+        time, "get_time", side_effect=[0, 0 + 1000]
+    ), pytest.raises(Exception) as execinfo:
+        zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
+
+    # Assert
+    assert str(execinfo.value) == "Program upload timed out!"

@@ -660,7 +660,7 @@ def add_wait(
 
 def add_play_wave(
     seqc_gen: SeqcILGenerator,
-    variable: str,
+    *variable: str,
     device_type: zhinst.DeviceType,
     comment: str = "",
 ) -> int:
@@ -682,7 +682,7 @@ def add_play_wave(
     """
     n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.PLAY_WAVE]
     seqc_gen.emit_play_wave(
-        variable,
+        *variable,
         comment=f"\t// {comment} n_instr={n_assembly_instructions}",
     )
     return n_assembly_instructions
@@ -816,6 +816,7 @@ def add_seqc_info(seqc_gen: SeqcILGenerator, seqc_info: SeqcInfo):
 def add_csv_waveform_variables(
     seqc_gen: SeqcILGenerator,
     device_serial: str,
+    awg_index: int,
     commandtable_map: Dict[int, int],
 ):
     """
@@ -826,9 +827,12 @@ def add_csv_waveform_variables(
     ----------
     seqc_gen :
     device_serial :
+    awg_index :
     commandtable_map :
     """
     for waveform_index in commandtable_map.values():
         # Declare new placeholder and assign wave index
         name: str = f"w{waveform_index:d}"
-        seqc_gen.declare_wave(name, f"{device_serial}_wave{waveform_index:d}")
+        seqc_gen.declare_wave(
+            name, f"{device_serial}_awg{awg_index}_wave{waveform_index:d}"
+        )

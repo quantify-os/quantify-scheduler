@@ -42,7 +42,7 @@ class Output(DataClassJsonMixin):
     modulation :
         The modulation settings.
     local_oscillator :
-        The LocalOscillator settings.
+        The LocalOscillator name.
     gain1 :
         The output1 IQ modulation gain (value between -1 and + 1). default is 0.
     gain2 :
@@ -59,7 +59,7 @@ class Output(DataClassJsonMixin):
     clock: str
     mode: enums.SignalModeType
     modulation: common.Modulation
-    local_oscillator: common.LocalOscillator
+    local_oscillator: str
     gain1: int = 0
     gain2: int = 0
     line_trigger_delay: float = -1
