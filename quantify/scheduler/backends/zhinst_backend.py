@@ -3,22 +3,23 @@
 """Backend for Zurich Instruments."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
+from dataclasses import dataclass
 
 import logging
 from functools import partial
-from typing import Any, Callable, Dict, Iterable, List, Tuple, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from zhinst.toolkit.helpers import Waveform
 
 from quantify.scheduler import enums, types, waveforms
 from quantify.scheduler.backends.types import zhinst
+from quantify.scheduler.backends.types import common
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 from quantify.scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify.scheduler.backends.zhinst import settings as zi_settings
 from quantify.scheduler.helpers import schedule as schedule_helpers
 from quantify.scheduler.helpers import waveforms as waveform_helpers
-
 
 logger = logging.getLogger()
 handler = logging.StreamHandler()
@@ -27,6 +28,10 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+
+
+# List of supported zhinst devices
+SUPPORTED_DEVICE_TYPES: List[str] = ["HDAWG", "UHFQA"]
 
 # https://www.zhinst.com/sites/default/files/documents/2020-09/ziHDAWG_UserManual_20.07.1.pdf
 # Section: 3.4. Basic Qubit Characterization, page 83
@@ -64,6 +69,62 @@ DEVICE_CLOCK_RATES: Dict[zhinst.DeviceType, Dict[int, int]] = {
 
 UHFQA_READOUT_CHANNELS = 10
 MAX_QAS_INTEGRATION_LENGTH = 4096
+
+
+def _parse_local_oscillators(data: Dict[str, Any]) -> Dict[str, common.LocalOscillator]:
+    """
+    Returns the LocalOscillator domain models parsed from the data dictionary.
+
+    Parameters
+    ----------
+    data :
+        The hardware map "local_oscillators" entry.
+
+    Returns
+    -------
+    :
+        A dictionary of unique LocalOscillator instances.
+
+    Raises
+    ------
+    RuntimeError
+        If duplicate LocalOscillators have been found.
+    """
+    local_oscillators: Dict[str, common.LocalOscillator] = dict()
+    lo_list: List[common.LocalOscillator] = common.LocalOscillator.schema().load(
+        data, many=True
+    )
+    for local_oscillator in lo_list:
+        if local_oscillator.name in local_oscillators:
+            raise RuntimeError(
+                f"Duplicate entry LocalOscillators '{local_oscillator.name}' in "
+                "hardware configuration!"
+            )
+
+        local_oscillators[local_oscillator.name] = local_oscillator
+
+    return local_oscillators
+
+
+def _parse_devices(data: Dict[str, Any]) -> List[zhinst.Device]:
+    device_list: List[zhinst.Device] = zhinst.Device.schema().load(data, many=True)
+
+    for device in device_list:
+        if device.device_type.value not in SUPPORTED_DEVICE_TYPES:
+            raise NotImplementedError(
+                f"Unable to create zhinst backend for '{device.device_type.value}'!"
+            )
+
+        clock_rates = DEVICE_CLOCK_RATES[device.device_type]
+        if not device.clock_select in clock_rates:
+            raise ValueError(
+                f"Unknown value clock_select='{device.clock_select}' "
+                + f"for device type '{device.device_type.value}'"
+            )
+
+        device.clock_rate = clock_rates[device.clock_select]
+
+    return device_list
 
 
 def _validate_schedule(schedule: types.Schedule) -> None:
@@ -147,8 +208,7 @@ def _flatten_dict(collection: Dict[Any, Any]) -> Iterable[Tuple[Any, Any]]:
 
     Parameters
     ----------
-    collection : Dict[Any, Any]
-        [description]
+    collection :
 
     Returns
     -------
@@ -407,65 +467,28 @@ def get_execution_table(
     return instructions
 
 
-class ZIBackend:
-    """Zurich Instruments Backend result class."""
+@dataclass(frozen=True)
+class ZIAcquisitionConfig:
+    """Zurich Instruments acquisition configuration."""
 
-    settings: Dict[str, zi_settings.ZISettingsBuilder]
-    lo_frequencies: Dict[Tuple[str, str], float]
+    n_acquisitions: int
+    resolvers: Dict[int, Callable]
 
-    def __init__(self):
-        """Create a new instance of ZIBackend."""
-        self.settings = dict()
-        self.lo_frequencies = dict()
-        self._acquisition_resolvers = dict()
 
-    def add_settings(self, name: str, builder: zi_settings.ZISettingsBuilder) -> None:
-        """
-        Adds ZISettingsBuilder to the ZIBackend.
+@dataclass(frozen=True)
+class ZIDeviceConfig:
+    """Zurich Instruments device configuration."""
 
-        Parameters
-        ----------
-        name :
-            The instrument name.
-        builder :
-        """
-        self.settings[name] = builder
-
-    def add_lo_frequency(self, channel: zhinst.Output) -> None:
-        """
-        Adds local oscillator settings to the ZIBackend.
-
-        Parameters
-        ----------
-        channel :
-        """
-        lo_freq: float = channel.local_oscillator.frequency - abs(
-            channel.modulation.interm_freq
-        )
-        self.lo_frequencies[(channel.port, channel.clock)] = lo_freq
-
-    @property
-    def acquisition_resolvers(self) -> Dict[int, Callable]:
-        """
-        Returns the data acquisition resolvers.
-
-        The dictionary contains a readout channel
-        index by acquisition resolver function.
-
-        Returns
-        -------
-        Dict[int, Callable]
-        """
-        return self._acquisition_resolvers
-
-    @acquisition_resolvers.setter
-    def acquisition_resolvers(self, value: Dict[int, Callable]):
-        self._acquisition_resolvers = value
+    name: str
+    schedule: types.Schedule
+    settings_builder: zi_settings.ZISettingsBuilder
+    acq_config: Optional[ZIAcquisitionConfig]
 
 
 def compile_backend(
     schedule: types.Schedule, hardware_map: Dict[str, Any]
-) -> ZIBackend:
+) -> Dict[str, Union[ZIDeviceConfig, float]]:
+
     """
     Compiles backend for Zurich Instruments hardware according
     to the Schedule and hardware configuration.
@@ -482,8 +505,8 @@ def compile_backend(
     Returns
     -------
     :
-        The compiled backend result containing
-        settings for all devices.
+        A collection containing the compiled backend
+        configuration for each device.
 
     Raises
     ------
@@ -492,54 +515,58 @@ def compile_backend(
     """
     _validate_schedule(schedule)
 
-    # List of supported zhinst devices
-    supported_devices: List[str] = ["HDAWG", "UHFQA"]
+    # Parse the hardware configuration file
+    devices: List[zhinst.Device] = _parse_devices(hardware_map["devices"])
+    local_oscillators: Dict[str, common.LocalOscillator] = _parse_local_oscillators(
+        hardware_map["local_oscillators"]
+    )
 
-    # Create the context
-    devices: Dict[str, zhinst.Device] = dict()
-
-    # Parse json hardware config
-    for device_dict in hardware_map["devices"]:
-        device = zhinst.Device.from_dict(device_dict)
-
-        if device.device_type.value not in supported_devices:
-            raise NotImplementedError(
-                f"Unable to create zhinst backend for '{device.device_type.value}'!"
-            )
-
-        clock_rates = DEVICE_CLOCK_RATES[device.device_type]
-        if not device.clock_select in clock_rates:
-            raise ValueError(
-                f"Unknown value clock_select='{device.clock_select}' "
-                + f"for device type '{device.device_type.value}'"
-            )
-
-        device.clock_rate = clock_rates[device.clock_select]
-
-        devices[device.name] = device
-
+    # Create CachedSchedule to populate schedule lookup dictionaries.
     cached_schedule = schedule_helpers.CachedSchedule(schedule)
-    backend = ZIBackend()
+
+    device_configs: Dict[str, Union[ZIDeviceConfig, float]] = dict()
+
+    def add_lo_config(channel: zhinst.Output) -> None:
+        name = channel.local_oscillator
+        if name not in local_oscillators:
+            raise KeyError(f"Missing configuration for LocalOscillator '{name}'!")
+
+        local_oscillator = local_oscillators[name]
+        lo_freq: float = local_oscillator.frequency + channel.modulation.interm_freq
+        if (
+            local_oscillator.name in device_configs
+            and device_configs[local_oscillator.name] != lo_freq
+        ):
+            raise ValueError(
+                f"zhinst backend: Multiple frequencies assigned "
+                f"to LocalOscillator '{name}'!"
+            )
+        device_configs[local_oscillator.name] = lo_freq
 
     # Program devices
-    for device in devices.values():
+    for device in sorted(
+        devices, key=lambda x: x.device_type == zhinst.DeviceType.UHFQA
+    ):
         builder = zi_settings.ZISettingsBuilder()
+        acq_config: Optional[ZIAcquisitionConfig] = None
 
         if device.device_type == zhinst.DeviceType.HDAWG:
             _compile_for_hdawg(device, cached_schedule, builder)
         elif device.device_type == zhinst.DeviceType.UHFQA:
-            backend.acquisition_resolvers.update(
-                _compile_for_uhfqa(device, cached_schedule, builder)
-            )
+            acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
 
         for channel in device.channels:
-            backend.add_lo_frequency(channel)
-        backend.add_settings(device.name, builder)
+            add_lo_config(channel)
 
-    return backend
+        device_configs[device.name] = ZIDeviceConfig(
+            device.name, schedule, builder, acq_config
+        )
+
+    return device_configs
 
 
 def _add_wave_nodes(
+    device: zhinst.Device,
     awg_index: int,
     waveforms_dict: Dict[int, np.ndarray],
     waveform_table: Dict[int, int],
@@ -551,6 +578,7 @@ def _add_wave_nodes(
 
     Parameters
     ----------
+    device :
     awg_index :
     waveforms_dict :
     waveform_table :
@@ -561,9 +589,14 @@ def _add_wave_nodes(
         array: np.ndarray = waveforms_dict[pulse_id]
         waveform = Waveform(array.real, array.imag)
 
-        settings_builder.with_wave_vector(
-            awg_index, waveform_table_index, waveform.data
-        )
+        if device.device_type == zhinst.DeviceType.UHFQA:
+            settings_builder.with_csv_wave_vector(
+                awg_index, waveform_table_index, waveform.data
+            )
+        else:
+            settings_builder.with_wave_vector(
+                awg_index, waveform_table_index, waveform.data
+            )
 
 
 # pylint: disable=too-many-locals
@@ -680,6 +713,7 @@ def _compile_for_hdawg(
         # Step 3: Upload waveforms to AWG CommandTable
         waveforms_dict = dict(map(lambda i: (i.uuid, i.waveform), instructions))
         _add_wave_nodes(
+            device,
             awg_index,
             waveforms_dict,
             waveform_table,
@@ -896,7 +930,7 @@ def _compile_for_uhfqa(
     device: zhinst.Device,
     cached_schedule: schedule_helpers.CachedSchedule,
     settings_builder: zi_settings.ZISettingsBuilder,
-) -> Dict[int, Callable]:
+) -> ZIAcquisitionConfig:
     """
     Initialize programming the UHFQA ZI Instrument.
 
@@ -913,6 +947,7 @@ def _compile_for_uhfqa(
     -------
     :
     """
+
     instrument_info = zhinst.InstrumentInfo(
         device.clock_rate,
         8,
@@ -965,6 +1000,7 @@ def _compile_for_uhfqa(
     )
 
     # Create a dictionary of uuid(s) and zhinst.Measure instructions
+    n_acquisitions = sum(isinstance(x, zhinst.Measure) for x in instructions)
     measure_instructions_dict: Dict[int, zhinst.Measure] = dict(
         (i.uuid, i) for i in instructions if isinstance(i, zhinst.Measure)
     )
@@ -982,7 +1018,7 @@ def _compile_for_uhfqa(
     settings_builder.with_compiler_sourcestring(awg_index, seqc)
 
     # Apply waveforms to AWG
-    _add_wave_nodes(awg_index, waveforms_dict, waveform_table, settings_builder)
+    _add_wave_nodes(device, awg_index, waveforms_dict, waveform_table, settings_builder)
 
     # Get a list of all acquisition protocol channels
     acq_channel_resolvers_map: Dict[int, Callable[..., Any]] = dict()
@@ -1012,9 +1048,9 @@ def _compile_for_uhfqa(
         if acq_protocol == "trace":
             # Disable Weighted integration because we'd like to see
             # the raw signal.
-            settings_builder.with_qas_monitor_averages(1).with_qas_monitor_length(
-                integration_length
-            ).with_qas_integration_weights(
+            settings_builder.with_qas_monitor_enable(True).with_qas_monitor_averages(
+                cached_schedule.schedule.repetitions
+            ).with_qas_monitor_length(integration_length).with_qas_integration_weights(
                 range(UHFQA_READOUT_CHANNELS),
                 np.ones(MAX_QAS_INTEGRATION_LENGTH),
                 np.ones(MAX_QAS_INTEGRATION_LENGTH),
@@ -1051,14 +1087,17 @@ def _compile_for_uhfqa(
             ).with_qas_result_source(
                 zhinst.QasResultSource.INTEGRATION
             ).with_qas_result_length(
-                integration_length
+                n_acquisitions
             ).with_qas_result_enable(
                 True
             ).with_qas_integration_weights(
                 readout_channel_index, weights_i, weights_q
-            ).with_qas_rotations(
-                range(UHFQA_READOUT_CHANNELS), 0
+            ).with_qas_result_averages(
+                cached_schedule.schedule.repetitions
             )
+            # .with_qas_rotations(
+            #     range(UHFQA_READOUT_CHANNELS), 0
+            # )
 
             # Create partial function for delayed execution
             acq_channel_resolvers_map[acq_channel] = partial(
@@ -1068,7 +1107,7 @@ def _compile_for_uhfqa(
 
             readout_channel_index += 1
 
-    return acq_channel_resolvers_map
+    return ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map)
 
 
 # pylint: disable=too-many-arguments
@@ -1134,19 +1173,23 @@ def _assemble_uhfqa_sequence(
     seqc_gen.declare_var("integration_trigger", acquisition_triggers)
     seqc_gen.declare_var("reset_integration_trigger", ["AWG_INTEGRATION_ARM"])
 
-    wave_instructions_dict: Dict[int, zhinst.Wave] = dict(
-        (i.uuid, i) for i in instructions if isinstance(i, zhinst.Wave)
+    seqc_il_generator.add_csv_waveform_variables(
+        seqc_gen, device.name, 0, waveform_table
     )
-    for pulse_id, waveform_index in waveform_table.items():
-        instruction = wave_instructions_dict[pulse_id]
-        waveform_index = waveform_table[instruction.uuid]
-        name: str = f"w{waveform_index}"
 
-        # Create and add variables to the Sequence program
-        # aswell as assign the variables with operations
-        seqc_gen.declare_wave(name)
-        seqc_gen.assign_placeholder(name, len(instruction.waveform))
-        seqc_gen.emit_assign_wave_index(name, name, index=waveform_index)
+    # wave_instructions_dict: Dict[int, zhinst.Wave] = dict(
+    #     (i.uuid, i) for i in instructions if isinstance(i, zhinst.Wave)
+    # )
+    # for pulse_id, waveform_index in waveform_table.items():
+    #     instruction = wave_instructions_dict[pulse_id]
+    #     waveform_index = waveform_table[instruction.uuid]
+    #     name: str = f"w{waveform_index}"
+
+    #     # Create and add variables to the Sequence program
+    #     # aswell as assign the variables with operations
+    #     seqc_gen.declare_wave(name)
+    #     seqc_gen.assign_placeholder(name, len(instruction.waveform))
+    #     seqc_gen.emit_assign_wave_index(name, name, index=waveform_index)
 
     seqc_gen.emit_begin_repeat("__repetitions__")
 
@@ -1209,7 +1252,7 @@ def _assemble_uhfqa_sequence(
             current_clock += seqc_il_generator.add_play_wave(
                 seqc_gen,
                 f"w{waveform_table[previous_instr.uuid]:d}",
-                device.device_type,
+                device_type=device.device_type,
                 comment=f"clock={current_clock}",
             )
 
@@ -1248,7 +1291,7 @@ def _assemble_uhfqa_sequence(
             current_clock += seqc_il_generator.add_play_wave(
                 seqc_gen,
                 f"w{waveform_table[previous_instr.uuid]:d}",
-                device.device_type,
+                device_type=device.device_type,
                 comment=f"clock={current_clock}",
             )
 

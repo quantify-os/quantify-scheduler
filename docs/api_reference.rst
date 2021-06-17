@@ -222,6 +222,12 @@ base
 .. automodule:: quantify.scheduler.controlstack.components.base
     :members:
 
+zhinst
+~~~~~~
+
+.. automodule:: quantify.scheduler.controlstack.components.zhinst
+    :members:
+
 
 miscellaneous
 -------------
