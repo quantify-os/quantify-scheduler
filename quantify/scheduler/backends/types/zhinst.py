@@ -103,6 +103,9 @@ class Device(DataClassJsonMixin):
 
         For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
         Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
+    mode :
+        The Instruments operation mode.
+        (default = enums.InstrumentOperationMode.OPERATING)
     device_type :
         The Zurich Instruments hardware type. (default = DeviceType.NONE)
         This field is automatically populated.
@@ -124,6 +127,7 @@ class Device(DataClassJsonMixin):
     channel_3: Optional[Output] = None
     clock_select: Optional[int] = 0
     channelgrouping: int = 0
+    mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     device_type: DeviceType = DeviceType.NONE
     clock_rate: Optional[int] = field(init=False)
     n_channels: int = field(init=False)
@@ -252,6 +256,7 @@ class InstrumentInfo:
     clock_rate: int
     resolution: int
     granularity: int
+    mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     low_res_clock: float = field(init=False)
 
     def __post_init__(self):
