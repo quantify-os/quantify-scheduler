@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable=wrong-import-position,unused-import
 #
 # quantify documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  9 13:47:02 2017.
@@ -223,8 +224,6 @@ numfig = True
 autodoc_member_order = "groupwise"
 
 # -- Options for auto documenting typehints ----------------------------
-
-# pylint: disable=wrong-import-position,unused-import
 
 # Please see https://gitlab.com/quantify-os/quantify/-/issues/10 regarding
 
