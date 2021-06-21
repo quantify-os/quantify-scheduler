@@ -941,6 +941,13 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 seq_cfg = io_cfg[seq_name]
                 portclock = seq_cfg["port"], seq_cfg["clock"]
 
+                if seq_name in sequencers:
+                    raise RuntimeError(
+                        f"Attemping to create multiple instances of "
+                        f"{seq_name}. Is it defined multiple times in "
+                        f"the hardware mapping?"
+                    )
+
                 sequencers[seq_name] = self.sequencer_type(
                     self, seq_name, portclock, seq_cfg, lo_name
                 )
