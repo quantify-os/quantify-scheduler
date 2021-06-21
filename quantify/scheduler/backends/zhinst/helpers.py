@@ -12,7 +12,7 @@ from zhinst.qcodes import base
 from zhinst import qcodes
 from quantify.scheduler.helpers import time
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def get_value(instrument: base.ZIBaseInstrument, node: str) -> str:

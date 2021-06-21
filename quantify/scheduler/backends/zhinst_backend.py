@@ -22,7 +22,7 @@ from quantify.scheduler.backends.zhinst import settings as zi_settings
 from quantify.scheduler.helpers import schedule as schedule_helpers
 from quantify.scheduler.helpers import waveforms as waveform_helpers
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
     # "%(levelname)-8s | %(module)s | %(funcName)s::%(lineno)s. %(message)s"
