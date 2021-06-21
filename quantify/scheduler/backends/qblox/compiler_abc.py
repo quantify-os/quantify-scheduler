@@ -948,13 +948,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
             lo_name = io_cfg.get("lo_name", None)
             portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
-            if len(portclock_dicts) > 1:
-                raise NotImplementedError(
-                    f"{len(portclock_dicts)} port and clock "
-                    f"combinations specified for output {io}. Multiple "
-                    f"sequencers per output is not yet supported "
-                    f"by this backend."
-                )
             portclock_dict = portclock_dicts[0]
             portclock = portclock_dict["port"], portclock_dict["clock"]
 
