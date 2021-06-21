@@ -138,7 +138,7 @@ class Pulsar_QCM(PulsarBase):
     """
 
     sequencer_type = QCMSequencer
-    max_sequencers: int = 2
+    max_sequencers: int = 6
 
     def _distribute_data(self):
         """
@@ -194,5 +194,5 @@ class Pulsar_QRM(PulsarBase):
 
     sequencer_type = QRMSequencer
     """The type of the sequencer."""
-    max_sequencers: int = 1
+    max_sequencers: int = 6
     """Maximum number of sequencer available in the instrument."""
