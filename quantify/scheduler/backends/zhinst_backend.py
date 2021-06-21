@@ -12,7 +12,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, 
 import numpy as np
 from zhinst.toolkit.helpers import Waveform
 
-from quantify.scheduler import enums, types, waveforms
+from quantify.scheduler import enums
+from quantify.scheduler import types
 from quantify.scheduler.backends.types import zhinst
 from quantify.scheduler.backends.types import common
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
@@ -133,7 +134,7 @@ def _validate_schedule(schedule: types.Schedule) -> None:
 
     Parameters
     ----------
-    schedule
+    schedule :
 
     Raises
     ------
@@ -168,11 +169,15 @@ def apply_waveform_corrections(
 
     Parameters
     ----------
-    output
-    waveform
-    start_and_duration_in_seconds
-    instrument_info
-    is_pulse
+    output :
+    waveform :
+    start_and_duration_in_seconds :
+    instrument_info :
+    is_pulse :
+
+    Returns
+    -------
+    :
     """
 
     (start_in_seconds, duration_in_seconds) = start_and_duration_in_seconds
@@ -183,11 +188,15 @@ def apply_waveform_corrections(
             t: np.ndarray = np.arange(
                 0, 0 + duration_in_seconds, 1 / instrument_info.clock_rate
             )
-            waveform = waveforms.modulate_wave(
-                t=t, wave=waveform, freq_mod=output.modulation.interm_freq
+            waveform = waveform_helpers.modulate_waveform(
+                t, waveform, output.modulation.interm_freq
             )
-
-        # TODO [TReynders] Add mixer corrections here.  pylint: disable=fixme
+        if not output.mixer_corrections is None:
+            waveform = waveform_helpers.apply_mixer_skewness_corrections(
+                waveform,
+                output.mixer_corrections.amp_ratio,
+                output.mixer_corrections.phase_error,
+            )
 
     start_in_clocks, waveform = waveform_helpers.shift_waveform(
         waveform,
@@ -213,7 +222,6 @@ def _flatten_dict(collection: Dict[Any, Any]) -> Iterable[Tuple[Any, Any]]:
     Returns
     -------
     :
-
     """
 
     def expand(key, obj):
@@ -322,11 +330,11 @@ def get_measure_instruction(
 
     Parameters
     ----------
-    uuid
-    timeslot_index
-    output
-    cached_schedule
-    instrument_info
+    uuid :
+    timeslot_index :
+    output :
+    cached_schedule :
+    instrument_info :
 
     Returns
     -------
@@ -389,9 +397,9 @@ def get_execution_table(
 
     Parameters
     ----------
-    cached_schedule
-    instrument_info
-    output
+    cached_schedule :
+    instrument_info :
+    output :
 
     Raises
     ------
@@ -499,8 +507,8 @@ def compile_backend(
 
     Parameters
     ----------
-    schedule
-    hardware_map
+    schedule :
+    hardware_map :
 
     Returns
     -------
@@ -666,7 +674,19 @@ def _compile_for_hdawg(
             raise ValueError(f"Required output at index '{i}' is undefined!")
 
         logger.debug(f"[{device.name}-awg{awg_index}] enabling outputs...")
-        settings_builder.with_sigouts(awg_index, (1, 1))
+        mixer_corrections = (
+            output.mixer_corrections
+            if not output.mixer_corrections is None
+            else common.MixerCorrections()
+        )
+        settings_builder.with_sigouts(awg_index, (1, 1)).with_gain(
+            awg_index, (output.gain1, output.gain2)
+        ).with_sigout_offset(
+            int(awg_index * 2), mixer_corrections.dc_offset_I
+        ).with_sigout_offset(
+            int(awg_index * 2) + 1, mixer_corrections.dc_offset_Q
+        )
+
         enabled_outputs[awg_index] = output
         i += 1
 
@@ -957,8 +977,13 @@ def _compile_for_uhfqa(
     channels = list(filter(lambda c: c.mode == enums.SignalModeType.REAL, channels))
 
     awg_index = 0
+    channel = channels[awg_index]
     logger.debug(f"[{device.name}-awg{awg_index}] {str(device)}")
-
+    mixer_corrections = (
+        channel.mixer_corrections
+        if not channel.mixer_corrections is None
+        else common.MixerCorrections()
+    )
     settings_builder.with_defaults(
         [
             ("awgs/0/single", 1),
@@ -970,9 +995,12 @@ def _compile_for_uhfqa(
         range(10),
         np.zeros(MAX_QAS_INTEGRATION_LENGTH),
         np.zeros(MAX_QAS_INTEGRATION_LENGTH),
+    ).with_sigout_offset(
+        0, mixer_corrections.dc_offset_I
+    ).with_sigout_offset(
+        1, mixer_corrections.dc_offset_Q
     )
 
-    channel = channels[0]
     logger.debug(f"[{device.name}-awg{awg_index}] channel={str(channel)}")
 
     instructions = get_execution_table(
