@@ -26,7 +26,15 @@
         "markers": [
           "AWG_MARKER1",
           "AWG_MARKER2"
-        ]
+        ],
+        "gain1": 1,
+        "gain2": 1,
+        "mixer_corrections": {
+          "amp_ratio": 1.0,
+          "phase_error": 0.0,
+          "dc_offset_I": 0.0,
+          "dc_offset_Q": 0.0
+        }
       },
       "channel_1": {
         "port": "q1:mw",

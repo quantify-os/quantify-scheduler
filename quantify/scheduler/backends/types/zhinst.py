@@ -44,15 +44,19 @@ class Output(DataClassJsonMixin):
     local_oscillator :
         The LocalOscillator name.
     gain1 :
-        The output1 IQ modulation gain (value between -1 and + 1). default is 0.
+        The output1 IQ modulation gain.
+        Accepted value between -1 and + 1. (default = 1.0)
     gain2 :
-        The output2 IQ modulation gain (value between -1 and + 1). default is 0.
+        The output2 IQ modulation gain.
+        Accepted value between -1 and + 1. (default = 1.0)
     line_trigger_delay :
-        The ZI Instrument output triggers. default is -1.
+        The ZI Instrument output triggers. (default = -1.0)
     triggers :
-        The ZI Instrument input triggers. default is [].
+        The ZI Instrument input triggers. (default = [])
     markers :
-        The ZI Instrument output triggers. default is [].
+        The ZI Instrument output triggers. (default = [])
+    mixer_corrections :
+        The output mixer corrections.
     """
 
     port: str
@@ -65,6 +69,7 @@ class Output(DataClassJsonMixin):
     line_trigger_delay: float = -1
     triggers: List[int] = field(default_factory=lambda: [])
     markers: List[Union[str, int]] = field(default_factory=lambda: [])
+    mixer_corrections: Optional[common.MixerCorrections] = None
 
 
 @dataclass

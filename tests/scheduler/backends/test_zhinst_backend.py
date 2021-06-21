@@ -17,12 +17,12 @@ from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
 import quantify.scheduler.backends.zhinst_backend as zhinst_backend
-import quantify.scheduler.waveforms as waveforms
 from quantify.scheduler import enums
 from quantify.scheduler.helpers import waveforms as waveform_helpers
 from quantify.scheduler.helpers import schedule as schedule_helpers
 
-from quantify.scheduler.backends.types import zhinst, common
+from quantify.scheduler.backends.types import zhinst
+from quantify.scheduler.backends.types import common
 from quantify.scheduler.backends.zhinst import settings
 from quantify.scheduler.gate_library import X90, Measure, Reset
 from quantify.scheduler.schedules import trace_schedules
@@ -93,7 +93,15 @@ def hdawg_hardware_map() -> Dict[str, Any]:
                 "markers": [
                   "AWG_MARKER1",
                   "AWG_MARKER2"
-                ]
+                ],
+                "gain1": 1,
+                "gain2": 1,
+                "mixer_corrections": {
+                  "amp_ratio": 0.81,
+                  "phase_error": 0.07,
+                  "dc_offset_I": 0.4,
+                  "dc_offset_Q": 0.38
+                }
               },
               "channel_1": {
                 "port": "q1:mw",
@@ -343,7 +351,7 @@ def test_compile_hardware_hdawg4_successfully(
     instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=hdawg.HDAWG)
 
     modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
+        waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
     )
     settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
     mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
@@ -356,8 +364,18 @@ def test_compile_hardware_hdawg4_successfully(
         "/dev1234/awgs/1/time": 0,
         "/dev1234/sigouts/0/on": 1,
         "/dev1234/sigouts/1/on": 1,
+        "/dev1234/awgs/0/outputs/0/gains/0": 1,
+        "/dev1234/awgs/0/outputs/1/gains/1": 1,
+        "/dev1234/sigouts/0/offset": 0.4,
+        "/dev1234/sigouts/1/offset": 0.38,
         "/dev1234/sigouts/2/on": 1,
         "/dev1234/sigouts/3/on": 1,
+        "/dev1234/awgs/0/outputs/0/gains/0": 1,
+        "/dev1234/awgs/0/outputs/1/gains/1": 1,
+        "/dev1234/awgs/1/outputs/0/gains/0": 0,
+        "/dev1234/awgs/1/outputs/1/gains/1": 0,
+        "/dev1234/sigouts/2/offset": 0.0,
+        "/dev1234/sigouts/3/offset": 0.0,
         "/dev1234/awgs/0/commandtable/data": ANY,
         "/dev1234/awgs/0/waveform/waves/0": ANY,
         "/dev1234/awgs/1/commandtable/data": ANY,
@@ -378,7 +396,9 @@ def test_compile_hardware_hdawg4_successfully(
         assert key in collection
         if isinstance(expected_value, type(ANY)):
             continue
-        assert collection[key] == expected_value
+        assert (
+            collection[key] == expected_value
+        ), f"Expected {key} {collection[key]} to equal {expected_value}"
 
     modulate_wave_spy.assert_called()
 
@@ -442,6 +462,8 @@ def test_compile_hardware_uhfqa_successfully(
         "/dev1234/qas/0/integration/weights/8/imag": ANY,
         "/dev1234/qas/0/integration/weights/9/real": ANY,
         "/dev1234/qas/0/integration/weights/9/imag": ANY,
+        "/dev1234/sigouts/0/offset": 0.0,
+        "/dev1234/sigouts/1/offset": 0.0,
         "/dev1234/awgs/0/waveform/waves/0": ANY,
         "/dev1234/qas/0/integration/mode": 0,
         "/dev1234/qas/0/integration/length": 540,
@@ -601,7 +623,9 @@ def test_apply_waveform_corrections(
     # Arrange
     wave = np.ones(48)
 
-    modulate_wave = mocker.patch.object(waveforms, "modulate_wave", return_value=wave)
+    modulate_wave = mocker.patch.object(
+        waveform_helpers, "modulate_waveform", return_value=wave
+    )
     shift_waveform = mocker.patch.object(
         waveform_helpers, "shift_waveform", return_value=(0, wave)
     )

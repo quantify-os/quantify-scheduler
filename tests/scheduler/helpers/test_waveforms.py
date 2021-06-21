@@ -259,6 +259,24 @@ def test_shift_waveform_aligned():
     np.testing.assert_array_equal(shifted_waveform, waveform)
 
 
+@pytest.mark.parametrize(
+    "size,granularity,expected",
+    [
+        (0, 16, 16),
+        (10, 16, 16),
+        (16, 16, 16),
+        (30, 16, 32),
+        (33, 16, 48),
+    ],
+)
+def test_get_waveform_size(size: int, granularity: int, expected: int):
+    # Act
+    new_size = get_waveform_size(np.ones(size), granularity)
+
+    # Assert
+    assert expected == new_size
+
+
 def test_apply_mixer_skewness_corrections():
     # Arrange
     frequency = 10e6
@@ -299,21 +317,3 @@ def test_modulate_waveform():
     # Assert
     assert np.allclose(waveform.real, expected_real)
     assert np.allclose(waveform.imag, expected_imag)
-
-
-@pytest.mark.parametrize(
-    "size,granularity,expected",
-    [
-        (0, 16, 16),
-        (10, 16, 16),
-        (16, 16, 16),
-        (30, 16, 32),
-        (33, 16, 48),
-    ],
-)
-def test_get_waveform_size(size: int, granularity: int, expected: int):
-    # Act
-    new_size = get_waveform_size(np.ones(size), granularity)
-
-    # Assert
-    assert expected == new_size

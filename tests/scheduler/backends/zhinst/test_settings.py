@@ -242,6 +242,9 @@ def test_zi_settings_builder_build(mocker):
         "/dev1234/awgs/0/time": 0,
         "/dev1234/sigouts/0/on": 1,
         "/dev1234/sigouts/1/on": 1,
+        "/dev1234/sigouts/0/offset": 50.0,
+        "/dev1234/awgs/0/outputs/0/gains/0": 0.9,
+        "/dev1234/awgs/0/outputs/1/gains/1": 0.8,
         "compiler/sourcestring": "wave w0 = gauss(128, 64, 32);",
     }
 
@@ -266,6 +269,8 @@ def test_zi_settings_builder_build(mocker):
         .with_system_channelgrouping(0)
         .with_awg_time(0, 0)
         .with_sigouts(0, (1, 1))
+        .with_sigout_offset(0, 50.0)
+        .with_gain(0, (0.9, 0.8))
         .with_compiler_sourcestring(0, "wave w0 = gauss(128, 64, 32);")
         .build(instrument)
     )

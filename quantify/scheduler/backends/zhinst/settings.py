@@ -693,6 +693,61 @@ class ZISettingsBuilder:
             ZISetting(f"sigouts/{channel_1:d}/on", onoff_1, zi_helpers.set_value)
         )
 
+    def with_sigout_offset(
+        self, channel_index: int, offset_in_millivolts: float
+    ) -> ZISettingsBuilder:
+        """
+        Adds the channel sigout offset
+        setting in volts.
+
+        Parameters
+        ----------
+        channel_index :
+        offset_in_millivolts :
+
+        Returns
+        -------
+        :
+        """
+        return self._set_daq(
+            ZISetting(
+                f"sigouts/{channel_index:d}/offset",
+                offset_in_millivolts,
+                zi_helpers.set_value,
+            )
+        )
+
+    def with_gain(self, awg_index: int, gain: Tuple[float, float]) -> ZISettingsBuilder:
+        """
+        Adds the gain settings
+        for the Instruments awg by index.
+
+        Parameters
+        ----------
+        awg_index :
+        gain :
+            The gain values for output 1 and 2.
+
+        Returns
+        -------
+        :
+        """
+        gain1, gain2 = gain
+
+        assert gain1 >= -1 <= 1
+        assert gain2 >= -1 <= 1
+
+        self._set_daq(
+            ZISetting(
+                f"awgs/{awg_index:d}/outputs/0/gains/0", gain1, zi_helpers.set_value
+            )
+        )
+        return self._set_daq(
+            ZISetting(
+                f"awgs/{awg_index:d}/outputs/1/gains/1", gain2, zi_helpers.set_value
+            )
+        )
+
     def with_compiler_sourcestring(
         self, awg_index: int, seqc: str
     ) -> ZISettingsBuilder:
