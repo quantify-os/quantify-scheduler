@@ -905,14 +905,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
             io_cfg = self.hw_mapping[io]
 
-            for idx, seq_name in enumerate(valid_seq_names):
+            for seq_name in valid_seq_names:
                 if seq_name not in io_cfg:
                     continue
 
                 seq_cfg = io_cfg[seq_name]
                 portclock = seq_cfg["port"], seq_cfg["clock"]
 
-                mapping[port_clock] = seq_name
+                mapping[portclock] = seq_name
         return mapping
 
     def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:
