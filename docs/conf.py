@@ -223,6 +223,8 @@ autodoc_member_order = "groupwise"
 
 # -- Options for auto documenting typehints ----------------------------
 
+# pylint: disable=wrong-import-position,unused-import
+
 # Please see https://gitlab.com/quantify-os/quantify/-/issues/10 regarding
 
 # below should be imported all "problematic" modules that might raise strange issues
@@ -233,7 +235,18 @@ autodoc_member_order = "groupwise"
 # https://github.com/QCoDeS/Qcodes/pull/2909
 # but the issues popped up again, so this is the best and easier solution so far
 
-# pylint: disable=wrong-import-position,unused-import
+# qcodes imports scipy under the hood but since scipy=1.7.0 it needs to be imported
+# here with typing.TYPE_CHECKING = True otherwise we run into quantify-core#
+import typing
+
+typing.TYPE_CHECKING = True
+import scipy
+
+# lmfit seem to be importing something from scipy that otherwise does not get imported
+import lmfit
+
+typing.TYPE_CHECKING = False
+
 import qcodes
 import marshmallow
 
