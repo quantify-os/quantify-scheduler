@@ -71,7 +71,7 @@ def pulse_diagram_plotly(
         offset_idx: int = 0
 
         for t_constr in schedule.timing_constraints:
-            operation = schedule.operations[t_constr["operation_hash"]]
+            operation = schedule.operations[t_constr["operation_repr"]]
             for pulse_info in operation["pulse_info"]:
                 if offset_idx == ports_length:
                     return
@@ -104,7 +104,7 @@ def pulse_diagram_plotly(
     col_idx: int = 0
 
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_hash"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
             if pulse_info["port"] not in port_map:
@@ -115,7 +115,7 @@ def pulse_diagram_plotly(
                 logger.warning(
                     f"Unable to draw pulse for pulse_info due to missing 'port' for "
                     f"operation name={operation['name']} "
-                    f"id={t_constr['operation_hash']} pulse_info={pulse_info}"
+                    f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
                 )
                 continue
 
@@ -123,7 +123,7 @@ def pulse_diagram_plotly(
                 logger.warning(
                     f"Unable to draw pulse for pulse_info due to missing 'wf_func' for "
                     f"operation name={operation['name']} "
-                    f"id={t_constr['operation_hash']} pulse_info={pulse_info}"
+                    f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
                 )
                 continue
 

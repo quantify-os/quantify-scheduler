@@ -186,7 +186,7 @@ def get_operation_start(
         return 0.0
 
     t_constr = schedule.timing_constraints[timeslot_index]
-    operation = schedule.operations[t_constr["operation_hash"]]
+    operation = schedule.operations[t_constr["operation_repr"]]
 
     t0: float = t_constr["abs_time"]
 
@@ -230,7 +230,7 @@ def get_operation_end(
         return 0.0
 
     t_constr = schedule.timing_constraints[timeslot_index]
-    operation: types.Operation = schedule.operations[t_constr["operation_hash"]]
+    operation: types.Operation = schedule.operations[t_constr["operation_repr"]]
     t0: float = t_constr["abs_time"]
 
     return t0 + operation.duration
@@ -272,7 +272,7 @@ def get_port_timeline(
     )
 
     for timeslot_index, t_constr in timing_constrains_map.items():
-        operation = schedule.operations[t_constr["operation_hash"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
         abs_time = t_constr["abs_time"]
 
         pulse_info_iter = map(
@@ -346,7 +346,7 @@ def get_pulse_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]
     """
     pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = dict()
     for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_hash"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = get_pulse_uuid(pulse_info)
             if pulse_id in pulseid_pulseinfo_dict:
@@ -379,7 +379,7 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
     """
     acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = dict()
     for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_hash"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
 
         for acq_info in operation["acquisition_info"]:
             acq_id = get_acq_uuid(acq_info)

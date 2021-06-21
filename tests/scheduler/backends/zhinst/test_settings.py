@@ -35,6 +35,7 @@ def test_zi_settings(mocker):
     # Arrange
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
     instrument._serial = "dev1234"
+    instrument.name = "uhfqa0"
     apply_fn = mocker.Mock()
     daq_settings = [settings.ZISetting("daq/foo/bar", 0, apply_fn)]
     awg_settings = [(0, settings.ZISetting("awg/foo/bar", 1, apply_fn))]
@@ -45,8 +46,8 @@ def test_zi_settings(mocker):
 
     # Assert
     calls = [
-        call(instrument=instrument, node="/dev1234/daq/foo/bar", value=0),
         call(instrument=instrument, node="awg/foo/bar", value=1),
+        call(instrument=instrument, node="/dev1234/daq/foo/bar", value=0),
     ]
     assert apply_fn.call_args_list == calls
 
@@ -74,6 +75,7 @@ def test_zi_settings_serialize_wave(mocker):
     # Arrange
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
     instrument._serial = "dev1234"
+    instrument.name = "uhfqa0"
     wave = np.ones(48)
     daq_settings = [settings.ZISetting("awgs/0/waveform/waves/0", wave, mocker.Mock())]
     awg_settings = [
@@ -97,7 +99,7 @@ def test_zi_settings_serialize_wave(mocker):
     zi_settings.serialize(root)
 
     # Assert
-    calls = [call(root / "dev1234_awg0_wave0.csv", ANY, delimiter=";")]
+    calls = [call(root / "uhfqa0_awg0_wave0.csv", ANY, delimiter=";")]
     assert np_savetext.call_args_list == calls
 
     args, _ = np_savetext.call_args
@@ -108,8 +110,8 @@ def test_zi_settings_serialize_wave(mocker):
     write_text.assert_called_with(
         json.dumps(
             {
-                "/dev1234/awgs/0/waveform/waves/0": "dev1234_awg0_wave0.csv",
-                "compiler/sourcestring": ["dev1234_awg0.seqc"],
+                "/dev1234/awgs/0/waveform/waves/0": "uhfqa0_awg0_wave0.csv",
+                "compiler/sourcestring": ["uhfqa0_awg0.seqc"],
             }
         )
     )
@@ -119,6 +121,7 @@ def test_zi_settings_serialize_command_table(mocker):
     # Arrange
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
     instrument._serial = "dev1234"
+    instrument.name = "uhfqa0"
     daq_settings = [
         settings.ZISetting("awgs/0/commandtable/data", {"key": 0}, mocker.Mock())
     ]
@@ -135,7 +138,7 @@ def test_zi_settings_serialize_command_table(mocker):
     touch.assert_called()
     calls = [
         call('{"key": 0}'),
-        call('{"/dev1234/awgs/0/commandtable/data": "dev1234_awg0.json"}'),
+        call('{"/dev1234/awgs/0/commandtable/data": "uhfqa0_awg0.json"}'),
     ]
     assert write_text.call_args_list == calls
 
@@ -144,6 +147,7 @@ def test_zi_settings_serialize_compiler_source(mocker):
     # Arrange
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
     instrument._serial = "dev1234"
+    instrument.name = "uhfqa0"
     awg_settings = [
         (
             0,
@@ -176,7 +180,7 @@ def test_zi_settings_serialize_compiler_source(mocker):
     calls = [
         call("wave w0 = gauss(128, 64, 32);"),
         call("wave w0 = gauss(128, 64, 32);"),
-        call('{"compiler/sourcestring": ["dev1234_awg0.seqc", "dev1234_awg2.seqc"]}'),
+        call('{"compiler/sourcestring": ["uhfqa0_awg0.seqc", "uhfqa0_awg2.seqc"]}'),
     ]
     assert write_text.call_args_list == calls
 
@@ -238,6 +242,9 @@ def test_zi_settings_builder_build(mocker):
         "/dev1234/awgs/0/time": 0,
         "/dev1234/sigouts/0/on": 1,
         "/dev1234/sigouts/1/on": 1,
+        "/dev1234/sigouts/0/offset": 50.0,
+        "/dev1234/awgs/0/outputs/0/gains/0": 0.9,
+        "/dev1234/awgs/0/outputs/1/gains/1": 0.8,
         "compiler/sourcestring": "wave w0 = gauss(128, 64, 32);",
     }
 
@@ -262,6 +269,8 @@ def test_zi_settings_builder_build(mocker):
         .with_system_channelgrouping(0)
         .with_awg_time(0, 0)
         .with_sigouts(0, (1, 1))
+        .with_sigout_offset(0, 50.0)
+        .with_gain(0, (0.9, 0.8))
         .with_compiler_sourcestring(0, "wave w0 = gauss(128, 64, 32);")
         .build(instrument)
     )
