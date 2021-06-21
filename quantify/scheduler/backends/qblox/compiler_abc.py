@@ -822,13 +822,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     functionality shared by the Pulsar QRM and Pulsar QCM.
     """
 
-    output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
-    """
-    Dictionary that maps output names to specific sequencer indices. This
-    implementation is temporary and will change when multiplexing is supported by
-    the hardware.
-    """
-
     def __init__(
         self,
         parent: compiler_container.CompilerContainer,
@@ -902,32 +895,24 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
             real outputs (instead of complex), or when the hardware mapping is invalid.
         """
-        output_to_seq = self.output_to_sequencer_idx
+        valid_io = (f"complex_output{i}" for i in [0, 1])
+        valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
 
         mapping = dict()
-        for io, data in self.hw_mapping.items():
-            if not isinstance(data, dict):
+        for io in valid_io:
+            if io not in self.hw_mapping:
                 continue
 
-            port_clocks = find_all_port_clock_combinations(data)
-            if len(port_clocks) > 1:
-                raise NotImplementedError(
-                    f"{len(port_clocks)} port and clock "
-                    f"combinations specified for output {io} "
-                    f"(sequencer {output_to_seq[io]}). Multiple "
-                    f"sequencers per output is not yet supported "
-                    f"by this backend."
-                )
+            io_cfg = self.hw_mapping[io]
 
-            if len(port_clocks) > 0:
-                port_clock = port_clocks[0]
-                if io not in output_to_seq:
-                    raise NotImplementedError(
-                        f"Attempting to use non-supported output {io}. "
-                        f"Supported output types: "
-                        f"{(str(t) for t in output_to_seq)}"
-                    )
-                mapping[port_clock] = f"seq{output_to_seq[io]}"
+            for idx, seq_name in enumerate(valid_seq_names):
+                if seq_name not in io_cfg:
+                    continue
+
+                seq_cfg = io_cfg[seq_name]
+                portclock = seq_cfg["port"], seq_cfg["clock"]
+
+                mapping[port_clock] = seq_name
         return mapping
 
     def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:
