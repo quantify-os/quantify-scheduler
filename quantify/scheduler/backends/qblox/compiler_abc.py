@@ -64,7 +64,7 @@ class InstrumentCompiler(ABC):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        hw_mapping: Optional[Dict[str, Any]] = None,
     ):
         """
         Constructor for an InstrumentCompiler object.
@@ -946,19 +946,22 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             if not isinstance(io_cfg, dict):
                 continue
 
-            lo_name = io_cfg.get("lo_name", None)
-            portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
-            portclock_dict = portclock_dicts[0]
-            portclock = portclock_dict["port"], portclock_dict["clock"]
+            valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
+            for idx, seq_name in enumerate(valid_seq_names):
+                if seq_name not in io_cfg:
+                    continue
 
-            seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = self.sequencer_type(
-                self, seq_name, portclock, portclock_dict, lo_name
-            )
-            if "mixer_corrections" in io_cfg:
-                sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
-                    io_cfg["mixer_corrections"]
+                seq_cfg = io_cfg[seq_name]
+                portclock = seq_cfg["port"], seq_cfg["clock"]
+
+                sequencers[seq_name] = self.sequencer_type(
+                    self, seq_name, portclock, seq_cfg
                 )
+
+                if "mixer_corrections" in io_cfg:
+                    sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
+                        io_cfg["mixer_corrections"]
+                    )
 
         if len(sequencers.keys()) > self.max_sequencers:
             raise ValueError(
