@@ -194,5 +194,5 @@ class Pulsar_QRM(PulsarBase):
 
     sequencer_type = QRMSequencer
     """The type of the sequencer."""
-    max_sequencers: int = 6
+    max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
