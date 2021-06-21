@@ -101,7 +101,7 @@ def hardware_cfg_baseband():
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq0": {"port": "q1:mw", "clock": "q1.01"},
+                "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},

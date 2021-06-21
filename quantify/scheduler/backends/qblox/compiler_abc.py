@@ -931,6 +931,8 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             if not isinstance(io_cfg, dict):
                 continue
 
+            lo_name = io_cfg.get("lo_name", None)
+
             valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
             for idx, seq_name in enumerate(valid_seq_names):
                 if seq_name not in io_cfg:
@@ -940,7 +942,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 portclock = seq_cfg["port"], seq_cfg["clock"]
 
                 sequencers[seq_name] = self.sequencer_type(
-                    self, seq_name, portclock, seq_cfg
+                    self, seq_name, portclock, seq_cfg, lo_name
                 )
 
                 if "mixer_corrections" in io_cfg:
