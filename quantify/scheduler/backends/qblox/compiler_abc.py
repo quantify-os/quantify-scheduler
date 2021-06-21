@@ -895,7 +895,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
             real outputs (instead of complex), or when the hardware mapping is invalid.
         """
-        valid_io = (f"complex_output{i}" for i in [0, 1])
+        valid_io = (f"complex_output_{i}" for i in [0, 1])
         valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
 
         mapping = dict()
