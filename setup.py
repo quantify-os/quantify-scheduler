@@ -28,6 +28,7 @@ requirements = [
     "pathvalidate",
     "quantify-core>=0.3.1",
     "qblox-instruments==0.3.2",
+    "asteval<0.9.24",  # see quantify-core#
 ]
 
 setup_requirements = [
