@@ -19,6 +19,8 @@ from quantify.scheduler.pulse_library import (
 from quantify.scheduler.resources import BasebandClockResource, ClockResource
 from quantify.scheduler.types import Schedule
 
+logger = logging.getLogger(__name__)
+
 
 def determine_absolute_timing(
     schedule: Schedule, time_unit: Literal["physical", "ideal"] = "physical"
@@ -272,8 +274,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
         elif op["gate_info"]["operation_type"] == "CNOT":
             # These methods don't raise exceptions as they will be implemented shortly
-            logging.warning("Not Implemented yet")
-            logging.warning(
+            logger.warning("Not Implemented yet")
+            logger.warning(
                 'Operation type "{}" not supported by backend'.format(
                     op["gate_info"]["operation_type"]
                 )

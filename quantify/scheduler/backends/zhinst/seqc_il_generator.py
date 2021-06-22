@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from quantify.scheduler.backends.types import zhinst
 from quantify.scheduler.helpers import schedule as schedule_helpers
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class SeqcInstructions(Enum):
