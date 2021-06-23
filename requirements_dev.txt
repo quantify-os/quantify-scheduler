@@ -28,8 +28,6 @@ scanpydoc==0.6 # pinned because 0.7 is made for sphinx-autodoc-typehints==1.12.0
 docutils<0.17 # pinned due to issue #175 (quantify-core)
 rich[jupyter]
 
-numpy<1.21.0 # see quantify-core#221
-
 # scheduler-only
 
 cachecontrol # see issue quantify-scheduler#129
