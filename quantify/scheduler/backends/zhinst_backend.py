@@ -991,10 +991,10 @@ def _compile_for_uhfqa(
         ]
     ).with_sigouts(0, (1, 1)).with_awg_time(
         0, device.clock_select
-    ).with_qas_integration_weights(
-        range(10),
-        np.zeros(MAX_QAS_INTEGRATION_LENGTH),
-        np.zeros(MAX_QAS_INTEGRATION_LENGTH),
+    ).with_qas_integration_weights_real(
+        range(10), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+    ).with_qas_integration_weights_imag(
+        range(10), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
     ).with_sigout_offset(
         0, mixer_corrections.dc_offset_I
     ).with_sigout_offset(
@@ -1078,10 +1078,12 @@ def _compile_for_uhfqa(
             # the raw signal.
             settings_builder.with_qas_monitor_enable(True).with_qas_monitor_averages(
                 cached_schedule.schedule.repetitions
-            ).with_qas_monitor_length(integration_length).with_qas_integration_weights(
-                range(UHFQA_READOUT_CHANNELS),
-                np.ones(MAX_QAS_INTEGRATION_LENGTH),
-                np.ones(MAX_QAS_INTEGRATION_LENGTH),
+            ).with_qas_monitor_length(
+                integration_length
+            ).with_qas_integration_weights_real(
+                range(UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
+            ).with_qas_integration_weights_imag(
+                range(UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
             )
 
             monitor_nodes = (
@@ -1118,8 +1120,10 @@ def _compile_for_uhfqa(
                 n_acquisitions
             ).with_qas_result_enable(
                 True
-            ).with_qas_integration_weights(
-                readout_channel_index, weights_i, weights_q
+            ).with_qas_integration_weights_real(
+                readout_channel_index, weights_i
+            ).with_qas_integration_weights_imag(
+                readout_channel_index, weights_q
             ).with_qas_result_averages(
                 cached_schedule.schedule.repetitions
             )
@@ -1134,6 +1138,9 @@ def _compile_for_uhfqa(
             )
 
             readout_channel_index += 1
+
+    settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
+    settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
 
     return ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map)
 
