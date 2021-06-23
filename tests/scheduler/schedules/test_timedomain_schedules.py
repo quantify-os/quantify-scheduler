@@ -40,9 +40,13 @@ class TestRabiPulse:
             "ro_pulse_frequency": 8e9,
             "ro_integration_time": 400e-9,
             "ro_acquisition_delay": 120e-9,
+            "repetitions": 10,
         }
 
         cls.sched = ts.rabi_pulse_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)
@@ -83,10 +87,14 @@ class TestRabiSched:
             "qubit": "q0",
             "port": None,
             "clock": None,
+            "repetitions": 10,
         }
 
         cls.sched = ts.rabi_sched(**cls.sched_kwargs)
         cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -213,10 +221,14 @@ class TestT1Sched:
         cls.sched_kwargs = {
             "times": np.linspace(0, 80e-6, 21),
             "qubit": "q0",
+            "repetitions": 10,
         }
 
         cls.sched = ts.t1_sched(**cls.sched_kwargs)
         cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -259,10 +271,14 @@ class TestRamseySched:
         cls.sched_kwargs = {
             "times": np.linspace(4.0e-6, 80e-6, 20),
             "qubit": "q0",
+            "repetitions": 10,
         }
 
         cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
         cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -303,10 +319,14 @@ class TestEchoSched:
         cls.sched_kwargs = {
             "times": np.linspace(4.0e-6, 80e-6, 20),
             "qubit": "q0",
+            "repetitions": 10,
         }
 
         cls.sched = ts.echo_sched(**cls.sched_kwargs)
         cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     # pylint: disable=no-self-use
     def test_sched_float_times(self):
@@ -347,12 +367,13 @@ class TestAllXYSched:
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
-        cls.sched_kwargs = {
-            "qubit": "q0",
-        }
+        cls.sched_kwargs = {"qubit": "q0", "repetitions": 10}
 
         cls.sched = ts.allxy_sched(**cls.sched_kwargs)
         cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.

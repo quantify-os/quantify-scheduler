@@ -30,9 +30,13 @@ class TestHeterodynceSpecSchedule:
             "integration_time": 1e-6,
             "acquisition_delay": 220e-9,
             "buffer_time": 18e-6,
+            "repetitions": 10,
         }
 
         cls.sched = sps.heterodyne_spec_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)
@@ -80,9 +84,13 @@ class TestPulsedSpecSchedule:
             "ro_integration_time": 1e-6,
             "ro_acquisition_delay": 220e-9,
             "buffer_time": 18e-6,
+            "repetitions": 10,
         }
 
         cls.sched = sps.two_tone_spec_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)

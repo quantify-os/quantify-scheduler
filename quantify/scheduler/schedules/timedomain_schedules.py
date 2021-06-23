@@ -20,6 +20,7 @@ def rabi_sched(
     qubit: str,
     port: str = None,
     clock: str = None,
+    repetitions: int = 1,
 ) -> Schedule:
     """
     Generate a schedule for performing a Rabi using a Gaussian pulse.
@@ -45,6 +46,8 @@ def rabi_sched(
         name of the location in frequency space where to apply the Rabi pulse.
         if set to :code:`None`, will use the naming convention :code:`"<qubit>.01"` to
         infer the clock.
+    repetitions
+        The amount of times the Schedule will be repeated. (default = 1)
     """
 
     # ensure pulse_amplitude and pulse_duration are iterable.
@@ -70,7 +73,7 @@ def rabi_sched(
     if clock is None:
         clock = f"{qubit}.01"
 
-    schedule = Schedule("Rabi")
+    schedule = Schedule("Rabi", repetitions)
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
     for i, (amp, duration) in enumerate(zip(amps, durations)):
@@ -94,6 +97,7 @@ def rabi_sched(
 def t1_sched(
     times: Union[np.ndarray, float],
     qubit: str,
+    repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
     """
@@ -112,7 +116,8 @@ def t1_sched(
         an array of wait times tau between the pi-pulse and the measurement.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the T1 experiment on.
-
+    repetitions
+        The amount of times the Schedule will be repeated. (default = 1)
 
     Returns
     -------
@@ -133,7 +138,7 @@ def t1_sched(
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
 
-    schedule = Schedule("T1")
+    schedule = Schedule("T1", repetitions)
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
@@ -146,6 +151,7 @@ def t1_sched(
 def ramsey_sched(
     times: Union[np.ndarray, float],
     qubit: str,
+    repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
     r"""
@@ -164,7 +170,8 @@ def ramsey_sched(
         an array of wait times tau between the pi/2 pulses.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
-
+    repetitions
+        The amount of times the Schedule will be repeated. (default = 1)
 
     Returns
     -------
@@ -185,7 +192,7 @@ def ramsey_sched(
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
 
-    schedule = Schedule("Ramsey")
+    schedule = Schedule("Ramsey", repetitions)
 
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
@@ -199,6 +206,7 @@ def ramsey_sched(
 def echo_sched(
     times: Union[np.ndarray, float],
     qubit: str,
+    repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
     """
@@ -220,7 +228,8 @@ def echo_sched(
         the name of the qubit e.g., "q0" to perform the Echo experiment on.
     times
         an array of wait times between the
-
+    repetitions
+        The amount of times the Schedule will be repeated. (default = 1)
 
     Returns
     -------
@@ -242,7 +251,7 @@ def echo_sched(
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
 
-    schedule = Schedule("Echo")
+    schedule = Schedule("Echo", repetitions)
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
@@ -252,7 +261,10 @@ def echo_sched(
     return schedule
 
 
-def allxy_sched(qubit: str) -> Schedule:
+def allxy_sched(
+    qubit: str,
+    repetitions: int = 1,
+) -> Schedule:
     # pylint: disable=line-too-long
     """
     Generate a schedule for performing an AllXY experiment.
@@ -269,7 +281,8 @@ def allxy_sched(qubit: str) -> Schedule:
     ----------
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
-
+    repetitions
+        The amount of times the Schedule will be repeated. (default = 1)
 
     Returns
     -------
@@ -312,7 +325,7 @@ def allxy_sched(qubit: str) -> Schedule:
         [(90, 0), (90, 0)],
         [(90, 90), (90, 90)],
     ]
-    schedule = Schedule("AllXY")
+    schedule = Schedule("AllXY", repetitions)
     for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
@@ -340,6 +353,7 @@ def rabi_pulse_sched(
     ro_acquisition_delay: float,
     ro_integration_time: float,
     reset_duration: float,
+    repetitions: int = 1,
 ) -> Schedule:
     """
     Generate a schedule for performing a Rabi experiment using a
@@ -385,11 +399,12 @@ def rabi_pulse_sched(
         integration time of the data acquisition in seconds.
     reset_duration
         time it takes for the qubit to initialize.
-
+    repetitions
+        The amount of times the Schedule will be repeated. (default = 1)
 
 
     """
-    schedule = Schedule("Rabi schedule (pulse)")
+    schedule = Schedule("Rabi schedule (pulse)", repetitions)
     schedule.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
     schedule.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
