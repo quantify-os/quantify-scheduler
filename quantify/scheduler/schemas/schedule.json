@@ -43,9 +43,9 @@
           "type": "string",
           "description": "reference point in added operation must be one of ('start', 'center', 'end')."
         },
-        "operation_hash": {
+        "operation_repr": {
           "type": "string",
-          "description": "hash of the operation in the operation dict."
+          "description": "string representation of the operation in the operation dict."
         }
       }
     },

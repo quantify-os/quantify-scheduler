@@ -1,5 +1,11 @@
 {
   "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+  "local_oscillators": [
+    {
+      "name": "lo0",
+      "frequency": 4.8e9
+    }
+  ],
   "devices": [
     {
       "name": "hdawg0",
@@ -15,15 +21,20 @@
           "type": "premod",
           "interm_freq": -50e6
         },
-        "local_oscillator": {
-          "name": "lo0",
-          "frequency": 4.8e9
-        },
+        "local_oscillator": "lo0",
         "line_trigger_delay": 5e-9,
         "markers": [
           "AWG_MARKER1",
           "AWG_MARKER2"
-        ]
+        ],
+        "gain1": 1,
+        "gain2": 1,
+        "mixer_corrections": {
+          "amp_ratio": 1.0,
+          "phase_error": 0.0,
+          "dc_offset_I": 0.0,
+          "dc_offset_Q": 0.0
+        }
       },
       "channel_1": {
         "port": "q1:mw",
@@ -33,10 +44,7 @@
           "type": "premod",
           "interm_freq": -50e6
         },
-        "local_oscillator": {
-          "name": "lo0",
-          "frequency": 4.8e9
-        },
+        "local_oscillator": "lo0",
         "line_trigger_delay": 5e-9,
         "triggers": [
           1
@@ -56,10 +64,7 @@
           "type": "premod",
           "interm_freq": -50e6
         },
-        "local_oscillator": {
-          "name": "lo0",
-          "frequency": 4.8e9
-        },
+        "local_oscillator": "lo0",
         "line_trigger_delay": 5e-9,
         "triggers": [
           2

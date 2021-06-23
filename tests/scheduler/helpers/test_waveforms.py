@@ -79,8 +79,8 @@ def test_get_waveform_by_pulseid(
     schedule_with_pulse_info: Schedule,
 ):
     # Arrange
-    operation_hash = schedule_with_pulse_info.timing_constraints[0]["operation_hash"]
-    pulse_info_0 = schedule_with_pulse_info.operations[operation_hash]["pulse_info"][0]
+    operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
+    pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
 
@@ -102,8 +102,8 @@ def test_get_waveform_by_pulseid_are_unique(
     schedule.add(X90("q0"))
     create_schedule_with_pulse_info(schedule)
 
-    operation_hash = schedule.timing_constraints[0]["operation_hash"]
-    pulse_info_0 = schedule.operations[operation_hash]["pulse_info"][0]
+    operation_repr = schedule.timing_constraints[0]["operation_repr"]
+    pulse_info_0 = schedule.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
 
@@ -259,6 +259,24 @@ def test_shift_waveform_aligned():
     np.testing.assert_array_equal(shifted_waveform, waveform)
 
 
+@pytest.mark.parametrize(
+    "size,granularity,expected",
+    [
+        (0, 16, 16),
+        (10, 16, 16),
+        (16, 16, 16),
+        (30, 16, 32),
+        (33, 16, 48),
+    ],
+)
+def test_get_waveform_size(size: int, granularity: int, expected: int):
+    # Act
+    new_size = get_waveform_size(np.ones(size), granularity)
+
+    # Assert
+    assert expected == new_size
+
+
 def test_apply_mixer_skewness_corrections():
     # Arrange
     frequency = 10e6
@@ -299,21 +317,3 @@ def test_modulate_waveform():
     # Assert
     assert np.allclose(waveform.real, expected_real)
     assert np.allclose(waveform.imag, expected_imag)
-
-
-@pytest.mark.parametrize(
-    "size,granularity,expected",
-    [
-        (0, 16, 16),
-        (10, 16, 16),
-        (16, 16, 16),
-        (30, 16, 32),
-        (33, 16, 48),
-    ],
-)
-def test_get_waveform_size(size: int, granularity: int, expected: int):
-    # Act
-    new_size = get_waveform_size(np.ones(size), granularity)
-
-    # Assert
-    assert expected == new_size
