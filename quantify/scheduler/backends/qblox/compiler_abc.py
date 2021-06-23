@@ -934,7 +934,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             lo_name = io_cfg.get("lo_name", None)
 
             valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
-            for idx, seq_name in enumerate(valid_seq_names):
+            for seq_name in valid_seq_names:
                 if seq_name not in io_cfg:
                     continue
 
