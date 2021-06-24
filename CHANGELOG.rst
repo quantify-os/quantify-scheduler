@@ -13,6 +13,7 @@ Merged branches and closed issues
 * Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
 * Added ControlStack (!70)
 * Added Qblox ControlStack components (!112)
+* Renamed input parameters of quantify.scheduler.schedules.* functions. (!136)
 
 
 0.3.0 Multiple backends support (2021-05-20)

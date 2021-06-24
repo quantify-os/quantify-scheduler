@@ -145,7 +145,7 @@ def test_get_port_timeline_sorted(
         ro_pulse_frequency=7.04e9,
         ro_acquisition_delay=ro_acquisition_delay,
         ro_integration_time=500e-9,
-        buffer_time=1e-5,
+        init_duration=1e-5,
     )
     schedule = create_schedule_with_pulse_info(schedule)
 
@@ -332,7 +332,7 @@ def test_get_total_duration(
                 ro_pulse_frequency=7.04e9,
                 ro_acquisition_delay=ro_acquisition_delay,
                 ro_integration_time=ro_integration_time,
-                buffer_time=init_duration,
+                init_duration=init_duration,
             )
         )
     )
