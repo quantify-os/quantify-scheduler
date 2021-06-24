@@ -5,6 +5,7 @@ Module containing schedules for common time domain experiments such as a Rabi an
 T1 measurement.
 """
 from typing import Union
+from typing_extensions import Literal
 import numpy as np
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse, DRAGPulse
@@ -150,6 +151,7 @@ def t1_sched(
 
 def ramsey_sched(
     times: Union[np.ndarray, float],
+    artificial_detuning: float,
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
@@ -168,6 +170,12 @@ def ramsey_sched(
     ----------
     times
         an array of wait times tau between the pi/2 pulses.
+    artificial_detuning
+        frequency in Hz of the software emulated, or `artificial` qubit detuning, which is
+        implemented by changing the phase of the second pi/2 (recovery) pulse. The
+        artificial detuning changes the observed frequency of the Ramsey oscillation,
+        which can be useful to distinguish a slow oscillation due to a small physical
+        detuning from the decay of the dephasing noise.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
     repetitions
@@ -194,11 +202,18 @@ def ramsey_sched(
 
     schedule = Schedule("Ramsey", repetitions)
 
+    if isinstance(times, float):
+        times = [times]
+
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
-        # FIXME: to be added artificial detuning see #98 # pylint: disable=fixme
-        schedule.add(Rxy(theta=90, phi=0, qubit=qubit), ref_pt="start", rel_time=tau)
+
+        # the phase of the second pi/2 phase progresses to propagate
+        recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
+        schedule.add(
+            Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau
+        )
         schedule.add(Measure(qubit), label=f"Measurement {i}")
     return schedule
 
@@ -225,7 +240,7 @@ def echo_sched(
     Parameters
     ----------
     qubit
-        the name of the qubit e.g., "q0" to perform the Echo experiment on.
+        the name of the qubit e.g., "q0" to perform the echo experiment on.
     times
         an array of wait times between the
     repetitions
@@ -263,6 +278,7 @@ def echo_sched(
 
 def allxy_sched(
     qubit: str,
+    elt_select_idx: Union[Literal["All"], int] = "ALL",
     repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -281,6 +297,9 @@ def allxy_sched(
     ----------
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+    elt_select_idx
+        the index of the particular element of the AllXY experiment to exectute -
+        or :code:`"All"` for all elemements of the sequence.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -305,7 +324,7 @@ def allxy_sched(
     allxy_combinations = [
         [(0, 0), (0, 0)],
         [(180, 0), (180, 0)],
-        [(180, 0), (180, 0)],
+        [(180, 90), (180, 90)],
         [(180, 0), (180, 90)],
         [(180, 90), (180, 0)],
         [(90, 0), (0, 0)],
@@ -327,10 +346,16 @@ def allxy_sched(
     ]
     schedule = Schedule("AllXY", repetitions)
     for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
-        schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        if elt_select_idx in ("ALL", i):
+            schedule.add(Reset(qubit), label=f"Reset {i}")
+            schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
+            schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
+            schedule.add(Measure(qubit), label=f"Measurement {i}")
+        elif elt_select_idx > len(allxy_combinations) or elt_select_idx < 0:
+            raise ValueError(
+                f"Invalid index selected: {elt_select_idx}. "
+                "Index must be in range 0 to 21 inclusive."
+            )
     return schedule
 
 
