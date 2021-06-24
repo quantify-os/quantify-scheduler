@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 from zhinst.qcodes import base
 from quantify.scheduler import waveforms
+from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 from quantify.scheduler.backends.types import zhinst as zi_types
 from quantify.scheduler.backends.zhinst import settings
 
@@ -24,7 +25,7 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_setting(mocker):
+def test_zi_setting_apply(mocker):
     # Arrange
     apply_fn = mocker.Mock()
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
@@ -41,7 +42,7 @@ def test_zi_setting(mocker):
     apply_fn.assert_called_with(instrument=instrument, node=node, value=value)
 
 
-def test_zi_settings(mocker):
+def test_zi_settings_apply(mocker):
     # Arrange
     instrument = make_ufhqa(mocker)
     apply_fn = mocker.Mock()
@@ -58,6 +59,33 @@ def test_zi_settings(mocker):
         call(instrument=instrument, node="/dev1234/daq/foo/bar", value=0),
     ]
     assert apply_fn.call_args_list == calls
+
+
+def test_zi_settings_apply_bulk(mocker):
+    # Arrange
+    instrument = make_ufhqa(mocker)
+    mocker.patch.object(zi_helpers, "set_vector")
+    set_values = mocker.patch.object(zi_helpers, "set_values")
+
+    zi_settings = (
+        settings.ZISettingsBuilder()
+        .with_wave_vector(0, 0, np.ones(64))
+        .with_qas_delay(0)
+        .with_qas_result_enable(0)
+        .build()
+    )
+
+    # Act
+    zi_settings.apply(instrument)
+
+    # Assert
+    set_values.assert_called_with(
+        instrument,
+        [
+            ("/dev1234/qas/0/delay", 0),
+            ("/dev1234/qas/0/result/enable", 0),
+        ],
+    )
 
 
 def test_zi_settings_as_dict(mocker):

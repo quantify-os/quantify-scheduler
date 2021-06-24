@@ -25,7 +25,7 @@ class TestRabiPulse:
     def setup_class(cls):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
-            "reset_duration": 200e-6,
+            "init_duration": 200e-6,
             "mw_G_amp": 0.5,
             "mw_D_amp": 0,
             "mw_frequency": 5.4e9,
@@ -53,12 +53,12 @@ class TestRabiPulse:
         # test that the right operations are added and timing is as expected.
         labels = ["qubit reset", "Rabi_pulse", "readout_pulse", "acquisition"]
         t2 = (
-            self.sched_kwargs["reset_duration"]
+            self.sched_kwargs["init_duration"]
             + self.sched_kwargs["mw_pulse_duration"]
             + self.sched_kwargs["ro_pulse_delay"]
         )
         t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
-        abs_times = [0, self.sched_kwargs["reset_duration"], t2, t3]
+        abs_times = [0, self.sched_kwargs["init_duration"], t2, t3]
 
         for i, constr in enumerate(sched.timing_constraints):
             assert constr["label"] == labels[i]
@@ -81,7 +81,7 @@ class TestRabiSched:
     def setup_class(cls):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
-            "pulse_amplitude": 0.2,
+            "pulse_amp": 0.2,
             "pulse_duration": 20e-9,
             "frequency": 5.442e9,
             "qubit": "q0",
@@ -116,7 +116,7 @@ class TestRabiSched:
 
     def test_batched_variant_single_val(self):
         sched = ts.rabi_sched(
-            pulse_amplitude=[0.5],
+            pulse_amp=[0.5],
             pulse_duration=20e-9,
             frequency=5.442e9,
             qubit="q0",
@@ -141,7 +141,7 @@ class TestRabiSched:
 
         amps = np.linspace(-0.5, 0.5, 5)
         sched = ts.rabi_sched(
-            pulse_amplitude=amps,
+            pulse_amp=amps,
             pulse_duration=20e-9,
             frequency=5.442e9,
             qubit="q0",
@@ -169,7 +169,7 @@ class TestRabiSched:
 
         durations = np.linspace(3e-9, 30e-9, 6)
         sched = ts.rabi_sched(
-            pulse_amplitude=0.5,
+            pulse_amp=0.5,
             pulse_duration=durations,
             frequency=5.442e9,
             qubit="q0",
@@ -190,7 +190,7 @@ class TestRabiSched:
     def test_batched_variant_incompatible(self):
         with pytest.raises(ValueError):
             _ = ts.rabi_sched(
-                pulse_amplitude=np.linspace(-0.3, 0.5, 3),
+                pulse_amp=np.linspace(-0.3, 0.5, 3),
                 pulse_duration=np.linspace(5e-9, 19e-9, 8),
                 frequency=5.442e9,
                 qubit="q0",
@@ -271,6 +271,7 @@ class TestRamseySched:
         cls.sched_kwargs = {
             "times": np.linspace(4.0e-6, 80e-6, 20),
             "qubit": "q0",
+            "artificial_detuning": 250e3,
             "repetitions": 10,
         }
 
@@ -295,6 +296,7 @@ class TestRamseySched:
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
             "qubit": "q0",
+            "artificial_detuning": 250e3,
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
@@ -302,7 +304,10 @@ class TestRamseySched:
 
     def test_operations(self):
         # 4 for a regular Ramsey, more with artificial detuning
-        assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
+        if self.sched_kwargs["artificial_detuning"]:
+            assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
+        else:
+            assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -384,10 +389,42 @@ class TestAllXYSched:
                 assert constr["label"][:11] == "Measurement"
 
     def test_operations(self):
-        # 7 operations (x90, y90, X180, Y180, idle, reset measurement)
+        # 7 operations (x90, y90, X180, Y180, idle, reset, measurement)
         assert len(self.sched.operations) == 7
 
-    @pytest.mark.xfail  # see #89
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
+
+
+class TestAllXYSchedElement:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "qubit": "q0",
+            "elt_select_idx": 4,
+        }
+
+        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        for i, constr in enumerate(self.sched.timing_constraints):
+            if i % 4 == 0:
+                assert constr["label"][:5] == "Reset"
+            if (i - 3) % 4 == 0:
+                assert constr["label"][:11] == "Measurement"
+
+    def test_operations(self):
+        # 4 operations (X180, Y180, reset, measurement)
+        assert len(self.sched.operations) == 4
+
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
         qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)

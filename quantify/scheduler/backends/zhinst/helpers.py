@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from zhinst.qcodes import base
 from zhinst import qcodes
@@ -56,6 +56,24 @@ def set_value(
         node = f"/{instrument._serial}/{node}"
     logger.debug(node)
     instrument._controller._set(node, value)
+
+
+def set_values(
+    instrument: base.ZIBaseInstrument,
+    value: List[Tuple[str, Any]],
+) -> None:
+    """
+    Sets the value of a ZI node.
+
+    Parameters
+    ----------
+    instrument :
+        The instrument.
+    value :
+        The dictionary with nodes and values.
+    """
+    logger.debug(value)
+    instrument._controller._set(value)
 
 
 def set_vector(

@@ -18,7 +18,7 @@ def heterodyne_spec_sched(
     integration_time: float,
     port: str,
     clock: str,
-    buffer_time: float = 18e-6,  # min based on QRM repetition rate
+    init_duration: float = 200e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -41,22 +41,15 @@ def heterodyne_spec_sched(
         location on the device where the pulse should be applied.
     clock
         reference clock used to track the spectroscopy frequency.
-    buffer_time
-        time between end of the acquisition and start of the next spectroscopy pulse.
+    init_duration :
+        The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
 
-    # pylint: disable=fixme
-    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware is
-    # released. See #99
-    # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
-    # wait time between different repetitions of the schedule.
-    sched.add(
-        IdlePulse(duration=buffer_time), label="buffer"
-    )  # QRM can only start acquisition every 17 microseconds
+    sched.add(IdlePulse(duration=init_duration), label="buffer")
 
     pulse = sched.add(
         SquarePulse(
@@ -101,7 +94,7 @@ def two_tone_spec_sched(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    buffer_time: float = 18e-6,  # min based on QRM repetition rate.
+    init_duration: float = 200e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -137,8 +130,8 @@ def two_tone_spec_sched(
         pulse in seconds.
     ro_integration_time
         integration time of the data acquisition in seconds.
-    buffer_time
-        time between end of the acquisition and start of the next spectroscopy pulse.
+    init_duration :
+        The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     """
@@ -146,13 +139,8 @@ def two_tone_spec_sched(
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
     sched.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
-    # pylint: disable=fixme
-    # FIXME This buffer should be moved to the end when pulsar_qrm 0.4.0 firmware
-    # is released. See #99
-    # releases: https://gitlab.com/qblox/releases/pulsar_qrm_releases/-/releases
-    # wait time between different repetitions of the schedule.
     sched.add(
-        IdlePulse(duration=buffer_time),
+        IdlePulse(duration=init_duration),
         label="buffer",
     )
 

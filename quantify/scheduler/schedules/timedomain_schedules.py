@@ -5,6 +5,7 @@ Module containing schedules for common time domain experiments such as a Rabi an
 T1 measurement.
 """
 from typing import Union
+from typing_extensions import Literal
 import numpy as np
 from quantify.scheduler.types import Schedule
 from quantify.scheduler.pulse_library import SquarePulse, IdlePulse, DRAGPulse
@@ -14,7 +15,7 @@ from quantify.scheduler.resources import ClockResource
 
 # pylint: disable=too-many-arguments
 def rabi_sched(
-    pulse_amplitude: Union[np.ndarray, float],
+    pulse_amp: Union[np.ndarray, float],
     pulse_duration: Union[np.ndarray, float],
     frequency: float,
     qubit: str,
@@ -30,7 +31,7 @@ def rabi_sched(
 
     Parameters
     ----------
-    pulse_amplitude
+    pulse_amp
         amplitude of the Rabi pulse in V.
     pulse_duration
         duration of the Gaussian shaped Rabi pulse. Corresponds to 4 sigma.
@@ -51,7 +52,7 @@ def rabi_sched(
     """
 
     # ensure pulse_amplitude and pulse_duration are iterable.
-    amps = np.asarray(pulse_amplitude)
+    amps = np.asarray(pulse_amp)
     amps = amps.reshape(amps.shape or (1,))
     durations = np.asarray(pulse_duration)
     durations = durations.reshape(durations.shape or (1,))
@@ -64,7 +65,7 @@ def rabi_sched(
         durations = np.ones(np.shape(amps)) * durations
     elif len(durations) != len(amps):
         raise ValueError(
-            f"Shapes of pulse_amplitude ({pulse_amplitude.shape}) and "
+            f"Shapes of pulse_amplitude ({pulse_amp.shape}) and "
             f"pulse_duration ({pulse_duration.shape}) are incompatible."
         )
 
@@ -150,6 +151,7 @@ def t1_sched(
 
 def ramsey_sched(
     times: Union[np.ndarray, float],
+    artificial_detuning: float,
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
@@ -168,6 +170,12 @@ def ramsey_sched(
     ----------
     times
         an array of wait times tau between the pi/2 pulses.
+    artificial_detuning
+        frequency in Hz of the software emulated, or `artificial` qubit detuning, which is
+        implemented by changing the phase of the second pi/2 (recovery) pulse. The
+        artificial detuning changes the observed frequency of the Ramsey oscillation,
+        which can be useful to distinguish a slow oscillation due to a small physical
+        detuning from the decay of the dephasing noise.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
     repetitions
@@ -194,11 +202,18 @@ def ramsey_sched(
 
     schedule = Schedule("Ramsey", repetitions)
 
+    if isinstance(times, float):
+        times = [times]
+
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X90(qubit))
-        # FIXME: to be added artificial detuning see #98 # pylint: disable=fixme
-        schedule.add(Rxy(theta=90, phi=0, qubit=qubit), ref_pt="start", rel_time=tau)
+
+        # the phase of the second pi/2 phase progresses to propagate
+        recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
+        schedule.add(
+            Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau
+        )
         schedule.add(Measure(qubit), label=f"Measurement {i}")
     return schedule
 
@@ -216,16 +231,13 @@ def echo_sched(
     Schedule sequence
         .. centered:: Reset -- pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 -- Measure
 
-
-
     See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
     model of decoherence and the echo experiment.
-
 
     Parameters
     ----------
     qubit
-        the name of the qubit e.g., "q0" to perform the Echo experiment on.
+        the name of the qubit e.g., "q0" to perform the echo experiment on.
     times
         an array of wait times between the
     repetitions
@@ -263,6 +275,7 @@ def echo_sched(
 
 def allxy_sched(
     qubit: str,
+    elt_select_idx: Union[Literal["All"], int] = "ALL",
     repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -281,6 +294,9 @@ def allxy_sched(
     ----------
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+    elt_select_idx
+        the index of the particular element of the AllXY experiment to exectute -
+        or :code:`"All"` for all elemements of the sequence.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -297,7 +313,6 @@ def allxy_sched(
         .. |reed_allxy| replace:: *Reed "Entanglement and Quantum Error Correction with Superconducting Qubits." Yale University (2013).*
 
         .. _reed_allxy: https://arxiv.org/abs/1311.6759
-
     """
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
@@ -305,7 +320,7 @@ def allxy_sched(
     allxy_combinations = [
         [(0, 0), (0, 0)],
         [(180, 0), (180, 0)],
-        [(180, 0), (180, 0)],
+        [(180, 90), (180, 90)],
         [(180, 0), (180, 90)],
         [(180, 90), (180, 0)],
         [(90, 0), (0, 0)],
@@ -327,10 +342,16 @@ def allxy_sched(
     ]
     schedule = Schedule("AllXY", repetitions)
     for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
-        schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        if elt_select_idx in ("ALL", i):
+            schedule.add(Reset(qubit), label=f"Reset {i}")
+            schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
+            schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
+            schedule.add(Measure(qubit), label=f"Measurement {i}")
+        elif elt_select_idx > len(allxy_combinations) or elt_select_idx < 0:
+            raise ValueError(
+                f"Invalid index selected: {elt_select_idx}. "
+                "Index must be in range 0 to 21 inclusive."
+            )
     return schedule
 
 
@@ -352,7 +373,7 @@ def rabi_pulse_sched(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    reset_duration: float,
+    init_duration: float,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -397,18 +418,16 @@ def rabi_pulse_sched(
         in seconds.
     ro_integration_time
         integration time of the data acquisition in seconds.
-    reset_duration
-        time it takes for the qubit to initialize.
+    init_duration :
+        The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
-
-
     """
     schedule = Schedule("Rabi schedule (pulse)", repetitions)
     schedule.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
     schedule.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
-    schedule.add(IdlePulse(duration=reset_duration), label="qubit reset")
+    schedule.add(IdlePulse(duration=init_duration), label="qubit reset")
     schedule.add(
         DRAGPulse(
             duration=mw_pulse_duration,

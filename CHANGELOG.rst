@@ -13,6 +13,7 @@ Merged branches and closed issues
 * Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
 * Added ControlStack (!70)
 * Added Qblox ControlStack components (!112)
+* Renamed input parameters of quantify.scheduler.schedules.* functions. (!136)
 
 
 0.3.0 Multiple backends support (2021-05-20)
@@ -59,6 +60,7 @@ Merged branches and closed issues
 * Pulsar backend v0.2.2 check. (!48)
 * Fix for issue with acq delay . (!45)
 * Fix for issue #52. (!44)
+* Add artificial detuning to Ramsey schedule (!120)
 
 
 
