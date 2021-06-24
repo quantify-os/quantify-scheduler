@@ -43,29 +43,34 @@ class Output(DataClassJsonMixin):
     modulation :
         The modulation settings.
     local_oscillator :
-        The LocalOscillator settings.
+        The LocalOscillator name.
     gain1 :
-        The output1 IQ modulation gain (value between -1 and + 1). default is 0.
+        The output1 IQ modulation gain.
+        Accepted value between -1 and + 1. (default = 1.0)
     gain2 :
-        The output2 IQ modulation gain (value between -1 and + 1). default is 0.
+        The output2 IQ modulation gain.
+        Accepted value between -1 and + 1. (default = 1.0)
     line_trigger_delay :
-        The ZI Instrument output triggers. default is -1.
+        The ZI Instrument output triggers. (default = -1.0)
     triggers :
-        The ZI Instrument input triggers. default is [].
+        The ZI Instrument input triggers. (default = [])
     markers :
-        The ZI Instrument output triggers. default is [].
+        The ZI Instrument output triggers. (default = [])
+    mixer_corrections :
+        The output mixer corrections.
     """
 
     port: str
     clock: str
     mode: enums.SignalModeType
     modulation: common.Modulation
-    local_oscillator: common.LocalOscillator
+    local_oscillator: str
     gain1: int = 0
     gain2: int = 0
     line_trigger_delay: float = -1
     triggers: List[int] = field(default_factory=lambda: [])
     markers: List[Union[str, int]] = field(default_factory=lambda: [])
+    mixer_corrections: Optional[common.MixerCorrections] = None
 
 
 @dataclass
@@ -104,6 +109,9 @@ class Device(DataClassJsonMixin):
 
         For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
         Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
+    mode :
+        The Instruments operation mode.
+        (default = enums.InstrumentOperationMode.OPERATING)
     device_type :
         The Zurich Instruments hardware type. (default = DeviceType.NONE)
         This field is automatically populated.
@@ -125,6 +133,7 @@ class Device(DataClassJsonMixin):
     channel_3: Optional[Output] = None
     clock_select: Optional[int] = 0
     channelgrouping: int = 0
+    mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     device_type: DeviceType = DeviceType.NONE
     clock_rate: Optional[int] = field(init=False)
     n_channels: int = field(init=False)
@@ -253,6 +262,7 @@ class InstrumentInfo:
     clock_rate: int
     resolution: int
     granularity: int
+    mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     low_res_clock: float = field(init=False)
 
     def __post_init__(self):

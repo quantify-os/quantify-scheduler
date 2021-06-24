@@ -26,6 +26,7 @@ requirements = [
     "dataclasses-json",
     "zhinst-qcodes",
     "pathvalidate",
+    "typing_extensions",
     "quantify-core>=0.3.1",
     "qblox-instruments==0.3.2",
 ]

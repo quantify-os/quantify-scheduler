@@ -19,9 +19,9 @@ class Rxy(Operation):
 
     .. math::
 
-        \\mathsf {R}_{xy} \\left(\\theta, \\varphi\\right) = \\begin{bmatrix}
-        \\textrm {cos}(\\theta /2) & -ie^{-i\\varphi }\\textrm {sin}(\\theta /2)
-        \\\\ -ie^{i\\varphi }\\textrm {sin}(\\theta /2) & \\textrm {cos}(\\theta /2) \\end{bmatrix}
+        \mathsf {R}_{xy} \left(\theta, \varphi\right) = \begin{bmatrix}
+        \textrm {cos}(\theta /2) & -ie^{-i\varphi }\textrm {sin}(\theta /2)
+        \\ -ie^{i\varphi }\textrm {sin}(\theta /2) & \textrm {cos}(\theta /2) \end{bmatrix}
 
     """
 
@@ -33,13 +33,13 @@ class Rxy(Operation):
 
         Parameters
         ----------
-        theta :
+        theta
             rotation angle in degrees
-        phi :
+        phi
             phase of the rotation axis
-        qubit :
+        qubit
             the target qubit
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -94,7 +94,7 @@ class Rxy(Operation):
 
 
 class X(Rxy):
-    """
+    r"""
     A single qubit rotation of 180 degrees around the X-axis.
 
 
@@ -102,9 +102,9 @@ class X(Rxy):
 
     .. math::
 
-        X = \\sigma_x = \\begin{bmatrix}
-             0 & 1 \\\\
-             1 & 0 \\ \\end{bmatrix}
+        X = \sigma_x = \begin{bmatrix}
+             0 & 1 \\
+             1 & 0 \\ \end{bmatrix}
 
     """
 
@@ -112,9 +112,9 @@ class X(Rxy):
         """
         Parameters
         ----------
-        qubit :
+        qubit
             the target qubit
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -139,9 +139,9 @@ class X90(Rxy):
 
         Parameters
         ----------
-        qubit :
+        qubit
             The target qubit.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -157,15 +157,15 @@ class X90(Rxy):
 
 
 class Y(Rxy):
-    """
+    r"""
     A single qubit rotation of 180 degrees around the Y-axis.
 
 
     .. math::
 
-        \\mathsf Y = \\sigma_y = \\begin{bmatrix}
-             0 & -i \\\\
-             i & 0 \\end{bmatrix}
+        \mathsf Y = \sigma_y = \begin{bmatrix}
+             0 & -i \\
+             i & 0 \end{bmatrix}
 
     """
 
@@ -178,9 +178,9 @@ class Y(Rxy):
 
         Parameters
         ----------
-        qubit :
+        qubit
             The target qubit.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -208,9 +208,9 @@ class Y90(Rxy):
 
         Parameters
         ----------
-        qubit :
+        qubit
             The target qubit.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -221,7 +221,7 @@ class Y90(Rxy):
 
     def __str__(self) -> str:
         """
-        Returns a concise string represenation
+        Returns a concise string representation
         which can be evaluated into a new instance
         using `eval(str(operation))` only when the
         data dictionary has not been modified.
@@ -244,11 +244,11 @@ class CNOT(Operation):
 
     .. math::
 
-        \\mathrm{CNOT}  = \\begin{bmatrix}
-            1 & 0 & 0 & 0 \\\\
-            0 & 1 & 0 & 0 \\\\
-            0 & 0 & 0 & 1 \\\\
-            0 & 0 & 1 & 0 \\ \\end{bmatrix}
+        \mathrm{CNOT}  = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 \\
+            0 & 0 & 0 & 1 \\
+            0 & 0 & 1 & 0 \\ \end{bmatrix}
 
     """
 
@@ -261,11 +261,11 @@ class CNOT(Operation):
 
         Parameters
         ----------
-        qC :
+        qC
             The control qubit.
-        qT :
+        qT
             The target qubit
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -294,7 +294,7 @@ class CNOT(Operation):
 
 
 class CZ(Operation):
-    """
+    r"""
     Conditional-phase gate, a common entangling gate.
 
     Performs a Z gate on the target qubit qT conditional on the state
@@ -304,11 +304,11 @@ class CZ(Operation):
 
     .. math::
 
-        \\mathrm{CZ}  = \\begin{bmatrix}
-            1 & 0 & 0 & 0 \\\\
-            0 & 1 & 0 & 0 \\\\
-            0 & 0 & 1 & 0 \\\\
-            0 & 0 & 0 & -1 \\ \\end{bmatrix}
+        \mathrm{CZ}  = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 \\
+            0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & -1 \\ \end{bmatrix}
 
     """
 
@@ -321,11 +321,11 @@ class CZ(Operation):
 
         Parameters
         ----------
-        qC :
+        qC
             The control qubit.
-        qT :
+        qT
             The target qubit
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -355,8 +355,8 @@ class CZ(Operation):
 
 
 class Reset(Operation):
-    """
-    Reset a qubit to the :math:`|0\\rangle` state.
+    r"""
+    Reset a qubit to the :math:`|0\rangle` state.
 
     The Reset gate is an idle operation that is used to initialize a qubit.
 
@@ -373,9 +373,9 @@ class Reset(Operation):
 
         Parameters
         ----------
-        qubits :
+        qubits
             The qubits to reset.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -396,7 +396,7 @@ class Reset(Operation):
 
     def __str__(self) -> str:
         qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
-        return f'{self.__class__.__name__}(*{",".join(qubits)})'
+        return f'{self.__class__.__name__}({",".join(qubits)})'
 
 
 class Measure(Operation):
@@ -425,13 +425,13 @@ class Measure(Operation):
 
         Parameters
         ----------
-        qubits :
+        qubits
             The qubits you want to measure
-        acq_channel :
+        acq_channel
             Acquisition channel on which the measurement is performed
-        acq_index :
+        acq_index
             Index of the register where the measurement is stored.
-        data :
+        data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
@@ -468,6 +468,6 @@ class Measure(Operation):
         acq_channel = self.data["gate_info"]["acq_channel"]
         acq_index = self.data["gate_info"]["acq_index"]
         return (
-            f'{self.__class__.__name__}(*{",".join(qubits)},'
+            f'{self.__class__.__name__}({",".join(qubits)},'
             + f"acq_channel={acq_channel},acq_index={acq_index})"
         )

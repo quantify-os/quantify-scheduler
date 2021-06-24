@@ -10,9 +10,9 @@ from typing import Any, Dict, List, Union
 
 from zhinst.qcodes import base
 from zhinst import qcodes
+from quantify.scheduler.helpers import time
 
-
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def get_value(instrument: base.ZIBaseInstrument, node: str) -> str:
@@ -90,7 +90,7 @@ def set_awg_value(
     value: Union[int, str],
 ) -> None:
     """
-    Sets the vector value of a ZI node.
+    Sets the value of a AWG module node.
 
     Parameters
     ----------
@@ -100,13 +100,80 @@ def set_awg_value(
         The awg to configure.
     node :
         The node path.
-    vector :
-        The new node vector value.
+    value :
+        The new node value.
     """
     logger.debug(node)
 
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awgs[awg_index]._awg._module.set(node, value)
+
+
+def set_and_compile_awg_seqc(
+    instrument: base.ZIBaseInstrument,
+    awg_index: int,
+    node: str,
+    value: str,
+):
+    """
+    Uploads and compiles the AWG sequencer program.
+
+    Parameters
+    ----------
+    instrument :
+        The instrument.
+    awg_index :
+        The awg to configure.
+    node :
+        The node path.
+    value :
+        The seqc program.
+    """
+    current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
+    awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
+    awg = awgs[awg_index]
+
+    # Assert the current Sequencer program with the new
+    if (
+        len(current_seqc) == len(value)
+        and hash(current_seqc) == hash(value)
+        and current_seqc == value
+    ):
+        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequencer"')
+        return
+
+    # Set the new 'compiler/sourcestring' value
+    set_awg_value(instrument, awg_index, node, value)
+
+    awg_module = awg._awg._module
+    status: int = -1
+    while status == -1:
+        time.sleep(0.1)
+        status = awg_module.get_int("compiler/status")
+
+    if status == 1:
+        status_str = awg_module.get_string("compiler/statusstring")
+        raise Exception(f"Upload failed: \n{status_str}")
+
+    if status == 2:
+        status_str = awg_module.get_string("compiler/statusstring")
+        raise Warning(f"Compiled with warning: \n{status_str}")
+
+    if status == 0:
+        print(f"{awg.name}: Compilation successful")
+
+    tik = time.get_time()
+    progress: float = awg_module.get_double("progress")
+    status: int = awg_module.get_int("/elf/status")
+    while (progress < 1.0) and (status != 1):
+        time.sleep(0.1)
+        if time.get_time() - tik >= 100:  # 100s timeout
+            raise Exception("Program upload timed out!")
+        progress: float = awg_module.get_double("progress")
+        status: int = awg_module.get_int("/elf/status")
+
+    sequencer_status = "ELF file uploaded" if status == 0 else "FAILED!!"
+    print(f"{awg.name}: Compilation status: {sequencer_status}")
 
 
 def set_wave_vector(

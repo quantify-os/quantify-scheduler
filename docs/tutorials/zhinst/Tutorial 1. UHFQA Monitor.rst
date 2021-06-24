@@ -128,7 +128,7 @@ Requirements
 
     # Resolve the results by querying the UHFQA monitor nodes
     acq_channel_results = dict()
-    for acq_channel, resolve in acq_channel_resolvers_map.items():
+    for acq_channel, resolve in zi_backend.acquisition_resolvers.items():
         acq_channel_results[acq_channel] = resolve()
 
 .. code-block:: python

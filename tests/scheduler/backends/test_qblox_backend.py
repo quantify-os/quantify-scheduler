@@ -408,6 +408,7 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     full_program = qcompile(
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
+
     qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
@@ -425,6 +426,7 @@ def test_compile_with_rel_time(
     full_program = qcompile(
         pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_MAPPING
     )
+
     qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
@@ -439,6 +441,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
     qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+
     with open(qcm0_seq0_json) as file:
         wf_and_prog = json.load(file)
     program_from_json = wf_and_prog["program"]

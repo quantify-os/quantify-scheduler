@@ -3,6 +3,7 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 # pylint: disable=too-many-locals
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import json
@@ -17,12 +18,12 @@ from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
 import quantify.scheduler.backends.zhinst_backend as zhinst_backend
-import quantify.scheduler.waveforms as waveforms
 from quantify.scheduler import enums
 from quantify.scheduler.helpers import waveforms as waveform_helpers
 from quantify.scheduler.helpers import schedule as schedule_helpers
 
-from quantify.scheduler.backends.types import zhinst, common
+from quantify.scheduler.backends.types import zhinst
+from quantify.scheduler.backends.types import common
 from quantify.scheduler.backends.zhinst import settings
 from quantify.scheduler.gate_library import X90, Measure, Reset
 from quantify.scheduler.schedules import trace_schedules
@@ -36,6 +37,10 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
         """
         {
           "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+          "local_oscillators": [{
+            "name": "lo0",
+            "frequency": 4.8e9
+          }],
           "devices": [
             {
               "name": "uhfqa0",
@@ -49,10 +54,7 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
                   "type": "premod",
                   "interm_freq": -50e6
                 },
-                "local_oscillator": {
-                  "name": "lo0",
-                  "frequency": 4.8e9
-                },
+                "local_oscillator": "lo0",
                 "triggers": [
                   2
                 ]
@@ -70,6 +72,10 @@ def hdawg_hardware_map() -> Dict[str, Any]:
         """
         {
           "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+          "local_oscillators": [{
+            "name": "lo0",
+            "frequency": 4.8e9
+          }],
           "devices": [
             {
               "name": "hdawg0",
@@ -84,14 +90,19 @@ def hdawg_hardware_map() -> Dict[str, Any]:
                   "type": "premod",
                   "interm_freq": -50e6
                 },
-                "local_oscillator": {
-                  "name": "lo0",
-                  "frequency": 4.8e9
-                },
+                "local_oscillator": "lo0",
                 "markers": [
                   "AWG_MARKER1",
                   "AWG_MARKER2"
-                ]
+                ],
+                "gain1": 1,
+                "gain2": 1,
+                "mixer_corrections": {
+                  "amp_ratio": 0.81,
+                  "phase_error": 0.07,
+                  "dc_offset_I": 0.4,
+                  "dc_offset_Q": 0.38
+                }
               },
               "channel_1": {
                 "port": "q1:mw",
@@ -101,10 +112,7 @@ def hdawg_hardware_map() -> Dict[str, Any]:
                   "type": "premod",
                   "interm_freq": -50e6
                 },
-                "local_oscillator": {
-                  "name": "lo0",
-                  "frequency": 4.8e9
-                },
+                "local_oscillator": "lo0",
                 "triggers": [
                   1
                 ]
@@ -278,6 +286,10 @@ def test_compile_backend_unsupported_devices(
         """
     {
         "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "local_oscillators": [{
+            "name": "lo0",
+            "frequency": 4.8e9
+        }],
         "devices": [
             {
                 "name": "device_name",
@@ -293,10 +305,7 @@ def test_compile_backend_unsupported_devices(
                       "type": "none",
                       "interm_freq": -50e6
                     },
-                    "local_oscillator": {
-                      "name": "lo0",
-                      "frequency": 4.8e9
-                    }
+                    "local_oscillator": "lo0"
                 }
             }
         ]
@@ -340,44 +349,56 @@ def test_compile_hardware_hdawg4_successfully(
     schedule.add(X90(q0))
     schedule.add(X90(q1))
     schedule = create_schedule_with_pulse_info(schedule)
-    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=hdawg.HDAWG)
 
     modulate_wave_spy = mocker.patch.object(
-        waveforms, "modulate_wave", wraps=waveforms.modulate_wave
+        waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
     )
     settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
     mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
 
     expected_settings = {
-        "/dev1234/sigouts/*/on": 0,
-        "/dev1234/awgs/*/single": 1,
-        "/dev1234/system/awg/channelgrouping": 0,
-        "/dev1234/awgs/0/time": 0,
-        "/dev1234/awgs/1/time": 0,
-        "/dev1234/sigouts/0/on": 1,
-        "/dev1234/sigouts/1/on": 1,
-        "/dev1234/sigouts/2/on": 1,
-        "/dev1234/sigouts/3/on": 1,
-        "/dev1234/awgs/0/commandtable/data": ANY,
-        "/dev1234/awgs/0/waveform/waves/0": ANY,
-        "/dev1234/awgs/1/commandtable/data": ANY,
-        "/dev1234/awgs/1/waveform/waves/0": ANY,
+        "sigouts/*/on": 0,
+        "awgs/*/single": 1,
+        "system/awg/channelgrouping": 0,
+        "awgs/0/time": 0,
+        "awgs/1/time": 0,
+        "sigouts/0/on": 1,
+        "sigouts/1/on": 1,
+        "awgs/0/outputs/0/gains/0": 1,
+        "awgs/0/outputs/1/gains/1": 1,
+        "sigouts/0/offset": 0.4,
+        "sigouts/1/offset": 0.38,
+        "sigouts/2/on": 1,
+        "sigouts/3/on": 1,
+        "awgs/0/outputs/0/gains/0": 1,
+        "awgs/0/outputs/1/gains/1": 1,
+        "awgs/1/outputs/0/gains/0": 0,
+        "awgs/1/outputs/1/gains/1": 0,
+        "sigouts/2/offset": 0.0,
+        "sigouts/3/offset": 0.0,
+        "awgs/0/commandtable/data": ANY,
+        "awgs/0/waveform/waves/0": ANY,
+        "awgs/1/commandtable/data": ANY,
+        "awgs/1/waveform/waves/0": ANY,
         "compiler/sourcestring": ANY,
     }
 
     # Act
-    zi_backend = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
 
     # Assert
-    assert "hdawg0" in zi_backend.settings
-    zi_settings = zi_backend.settings["hdawg0"].build(instrument)
+    assert "hdawg0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["hdawg0"]
+    zi_settings = device_config.settings_builder.build()
     collection = zi_settings.as_dict()
 
     for key, expected_value in expected_settings.items():
         assert key in collection
         if isinstance(expected_value, type(ANY)):
             continue
-        assert collection[key] == expected_value
+        assert (
+            collection[key] == expected_value
+        ), f"Expected {key} {collection[key]} to equal {expected_value}"
 
     modulate_wave_spy.assert_called()
 
@@ -398,6 +419,9 @@ def test_compile_hardware_hdawg4_successfully(
     expected_call = [call(0, ANY), call(1, ANY)]
     assert settings_builder.with_compiler_sourcestring.call_args_list == expected_call
 
+    assert "lo0" in device_configs
+    assert device_configs["lo0"] == (4.8e9 + -50e6)
+
 
 def test_compile_hardware_uhfqa_successfully(
     mocker,
@@ -406,66 +430,57 @@ def test_compile_hardware_uhfqa_successfully(
 ) -> None:
     # Arrange
     schedule = make_schedule()
-
-    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=uhfqa.UHFQA)
-
     settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
     mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
 
     expected_settings = {
-        "/dev1234/awgs/0/single": 1,
-        "/dev1234/qas/0/integration/weights/0/real": ANY,
-        "/dev1234/qas/0/integration/weights/0/imag": ANY,
-        "/dev1234/qas/0/integration/weights/1/real": ANY,
-        "/dev1234/qas/0/integration/weights/1/imag": ANY,
-        "/dev1234/qas/0/integration/weights/2/real": ANY,
-        "/dev1234/qas/0/integration/weights/2/imag": ANY,
-        "/dev1234/qas/0/integration/weights/3/real": ANY,
-        "/dev1234/qas/0/integration/weights/3/imag": ANY,
-        "/dev1234/qas/0/integration/weights/4/real": ANY,
-        "/dev1234/qas/0/integration/weights/4/imag": ANY,
-        "/dev1234/qas/0/integration/weights/5/real": ANY,
-        "/dev1234/qas/0/integration/weights/5/imag": ANY,
-        "/dev1234/qas/0/integration/weights/6/real": ANY,
-        "/dev1234/qas/0/integration/weights/6/imag": ANY,
-        "/dev1234/qas/0/integration/weights/7/real": ANY,
-        "/dev1234/qas/0/integration/weights/7/imag": ANY,
-        "/dev1234/qas/0/integration/weights/8/real": ANY,
-        "/dev1234/qas/0/integration/weights/8/imag": ANY,
-        "/dev1234/qas/0/integration/weights/9/real": ANY,
-        "/dev1234/qas/0/integration/weights/9/imag": ANY,
-        "/dev1234/qas/0/rotations/*": (1 + 0j),
-        "/dev1234/sigouts/0/on": 1,
-        "/dev1234/sigouts/1/on": 1,
-        "/dev1234/awgs/0/time": 0,
-        "/dev1234/awgs/0/waveform/waves/0": ANY,
-        "/dev1234/qas/0/integration/mode": 0,
-        "/dev1234/qas/0/integration/length": 540,
-        "/dev1234/qas/0/result/enable": 1,
-        "/dev1234/qas/0/monitor/enable": 0,
-        "/dev1234/qas/0/delay": 0,
-        "/dev1234/qas/0/result/mode": 0,
-        "/dev1234/qas/0/result/source": 7,
-        "/dev1234/qas/0/result/length": 540,
-        "/dev1234/qas/0/rotations/0": (1 + 0j),
-        "/dev1234/qas/0/rotations/1": (1 + 0j),
-        "/dev1234/qas/0/rotations/2": (1 + 0j),
-        "/dev1234/qas/0/rotations/3": (1 + 0j),
-        "/dev1234/qas/0/rotations/4": (1 + 0j),
-        "/dev1234/qas/0/rotations/5": (1 + 0j),
-        "/dev1234/qas/0/rotations/6": (1 + 0j),
-        "/dev1234/qas/0/rotations/7": (1 + 0j),
-        "/dev1234/qas/0/rotations/8": (1 + 0j),
-        "/dev1234/qas/0/rotations/9": (1 + 0j),
+        "awgs/0/single": 1,
+        "qas/0/rotations/*": (1 + 0j),
+        "sigouts/0/on": 1,
+        "sigouts/1/on": 1,
+        "awgs/0/time": 0,
+        "qas/0/integration/weights/0/real": ANY,
+        "qas/0/integration/weights/0/imag": ANY,
+        "qas/0/integration/weights/1/real": ANY,
+        "qas/0/integration/weights/1/imag": ANY,
+        "qas/0/integration/weights/2/real": ANY,
+        "qas/0/integration/weights/2/imag": ANY,
+        "qas/0/integration/weights/3/real": ANY,
+        "qas/0/integration/weights/3/imag": ANY,
+        "qas/0/integration/weights/4/real": ANY,
+        "qas/0/integration/weights/4/imag": ANY,
+        "qas/0/integration/weights/5/real": ANY,
+        "qas/0/integration/weights/5/imag": ANY,
+        "qas/0/integration/weights/6/real": ANY,
+        "qas/0/integration/weights/6/imag": ANY,
+        "qas/0/integration/weights/7/real": ANY,
+        "qas/0/integration/weights/7/imag": ANY,
+        "qas/0/integration/weights/8/real": ANY,
+        "qas/0/integration/weights/8/imag": ANY,
+        "qas/0/integration/weights/9/real": ANY,
+        "qas/0/integration/weights/9/imag": ANY,
+        "sigouts/0/offset": 0.0,
+        "sigouts/1/offset": 0.0,
+        "awgs/0/waveform/waves/0": ANY,
+        "qas/0/integration/mode": 0,
+        "qas/0/integration/length": 540,
+        "qas/0/result/enable": 1,
+        "qas/0/monitor/enable": 0,
+        "qas/0/delay": 0,
+        "qas/0/result/mode": 0,
+        "qas/0/result/source": 7,
+        "qas/0/result/length": 1,
+        "qas/0/result/averages": 1,
         "compiler/sourcestring": ANY,
     }
 
     # Act
-    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    assert "uhfqa0" in zi_backend.settings
-    zi_settings = zi_backend.settings["uhfqa0"].build(instrument)
+    assert "uhfqa0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["uhfqa0"]
+    zi_settings = device_config.settings_builder.build()
     collection = zi_settings.as_dict()
 
     for key, expected_value in expected_settings.items():
@@ -474,12 +489,16 @@ def test_compile_hardware_uhfqa_successfully(
             continue
         assert collection[key] == expected_value
 
+    assert "lo0" in device_configs
+    assert device_configs["lo0"] == (4.8e9 + -50e6)
+
 
 def test_hdawg4_sequence(
     hdawg_hardware_map: Dict[str, Any],
     make_schedule,
 ) -> None:
     # Arrange
+    awg_index = 0
     schedule = make_schedule()
 
     expected_seqc = dedent(
@@ -510,13 +529,18 @@ def test_hdawg4_sequence(
     ).lstrip("\n")
 
     # Act
-    zi_backend = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
 
     # Assert
-    assert "hdawg0" in zi_backend.settings
-    settings_builder = zi_backend.settings["hdawg0"]
-    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
-    assert zi_setting.value == expected_seqc
+    assert "hdawg0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["hdawg0"]
+
+    awg_settings = device_config.settings_builder._awg_settings
+    (node, zi_setting) = awg_settings[0]
+
+    assert node == "compiler/sourcestring"
+    assert zi_setting[0] == awg_index
+    assert zi_setting[1].value == expected_seqc
 
 
 @pytest.mark.parametrize("channelgrouping,enabled_channels", [(0, [0, 1]), (1, [0])])
@@ -599,7 +623,9 @@ def test_apply_waveform_corrections(
     # Arrange
     wave = np.ones(48)
 
-    modulate_wave = mocker.patch.object(waveforms, "modulate_wave", return_value=wave)
+    modulate_wave = mocker.patch.object(
+        waveform_helpers, "modulate_waveform", return_value=wave
+    )
     shift_waveform = mocker.patch.object(
         waveform_helpers, "shift_waveform", return_value=(0, wave)
     )
@@ -648,7 +674,6 @@ def test__flatten_dict():
 
 def test_get_wave_instruction(mocker, create_schedule_with_pulse_info):
     # Arrange
-
     q0 = "q0"
     schedule = types.Schedule("test")
     schedule.add(X90(q0))
@@ -678,6 +703,49 @@ def test_get_wave_instruction(mocker, create_schedule_with_pulse_info):
     assert isinstance(instruction, zhinst.Wave)
     assert instruction.uuid == "new_pulse"
     assert instruction.n_samples_scaled == 9
+
+
+def test_get_wave_instruction_mode_is_calibrating(
+    mocker, create_schedule_with_pulse_info
+):
+    # Arrange
+    q0 = "q0"
+    schedule = types.Schedule("test")
+    schedule.add(X90(q0))
+    schedule = create_schedule_with_pulse_info(schedule)
+    schedule = schedule_helpers.CachedSchedule(schedule)
+
+    uuid = next(iter(schedule.pulseid_pulseinfo_dict.keys()))
+    output = mocker.create_autospec(zhinst.Output, instance=True)
+    instrument_info = zhinst.InstrumentInfo(
+        2.4e9, 8, 16, enums.InstrumentOperationMode.CALIBRATING
+    )
+
+    def apply_waveform_corrections(  # pylint: disable=unused-argument
+        output,
+        waveform,
+        start_and_duration_in_seconds,
+        instrument_info,
+        is_pulse,
+    ):
+        return (start_and_duration_in_seconds[0], len(waveform), waveform)
+
+    mocker.patch.object(
+        zhinst_backend,
+        "apply_waveform_corrections",
+        side_effect=apply_waveform_corrections,
+    )
+
+    # Act
+    instruction = zhinst_backend.get_wave_instruction(
+        uuid, 0, output, schedule, instrument_info
+    )
+
+    # Assert
+    assert isinstance(instruction, zhinst.Wave)
+    np.testing.assert_array_equal(
+        instruction.waveform, np.ones(len(instruction.waveform))
+    )
 
 
 def test_get_measure_instruction(mocker, create_schedule_with_pulse_info):
@@ -711,6 +779,7 @@ def test_uhfqa_sequence1(
     uhfqa_hardware_map: Dict[str, Any],
 ) -> None:
     # Arrange
+    awg_index = 0
     schedule = make_schedule()
 
     # pylint: disable=line-too-long
@@ -721,7 +790,7 @@ def test_uhfqa_sequence1(
     var __repetitions__ = 1;
     var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
     var reset_integration_trigger = AWG_INTEGRATION_ARM;
-    wave w0 = placeholder(304);\n
+    wave w0 = "uhfqa0_awg0_wave0";\n
     // Operations
     // Schedule offset: 0.000200000s 45000 clocks
     // Schedule duration: 0.000000436s 98 clocks
@@ -729,7 +798,6 @@ def test_uhfqa_sequence1(
     // Sequence duration: 0.000000420s 94 clocks
     // Sequence end: 0.000000436s 98 clocks
     // Line delay: -1.000000000s 0 clocks
-    assignWaveIndex(w0, w0, 0);
     repeat(__repetitions__)
     {
       setTrigger(reset_integration_trigger);	// Arm QAResult n_instr=1
@@ -745,20 +813,26 @@ def test_uhfqa_sequence1(
     # pylint: enable=line-too-long
 
     # Act
-    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    assert "uhfqa0" in zi_backend.settings
-    settings_builder = zi_backend.settings["uhfqa0"]
-    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
-    assert zi_setting.value == expected_seqc
+    assert "uhfqa0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["uhfqa0"]
+
+    awg_settings = device_config.settings_builder._awg_settings
+    (node, zi_setting) = awg_settings[0]
+
+    assert node == "compiler/sourcestring"
+    assert zi_setting[0] == awg_index
+    assert zi_setting[1].value == expected_seqc
 
 
 def test_uhfqa_sequence2(
     create_schedule_with_pulse_info,
     uhfqa_hardware_map: Dict[str, Any],
-) -> None:
+):
     # Arrange
+    awg_index = 0
     schedule = trace_schedules.trace_schedule(
         pulse_amp=1,
         pulse_duration=16e-9,
@@ -780,7 +854,7 @@ def test_uhfqa_sequence2(
     var __repetitions__ = 1;
     var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
     var reset_integration_trigger = AWG_INTEGRATION_ARM;
-    wave w0 = placeholder(32);\n
+    wave w0 = "uhfqa0_awg0_wave0";\n
     // Operations
     // Schedule offset: 0.000010000s 2250 clocks
     // Schedule duration: 0.000001000s 225 clocks
@@ -788,7 +862,6 @@ def test_uhfqa_sequence2(
     // Sequence duration: 0.000001000s 225 clocks
     // Sequence end: 0.000001000s 225 clocks
     // Line delay: -1.000000000s 0 clocks
-    assignWaveIndex(w0, w0, 0);
     repeat(__repetitions__)
     {
       setTrigger(reset_integration_trigger);	// Arm QAResult n_instr=1
@@ -802,13 +875,18 @@ def test_uhfqa_sequence2(
     # pylint: enable=line-too-long
 
     # Act
-    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    assert "uhfqa0" in zi_backend.settings
-    settings_builder = zi_backend.settings["uhfqa0"]
-    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
-    assert zi_setting.value == expected_seqc
+    assert "uhfqa0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["uhfqa0"]
+
+    awg_settings = device_config.settings_builder._awg_settings
+    (node, zi_setting) = awg_settings[0]
+
+    assert node == "compiler/sourcestring"
+    assert zi_setting[0] == awg_index
+    assert zi_setting[1].value == expected_seqc
 
 
 def test_uhfqa_sequence3(
@@ -816,6 +894,7 @@ def test_uhfqa_sequence3(
     uhfqa_hardware_map: Dict[str, Any],
 ) -> None:
     # Arrange
+    awg_index = 0
     ro_acquisition_delay = -16e-9
     ro_pulse_delay = 2e-9
     schedule = spectroscopy_schedules.two_tone_spec_sched(
@@ -844,7 +923,7 @@ def test_uhfqa_sequence3(
     var __repetitions__ = 1;
     var integration_trigger = AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER;
     var reset_integration_trigger = AWG_INTEGRATION_ARM;
-    wave w0 = placeholder(272);\n
+    wave w0 = "uhfqa0_awg0_wave0";\n
     // Operations
     // Schedule offset: 0.000010000s 2250 clocks
     // Schedule duration: 0.000000502s 113 clocks
@@ -852,7 +931,6 @@ def test_uhfqa_sequence3(
     // Sequence duration: 0.000000166s 38 clocks
     // Sequence end: 0.000000168s 38 clocks
     // Line delay: -1.000000000s 0 clocks
-    assignWaveIndex(w0, w0, 0);
     repeat(__repetitions__)
     {
       setTrigger(reset_integration_trigger);	// Arm QAResult n_instr=1
@@ -867,16 +945,24 @@ def test_uhfqa_sequence3(
     # pylint: enable=line-too-long
 
     # Act
-    zi_backend = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
 
     # Assert
-    assert "uhfqa0" in zi_backend.settings
-    settings_builder = zi_backend.settings["uhfqa0"]
-    zi_setting = settings_builder._awg_settings["0/compiler/sourcestring"][1]
-    assert zi_setting.value == expected_seqc
+    assert "uhfqa0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["uhfqa0"]
+
+    awg_settings = device_config.settings_builder._awg_settings
+    (node, zi_setting) = awg_settings[0]
+
+    assert node == "compiler/sourcestring"
+    assert zi_setting[0] == awg_index
+    assert zi_setting[1].value == expected_seqc
 
 
-def test__add_wave_nodes(mocker):
+@pytest.mark.parametrize(
+    "device_type", [(zhinst.DeviceType.HDAWG), (zhinst.DeviceType.UHFQA)]
+)
+def test__add_wave_nodes_with_vector(mocker, device_type: zhinst.DeviceType):
     # Arrange
     waveform = np.vectorize(complex)(np.zeros(1024), np.ones(1024))
     waveforms_dict = {0: waveform}
@@ -884,6 +970,8 @@ def test__add_wave_nodes(mocker):
 
     awg_index: int = 0
     settings_builder = mocker.Mock(spec=settings.ZISettingsBuilder)
+    device = mocker.create_autospec(zhinst.Device, instance=True)
+    device.device_type = device_type
 
     _data = np.zeros((2, 1024))
     _data[0] = np.real(waveform)
@@ -892,12 +980,110 @@ def test__add_wave_nodes(mocker):
 
     # Act
     zhinst_backend._add_wave_nodes(
-        awg_index, waveforms_dict, waveform_table, settings_builder
+        device, awg_index, waveforms_dict, waveform_table, settings_builder
     )
 
     # Assert
     expected_call = [call(awg_index, 0, ANY)]
-    assert settings_builder.with_wave_vector.call_args_list == expected_call
+    if device_type == zhinst.DeviceType.HDAWG:
+        assert settings_builder.with_wave_vector.call_args_list == expected_call
+        args, _ = settings_builder.with_wave_vector.call_args
+    elif device_type == zhinst.DeviceType.UHFQA:
+        assert settings_builder.with_csv_wave_vector.call_args_list == expected_call
+        args, _ = settings_builder.with_csv_wave_vector.call_args
 
-    args, _ = settings_builder.with_wave_vector.call_args
     np.testing.assert_array_equal(args[2], expected_data)
+
+
+def test_compile_backend_with_undefined_local_oscillator(
+    make_schedule,
+):
+    # Arrange
+    schedule = make_schedule()
+    hardware_map_str = """
+    {
+        "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "local_oscillators": [{
+            "name": "lo0",
+            "frequency": 4.8e9
+        }],
+        "devices": [
+            {
+                "name": "device_name",
+                "type": "HDAWG4",
+                "ref": "none",
+                "channel_0": {
+                    "port": "q0:mw",
+                    "clock": "q0.ro",
+                    "mode": "real",
+                    "modulation": {
+                      "type": "none",
+                      "interm_freq": -50e6
+                    },
+                    "local_oscillator": "lo_unknown"
+                }
+            }
+        ]
+    }
+    """
+    zhinst_hardware_map = json.loads(hardware_map_str)
+
+    # Act
+    with pytest.raises(KeyError) as execinfo:
+        zhinst_backend.compile_backend(schedule, zhinst_hardware_map)
+
+    # Assert
+    assert (
+        execinfo.value.args[0]
+        == "Missing configuration for LocalOscillator 'lo_unknown'!"
+    )
+
+
+def test_compile_backend_with_duplicate_local_oscillator(
+    make_schedule,
+):
+    # Arrange
+    schedule = make_schedule()
+    hardware_map_str = """
+    {
+      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "local_oscillators": [
+        {
+          "name": "lo0",
+          "frequency": 4.7e9
+        },
+        {
+          "name": "lo0",
+          "frequency": 4.8e9
+        }
+      ],
+      "devices": [
+        {
+          "name": "device_name",
+          "type": "HDAWG4",
+          "ref": "none",
+          "channel_0": {
+            "port": "q0:mw",
+            "clock": "q0.ro",
+            "mode": "real",
+            "modulation": {
+              "type": "none",
+              "interm_freq": -50e6
+            },
+            "local_oscillator": "lo0"
+          }
+        }
+      ]
+    }
+    """
+    zhinst_hardware_map = json.loads(hardware_map_str)
+
+    # Act
+    with pytest.raises(RuntimeError) as execinfo:
+        zhinst_backend.compile_backend(schedule, zhinst_hardware_map)
+
+    # Assert
+    assert (
+        str(execinfo.value)
+        == "Duplicate entry LocalOscillators 'lo0' in hardware configuration!"
+    )
