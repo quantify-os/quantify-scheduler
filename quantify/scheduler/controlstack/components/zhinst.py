@@ -44,14 +44,14 @@ class ZIControlStackComponent(base.AbstractControlStackComponent):
         """
         self.device_config = options
 
-        self.zi_settings = self.device_config.settings_builder.build(self)
+        self.zi_settings = self.device_config.settings_builder.build()
 
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
-        self.zi_settings.serialize(self._data_path)
+        self.zi_settings.serialize(self._data_path, self)
 
         # Upload settings, seqc and waveforms
-        self.zi_settings.apply()
+        self.zi_settings.apply(self)
 
     def retrieve_acquisition(self) -> Any:
         return None

@@ -94,7 +94,6 @@ def test_hdawg_start(mocker, make_hdawg):
     hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
-        hdawg,
         list(),
         [
             (0, mocker.Mock()),
@@ -123,7 +122,6 @@ def test_hdawg_stop(mocker, make_hdawg):
     hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
-        hdawg,
         list(),
         [
             (0, mocker.Mock()),
@@ -161,8 +159,8 @@ def test_hdawg_prepare(mocker, make_hdawg):
     hdawg.prepare(config)
 
     # Assert
-    serialize.assert_called_with(Path("."))
-    apply.assert_called()
+    serialize.assert_called_with(Path("."), hdawg)
+    apply.assert_called_with(hdawg)
 
 
 def test_hdawg_retrieve_acquisition(make_hdawg):
@@ -184,7 +182,6 @@ def test_uhfqa_start(mocker, make_uhfqa):
     # Arrange
     uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
     uhfqa.zi_settings = settings.ZISettings(
-        uhfqa,
         list(),
         [
             (0, mocker.Mock()),
@@ -202,7 +199,6 @@ def test_uhfqa_stop(mocker, make_uhfqa):
     # Arrange
     uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
     uhfqa.zi_settings = settings.ZISettings(
-        uhfqa,
         list(),
         [
             (0, mocker.Mock()),
@@ -234,8 +230,8 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
     uhfqa.prepare(config)
 
     # Assert
-    serialize.assert_called_with(Path("."))
-    apply.assert_called()
+    serialize.assert_called_with(Path("."), uhfqa)
+    apply.assert_called_with(uhfqa)
     copy2.assert_called_with("uhfqa0_awg0.csv", "waves")
 
 

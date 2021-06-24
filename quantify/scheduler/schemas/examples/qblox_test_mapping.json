@@ -4,7 +4,7 @@
     "name": "qcm0",
     "type": "Pulsar_QCM",
     "mode": "complex",
-    "ref": "int",
+    "ref": "internal",
     "IP address": "192.168.0.2",
     "complex_output_0": {
       "line_gain_db": 0,
@@ -31,7 +31,7 @@
     "name": "qrm0",
     "type": "Pulsar_QRM",
     "mode": "complex",
-    "ref": "ext",
+    "ref": "external",
     "IP address": "192.168.0.6",
     "complex_output_0": {
       "line_gain_db": 0,
@@ -54,7 +54,7 @@
     "name": "qrm1",
     "type": "Pulsar_QRM",
     "mode": "complex",
-    "ref": "ext",
+    "ref": "external",
     "IP address": "192.168.0.8",
     "complex_output_0": {
       "line_gain_db": 0,

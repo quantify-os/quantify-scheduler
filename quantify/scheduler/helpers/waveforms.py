@@ -139,11 +139,8 @@ def shift_waveform(
     Parameters
     ----------
     waveform
-
     start_in_seconds
-
     clock_rate
-
     resolution
         The sequencer resolution.
     """

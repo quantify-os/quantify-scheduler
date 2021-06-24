@@ -261,7 +261,7 @@ def get_port_timeline(
     """
     port_timeline_dict: Dict[str, Dict[int, List[int]]] = dict()
 
-    # Sort timing containts based on abs_time and keep the original index.
+    # Sort timing constraints based on abs_time and keep the original index.
     timing_constrains_map = dict(
         sorted(
             map(

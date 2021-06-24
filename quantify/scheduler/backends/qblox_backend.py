@@ -5,13 +5,12 @@ from __future__ import annotations
 
 from typing import Dict, Any, Tuple, Callable
 
-from quantify.scheduler.helpers.schedule import get_total_duration
-
 # pylint: disable=no-name-in-module
 from quantify.utilities.general import (
     make_hash,
     without,
 )
+from quantify.scheduler.helpers.schedule import get_total_duration
 
 from quantify.scheduler.backends.qblox import helpers
 from quantify.scheduler.backends.qblox import instrument_compilers
@@ -31,10 +30,10 @@ def generate_ext_local_oscillators(
 
     Parameters
     ----------
-    total_play_time:
+    total_play_time
         Total time the schedule is played for, not counting repetitions.
-    hardware_cfg:
-        Hardware mapping dictionary
+    hardware_cfg
+        Hardware mapping dictionary.
 
     Returns
     -------
@@ -72,7 +71,7 @@ def generate_port_clock_to_device_map(
 
     Parameters
     ----------
-    mapping:
+    mapping
         The hardware mapping config.
 
     Returns
@@ -113,19 +112,19 @@ def _assign_frequencies(
 
     Parameters
     ----------
-    device_compilers:
+    device_compilers
         A dictionary containing all the `InstrumentCompiler` objects for which IQ
         modulation is used. The keys correspond to the QCoDeS names of the instruments.
-    lo_compilers:
+    lo_compilers
         A dictionary containing all the `LocalOscillator` objects that are used. The
         keys correspond to the QCoDeS names of the instruments.
-    hw_mapping:
+    hw_mapping
         The hardware mapping dictionary describing the whole setup.
-    portclock_mapping:
+    portclock_mapping
         A dictionary that maps tuples containing a port and a clock to names of
         instruments. The port and clock combinations are unique, but multiple portclocks
         can point to the same instrument.
-    schedule_resources:
+    schedule_resources
         The schedule resources containing all the clocks.
 
     Returns
@@ -189,17 +188,14 @@ def _assign_pulse_and_acq_info_to_devices(
 
     Parameters
     ----------
-    schedule:
+    schedule
         The schedule to extract the pulse and acquisition info from.
-    device_compilers:
+    device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    portclock_mapping:
+    portclock_mapping
         A dictionary that maps tuples containing a port and a clock to names of
         instruments. The port and clock combinations are unique, but multiple portclocks
         can point to the same instrument.
-
-    Returns
-    -------
 
     Raises
     ------
@@ -207,7 +203,7 @@ def _assign_pulse_and_acq_info_to_devices(
         This exception is raised then the function encountered an operation that has no
         pulse or acquisition info assigned to it.
     """
-    # for op_hash, op_data in schedule.operations.items():
+
     for op_timing_constraint in schedule.timing_constraints:
         op_hash = op_timing_constraint["operation_repr"]
         op_data = schedule.operations[op_hash]
@@ -269,10 +265,10 @@ def _construct_compiler_objects(
 
     Parameters
     ----------
-    total_play_time:
+    total_play_time
         Total time that it takes to execute a single repetition of the schedule with the
         current hardware setup as defined in the mapping.
-    mapping:
+    mapping
         The hardware mapping dictionary.
 
     Returns
@@ -312,16 +308,16 @@ def hardware_compile(
 
     Parameters
     ----------
-    schedule:
+    schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
-    hardware_map:
+    hardware_map
         The hardware mapping of the setup.
 
     Returns
     -------
     :
-        The compiled program
+        The compiled program.
     """
     total_play_time = get_total_duration(schedule)
 
