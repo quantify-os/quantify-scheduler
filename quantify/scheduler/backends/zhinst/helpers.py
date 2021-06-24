@@ -90,7 +90,7 @@ def set_awg_value(
     value: Union[int, str],
 ) -> None:
     """
-    Sets the vector value of a ZI node.
+    Sets the value of a AWG module node.
 
     Parameters
     ----------
@@ -101,7 +101,7 @@ def set_awg_value(
     node :
         The node path.
     value :
-        The new node vector value.
+        The new node value.
     """
     logger.debug(node)
 
@@ -129,10 +129,22 @@ def set_and_compile_awg_seqc(
     value :
         The seqc program.
     """
-    set_awg_value(instrument, awg_index, node, value)
-
+    current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awg = awgs[awg_index]
+
+    # Assert the current Sequencer program with the new
+    if (
+        len(current_seqc) == len(value)
+        and hash(current_seqc) == hash(value)
+        and current_seqc == value
+    ):
+        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequencer"')
+        return
+
+    # Set the new 'compiler/sourcestring' value
+    set_awg_value(instrument, awg_index, node, value)
+
     awg_module = awg._awg._module
     status: int = -1
     while status == -1:
@@ -148,7 +160,7 @@ def set_and_compile_awg_seqc(
         raise Warning(f"Compiled with warning: \n{status_str}")
 
     if status == 0:
-        print("Compilation successful")
+        print(f"{awg.name}: Compilation successful")
 
     tik = time.get_time()
     progress: float = awg_module.get_double("progress")
@@ -161,7 +173,7 @@ def set_and_compile_awg_seqc(
         status: int = awg_module.get_int("/elf/status")
 
     sequencer_status = "ELF file uploaded" if status == 0 else "FAILED!!"
-    print(f"{awg.name}: Sequencer status: {sequencer_status}")
+    print(f"{awg.name}: Compilation status: {sequencer_status}")
 
 
 def set_wave_vector(
