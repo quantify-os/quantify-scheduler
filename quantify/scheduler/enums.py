@@ -6,7 +6,7 @@ from enum import Enum, unique
 
 
 @unique
-class SignalModeType(Enum):
+class SignalModeType(str, Enum):
 
     """
     The signal output enum type.
@@ -20,7 +20,7 @@ class SignalModeType(Enum):
 
 
 @unique
-class ReferenceSourceType(Enum):
+class ReferenceSourceType(str, Enum):
 
     """
     The reference source enum type.
@@ -35,7 +35,7 @@ class ReferenceSourceType(Enum):
 
 
 @unique
-class ModulationModeType(Enum):
+class ModulationModeType(str, Enum):
 
     """
     The modulation mode enum type.
@@ -51,7 +51,7 @@ class ModulationModeType(Enum):
 
 
 @unique
-class BinMode(Enum):
+class BinMode(str, Enum):
 
     """
     The acquisition protocol bin mode enum type.
