@@ -136,7 +136,7 @@ class InstrumentCompiler(ABC):
         return portclocks_used
 
     @abstractmethod
-    def compile(self, repetitions: int = 1) -> Any:
+    def compile(self, repetitions: int = 1) -> Dict[str, Any]:
         """
         An abstract method that should be overridden by a subclass to implement the
         actual compilation. Method turns the pulses and acquisitions added to the device
@@ -150,8 +150,7 @@ class InstrumentCompiler(ABC):
         Returns
         -------
         :
-            A data structure representing the compiled program. The type is
-            dependent on implementation.
+            A data structure representing the compiled program.
         """
 
 
