@@ -109,6 +109,13 @@ def _assign_pulse_and_acq_info_to_devices(
             uuid = make_hash(without(pulse_data, "t0"))
             combined_data = OpInfo(data=pulse_data, timing=pulse_start_time, uuid=uuid)
 
+            if (port, clock) not in portclock_mapping:
+                raise KeyError(
+                    f"Could not assign pulse data to device. The combination"
+                    f" of port {port} and clock {clock} could not be found "
+                    f"in mapping.\n\nAre both the port and clock specified in"
+                    f" the hardware mapping?\n\nRelevant operation:\n{combined_data}."
+                )
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
 
