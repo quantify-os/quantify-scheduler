@@ -15,7 +15,7 @@ def trace_schedule(
     integration_time: float,
     port: str,
     clock: str,
-    init_duration: int = 1e-6,
+    init_duration: int = 200e-6,
     repetitions: int = 1,
 ) -> types.Schedule:
     """
@@ -101,12 +101,11 @@ def two_tone_trace_schedule(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    init_duration: float = 1e-6,
+    init_duration: float = 200e-6,
     repetitions: int = 1,
 ) -> types.Schedule:
     """
-    Generate a schedule for performing a two-tone
-    raw trace acquisition.
+    Generate a schedule for performing a two-tone raw trace acquisition.
 
     Parameters
     ----------

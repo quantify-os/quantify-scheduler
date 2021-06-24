@@ -15,7 +15,7 @@ from quantify.scheduler.resources import ClockResource
 
 # pylint: disable=too-many-arguments
 def rabi_sched(
-    pulse_amplitude: Union[np.ndarray, float],
+    pulse_amp: Union[np.ndarray, float],
     pulse_duration: Union[np.ndarray, float],
     frequency: float,
     qubit: str,
@@ -31,7 +31,7 @@ def rabi_sched(
 
     Parameters
     ----------
-    pulse_amplitude
+    pulse_amp
         amplitude of the Rabi pulse in V.
     pulse_duration
         duration of the Gaussian shaped Rabi pulse. Corresponds to 4 sigma.
@@ -52,7 +52,7 @@ def rabi_sched(
     """
 
     # ensure pulse_amplitude and pulse_duration are iterable.
-    amps = np.asarray(pulse_amplitude)
+    amps = np.asarray(pulse_amp)
     amps = amps.reshape(amps.shape or (1,))
     durations = np.asarray(pulse_duration)
     durations = durations.reshape(durations.shape or (1,))
@@ -65,7 +65,7 @@ def rabi_sched(
         durations = np.ones(np.shape(amps)) * durations
     elif len(durations) != len(amps):
         raise ValueError(
-            f"Shapes of pulse_amplitude ({pulse_amplitude.shape}) and "
+            f"Shapes of pulse_amplitude ({pulse_amp.shape}) and "
             f"pulse_duration ({pulse_duration.shape}) are incompatible."
         )
 
@@ -231,11 +231,8 @@ def echo_sched(
     Schedule sequence
         .. centered:: Reset -- pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 -- Measure
 
-
-
     See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
     model of decoherence and the echo experiment.
-
 
     Parameters
     ----------
@@ -316,7 +313,6 @@ def allxy_sched(
         .. |reed_allxy| replace:: *Reed "Entanglement and Quantum Error Correction with Superconducting Qubits." Yale University (2013).*
 
         .. _reed_allxy: https://arxiv.org/abs/1311.6759
-
     """
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
@@ -377,7 +373,7 @@ def rabi_pulse_sched(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    reset_duration: float,
+    init_duration: float,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -422,18 +418,16 @@ def rabi_pulse_sched(
         in seconds.
     ro_integration_time
         integration time of the data acquisition in seconds.
-    reset_duration
-        time it takes for the qubit to initialize.
+    init_duration :
+        The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
-
-
     """
     schedule = Schedule("Rabi schedule (pulse)", repetitions)
     schedule.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))
     schedule.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
-    schedule.add(IdlePulse(duration=reset_duration), label="qubit reset")
+    schedule.add(IdlePulse(duration=init_duration), label="qubit reset")
     schedule.add(
         DRAGPulse(
             duration=mw_pulse_duration,
