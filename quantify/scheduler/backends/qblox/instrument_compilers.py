@@ -3,7 +3,7 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 from quantify.scheduler.backends.qblox import compiler_container
 from quantify.scheduler.backends.qblox.compiler_abc import (
