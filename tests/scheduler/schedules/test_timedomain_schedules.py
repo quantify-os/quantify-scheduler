@@ -271,6 +271,7 @@ class TestRamseySched:
         cls.sched_kwargs = {
             "times": np.linspace(4.0e-6, 80e-6, 20),
             "qubit": "q0",
+            "artificial_detuning": 250e3,
             "repetitions": 10,
         }
 
@@ -295,6 +296,7 @@ class TestRamseySched:
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
             "qubit": "q0",
+            "artificial_detuning": 250e3,
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
@@ -302,7 +304,10 @@ class TestRamseySched:
 
     def test_operations(self):
         # 4 for a regular Ramsey, more with artificial detuning
-        assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
+        if self.sched_kwargs["artificial_detuning"]:
+            assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
+        else:
+            assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -384,10 +389,42 @@ class TestAllXYSched:
                 assert constr["label"][:11] == "Measurement"
 
     def test_operations(self):
-        # 7 operations (x90, y90, X180, Y180, idle, reset measurement)
+        # 7 operations (x90, y90, X180, Y180, idle, reset, measurement)
         assert len(self.sched.operations) == 7
 
-    @pytest.mark.xfail  # see #89
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
+
+
+class TestAllXYSchedElement:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "qubit": "q0",
+            "elt_select_idx": 4,
+        }
+
+        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        for i, constr in enumerate(self.sched.timing_constraints):
+            if i % 4 == 0:
+                assert constr["label"][:5] == "Reset"
+            if (i - 3) % 4 == 0:
+                assert constr["label"][:11] == "Measurement"
+
+    def test_operations(self):
+        # 4 operations (X180, Y180, reset, measurement)
+        assert len(self.sched.operations) == 4
+
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
         qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)

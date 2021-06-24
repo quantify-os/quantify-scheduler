@@ -59,6 +59,7 @@ Merged branches and closed issues
 * Pulsar backend v0.2.2 check. (!48)
 * Fix for issue with acq delay . (!45)
 * Fix for issue #52. (!44)
+* Add artificial detuning to Ramsey schedule (!120)
 
 
 
