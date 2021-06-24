@@ -4,6 +4,7 @@
 from __future__ import annotations
 from functools import partial
 
+import itertools
 import json
 import dataclasses
 from pathlib import Path
@@ -22,7 +23,7 @@ class ZISetting:
 
     node: str
     value: Any
-    apply_fn: Callable
+    apply_fn: Callable[[base.ZIBaseInstrument, str, Any], None]
 
     def as_dict(self) -> Dict[str, Any]:
         """
@@ -95,9 +96,26 @@ class ZISettings:
         for (_, setting) in self._awg_settings:
             setting.apply(instrument)
 
-        for setting in self._daq_settings:
-            setting.node = f"/{instrument._serial}/{setting.node}"
-            setting.apply(instrument)
+        def sort_by_fn(setting: ZISetting):
+            """Returns ZISetting callable apply function as a sorter."""
+            return setting.apply_fn
+
+        for apply_fn, group in itertools.groupby(self._daq_settings, sort_by_fn):
+            if apply_fn is zi_helpers.set_value:
+                values: List[Tuple[str, Any]] = list()
+                for setting in group:
+                    node = f"/{instrument._serial}/{setting.node}"
+                    values.append((node, setting.value))
+                zi_helpers.set_values(instrument, values)
+            else:
+                for setting in group:
+                    # Call apply_fn by property to avoid a deepcopy of all settings.
+                    node = f"/{instrument._serial}/{setting.node}"
+                    setting.apply_fn(
+                        instrument=instrument,
+                        node=node,
+                        value=setting.value,
+                    )
 
     def serialize(self, root: Path, instrument: base.ZIBaseInstrument) -> Path:
         """

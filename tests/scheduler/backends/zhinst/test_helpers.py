@@ -56,6 +56,21 @@ def test_set_value(mocker, node: str):
     controller._set.assert_called_with("/dev1234/qas/0/integration/mode", 1)
 
 
+def test_set_values(mocker):
+    # Arrange
+    controller = mocker.Mock()
+
+    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=ZIBaseInstrument)
+    instrument._controller = controller
+    values = [("/dev2299/qas/0/integration/mode", 1), ("/dev2299/sigouts/1/offset", 0)]
+
+    # Act
+    zi_helpers.set_values(instrument, values)
+
+    # Assert
+    controller._set.assert_called_with(values)
+
+
 def test_set_wave_vector(mocker):
     # Arrange
     set_vector = mocker.patch.object(zi_helpers, "set_vector")
