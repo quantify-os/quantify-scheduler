@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable=wrong-import-position, unused-import, invalid-name
 #
 # quantify documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  9 13:47:02 2017.
@@ -51,7 +52,7 @@ extensions = [
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
     "scanpydoc.elegant_typehints",
-    "enum_tools.autoenum",
+    # "enum_tools.autoenum",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -65,6 +66,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
+    "jsonschema": ("https://python-jsonschema.readthedocs.io/en/stable/", None),
     "quantify-core": (
         "https://quantify-quantify-core.readthedocs-hosted.com/en/develop/",
         None,
@@ -233,7 +235,9 @@ autodoc_member_order = "groupwise"
 # https://github.com/QCoDeS/Qcodes/pull/2909
 # but the issues popped up again, so this is the best and easier solution so far
 
-# pylint: disable=wrong-import-position,unused-import
+# qcodes imports scipy under the hood but since scipy=1.7.0 it needs to be imported
+# here with typing.TYPE_CHECKING = True otherwise we run into quantify-core#
+import lmfit  # related to quantify-core#218 and quantify-core#221
 import qcodes
 import marshmallow
 

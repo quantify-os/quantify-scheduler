@@ -5,10 +5,9 @@ from __future__ import annotations
 from functools import partial
 
 import json
-from copy import deepcopy
-from dataclasses import dataclass
+import dataclasses
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union, cast
 
 import numpy as np
 from zhinst.qcodes import base
@@ -17,7 +16,7 @@ from quantify.scheduler.backends.types import zhinst as zi_types
 from quantify.scheduler.backends.zhinst import helpers as zi_helpers
 
 
-@dataclass
+@dataclasses.dataclass
 class ZISetting:
     """Zurich Instruments Settings record type."""
 
@@ -51,18 +50,22 @@ class ZISettings:
 
     def __init__(
         self,
-        instrument: base.ZIBaseInstrument,
         daq_settings: List[ZISetting],
         awg_settings: List[Tuple[int, ZISetting]],
     ):
-        self._instrument = instrument
-        self._daq_settings = daq_settings
-        self._awg_settings = awg_settings
+        """
+        Create a new instance of ZISettings which is a collection of AWG and DAQ
+        settings for a Zurich Instruments device.
 
-        # Prefix all nodes with the instrument's serial.
-        for setting in self._daq_settings:
-            setting.node = f"/{instrument._serial}/{setting.node}"
-
+        Parameters
+        ----------
+        daq_settings :
+            The data acquisition node settings.
+        awg_settings :
+            The AWG(s) node settings.
+        """
+        self._daq_settings: List[ZISetting] = daq_settings
+        self._awg_settings: List[Tuple[int, ZISetting]] = awg_settings
         self._awg_indexes = [awg_index for (awg_index, _) in self._awg_settings]
 
     @property
@@ -82,79 +85,185 @@ class ZISettings:
         for setting in self._daq_settings:
             collection = {**collection, **setting.as_dict()}
 
-        for (_, setting) in self._awg_settings:
-            collection = {**collection, **setting.as_dict()}
+        for (awg_index, setting) in self._awg_settings:
+            collection = {**collection, **{setting.node: {awg_index: setting.value}}}
 
         return collection
 
-    def apply(self) -> None:
+    def apply(self, instrument: base.ZIBaseInstrument) -> None:
         """Apply all settings to the instrument."""
-        for setting in self._daq_settings:
-            setting.apply(self._instrument)
-
         for (_, setting) in self._awg_settings:
-            setting.apply(self._instrument)
+            setting.apply(instrument)
 
-    def serialize(self, root: Path) -> Path:
+        for setting in self._daq_settings:
+            setting.node = f"/{instrument._serial}/{setting.node}"
+            setting.apply(instrument)
+
+    def serialize(self, root: Path, instrument: base.ZIBaseInstrument) -> Path:
         """
-        Serializes the settings to file storage.
+        Serializes the ZISettings to file storage.
+        The parent '{instrument.name}_settings.json' file contains references to all
+        child files.
+
+        While settings are stored in JSON the waveforms are stored in CSV.
+
+        Parameters
+        ----------
+        root :
+            The root path to serialized files.
+        instrument :
+            The instrument belonging to these settings.
 
         Returns
         -------
         :
+            The path to the parent JSON file.
         """
-        collection = dict()
-        _tmp_daq_list = deepcopy(self._daq_settings)
-        _tmp_awg_list = deepcopy(self._awg_settings)
+        collection = {
+            "name": instrument.name,
+            "serial": instrument._serial,
+            "type": instrument._type,
+        }
+        # Copy the settings to avoid modifying the original values.
+        _tmp_daq_list = list(map(dataclasses.replace, self._daq_settings))
+        _tmp_awg_list = list(
+            map(
+                lambda pair: (pair[0], dataclasses.replace(pair[1])), self._awg_settings
+            )
+        )
 
         for setting in _tmp_daq_list:
             if "waveform/waves" in setting.node:
                 nodes = setting.node.split("/")
-                awg_index = nodes[3]
-                wave_index = nodes[-1]
-                name = (
-                    f"{self._instrument._serial}_"
-                    + f"awg{awg_index}_wave{wave_index}.csv"
-                )
+                awg_index = int(nodes[1])
+                wave_index = int(nodes[-1])
+                name = f"{instrument.name}_awg{awg_index}_wave{wave_index}.csv"
                 file_path = root / name
 
                 columns = 2
                 waveform_data = np.reshape(
-                    setting.value, (int(len(setting.value) / columns), -1)
+                    setting.value, (len(setting.value) // columns, -1)
                 )
                 np.savetxt(file_path, waveform_data, delimiter=";")
 
                 setting.value = str(file_path)
             elif "commandtable/data" in setting.node:
-                awg_index = setting.node.split("/")[3]
-                name = f"{self._instrument._serial}_awg{awg_index}.json"
+                awg_index = setting.node.split("/")[1]
+                name = f"{instrument.name}_awg{awg_index}.json"
                 file_path = root / name
                 file_path.touch()
                 file_path.write_text(json.dumps(setting.value))
 
                 setting.value = str(file_path)
+            elif "integration/weights" in setting.node:
+                setting.value = np.array2string(
+                    setting.value.tolist(), separator=", ", precision=9
+                )
+            elif "rotations/" in setting.node:
+                setting.value = str(setting.value).replace(" ", "")
 
             collection = {**collection, **setting.as_dict()}
 
         for (awg_index, setting) in _tmp_awg_list:
-
-            if "compiler/sourcestring" in setting.node:
+            if setting.node == "compiler/sourcestring":
                 if "compiler/sourcestring" not in collection:
-                    collection["compiler/sourcestring"] = list()
+                    collection["compiler/sourcestring"] = dict()
 
-                name = f"{self._instrument._serial}_awg{awg_index}.seqc"
+                name = f"{instrument.name}_awg{awg_index}.seqc"
                 file_path = root / name
                 file_path.touch()
                 file_path.write_text(setting.value)
 
                 setting.value = str(file_path)
-                collection["compiler/sourcestring"].append(setting.value)
+                collection["compiler/sourcestring"][str(awg_index)] = setting.value
 
-        file_path = root / f"{self._instrument._serial}_settings.json"
+        file_path = root / f"{instrument.name}_settings.json"
         file_path.touch()
         file_path.write_text(json.dumps(collection))
 
         return file_path
+
+    @classmethod
+    def deserialize(  # pylint: disable=too-many-locals,too-many-branches
+        cls, settings_path: Path
+    ) -> ZISettingsBuilder:
+        """
+        Deserializes the JSON settings for Zurich Instruments in to the
+        :class:`.ZISettingsBuilder`.
+
+        Parameters
+        ----------
+        settings_path :
+            The path to the parent JSON file.
+
+        Returns
+        -------
+        :
+            The ZISettingsBuilder containing all the deserialized settings.
+
+        Raises
+        ------
+        ValueError
+            If the settings_path does not end with '_settings.json'.
+        """
+        if not settings_path.name.endswith("_settings.json"):
+            raise ValueError(
+                "Invalid value for param 'settings_path' "
+                "provide path to '{instrument}_settings.json'"
+            )
+
+        settings_data: Dict[str, Any] = json.loads(settings_path.read_text())
+        settings_data.pop("name")
+        settings_data.pop("serial")
+        device_type_str: str = settings_data.pop("type")
+        device_type = zi_types.DeviceType(device_type_str.upper())
+        builder = ZISettingsBuilder()
+
+        for node in settings_data:
+            value = settings_data[node]
+
+            if "waveform/waves" in node:
+                nodes = node.split("/")
+                awg_index = int(nodes[1])
+                wave_index = int(nodes[-1])
+                waveform_data = np.loadtxt(value, delimiter=";")
+                if device_type == zi_types.DeviceType.UHFQA:
+                    builder.with_csv_wave_vector(awg_index, wave_index, waveform_data)
+                else:
+                    builder.with_wave_vector(awg_index, wave_index, waveform_data)
+            elif "commandtable/data" in node:
+                awg_index = int(node.split("/")[1])
+                json_str = Path(value).read_text()
+                json_data = json.loads(json_str)
+                builder.with_commandtable_data(awg_index, json_data)
+            elif "integration/weights" in node:
+                integration_weights = np.array(value)
+                parts = node.split("/")
+                channel_index = int(parts[4])
+                if node.endswith("real"):
+                    builder.with_qas_integration_weights_real(
+                        channel_index, integration_weights
+                    )
+                elif node.endswith("imag"):
+                    builder.with_qas_integration_weights_imag(
+                        channel_index, integration_weights
+                    )
+            elif "rotations/" in node:
+                channel_index = int(node.split("/")[-1])
+                complex_value = complex(value.replace(" ", ""))
+                builder.with_qas_rotations(channel_index, complex_value)
+            elif node == "compiler/sourcestring":
+                seqc_per_awg = cast(Dict[int, str], value)
+                for awg_index, seqc_file in seqc_per_awg.items():
+                    seqc_path = Path(seqc_file)
+                    seqc_content = seqc_path.read_text()
+                    builder.with_compiler_sourcestring(int(awg_index), seqc_content)
+            else:
+                builder._daq_settings.append(
+                    ZISetting(node, value, zi_helpers.set_value)
+                )
+
+        return builder
 
 
 class ZISettingsBuilder:
@@ -167,13 +276,13 @@ class ZISettingsBuilder:
     class is the resulting set that holds settings.
     """
 
-    _daq_settings: Dict[str, ZISetting]
-    _awg_settings: Dict[str, Tuple[int, ZISetting]]
+    _daq_settings: List[ZISetting]
+    _awg_settings: List[Tuple[str, Tuple[int, ZISetting]]]
 
     def __init__(self):
         """Creates a new instance of ZISettingsBuilder"""
-        self._daq_settings = dict()
-        self._awg_settings = dict()
+        self._daq_settings = list()
+        self._awg_settings = list()
 
     def _set_daq(self, setting: ZISetting) -> ZISettingsBuilder:
         """
@@ -187,7 +296,7 @@ class ZISettingsBuilder:
         -------
         :
         """
-        self._daq_settings[setting.node] = setting
+        self._daq_settings.append(setting)
         return self
 
     def _set_awg(self, awg_index: int, setting: ZISetting) -> ZISettingsBuilder:
@@ -203,7 +312,7 @@ class ZISettingsBuilder:
         -------
         :
         """
-        self._awg_settings[f"{awg_index}/{setting.node}"] = (awg_index, setting)
+        self._awg_settings.append((setting.node, (awg_index, setting)))
         return self
 
     def with_defaults(
@@ -246,6 +355,42 @@ class ZISettingsBuilder:
                 f"awgs/{awg_index:d}/waveform/waves/{wave_index:d}",
                 vector,
                 zi_helpers.set_vector,
+            )
+        )
+
+    def with_csv_wave_vector(
+        self, awg_index: int, wave_index: int, vector: Union[List, str]
+    ) -> ZISettingsBuilder:
+        """
+        Adds the Instruments waveform vector setting
+        by index for an awg by index.
+
+        This equivalent to `with_wave_vector` only it does
+        not upload the setting to the node, because
+        for loading waveforms using a CSV file this is
+        not required.
+
+        Parameters
+        ----------
+        awg_index :
+        wave_index :
+        vector :
+
+        Returns
+        -------
+        :
+        """
+
+        def void(
+            instrument: base.ZIBaseInstrument, node, value
+        ):  # pylint: disable=unused-argument
+            pass
+
+        return self._set_daq(
+            ZISetting(
+                f"awgs/{awg_index:d}/waveform/waves/{wave_index:d}",
+                vector,
+                void,
             )
         )
 
@@ -428,6 +573,26 @@ class ZISettingsBuilder:
             )
         )
 
+    def with_qas_result_reset(self, value: int) -> ZISettingsBuilder:
+        """
+        Adds the Instruments QAS Result reset setting.
+
+        Parameters
+        ----------
+        value :
+
+        Returns
+        -------
+        :
+        """
+        return self._set_daq(
+            ZISetting(
+                "qas/0/result/reset",
+                value,
+                zi_helpers.set_value,
+            )
+        )
+
     def with_qas_integration_length(self, n_samples: int) -> ZISettingsBuilder:
         """
         Adds the Instruments QAS Monitor integration
@@ -474,28 +639,24 @@ class ZISettingsBuilder:
             )
         )
 
-    def with_qas_integration_weights(
+    def with_qas_integration_weights_real(
         self,
         channels: Union[int, List[int]],
-        weights_i: List[int],
-        weights_q: List[int],
+        real: List[int],
     ) -> ZISettingsBuilder:
         """
-        Adds the Instruments QAS Monitor integration
-        weights setting.
+        Adds the Instruments QAS Monitor integration real weights setting.
 
         Parameters
         ----------
         channels :
-        weights_i :
-        weights_q :
+        real :
 
         Returns
         -------
         :
         """
-        assert len(weights_i) <= 4096
-        assert len(weights_q) <= 4096
+        assert len(real) <= 4096
 
         node = "qas/0/integration/weights/"
         channels_list = [channels] if isinstance(channels, int) else channels
@@ -503,14 +664,38 @@ class ZISettingsBuilder:
             self._set_daq(
                 ZISetting(
                     f"{node}{channel_index}/real",
-                    np.array(weights_i),
+                    np.array(real),
                     zi_helpers.set_vector,
                 )
             )
+        return self
+
+    def with_qas_integration_weights_imag(
+        self,
+        channels: Union[int, List[int]],
+        imag: List[int],
+    ) -> ZISettingsBuilder:
+        """
+        Adds the Instruments QAS Monitor integration imaginary weights setting.
+
+        Parameters
+        ----------
+        channels :
+        imag :
+
+        Returns
+        -------
+        :
+        """
+        assert len(imag) <= 4096
+
+        node = "qas/0/integration/weights/"
+        channels_list = [channels] if isinstance(channels, int) else channels
+        for channel_index in channels_list:
             self._set_daq(
                 ZISetting(
                     f"{node}{channel_index}/imag",
-                    np.array(weights_q),
+                    np.array(imag),
                     zi_helpers.set_vector,
                 )
             )
@@ -576,8 +761,28 @@ class ZISettingsBuilder:
             )
         )
 
+    def with_qas_monitor_reset(self, value: int) -> ZISettingsBuilder:
+        """
+        Adds the Instruments QAS Monitor reset setting.
+
+        Parameters
+        ----------
+        value :
+
+        Returns
+        -------
+        :
+        """
+        return self._set_daq(
+            ZISetting(
+                "qas/0/monitor/reset",
+                value,
+                zi_helpers.set_value,
+            )
+        )
+
     def with_qas_rotations(
-        self, channels: Union[int, List[int]], degrees: int
+        self, channels: Union[int, List[int]], value: Union[int, complex]
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments QAS rotation setting.
@@ -585,19 +790,22 @@ class ZISettingsBuilder:
         Parameters
         ----------
         channels :
-        degrees :
+        value :
+            Number of degrees or a complex value.
 
         Returns
         -------
         :
         """
-        complex_value = np.exp(1j * np.deg2rad(degrees))
+        if isinstance(value, int):
+            value = np.exp(1j * np.deg2rad(value))
+
         channels_list = [channels] if isinstance(channels, int) else channels
         for channel_index in channels_list:
             self._set_daq(
                 ZISetting(
                     f"qas/0/rotations/{channel_index}",
-                    complex_value,
+                    value,
                     zi_helpers.set_value,
                 )
             )
@@ -650,6 +858,61 @@ class ZISettingsBuilder:
             ZISetting(f"sigouts/{channel_1:d}/on", onoff_1, zi_helpers.set_value)
         )
 
+    def with_sigout_offset(
+        self, channel_index: int, offset_in_millivolts: float
+    ) -> ZISettingsBuilder:
+        """
+        Adds the channel sigout offset
+        setting in volts.
+
+        Parameters
+        ----------
+        channel_index :
+        offset_in_millivolts :
+
+        Returns
+        -------
+        :
+        """
+        return self._set_daq(
+            ZISetting(
+                f"sigouts/{channel_index:d}/offset",
+                offset_in_millivolts,
+                zi_helpers.set_value,
+            )
+        )
+
+    def with_gain(self, awg_index: int, gain: Tuple[float, float]) -> ZISettingsBuilder:
+        """
+        Adds the gain settings
+        for the Instruments awg by index.
+
+        Parameters
+        ----------
+        awg_index :
+        gain :
+            The gain values for output 1 and 2.
+
+        Returns
+        -------
+        :
+        """
+        gain1, gain2 = gain
+
+        assert gain1 >= -1 <= 1
+        assert gain2 >= -1 <= 1
+
+        self._set_daq(
+            ZISetting(
+                f"awgs/{awg_index:d}/outputs/0/gains/0", gain1, zi_helpers.set_value
+            )
+        )
+        return self._set_daq(
+            ZISetting(
+                f"awgs/{awg_index:d}/outputs/1/gains/1", gain2, zi_helpers.set_value
+            )
+        )
+
     def with_compiler_sourcestring(
         self, awg_index: int, seqc: str
     ) -> ZISettingsBuilder:
@@ -671,22 +934,16 @@ class ZISettingsBuilder:
             ZISetting(
                 "compiler/sourcestring",
                 seqc,
-                partial(zi_helpers.set_awg_value, awg_index=awg_index),
+                partial(zi_helpers.set_and_compile_awg_seqc, awg_index=awg_index),
             ),
         )
 
-    def build(self, instrument: base.ZIBaseInstrument) -> ZISettings:
+    def build(self) -> ZISettings:
         """
         Builds the ZISettings class.
-
-        Parameters
-        ----------
-        instrument :
 
         Returns
         -------
         :
         """
-        return ZISettings(
-            instrument, self._daq_settings.values(), self._awg_settings.values()
-        )
+        return ZISettings(self._daq_settings, dict(self._awg_settings).values())

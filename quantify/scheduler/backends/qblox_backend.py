@@ -10,6 +10,7 @@ from quantify.utilities.general import (
     make_hash,
     without,
 )
+from quantify.scheduler.helpers.schedule import get_total_duration
 
 from quantify.scheduler.backends.qblox import helpers, compiler_container
 from quantify.scheduler.backends.types.qblox import OpInfo
@@ -66,17 +67,14 @@ def _assign_pulse_and_acq_info_to_devices(
 
     Parameters
     ----------
-    schedule:
+    schedule
         The schedule to extract the pulse and acquisition info from.
-    device_compilers:
+    device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    portclock_mapping:
+    portclock_mapping
         A dictionary that maps tuples containing a port and a clock to names of
         instruments. The port and clock combinations are unique, but multiple portclocks
         can point to the same instrument.
-
-    Returns
-    -------
 
     Raises
     ------
@@ -84,8 +82,9 @@ def _assign_pulse_and_acq_info_to_devices(
         This exception is raised then the function encountered an operation that has no
         pulse or acquisition info assigned to it.
     """
+
     for op_timing_constraint in schedule.timing_constraints:
-        op_hash = op_timing_constraint["operation_hash"]
+        op_hash = op_timing_constraint["operation_repr"]
         op_data = schedule.operations[op_hash]
         if not op_data.valid_pulse and not op_data.valid_acquisition:
             raise RuntimeError(
@@ -149,16 +148,16 @@ def hardware_compile(
 
     Parameters
     ----------
-    schedule:
+    schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
-    hardware_map:
+    hardware_map
         The hardware mapping of the setup.
 
     Returns
     -------
     :
-        The compiled program
+        The compiled program.
     """
     portclock_map = generate_port_clock_to_device_map(hardware_map)
 

@@ -90,6 +90,7 @@ ENV/
 
 # IDE settings
 *.sublime-*
+.vscode
 
 # System files
 *.DS_Store

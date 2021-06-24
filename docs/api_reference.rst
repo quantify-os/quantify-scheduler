@@ -206,17 +206,10 @@ pulse_diagram
 .. automodule:: quantify.scheduler.visualization.pulse_diagram
     :members:
 
-
 controlstack
 -------------
 
 .. automodule:: quantify.scheduler.controlstack
-    :members:
-
-station
-~~~~~~~
-
-.. automodule:: quantify.scheduler.controlstack.station
     :members:
 
 base
@@ -224,7 +217,21 @@ base
 
 .. automodule:: quantify.scheduler.controlstack.components.base
     :members:
+    :show-inheritance:
 
+qblox
+~~~~~
+
+.. automodule:: quantify.scheduler.controlstack.components.qblox
+    :members:
+    :show-inheritance:
+
+zhinst
+~~~~~~
+
+.. automodule:: quantify.scheduler.controlstack.components.zhinst
+    :members:
+    :show-inheritance:
 
 miscellaneous
 -------------
