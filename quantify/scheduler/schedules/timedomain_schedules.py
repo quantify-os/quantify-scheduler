@@ -47,7 +47,7 @@ def rabi_sched(
         if set to :code:`None`, will use the naming convention :code:`"<qubit>.01"` to
         infer the clock.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
     """
 
     # ensure pulse_amplitude and pulse_duration are iterable.
@@ -117,7 +117,7 @@ def t1_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the T1 experiment on.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------
@@ -171,7 +171,7 @@ def ramsey_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------
@@ -229,7 +229,7 @@ def echo_sched(
     times
         an array of wait times between the
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------
@@ -282,7 +282,7 @@ def allxy_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------
@@ -400,7 +400,7 @@ def rabi_pulse_sched(
     reset_duration
         time it takes for the qubit to initialize.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
 
     """

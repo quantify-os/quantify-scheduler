@@ -46,7 +46,7 @@ def trace_schedule(
     init_duration :
         The relaxation time or dead time.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------
@@ -145,7 +145,7 @@ def two_tone_trace_schedule(
     init_duration :
         The relaxation time or dead time.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------

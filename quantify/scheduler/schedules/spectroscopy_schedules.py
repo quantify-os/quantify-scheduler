@@ -33,8 +33,8 @@ def heterodyne_spec_sched(
     frequency
         frequency of the spectroscopy pulse and of the data acquisition in Hertz.
     acquisition_delay
-        start of the data acquisition with respect to the start of the spectroscopy pulse
-        in seconds.
+        start of the data acquisition with respect to the start of the spectroscopy
+        pulse in seconds.
     integration_time
         integration time of the data acquisition in seconds.
     port
@@ -44,7 +44,7 @@ def heterodyne_spec_sched(
     buffer_time
         time between end of the acquisition and start of the next spectroscopy pulse.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
@@ -140,7 +140,7 @@ def two_tone_spec_sched(
     buffer_time
         time between end of the acquisition and start of the next spectroscopy pulse.
     repetitions
-        The amount of times the Schedule will be repeated. (default = 1)
+        The amount of times the Schedule will be repeated.
     """
     sched = Schedule("Pulsed spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
