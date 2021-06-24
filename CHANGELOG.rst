@@ -11,6 +11,8 @@ Merged branches and closed issues
 * Feature: Added zhinst backend option to enable Calibration mode, Closes #103. (!123)
 * Added acquisitions to circuit diagram (!93)
 * Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
+* Added ControlStack (!70)
+* Added Qblox ControlStack components (!112)
 
 
 0.3.0 Multiple backends support (2021-05-20)
