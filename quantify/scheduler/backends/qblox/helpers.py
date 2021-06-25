@@ -172,6 +172,30 @@ def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
     return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
 
+def output_name_to_outputs(name: str) -> Tuple[int, ...]:
+    """
+    Finds the physical outputs associated with the outputs specified in the config.
+
+    Parameters
+    ----------
+    name
+        name of the output channel. e.g. 'complex_output_0'.
+
+    Returns
+    -------
+    :
+        A tuple containing the indices of the physical (real) outputs.
+    """
+    return {
+        "complex_output_0": (0, 1),
+        "complex_output_1": (2, 3),
+        "real_output_0": (0,),
+        "real_output_1": (1,),
+        "real_output_2": (2,),
+        "real_output_3": (3,),
+    }[name]
+
+
 def _generate_waveform_dict(
     waveforms_complex: Dict[str, np.ndarray]
 ) -> Dict[str, dict]:
