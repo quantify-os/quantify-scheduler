@@ -3,7 +3,7 @@
 """Python dataclasses for compilation to Qblox hardware."""
 
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
@@ -162,6 +162,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies whether the NCO will be used or not."""
     sync_en: bool
     """Enables party-line synchronization."""
+    connected_outputs: Union[Tuple[int], Tuple[int, int]]
+    """Specifies which physical outputs this sequencer produces data for."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
     awg_offset_path_0: float = 0.0
