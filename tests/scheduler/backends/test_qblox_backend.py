@@ -463,8 +463,6 @@ def test_emit():
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm.instructions) == 2
-    with pytest.raises(SyntaxError):
-        qasm.emit(q1asm_instructions.ACQUIRE, 0, 1, 120, "argument too many")
 
 
 def test_auto_wait():
