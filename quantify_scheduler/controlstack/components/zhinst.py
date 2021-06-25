@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Dict, TYPE_CHECKING, Any, Optional
 
 from zhinst import qcodes
+from quantify_core.data import handling
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.controlstack.components import base
-from quantify_core.data import handling
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.zhinst_backend import ZIDeviceConfig
