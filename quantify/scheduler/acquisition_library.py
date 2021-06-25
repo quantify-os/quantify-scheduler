@@ -204,7 +204,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
