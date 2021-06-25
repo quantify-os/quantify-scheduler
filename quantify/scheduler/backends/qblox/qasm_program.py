@@ -9,6 +9,7 @@ from typing import List, Union, Optional
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
+from quantify.scheduler.enums import BinMode
 from quantify.scheduler.backends.qblox import q1asm_instructions
 from quantify.scheduler.backends.qblox import constants
 from quantify.scheduler.backends.types.qblox import OpInfo
@@ -368,6 +369,13 @@ class QASMProgram:
             dict.
         """
         self.wait_till_start_operation(acquisition)
+        if acquisition.data["bin_mode"] != BinMode.AVERAGE:
+            raise NotImplementedError(
+                f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
+                f"the qblox backend.\n\nAttempting to use "
+                f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
+            )
+
         measurement_idx = acquisition.data["acq_channel"]
         bin = acquisition.data["acq_index"]
         self.emit(
