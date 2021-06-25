@@ -368,7 +368,16 @@ class QASMProgram:
             dict.
         """
         self.wait_till_start_operation(acquisition)
-        self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, constants.GRID_TIME)
+        measurement_idx = acquisition.data["acq_channel"]
+        bin = acquisition.data["acq_index"]
+        self.emit(
+            q1asm_instructions.ACQUIRE,
+            measurement_idx,
+            bin,
+            idx0,
+            idx1,
+            constants.GRID_TIME,
+        )
         self.elapsed_time += constants.GRID_TIME
 
     def update_runtime_settings(self, operation: OpInfo):
