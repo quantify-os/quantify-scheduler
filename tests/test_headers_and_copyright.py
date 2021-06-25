@@ -13,6 +13,7 @@ def test_header():
     skipdirs = {"docs", ".", "tests", "__pycache__", "venv"}
     failures = []
     quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
+    print(quantify_scheduler_path)
     header_lines = [
         "# Repository: https://gitlab.com/quantify-os/quantify-scheduler",
         "# Licensed according to the LICENCE file on the master branch",
@@ -22,6 +23,7 @@ def test_header():
         if any(part.startswith(name) for part in Path(root).parts for name in skipdirs):
             continue
         for file_name in files:
+            print(file_name)
             if file_name[-3:] == ".py" and file_name not in skipfiles:
                 file_path = Path(root) / file_name
                 with open(file_path, "r") as file:
