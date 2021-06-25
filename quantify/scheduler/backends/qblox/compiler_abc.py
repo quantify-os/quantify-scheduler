@@ -225,6 +225,7 @@ class PulsarSequencerBase(ABC):
         parent: PulsarBase,
         name: str,
         portclock: Tuple[str, str],
+        connected_outputs: Tuple[int, ...],
         seq_settings: dict,
         lo_name: Optional[str] = None,
     ):
@@ -258,6 +259,7 @@ class PulsarSequencerBase(ABC):
         self._settings = SequencerSettings(
             nco_en=False,
             sync_en=True,
+            connected_outputs=connected_outputs,
             modulation_freq=seq_settings.get("interm_freq", None),
         )
         self.mixer_corrections = None
