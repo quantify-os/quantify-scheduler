@@ -80,7 +80,6 @@ stages:
 # Create an anchor called `pip_install_and_freeze`
 .pip-install-and-freeze: &pip_install_and_freeze
   - pip install --upgrade --upgrade-strategy eager -e .
-  # - pip install -e git+https://gitlab.com/quantify-os/quantify-core@develop#egg=quantify-core
   - pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt
   # save the version of the packages installed for CI debugging
   - pip freeze --all > frozen-requirements.txt; cat frozen-requirements.txt
@@ -146,60 +145,60 @@ stages:
 # Test Unix
 # ######################################################################################
 
-# test-unix-3.7:
-#   stage: Test
-#   image: "python:3.7"
-#   extends:
-#     - .unix-before-script
-#     - .unix-run-pytest
-#     - .save-test-artifacts
-#     - .run-for-develop-only
+test-unix-3.7:
+  stage: Test
+  image: "python:3.7"
+  extends:
+    - .unix-before-script
+    - .unix-run-pytest
+    - .save-test-artifacts
+    - .run-for-develop-only
 
-# test-unix-3.8:
-#   stage: Test
-#   image: "python:3.8"
-#   extends:
-#     - .unix-before-script
-#     - .unix-run-pytest
-#     - .save-test-artifacts
+test-unix-3.8:
+  stage: Test
+  image: "python:3.8"
+  extends:
+    - .unix-before-script
+    - .unix-run-pytest
+    - .save-test-artifacts
 
-# test-unix-latest:
-#   stage: Test
-#   image: "python:latest"
-#   extends:
-#     - .unix-before-script
-#     - .unix-run-pytest
-#     - .save-test-artifacts
-#     - .run-for-develop-only
-#   allow_failure: true
+test-unix-latest:
+  stage: Test
+  image: "python:latest"
+  extends:
+    - .unix-before-script
+    - .unix-run-pytest
+    - .save-test-artifacts
+    - .run-for-develop-only
+  allow_failure: true
 
-# alternative-install-unix:
-#   needs: []  # allow running in parallel with previous stage
-#   stage: Test
-#   extends:
-#     - .run-for-develop-only
-#   script:
-#     - *unix_before_script_no_install
-#     - python setup.py bdist_wheel
-#     # an alternative approach is to install and run:
-#     - pip install dist/*
-#     # run the command here
-#   artifacts:
-#     paths:
-#       - dist/*.whl
+alternative-install-unix:
+  needs: []  # allow running in parallel with previous stage
+  stage: Test
+  extends:
+    - .run-for-develop-only
+  script:
+    - *unix_before_script_no_install
+    - python setup.py bdist_wheel
+    # an alternative approach is to install and run:
+    - pip install dist/*
+    # run the command here
+  artifacts:
+    paths:
+      - dist/*.whl
 
 # ######################################################################################
 # Test Windows
 # ######################################################################################
 
-# test-win-3.7.9:
-#   stage: Test
-#   extends:
-#     - .shared-windows-runners
-#     - .win-before-script-3.7.9
-#     - .win-run-pytest
-#     - .save-test-artifacts
-#     - .run-for-develop-only
+test-win-3.7.9:
+  stage: Test
+  extends:
+    - .shared-windows-runners
+    - .win-before-script-3.7.9
+    - .win-run-pytest
+    - .save-test-artifacts
+    - .run-for-develop-only
 
 test-win-3.8.9:
   stage: Test
@@ -210,87 +209,87 @@ test-win-3.8.9:
     - .save-test-artifacts
     - .run-for-develop-only
 
-# test-win-latest:
-#   stage: Test
-#   extends:
-#     - .shared-windows-runners
-#     - .win-before-script-latest
-#     - .win-run-pytest
-#     - .save-test-artifacts
-#     - .run-for-develop-only
-#   # latest version always allowed to fail due to unforeseen changes
-#   allow_failure: true
+test-win-latest:
+  stage: Test
+  extends:
+    - .shared-windows-runners
+    - .win-before-script-latest
+    - .win-run-pytest
+    - .save-test-artifacts
+    - .run-for-develop-only
+  # latest version always allowed to fail due to unforeseen changes
+  allow_failure: true
 
 # ######################################################################################
 # Docs build Unix
 # ######################################################################################
 
-# docs-unix-make-html-3.7:
-#   stage: Docs build
-#   image: "python:3.7"
-#   extends:
-#     - .unix-before-script
-#     - .docs-unix-and-artifacts
-#     - .run-for-develop-only
+docs-unix-make-html-3.7:
+  stage: Docs build
+  image: "python:3.7"
+  extends:
+    - .unix-before-script
+    - .docs-unix-and-artifacts
+    - .run-for-develop-only
 
-# docs-unix-make-html-3.8:
-#   stage: Docs build
-#   image: "python:3.8"
-#   extends:
-#     - .unix-before-script
-#     - .docs-unix-and-artifacts
-#     - .run-for-develop-only
+docs-unix-make-html-3.8:
+  stage: Docs build
+  image: "python:3.8"
+  extends:
+    - .unix-before-script
+    - .docs-unix-and-artifacts
+    - .run-for-develop-only
 
-# docs-unix-make-html-latest:
-#   stage: Docs build
-#   image: "python:latest"
-#   extends:
-#     - .unix-before-script
-#     - .docs-unix-and-artifacts
-#     - .run-for-develop-only
-#   # latest version always allowed to fail due to unforeseen changes
-#   allow_failure: true
+docs-unix-make-html-latest:
+  stage: Docs build
+  image: "python:latest"
+  extends:
+    - .unix-before-script
+    - .docs-unix-and-artifacts
+    - .run-for-develop-only
+  # latest version always allowed to fail due to unforeseen changes
+  allow_failure: true
 
 # ######################################################################################
 # Docs build Windows
 # ######################################################################################
 
-# docs-win-make-html-3.7.9:
-#   stage: Docs build
-#   extends:
-#     - .shared-windows-runners
-#     - .win-before-script-3.7.9
-#     - .docs-win-and-artifacts
-#     - .run-for-develop-only
+docs-win-make-html-3.7.9:
+  stage: Docs build
+  extends:
+    - .shared-windows-runners
+    - .win-before-script-3.7.9
+    - .docs-win-and-artifacts
+    - .run-for-develop-only
 
-# docs-win-make-html-3.8.9:
-#   stage: Docs build
-#   extends:
-#     - .shared-windows-runners
-#     - .win-before-script-3.8.9
-#     - .docs-win-and-artifacts
-#     - .run-for-develop-only
-#   # Allowed to fail due to asyncio problems (quantify-core#182)
-#   allow_failure: true
+docs-win-make-html-3.8.9:
+  stage: Docs build
+  extends:
+    - .shared-windows-runners
+    - .win-before-script-3.8.9
+    - .docs-win-and-artifacts
+    - .run-for-develop-only
+  # Allowed to fail due to asyncio problems (quantify-core#182)
+  allow_failure: true
 
-# docs-win-make-html-latest:
-#   stage: Docs build
-#   extends:
-#     - .shared-windows-runners
-#     - .win-before-script-latest
-#     - .docs-win-and-artifacts
-#     - .run-for-develop-only
-#   # Allowed to fail due to asyncio problems (quantify-core#182)
-#   allow_failure: true
+docs-win-make-html-latest:
+  stage: Docs build
+  extends:
+    - .shared-windows-runners
+    - .win-before-script-latest
+    - .docs-win-and-artifacts
+    - .run-for-develop-only
+  # Allowed to fail due to asyncio problems (quantify-core#182)
+  allow_failure: true
 
 # ######################################################################################
 # Static Analysis
 # ######################################################################################
 
-# black:
-#   stage: Static Analysis
-#   image: python:3.8
-#   extends:
-#     - .unix-before-script
-#   script:
-#     - black --check --fast .
+black:
+  stage: Static Analysis
+  image: python:3.8
+  extends:
+    - .unix-before-script
+  script:
+    - black --check --fast .
