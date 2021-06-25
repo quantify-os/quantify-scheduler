@@ -308,7 +308,7 @@ The specified "backend" determines how the data for each qubit is used to create
 
 A valid device configuration is described by the schema shown here:
 
-.. jsonschema:: ../quantify/scheduler/schemas/transmon_cfg.json
+.. jsonschema:: ../quantify_scheduler/schemas/transmon_cfg.json
 
 
 Example device configuration file
