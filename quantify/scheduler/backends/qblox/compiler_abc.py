@@ -29,8 +29,6 @@ from quantify.scheduler.backends.qblox.helpers import (
     _generate_waveform_dict,
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
-    find_all_port_clock_combinations,
-    find_inner_dicts_containing_key,
 )
 from quantify.scheduler.backends.qblox.constants import (
     GRID_TIME,
@@ -895,7 +893,9 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
             real outputs (instead of complex), or when the hardware mapping is invalid.
         """
-        valid_io = (f"complex_output_{i}" for i in [0, 1])
+        valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
+            f"real_output_{i}" for i in range(4)
+        ]
         valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
 
         mapping = dict()
@@ -926,10 +926,18 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             A dictionary containing the sequencer objects, the keys correspond to the
             names of the sequencers.
         """
+        valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
+            f"real_output_{i}" for i in range(4)
+        ]
         sequencers = dict()
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
+            if io not in valid_io:
+                raise ValueError(
+                    f"Invalid hardware config. {io} of {self.name} not a "
+                    f"valid name of a in/output.\n\nSupported names:\n{valid_io}"
+                )
 
             lo_name = io_cfg.get("lo_name", None)
 
