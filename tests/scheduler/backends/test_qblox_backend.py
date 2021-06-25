@@ -35,7 +35,7 @@ from quantify.scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
 )
-
+from quantify.scheduler.enums import BinMode
 from quantify.scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
@@ -512,7 +512,12 @@ def test_wait_till_start_then_play():
 
 
 def test_wait_till_start_then_acquire():
-    minimal_pulse_data = {"duration": 20e-9}
+    minimal_pulse_data = {
+        "duration": 20e-9,
+        "acq_index": 0,
+        "acq_channel": 1,
+        "bin_mode": BinMode.AVERAGE,
+    }
     acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
     qrm = Pulsar_QRM(
         None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
