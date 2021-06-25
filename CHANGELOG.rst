@@ -5,6 +5,10 @@ Changelog
 Unreleased
 ----------
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Change of namespace from quantify.scheduler.* to quantify_scheduler.*
+
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
