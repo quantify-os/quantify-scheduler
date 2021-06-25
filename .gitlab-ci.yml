@@ -130,7 +130,7 @@ stages:
     - *pip_install_and_freeze
 
 .pytest-command: &pytest_command
-  - pytest -n 2 --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
+  - pytest -n 2 --mpl --mpl-baseline-path=tests/baseline_images -s --cov=quantify_scheduler --cov-report xml --cov-report html --cov-report term --cov-config=.coveragerc --color=yes
 
 .unix-run-pytest:
   script:
