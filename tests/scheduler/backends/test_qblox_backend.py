@@ -788,3 +788,13 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
+
+
+def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode):
+    container = compiler_container.CompilerContainer.from_mapping(
+        real_square_pulse_schedule, hardware_cfg_real_mode
+    )
+    qcm0 = container.instrument_compilers["qcm0"]
+    for output, seq_name in enumerate(f"seq{i}" for i in range(3)):
+        seq_settings = qcm0.sequencers[seq_name].settings
+        assert seq_settings.connected_outputs[0] == output
