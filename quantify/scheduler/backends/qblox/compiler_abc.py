@@ -29,6 +29,7 @@ from quantify.scheduler.backends.qblox.helpers import (
     _generate_waveform_dict,
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
+    output_name_to_outputs,
 )
 from quantify.scheduler.backends.qblox.constants import (
     GRID_TIME,
@@ -957,9 +958,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                         f"{seq_name}. Is it defined multiple times in "
                         f"the hardware mapping?"
                     )
+                connected_outputs = output_name_to_outputs(io)
 
                 sequencers[seq_name] = self.sequencer_type(
-                    self, seq_name, portclock, seq_cfg, lo_name
+                    self, seq_name, portclock, connected_outputs, seq_cfg, lo_name
                 )
 
                 if "mixer_corrections" in io_cfg:
