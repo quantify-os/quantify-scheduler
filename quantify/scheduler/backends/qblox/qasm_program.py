@@ -69,12 +69,6 @@ class QASMProgram:
         SyntaxError
             More arguments passed than the sequencer allows.
         """
-        max_args_amount = 3
-        if len(args) > max_args_amount:
-            raise SyntaxError(
-                f"Too many arguments supplied to `get_instruction_as_list` for "
-                f"instruction {instruction}."
-            )
         instr_args = ",".join(str(arg) for arg in args)
 
         label_str = f"{label}:" if label is not None else ""
