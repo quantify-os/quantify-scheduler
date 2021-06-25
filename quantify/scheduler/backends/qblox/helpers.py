@@ -6,6 +6,7 @@ from typing import Any, Dict, Union, List, Iterable, Tuple
 from collections import UserDict
 
 import numpy as np
+from typing_extensions import Literal
 
 from quantify.scheduler.helpers.waveforms import exec_waveform_function
 
@@ -194,6 +195,22 @@ def output_name_to_outputs(name: str) -> Tuple[int, ...]:
         "real_output_2": (2,),
         "real_output_3": (3,),
     }[name]
+
+
+def output_mode_from_outputs(
+    outputs: Tuple[int, ...]
+) -> Literal["complex", "real", "imag"]:
+    if len(outputs) > 2:
+        raise RuntimeError(
+            f"Too many outputs specified for this channel. Given: {outputs}."
+        )
+
+    if len(outputs) == 2:
+        return "complex"
+
+    output = outputs[0]
+    mode = "real" if output % 2 == 0 else "imag"
+    return mode
 
 
 def _generate_waveform_dict(
