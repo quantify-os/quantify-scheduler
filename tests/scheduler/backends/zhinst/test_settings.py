@@ -11,10 +11,10 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from zhinst.qcodes import base
-from quantify.scheduler import waveforms
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
-from quantify.scheduler.backends.types import zhinst as zi_types
-from quantify.scheduler.backends.zhinst import settings
+from quantify_scheduler import waveforms
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.backends.types import zhinst as zi_types
+from quantify_scheduler.backends.zhinst import settings
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:

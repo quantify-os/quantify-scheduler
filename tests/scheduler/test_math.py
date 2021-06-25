@@ -4,7 +4,7 @@
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
 import pytest
-import quantify.scheduler.math as math
+import quantify_scheduler.math as math
 
 
 @pytest.mark.parametrize(

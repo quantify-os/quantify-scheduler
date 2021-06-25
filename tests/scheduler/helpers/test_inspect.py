@@ -1,12 +1,12 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-from quantify.scheduler.helpers import inspect
+from quantify_scheduler.helpers import inspect
 
 
 def test_get_classes():
     # Arrange
-    from quantify.scheduler import (  # pylint: disable=import-outside-toplevel
+    from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
         gate_library,
     )
 

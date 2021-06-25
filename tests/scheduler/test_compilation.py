@@ -7,18 +7,18 @@ import os
 
 import numpy as np
 import pytest
-import quantify.scheduler.schemas.examples as examples
-from quantify.scheduler import Schedule
-from quantify.scheduler.compilation import (
+import quantify_scheduler.schemas.examples as examples
+from quantify_scheduler import Schedule
+from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
     qcompile,
     validate_config,
 )
-from quantify.scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
-from quantify.scheduler.pulse_library import SquarePulse
-from quantify.scheduler.resources import BasebandClockResource, ClockResource, Resource
-from quantify.scheduler.types import Operation
+from quantify_scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
+from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
+from quantify_scheduler.types import Operation
 
 esp = inspect.getfile(examples)
 
@@ -154,7 +154,7 @@ def test_empty_sched():
 def test_bad_gate():
     class NotAGate(Operation):
         def __init__(self, q):
-            plot_func = "quantify.scheduler.visualization.circuit_diagram.cnot"
+            plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
             data = {
                 "gate_info": {
                     "unitary": np.array(

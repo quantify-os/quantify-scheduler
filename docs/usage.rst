@@ -41,17 +41,17 @@ The following table shows an overview of the different concepts and how these ar
       - Gate-level description
       - Pulse-level description
     * - When
-      - :class:`~quantify.scheduler.types.Schedule`
+      - :class:`~quantify_scheduler.types.Schedule`
       - --
       - --
     * - What
-      - :class:`~quantify.scheduler.types.Operation`
+      - :class:`~quantify_scheduler.types.Operation`
       - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
       - parameterized waveforms
     * - Where
-      - :class:`~quantify.scheduler.Resource`
+      - :class:`~quantify_scheduler.Resource`
       - qubits (:code:`str`)
-      - ports (:code:`str`) & clocks  (:class:`~quantify.scheduler.resources.ClockResource`)
+      - ports (:code:`str`) & clocks  (:class:`~quantify_scheduler.resources.ClockResource`)
 
 
 
@@ -112,19 +112,19 @@ A second compilation step uses the :ref:`hardware configuration (file)<sec-hardw
 Schedule
 --------
 
-The :class:`~quantify.scheduler.types.Schedule` is a data structure that is at the core of the Quantify-scheduler.
-The :class:`~quantify.scheduler.types.Schedule` contains information on *when* operations should be performed.
+The :class:`~quantify_scheduler.types.Schedule` is a data structure that is at the core of the Quantify-scheduler.
+The :class:`~quantify_scheduler.types.Schedule` contains information on *when* operations should be performed.
 
-When adding an :class:`~quantify.scheduler.types.Operation` to a :class:`~quantify.scheduler.types.Schedule` using the :meth:`~quantify.scheduler.types.Schedule.add` method, it is possible to specify precisely *when* to perform this operation using timing constraints.
-However, at this point it is not required to specify how to represent this :class:`~quantify.scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
+When adding an :class:`~quantify_scheduler.types.Operation` to a :class:`~quantify_scheduler.types.Schedule` using the :meth:`~quantify_scheduler.types.Schedule.add` method, it is possible to specify precisely *when* to perform this operation using timing constraints.
+However, at this point it is not required to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many (calibration) experiments.
 An example of such an experiment is shown in :ref:`Tutorial 1 <sec-tutorial1>`.
 
 
-The :class:`~quantify.scheduler.types.Schedule` contains information on the :attr:`~quantify.scheduler.types.Schedule.operations` and :attr:`~quantify.scheduler.types.Schedule.timing_constraints`.
-The :attr:`~quantify.scheduler.types.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
-The :attr:`~quantify.scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing constraints between operations, i.e. when to apply an operation.
+The :class:`~quantify_scheduler.types.Schedule` contains information on the :attr:`~quantify_scheduler.types.Schedule.operations` and :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
+The :attr:`~quantify_scheduler.types.Schedule.operations` is a dictionary of all unique operations used in the schedule and contain the information on *what* operation to apply *where*.
+The :attr:`~quantify_scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing constraints between operations, i.e. when to apply an operation.
 
 
 .. _sec-operation:
@@ -133,9 +133,9 @@ Operation
 ---------
 
 
-The :class:`~quantify.scheduler.types.Operation` object is a data structure that describes the operation that should be performed, it also contains information on *where* it should be applied.
+The :class:`~quantify_scheduler.types.Operation` object is a data structure that describes the operation that should be performed, it also contains information on *where* it should be applied.
 An operation can be represented at different levels of abstraction such as the (quantum) :ref:`Gate-level description` and the :ref:`Pulse-level description`.
-The :mod:`quantify.scheduler` comes with the  :mod:`quantify.scheduler.gate_library` and the :mod:`quantify.scheduler.pulse_library` , both containing common operations.
+The :mod:`quantify_scheduler` comes with the  :mod:`quantify_scheduler.gate_library` and the :mod:`quantify_scheduler.pulse_library` , both containing common operations.
 
 
 Gate-level description
@@ -144,22 +144,22 @@ The (quantum) gate-level description is an idealized mathematical description of
 In this description operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
 Operations can be represented by (idealized) unitaries acting on qubits which are represented here as strings (e.g., :code:`"q0"`, :code:`"q1"`, :code:`"qubit_left"`, etc.).
 Valid qubits are strings that appear in the :ref:`device configuration file<Device configuration file>` used when compiling the schedule.
-The :mod:`~quantify.scheduler.gate_library` contains common gates (including the measurement operation).
+The :mod:`~quantify_scheduler.gate_library` contains common gates (including the measurement operation).
 
 
 .. note::
     Strictly speaking a measurement is not a gate as it cannot be described by a unitary. However, it is a fundamental building block of circuit diagrams and therefore included at this level of abstraction.
 
 
-A :class:`~quantify.scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify.scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 An example of such a visualization is shown below.
 
 .. jupyter-execute::
     :hide-code:
 
-    from quantify.scheduler import Schedule
-    from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-    from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
+    from quantify_scheduler import Schedule
+    from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+    from quantify_scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
 
     sched = Schedule('Bell experiment')
     sched
@@ -187,12 +187,12 @@ Pulse-level description
 The pulse-level description describes waveforms applied to a sample.
 These waveforms can be used to implement the unitaries of the gate-level description, in which case there is a one-to-one correspondence, but this is not required.
 The pulse-level description typically contain parameterization information, such as amplitudes, durations and so forth required to synthesize the waveform on control hardware.
-The :mod:`~quantify.scheduler.pulse_library` contains a collection of commonly used pulses.
+The :mod:`~quantify_scheduler.pulse_library` contains a collection of commonly used pulses.
 To specify *where* an operation is applied, the pulse-level description needs to specify both the location in physical space as well as in frequency space.
 The location on chip is denoted by a *port* while the frequency is set using a *clock*, both are represented as strings.
 These resources are described in detail in :ref:`the next section<sec-resources>`.
 
-A :class:`~quantify.scheduler.types.Schedule` containing operations can be visualized using as a pulse diagram using :func:`quantify.scheduler.visualization.pulse_scheme.pulse_diagram_plotly`.
+A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a pulse diagram using :func:`quantify_scheduler.visualization.pulse_scheme.pulse_diagram_plotly`.
 An example of such a visualization is shown below:
 
 
@@ -202,11 +202,11 @@ An example of such a visualization is shown below:
 
     import json
     import os, inspect
-    from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
-    from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
+    from quantify_scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
+    from quantify_scheduler.visualization.pulse_scheme import pulse_diagram_plotly
 
 
-    import quantify.scheduler.schemas.examples as es
+    import quantify_scheduler.schemas.examples as es
 
     esp = inspect.getfile(es)
     cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
@@ -274,7 +274,7 @@ Clocks
 ~~~~~~
 
 Besides the physical location on a device, a pulse is typically applied at a certain frequency.
-A :class:`~quantify.scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
+A :class:`~quantify_scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
 Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
 If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband and is assumed to be real-valued.
 
@@ -286,12 +286,12 @@ Compilation
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
 The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
 
-In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify.scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
+In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify_scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
 
 A second compilation step takes the schedule at the pulse level and translates this for use on a hardware backend.
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`hardware configuration file<sec-hardware-config>`.
 
-Both compilation steps can be triggered by passing a :class:`~quantify.scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify.scheduler.compilation.qcompile`.
+Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
 
 
 .. _sec-device-config:
@@ -320,7 +320,7 @@ Here we show an example of such a device configuration file:
 
     from pathlib import Path
     import json
-    import quantify.scheduler.schemas.examples as examples
+    import quantify_scheduler.schemas.examples as examples
 
     path = Path(examples.__file__).parent / 'transmon_test_config.json'
     json_data = json.loads(path.read_text())
@@ -344,7 +344,7 @@ Example Qblox hardware configuration file
 
     from pathlib import Path
     import json
-    import quantify.scheduler.schemas.examples as examples
+    import quantify_scheduler.schemas.examples as examples
 
     path = Path(examples.__file__).parent / 'qblox_test_mapping.json'
     json_data = json.loads(path.read_text())
@@ -359,7 +359,7 @@ Example Zurich Instruments hardware configuration file
 
     from pathlib import Path
     import json
-    import quantify.scheduler.schemas.examples as examples
+    import quantify_scheduler.schemas.examples as examples
 
     path = Path(examples.__file__).parent / 'zhinst_test_mapping.json'
     json_data = json.loads(path.read_text())
@@ -369,9 +369,9 @@ Device element
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A device element is a QCoDeS instrument which provides an abstract representation of a quantum device, and can be used to to generate a device
-configuration file. For example, the :class:`~quantify.scheduler.device_elements.transmon_element.TransmonElement` is a device element which 
+configuration file. For example, the :class:`~quantify_scheduler.device_elements.transmon_element.TransmonElement` is a device element which
 represents a single transmon qubit, and contains parameters necessary to implement single-transmon experiments. Using the 
-:func:`~quantify.scheduler.device_elements.transmon_element.TransmonElement.generate_device_config()` method, we are able to generate a 
+:func:`~quantify_scheduler.device_elements.transmon_element.TransmonElement.generate_device_config()` method, we are able to generate a
 valid device configuration file for a single transmon. In addition to being used to generate device configurations, a device element is also 
 useful for storing parameters during experiments, and can be supplied as an argument to a measurement function, for example, as a convenient
 way of specifying all the relevant parameter settings for the experiment.
@@ -383,7 +383,7 @@ Here we show a basic example of the initialization of a transmon element and its
 .. jupyter-execute::
 
     import json
-    from quantify.scheduler.device_elements.transmon_element import TransmonElement
+    from quantify_scheduler.device_elements.transmon_element import TransmonElement
 
     # Initialize transmon element
     q0 = TransmonElement("q0")

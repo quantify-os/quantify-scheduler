@@ -10,7 +10,7 @@ that describes your experimental setup. An example of such a config:
     :linenos:
 
     mapping_config = {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
             "type": "Pulsar_QCM",
@@ -46,8 +46,8 @@ that describes your experimental setup. An example of such a config:
         },
     }
 
-Here the entry :code:`"backend": "quantify.scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
-that we are using the Qblox backend (specifically the :func:`~quantify.scheduler.backends.qblox_backend.hardware_compile` function).
+Here the entry :code:`"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
+that we are using the Qblox backend (specifically the :func:`~quantify_scheduler.backends.qblox_backend.hardware_compile` function).
 
 Apart from the :code:`"backend"`, each entry in the dictionary corresponds to a device connected to the setup. In the example above, only a
 :ref:`Pulsar QCM <sec-qblox-pulsar>` named :code:`"qcm0"` is specified.

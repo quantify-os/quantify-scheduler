@@ -5,8 +5,8 @@
 # -----------------------------------------------------------------------------
 # pylint: disable=missing-function-docstring
 
-from quantify.scheduler import types
-from quantify.scheduler.schedules import trace_schedules
+from quantify_scheduler import types
+from quantify_scheduler.schedules import trace_schedules
 
 
 def test_trace_schedule():

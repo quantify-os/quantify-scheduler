@@ -80,7 +80,7 @@ stages:
 # Create an anchor called `pip_install_and_freeze`
 .pip-install-and-freeze: &pip_install_and_freeze
   - pip install --upgrade --upgrade-strategy eager -e .
-  - pip install -e git+https://gitlab.com/quantify-os/quantify-core@change_namespace_official#egg=quantify-core
+  - pip install -e git+https://gitlab.com/quantify-os/quantify-core@develop#egg=quantify-core
   - pip install --upgrade --upgrade-strategy eager -r requirements_dev.txt
   # save the version of the packages installed for CI debugging
   - pip freeze --all > frozen-requirements.txt; cat frozen-requirements.txt
