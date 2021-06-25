@@ -13,11 +13,10 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 import plotly.graph_objects as go
 
+from quantify_core.utilities.general import import_func_from_string
+
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.waveforms import modulate_wave
-
-# pylint: disable=no-name-in-module
-from quantify_core.utilities.general import import_func_from_string
 
 logger = logging.getLogger(__name__)
 
