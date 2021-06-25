@@ -936,7 +936,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             if io not in valid_io:
                 raise ValueError(
                     f"Invalid hardware config. {io} of {self.name} not a "
-                    f"valid name of a in/output.\n\nSupported names:\n{valid_io}"
+                    f"valid name of a in/output.\n\nSupported names:\n{valid_io}."
                 )
 
             lo_name = io_cfg.get("lo_name", None)
