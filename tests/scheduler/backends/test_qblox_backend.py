@@ -109,6 +109,42 @@ def hardware_cfg_baseband():
 
 
 @pytest.fixture
+def hardware_cfg_real_mode():
+    yield {
+        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "name": "qcm0",
+            "instrument_type": "Pulsar_QCM",
+            "ref": "int",
+            "real_output_0": {
+                "line_gain_db": 0,
+                "seq0": {
+                    "port": "LP",
+                    "clock": "cl0.baseband",
+                    "instruction_generated_pulses_enabled": True,
+                },
+            },
+            "real_output_1": {
+                "line_gain_db": 0,
+                "seq1": {
+                    "port": "RP",
+                    "clock": "cl0.baseband",
+                    "instruction_generated_pulses_enabled": True,
+                },
+            },
+            "real_output_2": {
+                "line_gain_db": 0,
+                "seq2": {
+                    "port": "TB",
+                    "clock": "cl0.baseband",
+                    "instruction_generated_pulses_enabled": True,
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
 def dummy_pulsars():
     if PULSAR_ASSEMBLER:
         _pulsars = []
@@ -283,6 +319,41 @@ def baseband_square_pulse_schedule():
     return sched
 
 
+@pytest.fixture
+def real_square_pulse_schedule():
+    sched = Schedule("fast_square_pulse_schedule")
+    sched.add(Reset("q0"))
+    sched.add(
+        SquarePulse(
+            amp=2.0,
+            duration=2.5e-6,
+            port="LP",
+            clock=BasebandClockResource.IDENTITY,
+            t0=1e-6,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=1.0,
+            duration=2.0e-6,
+            port="RP",
+            clock=BasebandClockResource.IDENTITY,
+            t0=0.5e-6,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=1.2,
+            duration=3.5e-6,
+            port="TB",
+            clock=BasebandClockResource.IDENTITY,
+            t0=0,
+        )
+    )
+    determine_absolute_timing(sched)
+    return sched
+
+
 # --------- Test utility functions ---------
 
 
@@ -449,6 +520,17 @@ def test_qcm_acquisition_error():
 
     with pytest.raises(RuntimeError):
         qcm._distribute_data()
+
+
+def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    real_square_pulse_schedule.repetitions = 10
+    full_program = qcompile(
+        real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
+    )
+    for seq in (f"seq{i}" for i in range(3)):
+        assert seq in full_program["qcm0"]
 
 
 # --------- Test QASMProgram class ---------
