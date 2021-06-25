@@ -17,18 +17,18 @@ import pytest
 from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
-import quantify.scheduler.backends.zhinst_backend as zhinst_backend
-from quantify.scheduler import enums
-from quantify.scheduler.helpers import waveforms as waveform_helpers
-from quantify.scheduler.helpers import schedule as schedule_helpers
+import quantify_scheduler.backends.zhinst_backend as zhinst_backend
+from quantify_scheduler import enums
+from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.helpers import schedule as schedule_helpers
 
-from quantify.scheduler.backends.types import zhinst
-from quantify.scheduler.backends.types import common
-from quantify.scheduler.backends.zhinst import settings
-from quantify.scheduler.gate_library import X90, Measure, Reset
-from quantify.scheduler.schedules import trace_schedules
-from quantify.scheduler.schedules import spectroscopy_schedules
-from quantify.scheduler import types
+from quantify_scheduler.backends.types import zhinst
+from quantify_scheduler.backends.types import common
+from quantify_scheduler.backends.zhinst import settings
+from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.schedules import trace_schedules
+from quantify_scheduler.schedules import spectroscopy_schedules
+from quantify_scheduler import types
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
     return json.loads(
         """
         {
-          "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+          "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
           "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -71,7 +71,7 @@ def hdawg_hardware_map() -> Dict[str, Any]:
     return json.loads(
         """
         {
-          "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+          "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
           "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -285,7 +285,7 @@ def test_compile_backend_unsupported_devices(
     hardware_map_str = (
         """
     {
-        "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
         "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -1002,7 +1002,7 @@ def test_compile_backend_with_undefined_local_oscillator(
     schedule = make_schedule()
     hardware_map_str = """
     {
-        "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
         "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -1046,7 +1046,7 @@ def test_compile_backend_with_duplicate_local_oscillator(
     schedule = make_schedule()
     hardware_map_str = """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "local_oscillators": [
         {
           "name": "lo0",

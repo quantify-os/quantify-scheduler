@@ -9,7 +9,7 @@ Each device in the setup can be individually configured using the entry in the c
     :linenos:
 
     mapping_config = {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
             "type": "Pulsar_QCM",
@@ -91,7 +91,7 @@ the backend by specifying it as :code:`None`.
 
 Note that the backend also supports correcting for mixer imperfections by digitally pre-distorting the waveforms. This is done
 by setting the offsets on the I and Q output paths and correcting the amplitude and phase (specified in degrees) of the signals through
-:func:`~quantify.scheduler.helpers.waveforms.apply_mixer_skewness_corrections`. The correction parameters need to be specified
+:func:`~quantify_scheduler.helpers.waveforms.apply_mixer_skewness_corrections`. The correction parameters need to be specified
 in :code:`mixer_corrections` as done for :code:`complex_output_1` in the example config.
 
 .. code-block:: python

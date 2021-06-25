@@ -19,46 +19,46 @@ import numpy as np
 from qcodes.instrument.base import Instrument
 
 # pylint: disable=no-name-in-module
-from quantify.data.handling import set_datadir
+from quantify_core.data.handling import set_datadir
 
-from quantify.scheduler.types import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, X
-from quantify.scheduler.pulse_library import (
+from quantify_scheduler.types import Schedule
+from quantify_scheduler.gate_library import Reset, Measure, X
+from quantify_scheduler.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
     StaircasePulse,
 )
-from quantify.scheduler.resources import ClockResource, BasebandClockResource
-from quantify.scheduler.compilation import (
+from quantify_scheduler.resources import ClockResource, BasebandClockResource
+from quantify_scheduler.compilation import (
     qcompile,
     determine_absolute_timing,
     device_compile,
 )
-from quantify.scheduler.helpers.schedule import get_total_duration
+from quantify_scheduler.helpers.schedule import get_total_duration
 
-from quantify.scheduler.backends.qblox.helpers import (
+from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
 )
-from quantify.scheduler.backends import qblox_backend as qb
-from quantify.scheduler.backends.types.qblox import (
+from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
 )
-from quantify.scheduler.backends.qblox.instrument_compilers import (
+from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
     QCMSequencer,
 )
-from quantify.scheduler.backends.qblox.compiler_abc import (
+from quantify_scheduler.backends.qblox.compiler_abc import (
     PulsarBase,
 )
-from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify.scheduler.backends.qblox import q1asm_instructions
-from quantify.scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox import q1asm_instructions
+from quantify_scheduler.backends.qblox import constants
 
-import quantify.scheduler.schemas.examples as es
+import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
 
@@ -85,7 +85,7 @@ except ImportError:
 @pytest.fixture
 def hardware_cfg_baseband():
     yield {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
             "type": "Pulsar_QCM",
@@ -556,7 +556,7 @@ def test_expand_from_normalised_range():
 
 def test_pulse_stitching_qasm_prog():
     minimal_pulse_data = {
-        "wf_func": "quantify.scheduler.waveforms.square",
+        "wf_func": "quantify_scheduler.waveforms.square",
         "duration": 20.5e-6,
     }
     runtime_settings = QASMRuntimeSettings(1, 1)

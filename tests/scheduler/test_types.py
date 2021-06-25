@@ -6,9 +6,9 @@ import json
 
 import numpy as np
 import pytest
-from quantify.scheduler import Operation, Schedule
-from quantify.scheduler.acquisition_library import SSBIntegrationComplex
-from quantify.scheduler.gate_library import (
+from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.gate_library import (
     CNOT,
     CZ,
     X90,
@@ -19,9 +19,9 @@ from quantify.scheduler.gate_library import (
     X,
     Y,
 )
-from quantify.scheduler.pulse_library import SquarePulse
-from quantify.scheduler.resources import BasebandClockResource, ClockResource
-from quantify.scheduler.schedules import timedomain_schedules
+from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
+from quantify_scheduler.schedules import timedomain_schedules
 
 
 def test_schedule_properties():

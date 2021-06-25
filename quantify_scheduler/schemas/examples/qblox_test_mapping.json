@@ -1,0 +1,70 @@
+{
+  "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+  "qcm0": {
+    "name": "qcm0",
+    "type": "Pulsar_QCM",
+    "mode": "complex",
+    "ref": "internal",
+    "IP address": "192.168.0.2",
+    "complex_output_0": {
+      "line_gain_db": 0,
+      "lo_name": "lo0",
+      "lo_freq": null,
+      "seq0": {
+        "port": "q0:mw",
+        "clock": "q0.01",
+        "interm_freq": 50e6
+      }
+    },
+    "complex_output_1": {
+      "line_gain_db": 0,
+      "lo_name": "lo1",
+      "lo_freq": 7.2e9,
+      "seq0": {
+        "port": "q1:mw",
+        "clock": "q1.01",
+        "interm_freq": null
+      }
+    }
+  },
+  "qrm0": {
+    "name": "qrm0",
+    "type": "Pulsar_QRM",
+    "mode": "complex",
+    "ref": "external",
+    "IP address": "192.168.0.6",
+    "complex_output_0": {
+      "line_gain_db": 0,
+      "lo_name": "lo1",
+      "lo_freq": 7.2e9,
+      "mixer_corrections": {
+        "amp_ratio": 1.0,
+        "phase_error": 0,
+        "offset_I": 0.1,
+        "offset_Q": 0.0
+      },
+      "seq0": {
+        "port": "q0:res",
+        "clock": "q0.ro",
+        "interm_freq": null
+      }
+    }
+  },
+  "qrm1": {
+    "name": "qrm1",
+    "type": "Pulsar_QRM",
+    "mode": "complex",
+    "ref": "external",
+    "IP address": "192.168.0.8",
+    "complex_output_0": {
+      "line_gain_db": 0,
+      "lo_name": "lo3",
+      "lo_freq": null,
+      "seq0": {
+        "port": "q1:res",
+        "clock": "q1.ro",
+        "interm_freq": 100e6
+        }
+      }
+    }
+}
