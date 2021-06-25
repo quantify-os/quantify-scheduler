@@ -2,7 +2,7 @@
   "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
   "qcm0": {
     "instrument_type": "Pulsar_QCM",
-    "ref": "int",
+    "ref": "internal",
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo0",
@@ -25,7 +25,7 @@
   },
   "qrm0": {
     "instrument_type": "Pulsar_QRM",
-    "ref": "ext",
+    "ref": "external",
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo1",
@@ -44,7 +44,7 @@
   },
   "qrm1": {
     "instrument_type": "Pulsar_QRM",
-    "ref": "ext",
+    "ref": "external",
     "complex_output_0": {
       "line_gain_db": 0,
       "seq0": {

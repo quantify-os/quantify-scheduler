@@ -47,7 +47,7 @@ Requirements
         integration_time=1e-6, 
         port="q0:res", 
         clock="q0.ro", 
-        buffer_time=1e-5, 
+        init_duration=1e-5, 
     )
     schedule.repetitions = 1
 

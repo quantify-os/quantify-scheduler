@@ -29,10 +29,14 @@ class TestHeterodynceSpecSchedule:
             "frequency": 4.48e9,
             "integration_time": 1e-6,
             "acquisition_delay": 220e-9,
-            "buffer_time": 18e-6,
+            "init_duration": 18e-6,
+            "repetitions": 10,
         }
 
         cls.sched = sps.heterodyne_spec_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)
@@ -40,8 +44,8 @@ class TestHeterodynceSpecSchedule:
         labels = ["buffer", "spec_pulse", "acquisition"]
         abs_times = [
             0,
-            self.sched_kwargs["buffer_time"],
-            self.sched_kwargs["buffer_time"] + self.sched_kwargs["acquisition_delay"],
+            self.sched_kwargs["init_duration"],
+            self.sched_kwargs["init_duration"] + self.sched_kwargs["acquisition_delay"],
         ]
 
         for i, constr in enumerate(sched.timing_constraints):
@@ -79,10 +83,14 @@ class TestPulsedSpecSchedule:
             "ro_pulse_frequency": 4.48e9,
             "ro_integration_time": 1e-6,
             "ro_acquisition_delay": 220e-9,
-            "buffer_time": 18e-6,
+            "init_duration": 18e-6,
+            "repetitions": 10,
         }
 
         cls.sched = sps.two_tone_spec_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)
@@ -91,12 +99,12 @@ class TestPulsedSpecSchedule:
         labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
 
         t2 = (
-            self.sched_kwargs["buffer_time"]
+            self.sched_kwargs["init_duration"]
             + self.sched_kwargs["spec_pulse_duration"]
             + self.sched_kwargs["ro_pulse_delay"]
         )
         t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
-        abs_times = [0, self.sched_kwargs["buffer_time"], t2, t3]
+        abs_times = [0, self.sched_kwargs["init_duration"], t2, t3]
 
         for i, constr in enumerate(sched.timing_constraints):
             assert constr["label"] == labels[i]

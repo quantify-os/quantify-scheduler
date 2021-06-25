@@ -52,11 +52,11 @@ class InstrumentCompiler(ABC):
     """
     Abstract base class that defines a generic instrument compiler. The subclasses that
     inherit from this are meant to implement the compilation steps needed to compile the
-    lists of `OpInfo` representing the pulse and acquisition info to device specific
-    instructions.
+    lists of :class:`quantify.scheduler.backends.types.qblox.OpInfo` representing the
+    pulse and acquisition information to device-specific instructions.
 
-    For each device that needs to be part of the compilation process such a
-    `InstrumentCompiler` should be implemented.
+    Each device that needs to be part of the compilation process requires an associated
+    `InstrumentCompiler`.
     """
 
     def __init__(
@@ -95,11 +95,11 @@ class InstrumentCompiler(ABC):
         """
 
     @abstractmethod
-    def compile(self, repetitions):
+    def compile(self, repetitions: int):
         """
-        An abstract method that should be overridden by a subclass to implement the
-        actual compilation. Method turns the pulses and acquisitions added to the device
-        into device specific instructions.
+        An abstract method that should be overridden in a subclass to implement the
+        actual compilation. It should turn the pulses and acquisitions added to the
+        device into device-specific instructions.
 
         Parameters
         ----------
@@ -128,7 +128,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         hw_mapping: Dict[str, Any],
     ):
         """
-        Constructor for an ControlDeviceCompiler object.
+        Constructor for a ControlDeviceCompiler object.
 
         Parameters
         ----------
@@ -197,11 +197,11 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         return portclocks_used
 
     @abstractmethod
-    def compile(self, repetitions: int = 1) -> Any:
+    def compile(self, repetitions: int = 1) -> Dict[str, Any]:
         """
         An abstract method that should be overridden by a subclass to implement the
         actual compilation. Method turns the pulses and acquisitions added to the device
-        into device specific instructions.
+        into device-specific instructions.
 
         Parameters
         ----------
@@ -211,8 +211,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         Returns
         -------
         :
-            A data structure representing the compiled program. The type is
-            dependent on implementation.
+            A data structure representing the compiled program.
         """
 
 
@@ -365,8 +364,8 @@ class PulsarSequencerBase(ABC):
         self._settings.modulation_freq = freq
 
     def assign_frequencies(self):
-        """
-        Sets the frequencies so that the LO and IF frequencies for the relation:
+        r"""
+        Sets the frequencies so that the LO and IF frequencies follow the relation:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
 
         In this step it is thus expected that either the IF and/or the LO frequency has
@@ -377,7 +376,8 @@ class PulsarSequencerBase(ABC):
         Raises
         ------
         ValueError
-            Neither the LO or IF frequency has been set and thus contain `None` values.
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
         """
         if self.clock not in self.parent.parent.resources:
             return
@@ -816,7 +816,7 @@ class PulsarSequencerBase(ABC):
 
 class PulsarBase(ControlDeviceCompiler, ABC):
     """
-    Pulsar specific implementation of`InstrumentCompiler`. The class is defined as an
+    Pulsar specific implementation of `InstrumentCompiler`. The class is defined as an
     abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
     implementations are defined in subclasses. Effectively, this base class contains the
     functionality shared by the Pulsar QRM and Pulsar QCM.

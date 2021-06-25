@@ -15,7 +15,8 @@ def trace_schedule(
     integration_time: float,
     port: str,
     clock: str,
-    init_duration: int = 1e-6,
+    init_duration: int = 200e-6,
+    repetitions: int = 1,
 ) -> types.Schedule:
     """
     Generate a schedule to perform raw trace acquisition.
@@ -44,12 +45,15 @@ def trace_schedule(
         pulse frequency.
     init_duration :
         The relaxation time or dead time.
+    repetitions
+        The amount of times the Schedule will be repeated.
 
     Returns
     -------
-    types.Schedule
+    :
+        The Raw Trace acquisition Schedule.
     """
-    schedule = types.Schedule("Raw trace acquisition")
+    schedule = types.Schedule("Raw trace acquisition", repetitions)
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
     schedule.add(IdlePulse(duration=init_duration), label="Dead time")
@@ -97,11 +101,11 @@ def two_tone_trace_schedule(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    init_duration: float = 1e-6,
+    init_duration: float = 200e-6,
+    repetitions: int = 1,
 ) -> types.Schedule:
     """
-    Generate a schedule for performing a two-tone
-    raw trace acquisition.
+    Generate a schedule for performing a two-tone raw trace acquisition.
 
     Parameters
     ----------
@@ -139,8 +143,15 @@ def two_tone_trace_schedule(
         The integration time of the data acquisition in seconds.
     init_duration :
         The relaxation time or dead time.
+    repetitions
+        The amount of times the Schedule will be repeated.
+
+    Returns
+    -------
+    :
+        The Two-tone Trace acquisition Schedule.
     """
-    schedule = types.Schedule("Two-tone Trace acquisition")
+    schedule = types.Schedule("Two-tone Trace acquisition", repetitions)
     schedule.add_resource(
         ClockResource(name=qubit_pulse_clock, freq=qubit_pulse_frequency)
     )
