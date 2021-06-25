@@ -9,6 +9,7 @@ from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List
+from typing_extensions import Literal
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -24,13 +25,7 @@ from quantify.scheduler.helpers.waveforms import modulate_waveform
 
 from quantify.scheduler.backends.qblox import non_generic
 from quantify.scheduler.backends.qblox import q1asm_instructions
-from quantify.scheduler.backends.qblox.helpers import (
-    generate_waveform_data,
-    _generate_waveform_dict,
-    generate_waveform_names_from_uuid,
-    verify_qblox_instruments_version,
-    output_name_to_outputs,
-)
+from quantify.scheduler.backends.qblox import helpers
 from quantify.scheduler.backends.qblox.constants import (
     GRID_TIME,
     SAMPLING_RATE,
@@ -442,11 +437,12 @@ class PulsarSequencerBase(ABC):
         ValueError
             I or Q amplitude is being set outside of maximum range.
         """
+        output_mode = helpers.output_mode_from_outputs(self._settings.connected_outputs)
         waveforms_complex = dict()
         for pulse in self.pulses:
             reserved_pulse_id = non_generic.check_reserved_pulse_id(pulse)
             if reserved_pulse_id is None:
-                raw_wf_data = generate_waveform_data(
+                raw_wf_data = helpers.generate_waveform_data(
                     pulse.data, sampling_rate=SAMPLING_RATE
                 )
                 raw_wf_data = self._apply_corrections_to_waveform(
@@ -480,8 +476,26 @@ class PulsarSequencerBase(ABC):
                 awg_gain_1=amp_q / self.awg_output_volt,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
+                self.apply_output_mode_to_data(pulse, raw_wf_data, output_mode)
                 waveforms_complex[pulse.uuid] = raw_wf_data
-        return _generate_waveform_dict(waveforms_complex)
+        return helpers.generate_waveform_dict(waveforms_complex)
+
+    def apply_output_mode_to_data(
+        self, pulse: OpInfo, data: np.ndarray, mode: Literal["complex", "real", "imag"]
+    ):
+        if mode == "complex":
+            return data
+
+        if not np.all((data.imag == 0)):
+            raise ValueError(
+                f"Attempting to play complex data on sequencer {self.name} of "
+                f"{self.parent.name} which is connected to a real output.\n\n"
+                f"Relevant pulse:\n{repr(pulse)}"
+            )
+        if mode == "imag":
+            return 1.0j * data
+        else:
+            return data
 
     def _generate_acq_dict(self) -> Dict[str, Any]:
         """
@@ -522,10 +536,10 @@ class PulsarSequencerBase(ABC):
         waveforms_complex = dict()
         for acq in self.acquisitions:
             if acq.uuid not in waveforms_complex:
-                raw_wf_data_real = generate_waveform_data(
+                raw_wf_data_real = helpers.generate_waveform_data(
                     acq.data["waveforms"][0], sampling_rate=SAMPLING_RATE
                 )
-                raw_wf_data_imag = generate_waveform_data(
+                raw_wf_data_imag = helpers.generate_waveform_data(
                     acq.data["waveforms"][1], sampling_rate=SAMPLING_RATE
                 )
                 self._settings.duration = len(raw_wf_data_real)
@@ -539,7 +553,7 @@ class PulsarSequencerBase(ABC):
                         f"{repr(acq)}."
                     )
                 waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
-        return _generate_waveform_dict(waveforms_complex)
+        return helpers.generate_waveform_dict(waveforms_complex)
 
     def _apply_corrections_to_waveform(
         self, waveform_data: np.ndarray, time_duration: float, t0: Optional[float] = 0
@@ -699,7 +713,7 @@ class PulsarSequencerBase(ABC):
         :
             Index of the Q waveform.
         """
-        name_real, name_imag = generate_waveform_names_from_uuid(uuid)
+        name_real, name_imag = helpers.generate_waveform_names_from_uuid(uuid)
         idx_real = None if name_real not in wf_dict else wf_dict[name_real]["index"]
         idx_imag = None if name_imag not in wf_dict else wf_dict[name_imag]["index"]
         return idx_real, idx_imag
@@ -847,7 +861,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             of the inner dictionaries of the overall hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping)
-        verify_qblox_instruments_version()
+        helpers.verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
@@ -958,7 +972,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                         f"{seq_name}. Is it defined multiple times in "
                         f"the hardware mapping?"
                     )
-                connected_outputs = output_name_to_outputs(io)
+                connected_outputs = helpers.output_name_to_outputs(io)
 
                 sequencers[seq_name] = self.sequencer_type(
                     self, seq_name, portclock, connected_outputs, seq_cfg, lo_name
