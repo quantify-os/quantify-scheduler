@@ -213,9 +213,7 @@ def output_mode_from_outputs(
     return mode
 
 
-def _generate_waveform_dict(
-    waveforms_complex: Dict[str, np.ndarray]
-) -> Dict[str, dict]:
+def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str, dict]:
     """
     Takes a dictionary with complex waveforms and generates a new dictionary with
     real valued waveforms with a unique index, as required by the hardware.
@@ -240,10 +238,10 @@ def _generate_waveform_dict(
     .. jupyter-execute::
 
         import numpy as np
-        from quantify.scheduler.backends.qblox.helpers import _generate_waveform_dict
+        from quantify.scheduler.backends.qblox.helpers import generate_waveform_dict
 
         complex_waveforms = {12345: np.array([1, 2])}
-        _generate_waveform_dict(complex_waveforms)
+        generate_waveform_dict(complex_waveforms)
 
         # {'12345_I': {'data': [1, 2], 'index': 0},
         # '12345_Q': {'data': [0, 0], 'index': 1}}
