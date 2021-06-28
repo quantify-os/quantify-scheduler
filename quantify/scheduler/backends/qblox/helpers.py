@@ -200,6 +200,25 @@ def output_name_to_outputs(name: str) -> Tuple[int, ...]:
 def output_mode_from_outputs(
     outputs: Tuple[int, ...]
 ) -> Literal["complex", "real", "imag"]:
+    """
+    Takes ths specified outputs to use and extracts a "sequencer mode" from it.
+
+    "real" means path0 will be used, whereas "imag" implies the use of only path1.
+    "complex" uses both paths, with the real and imaginary components referring to the
+    different paths.
+
+    Parameters
+    ----------
+    outputs:
+        The outputs the sequencer is supposed to use. Note that the outputs start from
+        0, but the labels on the front panel start counting from 1. So the mapping
+        differs n-1.
+
+    Returns
+    -------
+    :
+        The mode.
+    """
     if len(outputs) > 2:
         raise RuntimeError(
             f"Too many outputs specified for this channel. Given: {outputs}."
