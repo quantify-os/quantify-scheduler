@@ -218,6 +218,11 @@ def output_mode_from_outputs(
     -------
     :
         The mode.
+
+    Raises
+    ------
+    RuntimeError
+        The amount of outputs is more than 2, which is impossible for one sequencer.
     """
     if len(outputs) > 2:
         raise RuntimeError(
@@ -225,6 +230,9 @@ def output_mode_from_outputs(
         )
 
     if len(outputs) == 2:
+        assert (outputs[0] - outputs[1]) ** 2 == 1  # outputs are next to each other.
+        if 1 in outputs:
+            assert 2 not in outputs  # would be different pair.
         return "complex"
 
     output = outputs[0]
