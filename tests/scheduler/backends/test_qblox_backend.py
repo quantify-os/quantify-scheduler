@@ -667,35 +667,25 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
     container = compiler_container.CompilerContainer.from_mapping(
         pulse_only_schedule_no_lo, HARDWARE_MAPPING
     )
-    container.compile(10)
+    container.compile(repetitions=10)
 
     assert (
         container.get_instrument_compiler("qrm1").sequencers["seq0"].frequency == 100e6
     )
 
 
-def test_container_add_instrument_compiler(pulse_only_schedule):
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
-    assert "qcm0" in container.instrument_compilers
-
-
-def test_container__add_from_type(pulse_only_schedule):
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container._add_from_type("qcm0", Pulsar_QCM, HARDWARE_MAPPING["qcm0"])
-    assert "qcm0" in container.instrument_compilers
-
-
-def test_container__add_from_type_indirect(pulse_only_schedule):
+def test_container_add_from_type(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", Pulsar_QCM, HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], Pulsar_QCM)
 
 
-def test_container__add_from_str(pulse_only_schedule):
+def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container._add_from_str("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], Pulsar_QCM)
 
 
 def test_from_mapping(pulse_only_schedule):
