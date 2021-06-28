@@ -230,9 +230,14 @@ def output_mode_from_outputs(
         )
 
     if len(outputs) == 2:
-        assert (outputs[0] - outputs[1]) ** 2 == 1  # outputs are next to each other.
+        assert (
+            outputs[0] - outputs[1]
+        ) ** 2 == 1, "Attempting to use two outputs that are not next to each other."
         if 1 in outputs:
-            assert 2 not in outputs  # would be different pair.
+            assert 2 not in outputs, (
+                "Attempting to use output 1 and output 2 (2 and 3 on front panel) "
+                "together, but they belong to different pairs."
+            )
         return "complex"
 
     output = outputs[0]
