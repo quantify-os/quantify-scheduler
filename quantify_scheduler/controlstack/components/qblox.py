@@ -47,6 +47,10 @@ class PulsarQCMComponent(
             self._dummy_instr = False
         super().__init__(name, transport_inst, debug=debug)
 
+    @property
+    def is_running(self) -> bool:
+        return False
+
     def retrieve_acquisition(self) -> None:
         """
         Retrieves the previous acquisition.
@@ -144,6 +148,9 @@ class PulsarQCMComponent(
         if nco_en:
             self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
 
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        pass
+
 
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(
@@ -168,6 +175,10 @@ class PulsarQRMComponent(
         super().__init__(name, transport_inst, debug=debug)
 
         self._acq_settings = None
+
+    @property
+    def is_running(self) -> bool:
+        return False
 
     # pylint: disable=arguments-differ
     def retrieve_acquisition(self, num_of_samples: int = 2 ** 16) -> Any:
@@ -333,6 +344,9 @@ class PulsarQRMComponent(
         Stops all execution.
         """
         self.stop_sequencer()
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        pass
 
 
 # ----------------- Utility -----------------

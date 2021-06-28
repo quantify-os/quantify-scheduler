@@ -74,6 +74,13 @@ class HDAWGControlStackComponent(qcodes.HDAWG, ZIControlStackComponent):
             name, serial, interface, host, port, api, **kwargs
         )
 
+    @property
+    def is_running(self) -> bool:
+        return any(
+            self.get_awg(awg_index).is_running
+            for awg_index in self.zi_settings.awg_indexes
+        )
+
     def get_awg(self, index: int) -> qcodes.hdawg.AWG:
         """
         Returns the AWG by index.
@@ -106,6 +113,10 @@ class HDAWGControlStackComponent(qcodes.HDAWG, ZIControlStackComponent):
     def retrieve_acquisition(self) -> Any:
         return None
 
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        for awg_index in reversed(self.zi_settings.awg_indexes):
+            self.get_awg(awg_index).wait_done(timeout_sec)
+
 
 class UHFQAControlStackComponent(qcodes.UHFQA, ZIControlStackComponent):
     """Zurich Instruments UHFQA ControlStack Component class."""
@@ -123,6 +134,10 @@ class UHFQAControlStackComponent(qcodes.UHFQA, ZIControlStackComponent):
         super().__init__(  # pylint: disable=too-many-function-args
             name, serial, interface, host, port, api, **kwargs
         )
+
+    @property
+    def is_running(self) -> bool:
+        return self.awg.is_running
 
     def start(self) -> None:
         self.awg.run()
@@ -153,3 +168,6 @@ class UHFQAControlStackComponent(qcodes.UHFQA, ZIControlStackComponent):
             acq_channel_results[acq_channel] = resolve(uhfqa=self)
 
         return acq_channel_results
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        self.awg.wait_done(timeout_sec)

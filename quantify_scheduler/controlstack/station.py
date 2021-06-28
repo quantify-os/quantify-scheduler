@@ -28,6 +28,18 @@ class ControlStack(Station):
 
     components: Dict[str, base.AbstractControlStackComponent]
 
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns if any of the ControlStack components is running.
+
+        Returns
+        -------
+        :
+            The ControlStack's running state.
+        """
+        return any(c.is_running is True for c in self.components.values())
+
     def get_component(self, name: str) -> base.AbstractControlStackComponent:
         """
         Returns the ControlStack component by name.
@@ -155,3 +167,19 @@ class ControlStack(Station):
             if acq is not None:
                 acq_dict[instrument_name] = acq
         return acq_dict
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        """
+        Awaits each ControlStack component until it has stopped running or until it has
+        exceeded the amount of time to run.
+
+        The timeout in seconds specifies the allowed amount of time to run before
+        it times out.
+
+        Parameters
+        ----------
+        timeout_sec :
+            The maximum amount of time in seconds before a timeout.
+        """
+        for instrument_name in self.components:
+            self.get_component(instrument_name).wait_done(timeout_sec)
