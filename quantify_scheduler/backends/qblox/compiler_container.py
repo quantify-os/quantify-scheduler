@@ -60,7 +60,7 @@ class CompilerContainer:
         Parameters
         ----------
         name
-            Name of the instrument
+            Name of the instrument.
         instrument
             A reference to the compiler class. Can either be passed as string or a
             direct reference.
@@ -129,7 +129,7 @@ class CompilerContainer:
 
         Parameters
         ----------
-        schedule:
+        schedule
             The schedule to pass to the constructor.
         mapping
             The hardware mapping.
