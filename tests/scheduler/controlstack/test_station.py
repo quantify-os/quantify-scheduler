@@ -4,6 +4,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 from __future__ import annotations
+from typing import List
 
 from unittest.mock import call
 
@@ -26,6 +27,30 @@ def test_constructor():
 
     # Assert
     assert len(controlstack.components) == 0
+
+
+@pytest.mark.parametrize(
+    "states,expected",
+    [
+        ([True, True], True),
+        ([False, True], True),
+        ([False, False], False),
+    ],
+)
+def test_is_running(mocker, states: List[bool], expected: bool):
+    # Arrange
+    controlstack = station.ControlStack()
+
+    for i, state in enumerate(states):
+        component = make_component(mocker, f"dev{i}")
+        component.is_running = state
+        controlstack.add_component(component)
+
+    # Act
+    is_running = controlstack.is_running
+
+    # Assert
+    assert is_running == expected
 
 
 def test_get_component(mocker):
@@ -159,3 +184,21 @@ def test_retrieve_acquisition(mocker):
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
     assert {"dev1234": {0: [1, 2, 3, 4]}} == data
+
+
+def test_wait_done(mocker):
+    # Arrange
+    controlstack = station.ControlStack()
+    component1 = make_component(mocker, "dev1234")
+    component2 = make_component(mocker, "dev5678")
+    controlstack.add_component(component1)
+    controlstack.add_component(component2)
+
+    timeout: int = 1
+
+    # Act
+    controlstack.wait_done(timeout)
+
+    # Assert
+    component1.wait_done.assert_called_with(timeout)
+    component2.wait_done.assert_called_with(timeout)

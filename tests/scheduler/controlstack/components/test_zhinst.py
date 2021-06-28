@@ -174,6 +174,35 @@ def test_hdawg_retrieve_acquisition(make_hdawg):
     assert acq_result is None
 
 
+def test_hdawg_wait_done(mocker, make_hdawg):
+    # Arrange
+    hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
+    get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
+    hdawg.zi_settings = settings.ZISettings(
+        list(),
+        [
+            (0, mocker.Mock()),
+            (1, mocker.Mock()),
+            (2, mocker.Mock()),
+            (3, mocker.Mock()),
+        ],
+    )
+    timeout: int = 20
+
+    # Act
+    hdawg.wait_done(timeout)
+
+    # Assert
+    assert get_awg_spy.call_args_list == [
+        call(3),
+        call(2),
+        call(1),
+        call(0),
+    ]
+    for i in range(4):
+        hdawg.get_awg(i).wait_done.assert_called_with(timeout)
+
+
 def test_initialize_uhfqa(make_uhfqa):
     make_uhfqa("uhfqa0", "dev1234")
 
@@ -265,3 +294,17 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     assert not acq_result is None
     assert 0 in acq_result
     assert (acq_result[0] == expected_data).all()
+
+
+def test_uhfqa_wait_done(mocker, make_uhfqa):
+    # Arrange
+    uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
+
+    wait_done = mocker.patch.object(uhfqa.awg, "wait_done")
+    timeout: int = 20
+
+    # Act
+    uhfqa.wait_done(timeout)
+
+    # Assert
+    wait_done.assert_called_with(timeout)
