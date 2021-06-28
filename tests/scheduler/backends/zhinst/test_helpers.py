@@ -8,8 +8,8 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 from zhinst.qcodes.base import ZIBaseInstrument
-from quantify.scheduler.helpers import time
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.helpers import time
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
 
 @pytest.mark.parametrize(

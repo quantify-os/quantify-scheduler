@@ -140,7 +140,7 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_css_files = [
-    "quantify.css",
+    "quantify_scheduler.css",
 ]
 
 
@@ -173,7 +173,7 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "quantify.tex",
+        "quantify_scheduler.tex",
         "quantify Documentation",
         "Quantify Consortium ",
         "manual",

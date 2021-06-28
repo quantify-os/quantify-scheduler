@@ -5,6 +5,10 @@ Changelog
 Unreleased
 ----------
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Change of namespace from quantify.scheduler.* to quantify_scheduler.*
+
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -13,7 +17,7 @@ Merged branches and closed issues
 * Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
 * Added ControlStack (!70)
 * Added Qblox ControlStack components (!112)
-* Renamed input parameters of quantify.scheduler.schedules.* functions. (!136)
+* Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
 
 
 0.3.0 Multiple backends support (2021-05-20)
@@ -25,7 +29,7 @@ Merged branches and closed issues
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-* Major refactor of the Qblox backend. (For example, it's now `quantify.backends.qblox_backend` instead of the previous `quantify.backends.pulsar_backend`)
+* Major refactor of the Qblox backend. (For example, it's now `quantify_core.backends.qblox_backend` instead of the previous `quantify_core.backends.pulsar_backend`)
 * Qblox backend requires strictly v0.3.2 of the qblox-instruments package.
 
 
@@ -68,16 +72,16 @@ Merged branches and closed issues
 ---------------------------------------------------------
 
 * Major refactor of the scheduler resource code enabling hybrid pulse- gate-level control.
-* Moved quantify.scheduler.types.Resource class to a separate quantify.scheduler.resources module.
-* Adds a BasebandClockResource class within the newly created quantify.scheduler.resources module.
-* Moved QRM and QCM related classes to the quantify.scheduler.backends.pulsar_backend module.
-* In quantify.scheduler.compilation, rename of function '_determine_absolute_timing' to 'determine_absolute_timing'. Argument changed from clock_unit to time_unit.
-* In quantify.scheduler.compilation, rename of function '_add_pulse_information_transmon' to 'add_pulse_information_transmon'.
-* Added ramp waveform in quantify.scheduler.waveforms.
+* Moved quantify_scheduler.types.Resource class to a separate quantify_scheduler.resources module.
+* Adds a BasebandClockResource class within the newly created quantify_scheduler.resources module.
+* Moved QRM and QCM related classes to the quantify_scheduler.backends.pulsar_backend module.
+* In quantify_scheduler.compilation, rename of function '_determine_absolute_timing' to 'determine_absolute_timing'. Argument changed from clock_unit to time_unit.
+* In quantify_scheduler.compilation, rename of function '_add_pulse_information_transmon' to 'add_pulse_information_transmon'.
+* Added ramp waveform in quantify_scheduler.waveforms.
 * Added schemas for operation and transmon_cfg.
 * Added a basic hybrid visualisation for pulses using new addressing scheme.
 * Operations check whether an operation is a valid gate or pulse.
-* Refactor of visualization module. Moved quantify.scheduler.backends.visualization to quantify.scheduler.visualization module. Expect code breaking reorganization and changes to function names.
+* Refactor of visualization module. Moved quantify_scheduler.backends.visualization to quantify_scheduler.visualization module. Expect code breaking reorganization and changes to function names.
 * Pulsar backend version now checks for QCM and QRM drivers version 0.1.2.
 
 Merged branches and closed issues
