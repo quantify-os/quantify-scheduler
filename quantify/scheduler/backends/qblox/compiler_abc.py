@@ -476,13 +476,45 @@ class PulsarSequencerBase(ABC):
                 awg_gain_1=amp_q / self.awg_output_volt,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
-                self.apply_output_mode_to_data(pulse, raw_wf_data, output_mode)
+                raw_wf_data = self.apply_output_mode_to_data(
+                    pulse, raw_wf_data, output_mode
+                )
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return helpers.generate_waveform_dict(waveforms_complex)
 
     def apply_output_mode_to_data(
         self, pulse: OpInfo, data: np.ndarray, mode: Literal["complex", "real", "imag"]
-    ):
+    ) -> np.ndarray:
+        """
+        Takes the pulse and ensures it is played on the right path for real or imag
+        mode, does nothing in case of complex as this should be handled correctly either
+        way.
+
+        Effectively this means that real data is made imaginary when mode is "imag", but
+        complex and real only have some checks on the data.
+
+        Parameters
+        ----------
+        pulse
+            The pulse information.
+        data
+            Real or complex valued data.
+        mode
+            The output mode. Must be one of "complex", "real" or "imag".
+
+        Returns
+        -------
+        :
+            The (potentially made imag) data.
+
+        Raises
+        ------
+        ValueError
+            Mode is not complex but data has an imaginary part prior to the
+            transformation in this function.
+        """
+        assert mode in ("complex", "real", "imag")
+
         if mode == "complex":
             return data
 
@@ -494,8 +526,7 @@ class PulsarSequencerBase(ABC):
             )
         if mode == "imag":
             return 1.0j * data
-        else:
-            return data
+        return data  # mode is real
 
     def _generate_acq_dict(self) -> Dict[str, Any]:
         """
