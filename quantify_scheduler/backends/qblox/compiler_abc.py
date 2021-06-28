@@ -52,7 +52,7 @@ class InstrumentCompiler(ABC):
     """
     Abstract base class that defines a generic instrument compiler. The subclasses that
     inherit from this are meant to implement the compilation steps needed to compile the
-    lists of :class:`quantify.scheduler.backends.types.qblox.OpInfo` representing the
+    lists of :class:`quantify_scheduler.backends.types.qblox.OpInfo` representing the
     pulse and acquisition information to device-specific instructions.
 
     Each device that needs to be part of the compilation process requires an associated
