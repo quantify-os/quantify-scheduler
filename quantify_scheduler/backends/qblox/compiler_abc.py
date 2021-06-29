@@ -793,7 +793,7 @@ class PulsarSequencerBase(ABC):
         Parameters
         ----------
         repetitions:
-            Number of times execution the schedule is repeated
+            Number of times execution the schedule is repeated.
 
         Returns
         -------
