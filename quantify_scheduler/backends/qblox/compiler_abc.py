@@ -109,7 +109,7 @@ class InstrumentCompiler(ABC):
         Parameters
         ----------
         repetitions
-            Number of times execution the schedule is repeated.
+            Number of times execution of the schedule is repeated.
 
         Returns
         -------
