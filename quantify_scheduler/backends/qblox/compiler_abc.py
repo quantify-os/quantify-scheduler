@@ -91,7 +91,7 @@ class InstrumentCompiler(ABC):
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
 
-    def prepare(self):
+    def prepare(self) -> None:
         """
         Method that can be overridden to implement logic before the main compilation
         starts. This step is to extract all settings for the devices that are dependent
@@ -100,7 +100,7 @@ class InstrumentCompiler(ABC):
         """
 
     @abstractmethod
-    def compile(self, repetitions: int):
+    def compile(self, repetitions: int) -> Any:
         """
         An abstract method that should be overridden in a subclass to implement the
         actual compilation. It should turn the pulses and acquisitions added to the
@@ -137,6 +137,10 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
+        parent
+            Reference to the parent
+            :class:`quantify.scheduler.backends.qblox.compiler_container.CompilerContainer`
+            object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
