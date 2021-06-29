@@ -159,7 +159,7 @@ def pulse_only_schedule_no_lo():
     sched.add(
         SquarePulse(
             amp=0.5,
-            phase=90,
+            phase=0,
             port="q1:res",
             duration=20e-9,
             clock="q1.ro",
