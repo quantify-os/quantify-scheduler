@@ -94,8 +94,9 @@ class InstrumentCompiler(ABC):
     def prepare(self):
         """
         Method that can be overridden to implement logic before the main compilation
-        starts. This step is to align all settings between different devices that
-        which needs to happen after instantiation but before compilation.
+        starts. This step is to extract all settings for the devices that are dependent
+        on settings of other devices. This step happens after instantiation of the
+        compiler object but before the start of the main compilation.
         """
 
     @abstractmethod
