@@ -850,6 +850,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
+        parent
+            Reference to the parent
+            :class:`quantify.scheduler.backends.qblox.compiler_container.CompilerContainer`
+            object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
