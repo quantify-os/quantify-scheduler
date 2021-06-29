@@ -155,11 +155,10 @@ def pulse_only_schedule():
 @pytest.fixture
 def pulse_only_schedule_no_lo():
     sched = Schedule("pulse_only_schedule_no_lo")
-    sched.add(Reset("q0"))
+    sched.add(Reset("q1"))
     sched.add(
-        DRAGPulse(
-            G_amp=0.7,
-            D_amp=-0.2,
+        SquarePulse(
+            amp=0.5,
             phase=90,
             port="q1:res",
             duration=20e-9,
