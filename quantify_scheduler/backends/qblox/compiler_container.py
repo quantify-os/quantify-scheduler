@@ -16,6 +16,12 @@ from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
 class CompilerContainer:
     """
     Container class that holds all the compiler objects for the individual instruments.
+
+    This class serves to allow all the possible compilation steps that involve multiple
+    devices at the same time, such as calculating the modulation frequency for a device
+    with a separate local oscillator from a clock that is defined at the schedule level.
+
+    It is recommended to construct this object using the `from_mapping` factory method.
     """
 
     def __init__(self, schedule: types.Schedule):
