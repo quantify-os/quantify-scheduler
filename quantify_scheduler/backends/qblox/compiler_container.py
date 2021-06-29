@@ -35,13 +35,13 @@ class CompilerContainer:
         """
         self.total_play_time = get_total_duration(schedule)
         """
-        The total duration of the schedule in absolute time this class will be 
-        compiling.
+        The total duration of the schedule in absolute time this class will be
+         compiling.
         """
         self.resources = schedule.resources
         """
-        The resources attribute of the schedule. Used for getting the information 
-        from the clocks.
+        The resources attribute of the schedule. Used for getting the information
+         from the clocks.
         """
         self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
         """The compilers for the individual instruments."""
