@@ -51,10 +51,10 @@ class CompilerContainer:
 
         compiled_schedule = dict()
         for name, compiler in self.instrument_compilers.items():
-            compiled_dev_program = compiler.compile(repetitions=repetitions)
+            compiled_instrument_program = compiler.compile(repetitions=repetitions)
 
-            if compiled_dev_program is not None:
-                compiled_schedule[name] = compiled_dev_program
+            if compiled_instrument_program is not None:
+                compiled_schedule[name] = compiled_instrument_program
         return compiled_schedule
 
     def add_instrument_compiler(
