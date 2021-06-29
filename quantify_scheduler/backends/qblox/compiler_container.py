@@ -43,7 +43,7 @@ class CompilerContainer:
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
         """
-        self.instrument_compilers: Dict[str, compiler_abc.InstrumentCompiler] = dict()
+        self.instrument_compilers = dict()
         """The compilers for the individual instruments."""
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
