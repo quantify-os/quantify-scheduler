@@ -8,8 +8,6 @@ from typing import Dict, Any, Union
 from quantify_scheduler import types
 from quantify_scheduler.helpers.schedule import get_total_duration
 
-
-from quantify_scheduler.backends.qblox import compiler_abc
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
 
 
