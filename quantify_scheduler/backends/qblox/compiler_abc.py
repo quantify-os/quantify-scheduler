@@ -372,7 +372,7 @@ class PulsarSequencerBase(ABC):
                 )
         self._settings.modulation_freq = freq
 
-    def assign_frequencies(self):
+    def align_modulation_frequency_with_ext_lo(self):
         r"""
         Sets the frequencies so that the LO and IF frequencies follow the relation:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -1011,7 +1011,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     def prepare(self):
         self._distribute_data()
         for seq in self.sequencers.values():
-            seq.assign_frequencies()
+            seq.align_modulation_frequency_with_ext_lo()
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
