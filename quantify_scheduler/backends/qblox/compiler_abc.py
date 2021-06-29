@@ -361,7 +361,7 @@ class PulsarSequencerBase(ABC):
         ------
         ValueError
             Attempting to set the modulation frequency to a new value even though a
-            value has been previously assigned.
+            different value has been previously assigned.
         """
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
