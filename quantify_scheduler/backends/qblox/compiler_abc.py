@@ -132,6 +132,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        # pylint: disable=line-too-long
         """
         Constructor for a ControlDeviceCompiler object.
 
