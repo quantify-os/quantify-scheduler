@@ -378,9 +378,11 @@ class PulsarSequencerBase(ABC):
         :math:`f_{RF} = f_{LO} + f_{IF}`.
 
         In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise and error is thrown. If the frequency
-        is overconstraint (i.e. multiple values are somehow specified) an error is
-        thrown during assignment.
+        been set during instantiation. Otherwise an error is thrown.
+
+        If the frequency is overconstraint (i.e. multiple values are somehow specified)
+        an error will be thrown during assignment (in the setter method of the
+        frequency).
 
         Raises
         ------
