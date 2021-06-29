@@ -825,10 +825,13 @@ class PulsarSequencerBase(ABC):
 
 class PulsarBase(ControlDeviceCompiler, ABC):
     """
-    Pulsar specific implementation of `InstrumentCompiler`. The class is defined as an
-    abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
-    implementations are defined in subclasses. Effectively, this base class contains the
-    functionality shared by the Pulsar QRM and Pulsar QCM.
+    Pulsar specific implementation of
+    :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
+
+    This class is defined as an abstract base class since the distinction between
+    Pulsar QRM and Pulsar QCM specific implementations are defined in subclasses.
+    Effectively, this base class contains the functionality shared by the Pulsar QRM
+    and Pulsar QCM and serves to avoid code duplication between the two.
     """
 
     output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
