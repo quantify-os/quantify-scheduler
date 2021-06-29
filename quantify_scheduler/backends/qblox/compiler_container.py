@@ -9,7 +9,7 @@ from quantify_scheduler import types
 from quantify_scheduler.helpers.schedule import get_total_duration
 
 
-from quantify_scheduler.backends.qblox import instrument_compilers
+from quantify_scheduler.backends import qblox
 from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
 
 
@@ -99,7 +99,7 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        compiler: type = getattr(instrument_compilers, instrument)
+        compiler: type = getattr(qblox.instrument_compilers, instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(
