@@ -10,7 +10,7 @@ from quantify_scheduler.helpers.schedule import get_total_duration
 
 
 from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
-from quantify_scheduler.backends.qblox.instrument_compilers import compiler_classes
+from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
 
 
 class CompilerContainer:
