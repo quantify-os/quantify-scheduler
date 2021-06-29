@@ -1008,7 +1008,13 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
-    def prepare(self):
+    def prepare(self) -> None:
+        """
+        Performs the logic needed before being able to start the compilation. In effect,
+        this means assigning the pulses and acquisitions to the the sequencers and
+        calculating the relevant frequencies in case an external local oscillator is
+        used.
+        """
         self._distribute_data()
         for seq in self.sequencers.values():
             seq.align_modulation_frequency_with_ext_lo()
