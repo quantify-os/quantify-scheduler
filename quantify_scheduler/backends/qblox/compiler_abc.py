@@ -74,7 +74,7 @@ class InstrumentCompiler(ABC):
         ----------
         parent
             Reference to the parent
-            :class:`quantify.scheduler.backends.qblox.compiler_container.CompilerContainer`
+            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
             object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
@@ -141,7 +141,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         ----------
         parent
             Reference to the parent
-            :class:`quantify.scheduler.backends.qblox.compiler_container.CompilerContainer`
+            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
             object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
@@ -860,7 +860,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         ----------
         parent
             Reference to the parent
-            :class:`quantify.scheduler.backends.qblox.compiler_container.CompilerContainer`
+            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
             object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
