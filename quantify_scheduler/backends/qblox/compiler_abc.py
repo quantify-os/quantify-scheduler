@@ -850,6 +850,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        # pylint: disable=line-too-long
         """
         Constructor function.
 
