@@ -59,7 +59,7 @@ class CompilerContainer:
 
     def add_instrument_compiler(
         self, name: str, instrument: Union[str, type], mapping: Dict[str, Any]
-    ):
+    ) -> None:
         """
         Adds an instrument compiler to the container.
 
@@ -84,7 +84,9 @@ class CompilerContainer:
                 f"passed."
             )
 
-    def _add_from_str(self, name: str, instrument: str, mapping: Dict[str, Any]):
+    def _add_from_str(
+        self, name: str, instrument: str, mapping: Dict[str, Any]
+    ) -> None:
         """
         Adds the instrument compiler from a string.
 
@@ -100,7 +102,9 @@ class CompilerContainer:
         compiler: type = getattr(instrument_compilers, instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
-    def _add_from_type(self, name: str, instrument: type, mapping: Dict[str, Any]):
+    def _add_from_type(
+        self, name: str, instrument: type, mapping: Dict[str, Any]
+    ) -> None:
         """
         Adds the instrument compiler from a type.
 
@@ -115,17 +119,6 @@ class CompilerContainer:
         """
         compiler = instrument(self, name, self.total_play_time, mapping)
         self.instrument_compilers[name] = compiler
-
-    def get_instrument_compiler(self, name: str):
-        """
-        Getter for the individual instrument compilers.
-
-        Parameters
-        ----------
-        name
-            The name of the instrument.
-        """
-        return self.instrument_compilers[name]
 
     @classmethod
     def from_mapping(cls, schedule: types.Schedule, mapping: dict) -> CompilerContainer:

@@ -641,10 +641,9 @@ def test_container_prepare(pulse_only_schedule):
         instr.prepare()
 
     assert (
-        container.get_instrument_compiler("qcm0").sequencers["seq0"].frequency
-        is not None
+        container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
     )
-    assert container.get_instrument_compiler("lo0").frequency is not None
+    assert container.instrument_compilers["lo0"].frequency is not None
 
 
 def test_container_prepare_baseband(
@@ -657,10 +656,9 @@ def test_container_prepare_baseband(
         instr.prepare()
 
     assert (
-        container.get_instrument_compiler("qcm0").sequencers["seq0"].frequency
-        is not None
+        container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
     )
-    assert container.get_instrument_compiler("lo0").frequency is not None
+    assert container.instrument_compilers["lo0"].frequency is not None
 
 
 def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
@@ -669,9 +667,7 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
     )
     container.compile(repetitions=10)
 
-    assert (
-        container.get_instrument_compiler("qrm1").sequencers["seq0"].frequency == 100e6
-    )
+    assert container.instrument_compilers["qrm1"].sequencers["seq0"].frequency == 100e6
 
 
 def test_container_add_from_type(pulse_only_schedule):
