@@ -66,6 +66,7 @@ class InstrumentCompiler(ABC):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        # pylint: disable=line-too-long
         """
         Constructor for an InstrumentCompiler object.
 
