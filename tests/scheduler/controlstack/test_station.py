@@ -8,8 +8,8 @@ from __future__ import annotations
 from unittest.mock import call
 
 import pytest
-from quantify.scheduler.controlstack import station
-from quantify.scheduler.controlstack.components import base
+from quantify_scheduler.controlstack import station
+from quantify_scheduler.controlstack.components import base
 
 
 def make_component(mocker, name: str) -> base.AbstractControlStackComponent:

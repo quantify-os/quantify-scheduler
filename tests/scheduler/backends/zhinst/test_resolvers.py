@@ -5,8 +5,8 @@ from unittest.mock import call
 
 import numpy as np
 
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
-from quantify.scheduler.backends.zhinst.resolvers import (
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.backends.zhinst.resolvers import (
     monitor_acquisition_resolver,
     result_acquisition_resolver,
 )

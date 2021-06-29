@@ -1,10 +1,10 @@
 import pytest
-from quantify.scheduler import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy
-from quantify.scheduler.pulse_library import SquarePulse
-from quantify.scheduler.acquisition_library import SSBIntegrationComplex
-from quantify.scheduler.resources import ClockResource
-from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+from quantify_scheduler import Schedule
+from quantify_scheduler.gate_library import Reset, Measure, CNOT, Rxy
+from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 
 
 @pytest.mark.mpl_image_compare(style="default", savefig_kwargs={"dpi": 300})

@@ -6,10 +6,10 @@
 import tempfile
 import pytest
 import numpy as np
-from quantify.scheduler.schedules import timedomain_schedules as ts
-from quantify.scheduler.compilation import determine_absolute_timing, qcompile
-from quantify.data.handling import set_datadir
-from quantify.scheduler.schemas.examples import utils
+from quantify_core.data.handling import set_datadir
+from quantify_scheduler.schedules import timedomain_schedules as ts
+from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.schemas.examples import utils
 
 
 # FIXME to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme

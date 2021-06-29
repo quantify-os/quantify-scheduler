@@ -14,14 +14,14 @@ import pytest
 from qcodes.instrument import channel
 from zhinst import qcodes
 from zhinst import toolkit as tk
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
-from quantify.scheduler.backends.zhinst import settings
-from quantify.scheduler.backends.zhinst_backend import (
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.backends.zhinst import settings
+from quantify_scheduler.backends.zhinst_backend import (
     ZIAcquisitionConfig,
     ZIDeviceConfig,
 )
-from quantify.scheduler.controlstack.components import zhinst
-from quantify.scheduler.types import Schedule
+from quantify_scheduler.controlstack.components import zhinst
+from quantify_scheduler.types import Schedule
 
 
 @pytest.fixture
@@ -153,7 +153,7 @@ def test_hdawg_prepare(mocker, make_hdawg):
     )
     serialize = mocker.patch.object(settings.ZISettings, "serialize")
     apply = mocker.patch.object(settings.ZISettings, "apply")
-    mocker.patch("quantify.data.handling.get_datadir", return_value=".")
+    mocker.patch("quantify_core.data.handling.get_datadir", return_value=".")
 
     # Act
     hdawg.prepare(config)
@@ -220,7 +220,7 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
     )
     serialize = mocker.patch.object(settings.ZISettings, "serialize")
     apply = mocker.patch.object(settings.ZISettings, "apply")
-    mocker.patch("quantify.data.handling.get_datadir", return_value=".")
+    mocker.patch("quantify_core.data.handling.get_datadir", return_value=".")
 
     mocker.patch.object(zi_helpers, "get_waves_directory", return_value=Path("waves/"))
     mocker.patch.object(Path, "glob", return_value=["uhfqa0_awg0.csv"])
@@ -251,7 +251,7 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     )
     mocker.patch.object(settings.ZISettings, "serialize")
     mocker.patch.object(settings.ZISettings, "apply")
-    mocker.patch("quantify.data.handling.get_datadir", return_value=".")
+    mocker.patch("quantify_core.data.handling.get_datadir", return_value=".")
 
     mocker.patch.object(zi_helpers, "get_waves_directory", return_value=Path("waves/"))
     mocker.patch.object(Path, "glob", return_value=[])
