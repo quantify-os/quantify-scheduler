@@ -31,7 +31,7 @@ class CompilerContainer:
         self.resources = schedule.resources
         self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
 
-    def compile(self, repetitions: int):
+    def compile(self, repetitions: int) -> Dict[str, Any]:
         """
         Performs the compilation for all the individual instruments.
 
@@ -39,6 +39,12 @@ class CompilerContainer:
         ----------
         repetitions
             Amount of times to perform execution of the schedule.
+
+        Returns
+        -------
+        :
+            Dictionary containing all the compiled programs for each instrument. The key
+            refers to the name of the instrument that the program belongs to.
         """
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
