@@ -9,7 +9,7 @@ from quantify_scheduler import types
 from quantify_scheduler.helpers.schedule import get_total_duration
 
 
-from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
+from quantify_scheduler.backends.qblox import compiler_abc
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
 
 
@@ -43,7 +43,7 @@ class CompilerContainer:
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
         """
-        self.instrument_compilers: Dict[str, InstrumentCompiler] = dict()
+        self.instrument_compilers: Dict[str, compiler_abc.InstrumentCompiler] = dict()
         """The compilers for the individual instruments."""
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
