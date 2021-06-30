@@ -264,7 +264,7 @@ class TestT1Sched:
         qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
-class TestRamseySched:
+class TestRamseySchedDetuning:
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
@@ -301,13 +301,57 @@ class TestRamseySched:
 
         sched = ts.ramsey_sched(**sched_kwargs)
         sched = qcompile(sched, DEVICE_CONFIG)
+        assert any(op["rel_time"] == 3e-6 for op in sched.timing_constraints)
 
     def test_operations(self):
-        # 4 for a regular Ramsey, more with artificial detuning
-        if self.sched_kwargs["artificial_detuning"]:
-            assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
-        else:
-            assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
+        assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
+
+    def test_compiles_qblox_backend(self):
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
+
+    def test_compiles_zi_backend(self):
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
+
+
+class TestRamseySched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "times": np.linspace(4.0e-6, 80e-6, 20),
+            "qubit": "q0",
+            "repetitions": 10,
+        }
+
+        cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+
+    def test_timing(self):
+        # test that the right operations are added and timing is as expected.
+        for i, constr in enumerate(self.sched.timing_constraints):
+            if i % 4 == 0:
+                assert constr["label"][:5] == "Reset"
+            if (i - 2) % 4 == 0:  # every second pi/2 operation
+                assert constr["rel_time"] == self.sched_kwargs["times"][i // 4]
+            if (i - 3) % 4 == 0:
+                assert constr["label"][:11] == "Measurement"
+
+    # pylint: disable=no-self-use
+    def test_sched_float_times(self):
+        sched_kwargs = {
+            "times": 3e-6,  # a floating point time
+            "qubit": "q0",
+        }
+
+        sched = ts.ramsey_sched(**sched_kwargs)
+        sched = qcompile(sched, DEVICE_CONFIG)
+
+    def test_operations(self):
+        assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -407,7 +451,7 @@ class TestAllXYSchedElement:
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
             "qubit": "q0",
-            "elt_select_idx": 4,
+            "element_select_idx": 4,
         }
 
         cls.sched = ts.allxy_sched(**cls.sched_kwargs)
