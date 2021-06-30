@@ -5,12 +5,40 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Any
+from qcodes.instrument import parameter
+from qcodes.instrument import base
+from qcodes.utils import validators
 
-from qcodes.instrument.base import AbstractInstrument
 
-
-class AbstractControlStackComponent(AbstractInstrument):
+class ControlStackComponentBase(base.Instrument):
     """The ControlStack component abstract interface."""
+
+    def __init__(
+        self,
+        instrument: base.InstrumentBase,
+        **kwargs,
+    ) -> None:
+        """Instantiates the ControlStackComponentBase base class."""
+        super().__init__(f"cs_{instrument.name}", **kwargs)
+
+        self.add_parameter(
+            "instrument_ref",
+            initial_value=instrument.name,
+            parameter_class=parameter.InstrumentRefParameter,
+            docstring="A reference of a instrument associated to this ControlStack "
+            "component.",
+            vals=validators.MultiType(validators.Strings(), validators.Enum(None)),
+        )
+
+    @property
+    def instrument(self) -> base.InstrumentBase:
+        """Returns the instrument referenced by `instrument_ref`."""
+        return self.instrument_ref.get_instr()
+
+    @instrument.setter
+    def instrument(self, instrument: base.InstrumentBase) -> None:
+        """Sets a new Instrument as reference."""
+        self.instrument_ref(instrument.name)
 
     @property
     @abstractmethod

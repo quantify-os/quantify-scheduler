@@ -11,9 +11,7 @@ from unittest.mock import call
 
 import numpy as np
 import pytest
-from qcodes.instrument import channel
 from zhinst import qcodes
-from zhinst import toolkit as tk
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (
@@ -26,63 +24,38 @@ from quantify_scheduler.types import Schedule
 
 @pytest.fixture
 def make_hdawg(mocker):
-    instrument = None
-
     def _make_hdawg(name: str, serial: str) -> zhinst.HDAWGControlStackComponent:
-        mocker.patch.object(
-            tk,
-            "HDAWG",
-        )
         mocker.patch("qcodes.instrument.Instrument.record_instance")
-        mocker.patch.object(qcodes.HDAWG, "connect_message")
-        awg = mocker.Mock(spec=qcodes.hdawg.AWG)
-        mocker.patch.object(
-            qcodes.hdawg,
-            "AWG",
-            return_value=awg,
-        )
-        channel_list = mocker.Mock(spec=channel.ChannelList)
-        mocker.patch.object(qcodes.hdawg, "ChannelList", return_value=channel_list)
-        instrument = zhinst.HDAWGControlStackComponent(name=name, serial=serial)
-        instrument.awgs = list(
-            map(mocker.create_autospec(qcodes.hdawg.AWG, instance=True), range(4))
-        )
-        return instrument
+        hdawg: qcodes.HDAWG = mocker.create_autospec(qcodes.HDAWG, instance=True)
+        hdawg.name = name
+        hdawg._serial = serial
+        hdawg.awgs = [None] * 4
+        for i in range(4):
+            hdawg.awgs[i] = mocker.create_autospec(qcodes.hdawg.AWG, instance=True)
+
+        component = zhinst.HDAWGControlStackComponent(hdawg)
+        mocker.patch.object(component.instrument_ref, "get_instr", return_value=hdawg)
+
+        return component
 
     yield _make_hdawg
-
-    if not instrument is None:
-        instrument.close()
 
 
 @pytest.fixture
 def make_uhfqa(mocker):
-    instrument = None
-
-    def _make_uhfqa(name: str, serial: str) -> zhinst.UHFQAControlStackComponent:
-        awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
-        mocker.patch.object(
-            tk,
-            "UHFQA",
-        )
+    def _make_uhfqa(name: str, serial: str) -> zhinst.HDAWGControlStackComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
-        mocker.patch.object(qcodes.UHFQA, "connect_message")
-        mocker.patch.object(qcodes.UHFQA, "add_parameter")
-        mocker.patch.object(
-            qcodes.uhfqa,
-            "AWG",
-            return_value=awg,
-        )
+        uhfqa: qcodes.UHFQA = mocker.create_autospec(qcodes.UHFQA, instance=True)
+        uhfqa.name = name
+        uhfqa._serial = serial
+        uhfqa.awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
 
-        instrument = zhinst.UHFQAControlStackComponent(name=name, serial=serial)
-        instrument.awg = awg
+        component = zhinst.UHFQAControlStackComponent(uhfqa)
+        mocker.patch.object(component.instrument_ref, "get_instr", return_value=uhfqa)
 
-        return instrument
+        return component
 
     yield _make_uhfqa
-
-    if not instrument is None:
-        instrument.close()
 
 
 def test_initialize_hdawg(make_hdawg):
@@ -159,8 +132,8 @@ def test_hdawg_prepare(mocker, make_hdawg):
     hdawg.prepare(config)
 
     # Assert
-    serialize.assert_called_with(Path("."), hdawg)
-    apply.assert_called_with(hdawg)
+    serialize.assert_called_with(Path("."), hdawg.instrument)
+    apply.assert_called_with(hdawg.instrument)
 
 
 def test_hdawg_retrieve_acquisition(make_hdawg):
@@ -221,7 +194,7 @@ def test_uhfqa_start(mocker, make_uhfqa):
     uhfqa.start()
 
     # Assert
-    uhfqa.awg.run.assert_called()
+    uhfqa.instrument.awg.run.assert_called()
 
 
 def test_uhfqa_stop(mocker, make_uhfqa):
@@ -238,7 +211,7 @@ def test_uhfqa_stop(mocker, make_uhfqa):
     uhfqa.stop()
 
     # Assert
-    uhfqa.awg.stop.assert_called()
+    uhfqa.instrument.awg.stop.assert_called()
 
 
 def test_uhfqa_prepare(mocker, make_uhfqa):
@@ -259,8 +232,8 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
     uhfqa.prepare(config)
 
     # Assert
-    serialize.assert_called_with(Path("."), uhfqa)
-    apply.assert_called_with(uhfqa)
+    serialize.assert_called_with(Path("."), uhfqa.instrument)
+    apply.assert_called_with(uhfqa.instrument)
     copy2.assert_called_with("uhfqa0_awg0.csv", "waves")
 
 
@@ -300,7 +273,7 @@ def test_uhfqa_wait_done(mocker, make_uhfqa):
     # Arrange
     uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
 
-    wait_done = mocker.patch.object(uhfqa.awg, "wait_done")
+    wait_done = mocker.patch.object(uhfqa.instrument.awg, "wait_done")
     timeout: int = 20
 
     # Act

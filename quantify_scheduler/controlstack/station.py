@@ -3,20 +3,18 @@
 """Module containing the main ControlStack Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List
 from collections import OrderedDict
 
-from qcodes.instrument.base import Instrument
-from qcodes.station import Station
+from qcodes.utils import validators
+from qcodes.instrument import parameter
+from qcodes.instrument import base as qcodes_base
 from quantify_scheduler.controlstack.components import base
 
 
-class ControlStack(Station):
+class ControlStack(qcodes_base.Instrument):
     """
     The ControlStack class is a collection of ControlStack components.
-
-    Each component in the collection is a QCoDeS
-    :class:`~qcodes.instrument.base.Instrument` required to execute the experiment.
 
     This class provides a high level interface to:
 
@@ -26,7 +24,16 @@ class ControlStack(Station):
     3. Get the results.
     """
 
-    components: Dict[str, base.AbstractControlStackComponent]
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.add_parameter(
+            "components",
+            initial_value=list(),
+            parameter_class=parameter.ManualParameter,
+            vals=validators.Lists(validators.Strings()),
+            docstring="A list containing the names of all components that"
+            " are part of this ControlStack.",
+        )
 
     @property
     def is_running(self) -> bool:
@@ -38,16 +45,19 @@ class ControlStack(Station):
         :
             The ControlStack's running state.
         """
-        return any(c.is_running is True for c in self.components.values())
+        return any(
+            self.find_instrument(c_name).is_running is True
+            for c_name in self.components()
+        )
 
-    def get_component(self, name: str) -> base.AbstractControlStackComponent:
+    def get_component(self, name: str) -> base.ControlStackComponentBase:
         """
         Returns the ControlStack component by name.
 
         Parameters
         ----------
-        name :
-            The QCoDeS instrument name.
+        name
+            The ControlStack component name.
 
         Returns
         -------
@@ -59,51 +69,55 @@ class ControlStack(Station):
         KeyError
             If key `name` is not present in `self.components`.
         """
-        if name not in self.components:
-            raise KeyError(f"Device '{name}' not added to '{self.__class__.__name__}'")
-        return self.components[name]
+        if name in self.components():
+            return self.find_instrument(name)
+        raise KeyError(f"'{name}' is not a component of {self.name}!")
 
     def add_component(
         self,
-        component: base.AbstractControlStackComponent,
-        name: Optional[str] = None,
-        update_snapshot: bool = True,
-    ) -> str:
+        component: base.ControlStackComponentBase,
+    ) -> None:
         """
-        Adds a ControlStack component to the ControlStack collection.
+        Adds a ControlStack component to the ControlStack components collection.
 
         Parameters
         ----------
         component
-            The control stack component to add.
-        name
-            Optionally set the name of this component.
-        update_snapshot
-            Immediately update the snapshot of each component as it is added to the
-            Station.
-
-        Returns
-        -------
-        :
-            The QCoDeS name assigned to this component, the name might be changed to
-            make it unique among previously added components.
+            The ControlStack component to add.
 
         Raises
         ------
+        ValueError
+            If a component with a duplicated name is added to the collection.
         TypeError
-            If `component` is not an instance of `AbstractControlStackComponent` or
-            `Instrument`.
+            If 'component' is not an instance of 'ControlStackComponentBase'.
         """
-        if not isinstance(component, (base.AbstractControlStackComponent, Instrument)):
+        if component.name in self.components():
+            raise ValueError(f"'{component.name}' has already been added!")
+
+        if not isinstance(component, base.ControlStackComponentBase):
             raise TypeError(
-                (
-                    "Expected AbstractControlStackComponent and Instrument for "
-                    f"component argument, instead got {type(component)}"
-                )
+                f"{repr(component)} is not "
+                f"{base.__name__}.{base.ControlStackComponentBase.__name__}."
             )
-        return super().add_component(
-            component, name=name, update_snapshot=update_snapshot
-        )
+
+        components: List[str] = self.components()
+        # add the component by name
+        components.append(component.name)
+        self.components.set(components)
+
+    def remove_component(self, name: str) -> None:
+        """
+        Removes a ControlStack component by name.
+
+        Parameters
+        ----------
+        name
+            The ControlStack component name.
+        """
+
+        # list gets updated in place
+        self.components().remove(name)
 
     def prepare(
         self,
@@ -138,8 +152,9 @@ class ControlStack(Station):
         The components are started in the order in which they were added
         to the ControlStack.
         """
-        for instrument_name in self.components:
-            self.get_component(instrument_name).start()
+        for instr_name in self.components():
+            instrument = self.find_instrument(instr_name)
+            instrument.start()
 
     def stop(self) -> None:
         """
@@ -148,8 +163,9 @@ class ControlStack(Station):
         The components are stopped in the order in which they were added
         to the ControlStack.
         """
-        for instrument_name in self.components:
-            self.get_component(instrument_name).stop()
+        for instr_name in self.components():
+            instrument = self.find_instrument(instr_name)
+            instrument.stop()
 
     def retrieve_acquisition(self) -> Dict[str, Any]:
         """
@@ -162,10 +178,11 @@ class ControlStack(Station):
             The acquisition data per ControlStack component.
         """
         acq_dict = OrderedDict()
-        for instrument_name in self.components:
-            acq = self.get_component(instrument_name).retrieve_acquisition()
+        for instr_name in self.components():
+            instrument = self.find_instrument(instr_name)
+            acq = instrument.retrieve_acquisition()
             if acq is not None:
-                acq_dict[instrument_name] = acq
+                acq_dict[instrument.name] = acq
         return acq_dict
 
     def wait_done(self, timeout_sec: int = 10) -> None:
@@ -181,5 +198,6 @@ class ControlStack(Station):
         timeout_sec :
             The maximum amount of time in seconds before a timeout.
         """
-        for instrument_name in self.components:
-            self.get_component(instrument_name).wait_done(timeout_sec)
+        for instr_name in self.components():
+            instrument = self.find_instrument(instr_name)
+            self.get_component(instrument.name).wait_done(timeout_sec)
