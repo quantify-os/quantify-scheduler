@@ -172,6 +172,25 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     def wait_done(self, timeout_sec: int = 10) -> None:
         pass
 
+class PulsarQCMRFComponent(
+    PulsarQCMComponent
+):
+    """
+    Pulsar QCM-RF specific control stack component.
+    """
+
+
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        super()._configure_global_settings(settings)
+
 
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
@@ -381,6 +400,20 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         pass
+
+
+class PulsarQRMRFComponent(
+    PulsarQRMComponent
+):
+    """
+    Pulsar QRM specific stack component.
+    """
+
+    def _configure_global_settings(self, settings: PulsarSettings):
+        super()._configure_global_settings(settings)
+    
+
+
 
 
 # ----------------- Utility -----------------

@@ -195,3 +195,14 @@ class Pulsar_QRM(PulsarBase):
     """The type of the sequencer."""
     max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
+
+class Pulsar_QCM_RF(Pulsar_QCM):
+    """
+    Pulsar QCM-RF specific implementation of the pulsar compiler.
+    """
+
+
+class Pulsar_QRM_RF(Pulsar_QRM):
+    """
+    Pulsar QRM-RF specific implementation of the pulsar compiler.
+    """
