@@ -1014,7 +1014,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     def prepare(self) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
-        this means assigning the pulses and acquisitions to the the sequencers and
+        this means assigning the pulses and acquisitions to the sequencers and
         calculating the relevant frequencies in case an external local oscillator is
         used.
         """
