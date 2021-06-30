@@ -3,7 +3,7 @@
 """Module containing Qblox ControlStack Components."""
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from dataclasses import dataclass
 import logging
@@ -14,6 +14,7 @@ from typing_extensions import Literal
 import numpy as np
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
+from qcodes.instrument.base import Instrument
 from quantify_scheduler.controlstack.components import base
 from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.backends.types.qblox import PulsarSettings, SequencerSettings
@@ -24,10 +25,21 @@ from quantify_scheduler.backends.qblox.constants import (
 
 logger = logging.getLogger(__name__)
 
+
+class PulsarControlStackComponent(base.ControlStackComponentBase):
+    """Qblox Pulsar ControlStack component base class."""
+
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
+        """Create a new instance of PulsarControlStackComponent base class."""
+        super().__init__(instrument, **kwargs)
+
+    @property
+    def is_running(self) -> bool:
+        raise NotImplementedError()
+
+
 # pylint: disable=too-many-ancestors
-class PulsarQCMComponent(
-    pulsar_qcm.pulsar_qcm_qcodes, base.AbstractControlStackComponent
-):
+class PulsarQCMComponent(PulsarControlStackComponent):
     """
     Pulsar QCM specific control stack component.
     """
@@ -35,17 +47,18 @@ class PulsarQCMComponent(
     number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Specifies the amount of sequencers available to this QCM."""
 
-    def __init__(self, name, host, port=5025, debug=0) -> None:
-        if host == "dummy":
-            debug = 1
-            transport_inst = pulsar_qcm.pulsar_dummy_transport(
-                pulsar_qcm.pulsar_qcm_ifc._get_sequencer_cfg_format()
-            )
-            self._dummy_instr = True
-        else:
-            transport_inst = pulsar_qcm.ip_transport(host=host, port=port)
-            self._dummy_instr = False
-        super().__init__(name, transport_inst, debug=debug)
+    def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
+        """Create a new instance of PulsarQCMComponent."""
+        assert isinstance(instrument, pulsar_qcm.pulsar_qcm_qcodes)
+        super().__init__(instrument, **kwargs)
+
+    @property
+    def instrument(self) -> pulsar_qcm.pulsar_qcm_qcodes:
+        return super().instrument
+
+    @property
+    def is_running(self) -> bool:
+        return False
 
     def retrieve_acquisition(self) -> None:
         """
@@ -97,21 +110,23 @@ class PulsarQCMComponent(
                     seq_idx=seq_idx, settings=seq_settings
                 )
 
-            self.set(f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"])
+            self.instrument.set(
+                f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"]
+            )
 
-            self.arm_sequencer(sequencer=seq_idx)
+            self.instrument.arm_sequencer(sequencer=seq_idx)
 
     def start(self) -> None:
         """
         Starts execution of the schedule.
         """
-        self.start_sequencer()
+        self.instrument.start_sequencer()
 
     def stop(self) -> None:
         """
         Stops all execution.
         """
-        self.stop_sequencer()
+        self.instrument.stop_sequencer()
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -122,7 +137,7 @@ class PulsarQCMComponent(
         settings
             The settings to configure it to.
         """
-        self.set("reference_source", settings.ref)
+        self.instrument.set("reference_source", settings.ref)
 
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
@@ -135,39 +150,46 @@ class PulsarQCMComponent(
         settings
             The settings to configure it to.
         """
-        self.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.set(f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0)
-        self.set(f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1)
+        self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+        self.instrument.set(
+            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
+        )
+        self.instrument.set(
+            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
+        )
 
         nco_en: bool = settings.nco_en
-        self.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
         if nco_en:
-            self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
+            self.instrument.set(
+                f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
+            )
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        pass
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQRMComponent(
-    pulsar_qrm.pulsar_qrm_qcodes, base.AbstractControlStackComponent
-):
+class PulsarQRMComponent(PulsarControlStackComponent):
     """
     Pulsar QRM specific stack component.
     """
 
     number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
 
-    def __init__(self, name, host, port=5025, debug=0) -> None:
-        if host == "dummy":
-            debug = 1
-            transport_inst = pulsar_qcm.pulsar_dummy_transport(
-                pulsar_qrm.pulsar_qrm_ifc._get_sequencer_cfg_format()
-            )
-            self._dummy_instr = True
-        else:
-            transport_inst = pulsar_qrm.ip_transport(host=host, port=port)
-            self._dummy_instr = False
-        super().__init__(name, transport_inst, debug=debug)
+    def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
+        """Create a new instance of PulsarQRMComponent."""
+        assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
+        super().__init__(instrument, **kwargs)
+        self._acq_settings: Optional[_AcquisitionSettings] = None
 
-        self._acq_settings = None
+    @property
+    def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
+        return super().instrument
+
+    @property
+    def is_running(self) -> bool:
+        return False
 
     # pylint: disable=arguments-differ
     def retrieve_acquisition(self, num_of_samples: int = 2 ** 16) -> Any:
@@ -187,13 +209,15 @@ class PulsarQRMComponent(
 
         msmt_id: str = "msmt_00000"
 
-        self.delete_acquisitions(sequencer=0)
-        if not self._dummy_instr:
-            self.get_sequencer_state(0, 10, 0.01)
-            self.get_acquisition_state(sequencer=0, timeout=10, timeout_poll_res=0.1)
+        self.instrument.delete_acquisitions(sequencer=0)
+        if not isinstance(self.instrument, pulsar_qrm.pulsar_qrm_dummy):
+            self.instrument.get_sequencer_state(0, 10, 0.01)
+            self.instrument.get_acquisition_state(
+                sequencer=0, timeout=10, timeout_poll_res=0.1
+            )
 
-        self.store_acquisition(0, msmt_id, num_of_samples)
-        acq: Dict[str, dict] = self.get_acquisitions(0)
+        self.instrument.store_acquisition(0, msmt_id, num_of_samples)
+        acq: Dict[str, dict] = self.instrument.get_acquisitions(0)
 
         hardware_averages: int = self._acq_settings.hardware_averages
         duration: int = self._acq_settings.duration_ns
@@ -202,7 +226,9 @@ class PulsarQRMComponent(
         traces = [None] * len(path_labels)
         for path_idx, label in enumerate(path_labels):
             if acq[msmt_id][label]["out-of-range"]:
-                logger.warning(f"ADC out-of-range of {self.name} on {label}.")
+                logger.warning(
+                    f"ADC out-of-range of {self.instrument.name} on {label}."
+                )
 
             traces[path_idx] = (
                 np.array(acq[msmt_id][label]["data"][:duration]) / hardware_averages
@@ -290,17 +316,23 @@ class PulsarQRMComponent(
                 acq_settings.duration_ns = seq_settings.duration
 
             for path in [0, 1]:
-                self.set(f"sequencer{seq_idx}_trigger_mode_acq_path{path}", "sequencer")
-                self.set(f"sequencer{seq_idx}_avg_mode_en_acq_path{path}", True)
+                self.instrument.set(
+                    f"sequencer{seq_idx}_trigger_mode_acq_path{path}", "sequencer"
+                )
+                self.instrument.set(
+                    f"sequencer{seq_idx}_avg_mode_en_acq_path{path}", True
+                )
 
             self._acq_settings = acq_settings
 
-            self.set(f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"])
+            self.instrument.set(
+                f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"]
+            )
 
-            self.arm_sequencer(sequencer=seq_idx)
+            self.instrument.arm_sequencer(sequencer=seq_idx)
 
     def _configure_global_settings(self, settings: PulsarSettings):
-        self.set("reference_source", settings.ref)
+        self.instrument.set("reference_source", settings.ref)
 
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
@@ -313,26 +345,35 @@ class PulsarQRMComponent(
         settings
             The settings to configure it to.
         """
-        self.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.set(f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0)
-        self.set(f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1)
+        self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+        self.instrument.set(
+            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
+        )
+        self.instrument.set(
+            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
+        )
 
         nco_en: bool = settings.nco_en
-        self.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
         if nco_en:
-            self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
+            self.instrument.set(
+                f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
+            )
 
     def start(self) -> None:
         """
         Starts execution of the schedule.
         """
-        self.start_sequencer()
+        self.instrument.start_sequencer()
 
     def stop(self) -> None:
         """
         Stops all execution.
         """
-        self.stop_sequencer()
+        self.instrument.stop_sequencer()
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        pass
 
 
 # ----------------- Utility -----------------

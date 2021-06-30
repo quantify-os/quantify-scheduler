@@ -16,6 +16,8 @@ Merged branches and closed issues
 * Added acquisitions to circuit diagram (!93)
 * Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
 * Added ControlStack (!70)
+* Feature: Added Controlstack property is_running, Closes #113 (!140)
+* Feature: Added Controlstack wait_done method, Closes #113 (!140)
 * Added Qblox ControlStack components (!112)
 * Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
 
