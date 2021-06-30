@@ -5,24 +5,21 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 from __future__ import annotations
+
 import inspect
 import json
 import tempfile
-
 from pathlib import Path
+
 import numpy as np
-
 import pytest
-
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
-
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
-
-from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.helpers import waveforms
 import quantify_scheduler.schemas.examples as es
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.controlstack.components import qblox
+from quantify_scheduler.helpers import waveforms
 
 esp = inspect.getfile(es)
 
@@ -36,125 +33,184 @@ with open(map_f, "r") as f:
 
 
 @pytest.fixture
-def dummy_qcm():
-    _qcm = qblox.PulsarQCMComponent("qcm0", "dummy")
-    yield _qcm
+def make_qcm(mocker):
+    def _make_qcm(
+        name: str = "qcm0", serial: str = "dummy"
+    ) -> qblox.PulsarQCMComponent:
+        mocker.patch("qcodes.instrument.Instrument.record_instance")
+        qcm: pulsar_qcm.pulsar_qcm_qcodes = mocker.create_autospec(
+            pulsar_qcm.pulsar_qcm_qcodes, instance=True
+        )
+        qcm.name = name
+        qcm._serial = serial
 
-    _qcm.close()
+        component = qblox.PulsarQCMComponent(qcm)
+        mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm)
+
+        return component
+
+    yield _make_qcm
 
 
 @pytest.fixture
-def dummy_qrm():
-    _qrm = qblox.PulsarQRMComponent("qrm0", "dummy")
-    yield _qrm
+def make_qrm(mocker):
+    def _make_qrm(
+        name: str = "qrm0", serial: str = "dummy"
+    ) -> qblox.PulsarQRMComponent:
+        mocker.patch("qcodes.instrument.Instrument.record_instance")
+        qrm: pulsar_qrm.pulsar_qrm_qcodes = mocker.create_autospec(
+            pulsar_qrm.pulsar_qrm_qcodes, instance=True
+        )
+        qrm.name = name
+        qrm._serial = serial
 
-    _qrm.close()
+        component = qblox.PulsarQRMComponent(qrm)
+        mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm)
+
+        return component
+
+    yield _make_qrm
 
 
-def mock_ip_transport(
-    host: str, port: int = 5025, timeout: float = 60.0, snd_buf_size: int = 512 * 1024
-):
-    del host, port, timeout, snd_buf_size  # unused by mock
+def test_initialize_pulsar_qcm_component(make_qcm):
+    make_qcm("qblox_qcm0", "1234")
 
-    transport_inst = pulsar_qcm.pulsar_dummy_transport(
-        pulsar_qcm.pulsar_qcm_ifc._get_sequencer_cfg_format()
+
+def test_initialize_pulsar_qrm_component(make_qrm):
+    make_qrm("qblox_qrm0", "1234")
+
+
+def test_prepare(schedule_with_measurement, make_qcm, make_qrm):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+
+        qcm.prepare(prog["qcm0"])
+        qrm.prepare(prog["qrm0"])
+
+    # Assert
+    qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+    qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+
+
+def test_prepare_exception_qcm(make_qcm):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+
+    invalid_config = {"idontexist": "this is not used"}
+
+    # Act
+    with pytest.raises(KeyError) as execinfo:
+        qcm.prepare(invalid_config)
+
+    # Assert
+    assert execinfo.value.args[0] == (
+        "Invalid program. Attempting to access non-existing sequencer with"
+        ' name "idontexist".'
     )
-    return transport_inst
 
 
-def test_initialize_pulsar_qcm_component(monkeypatch):
-    monkeypatch.setattr(pulsar_qcm, "ip_transport", mock_ip_transport)
-    instr = qblox.PulsarQCMComponent("qblox_qcm0", "1234", debug=1)
-    instr.close()
+def test_prepare_exception_qrm(make_qrm):
+    # Arrange
+    qrm: qblox.PulsarQRMComponent = make_qrm("qcm0", "1234")
+
+    invalid_config = {"idontexist": "this is not used"}
+
+    # Act
+    with pytest.raises(KeyError) as execinfo:
+        qrm.prepare(invalid_config)
+
+    # Assert
+    assert execinfo.value.args[0] == (
+        "Invalid program. Attempting to access non-existing sequencer with"
+        ' name "idontexist".'
+    )
 
 
-def test_initialize_pulsar_qrm_component(monkeypatch):
-    monkeypatch.setattr(pulsar_qrm, "ip_transport", mock_ip_transport)
-    instr = qblox.PulsarQRMComponent("qblox_qrm0", "1234", debug=1)
-    instr.close()
+def test_retrieve_acquisition_qcm(make_qcm):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+
+    # Act
+    acq = qcm.retrieve_acquisition()
+
+    # Assert
+    assert acq is None
 
 
-def test_prepare(schedule_with_measurement, dummy_qcm, dummy_qrm, mocker):
-    spy_qcm = mocker.spy(dummy_qcm, "arm_sequencer")
-    spy_qrm = mocker.spy(dummy_qrm, "arm_sequencer")
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
+def test_retrieve_acquisition_qrm(schedule_with_measurement, make_qrm):
+    # Arrange
+    qrm: qblox.PulsarQRMComponent = make_qrm("qcm0", "1234")
 
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
-        for instr_name, params in prog.items():
-            for cs_comp in [dummy_qcm, dummy_qrm]:
-                if instr_name == cs_comp.name:
-                    cs_comp.prepare(params)
-        assert spy_qcm.call_count == 1
-        assert spy_qrm.call_count == 1
-
-
-def test_prepare_exception_qcm(dummy_qcm):
-    prep_with_invalid_key = {"idontexist": "this is not used"}
-    with pytest.raises(KeyError):
-        dummy_qcm.prepare(prep_with_invalid_key)
-
-
-def test_prepare_exception_qrm(dummy_qrm):
-    prep_with_invalid_key = {"idontexist": "this is not used"}
-    with pytest.raises(KeyError):
-        dummy_qrm.prepare(prep_with_invalid_key)
-
-
-def test_retrieve_acquisition_qcm(dummy_qcm):
-    assert dummy_qcm.retrieve_acquisition() is None
-
-
-def test_retrieve_acquisition_qrm(schedule_with_measurement, dummy_qrm):
+    # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
         prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
         prog = dict(prog)
 
-        dummy_qrm.prepare(prog[dummy_qrm.name])
-        dummy_qrm.start()
-        acq = dummy_qrm.retrieve_acquisition()
+        qrm.prepare(prog[qrm.instrument.name])
+        qrm.start()
+        acq = qrm.retrieve_acquisition()
 
-        assert len(acq) == 2
+    # Assert
+    assert len(acq) == 2
 
 
-def test_start_qcm_qrm(schedule_with_measurement, dummy_qcm, dummy_qrm, mocker):
-    spy_qcm = mocker.spy(dummy_qcm, "start_sequencer")
-    spy_qrm = mocker.spy(dummy_qrm, "start_sequencer")
+def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
 
+    # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
         prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
-        prog = dict(prog)
-        for pulsar in (dummy_qcm, dummy_qrm):
-            pulsar.prepare(prog[pulsar.name])
-            pulsar.start()
 
-        assert spy_qcm.call_count == 1
-        assert spy_qrm.call_count == 1
+        qcm.prepare(prog["qcm0"])
+        qrm.prepare(prog["qrm0"])
 
+        qcm.start()
+        qrm.start()
 
-def test_stop_qcm(dummy_qcm, mocker):
-    spy = mocker.spy(dummy_qcm, "stop_sequencer")
-    dummy_qcm.stop()
-    assert spy.call_count == 1
+    # Assert
+    qcm.instrument.start_sequencer.assert_called()
+    qcm.instrument.start_sequencer.assert_called()
 
 
-def test_stop_qrm(dummy_qrm, mocker):
-    spy = mocker.spy(dummy_qrm, "stop_sequencer")
-    dummy_qrm.stop()
-    assert spy.call_count == 1
+def test_stop_qcm_qrm(make_qcm, make_qrm):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+
+    # Act
+    qcm.stop()
+    qrm.stop()
+
+    # Assert
+    qcm.instrument.stop_sequencer.assert_called()
+    qcm.instrument.stop_sequencer.assert_called()
 
 
 def test_demodulate_trace():
+    # Arrange
     data = np.ones(1_000_000)
     freq = 10e6
     sampling_rate = 1e9
 
     t = np.arange(0, len(data) / sampling_rate, 1 / sampling_rate)
     mod_data = waveforms.modulate_waveform(t, data, freq)
+
+    # Act
     demod_data = qblox._demodulate_trace(
         freq, mod_data.real, mod_data.imag, sampling_rate
     )
+
+    # Assert
     np.testing.assert_allclose(data, demod_data)
