@@ -237,7 +237,8 @@ def test_zi_settings_serialize_compiler_source(mocker):
 def test_zi_settings_serialize_integration_weights(mocker):
     # Arrange
     instrument = make_ufhqa(mocker)
-    weights = np.ones(10)
+    time = np.arange(0, 10, 1)
+    weights = np.sin(time)
     daq_settings = [
         settings.ZISetting("qas/0/integration/weights/0/real", weights, mocker.Mock())
     ]
@@ -259,9 +260,7 @@ def test_zi_settings_serialize_integration_weights(mocker):
                 "name": "uhfqa0",
                 "serial": "dev1234",
                 "type": "uhfqa",
-                "qas/0/integration/weights/0/real": (
-                    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-                ),
+                "qas/0/integration/weights/0/real": weights.tolist(),
             }
         )
     )
