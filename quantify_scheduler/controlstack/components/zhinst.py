@@ -15,6 +15,7 @@ from zhinst import qcodes
 from quantify_core.data import handling
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.controlstack.components import base
+from quantify_scheduler.backends.zhinst.settings import ZISerializeSettings
 
 if TYPE_CHECKING:
     import numpy as np
@@ -53,7 +54,12 @@ class ZIControlStackComponent(base.ControlStackComponentBase):
 
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
-        self.zi_settings.serialize(self._data_path, self.instrument)
+        self.zi_settings.serialize(
+            self._data_path,
+            ZISerializeSettings(
+                self.name, self.instrument._serial, self.instrument._type
+            ),
+        )
 
         # Upload settings, seqc and waveforms
         self.zi_settings.apply(self.instrument)
@@ -146,7 +152,7 @@ class UHFQAControlStackComponent(ZIControlStackComponent):
         # Copy the UHFQA waveforms to the waves directory
         # This is required before compilation.
         waves_path: Path = zi_helpers.get_waves_directory(self.instrument.awg)
-        wave_files = self._data_path.cwd().glob(f"{self.instrument.name}*.csv")
+        wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
 
@@ -160,7 +166,7 @@ class UHFQAControlStackComponent(ZIControlStackComponent):
 
         acq_channel_results: Dict[int, np.ndarray] = dict()
         for acq_channel, resolve in acq_config.resolvers.items():
-            acq_channel_results[acq_channel] = resolve(uhfqa=self)
+            acq_channel_results[acq_channel] = resolve(uhfqa=self.instrument)
 
         return acq_channel_results
 

@@ -17,6 +17,13 @@ from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
 
+@dataclasses.dataclass(frozen=True)
+class ZISerializeSettings:
+    name: str
+    serial: str
+    type: str
+
+
 @dataclasses.dataclass
 class ZISetting:
     """Zurich Instruments Settings record type."""
@@ -117,7 +124,7 @@ class ZISettings:
                         value=setting.value,
                     )
 
-    def serialize(self, root: Path, instrument: base.ZIBaseInstrument) -> Path:
+    def serialize(self, root: Path, options: ZISerializeSettings) -> Path:
         """
         Serializes the ZISettings to file storage.
         The parent '{instrument.name}_settings.json' file contains references to all
@@ -129,8 +136,8 @@ class ZISettings:
         ----------
         root :
             The root path to serialized files.
-        instrument :
-            The instrument belonging to these settings.
+        options :
+            The serialization options to associate these settings.
 
         Returns
         -------
@@ -138,9 +145,9 @@ class ZISettings:
             The path to the parent JSON file.
         """
         collection = {
-            "name": instrument.name,
-            "serial": instrument._serial,
-            "type": instrument._type,
+            "name": options.name,
+            "serial": options.serial,
+            "type": options.type,
         }
         # Copy the settings to avoid modifying the original values.
         _tmp_daq_list = list(map(dataclasses.replace, self._daq_settings))
