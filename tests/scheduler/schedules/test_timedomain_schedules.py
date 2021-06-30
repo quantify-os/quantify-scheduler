@@ -301,6 +301,7 @@ class TestRamseySchedDetuning:
 
         sched = ts.ramsey_sched(**sched_kwargs)
         sched = qcompile(sched, DEVICE_CONFIG)
+        assert any(op["rel_time"] == 3e-6 for op in sched.timing_constraints)
 
     def test_operations(self):
         assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
