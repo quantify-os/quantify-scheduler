@@ -174,9 +174,7 @@ class ZISettings:
 
                 setting.value = str(file_path)
             elif "integration/weights" in setting.node:
-                setting.value = np.array2string(
-                    setting.value.tolist(), separator=", ", precision=9
-                )
+                setting.value = setting.value.tolist()
             elif "rotations/" in setting.node:
                 setting.value = str(setting.value).replace(" ", "")
 
