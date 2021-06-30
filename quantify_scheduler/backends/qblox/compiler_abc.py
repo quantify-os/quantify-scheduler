@@ -1,12 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Compiler base and utility classes for Qblox backend."""
-
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import json
 from os import path, makedirs
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List
 
@@ -37,6 +37,7 @@ from quantify_scheduler.backends.qblox.constants import (
     SAMPLING_RATE,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     SequencerSettings,
@@ -51,24 +52,30 @@ class InstrumentCompiler(ABC):
     """
     Abstract base class that defines a generic instrument compiler. The subclasses that
     inherit from this are meant to implement the compilation steps needed to compile the
-    lists of `OpInfo` representing the pulse and acquisition info to device specific
-    instructions.
+    lists of :class:`quantify_scheduler.backends.types.qblox.OpInfo` representing the
+    pulse and acquisition information to device-specific instructions.
 
-    For each device that needs to be part of the compilation process such a
-    `InstrumentCompiler` should be implemented.
+    Each device that needs to be part of the compilation process requires an associated
+    `InstrumentCompiler`.
     """
 
     def __init__(
         self,
+        parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        hw_mapping: Optional[Dict[str, Any]] = None,
+        hw_mapping: Dict[str, Any],
     ):
+        # pylint: disable=line-too-long
         """
         Constructor for an InstrumentCompiler object.
 
         Parameters
         ----------
+        parent
+            Reference to the parent
+            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -80,9 +87,74 @@ class InstrumentCompiler(ABC):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
+        self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
+
+    def prepare(self) -> None:
+        """
+        Method that can be overridden to implement logic before the main compilation
+        starts. This step is to extract all settings for the devices that are dependent
+        on settings of other devices. This step happens after instantiation of the
+        compiler object but before the start of the main compilation.
+        """
+
+    @abstractmethod
+    def compile(self, repetitions: int) -> Any:
+        """
+        An abstract method that should be overridden in a subclass to implement the
+        actual compilation. It should turn the pulses and acquisitions added to the
+        device into device-specific instructions.
+
+        Parameters
+        ----------
+        repetitions
+            Number of times execution of the schedule is repeated.
+
+        Returns
+        -------
+        :
+            A data structure representing the compiled program. The type is
+            dependent on implementation.
+        """
+
+
+class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
+    """
+    Abstract class for any device requiring logic for acquisition and playback of
+    pulses.
+    """
+
+    def __init__(
+        self,
+        parent: compiler_container.CompilerContainer,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
+        # pylint: disable=line-too-long
+        """
+        Constructor for a ControlDeviceCompiler object.
+
+        Parameters
+        ----------
+        parent
+            Reference to the parent
+            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            object.
+        name
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time
+            Total time execution of the schedule should go on for. This parameter is
+            used to ensure that the different devices, potentially with different clock
+            rates, can work in a synchronized way when performing multiple executions of
+            the schedule.
+        hw_mapping
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
+        super().__init__(parent, name, total_play_time, hw_mapping)
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
@@ -140,7 +212,7 @@ class InstrumentCompiler(ABC):
         """
         An abstract method that should be overridden by a subclass to implement the
         actual compilation. Method turns the pulses and acquisitions added to the device
-        into device specific instructions.
+        into device-specific instructions.
 
         Parameters
         ----------
@@ -167,6 +239,7 @@ class PulsarSequencerBase(ABC):
         name: str,
         portclock: Tuple[str, str],
         seq_settings: dict,
+        lo_name: Optional[str] = None,
     ):
         """
         Constructor for the sequencer compiler.
@@ -189,16 +262,16 @@ class PulsarSequencerBase(ABC):
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
-        modulation_freq = (
-            None if "interm_freq" in seq_settings else seq_settings["interm_freq"]
-        )
+        self._associated_ext_lo = lo_name
 
         self.instruction_generated_pulses_enabled = seq_settings.get(
             "instruction_generated_pulses_enabled", False
         )
 
         self._settings = SequencerSettings(
-            nco_en=False, sync_en=True, modulation_freq=modulation_freq
+            nco_en=False,
+            sync_en=True,
+            modulation_freq=seq_settings.get("interm_freq", None),
         )
         self.mixer_corrections = None
 
@@ -213,18 +286,6 @@ class PulsarSequencerBase(ABC):
             The portclock.
         """
         return self.port, self.clock
-
-    @property
-    def modulation_freq(self) -> float:
-        """
-        The frequency used for modulation of the pulses.
-
-        Returns
-        -------
-        :
-            The frequency.
-        """
-        return self._settings.modulation_freq
 
     @property
     def settings(self) -> SequencerSettings:
@@ -276,7 +337,20 @@ class PulsarSequencerBase(ABC):
         """
         return len(self.acquisitions) > 0 or len(self.pulses) > 0
 
-    def assign_frequency(self, freq: float):
+    @property
+    def frequency(self) -> float:
+        """
+        The frequency used for modulation of the pulses.
+
+        Returns
+        -------
+        :
+            The frequency.
+        """
+        return self._settings.modulation_freq
+
+    @frequency.setter
+    def frequency(self, freq: float):
         """
         Assigns a modulation frequency to the sequencer.
 
@@ -289,7 +363,7 @@ class PulsarSequencerBase(ABC):
         ------
         ValueError
             Attempting to set the modulation frequency to a new value even though a
-            value has been previously assigned.
+            different value has been previously assigned.
         """
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
@@ -299,6 +373,52 @@ class PulsarSequencerBase(ABC):
                     f"to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
+
+    def align_modulation_frequency_with_ext_lo(self):
+        r"""
+        Sets the frequencies so that the LO and IF frequencies follow the relation:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise an error is thrown.
+
+        If the frequency is overconstraint (i.e. multiple values are somehow specified)
+        an error will be thrown during assignment (in the setter method of the
+        frequency).
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+        if self.clock not in self.parent.parent.resources:
+            return
+
+        clk_freq = self.parent.parent.resources[self.clock]["freq"]
+        lo_compiler = self.parent.parent.instrument_compilers.get(
+            self._associated_ext_lo, None
+        )
+        if lo_compiler is None:
+            self.frequency = clk_freq
+            return
+
+        if_freq = self.frequency
+        lo_freq = lo_compiler.frequency
+
+        if lo_freq is None and if_freq is None:
+            raise ValueError(
+                f"Frequency settings underconstraint for sequencer {self.name} with "
+                f"port {self.port} and clock {self.clock}. When using an external "
+                f'local oscillator it is required to either supply an "lo_freq" or '
+                f'an "interm_freq". Neither was given.'
+            )
+
+        if if_freq is not None:
+            lo_compiler.frequency = clk_freq - if_freq
+
+        if lo_freq is not None:
+            self.frequency = clk_freq - lo_freq
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
@@ -456,7 +576,7 @@ class PulsarSequencerBase(ABC):
             The waveform data after applying all the transformations.
         """
         t = np.linspace(t0, time_duration + t0, int(time_duration * SAMPLING_RATE))
-        corrected_wf = modulate_waveform(t, waveform_data, self.modulation_freq)
+        corrected_wf = modulate_waveform(t, waveform_data, self.frequency)
         if self.mixer_corrections is not None:
             corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
         return corrected_wf
@@ -510,14 +630,10 @@ class PulsarSequencerBase(ABC):
         total_sequence_time
             Total time the program needs to play for. If the sequencer would be done
             before this time, a wait is added at the end to ensure synchronization.
-        pulses
-            A list containing all the pulses that are to be played.
         awg_dict
             Dictionary containing the pulse waveform data and the index that is assigned
             to the I and Q waveforms, as generated by the `generate_awg_dict` function.
             This is used to extract the relevant indexes when adding a play instruction.
-        acquisitions
-            A list containing all the acquisitions that are to be performed.
         acq_dict
             Dictionary containing the acquisition waveform data and the index that is
             assigned to the I and Q waveforms, as generated by the `generate_acq_dict`
@@ -678,7 +794,7 @@ class PulsarSequencerBase(ABC):
         Parameters
         ----------
         repetitions:
-            Number of times execution the schedule is repeated
+            Number of times execution the schedule is repeated.
 
         Returns
         -------
@@ -711,12 +827,15 @@ class PulsarSequencerBase(ABC):
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class PulsarBase(InstrumentCompiler, ABC):
+class PulsarBase(ControlDeviceCompiler, ABC):
     """
-    Pulsar specific implementation of`InstrumentCompiler`. The class is defined as an
-    abstract base class since the distinction between Pulsar QRM and Pulsar QCM specific
-    implementations are defined in subclasses. Effectively, this base class contains the
-    functionality shared by the Pulsar QRM and Pulsar QCM.
+    Pulsar specific implementation of
+    :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
+
+    This class is defined as an abstract base class since the distinction between
+    Pulsar QRM and Pulsar QCM specific implementations are defined in subclasses.
+    Effectively, this base class contains the functionality shared by the Pulsar QRM
+    and Pulsar QCM and serves to avoid code duplication between the two.
     """
 
     output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
@@ -728,15 +847,21 @@ class PulsarBase(InstrumentCompiler, ABC):
 
     def __init__(
         self,
+        parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        # pylint: disable=line-too-long
         """
         Constructor function.
 
         Parameters
         ----------
+        parent
+            Reference to the parent
+            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -748,7 +873,7 @@ class PulsarBase(InstrumentCompiler, ABC):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         """
-        super().__init__(name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping)
         verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()
@@ -779,22 +904,6 @@ class PulsarBase(InstrumentCompiler, ABC):
         :
             The maximum amount of sequencers
         """
-
-    def assign_modulation_frequency(self, portclock: Tuple[str, str], freq: float):
-        """
-        Sets the modulation frequency for a certain portclock belonging to this
-        instrument.
-
-        Parameters
-        ----------
-        portclock
-            A tuple with the port as first element and clock as second.
-        freq
-            The modulation frequency to assign to the portclock.
-        """
-        seq_name = self.portclock_map[portclock]
-        seq = self.sequencers[seq_name]
-        seq.assign_frequency(freq)
 
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
         """
@@ -858,6 +967,7 @@ class PulsarBase(InstrumentCompiler, ABC):
             if not isinstance(io_cfg, dict):
                 continue
 
+            lo_name = io_cfg.get("lo_name", None)
             portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
             if len(portclock_dicts) > 1:
                 raise NotImplementedError(
@@ -871,7 +981,7 @@ class PulsarBase(InstrumentCompiler, ABC):
 
             seq_name = f"seq{self.output_to_sequencer_idx[io]}"
             sequencers[seq_name] = self.sequencer_type(
-                self, seq_name, portclock, portclock_dict
+                self, seq_name, portclock, portclock_dict, lo_name
             )
             if "mixer_corrections" in io_cfg:
                 sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
@@ -901,6 +1011,17 @@ class PulsarBase(InstrumentCompiler, ABC):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
+    def prepare(self) -> None:
+        """
+        Performs the logic needed before being able to start the compilation. In effect,
+        this means assigning the pulses and acquisitions to the sequencers and
+        calculating the relevant frequencies in case an external local oscillator is
+        used.
+        """
+        self._distribute_data()
+        for seq in self.sequencers.values():
+            seq.align_modulation_frequency_with_ext_lo()
+
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this pulsar, by calling the sequencer
@@ -919,7 +1040,6 @@ class PulsarBase(InstrumentCompiler, ABC):
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
-        self._distribute_data()
         program = dict()
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(repetitions=repetitions)
