@@ -358,26 +358,41 @@ class Reset(Operation):
     r"""
     Reset a qubit to the :math:`|0\rangle` state.
 
-    The Reset gate is an idle operation that is used to initialize a qubit.
+    The Reset gate is an idle operation that is used to initialize one or more qubits.
 
     .. note::
 
         Strictly speaking this is not a gate as it can not
         be described by a unitary.
 
+    .. admonition:: Examples
+        :class: tip
+
+        The operation can be used in several ways:
+
+        .. jupyter-execute::
+
+            from quantify_scheduler.gate_library import Reset
+
+            reset_1 = Reset("q0")
+            reset_2 = Reset("q1", "q2")
+            reset_3 = Reset(*[f"q{i}" for i in range(3, 6)])
     """
 
     def __init__(self, *qubits: str, data: Optional[dict] = None):
         """
-        Create a new instance of Reset operation that is used to initialize a qubit.
+        Create a new instance of Reset operation that is used to initialize one or
+        more qubits.
+
 
         Parameters
         ----------
         qubits
-            The qubits to reset.
+            The qubit(s) to reset. NB one or more qubits can be specified, e.g.,
+            :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
         data
-            The operation's dictionary, by default None
-            Note: if the data parameter is not None all other parameters are
+            The operation's dictionary, by default :code:`None`.
+            Note: if the data parameter is not :code:`None` all other parameters are
             overwritten using the contents of data.
         """
         if data is None:
