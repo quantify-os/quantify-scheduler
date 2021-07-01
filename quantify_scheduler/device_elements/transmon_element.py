@@ -2,7 +2,11 @@
 # Licensed according to the LICENCE file on the master branch
 from typing import Dict, Any
 from qcodes.instrument.base import Instrument
-from qcodes.instrument.parameter import ManualParameter, Parameter
+from qcodes.instrument.parameter import (
+    ManualParameter,
+    Parameter,
+    InstrumentRefParameter,
+)
 from qcodes.utils import validators
 
 
@@ -15,11 +19,19 @@ class TransmonElement(Instrument):
     :func:`~quantify_scheduler.compilation.add_pulse_information_transmon` function.
     """
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, control_stack: str = None, **kwargs):
         """
         Initializes the parent class and adds
         :class:`~qcodes.instrument.parameter.Parameter` s /
         :class:`~qcodes.instrument.parameter.ManualParameter` s to it.
+
+        Parameters
+        -----------
+        name:
+            The name of the transmon element.
+        control_stack:
+            The name of the control stack that is used to run experiments on this
+            device.
 
         The list of all parameters and their latest (cached) value can be listed as
         follows:
@@ -33,6 +45,12 @@ class TransmonElement(Instrument):
 
         """
         super().__init__(name, **kwargs)
+        self.add_parameter(
+            "control_stack",
+            initial_value=control_stack,
+            parameter_class=InstrumentRefParameter,
+            vals=validators.Strings(),
+        )
         self._add_device_parameters()
 
     def _add_device_parameters(self):
@@ -208,7 +226,6 @@ class TransmonElement(Instrument):
             parameter_class=Parameter,
             set_cmd=False,
         )
-
         acquisition_validator = validators.Enum("SSBIntegrationComplex", "Trace")
         self.add_parameter(
             "acquisition",
