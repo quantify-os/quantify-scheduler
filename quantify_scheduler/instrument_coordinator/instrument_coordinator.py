@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Module containing the main ControlStack Component."""
+"""Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -9,12 +9,12 @@ from collections import OrderedDict
 from qcodes.utils import validators
 from qcodes.instrument import parameter
 from qcodes.instrument import base as qcodes_base
-from quantify_scheduler.controlstack.components import base
+from quantify_scheduler.instrument_coordinator.components import base
 
 
-class ControlStack(qcodes_base.Instrument):
+class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The ControlStack class is a collection of ControlStack components.
+    The InstrumentCoordinator class is a collection of InstrumentCoordinator components.
 
     This class provides a high level interface to:
 
@@ -32,37 +32,37 @@ class ControlStack(qcodes_base.Instrument):
             parameter_class=parameter.ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all components that"
-            " are part of this ControlStack.",
+            " are part of this InstrumentCoordinator.",
         )
 
     @property
     def is_running(self) -> bool:
         """
-        Returns if any of the ControlStack components is running.
+        Returns if any of the InstrumentCoordinator components is running.
 
         Returns
         -------
         :
-            The ControlStack's running state.
+            The InstrumentCoordinator's running state.
         """
         return any(
             self.find_instrument(c_name).is_running is True
             for c_name in self.components()
         )
 
-    def get_component(self, name: str) -> base.ControlStackComponentBase:
+    def get_component(self, name: str) -> base.InstrumentCoordinatorComponentBase:
         """
-        Returns the ControlStack component by name.
+        Returns the InstrumentCoordinator component by name.
 
         Parameters
         ----------
         name
-            The ControlStack component name.
+            The InstrumentCoordinator component name.
 
         Returns
         -------
         :
-            The ControlStack component.
+            The InstrumentCoordinator component.
 
         Raises
         ------
@@ -75,30 +75,31 @@ class ControlStack(qcodes_base.Instrument):
 
     def add_component(
         self,
-        component: base.ControlStackComponentBase,
+        component: base.InstrumentCoordinatorComponentBase,
     ) -> None:
         """
-        Adds a ControlStack component to the ControlStack components collection.
+        Adds a InstrumentCoordinator component to the InstrumentCoordinator components
+        collection.
 
         Parameters
         ----------
         component
-            The ControlStack component to add.
+            The InstrumentCoordinator component to add.
 
         Raises
         ------
         ValueError
             If a component with a duplicated name is added to the collection.
         TypeError
-            If 'component' is not an instance of 'ControlStackComponentBase'.
+            If 'component' is not an instance of 'InstrumentCoordinatorComponentBase'.
         """
         if component.name in self.components():
             raise ValueError(f"'{component.name}' has already been added!")
 
-        if not isinstance(component, base.ControlStackComponentBase):
+        if not isinstance(component, base.InstrumentCoordinatorComponentBase):
             raise TypeError(
                 f"{repr(component)} is not "
-                f"{base.__name__}.{base.ControlStackComponentBase.__name__}."
+                f"{base.__name__}.{base.InstrumentCoordinatorComponentBase.__name__}."
             )
 
         components: List[str] = self.components()
@@ -108,12 +109,12 @@ class ControlStack(qcodes_base.Instrument):
 
     def remove_component(self, name: str) -> None:
         """
-        Removes a ControlStack component by name.
+        Removes a InstrumentCoordinator component by name.
 
         Parameters
         ----------
         name
-            The ControlStack component name.
+            The InstrumentCoordinator component name.
         """
 
         # list gets updated in place
@@ -124,7 +125,7 @@ class ControlStack(qcodes_base.Instrument):
         options: Dict[str, Any],
     ) -> None:
         """
-        Prepares each ControlStack component in the list by name with
+        Prepares each InstrumentCoordinator component in the list by name with
         parameters.
 
         The parameters such as sequence programs, waveforms and other
@@ -134,7 +135,7 @@ class ControlStack(qcodes_base.Instrument):
         Parameters
         ----------
         options
-            The arguments per ControlStack component required to arm the
+            The arguments per InstrumentCoordinator component required to arm the
             instrument.
 
         Raises
@@ -147,10 +148,10 @@ class ControlStack(qcodes_base.Instrument):
 
     def start(self) -> None:
         """
-        Start all of the ControlStack components.
+        Start all of the InstrumentCoordinator components.
 
         The components are started in the order in which they were added
-        to the ControlStack.
+        to the InstrumentCoordinator.
         """
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
@@ -158,10 +159,10 @@ class ControlStack(qcodes_base.Instrument):
 
     def stop(self) -> None:
         """
-        Stops all ControlStack Components.
+        Stops all InstrumentCoordinator Components.
 
         The components are stopped in the order in which they were added
-        to the ControlStack.
+        to the InstrumentCoordinator.
         """
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
@@ -169,13 +170,13 @@ class ControlStack(qcodes_base.Instrument):
 
     def retrieve_acquisition(self) -> Dict[str, Any]:
         """
-        Retrieves the latest acquisition results of ControlStack components
+        Retrieves the latest acquisition results of InstrumentCoordinator components
         with acquisition capabilities.
 
         Returns
         -------
         :
-            The acquisition data per ControlStack component.
+            The acquisition data per InstrumentCoordinator component.
         """
         acq_dict = OrderedDict()
         for instr_name in self.components():
@@ -187,8 +188,8 @@ class ControlStack(qcodes_base.Instrument):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
-        Awaits each ControlStack component until it has stopped running or until it has
-        exceeded the amount of time to run.
+        Awaits each InstrumentCoordinator component until it has stopped running or
+        until it has exceeded the amount of time to run.
 
         The timeout in seconds specifies the allowed amount of time to run before
         it times out.

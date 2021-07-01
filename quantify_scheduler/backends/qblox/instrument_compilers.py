@@ -89,7 +89,7 @@ class LocalOscillator(InstrumentCompiler):
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
-        Compiles the program for the LO control stack component.
+        Compiles the program for the LO InstrumentCoordinator component.
 
         Parameters
         ----------
@@ -99,8 +99,8 @@ class LocalOscillator(InstrumentCompiler):
         Returns
         -------
         :
-            Dictionary containing all the information the ControlStack component needs
-            to set the parameters appropriately.
+            Dictionary containing all the information the InstrumentCoordinator
+            component needs to set the parameters appropriately.
         """
         if self.frequency is None:
             return None
