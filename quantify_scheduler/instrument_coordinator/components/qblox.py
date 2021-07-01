@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Module containing Qblox ControlStack Components."""
+"""Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional, Tuple
@@ -15,7 +15,7 @@ import numpy as np
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
-from quantify_scheduler.controlstack.components import base
+from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.backends.types.qblox import PulsarSettings, SequencerSettings
 from quantify_scheduler.backends.qblox.constants import (
@@ -26,11 +26,11 @@ from quantify_scheduler.backends.qblox.constants import (
 logger = logging.getLogger(__name__)
 
 
-class PulsarControlStackComponent(base.ControlStackComponentBase):
-    """Qblox Pulsar ControlStack component base class."""
+class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
+    """Qblox Pulsar InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of PulsarControlStackComponent base class."""
+        """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
 
     @property
@@ -39,9 +39,9 @@ class PulsarControlStackComponent(base.ControlStackComponentBase):
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQCMComponent(PulsarControlStackComponent):
+class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     """
-    Pulsar QCM specific control stack component.
+    Pulsar QCM specific InstrumentCoordinator component.
     """
 
     number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -73,7 +73,8 @@ class PulsarQCMComponent(PulsarControlStackComponent):
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
-        Makes the devices in the control stack ready for execution of a schedule.
+        Makes the devices in the InstrumentCoordinator ready for execution of a
+        schedule.
 
         This involves uploading the waveforms and programs to the sequencers as well as
         configuring all the settings required. Keep in mind that values set directly
@@ -170,9 +171,9 @@ class PulsarQCMComponent(PulsarControlStackComponent):
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQRMComponent(PulsarControlStackComponent):
+class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     """
-    Pulsar QRM specific stack component.
+    Pulsar QRM specific InstrumentCoordinator component.
     """
 
     number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -273,7 +274,8 @@ class PulsarQRMComponent(PulsarControlStackComponent):
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
-        Makes the devices in the control stack ready for execution of a schedule.
+        Makes the devices in the InstrumentCoordinator ready for execution of a
+        schedule.
 
         This involves uploading the waveforms and programs to the sequencers as well as
         configuring all the settings required. Keep in mind that values set directly
