@@ -3,15 +3,15 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
+from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
     PulsarSequencerBase,
     PulsarBase,
 )
-
-from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
 
 
 class LocalOscillator(InstrumentCompiler):
@@ -23,15 +23,18 @@ class LocalOscillator(InstrumentCompiler):
 
     def __init__(
         self,
+        parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        lo_freq: Optional[int] = None,
+        hw_mapping: Dict[str, Any],
     ):
         """
         Constructor for a local oscillator compiler.
 
         Parameters
         ----------
+        parent
+            Reference to the parent container object.
         name
             QCoDeS name of the device it compiles for.
         total_play_time
@@ -39,38 +42,11 @@ class LocalOscillator(InstrumentCompiler):
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        lo_freq
-            LO frequency it needs to be set to. Either this is passed to the constructor
-            or set later in the compilation process, in case the LO frequency is not
-            initially given and needs to be calculated.
+        hw_mapping
+            The hardware mapping dict for this instrument.
         """
-        super().__init__(name, total_play_time)
-        self._lo_freq = lo_freq
-
-    def assign_frequency(self, freq: float):
-        """
-        Sets the lo frequency for this device if no frequency is specified, but raises
-        an exception otherwise.
-
-        Parameters
-        ----------
-        freq
-            The frequency to set it to.
-
-        Raises
-        -------
-        ValueError
-            Occurs when a frequency has been previously set and attempting to set the
-            frequency to a different value than what it is currently set to. This would
-            indicate an invalid configuration in the hardware mapping.
-        """
-        if self._lo_freq is not None:
-            if freq != self._lo_freq:
-                raise ValueError(
-                    f"Attempting to set LO {self.name} to frequency {freq}, "
-                    f"while it has previously already been set to {self._lo_freq}!"
-                )
-        self._lo_freq = freq
+        super().__init__(parent, name, total_play_time, hw_mapping)
+        self._settings = LOSettings.from_mapping(hw_mapping)
 
     @property
     def frequency(self) -> float:
@@ -82,9 +58,36 @@ class LocalOscillator(InstrumentCompiler):
         :
             The current frequency.
         """
-        return self._lo_freq
+        return self._settings.lo_freq
 
-    def compile(self, repetitions: int = 1) -> Optional[Dict[str, dict]]:
+    @frequency.setter
+    def frequency(self, value: float):
+        """
+        Sets the lo frequency for this device if no frequency is specified, but raises
+        an exception otherwise.
+
+        Parameters
+        ----------
+        value
+            The frequency to set it to.
+
+        Raises
+        -------
+        ValueError
+            Occurs when a frequency has been previously set and attempting to set the
+            frequency to a different value than what it is currently set to. This would
+            indicate an invalid configuration in the hardware mapping.
+        """
+        if self._settings.lo_freq is not None:
+            if value != self._settings.lo_freq:
+                raise ValueError(
+                    f"Attempting to set LO {self.name} to frequency {value}, "
+                    f"while it has previously already been set to "
+                    f"{self._settings.lo_freq}!"
+                )
+        self._settings.lo_freq = value
+
+    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Compiles the program for the LO control stack component.
 
@@ -99,7 +102,9 @@ class LocalOscillator(InstrumentCompiler):
             Dictionary containing all the information the ControlStack component needs
             to set the parameters appropriately.
         """
-        return {"lo_freq": self._lo_freq}
+        if self.frequency is None:
+            return None
+        return self._settings.to_dict()
 
 
 # ---------- pulsar sequencer classes ----------

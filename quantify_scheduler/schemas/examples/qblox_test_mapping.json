@@ -1,15 +1,11 @@
 {
   "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
   "qcm0": {
-    "name": "qcm0",
-    "type": "Pulsar_QCM",
-    "mode": "complex",
+    "instrument_type": "Pulsar_QCM",
     "ref": "internal",
-    "IP address": "192.168.0.2",
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo0",
-      "lo_freq": null,
       "seq0": {
         "port": "q0:mw",
         "clock": "q0.01",
@@ -20,7 +16,7 @@
       "line_gain_db": 0,
       "lo_name": "lo1",
       "lo_freq": 7.2e9,
-      "seq0": {
+      "seq1": {
         "port": "q1:mw",
         "clock": "q1.01",
         "interm_freq": null
@@ -28,15 +24,11 @@
     }
   },
   "qrm0": {
-    "name": "qrm0",
-    "type": "Pulsar_QRM",
-    "mode": "complex",
+    "instrument_type": "Pulsar_QRM",
     "ref": "external",
-    "IP address": "192.168.0.6",
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo1",
-      "lo_freq": 7.2e9,
       "mixer_corrections": {
         "amp_ratio": 1.0,
         "phase_error": 0,
@@ -51,20 +43,16 @@
     }
   },
   "qrm1": {
-    "name": "qrm1",
-    "type": "Pulsar_QRM",
-    "mode": "complex",
+    "instrument_type": "Pulsar_QRM",
     "ref": "external",
-    "IP address": "192.168.0.8",
     "complex_output_0": {
       "line_gain_db": 0,
-      "lo_name": "lo3",
-      "lo_freq": null,
       "seq0": {
         "port": "q1:res",
-        "clock": "q1.ro",
-        "interm_freq": 100e6
+        "clock": "q1.ro"
         }
       }
-    }
+    },
+  "lo0": {"instrument_type": "LocalOscillator", "lo_freq": null, "power": 1},
+  "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
 }

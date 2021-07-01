@@ -151,8 +151,8 @@ def t1_sched(
 
 def ramsey_sched(
     times: Union[np.ndarray, float],
-    artificial_detuning: float,
     qubit: str,
+    artificial_detuning: float = 0,
     repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -275,7 +275,7 @@ def echo_sched(
 
 def allxy_sched(
     qubit: str,
-    elt_select_idx: Union[Literal["All"], int] = "ALL",
+    element_select_idx: Union[Literal["All"], int] = "All",
     repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -294,7 +294,7 @@ def allxy_sched(
     ----------
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
-    elt_select_idx
+    element_select_idx
         the index of the particular element of the AllXY experiment to exectute -
         or :code:`"All"` for all elemements of the sequence.
     repetitions
@@ -342,14 +342,14 @@ def allxy_sched(
     ]
     schedule = Schedule("AllXY", repetitions)
     for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
-        if elt_select_idx in ("ALL", i):
+        if element_select_idx in ("All", i):
             schedule.add(Reset(qubit), label=f"Reset {i}")
             schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
             schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
             schedule.add(Measure(qubit), label=f"Measurement {i}")
-        elif elt_select_idx > len(allxy_combinations) or elt_select_idx < 0:
+        elif element_select_idx > len(allxy_combinations) or element_select_idx < 0:
             raise ValueError(
-                f"Invalid index selected: {elt_select_idx}. "
+                f"Invalid index selected: {element_select_idx}. "
                 "Index must be in range 0 to 21 inclusive."
             )
     return schedule

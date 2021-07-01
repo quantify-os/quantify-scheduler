@@ -89,6 +89,35 @@ class OpInfo(DataClassJsonMixin):
 
 
 @dataclass
+class LOSettings(DataClassJsonMixin):
+    """
+    Dataclass containing all the settings for a generic LO instrument.
+    """
+
+    power: float
+    """Power of the LO source."""
+    lo_freq: Optional[float]
+    """The frequency to set the LO to."""
+
+    @classmethod
+    def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
+        """
+        Factory method for the LOSettings from a mapping dict.
+
+        Parameters
+        ----------
+        mapping
+            The part of the mapping dict relevant for this instrument.
+
+        Returns
+        -------
+        :
+            Instantiated LOSettings from the mapping dict.
+        """
+        return cls(power=mapping["power"], lo_freq=mapping["lo_freq"])
+
+
+@dataclass
 class PulsarSettings(DataClassJsonMixin):
     """
     Global settings for the pulsar to be set in the control stack component. This is

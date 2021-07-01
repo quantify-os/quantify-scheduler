@@ -520,17 +520,22 @@ class QASMProgram:
         .. jupyter-execute::
 
             import inspect, os, json
+            from quantify_scheduler.types import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
             import quantify_scheduler.schemas.examples as es
-            from quantify_scheduler.backends.qblox import instrument_compilers
+            from quantify_scheduler.backends.qblox import (
+                instrument_compilers, compiler_container
+            )
 
             esp = inspect.getfile(es)
             map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
             with open(map_f, "r") as f:
                 HARDWARE_MAPPING = json.load(f)
 
-
+            sched = Schedule("example")
+            container = compiler_container.CompilerContainer(sched)
             qcm = instrument_compilers.Pulsar_QCM(
+                container,
                 "qcm0",
                 total_play_time=10,
                 hw_mapping=HARDWARE_MAPPING["qcm0"]
