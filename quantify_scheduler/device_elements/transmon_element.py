@@ -25,14 +25,6 @@ class TransmonElement(Instrument):
         :class:`~qcodes.instrument.parameter.Parameter` s /
         :class:`~qcodes.instrument.parameter.ManualParameter` s to it.
 
-        Parameters
-        -----------
-        name:
-            The name of the transmon element.
-        control_stack:
-            The name of the control stack that is used to run experiments on this
-            device.
-
         The list of all parameters and their latest (cached) value can be listed as
         follows:
 
@@ -42,6 +34,14 @@ class TransmonElement(Instrument):
             q0 = transmon_element.TransmonElement("q0")
 
             q0.print_readable_snapshot()
+
+        Parameters
+        -----------
+        name:
+            The name of the transmon element.
+        control_stack:
+            The name of the control stack that is used to run experiments on this
+            device.
 
         """
         super().__init__(name, **kwargs)
