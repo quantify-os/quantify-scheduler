@@ -120,14 +120,14 @@ class LOSettings(DataClassJsonMixin):
 @dataclass
 class PulsarSettings(DataClassJsonMixin):
     """
-    Global settings for the pulsar to be set in the control stack component. This is
-    kept separate from the settings that can be set on a per sequencer basis, which are
-    specified in `SequencerSettings`.
+    Global settings for the pulsar to be set in the InstrumentCoordinator component.
+    This is kept separate from the settings that can be set on a per sequencer basis,
+    which are specified in `SequencerSettings`.
     """
 
     ref: str
     """The reference source. Should either be "internal" or "external", will raise an
-    exception in the cs component otherwise."""
+    exception in the instrument coordinator component otherwise."""
     hardware_averages: int = 1
     """The number of repetitions of the Schedule."""
     acq_mode: str = "SSBIntegrationComplex"
@@ -151,7 +151,7 @@ class PulsarSettings(DataClassJsonMixin):
 @dataclass
 class SequencerSettings(DataClassJsonMixin):
     """
-    Sequencer level settings. In the drivers these settings are typically recognised by
+    Sequencer level settings. In the drivers these settings are typically recognized by
     parameter names of the form "sequencer_{index}_{setting}". These settings are set
     once at the start and will remain unchanged after. Meaning that these correspond to
     the "slow" QCoDeS parameters and not settings that are changed dynamically by the
@@ -171,7 +171,8 @@ class SequencerSettings(DataClassJsonMixin):
     when using IQ mixers."""
     duration: int = 0
     """Duration of the acquisition. This is a temporary addition for not yet merged the
-    ControlStack to function properly. This will be removed in a later version!"""
+    InstrumentCoordinator to function properly. This will be removed in a later
+    version!"""
 
 
 @dataclass

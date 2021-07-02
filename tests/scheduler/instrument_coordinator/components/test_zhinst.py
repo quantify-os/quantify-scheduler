@@ -18,13 +18,15 @@ from quantify_scheduler.backends.zhinst_backend import (
     ZIAcquisitionConfig,
     ZIDeviceConfig,
 )
-from quantify_scheduler.controlstack.components import zhinst
+from quantify_scheduler.instrument_coordinator.components import zhinst
 from quantify_scheduler.types import Schedule
 
 
 @pytest.fixture
 def make_hdawg(mocker):
-    def _make_hdawg(name: str, serial: str) -> zhinst.HDAWGControlStackComponent:
+    def _make_hdawg(
+        name: str, serial: str
+    ) -> zhinst.HDAWGInstrumentCoordinatorComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
         hdawg: qcodes.HDAWG = mocker.create_autospec(qcodes.HDAWG, instance=True)
         hdawg.name = name
@@ -33,7 +35,7 @@ def make_hdawg(mocker):
         for i in range(4):
             hdawg.awgs[i] = mocker.create_autospec(qcodes.hdawg.AWG, instance=True)
 
-        component = zhinst.HDAWGControlStackComponent(hdawg)
+        component = zhinst.HDAWGInstrumentCoordinatorComponent(hdawg)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=hdawg)
 
         return component
@@ -43,14 +45,16 @@ def make_hdawg(mocker):
 
 @pytest.fixture
 def make_uhfqa(mocker):
-    def _make_uhfqa(name: str, serial: str) -> zhinst.HDAWGControlStackComponent:
+    def _make_uhfqa(
+        name: str, serial: str
+    ) -> zhinst.HDAWGInstrumentCoordinatorComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
         uhfqa: qcodes.UHFQA = mocker.create_autospec(qcodes.UHFQA, instance=True)
         uhfqa.name = name
         uhfqa._serial = serial
         uhfqa.awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
 
-        component = zhinst.UHFQAControlStackComponent(uhfqa)
+        component = zhinst.UHFQAInstrumentCoordinatorComponent(uhfqa)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=uhfqa)
 
         return component
@@ -64,7 +68,7 @@ def test_initialize_hdawg(make_hdawg):
 
 def test_hdawg_start(mocker, make_hdawg):
     # Arrange
-    hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
+    hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
         list(),
@@ -92,7 +96,7 @@ def test_hdawg_start(mocker, make_hdawg):
 
 def test_hdawg_stop(mocker, make_hdawg):
     # Arrange
-    hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
+    hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
         list(),
@@ -120,7 +124,7 @@ def test_hdawg_stop(mocker, make_hdawg):
 
 def test_hdawg_prepare(mocker, make_hdawg):
     # Arrange
-    hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
+    hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
     config = ZIDeviceConfig(
         "hdawg0", Schedule("test"), settings.ZISettingsBuilder(), None
     )
@@ -138,7 +142,7 @@ def test_hdawg_prepare(mocker, make_hdawg):
 
 def test_hdawg_retrieve_acquisition(make_hdawg):
     # Arrange
-    hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
+    hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
 
     # Act
     acq_result = hdawg.retrieve_acquisition()
@@ -149,7 +153,7 @@ def test_hdawg_retrieve_acquisition(make_hdawg):
 
 def test_hdawg_wait_done(mocker, make_hdawg):
     # Arrange
-    hdawg: zhinst.HDAWGControlStackComponent = make_hdawg("hdawg0", "dev1234")
+    hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
         list(),
@@ -182,7 +186,7 @@ def test_initialize_uhfqa(make_uhfqa):
 
 def test_uhfqa_start(mocker, make_uhfqa):
     # Arrange
-    uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
+    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     uhfqa.zi_settings = settings.ZISettings(
         list(),
         [
@@ -199,7 +203,7 @@ def test_uhfqa_start(mocker, make_uhfqa):
 
 def test_uhfqa_stop(mocker, make_uhfqa):
     # Arrange
-    uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
+    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     uhfqa.zi_settings = settings.ZISettings(
         list(),
         [
@@ -216,7 +220,7 @@ def test_uhfqa_stop(mocker, make_uhfqa):
 
 def test_uhfqa_prepare(mocker, make_uhfqa):
     # Arrange
-    uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
+    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     config = ZIDeviceConfig(
         "hdawg0", Schedule("test"), settings.ZISettingsBuilder(), None
     )
@@ -239,7 +243,7 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
 
 def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     # Arrange
-    uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
+    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     expected_data = np.ones(64)
 
     def resolver(uhfqa):  # pylint: disable=unused-argument
@@ -271,7 +275,7 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
 
 def test_uhfqa_wait_done(mocker, make_uhfqa):
     # Arrange
-    uhfqa: zhinst.UHFQAControlStackComponent = make_uhfqa("uhfqa0", "dev1234")
+    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
 
     wait_done = mocker.patch.object(uhfqa.instrument.awg, "wait_done")
     timeout: int = 20

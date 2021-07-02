@@ -31,8 +31,9 @@ cache:
 
 stages:
   - Static Analysis
-  - Test
+  - Test Unix
   - Docs build
+  - Test/docs win
   - Deploy
 
 # ######################################################################################
@@ -142,11 +143,11 @@ stages:
     - *pytest_command
 
 # ######################################################################################
-# Test Unix
+# Test Unix Unix
 # ######################################################################################
 
 test-unix-3.7:
-  stage: Test
+  stage: Test Unix
   image: "python:3.7"
   extends:
     - .unix-before-script
@@ -155,7 +156,7 @@ test-unix-3.7:
     - .run-for-develop-only
 
 test-unix-3.8:
-  stage: Test
+  stage: Test Unix
   image: "python:3.8"
   extends:
     - .unix-before-script
@@ -163,7 +164,7 @@ test-unix-3.8:
     - .save-test-artifacts
 
 test-unix-latest:
-  stage: Test
+  stage: Test Unix
   image: "python:latest"
   extends:
     - .unix-before-script
@@ -174,7 +175,7 @@ test-unix-latest:
 
 alternative-install-unix:
   needs: []  # allow running in parallel with previous stage
-  stage: Test
+  stage: Test Unix
   extends:
     - .run-for-develop-only
   script:
@@ -188,35 +189,35 @@ alternative-install-unix:
       - dist/*.whl
 
 # ######################################################################################
-# Test Windows
+# Test Unix Windows
 # ######################################################################################
 
 test-win-3.7.9:
-  stage: Test
+  stage: Test/docs win
   extends:
     - .shared-windows-runners
     - .win-before-script-3.7.9
     - .win-run-pytest
     - .save-test-artifacts
-    - .run-for-develop-only
+  when: manual
 
 test-win-3.8.9:
-  stage: Test
+  stage: Test/docs win
   extends:
     - .shared-windows-runners
     - .win-before-script-3.8.9
     - .win-run-pytest
     - .save-test-artifacts
-    - .run-for-develop-only
+  when: manual
 
 test-win-latest:
-  stage: Test
+  stage: Test/docs win
   extends:
     - .shared-windows-runners
     - .win-before-script-latest
     - .win-run-pytest
     - .save-test-artifacts
-    - .run-for-develop-only
+  when: manual
   # latest version always allowed to fail due to unforeseen changes
   allow_failure: true
 
@@ -255,30 +256,30 @@ docs-unix-make-html-latest:
 # ######################################################################################
 
 docs-win-make-html-3.7.9:
-  stage: Docs build
+  stage: Test/docs win
   extends:
     - .shared-windows-runners
     - .win-before-script-3.7.9
     - .docs-win-and-artifacts
-    - .run-for-develop-only
+  when: manual
 
 docs-win-make-html-3.8.9:
-  stage: Docs build
+  stage: Test/docs win
   extends:
     - .shared-windows-runners
     - .win-before-script-3.8.9
     - .docs-win-and-artifacts
-    - .run-for-develop-only
+  when: manual
   # Allowed to fail due to asyncio problems (quantify-core#182)
   allow_failure: true
 
 docs-win-make-html-latest:
-  stage: Docs build
+  stage: Test/docs win
   extends:
     - .shared-windows-runners
     - .win-before-script-latest
     - .docs-win-and-artifacts
-    - .run-for-develop-only
+  when: manual
   # Allowed to fail due to asyncio problems (quantify-core#182)
   allow_failure: true
 

@@ -3,9 +3,10 @@
 """
 Contains function to generate most basic waveforms.
 
-These functions are intended to be used to generate waveforms defined in the :mod:`~.pulse_library`.
-Examples of waveforms that are too advanced are flux pulses that require knowledge of the flux
-sensitivity and interaction strengths and qubit frequencies.
+These functions are intended to be used to generate waveforms defined in the
+:mod:`~.pulse_library`.
+Examples of waveforms that are too advanced are flux pulses that require knowledge of
+the flux sensitivity and interaction strengths and qubit frequencies.
 """
 import numpy as np
 from scipy import signal
