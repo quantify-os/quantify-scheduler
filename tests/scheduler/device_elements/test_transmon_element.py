@@ -3,21 +3,23 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 import pytest
-from quantify_scheduler.controlstack.station import ControlStack
+from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
+    InstrumentCoordinator,
+)
 from quantify_scheduler.compilation import validate_config
 from quantify_scheduler.device_elements.transmon_element import TransmonElement
 
 
 @pytest.fixture
 def q_0() -> TransmonElement:
-    control_stack = ControlStack("cs")
-    q_0 = TransmonElement("q0", control_stack="cs")
+    coordinator = InstrumentCoordinator("ic")
+    q_0 = TransmonElement("q0", coordinator="ic")
 
     # Transmon element is returned
     yield q_0
     # after the test, teardown...
     q_0.close()
-    control_stack.close()
+    coordinator.close()
 
 
 def test_qubit_name(q_0: TransmonElement):
@@ -43,6 +45,6 @@ def test_generate_device_config(q_0: TransmonElement):
     assert validate_config(dev_cfg, scheme_fn="transmon_cfg.json")
 
 
-def test_find_control_stack(q_0: TransmonElement):
-    control_stack = q_0.control_stack.get_instr()
-    assert control_stack.name == "cs"
+def test_find_coordinator(q_0: TransmonElement):
+    coordinator = q_0.coordinator.get_instr()
+    assert coordinator.name == "ic"

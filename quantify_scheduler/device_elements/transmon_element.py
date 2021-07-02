@@ -19,11 +19,12 @@ class TransmonElement(Instrument):
     :func:`~quantify_scheduler.compilation.add_pulse_information_transmon` function.
     """
 
-    def __init__(self, name: str, control_stack: str = None, **kwargs):
+    def __init__(self, name: str, coordinator: str = None, **kwargs):
         """
         Initializes the parent class and adds
         :class:`~qcodes.instrument.parameter.Parameter` s /
-        :class:`~qcodes.instrument.parameter.ManualParameter` s to it.
+        :class:`~qcodes.instrument.parameter.ManualParameter` s /
+        :class:`~qcodes.instrument.parameter.InstrumentRefParameter` s to it.
 
         The list of all parameters and their latest (cached) value can be listed as
         follows:
@@ -39,15 +40,15 @@ class TransmonElement(Instrument):
         -----------
         name:
             The name of the transmon element.
-        control_stack:
-            The name of the control stack that is used to run experiments on this
-            device.
+        coordinator:
+            The name of the instrument coordinator that is used to run experiments
+            on this device.
 
         """
         super().__init__(name, **kwargs)
         self.add_parameter(
-            "control_stack",
-            initial_value=control_stack,
+            "coordinator",
+            initial_value=coordinator,
             parameter_class=InstrumentRefParameter,
             vals=validators.Strings(),
         )
