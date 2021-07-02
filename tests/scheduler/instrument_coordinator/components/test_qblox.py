@@ -46,6 +46,11 @@ def make_qcm(mocker):
 
         component = qblox.PulsarQCMComponent(qcm)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm)
+        mocker.patch.object(
+            component.instrument,
+            "get_sequencer_state",
+            return_value={"status": "ARMED"},
+        )
 
         return component
 
@@ -66,6 +71,11 @@ def make_qrm(mocker):
 
         component = qblox.PulsarQRMComponent(qrm)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm)
+        mocker.patch.object(
+            component.instrument,
+            "get_sequencer_state",
+            return_value={"status": "ARMED"},
+        )
 
         return component
 
@@ -181,7 +191,7 @@ def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
 
     # Assert
     qcm.instrument.start_sequencer.assert_called()
-    qcm.instrument.start_sequencer.assert_called()
+    qrm.instrument.start_sequencer.assert_called()
 
 
 def test_stop_qcm_qrm(make_qcm, make_qrm):
@@ -195,7 +205,7 @@ def test_stop_qcm_qrm(make_qcm, make_qrm):
 
     # Assert
     qcm.instrument.stop_sequencer.assert_called()
-    qcm.instrument.stop_sequencer.assert_called()
+    qrm.instrument.stop_sequencer.assert_called()
 
 
 def test_demodulate_trace():
