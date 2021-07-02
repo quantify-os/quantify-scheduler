@@ -121,7 +121,10 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         Starts execution of the schedule.
         """
-        self.instrument.start_sequencer()
+        for seq_idx in [0, 1]:
+            state = self.instrument.get_sequencer_state(seq_idx)
+            if state["status"] == "ARMED":
+                self.instrument.start_sequencer(seq_idx)
 
     def stop(self) -> None:
         """
@@ -366,7 +369,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         """
         Starts execution of the schedule.
         """
-        self.instrument.start_sequencer()
+        state = self.instrument.get_sequencer_state(0)
+        if state["status"] == "ARMED":
+            self.instrument.start_sequencer(0)
 
     def stop(self) -> None:
         """
