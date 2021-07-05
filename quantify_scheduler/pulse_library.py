@@ -4,7 +4,9 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Dict, Any
+
+import numpy as np
 from qcodes import validators
 from quantify_scheduler.types import Operation
 from quantify_scheduler.resources import BasebandClockResource
@@ -492,6 +494,36 @@ class DRAGPulse(Operation):
                     }
                 ],
             }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
+class NumericalPulse(Operation):
+    def __init__(
+        self,
+        samples: np.ndarray,
+        t_samples: np.ndarray,
+        port: str,
+        clock: str,
+        t0: float = 0,
+    ):
+        data: Dict[str, Any] = {
+            "name": "NumericalPulse",
+            "pulse_info": [
+                {
+                    "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
+                    "samples": samples,
+                    "t_samples": t_samples,
+                    "clock": clock,
+                    "port": port,
+                    "t0": t0,
+                }
+            ],
+        }
+
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
