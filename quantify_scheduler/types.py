@@ -249,13 +249,13 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
             for waveform in acq_info["waveforms"]:
-                if "t" in waveform:
-                    waveform["t"] = np.array2string(
-                        waveform["t"], separator=", ", precision=9
+                if "t_samples" in waveform:
+                    waveform["t_samples"] = np.array2string(
+                        waveform["t_samples"], separator=", ", precision=9
                     )
-                if "weights" in waveform:
-                    waveform["weights"] = np.array2string(
-                        waveform["weights"], separator=", ", precision=9
+                if "samples" in waveform:
+                    waveform["samples"] = np.array2string(
+                        waveform["samples"], separator=", ", precision=9
                     )
 
         return _data
@@ -274,11 +274,13 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
                 acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
             for waveform in acq_info["waveforms"]:
-                if "t" in waveform and isinstance(waveform["t"], str):
-                    waveform["t"] = np.array(ast.literal_eval(waveform["t"]))
-                if "weights" in waveform and isinstance(waveform["weights"], str):
-                    waveform["weights"] = np.array(
-                        ast.literal_eval(waveform["weights"])
+                if "t_samples" in waveform and isinstance(waveform["t_samples"], str):
+                    waveform["t_samples"] = np.array(
+                        ast.literal_eval(waveform["t_samples"])
+                    )
+                if "samples" in waveform and isinstance(waveform["samples"], str):
+                    waveform["samples"] = np.array(
+                        ast.literal_eval(waveform["samples"])
                     )
 
     @classmethod
