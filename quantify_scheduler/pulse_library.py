@@ -518,6 +518,24 @@ class NumericalPulse(Operation):
         clock: str,
         t0: float = 0,
     ):
+        """
+        Creates an instance of the `NumericalPulse`.
+
+        Parameters
+        ----------
+        samples
+            An array of (possibly complex) values specifying the shape of the pulse.
+        t_samples
+            An array of values specifying the corresponding times at which the
+            `samples` are evaluated.
+        port
+            The port that the pulse should be played on.
+        clock
+            Clock used to (de)modulate the pulse.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        """
         data: Dict[str, Any] = {
             "name": "NumericalPulse",
             "pulse_info": [
@@ -535,5 +553,6 @@ class NumericalPulse(Operation):
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
+        """Provides a string representation of the Pulse."""
         pulse_info = self.data["pulse_info"][0]
         return self._get_signature(pulse_info)
