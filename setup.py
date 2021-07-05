@@ -27,7 +27,7 @@ requirements = [
     "zhinst-qcodes",
     "pathvalidate",
     "typing_extensions",
-    "quantify-core@git+https://gitlab.com/quantify-os/quantify-core@develop#egg=quantify-core",
+    "quantify_core@git+https://gitlab.com/quantify-os/quantify-core@develop",
     "qblox-instruments==0.3.2",
 ]
 
