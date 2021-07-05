@@ -9,7 +9,7 @@ Examples of waveforms that are too advanced are flux pulses that require knowled
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
 import numpy as np
-from scipy import signal
+from scipy import signal, interpolate
 from typing import Union, List
 
 
@@ -226,6 +226,14 @@ def drag(
     rot_drag_wave = rotate_wave(drag_wave, phase=phase)
 
     return rot_drag_wave
+
+
+def interpolated_waveform(
+    t: np.ndarray, samples: np.ndarray, t_samples: np.ndarray, **kwargs
+):
+    real_interpolator = interpolate.interp1d(t_samples, samples.real, **kwargs)
+    imag_interpolator = interpolate.interp1d(t_samples, samples.imag, **kwargs)
+    return real_interpolator(t) + 1.0j * imag_interpolator(t)
 
 
 # ----------------------------------
