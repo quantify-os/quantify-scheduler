@@ -250,6 +250,7 @@ def interpolated_waveform(
 
     Returns
     -------
+    :
         An array containing the interpolated values.
     """
     real_interpolator = interpolate.interp1d(t_samples, samples.real, **kwargs)
