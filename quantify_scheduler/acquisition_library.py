@@ -388,15 +388,17 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
         weights_a = np.array2string(
-            acq_info["waveforms"][0]["weights"], separator=", ", precision=9
+            acq_info["waveforms"][0]["samples"], separator=", ", precision=9
         )
         weights_b = np.array2string(
-            acq_info["waveforms"][1]["weights"], separator=", ", precision=9
+            acq_info["waveforms"][1]["samples"], separator=", ", precision=9
         )
-        t = np.array2string(acq_info["waveforms"][0]["t"], separator=", ", precision=9)
+        t = np.array2string(
+            acq_info["waveforms"][0]["t_samples"], separator=", ", precision=9
+        )
         port = acq_info["port"]
         clock = acq_info["clock"]
-        interpolation = acq_info["waveforms"][0]["interpolation"]
+        interpolation = acq_info["waveforms"][0]["kind"]
         acq_channel = acq_info["acq_channel"]
         acq_index = acq_info["acq_index"]
         bin_mode = acq_info["bin_mode"].value
