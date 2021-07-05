@@ -536,6 +536,7 @@ class NumericalPulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         """
+        duration = t_samples[-1] - t_samples[0]
         data: Dict[str, Any] = {
             "name": "NumericalPulse",
             "pulse_info": [
@@ -543,6 +544,7 @@ class NumericalPulse(Operation):
                     "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
                     "samples": samples,
                     "t_samples": t_samples,
+                    "duration": duration,
                     "clock": clock,
                     "port": port,
                     "t0": t0,
