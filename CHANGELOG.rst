@@ -20,6 +20,7 @@ Merged branches and closed issues
 * Feature: Added InstrumentCoordinator wait_done method, Closes #113 (!140)
 * Added Qblox InstrumentCoordinator components (!112)
 * Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
+* Added instrument coordinator reference parameter to transmon element. (!152)
 
 
 0.3.0 Multiple backends support (2021-05-20)
