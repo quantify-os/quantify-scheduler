@@ -5,6 +5,7 @@
 from unittest import TestCase
 
 import pytest
+import numpy as np
 from quantify_scheduler import Operation
 from quantify_scheduler.gate_library import X90
 from quantify_scheduler.pulse_library import (
@@ -13,6 +14,7 @@ from quantify_scheduler.pulse_library import (
     RampPulse,
     SoftSquarePulse,
     SquarePulse,
+    NumericalPulse,
     decompose_long_square_pulse,
 )
 
@@ -103,6 +105,9 @@ def test_operation_duration_composite_pulse():
         SquarePulse(amp=0.5, duration=300e-9, port="p.01", clock="cl0.baseband"),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
+        NumericalPulse(
+            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
+        ),
         DRAGPulse(
             G_amp=0.8,
             D_amp=-0.3,
@@ -171,6 +176,9 @@ def test_decompose_long_square_pulse():
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
+        NumericalPulse(
+            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
+        ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
@@ -185,6 +193,9 @@ def test__repr__(operation: Operation):
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
+        NumericalPulse(
+            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
+        ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
@@ -199,6 +210,9 @@ def test__str__(operation: Operation):
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
+        NumericalPulse(
+            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
+        ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
@@ -220,6 +234,9 @@ def test_deserialize(operation: Operation):
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
+        NumericalPulse(
+            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
+        ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
