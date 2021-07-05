@@ -253,6 +253,8 @@ def interpolated_waveform(
     :
         An array containing the interpolated values.
     """
+    if isinstance(samples, list):
+        samples = np.array(samples)
     real_interpolator = interpolate.interp1d(t_samples, samples.real, **kwargs)
     imag_interpolator = interpolate.interp1d(t_samples, samples.imag, **kwargs)
     return real_interpolator(t) + 1.0j * imag_interpolator(t)
