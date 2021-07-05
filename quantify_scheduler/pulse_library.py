@@ -4,7 +4,7 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 
 import numpy as np
 from qcodes import validators
@@ -512,11 +512,12 @@ class NumericalPulse(Operation):
 
     def __init__(
         self,
-        samples: np.ndarray,
-        t_samples: np.ndarray,
+        samples: Union[np.ndarray, list],
+        t_samples: Union[np.ndarray, list],
         port: str,
         clock: str,
         t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
         Creates an instance of the `NumericalPulse`.
@@ -535,22 +536,36 @@ class NumericalPulse(Operation):
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
+
+        def make_list_from_array(val: np.ndarray) -> list:
+            """Needed since numpy arrays break the (de)serialization code."""
+            new_val = list()
+            if isinstance(val, np.ndarray):
+                new_val: list = val.tolist()
+            return new_val
+
         duration = t_samples[-1] - t_samples[0]
-        data: Dict[str, Any] = {
-            "name": "NumericalPulse",
-            "pulse_info": [
-                {
-                    "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
-                    "samples": samples,
-                    "t_samples": t_samples,
-                    "duration": duration,
-                    "clock": clock,
-                    "port": port,
-                    "t0": t0,
-                }
-            ],
-        }
+        samples, t_samples = map(make_list_from_array, [samples, t_samples])
+        if data is None:
+            data: Dict[str, Any] = {
+                "name": "NumericalPulse",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
+                        "samples": samples,
+                        "t_samples": t_samples,
+                        "duration": duration,
+                        "clock": clock,
+                        "port": port,
+                        "t0": t0,
+                    }
+                ],
+            }
 
         super().__init__(name=data["name"], data=data)
 
