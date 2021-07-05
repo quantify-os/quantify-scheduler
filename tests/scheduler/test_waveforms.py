@@ -8,6 +8,7 @@ from quantify_scheduler.waveforms import (
     square,
     drag,
     staircase,
+    interpolated_waveform,
     modulate_wave,
     rotate_wave,
 )
@@ -92,6 +93,17 @@ def test_drag_ns():
     exp_waveform.real -= np.mean([exp_waveform.real[0], exp_waveform.real[-1]])
     exp_waveform.imag -= np.mean([exp_waveform.imag[0], exp_waveform.imag[-1]])
     np.testing.assert_array_almost_equal(waveform, exp_waveform, decimal=3)
+
+
+def test_interpolated_waveform():
+    amp = 2.44
+    t_samples = np.linspace(0, 50e-6, 1000)
+    samples = square(t_samples, amp)
+
+    t_answer = np.linspace(0, 50e-6, 2000)
+    result = interpolated_waveform(t=t_answer, samples=samples, t_samples=t_samples)
+    answer = np.array([amp] * len(t_answer))
+    npt.assert_array_equal(answer, result)
 
 
 def test_rotate_wave():
