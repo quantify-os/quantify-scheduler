@@ -19,7 +19,7 @@ class TransmonElement(Instrument):
     :func:`~quantify_scheduler.compilation.add_pulse_information_transmon` function.
     """
 
-    def __init__(self, name: str, coordinator: str = None, **kwargs):
+    def __init__(self, name: str, **kwargs):
         """
         Initializes the parent class and adds
         :class:`~qcodes.instrument.parameter.Parameter` s /
@@ -40,15 +40,12 @@ class TransmonElement(Instrument):
         -----------
         name:
             The name of the transmon element.
-        coordinator:
-            The name of the instrument coordinator that is used to run experiments
-            on this device.
 
         """
         super().__init__(name, **kwargs)
         self.add_parameter(
-            "coordinator",
-            initial_value=coordinator,
+            "instrument_coordinator",
+            initial_value=None,
             parameter_class=InstrumentRefParameter,
             vals=validators.Strings(),
         )
