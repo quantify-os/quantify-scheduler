@@ -43,6 +43,7 @@ class TransmonElement(Instrument):
 
         """
         super().__init__(name, **kwargs)
+        # pylint: disable=fixme
         # TODO: create DeviceElement parent class and make instrument_coordinator
         # a parameter of that class.
         self.add_parameter(
