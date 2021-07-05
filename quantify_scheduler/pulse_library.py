@@ -502,6 +502,14 @@ class DRAGPulse(Operation):
 
 
 class NumericalPulse(Operation):
+    """
+    Defines a pulse where the shape is determined by specifying an array of (complex)
+    points. If points are required between the specified samples (such as could be
+    required by the sampling rate of the hardware), meaning :math:`t[n] < t' < t[n+1]`,
+    `scipy.interpolate.interp1d` will be used to interpolate between the two points and
+    determine the value.
+    """
+
     def __init__(
         self,
         samples: np.ndarray,
