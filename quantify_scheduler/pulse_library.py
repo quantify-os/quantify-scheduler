@@ -543,7 +543,7 @@ class NumericalPulse(Operation):
         """
 
         def make_list_from_array(val: np.ndarray) -> list:
-            """Needed since numpy arrays break the (de)serialization code."""
+            """Needed since numpy arrays break the (de)serialization code (#146)."""
             new_val = list()
             if isinstance(val, np.ndarray):
                 new_val: list = val.tolist()
