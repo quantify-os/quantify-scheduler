@@ -173,25 +173,25 @@ def test_deserialize(operation: Operation):
     if isinstance(operation, NumericalWeightedIntegrationComplex):
         waveforms = operation.data["acquisition_info"][0]["waveforms"]
         for i, waveform in enumerate(waveforms):
-            assert isinstance(waveform["t"], (np.generic, np.ndarray))
-            assert isinstance(waveform["weights"], (np.generic, np.ndarray))
+            assert isinstance(waveform["t_samples"], (np.generic, np.ndarray))
+            assert isinstance(waveform["samples"], (np.generic, np.ndarray))
             np.testing.assert_array_almost_equal(
-                obj.data["acquisition_info"][0]["waveforms"][i]["t"],
-                waveform["t"],
+                obj.data["acquisition_info"][0]["waveforms"][i]["t_samples"],
+                waveform["t_samples"],
                 decimal=9,
             )
             np.testing.assert_array_almost_equal(
-                obj.data["acquisition_info"][0]["waveforms"][i]["weights"],
-                waveform["weights"],
+                obj.data["acquisition_info"][0]["waveforms"][i]["samples"],
+                waveform["samples"],
                 decimal=9,
             )
 
             # TestCase().assertDictEqual cannot compare numpy arrays for equality
             # therefore "unitary" is removed
-            del obj.data["acquisition_info"][0]["waveforms"][i]["t"]
-            del waveform["t"]
-            del obj.data["acquisition_info"][0]["waveforms"][i]["weights"]
-            del waveform["weights"]
+            del obj.data["acquisition_info"][0]["waveforms"][i]["t_samples"]
+            del waveform["t_samples"]
+            del obj.data["acquisition_info"][0]["waveforms"][i]["samples"]
+            del waveform["samples"]
 
     TestCase().assertDictEqual(obj.data, operation.data)
 
