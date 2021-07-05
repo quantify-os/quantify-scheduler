@@ -45,7 +45,7 @@ class TransmonElement(Instrument):
         super().__init__(name, **kwargs)
         # pylint: disable=fixme
         # TODO: create DeviceElement parent class and make instrument_coordinator
-        # a parameter of that class.
+        # a parameter of that class, see issue quantify-scheduler#148
         self.add_parameter(
             "instrument_coordinator",
             initial_value=None,
