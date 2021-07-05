@@ -12,15 +12,15 @@ from quantify_scheduler.device_elements.transmon_element import TransmonElement
 
 @pytest.fixture
 def q_0() -> TransmonElement:
-    ins_coord = InstrumentCoordinator("ic")
+    coordinator = InstrumentCoordinator("ic")
     q_0 = TransmonElement("q0")
-    q_0.instrument_coordinator(ins_coord.name)
+    q_0.instrument_coordinator(coordinator.name)
 
     # Transmon element is returned
     yield q_0
     # after the test, teardown...
     q_0.close()
-    ins_coord.close()
+    coordinator.close()
 
 
 def test_qubit_name(q_0: TransmonElement):
@@ -47,5 +47,5 @@ def test_generate_device_config(q_0: TransmonElement):
 
 
 def test_find_coordinator(q_0: TransmonElement):
-    ins_coord = q_0.instrument_coordinator.get_instr()
-    assert ins_coord.name == "ic"
+    coordinator = q_0.instrument_coordinator.get_instr()
+    assert coordinator.name == "ic"
