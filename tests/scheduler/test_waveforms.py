@@ -8,7 +8,7 @@ from quantify_scheduler.waveforms import (
     square,
     drag,
     staircase,
-    interpolated_waveform,
+    interpolated_complex_waveform,
     modulate_wave,
     rotate_wave,
 )
@@ -101,7 +101,9 @@ def test_interpolated_waveform():
     samples = square(t_samples, amp)
 
     t_answer = np.linspace(0, 50e-6, 2000)
-    result = interpolated_waveform(t=t_answer, samples=samples, t_samples=t_samples)
+    result = interpolated_complex_waveform(
+        t=t_answer, samples=samples, t_samples=t_samples
+    )
     answer = np.array([amp] * len(t_answer))
     npt.assert_array_equal(answer, result)
 

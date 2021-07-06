@@ -556,7 +556,7 @@ class NumericalPulse(Operation):
                 "name": "NumericalPulse",
                 "pulse_info": [
                     {
-                        "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
+                        "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
                         "samples": samples,
                         "t_samples": t_samples,
                         "duration": duration,

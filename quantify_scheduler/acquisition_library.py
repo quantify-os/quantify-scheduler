@@ -358,13 +358,13 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             overwritten using the contents of data.
         """
         waveforms_a = {
-            "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
+            "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_a,
             "t_samples": t,
             "kind": interpolation,
         }
         waveforms_b = {
-            "wf_func": "quantify_scheduler.waveforms.interpolated_waveform",
+            "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_b,
             "t_samples": t,
             "kind": interpolation,

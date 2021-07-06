@@ -228,7 +228,7 @@ def drag(
     return rot_drag_wave
 
 
-def interpolated_waveform(
+def interpolated_complex_waveform(
     t: np.ndarray, samples: np.ndarray, t_samples: np.ndarray, **kwargs
 ):
     """
