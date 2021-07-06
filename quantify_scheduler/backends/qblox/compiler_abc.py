@@ -1157,11 +1157,11 @@ class PulsarRF(PulsarBase):
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
-        seq_index = seq.name.split("seq")[0]
+        seq_index = int(seq.name.split("seq")[1])
         for key, value in self.output_to_sequencer_idx.items():
             if seq_index == value:
                 output = key
-        output_index = filter(str.isdigit, output)
+        output_index = next(filter(str.isdigit, output))
 
         if_freq = seq.frequency
         lo_freq = getattr(self._settings, f"lo{output_index}_freq")

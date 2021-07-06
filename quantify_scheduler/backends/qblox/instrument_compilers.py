@@ -198,13 +198,13 @@ class Pulsar_QRM(PulsarBaseband):
     """Maximum number of sequencer available in the instrument."""
 
 
-class Pulsar_QCM_RF(Pulsar_QCM, PulsarRF):
+class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
 
 
-class Pulsar_QRM_RF(Pulsar_QRM, PulsarRF):
+class Pulsar_QRM_RF(PulsarRF, Pulsar_QRM):
     """
     Pulsar QRM-RF specific implementation of the pulsar compiler.
     """

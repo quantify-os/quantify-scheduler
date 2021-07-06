@@ -162,7 +162,7 @@ class PulsarRFSettings(PulsarSettings):
     """The frequency of Output 1 (O1) LO."""
 
     @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
