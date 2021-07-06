@@ -561,7 +561,7 @@ class NumericalPulse(Operation):
                 "pulse_info": [
                     {  # pylint: disable=line-too-long
                         "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
-                        "samples": samples,  # pylint: enable=line-too-long
+                        "samples": samples,
                         "t_samples": t_samples,
                         "duration": duration,
                         "interpolation": interpolation,
