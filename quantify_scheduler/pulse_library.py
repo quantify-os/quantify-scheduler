@@ -517,6 +517,7 @@ class NumericalPulse(Operation):
         port: str,
         clock: str,
         t0: float = 0,
+        interpolation: str = "linear",
         data: Optional[dict] = None,
     ):
         """
@@ -536,6 +537,9 @@ class NumericalPulse(Operation):
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        interpolation
+            Specifies the type of interpolation used. This is passed as the "kind"
+            argument to `scipy.interpolate.interp1d`.
         data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
@@ -560,6 +564,7 @@ class NumericalPulse(Operation):
                         "samples": samples,
                         "t_samples": t_samples,
                         "duration": duration,
+                        "interpolation": interpolation,
                         "clock": clock,
                         "port": port,
                         "t0": t0,

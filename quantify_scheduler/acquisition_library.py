@@ -361,13 +361,13 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
             "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_a,
             "t_samples": t,
-            "kind": interpolation,
+            "interpolation": interpolation,
         }
         waveforms_b = {
             "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_b,
             "t_samples": t,
-            "kind": interpolation,
+            "interpolation": interpolation,
         }
         duration = t[-1] - t[0]
         super().__init__(
@@ -398,7 +398,7 @@ class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
         )
         port = acq_info["port"]
         clock = acq_info["clock"]
-        interpolation = acq_info["waveforms"][0]["kind"]
+        interpolation = acq_info["waveforms"][0]["interpolation"]
         acq_channel = acq_info["acq_channel"]
         acq_index = acq_info["acq_index"]
         bin_mode = acq_info["bin_mode"].value

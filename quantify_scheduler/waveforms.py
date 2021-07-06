@@ -229,7 +229,11 @@ def drag(
 
 
 def interpolated_complex_waveform(
-    t: np.ndarray, samples: np.ndarray, t_samples: np.ndarray, **kwargs
+    t: np.ndarray,
+    samples: np.ndarray,
+    t_samples: np.ndarray,
+    interpolation: str = "linear",
+    **kwargs
 ) -> np.ndarray:
     """
     Wrapper function around `scipy.interpolate.interp1d`, which takes the array of
@@ -255,8 +259,12 @@ def interpolated_complex_waveform(
     """
     if isinstance(samples, list):
         samples = np.array(samples)
-    real_interpolator = interpolate.interp1d(t_samples, samples.real, **kwargs)
-    imag_interpolator = interpolate.interp1d(t_samples, samples.imag, **kwargs)
+    real_interpolator = interpolate.interp1d(
+        t_samples, samples.real, kind=interpolation, **kwargs
+    )
+    imag_interpolator = interpolate.interp1d(
+        t_samples, samples.imag, kind=interpolation, **kwargs
+    )
     return real_interpolator(t) + 1.0j * imag_interpolator(t)
 
 
