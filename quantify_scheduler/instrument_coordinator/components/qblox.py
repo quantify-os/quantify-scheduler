@@ -459,8 +459,10 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             The settings to configure it to.
         """
         super()._configure_global_settings(settings)
-        self.set("lo0_freq", settings.lo0_freq)
-        self.set("lo1_freq", settings.lo1_freq)
+        if settings.lo0_freq:
+            self.set("lo0_freq", settings.lo0_freq)
+        if settings.lo1_freq:
+            self.set("lo1_freq", settings.lo1_freq)
 
 
 # ----------------- Utility -----------------
