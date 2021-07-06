@@ -370,11 +370,11 @@ docs-win-make-html-latest-nightly:
 
 black:
   stage: Static Analysis
-  image: python:3.8
-  extends:
-    - .unix-before-script
+  image: $CI_REGISTRY_IMAGE:python_3.8
   script:
     - black --check --fast .
+  extends:
+    - .run-always-except-docker-images
 
 # ######################################################################################
 # Build Docker images
