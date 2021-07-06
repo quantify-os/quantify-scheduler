@@ -559,9 +559,9 @@ class NumericalPulse(Operation):
             data: Dict[str, Any] = {
                 "name": "NumericalPulse",
                 "pulse_info": [
-                    {
+                    {  # pylint: disable=line-too-long
                         "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
-                        "samples": samples,
+                        "samples": samples,  # pylint: enable=line-too-long
                         "t_samples": t_samples,
                         "duration": duration,
                         "interpolation": interpolation,
