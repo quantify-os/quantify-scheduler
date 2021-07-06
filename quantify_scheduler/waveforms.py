@@ -230,7 +230,7 @@ def drag(
 
 def interpolated_complex_waveform(
     t: np.ndarray, samples: np.ndarray, t_samples: np.ndarray, **kwargs
-):
+) -> np.ndarray:
     """
     Wrapper function around `scipy.interpolate.interp1d`, which takes the array of
     (complex) samples, interpolates the real and imaginary parts separately and returns
