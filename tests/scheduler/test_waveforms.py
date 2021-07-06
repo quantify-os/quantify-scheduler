@@ -95,16 +95,32 @@ def test_drag_ns():
     np.testing.assert_array_almost_equal(waveform, exp_waveform, decimal=3)
 
 
-def test_interpolated_waveform():
-    amp = 2.44
-    t_samples = np.linspace(0, 50e-6, 1000)
-    samples = square(t_samples, amp)
-
+@pytest.mark.parametrize(
+    "test_wf, test_time, answer",
+    [
+        (
+            square(np.linspace(0, 50e-6, 1000), 2.44),
+            np.linspace(0, 50e-6, 1000),
+            np.array([2.44] * 2000),
+        ),
+        (
+            square(np.linspace(0, 50e-6, 1000), 2.44)
+            + 1.0j * square(np.linspace(0, 50e-6, 1000), 1),
+            np.linspace(0, 50e-6, 1000),
+            np.array([2.44 + 1.0j] * 2000),
+        ),
+        (
+            square(np.linspace(0, 50e-6, 1000), -2.1j),
+            np.linspace(0, 50e-6, 1000),
+            np.array([-2.1j] * 2000),
+        ),
+    ],
+)
+def test_interpolated_complex_waveform(test_wf, test_time, answer):
     t_answer = np.linspace(0, 50e-6, 2000)
     result = interpolated_complex_waveform(
-        t=t_answer, samples=samples, t_samples=t_samples
+        t=t_answer, samples=test_wf, t_samples=test_time
     )
-    answer = np.array([amp] * len(t_answer))
     npt.assert_array_equal(answer, result)
 
 
