@@ -648,6 +648,24 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
+def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
+    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    container = compiler_container.CompilerContainer.from_mapping(
+        sched, HARDWARE_MAPPING
+    )
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+    qb._assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        device_compilers=container.instrument_compilers,
+        portclock_mapping=portclock_map,
+    )
+    for instr in container.instrument_compilers.values():
+        if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
+            instr._distribute_data()
+            scope_mode_seq = instr._determine_scope_mode_acquisition_sequencer()
+    pass
+
+
 def test_container_prepare_baseband(
     baseband_square_pulse_schedule, hardware_cfg_baseband
 ):
