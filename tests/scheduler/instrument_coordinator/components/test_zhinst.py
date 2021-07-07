@@ -125,7 +125,6 @@ def test_hdawg_stop(mocker, make_hdawg):
 def test_hdawg_prepare(mocker, make_hdawg):
     # Arrange
     hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
-    print(f"{hdawg=}")
     config = ZIDeviceConfig(
         "hdawg0", Schedule("test"), settings.ZISettingsBuilder(), None
     )
