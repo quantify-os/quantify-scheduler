@@ -168,7 +168,6 @@ class WeightedIntegratedComplex(Operation):
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to the waveform separate from the clock.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
         if data is None:

@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Module containing Zurich Instruments ControlStack Components."""
+"""Module containing Zurich Instruments InstrumentCoordinator Components."""
 # pylint: disable=useless-super-delegation
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-ancestors
@@ -24,11 +24,11 @@ if TYPE_CHECKING:
     from quantify_scheduler.backends.zhinst.settings import ZISettings
 
 
-class ZIControlStackComponent(base.ControlStackComponentBase):
-    """Zurich Instruments ControlStack component base class."""
+class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
+    """Zurich Instruments InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: ZIBaseInstrument, **kwargs) -> None:
-        """Create a new instance of ZIControlStackComponent."""
+        """Create a new instance of ZIInstrumentCoordinatorComponent."""
         super().__init__(instrument, **kwargs)
         self.device_config: Optional[ZIDeviceConfig] = None
         self.zi_settings: Optional[ZISettings] = None
@@ -40,7 +40,7 @@ class ZIControlStackComponent(base.ControlStackComponentBase):
 
     def prepare(self, options: ZIDeviceConfig) -> None:
         """
-        Prepare the ControlStack component with configuration
+        Prepare the InstrumentCoordinator component with configuration
         required to arm the instrument.
 
         Parameters
@@ -68,11 +68,11 @@ class ZIControlStackComponent(base.ControlStackComponentBase):
         return None
 
 
-class HDAWGControlStackComponent(ZIControlStackComponent):
-    """Zurich Instruments HDAWG ControlStack Component class."""
+class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
+    """Zurich Instruments HDAWG InstrumentCoordinator Component class."""
 
     def __init__(self, instrument: qcodes.HDAWG, **kwargs) -> None:
-        """Create a new instance of HDAWGControlStackComponent."""
+        """Create a new instance of HDAWGInstrumentCoordinatorComponent."""
         assert isinstance(instrument, qcodes.HDAWG)
         super().__init__(instrument, **kwargs)
 
@@ -124,11 +124,11 @@ class HDAWGControlStackComponent(ZIControlStackComponent):
             self.get_awg(awg_index).wait_done(timeout_sec)
 
 
-class UHFQAControlStackComponent(ZIControlStackComponent):
-    """Zurich Instruments UHFQA ControlStack Component class."""
+class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
+    """Zurich Instruments UHFQA InstrumentCoordinator Component class."""
 
     def __init__(self, instrument: qcodes.UHFQA, **kwargs) -> None:
-        """Create a new instance of UHFQAControlStackComponent."""
+        """Create a new instance of UHFQAInstrumentCoordinatorComponent."""
         assert isinstance(instrument, qcodes.UHFQA)
         super().__init__(instrument, **kwargs)
 

@@ -187,7 +187,7 @@ class Y(Rxy):
         """
         super().__init__(theta=180.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y {qubit}"
-        self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
+        self.data["gate_info"]["tex"] = r"$Y_{\pi}$"
 
     def __str__(self) -> str:
         qubit = self.data["gate_info"]["qubits"][0]

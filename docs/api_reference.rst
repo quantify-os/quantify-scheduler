@@ -206,30 +206,30 @@ pulse_diagram
 .. automodule:: quantify_scheduler.visualization.pulse_diagram
     :members:
 
-controlstack
--------------
+instrument_coordinator
+----------------------
 
-.. automodule:: quantify_scheduler.controlstack
+.. automodule:: quantify_scheduler.instrument_coordinator
     :members:
 
 base
 ~~~~
 
-.. automodule:: quantify_scheduler.controlstack.components.base
+.. automodule:: quantify_scheduler.instrument_coordinator.components.base
     :members:
     :show-inheritance:
 
 qblox
 ~~~~~
 
-.. automodule:: quantify_scheduler.controlstack.components.qblox
+.. automodule:: quantify_scheduler.instrument_coordinator.components.qblox
     :members:
     :show-inheritance:
 
 zhinst
 ~~~~~~
 
-.. automodule:: quantify_scheduler.controlstack.components.zhinst
+.. automodule:: quantify_scheduler.instrument_coordinator.components.zhinst
     :members:
     :show-inheritance:
 

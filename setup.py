@@ -13,27 +13,14 @@ with open("AUTHORS.rst") as authors_file:
 with open("CHANGELOG.rst") as history_file:
     history = history_file.read()
 
-with open("requirements_dev.txt") as test_reqs:
-    test_requirements = test_reqs.read().splitlines()
+with open("requirements.txt") as installation_requirements_file:
+    requirements = installation_requirements_file.read().splitlines()
 
-requirements = [
-    "numpy",
-    "scipy",
-    "columnar",
-    "matplotlib",
-    "plotly",
-    "jsonschema",
-    "dataclasses-json",
-    "zhinst-qcodes",
-    "pathvalidate",
-    "typing_extensions",
-    "quantify_core@git+https://gitlab.com/quantify-os/quantify-core/#629f212927ab1c001b0ced1aba896ffc7f77bcc0",
-    "qblox-instruments==0.3.2",
-]
+with open("requirements_setup.txt") as setup_requirements_file:
+    setup_requirements = setup_requirements_file.read().splitlines()
 
-setup_requirements = [
-    "pytest-runner",
-]
+with open("requirements_dev.txt") as test_requirements_file:
+    test_requirements = test_requirements_file.read().splitlines()
 
 version = "0.3.0"
 
