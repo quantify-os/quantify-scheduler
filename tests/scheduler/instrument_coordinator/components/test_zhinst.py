@@ -125,6 +125,7 @@ def test_hdawg_stop(mocker, make_hdawg):
 def test_hdawg_prepare(mocker, make_hdawg):
     # Arrange
     hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
+    print(f"{hdawg=}")
     config = ZIDeviceConfig(
         "hdawg0", Schedule("test"), settings.ZISettingsBuilder(), None
     )
@@ -136,7 +137,11 @@ def test_hdawg_prepare(mocker, make_hdawg):
     hdawg.prepare(config)
 
     # Assert
-    serialize.assert_called_with(Path("."), hdawg.instrument)
+    hdawg_serialize_settings = settings.ZISerializeSettings(f"ic_{hdawg.instrument.name}",
+                                                            hdawg.instrument._serial,
+                                                            hdawg.instrument._type
+                                                           )
+    serialize.assert_called_with(Path("."), hdawg_serialize_settings)
     apply.assert_called_with(hdawg.instrument)
 
 
@@ -236,7 +241,11 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
     uhfqa.prepare(config)
 
     # Assert
-    serialize.assert_called_with(Path("."), uhfqa.instrument)
+    uhfqa_serialize_settings = settings.ZISerializeSettings(f"ic_{uhfqa.instrument.name}",
+                                                        uhfqa.instrument._serial,
+                                                        uhfqa.instrument._type
+                                                       )
+    serialize.assert_called_with(Path("."), uhfqa_serialize_settings)
     apply.assert_called_with(uhfqa.instrument)
     copy2.assert_called_with("uhfqa0_awg0.csv", "waves")
 

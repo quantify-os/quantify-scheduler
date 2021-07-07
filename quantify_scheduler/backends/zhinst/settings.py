@@ -20,8 +20,8 @@ from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 @dataclasses.dataclass(frozen=True)
 class ZISerializeSettings:
     name: str
-    serial: str
-    type: str
+    _serial: str
+    _type: str
 
 
 @dataclasses.dataclass
@@ -126,8 +126,8 @@ class ZISettings:
 
     def serialize(self, root: Path, options: ZISerializeSettings) -> Path:
         """
-        Serializes the ZISettings to file storage.
-        The parent '{instrument.name}_settings.json' file contains references to all
+        Serializes the ZISerializeSettings to file storage.
+        The parent '{options.name}_settings.json' file contains references to all
         child files.
 
         While settings are stored in JSON the waveforms are stored in CSV.
@@ -146,8 +146,8 @@ class ZISettings:
         """
         collection = {
             "name": options.name,
-            "serial": options.serial,
-            "type": options.type,
+            "serial": options._serial,
+            "type": options._type,
         }
         # Copy the settings to avoid modifying the original values.
         _tmp_daq_list = list(map(dataclasses.replace, self._daq_settings))
@@ -162,7 +162,7 @@ class ZISettings:
                 nodes = setting.node.split("/")
                 awg_index = int(nodes[1])
                 wave_index = int(nodes[-1])
-                name = f"{instrument.name}_awg{awg_index}_wave{wave_index}.csv"
+                name = f"{options.name}_awg{awg_index}_wave{wave_index}.csv"
                 file_path = root / name
 
                 columns = 2
@@ -174,7 +174,7 @@ class ZISettings:
                 setting.value = str(file_path)
             elif "commandtable/data" in setting.node:
                 awg_index = setting.node.split("/")[1]
-                name = f"{instrument.name}_awg{awg_index}.json"
+                name = f"{options.name}_awg{awg_index}.json"
                 file_path = root / name
                 file_path.touch()
                 file_path.write_text(json.dumps(setting.value))
@@ -192,7 +192,7 @@ class ZISettings:
                 if "compiler/sourcestring" not in collection:
                     collection["compiler/sourcestring"] = dict()
 
-                name = f"{instrument.name}_awg{awg_index}.seqc"
+                name = f"{options.name}_awg{awg_index}.seqc"
                 file_path = root / name
                 file_path.touch()
                 file_path.write_text(setting.value)
@@ -200,7 +200,7 @@ class ZISettings:
                 setting.value = str(file_path)
                 collection["compiler/sourcestring"][str(awg_index)] = setting.value
 
-        file_path = root / f"{instrument.name}_settings.json"
+        file_path = root / f"{options.name}_settings.json"
         file_path.touch()
         file_path.write_text(json.dumps(collection))
 

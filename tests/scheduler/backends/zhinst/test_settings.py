@@ -125,7 +125,10 @@ def test_zi_settings_serialize_wave(mocker):
 
     # Act
     zi_settings = settings.ZISettings(daq_settings, awg_settings)
-    zi_settings.serialize(root, instrument)
+    zi_settings.serialize(root, settings.ZISerializeSettings(instrument.name,
+                                                             instrument._serial,
+                                                             instrument._type)
+                          )
 
     # Assert
     calls = [call(root / "uhfqa0_awg0_wave0.csv", ANY, delimiter=";")]
