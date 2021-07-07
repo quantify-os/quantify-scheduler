@@ -11,10 +11,10 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from zhinst.qcodes import base
-from quantify.scheduler import waveforms
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
-from quantify.scheduler.backends.types import zhinst as zi_types
-from quantify.scheduler.backends.zhinst import settings
+from quantify_scheduler import waveforms
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.backends.types import zhinst as zi_types
+from quantify_scheduler.backends.zhinst import settings
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:
@@ -232,6 +232,38 @@ def test_zi_settings_serialize_compiler_source(mocker):
         ),
     ]
     assert write_text.call_args_list == calls
+
+
+def test_zi_settings_serialize_integration_weights(mocker):
+    # Arrange
+    instrument = make_ufhqa(mocker)
+    time = np.arange(0, 10, 1)
+    weights = np.sin(time)
+    daq_settings = [
+        settings.ZISetting("qas/0/integration/weights/0/real", weights, mocker.Mock())
+    ]
+
+    root = Path(".")
+    touch = mocker.patch.object(Path, "touch")
+    write_text = mocker.patch.object(Path, "write_text")
+
+    # Act
+    zi_settings = settings.ZISettings(daq_settings, [])
+    zi_settings.serialize(root, instrument)
+
+    # Assert
+    touch.assert_called()
+
+    write_text.assert_called_with(
+        json.dumps(
+            {
+                "name": "uhfqa0",
+                "serial": "dev1234",
+                "type": "uhfqa",
+                "qas/0/integration/weights/0/real": weights.tolist(),
+            }
+        )
+    )
 
 
 def test_zi_settings_builder_build():

@@ -10,8 +10,8 @@
 # -----------------------------------------------------------------------------
 from __future__ import annotations
 
-from quantify.scheduler.gate_library import X90, Measure, Reset
-from quantify.scheduler.helpers.schedule import (
+from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.helpers.schedule import (
     get_acq_info_by_uuid,
     get_acq_uuid,
     get_operation_end,
@@ -22,8 +22,8 @@ from quantify.scheduler.helpers.schedule import (
     get_schedule_time_offset,
     get_total_duration,
 )
-from quantify.scheduler.types import Schedule
-from quantify.scheduler.schedules import spectroscopy_schedules
+from quantify_scheduler.types import Schedule
+from quantify_scheduler.schedules import spectroscopy_schedules
 
 
 def test_get_info_by_uuid_empty(empty_schedule: Schedule):

@@ -19,45 +19,45 @@ import numpy as np
 from qcodes.instrument.base import Instrument
 
 # pylint: disable=no-name-in-module
-from quantify.data.handling import set_datadir
+from quantify_core.data.handling import set_datadir
 
-from quantify.scheduler.types import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, X
-from quantify.scheduler.pulse_library import (
+from quantify_scheduler.types import Schedule
+from quantify_scheduler.gate_library import Reset, Measure, X
+from quantify_scheduler.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
     StaircasePulse,
 )
-from quantify.scheduler.resources import ClockResource, BasebandClockResource
-from quantify.scheduler.compilation import (
+from quantify_scheduler.resources import ClockResource, BasebandClockResource
+from quantify_scheduler.compilation import (
     qcompile,
     determine_absolute_timing,
     device_compile,
 )
-from quantify.scheduler.enums import BinMode
-from quantify.scheduler.backends.qblox.helpers import (
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
 )
-from quantify.scheduler.backends import qblox_backend as qb
-from quantify.scheduler.backends.types.qblox import (
+from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
 )
-from quantify.scheduler.backends.qblox.instrument_compilers import (
+from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
     QCMSequencer,
 )
-from quantify.scheduler.backends.qblox.compiler_abc import (
+from quantify_scheduler.backends.qblox.compiler_abc import (
     PulsarBase,
 )
-from quantify.scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify.scheduler.backends.qblox import q1asm_instructions, compiler_container
-from quantify.scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
+from quantify_scheduler.backends.qblox import constants
 
-import quantify.scheduler.schemas.examples as es
+import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
 
@@ -84,7 +84,7 @@ except ImportError:
 @pytest.fixture
 def hardware_cfg_baseband():
     yield {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
             "instrument_type": "Pulsar_QCM",
@@ -155,12 +155,11 @@ def pulse_only_schedule():
 @pytest.fixture
 def pulse_only_schedule_no_lo():
     sched = Schedule("pulse_only_schedule_no_lo")
-    sched.add(Reset("q0"))
+    sched.add(Reset("q1"))
     sched.add(
-        DRAGPulse(
-            G_amp=0.7,
-            D_amp=-0.2,
-            phase=90,
+        SquarePulse(
+            amp=0.5,
+            phase=0,
             port="q1:res",
             duration=20e-9,
             clock="q1.ro",
@@ -544,7 +543,7 @@ def test_expand_from_normalised_range():
 
 def test_pulse_stitching_qasm_prog():
     minimal_pulse_data = {
-        "wf_func": "quantify.scheduler.waveforms.square",
+        "wf_func": "quantify_scheduler.waveforms.square",
         "duration": 20.5e-6,
     }
     runtime_settings = QASMRuntimeSettings(1, 1)
@@ -644,10 +643,9 @@ def test_container_prepare(pulse_only_schedule):
         instr.prepare()
 
     assert (
-        container.get_instrument_compiler("qcm0").sequencers["seq0"].frequency
-        is not None
+        container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
     )
-    assert container.get_instrument_compiler("lo0").frequency is not None
+    assert container.instrument_compilers["lo0"].frequency is not None
 
 
 def test_container_prepare_baseband(
@@ -660,45 +658,32 @@ def test_container_prepare_baseband(
         instr.prepare()
 
     assert (
-        container.get_instrument_compiler("qcm0").sequencers["seq0"].frequency
-        is not None
+        container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
     )
-    assert container.get_instrument_compiler("lo0").frequency is not None
+    assert container.instrument_compilers["lo0"].frequency is not None
 
 
 def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
     container = compiler_container.CompilerContainer.from_mapping(
         pulse_only_schedule_no_lo, HARDWARE_MAPPING
     )
-    container.compile(10)
+    container.compile(repetitions=10)
 
-    assert (
-        container.get_instrument_compiler("qrm1").sequencers["seq0"].frequency == 100e6
-    )
+    assert container.instrument_compilers["qrm1"].sequencers["seq0"].frequency == 100e6
 
 
-def test_container_add_instrument_compiler(pulse_only_schedule):
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
-    assert "qcm0" in container.instrument_compilers
-
-
-def test_container__add_from_type(pulse_only_schedule):
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container._add_from_type("qcm0", Pulsar_QCM, HARDWARE_MAPPING["qcm0"])
-    assert "qcm0" in container.instrument_compilers
-
-
-def test_container__add_from_type_indirect(pulse_only_schedule):
+def test_container_add_from_type(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", Pulsar_QCM, HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], Pulsar_QCM)
 
 
-def test_container__add_from_str(pulse_only_schedule):
+def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container._add_from_str("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], Pulsar_QCM)
 
 
 def test_from_mapping(pulse_only_schedule):

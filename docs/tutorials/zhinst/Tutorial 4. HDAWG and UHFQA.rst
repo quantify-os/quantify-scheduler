@@ -25,8 +25,8 @@ Requirements
 
     from zhinst.qcodes import HDAWG, UHFQA
 
-    from quantify.scheduler.schedules.timedomain_schedules import t1_sched
-    from quantify.scheduler.compilation import qcompile
+    from quantify_scheduler.schedules.timedomain_schedules import t1_sched
+    from quantify_scheduler.compilation import qcompile
 
     # Debug only
     # logging.getLogger().setLevel(logging.DEBUG)
@@ -44,17 +44,17 @@ Requirements
     :emphasize-lines: 21,32-34,40,48-50
 
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
-        import quantify.scheduler.schemas.examples as examples
+        import quantify_scheduler.schemas.examples as examples
         path = Path(examples.__file__).parent.joinpath(filename)
         return json.loads(path.read_text())
     
-    # Load example configuration from quantify.scheduler.schemas.examples
+    # Load example configuration from quantify_scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
     zhinst_hardware_map: Dict[str, Any] = json.loads(
     """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "hdawg0",

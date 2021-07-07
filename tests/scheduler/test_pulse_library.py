@@ -5,9 +5,9 @@
 from unittest import TestCase
 
 import pytest
-from quantify.scheduler import Operation
-from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import (
+from quantify_scheduler import Operation
+from quantify_scheduler.gate_library import X90
+from quantify_scheduler.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,

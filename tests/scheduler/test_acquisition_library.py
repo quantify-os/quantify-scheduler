@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Unit tests acquisition protocols for use with the quantify.scheduler."""
+"""Unit tests acquisition protocols for use with the quantify_scheduler."""
 
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -9,15 +9,15 @@ from unittest import TestCase
 
 import pytest
 import numpy as np
-from quantify.scheduler.acquisition_library import (
+from quantify_scheduler.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     Trace,
 )
-from quantify.scheduler.enums import BinMode
-from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import DRAGPulse
-from quantify.scheduler.types import Operation
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.gate_library import X90
+from quantify_scheduler.pulse_library import DRAGPulse
+from quantify_scheduler.types import Operation
 
 
 def test_ssb_integration_complex():
