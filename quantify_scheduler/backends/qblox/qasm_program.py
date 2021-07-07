@@ -4,7 +4,7 @@
 from __future__ import annotations
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Callable
 
 import numpy as np
 from columnar import columnar
@@ -347,6 +347,48 @@ class QASMProgram:
             self.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
             self.elapsed_time += constants.GRID_TIME
 
+    def _acquire_weighted(self, acquisition: OpInfo, idx0: int, idx1: int):
+        measurement_idx = acquisition.data["acq_channel"]
+        bin = acquisition.data["acq_index"]
+        self.emit(
+            q1asm_instructions.ACQUIRE_WEIGHTED,
+            measurement_idx,
+            bin,
+            idx0,
+            idx1,
+            constants.GRID_TIME,
+        )
+        self.elapsed_time += constants.GRID_TIME
+
+    def _acquire_square(self, acquisition: OpInfo):
+        measurement_idx = acquisition.data["acq_channel"]
+        bin = acquisition.data["acq_index"]
+        self.emit(
+            q1asm_instructions.ACQUIRE,
+            measurement_idx,
+            bin,
+            constants.GRID_TIME,
+        )
+        self.elapsed_time += constants.GRID_TIME
+
+    def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
+        protocol_to_acquire_func_mapping = {
+            "trace": self._acquire_square,
+            "weighted_integrated_complex": self._acquire_weighted,
+        }
+        if acquisition.data["bin_mode"] != BinMode.AVERAGE:
+            raise NotImplementedError(
+                f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
+                f"the qblox backend.\n\nAttempting to use "
+                f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
+            )
+
+        acquisition_func = protocol_to_acquire_func_mapping.get(
+            acquisition.data["protocol"], None
+        )
+        args = [arg for arg in [acquisition, idx0, idx1] if arg]
+        acquisition_func(*args)
+
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
         Waits until the start of the acquisition, then starts the acquisition.
@@ -363,24 +405,7 @@ class QASMProgram:
             dict.
         """
         self.wait_till_start_operation(acquisition)
-        if acquisition.data["bin_mode"] != BinMode.AVERAGE:
-            raise NotImplementedError(
-                f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
-                f"the qblox backend.\n\nAttempting to use "
-                f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
-            )
-
-        measurement_idx = acquisition.data["acq_channel"]
-        bin = acquisition.data["acq_index"]
-        self.emit(
-            q1asm_instructions.ACQUIRE_WEIGHTED,
-            measurement_idx,
-            bin,
-            idx0,
-            idx1,
-            constants.GRID_TIME,
-        )
-        self.elapsed_time += constants.GRID_TIME
+        self.auto_acquire(acquisition, idx0, idx1)
 
     def update_runtime_settings(self, operation: OpInfo):
         """
