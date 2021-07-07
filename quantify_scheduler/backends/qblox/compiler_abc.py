@@ -1019,11 +1019,22 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         used.
         """
         self._distribute_data()
-        scope_acq_seq = self._determine_scope_mode_acquisition_sequencer()
+        self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             seq.align_modulation_frequency_with_ext_lo()
 
-    def _determine_scope_mode_acquisition_sequencer(self) -> Optional[str]:
+    def _determine_scope_mode_acquisition_sequencer(self) -> None:
+        """
+        Finds which sequencer has to perform raw trace acquisitions and adds it to the
+        `scope_mode_sequencer` of the settings.
+
+        Raises
+        ------
+        ValueError
+            Multiple sequencers have to perform trace acquisition. This is not
+            supported by the hardware.
+        """
+
         def is_scope_acquisition(acquisition: OpInfo) -> bool:
             return acquisition.data["protocol"] == "trace"
 
@@ -1041,7 +1052,8 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                         f"perform raw trace acquisition per instrument."
                     )
             scope_acq_seq = seq.name
-        return scope_acq_seq
+
+        self._settings.scope_mode_sequencer = scope_acq_seq
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
