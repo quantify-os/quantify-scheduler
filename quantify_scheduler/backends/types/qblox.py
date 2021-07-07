@@ -128,11 +128,8 @@ class PulsarSettings(DataClassJsonMixin):
     ref: str
     """The reference source. Should either be "internal" or "external", will raise an
     exception in the instrument coordinator component otherwise."""
-    hardware_averages: int = 1
-    """The number of repetitions of the Schedule."""
-    acq_mode: str = "SSBIntegrationComplex"
-    """The acquisition mode the Pulsar operates in. This setting will most likely
-    change in the future."""
+    scope_mode_sequencer: Optional[str] = None
+    """The sequencer that is in responsible for scope mode Acquisitions."""
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
