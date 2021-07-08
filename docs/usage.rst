@@ -1,5 +1,6 @@
 .. _sec-user-guide:
 
+==========
 User guide
 ==========
 
@@ -12,6 +13,10 @@ User guide
     # Make output easier to read
     from rich import pretty
     pretty.install()
+
+.. todo::
+
+    to be replaced by/merged with user_guide.rst
 
 
 Introduction

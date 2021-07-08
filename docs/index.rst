@@ -10,6 +10,7 @@ Welcome to Quantify's documentation!
 
    installation
    usage
+   user_guide
    contributing
    authors
    changelog
@@ -20,8 +21,19 @@ Tutorials
 
 .. toctree::
    :caption: Tutorials
+   :glob:
 
-   tutorials/Tutorial 1. basic experiment
+
+   tutorials/*
+
+
+Hardware backends
+=================
+
+.. toctree::
+   :caption: Hardware backend tutorials
+   :glob:
+
    tutorials/qblox/index
    tutorials/zhinst/index
 
