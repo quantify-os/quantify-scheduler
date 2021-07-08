@@ -381,7 +381,7 @@ class QASMProgram:
         if acquisition.data["bin_mode"] != BinMode.AVERAGE:
             raise NotImplementedError(
                 f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
-                f"the qblox backend.\n\nAttempting to use "
+                f"the Qblox backend.\n\nAttempting to use "
                 f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
             )
 
