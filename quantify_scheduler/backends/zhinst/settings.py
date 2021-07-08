@@ -19,6 +19,9 @@ from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
 @dataclasses.dataclass(frozen=True)
 class ZISerializeSettings:
+    """Serialization data container to decouple filenames from
+       instrument names during the serialization.
+    """
     name: str
     _serial: str
     _type: str
