@@ -9,6 +9,7 @@ from typing import List, Union, Optional, Callable
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
+import jsonschema
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox import constants
@@ -347,7 +348,7 @@ class QASMProgram:
             self.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
             self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_weighted(self, acquisition: OpInfo, idx0: int, idx1: int):
+    def _acquire_weighted(self, acquisition: OpInfo, bin: int, idx0: int, idx1: int):
         measurement_idx = acquisition.data["acq_channel"]
         bin = acquisition.data["acq_index"]
         self.emit(
@@ -360,9 +361,8 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_square(self, acquisition: OpInfo):
+    def _acquire_square(self, acquisition: OpInfo, bin: int):
         measurement_idx = acquisition.data["acq_channel"]
-        bin = acquisition.data["acq_index"]
         self.emit(
             q1asm_instructions.ACQUIRE,
             measurement_idx,
@@ -373,6 +373,8 @@ class QASMProgram:
 
     def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         protocol_to_acquire_func_mapping = {
+            # FIXME: Somehow need to handle SSBIntegrationComplex, but it has the
+            #  same protocol as weighted_integrated_complex
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
         }
@@ -383,10 +385,11 @@ class QASMProgram:
                 f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
             )
 
+        bin = acquisition.data["acq_index"]
         acquisition_func = protocol_to_acquire_func_mapping.get(
             acquisition.data["protocol"], None
         )
-        args = [arg for arg in [acquisition, idx0, idx1] if arg]
+        args = [arg for arg in [acquisition, bin, idx0, idx1] if arg is not None]
         acquisition_func(*args)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
