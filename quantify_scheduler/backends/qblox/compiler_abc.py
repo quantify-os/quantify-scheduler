@@ -495,7 +495,7 @@ class PulsarSequencerBase(ABC):
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return _generate_waveform_dict(waveforms_complex)
 
-    def _generate_acq_dict(self) -> Dict[str, Any]:
+    def _generate_weights_dict(self) -> Dict[str, Any]:
         """
         Generates the dictionary that corresponds that contains the acq weights
         waveforms in the format accepted by the driver.
@@ -805,17 +805,19 @@ class PulsarSequencerBase(ABC):
             return None
 
         awg_dict = self._generate_awg_dict()
-        acq_dict = self._generate_acq_dict() if len(self.acquisitions) > 0 else None
+        weights_dict = (
+            self._generate_weights_dict() if len(self.acquisitions) > 0 else None
+        )
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
             awg_dict,
-            acq_dict,
+            weights_dict,
             repetitions=repetitions,
         )
 
         wf_and_pr_dict = self._generate_waveforms_and_program_dict(
-            qasm_program, awg_dict, acq_dict
+            qasm_program, awg_dict, weights_dict
         )
 
         json_filename = self._dump_waveforms_and_program_json(
