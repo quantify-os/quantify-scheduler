@@ -745,10 +745,9 @@ class PulsarSequencerBase(ABC):
         """
         compiled_dict = dict()
         compiled_dict["program"] = program
-        compiled_dict["waveforms"] = dict()
-        compiled_dict["waveforms"]["awg"] = awg_dict
+        compiled_dict["waveforms"] = awg_dict
         if acq_dict is not None:
-            compiled_dict["waveforms"]["acq"] = acq_dict
+            compiled_dict["weights"] = acq_dict
         return compiled_dict
 
     @staticmethod
