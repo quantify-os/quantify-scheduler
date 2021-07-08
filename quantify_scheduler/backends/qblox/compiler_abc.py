@@ -654,8 +654,15 @@ class PulsarSequencerBase(ABC):
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        qasm.emit(q1asm_instructions.SET_MARKER, 1)
-
+        #TODO In the next revisions, the output markers will not be manually handled anymore
+        #TODO Right now, the marker changes depending on QCM/QRM (QRM only has 3 bits for now)
+        if type(self.parent).__name__ == "Pulsar_QCM_RF":
+            qasm.emit(q1asm_instructions.SET_MARKER, 7) #All on
+        elif type(self.parent).__name__ == "Pulsar_QRM_RF":
+            qasm.emit(q1asm_instructions.SET_MARKER, 0)
+        else:
+            qasm.emit(q1asm_instructions.SET_MARKER, 1)
+    
         # program body
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
@@ -687,7 +694,12 @@ class PulsarSequencerBase(ABC):
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.emit(q1asm_instructions.SET_MARKER, 0)
+        if type(self.parent).__name__ == "Pulsar_QCM_RF":
+            qasm.emit(q1asm_instructions.SET_MARKER, 8) #All off
+        elif type(self.parent).__name__ == "Pulsar_QRM_RF":
+            qasm.emit(q1asm_instructions.SET_MARKER, 1)
+        else:
+            qasm.emit(q1asm_instructions.SET_MARKER, 0)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
