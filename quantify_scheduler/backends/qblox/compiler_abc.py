@@ -567,7 +567,7 @@ class PulsarSequencerBase(ABC):
             for acq in acquistitions:
                 if get_acq_channel(acq) == ch:
                     indices.append(acq.data["acq_index"])
-            acq_declaration_dict[str(ch)] = {"num_bins": max(indices), "index": ch}
+            acq_declaration_dict[str(ch)] = {"num_bins": max(indices) + 1, "index": ch}
 
         return acq_declaration_dict
 
