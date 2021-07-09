@@ -662,7 +662,8 @@ def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisi
     for instr in container.instrument_compilers.values():
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
             instr._distribute_data()
-            scope_mode_seq = instr._determine_scope_mode_acquisition_sequencer()
+            instr._determine_scope_mode_acquisition_sequencer()
+            # TODO
     pass
 
 

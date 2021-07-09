@@ -228,9 +228,9 @@ class QASMProgram:
         pulse
             The pulse to play.
         idx0
-            Index in the awg_dict corresponding to the waveform for the I channel.
+            Index in the waveforms_dict corresponding to the waveform for the I channel.
         idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel.
+            Index in the waveforms_dict corresponding to the waveform for the Q channel.
         """
         self.update_runtime_settings(pulse)
         self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
@@ -332,9 +332,9 @@ class QASMProgram:
         pulse
             The pulse to play.
         idx0
-            Index in the awg_dict corresponding to the waveform for the I channel.
+            Index in the waveforms_dict corresponding to the waveform for the I channel.
         idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel.
+            Index in the waveforms_dict corresponding to the waveform for the Q channel.
         """
         reserved_pulse_mapping = {
             "stitched_square_pulse": self.play_stitched_pulse,
