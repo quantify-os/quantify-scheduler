@@ -33,9 +33,73 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
 
+    @abstracmethod
+    @property
+    def _number_of_sequencers(self) -> int:
+        """"""
+
     @property
     def is_running(self) -> bool:
-        raise NotImplementedError()
+        raise False
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        timeout_min = timeout_sec // 60
+        if timeout_min == 0:
+            timeout_min = 1
+        for idx in range(self.number_of_sequencers):
+            state = self.instrument.get_sequencer_state(idx, timeout_min)
+
+    def start(self) -> None:
+        """
+        Starts execution of the schedule.
+        """
+        for idx in range(self._number_of_sequencers):
+            state = self.instrument.get_sequencer_state(idx)
+            if state["status"] == "ARMED":
+                self.instrument.start_sequencer(idx)
+
+    def stop(self) -> None:
+        """
+        Stops all execution.
+        """
+        self.instrument.stop_sequencer()
+
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        self.instrument.set("reference_source", settings.ref)
+
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
+        """
+        Configures all sequencer specific settings.
+
+        Parameters
+        ----------
+        seq_idx
+            Index of the sequencer to configure.
+        settings
+            The settings to configure it to.
+        """
+        self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+        self.instrument.set(
+            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
+        )
+        self.instrument.set(
+            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
+        )
+
+        nco_en: bool = settings.nco_en
+        self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        if nco_en:
+            self.instrument.set(
+                f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
+            )
 
 
 # pylint: disable=too-many-ancestors
@@ -44,7 +108,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QCM specific InstrumentCoordinator component.
     """
 
-    number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    _number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Specifies the amount of sequencers available to this QCM."""
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
@@ -90,7 +154,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         program = copy.deepcopy(options)
         seq_name_to_idx_map = {
-            f"seq{idx}": idx for idx in range(self.number_of_sequencers)
+            f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
         if "settings" in program:
             settings_entry = program.pop("settings")
@@ -117,61 +181,6 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
-    def start(self) -> None:
-        """
-        Starts execution of the schedule.
-        """
-        for seq_idx in [0, 1]:
-            state = self.instrument.get_sequencer_state(seq_idx)
-            if state["status"] == "ARMED":
-                self.instrument.start_sequencer(seq_idx)
-
-    def stop(self) -> None:
-        """
-        Stops all execution.
-        """
-        self.instrument.stop_sequencer()
-
-    def _configure_global_settings(self, settings: PulsarSettings):
-        """
-        Configures all settings that are set globally for the whole instrument.
-
-        Parameters
-        ----------
-        settings
-            The settings to configure it to.
-        """
-        self.instrument.set("reference_source", settings.ref)
-
-    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
-        """
-        Configures all sequencer specific settings.
-
-        Parameters
-        ----------
-        seq_idx
-            Index of the sequencer to configure.
-        settings
-            The settings to configure it to.
-        """
-        self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
-
-        nco_en: bool = settings.nco_en
-        self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
-        if nco_en:
-            self.instrument.set(
-                f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
-            )
-
-    def wait_done(self, timeout_sec: int = 10) -> None:
-        pass
-
 
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
@@ -179,7 +188,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QRM specific InstrumentCoordinator component.
     """
 
-    number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    _number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQRMComponent."""
@@ -211,42 +220,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             The acquired data.
         """
 
-        msmt_id: str = "msmt_00000"
-
-        self.instrument.delete_acquisitions(sequencer=0)
-        if not isinstance(self.instrument, pulsar_qrm.pulsar_qrm_dummy):
-            self.instrument.get_sequencer_state(0, 10, 0.01)
-            self.instrument.get_acquisition_state(
-                sequencer=0, timeout=10, timeout_poll_res=0.1
-            )
-
-        self.instrument.store_acquisition(0, msmt_id, num_of_samples)
-        acq: Dict[str, dict] = self.instrument.get_acquisitions(0)
-
-        hardware_averages: int = self._acq_settings.hardware_averages
-        duration: int = self._acq_settings.duration_ns
-
-        path_labels = ("path_0", "path_1")
-        traces = [None] * len(path_labels)
-        for path_idx, label in enumerate(path_labels):
-            if acq[msmt_id][label]["out-of-range"]:
-                logger.warning(
-                    f"ADC out-of-range of {self.instrument.name} on {label}."
-                )
-
-            traces[path_idx] = (
-                np.array(acq[msmt_id][label]["data"][:duration]) / hardware_averages
-            )
-        i_trace, q_trace = traces
-
-        acq_processing_func: Callable[..., Any] = {
-            "SSBIntegrationComplex": self._acquire_ssb_integration_complex,
-        }.get(self._acq_settings.acq_mode, None)
-
-        if acq_processing_func is not None:
-            i_trace, q_trace = acq_processing_func(i_trace, q_trace)
-
-        return i_trace, q_trace
+        return 0, 0
 
     def _acquire_ssb_integration_complex(
         self,
@@ -293,16 +267,13 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         """
         program = copy.deepcopy(options)
         seq_name_to_idx_map = {
-            f"seq{idx}": idx for idx in range(self.number_of_sequencers)
+            f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
         acq_settings = _AcquisitionSettings()
         if "settings" in program:
             settings_entry = program.pop("settings")
             pulsar_settings = PulsarSettings.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
-
-            acq_settings.hardware_averages = pulsar_settings.hardware_averages
-            acq_settings.acq_mode = pulsar_settings.acq_mode
 
         for seq_name, seq_cfg in program.items():
             if seq_name in seq_name_to_idx_map:
@@ -336,71 +307,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
-    def _configure_global_settings(self, settings: PulsarSettings):
-        self.instrument.set("reference_source", settings.ref)
-
-    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
-        """
-        Configures all sequencer specific settings.
-
-        Parameters
-        ----------
-        seq_idx
-            Index of the sequencer to configure.
-        settings
-            The settings to configure it to.
-        """
-        self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
-
-        nco_en: bool = settings.nco_en
-        self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
-        if nco_en:
-            self.instrument.set(
-                f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
-            )
-
-    def start(self) -> None:
-        """
-        Starts execution of the schedule.
-        """
-        state = self.instrument.get_sequencer_state(0)
-        if state["status"] == "ARMED":
-            self.instrument.start_sequencer(0)
-
-    def stop(self) -> None:
-        """
-        Stops all execution.
-        """
-        self.instrument.stop_sequencer()
-
-    def wait_done(self, timeout_sec: int = 10) -> None:
-        pass
-
 
 # ----------------- Utility -----------------
-
-
-@dataclass
-class _AcquisitionSettings:
-    """Holds all information required to perform and process the acquisition."""
-
-    duration_ns: int = 0
-    """Duration of the acquisition trace."""
-    acq_mode: Literal["raw_trace", "SSBIntegrationComplex"] = "SSBIntegrationComplex"
-    """
-    Current mode of the acquisition to use. This effectively specifies the data
-    processing function.
-    """
-    hardware_averages: int = 1
-    """The number of hardware averages to use."""
-    modulation_freq: float = 0
-    """The modulation frequency used. Used for digital demodulation."""
 
 
 def _demodulate_trace(
