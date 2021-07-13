@@ -16,30 +16,54 @@ User guide (new)
     pretty.install()
 
 
-.. seealso::
-
-    The complete source code of this tutorial can be found in
-
-    :jupyter-download:notebook:`Scheduler user guide`
-
-    :jupyter-download:script:`Scheduler user guide`
-
-
 Introduction
 ------------
 Quantify-scheduler is a python module for writing (hybrid) quantum programs featuring a hybrid gate-pulse control model.
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
-In quantify scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described
 
-.. todo::
+In quantify scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a :class:`~quantify_scheduler.types.Schedule` .
+The :class:`~quantify_scheduler.types.Schedule` contains information on *when* operations should be performed.
+When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
+Instead, this information can be added later during :ref:`Compilation`.
+This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
 
-    add paragraph on concepts and what a schedule is here.
+
+Creating a schedule
+-------------------
+
+The most convenient way to interact with a :class:`~quantify_scheduler.types.Schedule` is through the quantify API.
+In the following example, we set up an element of a Bell experiment and visualize the circuit.
 
 
+.. jupyter-execute::
+    :hide-output:
+
+    # import the Schedule class and some basic operations.
+    from quantify_scheduler import Schedule
+    from quantify_scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
+
+    sched = Schedule('Bell experiment')
+
+    sched.add(Reset("q0", "q1"))                        # initialize the qubits
+    sched.add(X90(qubit="q0"))
+    sched.add(X90(qubit="q1"), ref_pt='start')          # ensure the second gate
+    sched.add(CZ(qC="q0", qT="q1"))
+    sched.add(Rxy(theta=45.0, phi=0, qubit="q0"))       # pick an angle for maximal Bell violation
+    sched.add(Measure("q0", "q1", acq_index=(0, 1)))    # denote where to store the data
 
 
+.. jupyter-execute::
+
+    # import the circuit visualizer
+    from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+
+    # visualize the circuit
+    f, ax = circuit_diagram_matplotlib(sched)
+
+
+For more details on how to create schedules, specify timing constraints and seamlessly mix the gate- and pulse-level descriptions, see :ref:`Tutorial 1 <sec-tutorial1>`.
 
 Compilation
 -----------
@@ -47,6 +71,16 @@ Compilation
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
 The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
 This is schematically shown in :numref:`compilation_overview`.
+
+
+.. figure:: /images/compilation_overview.svg
+    :name: compilation_overview
+
+    A schematic overview of the different abstraction layers and the compilation process.
+    Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a :class:`~quantify_scheduler.types.Schedule` .
+    The information specified in the :ref:`device configuration<sec-device-config>` is used during compilation to add information on how to represent :class:`~quantify_scheduler.types.Operation` s specified at the quantum-circuit level as control pulses.
+    The information in the :ref:`hardware configuration <sec-hardware-config>` is then used to compile the control pulses into instructions suitable for hardware execution.
+
 
 In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify_scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
 
@@ -56,11 +90,82 @@ This compilation step is performed using a hardware dependent compiler and uses 
 Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
 
 
-.. figure:: /images/compilation_overview.svg
-    :name: compilation_overview
+.. _sec-device-config:
 
-    A schematic overview of the different abstraction layers and the compilation process.
+Device configuration file
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The device configuration file is used to compile from the  quantum-circuit layer to the quantum-device layer.
+The main responsibility is to add a pulse-representation to every operation that only has a quantum-circuit layer description.
+To do this, it contains information for all qubits, and all edges.
+Edges are pairs of qubits (separated by a dash :code:`-`) on which gates can act.
+The specified "backend" determines how the data for each qubit is used to create pulses.
+A configuration file can be written down manually as a JSON file or be code generated.
+
+
+.. admonition:: Device configuration JSON schema for the transmon backend
+    :class: dropdown
+
+    A valid device configuration is described by the schema shown here:
+
+    .. jsonschema:: ../quantify_scheduler/schemas/transmon_cfg.json
+
+
+
+
+.. admonition:: Example device configuration file
+    :class: dropdown
+
+    .. jupyter-execute::
+        :hide-code:
+
+        from pathlib import Path
+        import json
+        import quantify_scheduler.schemas.examples as examples
+
+        path = Path(examples.__file__).parent / 'transmon_test_config.json'
+        json_data = json.loads(path.read_text())
+        json_data
+
+.. _sec-hardware-config:
+
+Hardware configuration file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The hardware configuration file is used to compile pulses to specific control electronics.
+To do this, it contains information on what control electronics  to compile to and on what ports are connected to which outputs/inputs, as well as other hardware-specific settings.
+A configuration file can be written down manually as a JSON file or be code generated.
+
+
+.. admonition:: Example Qblox hardware configuration file
+    :class: dropdown
+
+    .. jupyter-execute::
+        :hide-code:
+
+        from pathlib import Path
+        import json
+        import quantify_scheduler.schemas.examples as examples
+
+        path = Path(examples.__file__).parent / 'qblox_test_mapping.json'
+        json_data = json.loads(path.read_text())
+        json_data
+
+
+
+.. admonition:: Example Zurich Instruments hardware configuration file
+    :class: dropdown
+
+    .. jupyter-execute::
+        :hide-code:
+
+        from pathlib import Path
+        import json
+        import quantify_scheduler.schemas.examples as examples
+
+        path = Path(examples.__file__).parent / 'zhinst_test_mapping.json'
+        json_data = json.loads(path.read_text())
+        json_data
 
 
 
@@ -68,38 +173,43 @@ Both compilation steps can be triggered by passing a :class:`~quantify_scheduler
 Execution
 ---------
 
-In order to execute a schedule, one needs configuration files describing the system to compile the schedule, and physical instruments to execute the compiled instructions.
-Within the Quantify framework, we use different kinds of :class:`~qcodes.instrument.base.Instrument` s to control the experiments and the management of the configuration files.
-The different kinds of instruments and their responsibility in this framework are  shown in :numref:`instruments_overview`.
+Different kinds of instruments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to execute a schedule, one needs both physical instruments to execute the compiled instructions as well as a way to manage the calibration parameters used to compile the schedule.
+Although one could use manually written configuration files and send the compiled files directly to the hardware, the Quantify framework provides different kinds of :class:`~qcodes.instrument.base.Instrument` s to control the experiments and the management the configuration files (:numref:`instruments_overview`).
+
 
 
 .. figure:: /images/instruments_overview.svg
     :name: instruments_overview
 
     A schematic overview of the different kinds of instruments present in an experiment.
-
-
-    Add links to objects in API ref.
-    Add explanation of asterix.
-
-On the left side of :numref:`instruments_overview` we have the instruments responsible for executing the experiment.
-
-
-
-The init script
-~~~~~~~~~~~~~~~
-
-Why single process.
-How possible to
-Basic import statements
-Connecting to instruments
-Loading settings
+    Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
+    On top of the physical instruments is a hardware abstraction layer, that provides a hardware agnostic interface to execute compiled schedules.
+    The instruments responsible for experiment control are threated to be as stateless as possible [#]_ .
+    The knowledge about the system that is required to generate the configuration files is described by the QuantumDevice and DeviceElements.
+    Several utility instruments are used to control the
 
 
 
+`QCoDeS instrument drivers <https://qcodes.github.io/Qcodes/api/generated/qcodes.instrument_drivers.html>`_ are used to represent the physical hardware.
+For the purpose of quantify-scheduler, these instruments are threated as stateless, the desired configurations for an experiment being described by the compiled instructions.
+Because the instruments correspond to physical hardware, there is a significant overhead in querying and configuring these parameters.
+As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.
 
-Putting it all together
+Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
+This hardware abstraction layer is implented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual InstrumentCoordinatorComponents are added that provide the uniform interface to the individual instruments.
+
+The knowledge of the system is described by the :class:`QuantumDevice` and :class:`DeviceElement` s.
+The :class:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantites like crosstalk, attenuation and calibrated cable-delays.
+The :class:`QuantumDevice` also contains references to individual :class:`DeviceElement` s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
+
+
+Experiment flow
 ~~~~~~~~~~~~~~~~~~~~~~~
+
+.. todo:: write section on experiment flow
 
 
 
@@ -109,4 +219,10 @@ Putting it all together
     A schematic overview of the experiments control flow.
 
 
-The measurement function.
+.. todo:: Add an example measurement function showcasing the flow.
+
+
+.. rubric:: footnote
+
+    .. [#] Quantify-scheduler threats physical instruments as staless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
+
