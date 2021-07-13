@@ -268,10 +268,14 @@ class PulsarSequencerBase(ABC):
             "instruction_generated_pulses_enabled", False
         )
 
+        modulation_freq = seq_settings.get("interm_freq", None)
+        nco_en: bool = (
+            False if (modulation_freq == 0 or modulation_freq is None) else True
+        )
         self._settings = SequencerSettings(
-            nco_en=False,
+            nco_en=nco_en,
             sync_en=True,
-            modulation_freq=seq_settings.get("interm_freq", None),
+            modulation_freq=modulation_freq,
         )
         self.mixer_corrections = None
 
@@ -373,6 +377,8 @@ class PulsarSequencerBase(ABC):
                     f"to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
+        if freq != 0:
+            self._settings.nco_en = True
 
     def align_modulation_frequency_with_ext_lo(self):
         r"""
