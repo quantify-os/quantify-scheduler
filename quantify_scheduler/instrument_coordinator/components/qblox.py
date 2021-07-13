@@ -227,6 +227,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def _get_scope_data(
         self, acq_channel: int = 0, acq_index: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
+        del acq_index  # not needed for scope data
         seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
@@ -253,6 +254,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                     f"The scope mode data of {path_label} of sequencer "
                     f"{sequencer_index} of {self.name} is out-of-range."
                 )
+        # hardware already divides by avg_count for scope mode
         scope_data_i = scope_data["path0"]["data"]
         scope_data_q = scope_data["path1"]["data"]
         return scope_data_i, scope_data_q
