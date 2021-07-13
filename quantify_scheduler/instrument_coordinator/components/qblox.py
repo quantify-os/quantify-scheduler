@@ -10,6 +10,7 @@ import logging
 
 import copy
 from typing_extensions import Literal
+from collections import namedtuple
 
 import numpy as np
 from pulsar_qcm import pulsar_qcm
@@ -194,7 +195,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         """Create a new instance of PulsarQRMComponent."""
         assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
         super().__init__(instrument, **kwargs)
-        self._acq_settings: Optional[_AcquisitionSettings] = None
 
     @property
     def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
@@ -205,22 +205,54 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         return False
 
     # pylint: disable=arguments-differ
-    def retrieve_acquisition(self, num_of_samples: int = 2 ** 16) -> Any:
+    def retrieve_acquisition(self, acq_channel: int = 0, acq_index: int = 0) -> Any:
         """
         Retrieves the latest acquisition results.
 
         Parameters
         ----------
-        num_of_samples
-            Unsigned integer representing the number of data points to acquire.
+        acq_channel
+            TODO
+        acq_index
+            TODO
 
         Returns
         -------
         :
             The acquired data.
         """
+        acquisition_function = self._get_integration_data
+        return acquisition_function(acq_channel, acq_index)
 
-        return 0, 0
+    def _get_bin_data(self, acq_channel: int = 0) -> dict:
+        acquisitions = self.instrument.get_acquisitions(0)
+        acq_name = _channel_index_to_channel_name(acq_channel)
+        channel_data = acquisitions[acq_name]
+        if channel_data["index"] != acq_channel:
+            raise RuntimeError(
+                f"Name does not correspond to a valid acquisition for name {acq_name}, "
+                f'which has index {channel_data["index"]}.'
+            )
+        return channel_data["acquisition"]["bins"]
+
+    def _get_integration_data(
+        self, acq_channel: int = 0, acq_index: int = 0
+    ) -> Tuple[float, float]:
+        bin_data = self._get_bin_data(acq_channel)
+        i_data, q_data = (
+            bin_data["integration"]["path0"],
+            bin_data["integration"]["path1"],
+        )
+        avg_count = bin_data["avg_count"][acq_index]
+        return i_data[acq_index] / avg_count, q_data[acq_index] / avg_count
+
+    def _get_threshold_data(self, acq_channel: int = 0, acq_index: int = 0):
+        bin_data = self._get_bin_data(acq_channel)
+        i_data, q_data = (
+            bin_data["threshold"]["path0"],
+            bin_data["threshold"]["path1"],
+        )
+        return i_data[acq_index], q_data[acq_index]
 
     def _acquire_ssb_integration_complex(
         self,
@@ -269,7 +301,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
-        acq_settings = _AcquisitionSettings()
         if "settings" in program:
             settings_entry = program.pop("settings")
             pulsar_settings = PulsarSettings.from_dict(settings_entry)
@@ -288,8 +319,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                 self._configure_sequencer_settings(
                     seq_idx=seq_idx, settings=seq_settings
                 )
-                acq_settings.modulation_freq = seq_settings.modulation_freq
-                acq_settings.duration_ns = seq_settings.duration
 
             for path in [0, 1]:
                 self.instrument.set(
@@ -299,8 +328,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                     f"sequencer{seq_idx}_avg_mode_en_acq_path{path}", True
                 )
 
-            self._acq_settings = acq_settings
-
             self.instrument.set(
                 f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"]
             )
@@ -309,6 +336,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
 
 # ----------------- Utility -----------------
+def _channel_index_to_channel_name(index: int) -> str:
+    return str(index)
 
 
 def _demodulate_trace(
