@@ -317,7 +317,7 @@ class _QRMAcquisitionManager:
     Utility class that handles the acquisitions performed with the QRM.
     """
 
-    def __init__(self, parent: PulsarQRMComponent, number_of_sequencers):
+    def __init__(self, parent: PulsarQRMComponent, number_of_sequencers: int):
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.scope_mode_sequencer: Optional[str] = None
@@ -391,6 +391,7 @@ class _QRMAcquisitionManager:
                 f"in acquisition data."
             )
         avg_count = bin_data["avg_count"][acq_index]
+        # TODO add check if bin data is valid
         return i_data[acq_index] / avg_count, q_data[acq_index] / avg_count
 
     def _get_threshold_data(self, acq_channel: int = 0, acq_index: int = 0):
