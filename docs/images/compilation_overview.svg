@@ -28,7 +28,7 @@
         <text id="Contains-mapping,-co" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
             <tspan x="435" y="163">Contains mapping, </tspan>
             <tspan x="435" y="173">connectivity, crosstalk, </tspan>
-            <tspan x="435" y="183">attenutation, cable-delays, etc. </tspan>
+            <tspan x="435" y="183">attenuation, cable-delays, etc. </tspan>
         </text>
         <text id="Contains-(calibrated" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
             <tspan x="435" y="73">Contains (calibrated) pulse </tspan>
@@ -43,11 +43,11 @@
             <tspan x="14" y="217">Instructions executed by </tspan>
             <tspan x="14" y="227">control hardware.</tspan>
         </text>
-        <text id="Qauntum-circuit-laye" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
-            <tspan x="9" y="19">Qauntum-circuit layer</tspan>
+        <text id="Quantum-circuit-laye" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+            <tspan x="9" y="19">Quantum-circuit layer</tspan>
         </text>
-        <text id="Qauntum-device-layer" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
-            <tspan x="9" y="109">Qauntum-device layer</tspan>
+        <text id="Quantum-device-layer" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+            <tspan x="9" y="109">Quantum-device layer</tspan>
         </text>
         <text id="Control-hardware-lay" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
             <tspan x="5" y="200">Control-hardware layer</tspan>
@@ -154,8 +154,8 @@
                 </g>
             </g>
         </g>
-        <line x1="236" y1="105" x2="339.5" y2="104.5" id="Line-4" stroke="#375A7F" stroke-width="2" stroke-linecap="square"></line>
-        <line x1="268" y1="229" x2="558" y2="229" id="Line-4" stroke="#375A7F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="236" y1="105" x2="339.5" y2="104.5" id="Line-4" stroke="#586C86" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="268" y1="229" x2="558" y2="229" id="Line-4" stroke="#586C86" stroke-width="2" stroke-linecap="square"></line>
         <text id="Device-agnostic" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
             <tspan x="259" y="100">Device agnostic</tspan>
         </text>
@@ -163,21 +163,24 @@
             <tspan x="257" y="112">Device specific</tspan>
         </text>
         <text id="Transmon" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#6D7278">
-            <tspan x="267" y="129">Transmon</tspan>
+            <tspan x="270" y="124">Transmon</tspan>
         </text>
         <text id="Si-spin" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#6D7278">
-            <tspan x="259" y="147">Si-spin</tspan>
+            <tspan x="263" y="138">Si-spin</tspan>
         </text>
         <text id="Diamond" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#6D7278">
-            <tspan x="250" y="165">Diamond</tspan>
+            <tspan x="254" y="153">Diamond</tspan>
         </text>
-        <path id="Line-5" d="M353.379362,97.2637512 L353.481,103.263 L398.483053,102.500144 L399.48291,102.483197 L399.516803,104.48291 L398.516947,104.499856 L353.514,105.263 L353.616617,111.261741 L339.5,104.5 L353.379362,97.2637512 Z" fill="#375A7F" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M279.526119,192.552483 L279.503,198.552 L399.003745,199.000007 L400.003738,199.003752 L399.996248,201.003738 L398.996255,200.999993 L279.496,200.552 L279.473685,206.552385 L265.5,199.5 L279.526119,192.552483 Z" fill="#375A7F" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M267.985614,186.985818 L267.999898,187.985716 L268.799,243.987 L274.799306,243.901439 L268,258 L260.800735,244.101418 L266.799,244.015 L266.000102,188.014284 L265.985818,187.014386 L267.985614,186.985818 Z" fill="#375A7F" fill-rule="nonzero"></path>
-        <path id="Line-5-Copy" d="M436,228 L436,244 L442,244 L435,258 L428,244 L434,244 L434,228 L436,228 Z" fill="#375A7F" fill-rule="nonzero"></path>
-        <path id="Line-5-Copy-2" d="M559,228 L559,244 L565,244 L558,258 L551,244 L557,244 L557,228 L559,228 Z" fill="#375A7F" fill-rule="nonzero"></path>
+        <text id="Other" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#6D7278">
+            <tspan x="247" y="170">Other</tspan>
+        </text>
+        <path id="Line-5" d="M353.379362,97.2637512 L353.481,103.263 L398.483053,102.500144 L399.48291,102.483197 L399.516803,104.48291 L398.516947,104.499856 L353.514,105.263 L353.616617,111.261741 L339.5,104.5 L353.379362,97.2637512 Z" fill="#586C86" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M279.526119,192.552483 L279.503,198.552 L399.003745,199.000007 L400.003738,199.003752 L399.996248,201.003738 L398.996255,200.999993 L279.496,200.552 L279.473685,206.552385 L265.5,199.5 L279.526119,192.552483 Z" fill="#586C86" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M267.985614,186.985818 L267.999898,187.985716 L268.799,243.987 L274.799306,243.901439 L268,258 L260.800735,244.101418 L266.799,244.015 L266.000102,188.014284 L265.985818,187.014386 L267.985614,186.985818 Z" fill="#586C86" fill-rule="nonzero"></path>
+        <path id="Line-5-Copy" d="M436,228 L436,244 L442,244 L435,258 L428,244 L434,244 L434,228 L436,228 Z" fill="#586C86" fill-rule="nonzero"></path>
+        <path id="Line-5-Copy-2" d="M559,228 L559,244 L565,244 L558,258 L551,244 L557,244 L557,228 L559,228 Z" fill="#586C86" fill-rule="nonzero"></path>
         <line x1="398.5" y1="77.5" x2="398.5" y2="102.5" id="Line-6" stroke="#375A7F" stroke-width="2" stroke-linecap="square"></line>
-        <line x1="399" y1="173" x2="399" y2="200" id="Line-6" stroke="#375A7F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="399" y1="173" x2="399" y2="200" id="Line-6" stroke="#586C86" stroke-width="2" stroke-linecap="square"></line>
         <g id="noun_Document_897581-Copy" transform="translate(286.000000, 214.000000)" fill-rule="nonzero">
             <g id="Group">
                 <rect id="Rectangle" fill="#FFFFFF" x="1" y="1" width="21" height="26"></rect>

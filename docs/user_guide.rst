@@ -31,6 +31,8 @@ Quantify-scheduler is a python module for writing (hybrid) quantum programs feat
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
+In quantify scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described
+
 .. todo::
 
     add paragraph on concepts and what a schedule is here.
@@ -55,31 +57,32 @@ Both compilation steps can be triggered by passing a :class:`~quantify_scheduler
 
 
 .. figure:: /images/compilation_overview.svg
-    :width: 800
     :name: compilation_overview
 
     A schematic overview of the different abstraction layers and the compilation process.
+
+
+
 
 
 Execution
 ---------
 
 In order to execute a schedule, one needs configuration files describing the system to compile the schedule, and physical instruments to execute the compiled instructions.
-Within the Quantify framework, we use different kinds of :class:`~qcodes.instrument.base.Instrument`s to control the experiments and the management of the configuration files.
-The different kinds of instruments and their responsibility in this framework is schematically shown in :numref:`instruments_overview`.
+Within the Quantify framework, we use different kinds of :class:`~qcodes.instrument.base.Instrument` s to control the experiments and the management of the configuration files.
+The different kinds of instruments and their responsibility in this framework are  shown in :numref:`instruments_overview`.
 
-
-Different kinds of instruments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. figure:: /images/instruments_overview.svg
-    :width: 600
     :name: instruments_overview
 
     A schematic overview of the different kinds of instruments present in an experiment.
+
+
     Add links to objects in API ref.
     Add explanation of asterix.
 
+On the left side of :numref:`instruments_overview` we have the instruments responsible for executing the experiment.
 
 
 
@@ -100,3 +103,10 @@ Putting it all together
 
 
 
+.. figure:: /images/experiments_control_flow.svg
+    :name: experiments_control_flow
+
+    A schematic overview of the experiments control flow.
+
+
+The measurement function.
