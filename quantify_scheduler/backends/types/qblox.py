@@ -131,8 +131,8 @@ class PulsarSettings(DataClassJsonMixin):
     scope_mode_sequencer: Optional[str] = None
     """The sequencer that is in responsible for scope mode Acquisitions."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -142,7 +142,7 @@ class PulsarSettings(DataClassJsonMixin):
         mapping
         """
         ref: str = mapping["ref"]
-        return PulsarSettings(ref=ref)
+        return cls(ref=ref)
 
 
 @dataclass
