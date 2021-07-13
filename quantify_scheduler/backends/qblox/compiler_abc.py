@@ -461,9 +461,6 @@ class PulsarSequencerBase(ABC):
                 raw_wf_data = generate_waveform_data(
                     pulse.data, sampling_rate=SAMPLING_RATE
                 )
-                raw_wf_data = self._apply_corrections_to_waveform(
-                    raw_wf_data, pulse.duration, pulse.timing
-                )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
             else:
                 pulse.uuid = reserved_pulse_id
@@ -577,34 +574,6 @@ class PulsarSequencerBase(ABC):
             acq_declaration_dict[str(ch)] = {"num_bins": max(indices) + 1, "index": ch}
 
         return acq_declaration_dict
-
-    def _apply_corrections_to_waveform(
-        self, waveform_data: np.ndarray, time_duration: float, t0: Optional[float] = 0
-    ) -> np.ndarray:
-        """
-        Applies all the needed pre-processing on the waveform data. This includes mixer
-        corrections and modulation.
-
-        Parameters
-        ----------
-        waveform_data
-            The data to correct.
-        time_duration
-            Total time is seconds that the waveform is used.
-        t0
-            The start time of the pulse/acquisition. This is used for instance to make
-            the make the phase change continuously when the start time is not zero.
-
-        Returns
-        -------
-        :
-            The waveform data after applying all the transformations.
-        """
-        t = np.linspace(t0, time_duration + t0, int(time_duration * SAMPLING_RATE))
-        corrected_wf = modulate_waveform(t, waveform_data, self.frequency)
-        if self.mixer_corrections is not None:
-            corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
-        return corrected_wf
 
     def update_settings(self):
         """
