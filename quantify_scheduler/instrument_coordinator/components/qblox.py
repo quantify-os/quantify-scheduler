@@ -261,7 +261,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     ) -> Tuple[float, float]:
         """
         Performs the required transformation to obtain a
-        single phasor from the acquired I and Q traces.
+        single phasor from the acquired I and Q traces
+        in software.
 
         Parameters
         ----------
