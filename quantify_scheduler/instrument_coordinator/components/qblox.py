@@ -3,7 +3,7 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Callable
 
 import logging
 
@@ -317,6 +317,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
+        super()._configure_sequencer_settings(seq_idx, settings)
+
 
 class _QRMAcquisitionManager:
     """
@@ -341,8 +344,16 @@ class _QRMAcquisitionManager:
         return self.parent.instrument
 
     def retrieve_acquisition(self, acq_channel: int = 0, acq_index: int = 0) -> Any:
-        acquisition_function = self._get_integration_data
+        protocol_to_function_mapping = {
+            "weighted_integrated_complex": self._get_integration_data,
+            "trace": self._get_scope_data,
+        }
+        protocol = self._get_protocol(acq_channel, acq_index)
+        acquisition_function: Callable = protocol_to_function_mapping[protocol]
         return acquisition_function(acq_channel, acq_index)
+
+    def _get_protocol(self, acq_channel, acq_index) -> str:
+        return self.acquisition_mapping[(acq_channel, acq_index)][1]
 
     def _get_scope_data(
         self, acq_channel: int = 0, acq_index: int = 0
