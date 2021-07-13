@@ -224,34 +224,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             return None
         return self._acquisition_manager.retrieve_acquisition(acq_channel, acq_index)
 
-    def _acquire_ssb_integration_complex(
-        self,
-        i_trace: np.ndarray,
-        q_trace: np.ndarray,
-    ) -> Tuple[float, float]:
-        """
-        Performs the required transformation to obtain a
-        single phasor from the acquired I and Q traces
-        in software.
-
-        Parameters
-        ----------
-        i_trace
-            The data of the acquisition from the I path.
-        q_trace
-            The data of the acquisition from the Q path.
-
-        Returns
-        -------
-        :
-            The static phasor extracted from the data.
-        """
-        interm_freq = self._acq_settings.modulation_freq
-        demod_trace_complex = _demodulate_trace(interm_freq, i_trace, q_trace)
-        i_demod, q_demod = demod_trace_complex.real, demod_trace_complex.imag
-
-        return np.average(i_demod), np.average(q_demod)
-
     def prepare(self, options: Dict[str, dict]) -> None:
         """
         Makes the devices in the InstrumentCoordinator ready for execution of a
@@ -437,37 +409,3 @@ class _QRMAcquisitionManager:
 # ----------------- Utility -----------------
 def _channel_index_to_channel_name(index: int) -> str:
     return str(index)
-
-
-def _demodulate_trace(
-    demod_freq: float,
-    trace_i: np.ndarray,
-    trace_q: np.ndarray,
-    sampling_rate: float = 1e9,
-) -> np.ndarray:
-    """
-    Digital demodulation of traces.
-
-    Parameters
-    ----------
-    demod_freq
-        Frequency to use for demodulation.
-    trace_i
-        I data to demodulate.
-    trace_q
-        Q data to demodulate.
-    sampling_rate
-        Sampling rate of the data (Hz).
-
-    Returns
-    -------
-    :
-        The demodulated data.
-    """
-
-    complex_signal = trace_i + 1.0j * trace_q
-    complex_signal -= np.average(complex_signal)
-
-    tbase = np.arange(0, len(complex_signal), 1) / sampling_rate
-
-    return modulate_waveform(t=tbase, envelope=complex_signal, freq=-demod_freq)
