@@ -168,7 +168,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             instrument.stop()
 
-    def retrieve_acquisition(self) -> Dict[str, Any]:
+    def retrieve_acquisition(
+        self, acq_channel: int = 0, acq_index: int = 0
+    ) -> Dict[str, Any]:
         """
         Retrieves the latest acquisition results of InstrumentCoordinator components
         with acquisition capabilities.
@@ -181,7 +183,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         acq_dict = OrderedDict()
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
-            acq = instrument.retrieve_acquisition()
+            acq = instrument.retrieve_acquisition(acq_channel, acq_index)
             if acq is not None:
                 acq_dict[instrument.name] = acq
         return acq_dict
