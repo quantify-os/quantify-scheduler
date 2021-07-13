@@ -3,14 +3,12 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-from dataclasses import dataclass
 import logging
 
 import copy
-from typing_extensions import Literal
-from collections import namedtuple
+from abc import abstractmethod
 
 import numpy as np
 from pulsar_qcm import pulsar_qcm
@@ -34,8 +32,8 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
 
-    @abstracmethod
     @property
+    @abstractmethod
     def _number_of_sequencers(self) -> int:
         """"""
 
