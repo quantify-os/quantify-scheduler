@@ -3,7 +3,7 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
@@ -195,3 +195,25 @@ class Pulsar_QRM(PulsarBase):
     """The type of the sequencer."""
     max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
+
+    def _get_acquisition_mapping(self) -> Optional[dict]:
+        def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
+            return (
+                acquisition.data["acq_channel"],
+                acquisition.data["acq_index"],
+            ), acquisition.data["protocol"]
+
+        acq_mapping = dict()
+        for sequencer in self.sequencers.values():
+            mapping_items = map(extract_mapping_item, sequencer.acquisitions)
+            for item in mapping_items:
+                acq_mapping[item[0]] = (sequencer.name, item[1])
+
+        return acq_mapping
+
+    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+        program = super().compile(repetitions=repetitions)
+        acq_mapping = self._get_acquisition_mapping()
+        if acq_mapping is not None:
+            program["acq_mapping"] = acq_mapping
+        return program
