@@ -195,9 +195,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         """Create a new instance of PulsarQRMComponent."""
         assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
         super().__init__(instrument, **kwargs)
-        self._acquisition_manager = _QRMAcquisitionManager(
-            self, self._number_of_sequencers
-        )
+        self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
 
     @property
     def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
@@ -224,6 +222,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         :
             The acquired data.
         """
+        if self._acquisition_manager is None:
+            return None
         return self._acquisition_manager.retrieve_acquisition(acq_channel, acq_index)
 
     def _acquire_ssb_integration_complex(
@@ -270,14 +270,18 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             Program to upload to the sequencers. The key is a sequencer or "settings",
             the value is the global settings dict or a sequencer specific configuration.
         """
-        self._acquisition_manager = _QRMAcquisitionManager(
-            self, self._number_of_sequencers
-        )  # Reset everything to do with acquisition.
-
         program = copy.deepcopy(options)
         seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
+        if "acq_mapping" in program:  # Resets everything to do with acquisition.
+            acq_mapping = program.pop("acq_mapping")
+            self._acquisition_manager = _QRMAcquisitionManager(
+                self, self._number_of_sequencers, acquisition_mapping=acq_mapping
+            )
+        else:
+            self._acquisition_manager = None
+
         if "settings" in program:
             settings_entry = program.pop("settings")
             pulsar_settings = PulsarSettings.from_dict(settings_entry)
@@ -317,9 +321,15 @@ class _QRMAcquisitionManager:
     Utility class that handles the acquisitions performed with the QRM.
     """
 
-    def __init__(self, parent: PulsarQRMComponent, number_of_sequencers: int):
+    def __init__(
+        self,
+        parent: PulsarQRMComponent,
+        number_of_sequencers: int,
+        acquisition_mapping: Dict[Tuple[int, int], str],
+    ):
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
+        self.acquisition_mapping: Dict[Tuple[int, int], str] = acquisition_mapping
         self.scope_mode_sequencer: Optional[str] = None
 
     @property
