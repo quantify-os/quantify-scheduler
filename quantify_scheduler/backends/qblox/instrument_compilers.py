@@ -209,7 +209,7 @@ class Pulsar_QRM(PulsarBase):
             for item in mapping_items:
                 acq_mapping[item[0]] = (sequencer.name, item[1])
 
-        return acq_mapping
+        return acq_mapping if len(acq_mapping) > 0 else None
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         program = super().compile(repetitions=repetitions)
