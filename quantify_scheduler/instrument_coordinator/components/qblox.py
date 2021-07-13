@@ -285,6 +285,10 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         if "settings" in program:
             settings_entry = program.pop("settings")
             pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            if self._acquisition_manager is not None:
+                self._acquisition_manager.scope_mode_sequencer = (
+                    pulsar_settings.scope_mode_sequencer
+                )
             self._configure_global_settings(pulsar_settings)
 
         for seq_name, seq_cfg in program.items():
@@ -325,11 +329,13 @@ class _QRMAcquisitionManager:
         self,
         parent: PulsarQRMComponent,
         number_of_sequencers: int,
-        acquisition_mapping: Dict[Tuple[int, int], str],
+        acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
     ):
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
-        self.acquisition_mapping: Dict[Tuple[int, int], str] = acquisition_mapping
+        self.acquisition_mapping: Dict[
+            Tuple[int, int], Tuple[str, str]
+        ] = acquisition_mapping
         self.scope_mode_sequencer: Optional[str] = None
 
     @property
