@@ -261,6 +261,10 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                 )
             self._configure_global_settings(pulsar_settings)
 
+        for path in [0, 1]:
+            self.instrument.set(f"scope_acq_trigger_mode_path{path}", "sequencer")
+            self.instrument.set(f"scope_acq_avg_mode_en_path{path}", True)
+
         for seq_name, seq_cfg in program.items():
             if seq_name in seq_name_to_idx_map:
                 seq_idx = seq_name_to_idx_map[seq_name]
@@ -273,14 +277,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
                 self._configure_sequencer_settings(
                     seq_idx=seq_idx, settings=seq_settings
-                )
-
-            for path in [0, 1]:
-                self.instrument.set(
-                    f"sequencer{seq_idx}_trigger_mode_acq_path{path}", "sequencer"
-                )
-                self.instrument.set(
-                    f"sequencer{seq_idx}_avg_mode_en_acq_path{path}", True
                 )
 
             self.instrument.set(
@@ -388,9 +384,8 @@ class _QRMAcquisitionManager:
                 f"{self.parent.name} but only {len(i_data)} values found "
                 f"in acquisition data."
             )
-        avg_count = bin_data["avg_count"][acq_index]
         # TODO add check if bin data is valid
-        return i_data[acq_index] / avg_count, q_data[acq_index] / avg_count
+        return i_data[acq_index], q_data[acq_index]
 
     def _get_threshold_data(self, acq_channel: int = 0, acq_index: int = 0):
         bin_data = self._get_bin_data(acq_channel)

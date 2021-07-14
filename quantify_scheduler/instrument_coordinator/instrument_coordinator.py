@@ -180,13 +180,15 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per InstrumentCoordinator component.
         """
-        acq_dict = OrderedDict()
+        acquisitions = list()
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
             acq = instrument.retrieve_acquisition(acq_channel, acq_index)
             if acq is not None:
-                acq_dict[instrument.name] = acq
-        return acq_dict
+                acquisitions.append(acq)
+        if len(acquisitions) > 1:
+            raise ValueError(f"Multiple instruments use the same channel and index.")
+        return acquisitions[0]
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
