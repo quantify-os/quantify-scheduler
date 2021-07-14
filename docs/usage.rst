@@ -283,7 +283,7 @@ A :class:`~quantify_scheduler.resources.ClockResource` can be used to track the 
 Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
 If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband and is assumed to be real-valued.
 
-.. _sec-compilation:
+sec-compilation
 
 Compilation
 -----------
@@ -299,7 +299,7 @@ This compilation step is performed using a hardware dependent compiler and uses 
 Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
 
 
-.. _sec-device-config:
+sec-device-config
 
 Device configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -331,7 +331,7 @@ Here we show an example of such a device configuration file:
     json_data = json.loads(path.read_text())
     json_data
 
-.. _sec-hardware-config:
+sec-hardware-config
 
 Hardware configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

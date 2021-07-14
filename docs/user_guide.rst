@@ -65,6 +65,8 @@ In the following example, we set up an element of a Bell experiment and visualiz
 
 For more details on how to create schedules, specify timing constraints and seamlessly mix the gate- and pulse-level descriptions, see :ref:`Tutorial 1 <sec-tutorial1>`.
 
+.. _sec-compilation:
+
 Compilation
 -----------
 
@@ -188,8 +190,8 @@ Although one could use manually written configuration files and send the compile
     Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
     On top of the physical instruments is a hardware abstraction layer, that provides a hardware agnostic interface to execute compiled schedules.
     The instruments responsible for experiment control are threated to be as stateless as possible [#]_ .
-    The knowledge about the system that is required to generate the configuration files is described by the QuantumDevice and DeviceElements.
-    Several utility instruments are used to control the
+    The knowledge about the system that is required to generate the configuration files is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
+    Several utility instruments are used to control the flow of the experiments.
 
 
 
@@ -201,9 +203,9 @@ As such, the state of the instruments in the software is intended to track the s
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
 This hardware abstraction layer is implented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual InstrumentCoordinatorComponents are added that provide the uniform interface to the individual instruments.
 
-The knowledge of the system is described by the :class:`QuantumDevice` and :class:`DeviceElement` s.
-The :class:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantites like crosstalk, attenuation and calibrated cable-delays.
-The :class:`QuantumDevice` also contains references to individual :class:`DeviceElement` s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
+The knowledge of the system is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
+The :code:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantites like crosstalk, attenuation and calibrated cable-delays.
+The :code:`QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) sublimecontaining the (calibrated) control-pulse parameters.
 
 
 Experiment flow
@@ -222,7 +224,7 @@ Experiment flow
 .. todo:: Add an example measurement function showcasing the flow.
 
 
-.. rubric:: footnote
+.. rubric:: Footnotes
 
-    .. [#] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
+.. [#] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
 
