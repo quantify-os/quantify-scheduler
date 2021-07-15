@@ -3,6 +3,8 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=unused-argument
+# pylint: disable=too-many-arguments
 from __future__ import annotations
 from typing import List
 import gc
@@ -17,7 +19,6 @@ from quantify_scheduler.instrument_coordinator.components import base as base_co
 
 
 class MyICC(base_component.InstrumentCoordinatorComponentBase):
-
     @property
     def is_running(self):
         pass
@@ -45,23 +46,29 @@ def fixture_close_all_instruments():
     yield
     Instrument.close_all()
 
+
 # cretes a few dummy compoents avialable to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
-def fixture_dummy_components(request, mocker) -> base_component.InstrumentCoordinatorComponentBase:
-
-    mocker.patch.object(MyICC, "is_running")
-    mocker.patch.object(MyICC, "start")
-    mocker.patch.object(MyICC, "stop")
-    mocker.patch.object(MyICC, "prepare")
-    mocker.patch.object(MyICC, "retrieve_acquisition")
-    mocker.patch.object(MyICC, "wait_done")
+def fixture_dummy_components(
+    mocker, request
+) -> base_component.InstrumentCoordinatorComponentBase:
 
     # Crete a QCoDeS intrument for realistic emulation
     instruments = [Instrument(f"dev{i}") for i in range(3)]
-    components = [MyICC(instrument) for instrument in instruments]
+    components = []
+
+    for instrument in instruments:
+        comp = MyICC(instrument)
+        for func in ("prepare", "start", "stop", "wait_done", "retrieve_acquisition"):
+            mocker.patch.object(
+                comp,
+                func,
+                wraps=getattr(comp, func),
+            )
+        components.append(comp)
 
     def cleanup_tmp():
-        # This also prevent the garbage collector from colleting the qcodes instrument
+        # This should prevent the garbage collector from colleting the qcodes instrument
         for instrument in instruments:
             instrument.close()
 
@@ -69,12 +76,13 @@ def fixture_dummy_components(request, mocker) -> base_component.InstrumentCoordi
 
     return components
 
+
 @pytest.fixture(scope="function", name="instrument_coordinator")
 def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
     instrument_coordinator = InstrumentCoordinator("ic_0000")
 
     def cleanup_tmp():
-        # This also prevent the garbage collector from colleting the qcodes instrument
+        # This should prevent the garbage collector from colleting the qcodes instrument
         instrument_coordinator.close()
 
     request.addfinalizer(cleanup_tmp)
@@ -101,15 +109,17 @@ def test_is_running(
     instrument_coordinator,
     dummy_components,
     states: List[bool],
-    expected: bool
+    expected: bool,
+    mocker,
 ):
     # Arrange
+    mocker.patch.object(MyICC, "is_running")  # necessary for overriding `is_running`
 
     for state in states:
         # popping ensures the reference to the object is released after this for loop
         component = dummy_components.pop(0)
-        component.is_running = state
         instrument_coordinator.add_component(component)
+        component.is_running = state
 
     # force garbage collection to emulate qcodes correcly
     gc.collect()
@@ -134,181 +144,157 @@ def test_get_component(close_all_instruments, instrument_coordinator, dummy_comp
         assert component_ == component
 
 
-# def test_get_component_failed(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
+def test_get_component_failed(close_all_instruments, instrument_coordinator):
 
-#     # Act
-#     with pytest.raises(KeyError) as execinfo:
-#         instrument_coordinator.get_component("dev1234")
+    # Act
+    with pytest.raises(KeyError) as execinfo:
+        instrument_coordinator.get_component("ic_dev1234")
 
-#     # Assert
-#     assert execinfo.value.args[0] == "'dev1234' is not a component of ic0!"
+    # Assert
+    assert execinfo.value.args[0] == "'ic_dev1234' is not a component of ic_0000!"
 
 
-# def test_add_component_failed_duplicate(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
+def test_add_component_failed_duplicate(
+    close_all_instruments, instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
 
-#     # Act
-#     with pytest.raises(ValueError) as execinfo:
-#         instrument_coordinator.add_component(component1)
-#         instrument_coordinator.add_component(component1)
+    # Act
+    with pytest.raises(ValueError) as execinfo:
+        instrument_coordinator.add_component(component1)
 
-#     # Assert
-#     assert execinfo.value.args[0] == "'dev1234' has already been added!"
-
-
-# def test_add_component_failed_type_validation(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-
-#     @dataclass
-#     class DummyComponent:
-#         name: str
-
-#         def __repr__(self) -> str:
-#             return "<DummyComponent>"
-
-#     component = DummyComponent("abc")
-
-#     # Act
-#     with pytest.raises(TypeError) as execinfo:
-#         instrument_coordinator.add_component(component)
-
-#     # Assert
-#     assert execinfo.value.args[0] == (
-#         "<DummyComponent> is not quantify_scheduler.instrument_coordinator."
-#         "components.base.InstrumentCoordinatorComponentBase."
-#     )
+    # Assert
+    assert execinfo.value.args[0] == "'ic_dev0' has already been added!"
 
 
-# def test_remove_component(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
-#     component2 = make_component(mocker, "dev5678")
-#     instrument_coordinator.add_component(component1)
-#     instrument_coordinator.add_component(component2)
-#     # required for the mock find_instrument to work
-#     instrument_coordinator._mock_instr_dict[component1.name] = component1
-#     instrument_coordinator._mock_instr_dict[component2.name] = component2
+def test_add_component_failed_type_validation(
+    close_all_instruments, instrument_coordinator
+):
+    @dataclass
+    class DummyComponent:
+        name: str
 
-#     # Act
-#     assert instrument_coordinator.components() == ["dev1234", "dev5678"]
-#     instrument_coordinator.remove_component("dev1234")
-#     assert instrument_coordinator.components() == ["dev5678"]
+        def __repr__(self) -> str:
+            return "<DummyComponent>"
 
+    component = DummyComponent("abc")
 
-# def test_prepare(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
-#     component2 = make_component(mocker, "dev5678")
+    # Act
+    with pytest.raises(TypeError) as execinfo:
+        instrument_coordinator.add_component(component)
 
-#     instrument_coordinator.add_component(component1)
-#     instrument_coordinator.add_component(component2)
-#     # required for the mock find_instrument to work
-#     instrument_coordinator._mock_instr_dict[component1.name] = component1
-#     instrument_coordinator._mock_instr_dict[component2.name] = component2
-
-#     get_component_spy = mocker.patch.object(
-#         instrument_coordinator,
-#         "get_component",
-#         wraps=instrument_coordinator.get_component,
-#     )
-
-#     # Act
-#     args = {"dev1234": {"foo": 1}, "dev5678": {"foo": 2}}
-#     instrument_coordinator.prepare(args)
-
-#     # Assert
-#     assert get_component_spy.call_args_list == [
-#         call("dev1234"),
-#         call("dev5678"),
-#     ]
-#     component1.prepare.assert_called_with(args["dev1234"])
-#     component2.prepare.assert_called_with(args["dev5678"])
+    # Assert
+    assert execinfo.value.args[0] == (
+        "<DummyComponent> is not quantify_scheduler.instrument_coordinator."
+        "components.base.InstrumentCoordinatorComponentBase."
+    )
 
 
-# def test_start(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
-#     component2 = make_component(mocker, "dev5678")
-#     instrument_coordinator.add_component(component1)
-#     instrument_coordinator.add_component(component2)
-#     # required for the mock find_instrument to work
-#     instrument_coordinator._mock_instr_dict[component1.name] = component1
-#     instrument_coordinator._mock_instr_dict[component2.name] = component2
+def test_remove_component(
+    close_all_instruments, instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1, component2 = dummy_components.pop(0), dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
 
-#     # Act
-#     instrument_coordinator.start()
-
-#     # Assert
-#     component1.start.assert_called()
-#     component2.start.assert_called()
+    # Act
+    assert instrument_coordinator.components() == ["ic_dev0", "ic_dev1"]
+    instrument_coordinator.remove_component("ic_dev0")
+    assert instrument_coordinator.components() == ["ic_dev1"]
 
 
-# def test_stop(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
-#     component2 = make_component(mocker, "dev5678")
-#     instrument_coordinator.add_component(component1)
-#     instrument_coordinator.add_component(component2)
-#     # required for the mock find_instrument to work
-#     instrument_coordinator._mock_instr_dict[component1.name] = component1
-#     instrument_coordinator._mock_instr_dict[component2.name] = component2
+def test_prepare(
+    close_all_instruments, instrument_coordinator, dummy_components, mocker
+):  # NB order of fixtures matters for teardown, keep mocker as last!
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
 
-#     # Act
-#     instrument_coordinator.stop()
+    get_component_spy = mocker.patch.object(
+        instrument_coordinator,
+        "get_component",
+        wraps=instrument_coordinator.get_component,
+    )
 
-#     # Assert
-#     component1.stop.assert_called()
-#     component2.stop.assert_called()
+    # Act
+    args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
+    instrument_coordinator.prepare(args)
 
+    # Assert
+    assert get_component_spy.call_args_list == [call("ic_dev0"), call("ic_dev1")]
 
-# def test_retrieve_acquisition(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
-#     component2 = make_component(mocker, "dev5678")
-#     instrument_coordinator.add_component(component1)
-#     instrument_coordinator.add_component(component2)
-#     # required for the mock find_instrument to work
-#     instrument_coordinator._mock_instr_dict[component1.name] = component1
-#     instrument_coordinator._mock_instr_dict[component2.name] = component2
-
-#     component1.retrieve_acquisition.return_value = {0: [1, 2, 3, 4]}
-#     component2.retrieve_acquisition.return_value = None
-
-#     # Act
-#     data = instrument_coordinator.retrieve_acquisition()
-
-#     # Assert
-#     component1.retrieve_acquisition.assert_called()
-#     component2.retrieve_acquisition.assert_called()
-#     assert {"dev1234": {0: [1, 2, 3, 4]}} == data
+    component1.prepare.assert_called_with(args["ic_dev0"])
+    component2.prepare.assert_called_with(args["ic_dev1"])
 
 
-# def test_wait_done(mocker):
-#     # Arrange
-#     instrument_coordinator = make_instrument_coordinator(mocker, "ic0")
-#     component1 = make_component(mocker, "dev1234")
-#     component2 = make_component(mocker, "dev5678")
-#     instrument_coordinator.add_component(component1)
-#     instrument_coordinator.add_component(component2)
-#     # required for the mock find_instrument to work
-#     instrument_coordinator._mock_instr_dict[component1.name] = component1
-#     instrument_coordinator._mock_instr_dict[component2.name] = component2
+def test_start(close_all_instruments, instrument_coordinator, dummy_components):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
 
-#     timeout: int = 1
+    # Act
+    instrument_coordinator.start()
 
-#     # Act
-#     instrument_coordinator.wait_done(timeout)
+    # Assert
+    component1.start.assert_called()
+    component2.start.assert_called()
 
-#     # Assert
-#     component1.wait_done.assert_called_with(timeout)
-#     component2.wait_done.assert_called_with(timeout)
+
+def test_stop(close_all_instruments, instrument_coordinator, dummy_components):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
+
+    # Act
+    instrument_coordinator.stop()
+
+    # Assert
+    component1.stop.assert_called()
+    component2.stop.assert_called()
+
+
+def test_retrieve_acquisition(
+    close_all_instruments, instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
+
+    component1.retrieve_acquisition.return_value = {0: [1, 2, 3, 4]}
+    component2.retrieve_acquisition.return_value = None
+
+    # Act
+    data = instrument_coordinator.retrieve_acquisition()
+
+    # Assert
+    component1.retrieve_acquisition.assert_called()
+    component2.retrieve_acquisition.assert_called()
+    assert {"ic_dev0": {0: [1, 2, 3, 4]}} == data
+
+
+def test_wait_done(close_all_instruments, instrument_coordinator, dummy_components):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
+
+    timeout: int = 1
+
+    # Act
+    instrument_coordinator.wait_done(timeout)
+
+    # Assert
+    component1.wait_done.assert_called_with(timeout)
+    component2.wait_done.assert_called_with(timeout)
