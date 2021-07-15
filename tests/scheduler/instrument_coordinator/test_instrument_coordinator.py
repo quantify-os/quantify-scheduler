@@ -5,6 +5,7 @@
 # pylint: disable=missing-function-docstring
 from __future__ import annotations
 from typing import List
+from weakref import WeakValueDictionary
 
 from dataclasses import dataclass
 from unittest.mock import call
@@ -12,7 +13,6 @@ from unittest.mock import call
 import pytest
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components import base as base_component
-
 
 def make_component(
     mocker, name: str
@@ -26,10 +26,17 @@ def make_component(
 
 
 def make_instrument_coordinator(mocker, name: str) -> InstrumentCoordinator:
+    """
+    NB tests will not emulate the garbage collection because references to objects
+    are stored inside nstrument_coordinator._mock_instr_dict.
+    """
+
     mocker.patch("qcodes.instrument.Instrument.record_instance")
     instrument_coordinator = InstrumentCoordinator(name)
 
-    instrument_coordinator._mock_instr_dict = {}
+    # FIXME this needs to be a weakref dictionary to properly test the real behaviour
+    # quantify-scheduler#151
+    instrument_coordinator._mock_instr_dict = WeakValueDictionary()
 
     # add a mock find instrument
     def mock_find_instrument(instr_name: str):
