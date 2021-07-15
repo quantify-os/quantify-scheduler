@@ -6,22 +6,51 @@
 from __future__ import annotations
 from typing import List
 from weakref import WeakValueDictionary
+import gc
 
 from dataclasses import dataclass
 from unittest.mock import call
 
 import pytest
+from qcodes import Instrument
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 
-def make_component(
-    mocker, name: str
+
+# cretes a few dummy compoents avialable to be used in each test
+# for each component an auxiliar qcodes intrument is created for integration testing
+@pytest.fixture(
+    scope="function",
+    params=["dev0", "dev1", "dev2", "dev3"],
+    name="dummy_components"
+)
+def fixture_dummy_components(
+    request, mocker, name: str
 ) -> base_component.InstrumentCoordinatorComponentBase:
-    mocker.patch("qcodes.instrument.Instrument.record_instance")
-    component = mocker.create_autospec(
-        base_component.InstrumentCoordinatorComponentBase, instance=True
-    )
-    component.name = name
+    # Crete a QCoDeS intrument for realistic emulation
+    instrument = Instrument(name)
+
+    for func in (
+        "is_running",
+        "start",
+        "stop",
+        "prepare",
+        "retrieve_acquisition",
+        "wait_done",
+    ):
+        mocker.patch(
+            "quantify_scheduler.instrument_coordinator.components.base."
+            f"InstrumentCoordinatorComponentBase.{func}"
+        )
+
+    component = base_component.InstrumentCoordinatorComponentBase(instrument)
+
+    def cleanup_tmp():
+        # This also prevent the garbage collector from colleting the qcodes instrument
+        instrument.close()
+
+    request.addfinalizer(cleanup_tmp)
+
     return component
 
 
@@ -30,7 +59,6 @@ def make_instrument_coordinator(mocker, name: str) -> InstrumentCoordinator:
     NB tests will not emulate the garbage collection because references to objects
     are stored inside nstrument_coordinator._mock_instr_dict.
     """
-
     mocker.patch("qcodes.instrument.Instrument.record_instance")
     instrument_coordinator = InstrumentCoordinator(name)
 
@@ -69,10 +97,14 @@ def test_is_running(mocker, states: List[bool], expected: bool):
 
     for i, state in enumerate(states):
         component = make_component(mocker, f"dev{i}")
-        component.is_running = state
         instrument_coordinator.add_component(component)
+        component.is_running = state
+        print(component._no_gc_intances)
 
         instrument_coordinator._mock_instr_dict[component.name] = component
+
+    # force garbage collection to emulate qcodes correcly
+    gc.collect()
 
     # Act
     is_running = instrument_coordinator.is_running
