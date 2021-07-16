@@ -412,7 +412,17 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         """
         A list of dictionaries describing timing constraints between operations.
 
-        Each item in the list is a dictionary with the following keys:
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference operation and the added operation.
+        The time can be specified with respect to a reference point (:code:`"ref_pt"')
+        on the reference operation (:code:`"ref_op"`) and a reference point on the next
+        added operation (:code:`"ref_pt_new"').
+        A reference point can be either the "start", "center", or "end" of an operations.
+        The reference operation (:code:`"ref_op"`) is specified using its label
+        property.
+
+        Each item in the list represents a timing constraint and is a dictionary with
+        the following keys:
 
         .. code-block::
 
@@ -421,6 +431,12 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         The label is used as a unique identifier that can be used as a reference for
         other operations, the operation_repr refers to the string representation of a
         operation in :attr:`~Schedule.operations`.
+
+        .. note::
+
+            timing constraints are not intended to be modified directly.
+            Instead use the :meth:`~quantify_scheduler.types.Operation.add`
+
         """
         return self.data["timing_constraints"]
 
@@ -513,6 +529,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         the operations.
         The reference operation (:code:`"ref_op"`) is specified using its label
         property.
+        See also :attr:`~quantify_scheduler.types.Operation.timing_constraints`.
 
         Parameters
         ----------

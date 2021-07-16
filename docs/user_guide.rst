@@ -28,6 +28,8 @@ The :class:`~quantify_scheduler.types.Schedule` contains information on *when* o
 When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.Operation.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+
 
 
 Creating a schedule
@@ -48,7 +50,7 @@ In the following example, we set up an element of a Bell experiment and visualiz
 
     sched.add(Reset("q0", "q1"))                        # initialize the qubits
     sched.add(X90(qubit="q0"))
-    sched.add(X90(qubit="q1"), ref_pt='start')          # ensure the second gate
+    sched.add(X90(qubit="q1"), ref_pt='start', rel_time=0)          # Here we use a timing constraint to explicitly schedule the second gate to start simultaneously with the first gate.
     sched.add(CZ(qC="q0", qT="q1"))
     sched.add(Rxy(theta=45.0, phi=0, qubit="q0"))       # pick an angle for maximal Bell violation
     sched.add(Measure("q0", "q1", acq_index=(0, 1)))    # denote where to store the data
@@ -71,7 +73,7 @@ Compilation
 -----------
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
-The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware backend.
+The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware back end.
 This is schematically shown in :numref:`compilation_overview`.
 
 
@@ -84,9 +86,9 @@ This is schematically shown in :numref:`compilation_overview`.
     The information in the :ref:`hardware configuration <sec-hardware-config>` is then used to compile the control pulses into instructions suitable for hardware execution.
 
 
-In the first compilation step, pulse information is added to all operations that are not valid pulses (:meth:`~quantify_scheduler.types.Operation.valid_pulse` ) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
+In the first compilation step, pulse information is added to all operations that are not valid pulses (see :attr:`~quantify_scheduler.types.Operation.valid_pulse`) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
 
-A second compilation step takes the schedule at the pulse level and translates this for use on a hardware backend.
+A second compilation step takes the schedule at the pulse level and translates this for use on a hardware back end.
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`hardware configuration file<sec-hardware-config>`.
 
 Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
@@ -97,11 +99,10 @@ Both compilation steps can be triggered by passing a :class:`~quantify_scheduler
 Device configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The device configuration file is used to compile from the  quantum-circuit layer to the quantum-device layer.
-The main responsibility is to add a pulse-representation to every operation that only has a quantum-circuit layer description.
-To do this, it contains information for all qubits, and all edges.
+The device configuration file is used to compile from the quantum-circuit layer to the quantum-device layer.
+The main responsibility is to contain the information required to add a pulse-representation to every operation that only has a quantum-circuit layer description.
+The device configuration contains information for all qubits, and all edges.
 Edges are pairs of qubits (separated by a dash :code:`-`) on which gates can act.
-The specified "backend" determines how the data for each qubit is used to create pulses.
 A configuration file can be written down manually as a JSON file or be code generated.
 
 
@@ -134,9 +135,9 @@ A configuration file can be written down manually as a JSON file or be code gene
 Hardware configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The hardware configuration file is used to compile pulses to specific control electronics.
-To do this, it contains information on what control electronics  to compile to and on what ports are connected to which outputs/inputs, as well as other hardware-specific settings.
-A configuration file can be written down manually as a JSON file or be code generated.
+The hardware configuration file is used to compile pulses (and acquisition protocols) along with their timing information ton instruction compatible with the specific control electronics.
+To do this, it contains information on what control electronics  to compile to and the connectivity: which ports are connected to which outputs/inputs, as well as other hardware-specific settings.
+Similar to the device configuration file, the hardware configuration file can be written down manually as JSON or be code generated.
 
 
 .. admonition:: Example Qblox hardware configuration file
@@ -189,23 +190,23 @@ Although one could use manually written configuration files and send the compile
     A schematic overview of the different kinds of instruments present in an experiment.
     Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
     On top of the physical instruments is a hardware abstraction layer, that provides a hardware agnostic interface to execute compiled schedules.
-    The instruments responsible for experiment control are threated to be as stateless as possible [#]_ .
+    The instruments responsible for experiment control are treated to be as stateless as possible [#]_ .
     The knowledge about the system that is required to generate the configuration files is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
     Several utility instruments are used to control the flow of the experiments.
 
 
 
 `QCoDeS instrument drivers <https://qcodes.github.io/Qcodes/api/generated/qcodes.instrument_drivers.html>`_ are used to represent the physical hardware.
-For the purpose of quantify-scheduler, these instruments are threated as stateless, the desired configurations for an experiment being described by the compiled instructions.
+For the purpose of quantify-scheduler, these instruments are treated as stateless, the desired configurations for an experiment being described by the compiled instructions.
 Because the instruments correspond to physical hardware, there is a significant overhead in querying and configuring these parameters.
 As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.
 
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
-This hardware abstraction layer is implented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual InstrumentCoordinatorComponents are added that provide the uniform interface to the individual instruments.
+This hardware abstraction layer is implemented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual InstrumentCoordinatorComponents are added that provide the uniform interface to the individual instruments.
 
 The knowledge of the system is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
-The :code:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantites like crosstalk, attenuation and calibrated cable-delays.
-The :code:`QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) sublimecontaining the (calibrated) control-pulse parameters.
+The :code:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
+The :code:`QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
 
 
 Experiment flow
