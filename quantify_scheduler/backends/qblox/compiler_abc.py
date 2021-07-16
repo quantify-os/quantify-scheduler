@@ -1160,6 +1160,50 @@ class PulsarRF(PulsarBase):
         super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = PulsarRFSettings.extract_settings_from_mapping(hw_mapping)
 
+
+    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+        """
+        Performs the actual compilation steps for this pulsar, by calling the sequencer
+        level compilation functions and combining them into a single dictionary. The
+        compiled program has a settings key, and keys for every sequencer.
+
+        Parameters
+        ----------
+        repetitions
+            Number of times execution the schedule is repeated.
+
+        Returns
+        -------
+        :
+            The compiled program corresponding to this pulsar. It contains an entry for
+            every sequencer and general "settings". If the device is not actually used,
+            and an empty program is compiled, None is returned instead.
+        """
+        #TODO take this out of here, this was a quick fix
+        if self.sequencers["seq0"].mixer_corrections is not None:
+            self._settings.offset_I_ch0 = self.sequencers["seq0"].mixer_corrections.offset_I
+            self._settings.offset_Q_ch0 = self.sequencers["seq0"].mixer_corrections.offset_Q
+        try:
+            if self.sequencers["seq1"].mixer_corrections is not None:
+                self._settings.offset_I_ch1 = self.sequencers["seq1"].mixer_corrections.offset_I
+                self._settings.offset_Q_ch1 = self.sequencers["seq1"].mixer_corrections.offset_Q
+        except:
+            pass
+
+
+        program = dict()
+        for seq_name, seq in self.sequencers.items():
+            seq_program = seq.compile(repetitions=repetitions)
+            if seq_program is not None:
+                program[seq_name] = seq_program
+
+        if len(program) == 0:
+            return None
+
+        self._settings.hardware_averages = repetitions
+        program["settings"] = self._settings.to_dict()
+        return program
+
     def assign_frequencies(self, seq):
         if seq.clock not in self.parent.resources:
             return

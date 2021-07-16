@@ -418,6 +418,24 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         """
         return PulsarRFSettings.from_dict(settings_dict)
 
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
+        """
+        Configures all sequencer specific settings.
+
+        Parameters
+        ----------
+        seq_idx
+            Index of the sequencer to configure.
+        settings
+            The settings to configure it to.
+        """
+        self.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+
+        nco_en: bool = settings.nco_en
+        self.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        if nco_en:
+            self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
+
     def _configure_global_settings(self, settings: PulsarSettings):
         """
         Configures all settings that are set globally for the whole instrument.
@@ -432,6 +450,15 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
             self.set("lo0_freq", settings.lo0_freq)
         if settings.lo1_freq:
             self.set("lo1_freq", settings.lo1_freq)
+
+        if settings.offset_I_ch0:
+            self.set("offset_I_ch0", settings.offset_I_ch0)
+        if settings.offset_Q_ch0:
+            self.set("offset_Q_ch0", settings.offset_Q_ch0)
+        if settings.offset_I_ch1:
+            self.set("offset_I_ch1", settings.offset_I_ch1)
+        if settings.offset_Q_ch1:
+            self.set("offset_Q_ch1", settings.offset_Q_ch1)
 
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
@@ -449,6 +476,25 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         """
         return PulsarRFSettings.from_dict(settings_dict)
 
+
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
+        """
+        Configures all sequencer specific settings.
+
+        Parameters
+        ----------
+        seq_idx
+            Index of the sequencer to configure.
+        settings
+            The settings to configure it to.
+        """
+        self.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+
+        nco_en: bool = settings.nco_en
+        self.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        if nco_en:
+            self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
+
     def _configure_global_settings(self, settings: PulsarSettings):
         """
         Configures all settings that are set globally for the whole instrument.
@@ -463,6 +509,10 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             self.set("lo0_freq", settings.lo0_freq)
         if settings.lo1_freq:
             self.set("lo1_freq", settings.lo1_freq)
+        # if settings.offset_I_ch0:
+        #     self.set("offset_I_ch0", settings.offset_I_ch0)
+        # if settings.offset_Q_ch0:
+        #     self.set("offset_Q_ch0", settings.offset_Q_ch0)
 
 
 # ----------------- Utility -----------------

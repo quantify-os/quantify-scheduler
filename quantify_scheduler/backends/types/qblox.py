@@ -160,6 +160,14 @@ class PulsarRFSettings(PulsarSettings):
     """The frequency of Output 0 (O0) LO."""
     lo1_freq: float = None
     """The frequency of Output 1 (O1) LO."""
+    offset_I_ch0: float = None
+    """The DC offset on the I path of Output 0 (O0)."""
+    offset_Q_ch0: float = None
+    """The DC offset on the Q path of Output 0 (O0)."""
+    offset_I_ch1: float = None
+    """The DC offset on the I path of Output 1 (O1)."""
+    offset_Q_ch1: float = None
+    """The DC offset on the Q path of Output 1 (O1)."""
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
