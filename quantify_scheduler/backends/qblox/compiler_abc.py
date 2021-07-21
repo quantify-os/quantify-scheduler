@@ -592,7 +592,7 @@ class PulsarSequencerBase(ABC):
             self._settings.awg_offset_path_0 = (
                 self.mixer_corrections.offset_I / self.awg_output_volt
             )
-            self._settings.awg_offset_path_1 = (
+            self._settings.awg_offset_path_1 = (    
                 self.mixer_corrections.offset_Q / self.awg_output_volt
             )
 
@@ -659,9 +659,9 @@ class PulsarSequencerBase(ABC):
         if type(self.parent).__name__ == "Pulsar_QCM_RF":
             qasm.emit(q1asm_instructions.SET_MARKER, 7) #All on
         elif type(self.parent).__name__ == "Pulsar_QRM_RF":
-            qasm.emit(q1asm_instructions.SET_MARKER, 0)
+            qasm.emit(q1asm_instructions.SET_MARKER, 3) #All on
         else:
-            qasm.emit(q1asm_instructions.SET_MARKER, 1)
+            qasm.emit(q1asm_instructions.SET_MARKER, 1) 
     
         # program body
         pulses = list() if self.pulses is None else self.pulses
@@ -697,7 +697,7 @@ class PulsarSequencerBase(ABC):
         if type(self.parent).__name__ == "Pulsar_QCM_RF":
             qasm.emit(q1asm_instructions.SET_MARKER, 8) #All off
         elif type(self.parent).__name__ == "Pulsar_QRM_RF":
-            qasm.emit(q1asm_instructions.SET_MARKER, 1)
+            qasm.emit(q1asm_instructions.SET_MARKER, 4)
         else:
             qasm.emit(q1asm_instructions.SET_MARKER, 0)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
