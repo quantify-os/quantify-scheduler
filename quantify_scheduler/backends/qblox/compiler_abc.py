@@ -536,12 +536,21 @@ class PulsarSequencerBase(ABC):
         """
         waveforms_complex = dict()
         for acq in self.acquisitions:
+            waveforms_data = acq.data["waveforms"]
+            if len(waveforms_data) == 0:
+                continue  # e.g. scope acquisition
+            if len(waveforms_data) != 2:
+                raise ValueError(
+                    f"Acquisitions need precisely 2 waveforms (one for I and one for Q)"
+                    f".\n\n{acq} has {len(waveforms_data)} waveforms and is thus "
+                    f"invalid."
+                )
             if acq.uuid not in waveforms_complex:
                 raw_wf_data_real = generate_waveform_data(
-                    acq.data["waveforms"][0], sampling_rate=SAMPLING_RATE
+                    waveforms_data[0], sampling_rate=SAMPLING_RATE
                 )
                 raw_wf_data_imag = generate_waveform_data(
-                    acq.data["waveforms"][1], sampling_rate=SAMPLING_RATE
+                    waveforms_data[1], sampling_rate=SAMPLING_RATE
                 )
                 self._settings.duration = len(raw_wf_data_real)
                 if not (
