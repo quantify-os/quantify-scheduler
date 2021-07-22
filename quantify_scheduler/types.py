@@ -435,7 +435,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         .. note::
 
             timing constraints are not intended to be modified directly.
-            Instead use the :meth:`~quantify_scheduler.types.Operation.add`
+            Instead use the :meth:`~quantify_scheduler.types.Schedule.add`
 
         """
         return self.data["timing_constraints"]
@@ -529,7 +529,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         the operations.
         The reference operation (:code:`"ref_op"`) is specified using its label
         property.
-        See also :attr:`~quantify_scheduler.types.Operation.timing_constraints`.
+        See also :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
 
         Parameters
         ----------

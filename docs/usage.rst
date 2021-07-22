@@ -54,7 +54,7 @@ The following table shows an overview of the different concepts and how these ar
       - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
       - parameterized waveforms
     * - Where
-      - :class:`~quantify_scheduler.Resource`
+      - :class:`~quantify_scheduler.resources.Resource`
       - qubits (:code:`str`)
       - ports (:code:`str`) & clocks  (:class:`~quantify_scheduler.resources.ClockResource`)
 

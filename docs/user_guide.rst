@@ -28,7 +28,7 @@ The :class:`~quantify_scheduler.types.Schedule` contains information on *when* o
 When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.Operation.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.Schedule.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 

@@ -2,7 +2,6 @@ quantify_scheduler
 ==================
 
 .. automodule:: quantify_scheduler
-    :members:
 
 types
 -----
