@@ -148,7 +148,7 @@ The timing constraints are stored as a list of pulses.
     sched.data['timing_constraints'][:6]
 
 
-Similar to the schedule, :class:`~quantify_scheduler.Operation` objects are also based on dicts.
+Similar to the schedule, :class:`~quantify_scheduler.types.Operation` objects are also based on dicts.
 
 .. jupyter-execute::
 
