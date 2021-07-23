@@ -103,7 +103,7 @@ class QASMProgram:
         """
         marker_binary = int(marker_setting, 2)
         self.emit(
-            q1asm_instructions.WAIT,
+            q1asm_instructions.SET_MARKER,
             marker_binary,
             comment=f"set marker to {marker_setting}",
         )
