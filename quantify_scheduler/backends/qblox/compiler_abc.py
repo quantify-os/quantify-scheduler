@@ -375,52 +375,6 @@ class PulsarSequencerBase(ABC):
                 )
         self._settings.modulation_freq = freq
 
-    def align_modulation_frequency_with_ext_lo(self):
-        r"""
-        Sets the frequencies so that the LO and IF frequencies follow the relation:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
-
-        In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown.
-
-        If the frequency is overconstraint (i.e. multiple values are somehow specified)
-        an error will be thrown during assignment (in the setter method of the
-        frequency).
-
-        Raises
-        ------
-        ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
-        """
-        if self.clock not in self.parent.parent.resources:
-            return
-
-        clk_freq = self.parent.parent.resources[self.clock]["freq"]
-        lo_compiler = self.parent.parent.instrument_compilers.get(
-            self._associated_ext_lo, None
-        )
-        if lo_compiler is None:
-            self.frequency = clk_freq
-            return
-
-        if_freq = self.frequency
-        lo_freq = lo_compiler.frequency
-
-        if lo_freq is None and if_freq is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {self.name} with "
-                f"port {self.port} and clock {self.clock}. When using an external "
-                f'local oscillator it is required to either supply an "lo_freq" or '
-                f'an "interm_freq". Neither was given.'
-            )
-
-        if if_freq is not None:
-            lo_compiler.frequency = clk_freq - if_freq
-
-        if lo_freq is not None:
-            self.frequency = clk_freq - lo_freq
-
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
         Generates the dictionary that contains the awg waveforms in the
@@ -654,8 +608,8 @@ class PulsarSequencerBase(ABC):
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        #TODO In the next revisions, the output markers will not be manually handled anymore
-        #TODO Right now, the marker changes depending on QCM/QRM (QRM only has 3 bits for now)
+
+        #In the next revisions, the output markers will not be manually handled anymore
         if type(self.parent).__name__ == "Pulsar_QCM_RF":
             qasm.emit(q1asm_instructions.SET_MARKER, 7) #All on
         elif type(self.parent).__name__ == "Pulsar_QRM_RF":
@@ -1021,16 +975,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
-    def prepare(self) -> None:
-        """
-        Performs the logic needed before being able to start the compilation. In effect,
-        this means assigning the pulses and acquisitions to the sequencers and
-        calculating the relevant frequencies in case an external local oscillator is
-        used.
-        """
-        self._distribute_data()
-        for seq in self.sequencers.values():
-            seq.align_modulation_frequency_with_ext_lo()
     @abstractmethod
     def assign_frequencies(self, seq):
         r"""
@@ -1051,8 +995,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-
-    def prepare(self):
+    
+    def prepare(self) -> None:
+        """
+        Performs the logic needed before being able to start the compilation. In effect,
+        this means assigning the pulses and acquisitions to the sequencers and
+        calculating the relevant frequencies in case an external local oscillator is
+        used.
+        """
         self._distribute_data()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
