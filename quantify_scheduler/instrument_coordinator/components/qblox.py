@@ -17,7 +17,7 @@ from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.helpers.waveforms import modulate_waveform
-from quantify_scheduler.backends.types.qblox import PulsarSettings, SequencerSettings
+from quantify_scheduler.backends.types.qblox import PulsarSettings, PulsarRFSettings, SequencerSettings
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -71,6 +71,17 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         return None
 
+    def _retrieve_pulsarsettings(self, settings_dict) -> PulsarSettings:
+        """
+        Retrives PulsarSettings from dict.
+
+        Returns
+        -------
+        :
+            PulsarSettings.
+        """
+        return PulsarSettings.from_dict(settings_dict)
+
     def prepare(self, options: Dict[str, dict]) -> None:
         """
         Makes the devices in the InstrumentCoordinator ready for execution of a
@@ -94,7 +105,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         }
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            pulsar_settings = self._retrieve_pulsarsettings(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
         for seq_name, seq_cfg in program.items():
@@ -273,6 +284,17 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
         return np.average(i_demod), np.average(q_demod)
 
+    def _retrieve_pulsarsettings(self, settings_dict) -> PulsarSettings:
+        """
+        Retrives PulsarSettings from dict.
+
+        Returns
+        -------
+        :
+            PulsarSettings.
+        """
+        return PulsarSettings.from_dict(settings_dict)
+
     def prepare(self, options: Dict[str, dict]) -> None:
         """
         Makes the devices in the InstrumentCoordinator ready for execution of a
@@ -296,7 +318,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         acq_settings = _AcquisitionSettings()
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            pulsar_settings = self._retrieve_pulsarsettings(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
             acq_settings.hardware_averages = pulsar_settings.hardware_averages
@@ -385,6 +407,16 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     """
     Pulsar QCM-RF specific control stack component.
     """
+    def _retrieve_pulsarsettings(self, settings_dict) -> PulsarRFSettings:
+        """
+        Retrives PulsarSettings from dict.
+
+        Returns
+        -------
+        :
+            PulsarSettings.
+        """
+        return PulsarRFSettings.from_dict(settings_dict)
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -406,6 +438,16 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     """
     Pulsar QRM-RF specific stack component.
     """
+    def _retrieve_pulsarsettings(self, settings_dict) -> PulsarRFSettings:
+        """
+        Retrives PulsarSettings from dict.
+
+        Returns
+        -------
+        :
+            PulsarSettings.
+        """
+        return PulsarRFSettings.from_dict(settings_dict)
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
