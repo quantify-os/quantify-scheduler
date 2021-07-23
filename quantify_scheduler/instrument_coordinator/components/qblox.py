@@ -322,6 +322,10 @@ class _QRMAcquisitionManager:
         return acquisition_function(acq_channel, acq_index)
 
     def _get_protocol(self, acq_channel, acq_index) -> str:
+        """
+        Returns the acquisition protocol corresponding to acq_channel with
+        acq_index.
+        """
         return self.acquisition_mapping[(acq_channel, acq_index)][1]
 
     def _get_scope_data(
