@@ -543,6 +543,8 @@ class PulsarSequencerBase(ABC):
             waveforms_data = acq.data["waveforms"]
             if len(waveforms_data) == 0:
                 continue  # e.g. scope acquisition
+            if acq.name == "SSBIntegrationComplex":
+                continue
             if len(waveforms_data) != 2:
                 raise ValueError(
                     f"Acquisitions need precisely 2 waveforms (one for I and one for Q)"
