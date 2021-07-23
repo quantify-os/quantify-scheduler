@@ -36,7 +36,8 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
-    description="Quantify-scheduler is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.",
+    description="Quantify-scheduler is a python package for writing quantum programs "
+    "featuring a hybrid gate-pulse control model with explicit timing control.",
     install_requires=requirements,
     license="BSD-4 license",
     long_description=readme + "\n\n" + authors + "\n\n" + history,
