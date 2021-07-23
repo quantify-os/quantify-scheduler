@@ -288,7 +288,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         super()._configure_sequencer_settings(seq_idx, settings)
         self.instrument.set(
-            "sequencer{seq_idx}_integration_length_acq", settings.integration_length_acq
+            f"sequencer{seq_idx}_integration_length_acq",
+            settings.integration_length_acq,
         )
         self.instrument.set(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
