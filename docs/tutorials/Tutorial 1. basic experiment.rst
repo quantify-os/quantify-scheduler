@@ -115,7 +115,7 @@ And we can use this to create a default visualization:
     from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
     f, ax = circuit_diagram_matplotlib(sched)
     # all gates are plotted, but it doesn't all fit in a matplotlib figure
-    ax.set_xlim(-.5, 9.5)
+    ax.set_xlim(-.5, 9.5);
 
 
 Datastructure internals
