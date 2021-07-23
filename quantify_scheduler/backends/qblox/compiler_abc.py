@@ -709,8 +709,8 @@ class PulsarSequencerBase(ABC):
     @staticmethod
     def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
         """
-        Takes a waveforms_dict or weights_dict and extracts the waveform indices based off of the
-        uuid of the pulse/acquisition.
+        Takes a waveforms_dict or weights_dict and extracts the waveform indices based
+        off of the uuid of the pulse/acquisition.
 
         Parameters
         ----------
