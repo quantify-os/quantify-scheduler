@@ -37,7 +37,8 @@ class QASMProgram:
         """Time on which the last acquisition was triggered. Is `None` if no previous 
         acquisition was triggered."""
         self.instructions: List[list] = list()
-        """A list containing the instructions added to the program"""
+        """A list containing the instructions added to the program. The instructions 
+        added are in turn a list of the instruction string with arguments."""
 
     @staticmethod
     def get_instruction_as_list(

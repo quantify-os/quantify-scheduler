@@ -662,20 +662,46 @@ class PulsarSequencerBase(ABC):
         :
             The generated QASM program.
         """
-        loop_label = "start"
-        loop_register = "R0"
-
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
         qasm.set_marker("0001")
 
         # program body
-        pulses = list() if self.pulses is None else self.pulses
-        acquisitions = list() if self.acquisitions is None else self.acquisitions
+        self._process_pulses_and_acquisitions_qasm(
+            qasm=qasm,
+            total_sequence_time=total_sequence_time,
+            pulses=self.pulses,
+            acquisitions=self.acquisitions,
+            awg_dict=awg_dict,
+            weights_dict=weights_dict,
+            repetitions=repetitions,
+        )
+
+        # program footer
+        qasm.emit(q1asm_instructions.SET_MARKER, 0)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
+        qasm.emit(q1asm_instructions.STOP)
+        return str(qasm)
+
+    @classmethod
+    def _process_pulses_and_acquisitions_qasm(
+        cls,
+        qasm: QASMProgram,
+        total_sequence_time: float,
+        pulses,
+        acquisitions,
+        awg_dict: Optional[Dict[str, Any]] = None,
+        weights_dict: Optional[Dict[str, Any]] = None,
+        repetitions: Optional[int] = 1,
+    ):
+        pulses = list() if pulses is None else pulses
+        acquisitions = list() if acquisitions is None else acquisitions
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
 
+        loop_label = "start"
+        loop_register = "R0"
         with qasm.loop(
             label=loop_label, register=loop_register, repetitions=repetitions
         ):
@@ -683,12 +709,12 @@ class PulsarSequencerBase(ABC):
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
                 if operation.is_acquisition:
-                    idx0, idx1 = self.get_indices_from_wf_dict(
+                    idx0, idx1 = cls.get_indices_from_wf_dict(
                         operation.uuid, weights_dict
                     )
                     qasm.wait_till_start_then_acquire(operation, idx0, idx1)
                 else:
-                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
+                    idx0, idx1 = cls.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
             end_time = qasm.to_pulsar_time(total_sequence_time)
@@ -701,12 +727,6 @@ class PulsarSequencerBase(ABC):
                     f"already processed."
                 )
             qasm.auto_wait(wait_time)
-
-        # program footer
-        qasm.emit(q1asm_instructions.SET_MARKER, 0)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
-        qasm.emit(q1asm_instructions.STOP)
-        return str(qasm)
 
     @staticmethod
     def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
