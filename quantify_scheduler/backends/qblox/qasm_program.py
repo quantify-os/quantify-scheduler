@@ -91,11 +91,29 @@ class QASMProgram:
 
     # --- QOL functions -----
 
+    def set_marker(self, marker_setting: str = "0000"):
+        """
+        Sets the marker from a string representing a binary number. Each digit
+        corresponds to a marker e.g. '0010' sets the second marker to True.
+
+        Parameters
+        ----------
+        marker_setting:
+            The string representing a binary number.
+        """
+        marker_binary = int(marker_setting, 2)
+        self.emit(
+            q1asm_instructions.WAIT,
+            marker_binary,
+            comment=f"set marker to {marker_setting}",
+        )
+
     def auto_wait(self, wait_time: int):
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
-        instructions.
+        instructions. If the number of wait instructions is too high (>4), a loop will
+        be used.
 
         Parameters
         ----------

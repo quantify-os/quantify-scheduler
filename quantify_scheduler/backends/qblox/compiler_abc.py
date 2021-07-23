@@ -462,7 +462,11 @@ class PulsarSequencerBase(ABC):
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
-            reserved_pulse_id = non_generic.check_reserved_pulse_id(pulse)
+            reserved_pulse_id = (
+                non_generic.check_reserved_pulse_id(pulse)
+                if self.instruction_generated_pulses_enabled
+                else None
+            )
             if reserved_pulse_id is None:
                 raw_wf_data = generate_waveform_data(
                     pulse.data, sampling_rate=SAMPLING_RATE
@@ -662,7 +666,7 @@ class PulsarSequencerBase(ABC):
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        qasm.emit(q1asm_instructions.SET_MARKER, 1)
+        qasm.set_marker("0001")
 
         # program body
         pulses = list() if self.pulses is None else self.pulses
