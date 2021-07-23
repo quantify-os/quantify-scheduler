@@ -172,25 +172,6 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     def wait_done(self, timeout_sec: int = 10) -> None:
         pass
 
-class PulsarQCMRFComponent(
-    PulsarQCMComponent
-):
-    """
-    Pulsar QCM-RF specific control stack component.
-    """
-
-
-    def _configure_global_settings(self, settings: PulsarSettings):
-        """
-        Configures all settings that are set globally for the whole instrument.
-
-        Parameters
-        ----------
-        settings
-            The settings to configure it to.
-        """
-        super()._configure_global_settings(settings)
-
 
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
@@ -268,9 +249,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         return i_trace, q_trace
 
     def _acquire_ssb_integration_complex(
-        self,
-        i_trace: np.ndarray,
-        q_trace: np.ndarray,
+        self, i_trace: np.ndarray, q_trace: np.ndarray,
     ) -> Tuple[float, float]:
         """
         Performs the required transformation to obtain a
@@ -402,18 +381,44 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         pass
 
 
-class PulsarQRMRFComponent(
-    PulsarQRMComponent
-):
+class PulsarQCMRFComponent(PulsarQCMComponent):
     """
-    Pulsar QRM specific stack component.
+    Pulsar QCM-RF specific control stack component.
     """
 
     def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
         super()._configure_global_settings(settings)
-    
+        if settings.lo0_freq:
+            self.set("lo0_freq", settings.lo0_freq)
+        if settings.lo1_freq:
+            self.set("lo1_freq", settings.lo1_freq)
 
 
+class PulsarQRMRFComponent(PulsarQRMComponent):
+    """
+    Pulsar QRM-RF specific stack component.
+    """
+
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        super()._configure_global_settings(settings)
+        self.set("lo0_freq", settings.lo0_freq)
+        self.set("lo1_freq", settings.lo1_freq)
 
 
 # ----------------- Utility -----------------

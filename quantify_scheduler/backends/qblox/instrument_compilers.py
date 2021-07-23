@@ -9,7 +9,8 @@ from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
     PulsarSequencerBase,
-    PulsarBase,
+    PulsarBaseband,
+    PulsarRF,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
 
@@ -131,7 +132,7 @@ class QRMSequencer(PulsarSequencerBase):
 
 
 # pylint: disable=invalid-name
-class Pulsar_QCM(PulsarBase):
+class Pulsar_QCM(PulsarBaseband):
     """
     Pulsar QCM specific implementation of the pulsar compiler.
     """
@@ -186,7 +187,7 @@ class Pulsar_QCM(PulsarBase):
 
 
 # pylint: disable=invalid-name
-class Pulsar_QRM(PulsarBase):
+class Pulsar_QRM(PulsarBaseband):
     """
     Pulsar QRM specific implementation of the pulsar compiler.
     """
@@ -196,13 +197,14 @@ class Pulsar_QRM(PulsarBase):
     max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
 
-class Pulsar_QCM_RF(Pulsar_QCM):
+
+class Pulsar_QCM_RF(Pulsar_QCM, PulsarRF):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
 
 
-class Pulsar_QRM_RF(Pulsar_QRM):
+class Pulsar_QRM_RF(Pulsar_QRM, PulsarRF):
     """
     Pulsar QRM-RF specific implementation of the pulsar compiler.
     """
