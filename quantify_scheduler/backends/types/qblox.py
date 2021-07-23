@@ -172,6 +172,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Duration of the acquisition. This is a temporary addition for not yet merged the
     InstrumentCoordinator to function properly. This will be removed in a later
     version!"""
+    integration_length_acq: Optional[int] = None
+    """Integration length for acquisitions. Must be a multiple of 4 ns."""
 
 
 @dataclass

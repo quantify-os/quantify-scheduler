@@ -384,6 +384,25 @@ class QASMProgram:
         self.elapsed_time += constants.GRID_TIME
 
     def _acquire_square(self, acquisition: OpInfo, bin: int):
+        duration_ns = int(acquisition.duration * 1e9)
+        if self.parent.settings.integration_length_acq is None:
+            if duration_ns % constants.GRID_TIME != 0:
+                raise ValueError(
+                    f"Attempting to perform square acquisition with a "
+                    f"duration of {duration_ns} ns. Please ensure the "
+                    f"duration is a multiple of {constants.GRID_TIME} "
+                    f"ns.\n\nException caused by {repr(acquisition)}"
+                )
+            self.parent.settings.integration_length_acq = duration_ns
+        elif self.parent.settings.integration_length_acq != duration_ns:
+            raise ValueError(
+                f"Attempting to set an integration_length of {duration_ns}"
+                f" ns, while this has previously determined to be"
+                f" {self.parent.settings.integration_length_acq}. Please "
+                f"check whether all square acquisitions in the schedule "
+                f"have the same duration."
+            )
+
         measurement_idx = acquisition.data["acq_channel"]
         self.emit(
             q1asm_instructions.ACQUIRE,
