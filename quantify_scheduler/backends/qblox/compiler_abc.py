@@ -8,7 +8,7 @@ import json
 from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List
+from typing import Optional, Dict, Any, Set, Tuple, List, Type
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -892,7 +892,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def sequencer_type(self) -> type(PulsarSequencerBase):
+    def sequencer_type(self) -> Type[PulsarSequencerBase]:
         """
         Specifies whether the sequencers in this pulsar are QCM_sequencers or
         QRM_sequencers.
