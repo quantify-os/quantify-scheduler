@@ -3,7 +3,9 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from abc import abstractmethod
+from typing import Any, Callable, Dict, Optional, Tuple, Type
+
 
 from dataclasses import dataclass
 import logging
@@ -17,7 +19,7 @@ from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.helpers.waveforms import modulate_waveform
-from quantify_scheduler.backends.types.qblox import PulsarSettings, SequencerSettings
+from quantify_scheduler.backends.types.qblox import PulsarSettings, PulsarRFSettings, SequencerSettings
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -37,6 +39,17 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
     def is_running(self) -> bool:
         raise NotImplementedError()
 
+    @property
+    @abstractmethod
+    def settings_type(self) -> Type[PulsarSettings]:
+        """
+        Specifies the type of qblox settings class that the subclasses use.
+
+        Returns
+        -------
+        :
+            PulsarSettings or PulsarRFSettings
+        """
 
 # pylint: disable=too-many-ancestors
 class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
@@ -46,6 +59,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
     number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Specifies the amount of sequencers available to this QCM."""
+    settings_type = PulsarSettings
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQCMComponent."""
@@ -94,7 +108,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         }
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            pulsar_settings = self.settings_type.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
         for seq_name, seq_cfg in program.items():
@@ -180,6 +194,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     """
 
     number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    settings_type = PulsarSettings
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQRMComponent."""
@@ -296,7 +311,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         acq_settings = _AcquisitionSettings()
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            pulsar_settings = self.settings_type.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
             acq_settings.hardware_averages = pulsar_settings.hardware_averages
@@ -386,6 +401,8 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     Pulsar QCM-RF specific control stack component.
     """
 
+    settings_type = PulsarRFSettings
+
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
         Configures all sequencer specific settings.
@@ -434,6 +451,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     Pulsar QRM-RF specific stack component.
     """
 
+    settings_type = PulsarRFSettings
 
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
