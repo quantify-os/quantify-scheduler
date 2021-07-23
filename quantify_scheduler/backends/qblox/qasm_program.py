@@ -33,6 +33,9 @@ class QASMProgram:
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
+        self.time_last_acquisition_triggered: Optional[int] = None
+        """Time on which the last acquisition was triggered. Is `None` if no previous 
+        acquisition was triggered."""
         self.instructions: List[list] = list()
         """A list containing the instructions added to the program"""
 
@@ -390,6 +393,19 @@ class QASMProgram:
         self.elapsed_time += constants.GRID_TIME
 
     def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
+        if (
+            self.time_last_acquisition_triggered - self.elapsed_time
+            < constants.MIN_TIME_BETWEEN_ACQUISITIONS
+        ):
+            raise ValueError(
+                f"Attempting to start acquisition on t={self.elapsed_time}"
+                f" ns, while the last acquisition was started on "
+                f"t={self.time_last_acquisition_triggered}. Please ensure "
+                f"a minimum interval of "
+                f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
+                f"acquisitions.\n\nError caused by acquisition:\n{repr(acquisition)}"
+            )
+        self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {
             # FIXME: Somehow need to handle SSBIntegrationComplex, but it has the
             #  same protocol as weighted_integrated_complex

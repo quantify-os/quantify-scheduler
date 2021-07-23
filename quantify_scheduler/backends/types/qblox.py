@@ -84,7 +84,7 @@ class OpInfo(DataClassJsonMixin):
 
     def __repr__(self):
         repr_string = 'Acquisition "' if self.is_acquisition else 'Pulse "'
-        repr_string += str(self.uuid)
+        repr_string += f"{str(self.name)} - {str(self.uuid)}"
         repr_string += f'" (t={self.timing} to {self.timing+self.duration})'
         repr_string += f" data={self.data}"
         return repr_string
