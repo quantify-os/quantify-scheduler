@@ -404,11 +404,14 @@ class QASMProgram:
             )
 
         bin = acquisition.data["acq_index"]
-        acquisition_func = protocol_to_acquire_func_mapping.get(
-            acquisition.data["protocol"], None
-        )
-        args = [arg for arg in [acquisition, bin, idx0, idx1] if arg is not None]
-        acquisition_func(*args)
+        if acquisition.name == "SSBIntegrationComplex":
+            self._acquire_square(acquisition, bin=bin)
+        else:
+            acquisition_func = protocol_to_acquire_func_mapping.get(
+                acquisition.data["protocol"], None
+            )
+            args = [arg for arg in [acquisition, bin, idx0, idx1] if arg is not None]
+            acquisition_func(*args)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
