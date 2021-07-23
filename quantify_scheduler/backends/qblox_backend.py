@@ -103,7 +103,12 @@ def _assign_pulse_and_acq_info_to_devices(
                 continue  # ignore idle pulses
 
             uuid = make_hash(without(pulse_data, "t0"))
-            combined_data = OpInfo(data=pulse_data, timing=pulse_start_time, uuid=uuid)
+            combined_data = OpInfo(
+                name=op_data.data["name"],
+                data=pulse_data,
+                timing=pulse_start_time,
+                uuid=uuid,
+            )
 
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
@@ -124,7 +129,12 @@ def _assign_pulse_and_acq_info_to_devices(
                 hashed_dict["waveforms"].append(without(acq, ["t0"]))
             uuid = make_hash(hashed_dict)
 
-            combined_data = OpInfo(data=acq_data, timing=acq_start_time, uuid=uuid)
+            combined_data = OpInfo(
+                name=op_data.data["name"],
+                data=acq_data,
+                timing=acq_start_time,
+                uuid=uuid,
+            )
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
 

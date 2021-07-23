@@ -39,6 +39,8 @@ class OpInfo(DataClassJsonMixin):
     needed to play it.
     """
 
+    name: str
+    """Name of the operation that this pulse/acquisition is a part of."""
     uuid: str
     """A unique identifier for this pulse/acquisition."""
     data: dict
