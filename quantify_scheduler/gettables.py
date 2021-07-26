@@ -38,7 +38,8 @@ class ScheduleVectorAcqGettable:
 
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the `Schedule` using the `schedule_function`, this is then compiled and finally
-    executed by the `instrument_coordinator`.
+    executed by the
+    :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
     """
 
     # pylint: disable=too-many-arguments
@@ -50,7 +51,7 @@ class ScheduleVectorAcqGettable:
         schedule_kwargs: Dict[str, Any],
         device_cfg: Dict[str, Any],
         hardware_cfg: Dict[str, Any],
-        ins_coord: InstrumentCoordinator,
+        instr_coord: InstrumentCoordinator,
         acq_instr: str,
         real_imag: bool = True,
         hardware_averages: int = 1024,
@@ -61,29 +62,29 @@ class ScheduleVectorAcqGettable:
 
         Parameters
         ----------
-        device :
+        device
             The qcodes instrument.
-        schedule_function :
+        schedule_function
             A function which returns a :class:`~quantify_scheduler.types.Schedule`.
-        schedule_kwargs :
+        schedule_kwargs
             The schedule function keyword arguments, when a value in this dictionary is
             a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
-            evaluated every time .get is called before being passed to the
-            schedule_function.
-        device_cfg :
+            evaluated every time :code:`.get()` is called before being passed to the
+            :code:`schedule_function`.
+        device_cfg
             The device configuration dictionary.
-        hardware_cfg :
+        hardware_cfg
             The hardware configuration dictionary.
-        coordinator :
+        instr_coord
             An instance of
             :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
-        real_imag :
+        real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
-            are returned.
-        acq_instr : str
+            (degrees) are returned.
+        acq_instr
             Name of the instrument that is used to perform the acquisition.
-        hardware_averages :
-            The number of hardware averages, by default 1024
+        hardware_averages
+            The number of hardware averages.
         """
         if real_imag:
             self.name = ["I", "Q"]
@@ -101,7 +102,7 @@ class ScheduleVectorAcqGettable:
 
         self.device_cfg = device_cfg
         self.mapping_cfg = hardware_cfg
-        self.ins_coord = ins_coord
+        self.instr_coord = instr_coord
 
         self.hardware_averages = hardware_averages
         self.acq_instr = acq_instr
@@ -111,16 +112,16 @@ class ScheduleVectorAcqGettable:
         self._evaluated_sched_kwargs = {}
         self._config = {}
 
-    def get(self) -> Tuple[float]:
+    def get(self) -> Tuple[float, float]:
         """
-        Start the experimental sequence and retrieve acquisition data
+        Start the experimental sequence and retrieve acquisition data.
 
         Returns
-        -----------
+        -------
         :
-            The acquired I/Q volatage signal as a complex number,
+            The acquired I/Q voltage signal as a complex number,
             split into a tuple of floats: either real/imaginary parts or
-            magnitude/phase, depending on whether :code:`real_imag` is :code:`True`
+            magnitude/phase, depending on whether :code:`real_imag` is :code:`True`.
         """
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
@@ -134,24 +135,24 @@ class ScheduleVectorAcqGettable:
             hardware_mapping=self.mapping_cfg,
         )
 
-        self.ins_coord.acq_instr = self.acq_instr
-        self.ins_coord.schedule_kwargs = self.schedule_kwargs
-        self.ins_coord.device = self.device
+        self.instr_coord.acq_instr = self.acq_instr
+        self.instr_coord.schedule_kwargs = self.schedule_kwargs
+        self.instr_coord.device = self.device
 
-        # Upload the schedule and configure the control stack
-        self.ins_coord.prepare(self._config)
+        # Upload the schedule and configure the instrument coordinator
+        self.instr_coord.prepare(self._config)
 
-        # Run experiment and retrieve data
-        self.ins_coord.start()
+        # Run experiment
+        self.instr_coord.start()
 
-        # TODO ins_coord components need to be awaited
+        # TODO instr_coord components need to be awaited # pylint: disable=fixme
 
         # TODO Why index on 'acq_instr'. There can be multiple acquisition instruments.
         # This function should rather return the result of 'retrieve_acquisition' than
         # doing extra additions to the data.
         # This will not work because it needs to also know the acq_index
         # { 'uhfqa0': { [acq_index]: [0,1,1,...] } }
-        i_val, q_val = self.ins_coord.retrieve_acquisition()[self.acq_instr]
+        i_val, q_val = self.instr_coord.retrieve_acquisition()[self.acq_instr]
 
         s21: np.ndarray = i_val + 1j * q_val
         if self.real_imag:
@@ -160,19 +161,20 @@ class ScheduleVectorAcqGettable:
         return np.abs(s21), np.angle(s21, deg=True)
 
 
-def _evaluate_parameter_dict(parameters: Dict[str, Any]):
-    """
+def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
+    r"""
     Loop over the keys and values in a dict and replaces parameters with their current
     value.
 
     Parameters
     ----------
-    parameters:
-        A dictionary containing a mix of Parameters and normal values.
+    parameters
+        A dictionary containing a mix of
+        :class:`~qcodes.instrument.parameter.Parameter`\s and normal values.
 
     Returns
     -------
-    evaluated_parameters:
+    :
         The `parameters` dictionary, but with the parameters replaced by their current
         value.
     """
