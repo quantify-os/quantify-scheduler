@@ -203,7 +203,12 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
 
-class Pulsar_QRM_RF(PulsarRF, Pulsar_QRM):
+class Pulsar_QRM_RF(PulsarRF):
     """
     Pulsar QRM-RF specific implementation of the pulsar compiler.
     """
+
+    sequencer_type = QRMSequencer
+    """The type of the sequencer."""
+    max_sequencers: int = 1
+    """Maximum number of sequencer available in the instrument."""
