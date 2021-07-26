@@ -109,7 +109,7 @@ class QASMProgram:
         self.emit(
             q1asm_instructions.SET_MARKER,
             marker_binary,
-            comment=f"set marker to {marker_setting}",
+            comment=f"set markers to {marker_setting}",
         )
 
     def auto_wait(self, wait_time: int):
