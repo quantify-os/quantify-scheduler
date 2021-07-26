@@ -19,16 +19,19 @@ Schedule gettables are set up to f
 
 """
 
-from typing import Callable, Dict, Any
+from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
-
 from qcodes import Parameter
+from qcodes.instrument.base import Instrument
 
+from quantify_scheduler import types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-few-public-methods
 class ScheduleVectorAcqGettable:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
@@ -40,7 +43,6 @@ class ScheduleVectorAcqGettable:
 
     Examples
     --------
-
     .. code-block:
 
         from qcodes import ManualParameter
@@ -55,42 +57,49 @@ class ScheduleVectorAcqGettable:
                                             instrument_coordinator=ic, real_imag=True,
                                             acq_instr='qrm0', repetitions=10_000
                                             )
+
     """
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=line-too-long
     def __init__(
         self,
-        schedule_function: Callable,
+        device: Instrument,
+        schedule_function: Callable[..., types.Schedule],
         schedule_kwargs: Dict[str, Any],
         device_cfg: Dict[str, Any],
-        mapping_cfg: Dict[str, Any],
-        instrument_coordinator: InstrumentCoordinator,
+        hardware_cfg: Dict[str, Any],
+        ins_coord: InstrumentCoordinator,
         acq_instr: str,
-        repetitions: int,
         real_imag: bool = True,
+        hardware_averages: int = 1024,
     ):
         """
-        Instantiates the gettable.
+                Create a new instance of ScheduleVectorAcqGettable which is used to do I and Q
+                acquisition.
 
-        Parameters
-        ----------
-        schedule_function:
-            A reference to the function that generates the schedule.
-        schedule_kwargs:
-            A dictionary containing all the arguments to pass to the schedule generation
-            function.
-        device_cfg:
-            The device configuration dictionary.
-        mapping_cfg:
-            The hardware configuration dictionary.
-        instrument_coordinator:
-            The control stack object that will execute the schedule.
-        real_imag:
-            If true, the gettable returns I, Q values. Otherwise, magnitude and phase
-            are returned.
-        acq_instr:
-            Name of the instrument that is used to perform the acquisition.
-        repetitions:
-            Value of the `Schedule.repetitions` property.
+                Parameters
+                ----------
+                device :
+                    The qcodes instrument.
+                schedule_function :
+                    A function which returns a :class:`~quantify.scheduler.types.Schedule`.
+                schedule_kwargs :
+                    The schedule function keyword arguments.
+                device_cfg :
+                    The device configuration dictionary.
+                hardware_cfg :
+                    The hardware configuration dictionary.
+                coordinator :
+                    An instance of
+                    :class:`~quantify.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+                real_imag :
+                    If true, the gettable returns I, Q values. Otherwise, magnitude and phase
+        -            are returned.
+                acq_instr : str
+                    Name of the instrument that is used to perform the acquisition.
+                hardware_averages :
+                    The number of hardware averages, by default 1024
         """
         if real_imag:
             self.name = ["I", "Q"]
@@ -105,47 +114,64 @@ class ScheduleVectorAcqGettable:
         self.schedule_kwargs = schedule_kwargs
 
         self.device_cfg = device_cfg
-        self.mapping_cfg = mapping_cfg
-        self.instrument_coordinator = instrument_coordinator
+        self.mapping_cfg = hardware_cfg
+        self.ins_coord = ins_coord
 
+        self.hardware_averages = hardware_averages
         self.acq_instr = acq_instr
-        self._real_imag = real_imag
-        self.repetitions = repetitions
+        self.real_imag = real_imag
+        self.device = device
 
-    def get(self):
+        self._evaluated_sched_kwargs = {}
+        self._config = {}
+
+    def get(self) -> Tuple[float]:
         """
-        Executes the schedule on hardware using the control stack and returns the data
-        obtained.
+        Start the experimental sequence and retrieve acquisition data
 
         Returns
-        -------
+        -----------
         :
-            The data returned by the control stack.
+            The acquired I/Q volatage signal as a complex number,
+            split into a tuple of floats: either real/imaginary parts or
+            magnitude/phase, depending on whether :code:`real_imag` is :code:`True`
         """
-        evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
-        # generate a schedule using the evaluated keyword arguments dict
-        sched = self.schedule_function(**evaluated_sched_kwargs)
+        self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
-        sched.repetitions = self.repetitions
-        config = qcompile(
+        # generate a schedule using the evaluated keyword arguments dict
+        sched = self.schedule_function(**self._evaluated_sched_kwargs)
+        # compile and assign to attributes for debugging purposes
+        sched.repetitions = self.hardware_averages
+        self._config = qcompile(
             schedule=sched,
             device_cfg=self.device_cfg,
             hardware_mapping=self.mapping_cfg,
         )
 
-        # Upload the schedule and configure the control stack
-        self.instrument_coordinator.prepare(config)
-        # Run experiment and retrieve data
-        self.instrument_coordinator.start()
-        i_val, q_val = self.instrument_coordinator.retrieve_acquisition()[
-            self.acq_instr
-        ]
+        self.ins_coord.acq_instr = self.acq_instr
+        self.ins_coord.schedule_kwargs = self.schedule_kwargs
+        self.ins_coord.device = self.device
 
-        # complex conjugate of data is taken because of issue #103
-        S21 = np.conj(i_val + 1j * q_val)
-        if self._real_imag:
-            return S21.real, S21.imag
-        return np.abs(S21), np.angle(S21, deg=True)
+        # Upload the schedule and configure the control stack
+        self.ins_coord.prepare(self._config)
+
+        # Run experiment and retrieve data
+        self.ins_coord.start()
+
+        # TODO ins_coord components need to be awaited
+
+        # TODO Why index on 'acq_instr'. There can be multiple acquisition instruments.
+        # This function should rather return the result of 'retrieve_acquisition' than
+        # doing extra additions to the data.
+        # This will not work because it needs to also know the acq_index
+        # { 'uhfqa0': { [acq_index]: [0,1,1,...] } }
+        i_val, q_val = self.ins_coord.retrieve_acquisition()[self.acq_instr]
+
+        s21: np.ndarray = i_val + 1j * q_val
+        if self.real_imag:
+            return (np.real(s21), np.imag(s21))
+
+        return np.abs(s21), np.angle(s21, deg=True)
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]):
