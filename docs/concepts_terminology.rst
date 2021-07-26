@@ -5,7 +5,7 @@ Concepts and terminology
 ========================
 
 .. jupyter-kernel::
-  :id: Scheduler user guide
+  :id: Scheduler concepts and terminology
 
 .. jupyter-execute::
     :hide-code:

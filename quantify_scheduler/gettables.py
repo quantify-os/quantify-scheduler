@@ -6,7 +6,6 @@ quantify-scheduler.
 
 Schedule gettables are set up to f
 
-
 .. warning::
 
     The gettable module is expected to change significantly as the
@@ -14,10 +13,8 @@ Schedule gettables are set up to f
     Currently different Gettables are required for different acquisition modes.
     The intent is to have one generic `ScheduleGettable`.
     Expect breaking changes.
-
-
 """
-
+from __future__ import annotations
 from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
@@ -39,8 +36,8 @@ class ScheduleVectorAcqGettable:
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the `Schedule` using the `schedule_function`, this is then compiled and finally
     executed by the
-    :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
-    """
+    :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+    """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments
     # pylint: disable=line-too-long
@@ -77,7 +74,7 @@ class ScheduleVectorAcqGettable:
             The hardware configuration dictionary.
         instr_coord
             An instance of
-            :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
+            :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
         real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
@@ -85,7 +82,7 @@ class ScheduleVectorAcqGettable:
             Name of the instrument that is used to perform the acquisition.
         hardware_averages
             The number of hardware averages.
-        """
+        """  # pylint: disable=line-too-long
         if real_imag:
             self.name = ["I", "Q"]
             self.label = ["Voltage I", "Voltage Q"]

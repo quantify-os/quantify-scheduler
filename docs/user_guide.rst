@@ -4,7 +4,7 @@ Getting started
 ===============
 
 .. jupyter-kernel::
-  :id: Scheduler user guide new
+  :id: Scheduler getting started
 
 .. jupyter-execute::
     :hide-code:
@@ -226,7 +226,7 @@ The :code:`QuantumDevice` also contains references to individual :code:`DeviceEl
 Because the :code:`QuantumDevice` and the :code:`DeviceElement`\s are an :class:`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
 
 Experiment flow
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of :mod:`quantify_core`.
 Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`~quantify_core.measurement.MeasurementControl` and are responsible for the experiment flow.
@@ -284,17 +284,22 @@ This flexibility allows the user to create template schedules that can then be m
 Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :code:`QuantumDevice` for every iteration.
 This ensures that if a calibration parameter is changed on the :code:`QuantumDevice`, the compilation will be affected as expected.
 
+.. warning::
+
+    :code:`QuantumDevice` class is not implemented yet.
+
 .. jupyter-execute::
 
-    # FIXME: QuantumDevice class not implemented yet
     # device = QuantumDevice
     device = None # placeholder value
 
 These ingredients can then be combined to perform the experiment:
 
-.. code-block:: python
+.. warning::
 
-    # FIXME: ScheduleGettable class not implemented yet
+    :code:`ScheduleGettable` class is not implemented yet.
+
+.. code-block:: python
 
     t1_gettable = ScheduleGettable(
         device=device,
