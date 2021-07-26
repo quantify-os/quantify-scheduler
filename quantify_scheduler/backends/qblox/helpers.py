@@ -15,7 +15,7 @@ try:
 except ImportError:
     driver_version = None
 
-SUPPORTED_DRIVER_VERSIONS = ("0.3.2",)
+SUPPORTED_DRIVER_VERSIONS = ("0.4.0",)
 
 
 class DriverVersionError(Exception):
