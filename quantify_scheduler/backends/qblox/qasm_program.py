@@ -412,7 +412,20 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
+    def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int) -> None:
+        """
+        Automatically adds an acquisition. Keeps track of the time since the last
+        acquisition was started to prevent FIFO errors.
+
+        Parameters
+        ----------
+        acquisition:
+            The acquisition to start.
+        idx0:
+            Index of the waveform in the weights dict to use as weights for path0.
+        idx1:
+            Index of the waveform in the weights dict to use as weights for path1.
+        """
         if self.time_last_acquisition_triggered is not None:
             if (
                 self.elapsed_time - self.time_last_acquisition_triggered
