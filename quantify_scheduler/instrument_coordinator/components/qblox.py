@@ -485,6 +485,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             self.set("lo0_freq", settings.lo0_freq)
         if settings.lo1_freq:
             self.set("lo1_freq", settings.lo1_freq)
+        # Uncomment lines below when the QRM-RF driver supports it
         # if settings.offset_I_ch0:
         #     self.set("offset_I_ch0", settings.offset_I_ch0)
         # if settings.offset_Q_ch0:
