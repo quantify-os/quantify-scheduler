@@ -82,7 +82,7 @@ This is schematically shown in :numref:`compilation_overview`.
 .. figure:: /images/compilation_overview.svg
     :name: compilation_overview
     :align: center
-    :width: 800px
+    :width: 900px
 
     A schematic overview of the different abstraction layers and the compilation process.
     Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a :class:`~quantify_scheduler.types.Schedule` .
@@ -96,6 +96,14 @@ A second compilation step takes the schedule at the pulse level and translates t
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`hardware configuration file<sec-hardware-config>`.
 
 Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
+
+.. note::
+
+    We use the term "**device**" to refer to the physical object(s) on the receiving end of the control pulses, e.g. a thin-film chip inside a dilution refrigerator.
+
+    And we employ the term "**hardware**" to refer to the instruments (electronics) that are involved in the pulse generations / signal digitization.
+
+
 
 .. _sec-device-config:
 
@@ -187,7 +195,7 @@ Although one could use manually written configuration files and send the compile
 .. figure:: /images/instruments_overview.svg
     :name: instruments_overview
     :align: center
-    :width: 1000px
+    :width: 600px
 
     A schematic overview of the different kinds of instruments present in an experiment.
     Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
@@ -196,19 +204,28 @@ Although one could use manually written configuration files and send the compile
     The knowledge about the system that is required to generate the configuration files is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
     Several utility instruments are used to control the flow of the experiments.
 
+Physical instruments
+^^^^^^^^^^^^^^^^^^^^
 
 `QCoDeS instrument drivers <https://qcodes.github.io/Qcodes/api/generated/qcodes.instrument_drivers.html>`_ are used to represent the physical hardware.
 For the purpose of quantify-scheduler, these instruments are treated as stateless, the desired configurations for an experiment being described by the compiled instructions.
 Because the instruments correspond to physical hardware, there is a significant overhead in querying and configuring these parameters.
 As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.
 
+Hardware abstraction layer
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
 This hardware abstraction layer is implemented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual :class:`InstrumentCoordinatorComponent <quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase>`\s are added that provide the uniform interface to the individual instruments.
+
+
+The quantum device and the device elements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The knowledge of the system is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
 The :code:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
 The :code:`QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
 
+Because the :code:`QuantumDevice` and the :code:`DeviceElement`\s are an :class:`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
 
 Experiment flow
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -220,7 +237,7 @@ Experiment flow
 .. figure:: /images/experiments_control_flow.svg
     :name: experiments_control_flow
     :align: center
-    :width: 1000px
+    :width: 800px
 
     A schematic overview of the experiments control flow.
 
