@@ -42,8 +42,6 @@ from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     SequencerSettings,
     QASMRuntimeSettings,
-    PulsarSettings,
-    PulsarRFSettings,
     MixerCorrections,
 )
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -842,7 +840,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
-        self._settings = PulsarSettings.extract_settings_from_mapping(hw_mapping)
+        self._settings = self.sequencer_type.extract_settings_from_mapping(hw_mapping)
 
     def _sequencer_to_output_idx(self, seq):
         seq_index = int(seq.name.split("seq")[1])
@@ -985,7 +983,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                     seq.acquisitions = acq_data_list
 
     @abstractmethod
-    def assign_frequencies(self, seq):
+    def assign_frequencies(self, sequencer: PulsarSequencerBase):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency 
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1068,23 +1066,23 @@ class PulsarBaseband(PulsarBase):
         compiler.
         """
 
-    def assign_frequencies(self, seq):
-        if seq.clock not in self.parent.resources:
+    def assign_frequencies(self, sequencer: PulsarSequencerBase):
+        if sequencer.clock not in self.parent.resources:
             return
 
-        clk_freq = self.parent.resources[seq.clock]["freq"]
-        lo_compiler = self.parent.instrument_compilers.get(seq.associated_ext_lo, None)
+        clk_freq = self.parent.resources[sequencer.clock]["freq"]
+        lo_compiler = self.parent.instrument_compilers.get(sequencer.associated_ext_lo, None)
         if lo_compiler is None:
-            seq.frequency = clk_freq
+            sequencer.frequency = clk_freq
             return
 
-        if_freq = seq.frequency
+        if_freq = sequencer.frequency
         lo_freq = lo_compiler.frequency
 
         if lo_freq is None and if_freq is None:
             raise ValueError(
-                f"Frequency settings underconstraint for sequencer {seq.name} with "
-                f"port {seq.port} and clock {seq.clock}. When using an external "
+                f"Frequency settings underconstraint for sequencer {sequencer.name} with "
+                f"port {sequencer.port} and clock {sequencer.clock}. When using an external "
                 f'local oscillator it is required to either supply an "lo_freq" or '
                 f'an "interm_freq". Neither was given.'
             )
@@ -1093,39 +1091,13 @@ class PulsarBaseband(PulsarBase):
             lo_compiler.frequency = clk_freq - if_freq
 
         if lo_freq is not None:
-            seq.frequency = clk_freq - lo_freq
+            sequencer.frequency = clk_freq - lo_freq
 
 
 class PulsarRF(PulsarBase):
     """
     Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit from.
     """
-
-    def __init__(
-        self,
-        parent: compiler_container.CompilerContainer,
-        name: str,
-        total_play_time: float,
-        hw_mapping: Dict[str, Any],
-    ):
-        """
-        Constructor function.
-
-        Parameters
-        ----------
-        name
-            Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time
-            Total time execution of the schedule should go on for. This parameter is
-            used to ensure that the different devices, potentially with different clock
-            rates, can work in a synchronized way when performing multiple executions of
-            the schedule.
-        hw_mapping
-            The hardware configuration dictionary for this specific device. This is one
-            of the inner dictionaries of the overall hardware config.
-        """
-        super().__init__(parent, name, total_play_time, hw_mapping)
-        self._settings = PulsarRFSettings.extract_settings_from_mapping(hw_mapping)
 
     def update_settings(self):
         """
@@ -1141,38 +1113,37 @@ class PulsarRF(PulsarBase):
                 setattr(self._settings, f"offset_I_ch{output_index}_freq", seq.mixer_corrections.offset_I)
                 setattr(self._settings, f"offset_Q_ch{output_index}_freq", seq.mixer_corrections.offset_Q)
 
-    def assign_frequencies(self, seq):
-        if seq.clock not in self.parent.resources:
+    def assign_frequencies(self, sequencer: PulsarSequencerBase):
+        if sequencer.clock not in self.parent.resources:
             return
 
-        clk_freq = self.parent.resources[seq.clock]["freq"]
+        clk_freq = self.parent.resources[sequencer.clock]["freq"]
 
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        output_index = self._sequencer_to_output_idx(seq.name)
+        output_index = self._sequencer_to_output_idx(sequencer.name)
 
-        if_freq = seq.frequency
+        if_freq = sequencer.frequency
         lo_freq = getattr(self._settings, f"lo{output_index}_freq")
 
         if lo_freq is None and if_freq is None:
             raise ValueError(
-                f"Frequency settings underconstraint for sequencer {seq.name} with "
-                f"port {seq.port} and clock {seq.clock}. When using an external "
-                f'local oscillator it is required to either supply an "lo_freq" or '
-                f'an "interm_freq". Neither was given.'
+                f"Frequency settings underconstraint for sequencer {sequencer.name} with "
+                f"port {sequencer.port} and clock {sequencer.clock}. It is required "
+                f'to either supply an "lo_freq" or an "interm_freq". Neither was given.'
             )
 
         if if_freq is not None:
             new_lo_freq = clk_freq - if_freq
             if lo_freq is not None and new_lo_freq != lo_freq:
                 raise ValueError(
-                    f"Attempting to set LO {self.name} to frequency {new_lo_freq}, "
+                    f"Attempting to set 'lo{output_index}_freq' to frequency {new_lo_freq}, "
                     f"while it has previously already been set to "
                     f"{lo_freq}!"
                 )
             setattr(self._settings, f"lo{output_index}_freq", new_lo_freq)
 
         if lo_freq is not None:
-            seq.frequency = clk_freq - lo_freq
+            sequencer.frequency = clk_freq - lo_freq
