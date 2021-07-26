@@ -202,7 +202,8 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
-
+    marker_values = {0: {"marker", "switch"}
+    }
 
 class Pulsar_QRM_RF(PulsarRF, Pulsar_QRM):
     """

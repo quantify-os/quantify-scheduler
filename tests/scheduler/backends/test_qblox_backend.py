@@ -352,6 +352,12 @@ def test_contruct_sequencer():
                 hw_mapping=HARDWARE_MAPPING["qcm0"],
             )
 
+        def assign_frequencies(self, seq):
+            pass
+
+        def update_settings(self):
+            pass
+
         def compile(self, repetitions: int = 1) -> Dict[str, Any]:
             return dict()
 
