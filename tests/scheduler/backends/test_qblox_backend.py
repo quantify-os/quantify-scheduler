@@ -485,6 +485,7 @@ def test_wait_till_start_then_play():
     minimal_pulse_data = {"duration": 20e-9}
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="test_pulse",
         uuid="test_pulse",
         data=minimal_pulse_data,
         timing=4e-9,
@@ -501,6 +502,7 @@ def test_wait_till_start_then_play():
     assert qasm.instructions[2][1] == q1asm_instructions.PLAY
 
     pulse = qb.OpInfo(
+        name="test_pulse",
         uuid="test_pulse",
         data=minimal_pulse_data,
         timing=1e-9,
@@ -516,8 +518,14 @@ def test_wait_till_start_then_acquire():
         "acq_index": 0,
         "acq_channel": 1,
         "bin_mode": BinMode.AVERAGE,
+        "protocol": "SSBIntegrationComplex",
     }
-    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(
+        name="SSBIntegrationComplex",
+        uuid="test_acq",
+        data=minimal_pulse_data,
+        timing=4e-9,
+    )
     qrm = Pulsar_QRM(
         None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
     )
@@ -530,7 +538,9 @@ def test_wait_till_start_then_acquire():
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(
+        name="test_acq", uuid="test_acq", data=minimal_pulse_data, timing=4e-9
+    )
     expanded_val = QASMProgram._expand_from_normalised_range(
         1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
     )
@@ -548,6 +558,7 @@ def test_pulse_stitching_qasm_prog():
     }
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="stitched_square_pulse",
         uuid="stitched_square_pulse",
         data=minimal_pulse_data,
         timing=4e-9,
@@ -568,6 +579,7 @@ def test_staircase_qasm_prog(start_amp, final_amp):
 
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="staircase",
         uuid="staircase",
         data=s_ramp_pulse.data["pulse_info"][0],
         timing=4e-9,
