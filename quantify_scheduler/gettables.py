@@ -7,13 +7,12 @@ quantify-scheduler.
 Schedule gettables are set up to f
 
 
-.. warning:
+.. warning::
 
     The gettable module is expected to change significantly as the
-    acquisition protocols (#80) get fully supported by the scheduler.
+    acquisition protocols (#36 and #80) get fully supported by the scheduler.
     Currently different Gettables are required for different acquisition modes.
     The intent is to have one generic `ScheduleGettable`.
-
     Expect breaking changes.
 
 
@@ -43,7 +42,7 @@ class ScheduleVectorAcqGettable:
 
     Examples
     --------
-    .. code-block:
+    .. code-block::
 
         from qcodes import ManualParameter
 
@@ -53,9 +52,9 @@ class ScheduleVectorAcqGettable:
         sched_kwargs = {'qubit': 'q0', 'times': tau}
 
         gettable = ScheduleVectorAcqGettable(t1_sched, sched_kwargs,
-                                            DEVICE_CFG, MAPPING_CFG,
+                                            DEVICE_CFG, HARDWARE_CFG,
                                             instrument_coordinator=ic, real_imag=True,
-                                            acq_instr='qrm0', repetitions=10_000
+                                            acq_instr='qrm0', repetitions=10000
                                             )
 
     """
@@ -75,31 +74,31 @@ class ScheduleVectorAcqGettable:
         hardware_averages: int = 1024,
     ):
         """
-                Create a new instance of ScheduleVectorAcqGettable which is used to do I and Q
-                acquisition.
+        Create a new instance of ScheduleVectorAcqGettable which is used to do I and Q
+        acquisition.
 
-                Parameters
-                ----------
-                device :
-                    The qcodes instrument.
-                schedule_function :
-                    A function which returns a :class:`~quantify.scheduler.types.Schedule`.
-                schedule_kwargs :
-                    The schedule function keyword arguments.
-                device_cfg :
-                    The device configuration dictionary.
-                hardware_cfg :
-                    The hardware configuration dictionary.
-                coordinator :
-                    An instance of
-                    :class:`~quantify.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
-                real_imag :
-                    If true, the gettable returns I, Q values. Otherwise, magnitude and phase
-        -            are returned.
-                acq_instr : str
-                    Name of the instrument that is used to perform the acquisition.
-                hardware_averages :
-                    The number of hardware averages, by default 1024
+        Parameters
+        ----------
+        device :
+            The qcodes instrument.
+        schedule_function :
+            A function which returns a :class:`~quantify_scheduler.types.Schedule`.
+        schedule_kwargs :
+            The schedule function keyword arguments.
+        device_cfg :
+            The device configuration dictionary.
+        hardware_cfg :
+            The hardware configuration dictionary.
+        coordinator :
+            An instance of
+            :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+        real_imag :
+            If true, the gettable returns I, Q values. Otherwise, magnitude and phase
+            are returned.
+        acq_instr : str
+            Name of the instrument that is used to perform the acquisition.
+        hardware_averages :
+            The number of hardware averages, by default 1024
         """
         if real_imag:
             self.name = ["I", "Q"]
