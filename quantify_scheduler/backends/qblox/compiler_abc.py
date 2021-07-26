@@ -844,6 +844,15 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self.sequencers = self._construct_sequencers()
         self._settings = PulsarSettings.extract_settings_from_mapping(hw_mapping)
 
+    def _sequencer_to_output_idx(self, seq):
+        seq_index = int(seq.name.split("seq")[1])
+        for key, value in self.output_to_sequencer_idx.items():
+            if seq_index == value:
+                output = key
+        output_index = next(filter(str.isdigit, output))
+        return output_index
+
+
     @property
     @abstractmethod
     def sequencer_type(self) -> Type[PulsarSequencerBase]:
@@ -1007,6 +1016,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
 
+    @abstractmethod
+    def update_settings(self):
+        """
+        Updates the Pulsar settings to set all parameters that are determined by the
+        compiler.
+        """
+
+
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this pulsar, by calling the sequencer
@@ -1035,6 +1052,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             return None
 
         self._settings.hardware_averages = repetitions
+        self.update_settings()
         program["settings"] = self._settings.to_dict()
         return program
 
@@ -1043,6 +1061,12 @@ class PulsarBaseband(PulsarBase):
     """
     Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should inherit from.
     """
+
+    def update_settings(self):
+        """
+        Updates the Pulsar settings to set all parameters that are determined by the
+        compiler.
+        """
 
     def assign_frequencies(self, seq):
         if seq.clock not in self.parent.resources:
@@ -1077,13 +1101,6 @@ class PulsarRF(PulsarBase):
     Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit from.
     """
 
-    # def compile(self, repetitions: int) -> Optional[Dict[str, Any]]:
-    #     program = super().compile(repetitions=repetitions)
-    #     # Add the extra RF internal LO parameters to the program settings
-    #     program_settings = program["settings"]
-    #     hw_mapping_settings = self._settings.to_dict()
-    #     program_settings["lo0_freq"] =
-    #     program_settings["lo1_freq"] =
     def __init__(
         self,
         parent: compiler_container.CompilerContainer,
@@ -1110,6 +1127,19 @@ class PulsarRF(PulsarBase):
         super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = PulsarRFSettings.extract_settings_from_mapping(hw_mapping)
 
+    def update_settings(self):
+        """
+        Updates the Pulsar settings to set all parameters that are determined by the
+        compiler. Currently, this only changes the offsets based on the mixer
+        calibration parameters.
+        """
+
+        #Will be changed when LO leakage correction is decoupled from the sequencer
+        for seq in self.sequencers.values():
+            if seq.mixer_corrections is not None:
+                output_index = self._sequencer_to_output_idx(seq.name)
+                setattr(self._settings, f"offset_I_ch{output_index}_freq", seq.mixer_corrections.offset_I)
+                setattr(self._settings, f"offset_Q_ch{output_index}_freq", seq.mixer_corrections.offset_Q)
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
@@ -1129,17 +1159,6 @@ class PulsarRF(PulsarBase):
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
-        #TODO take this out of here, this was a quick fix
-        if self.sequencers["seq0"].mixer_corrections is not None:
-            self._settings.offset_I_ch0 = self.sequencers["seq0"].mixer_corrections.offset_I
-            self._settings.offset_Q_ch0 = self.sequencers["seq0"].mixer_corrections.offset_Q
-        try:
-            if self.sequencers["seq1"].mixer_corrections is not None:
-                self._settings.offset_I_ch1 = self.sequencers["seq1"].mixer_corrections.offset_I
-                self._settings.offset_Q_ch1 = self.sequencers["seq1"].mixer_corrections.offset_Q
-        except:
-            pass
-
 
         program = dict()
         for seq_name, seq in self.sequencers.items():
@@ -1163,11 +1182,8 @@ class PulsarRF(PulsarBase):
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
-        seq_index = int(seq.name.split("seq")[1])
-        for key, value in self.output_to_sequencer_idx.items():
-            if seq_index == value:
-                output = key
-        output_index = next(filter(str.isdigit, output))
+
+        output_index = self._sequencer_to_output_idx(seq.name)
 
         if_freq = seq.frequency
         lo_freq = getattr(self._settings, f"lo{output_index}_freq")
