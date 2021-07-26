@@ -102,6 +102,14 @@ frontends
 .. automodule:: quantify_scheduler.frontends
     :members:
 
+gettables
+---------
+
+.. automodule:: quantify_scheduler.gettables
+    :members:
+
+
+
 backends
 --------
 

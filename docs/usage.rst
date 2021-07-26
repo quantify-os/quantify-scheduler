@@ -102,12 +102,6 @@ A first :ref:`compilation <sec-compilation>` step uses the :ref:`device configur
 A second compilation step uses the :ref:`hardware configuration (file)<sec-hardware-config>` to compile the pulses onto a hardware backend.
 
 
-.. note::
-
-    We use the term "**device**" to refer to the physical object(s) on the receiving end of the control pulses, e.g. a thin-film chip inside a dilution refrigerator.
-
-    And we employ the term "**hardware**" to refer to the instruments (electronics) that are involved in the pulse generations / signal digitization.
-
 
 
 
