@@ -572,17 +572,17 @@ class PulsarSequencerBase(ABC):
         return _generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_declaration_dict(
-        self, acquisititions: List[OpInfo]
+        self, acquisitions: List[OpInfo]
     ) -> Dict[str, Any]:
         def get_acq_channel(acq: OpInfo) -> int:
             return acq.data["acq_channel"]
 
-        unique_channels = set(map(get_acq_channel, acquisititions))
+        unique_channels = set(map(get_acq_channel, acquisitions))
 
         acq_declaration_dict = dict()
         for ch in unique_channels:
             indices = list()
-            for acq in acquisititions:
+            for acq in acquisitions:
                 if get_acq_channel(acq) == ch:
                     indices.append(acq.data["acq_index"])
             if min(indices) != 0:
