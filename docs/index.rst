@@ -11,31 +11,13 @@ Welcome to Quantify's documentation!
    installation
    user_guide
    concepts_terminology
+   tutorials/*
+   tutorials/qblox/index
+   tutorials/zhinst/index
    contributing
    authors
    changelog
 
-
-Tutorials
-==============
-
-.. toctree::
-   :caption: Tutorials
-   :glob:
-
-
-   tutorials/*
-
-
-Hardware backends
-=================
-
-.. toctree::
-   :caption: Hardware backend tutorials
-   :glob:
-
-   tutorials/qblox/index
-   tutorials/zhinst/index
 
 API Reference
 ===================

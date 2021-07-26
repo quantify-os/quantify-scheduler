@@ -211,7 +211,7 @@ Compilation of pulses onto physical hardware
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file <sec-hardware-config>`.
+The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware configuration file <sec-hardware-config>`.
 
 Here we will use the :class:`~quantify_scheduler.backends.qblox_backend.hardware_compile` made for the Qblox pulsar series hardware.
 
@@ -313,7 +313,7 @@ and reference operators as Gates.
     When adding a Pulse to a schedule, the clock is not automatically added to the resources of the schedule. It may
     be necessary to add this clock manually, as in the final line of the above example
 
-We can also quickly compile using the :func:`!qcompile` function and associate mapping files:
+We can also quickly compile using the :func:`!qcompile` function and associate configuration files:
 
 .. jupyter-execute::
 

@@ -1,5 +1,5 @@
-Zurich Instruments Backend
-==========================
+Tutorials Zurich Instruments Backend
+====================================
 
 .. warning::
     The :mod:`quantify_scheduler.backends.zhinst_backend` is still under development.

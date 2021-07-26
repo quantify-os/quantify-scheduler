@@ -1,5 +1,5 @@
-Qblox Backend
-=============
+Tutorials Qblox Backend
+=======================
 
 .. warning::
     The :mod:`quantify_scheduler.backends.qblox_backend` is still under development.
@@ -38,6 +38,17 @@ is done through
 Please visit the `Qblox instruments documentation <https://qblox-qblox-instruments.readthedocs-hosted.com>`_
 for more information.
 
+Supported Instruments
+^^^^^^^^^^^^^^^^^^^^^
+
+- ✅ QCM
+- ✅ QRM
+- ⬜️ QCM-RF
+- ⬜️ QRM-RF
+- ⬜️ Cluster
+- ⬜️ SPI
+
+
 How to use
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -46,13 +57,3 @@ How to use
 
     How to use
     Pulsar
-
-Currently Supported Instruments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- ✅ QCM
-- ✅ QRM
-- ⬜️ QCM-RF
-- ⬜️ QRM-RF
-- ⬜️ Cluster
-- ⬜️ SPI

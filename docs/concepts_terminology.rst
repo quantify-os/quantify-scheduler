@@ -16,7 +16,7 @@ Concepts and terminology
 
 .. todo::
 
-    to be replaced by/merged with user_guide.rst
+    Clean up after finishing user_guide.rst and remove redundancies.
 
 
 Introduction
