@@ -36,9 +36,9 @@ class ScheduleVectorAcqGettable:
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
     set to return either static (demodulated) I and Q values or magnitude and phase.
 
-    The gettable evaluates the parameters the parameters passed as
-    `schedule_kwargs`, then generates the `Schedule` using the `schedule_function`,
-    this is then compiled and finally executed by the `instrument_coordinator`.
+    The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
+    the `Schedule` using the `schedule_function`, this is then compiled and finally
+    executed by the `instrument_coordinator`.
 
     Examples
     --------
@@ -108,6 +108,8 @@ class ScheduleVectorAcqGettable:
             self.name = ["magn", "phase"]
             self.label = ["Magnitude", "Phase"]
             self.unit = ["V", "deg"]
+
+        self.batched = False
 
         self.schedule_function = schedule_function
         self.schedule_kwargs = schedule_kwargs
