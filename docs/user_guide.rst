@@ -1,9 +1,7 @@
-.. _user_guide:
+.. _sec-user-guide:
 
-
-
-User guide (new)
-================
+Getting started
+===============
 
 .. jupyter-kernel::
   :id: Scheduler user guide new
@@ -243,6 +241,11 @@ Experiment flow
 
 
 .. todo:: Add an example measurement function showcasing the flow.
+
+
+.. tip::
+    For a more technical overview of the concepts and terminology, we recommend to consult the section on :ref:`concepts and terminology <sec-concepts-terminology>`
+
 
 
 .. rubric:: Footnotes

@@ -15,7 +15,7 @@ Tutorial 1. Basic experiments
     :jupyter-download:script:`Tutorial 1. Basic experiment`
 
 .. tip::
-    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short) :ref:`User guide` before proceeding.
+    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short)  :ref:`User guide <sec-user-guide>` before proceeding.
 
 
 The benefit of allowing the user to mix the high-level gate description of a circuit with the lower-level pulse description can be understood through an example.

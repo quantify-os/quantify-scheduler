@@ -1,8 +1,8 @@
-.. _sec-user-guide:
+.. _sec-concepts-terminology:
 
-==========
-User guide
-==========
+========================
+Concepts and terminology
+========================
 
 .. jupyter-kernel::
   :id: Scheduler user guide

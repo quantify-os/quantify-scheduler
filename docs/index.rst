@@ -9,8 +9,8 @@ Welcome to Quantify's documentation!
    :glob:
 
    installation
-   usage
    user_guide
+   concepts_terminology
    contributing
    authors
    changelog
