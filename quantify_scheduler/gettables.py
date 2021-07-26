@@ -39,24 +39,6 @@ class ScheduleVectorAcqGettable:
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the `Schedule` using the `schedule_function`, this is then compiled and finally
     executed by the `instrument_coordinator`.
-
-    Examples
-    --------
-    .. code-block::
-
-        from qcodes import ManualParameter
-
-        from quantify_scheduler.schedules.timedomain_schedules import t1_sched
-
-        tau = ManualParameter('tau', initial_value=1e-6, unit='s', label='Time')
-        sched_kwargs = {'qubit': 'q0', 'times': tau}
-
-        gettable = ScheduleVectorAcqGettable(t1_sched, sched_kwargs,
-                                            DEVICE_CFG, HARDWARE_CFG,
-                                            instrument_coordinator=ic, real_imag=True,
-                                            acq_instr='qrm0', repetitions=10000
-                                            )
-
     """
 
     # pylint: disable=too-many-arguments
@@ -84,14 +66,17 @@ class ScheduleVectorAcqGettable:
         schedule_function :
             A function which returns a :class:`~quantify_scheduler.types.Schedule`.
         schedule_kwargs :
-            The schedule function keyword arguments.
+            The schedule function keyword arguments, when a value in this dictionary is
+            a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
+            evaluated every time .get is called before being passed to the
+            schedule_function.
         device_cfg :
             The device configuration dictionary.
         hardware_cfg :
             The hardware configuration dictionary.
         coordinator :
             An instance of
-            :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+            :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
         real_imag :
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             are returned.

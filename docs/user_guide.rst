@@ -228,8 +228,9 @@ Because the :code:`QuantumDevice` and the :code:`DeviceElement`\s are an :class:
 Experiment flow
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: write section on experiment flow
-
+To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of :mod:`quantify_core`.
+Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`~quantify_core.measurement.MeasurementControl` and are responsible for the experiment flow.
+This flow is schematically show in :numref:`experiments_control_flow`
 
 
 .. figure:: /images/experiments_control_flow.svg
@@ -240,8 +241,80 @@ Experiment flow
     A schematic overview of the experiments control flow.
 
 
-.. todo:: Add an example measurement function showcasing the flow.
+Let us consider the example of an experiment used to measure the coherence time :math:`T_1`.
+In this experiment a :math:`\pi` pulse is used to excite the qubit, which is left to idle for a time :math:`\tau` before it is measured.
+This experiment is then repeated for different :math:`\tau` and averaged.
 
+In terms of settables and gettables to use with the :class:`~quantify_core.measurement.MeasurementControl`, the settable in this experiment is the delay time :math:`\tau`, and the gettable is the execution of the schedule.
+
+We represent the settable as a :class:`qcodes.instrument.parameter.ManualParameter`:
+
+.. jupyter-execute::
+
+    from qcodes.instrument.parameter import ManualParameter
+
+    tau = ManualParameter("tau", label=r"Delay time", initial_value=0, unit="s")
+
+
+To execute the schedule with the right parameters, the :code:`ScheduleGettable` needs to have a reference to a template function that generates the schedule, the appropriate keyword arguments for that function, and a reference to the :code:`QuantumDevice` to generate the required configuration files.
+
+For the :math:`T_1` experiment, quantify-scheduler provides a schedule generating function as part of the :mod:`quantify_scheduler.schedules.timedomain_schedules`: the :func:`quantify_scheduler.schedules.timedomain_schedules.t1_sched`.
+
+.. jupyter-execute::
+
+    from quantify_scheduler.schedules.timedomain_schedules import t1_sched
+    schedule_function = t1_sched
+
+
+Inspecting the :func:`quantify_scheduler.schedules.timedomain_schedules.t1_sched`, we find that we need to provide the times :math:`\tau`, the name of the qubit, and the number of times we want to repeat the schedule.
+Rather than specifying the values of the delay times, we pass the parameter :code:`tau`.
+
+.. jupyter-execute::
+
+    qubit_name = "q0"
+    sched_kwargs = {
+        "times": tau,
+        "qubit": qubit_name,
+        "repetitions": 1024 # could also be a parameter
+    }
+
+The :code:`ScheduleGettable` is set up to evaluate the value of these parameter on every call of :code:`ScheduleGettable.get`.
+This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the MeasurementControl.
+
+Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :code:`QuantumDevice` for every iteration.
+This ensures that if a calibration parameter is changed on the :code:`QuantumDevice`, the compilation will be affected as expected.
+
+.. jupyter-execute::
+
+    # FIXME: QuantumDevice class not implemented yet
+    # device = QuantumDevice
+    device = None # placeholder value
+
+These ingredients can then be combined to perform the experiment:
+
+.. code-block:: python
+
+    # FIXME: ScheduleGettable class not implemented yet
+
+    t1_gettable = ScheduleGettable(
+        device=device,
+        schedule_function=schedule_function,
+        schedule_kwargs=sched_kwargs
+    )
+
+    meas_ctrl.settables(tau)
+    meas_ctrl.setpoints(times)
+    meas_ctrl.gettables(t1_gettable)
+    label = f"T1 experiment {qubit_name}"
+    dset = meas_ctrl.run(label)
+
+
+and the resulting dataset can be analyzed using
+
+.. jupyter-execute::
+
+    from quantify_core.analysis.t1_analysis import T1Analysis
+    # analyzed_dset = T1Analysis(label=label).run()
 
 .. tip::
     For a more technical overview of the concepts and terminology, we recommend to consult the section on :ref:`concepts and terminology <sec-concepts-terminology>`
