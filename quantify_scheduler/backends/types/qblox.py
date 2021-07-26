@@ -187,7 +187,6 @@ class PulsarRFSettings(PulsarSettings):
             lo0_freq: float = complex_output_0.get("lo_freq")
         if complex_output_1:
             lo1_freq: float = complex_output_1.get("lo_freq")
-        lo1_freq: float = mapping.get("lo1_freq")
 
 
         return PulsarRFSettings(ref=ref, lo0_freq=lo0_freq, lo1_freq=lo1_freq)
