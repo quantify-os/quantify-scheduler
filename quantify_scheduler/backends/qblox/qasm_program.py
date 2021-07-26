@@ -440,6 +440,8 @@ class QASMProgram:
 
         bin = acquisition.data["acq_index"]
         if acquisition.name == "SSBIntegrationComplex":
+            # Since "SSBIntegrationComplex" just has "weighted_integrated_complex" as
+            # protocol.
             self._acquire_square(acquisition, bin=bin)
         else:
             acquisition_func = protocol_to_acquire_func_mapping.get(
