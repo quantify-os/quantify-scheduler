@@ -230,7 +230,7 @@ Experiment flow
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of :mod:`quantify_core`.
 Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`~quantify_core.measurement.MeasurementControl` and are responsible for the experiment flow.
-This flow is schematically show in :numref:`experiments_control_flow`
+This flow is schematically show in :numref:`experiments_control_flow`.
 
 
 .. figure:: /images/experiments_control_flow.svg
@@ -279,7 +279,7 @@ Rather than specifying the values of the delay times, we pass the parameter :cod
     }
 
 The :code:`ScheduleGettable` is set up to evaluate the value of these parameter on every call of :code:`ScheduleGettable.get`.
-This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the MeasurementControl.
+This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the :class:`~quantify_core.measurement.MeasurementControl`.
 
 Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :code:`QuantumDevice` for every iteration.
 This ensures that if a calibration parameter is changed on the :code:`QuantumDevice`, the compilation will be affected as expected.
@@ -290,10 +290,15 @@ This ensures that if a calibration parameter is changed on the :code:`QuantumDev
 
 .. jupyter-execute::
 
-    # device = QuantumDevice
+    # device = QuantumDevice(name="quantum_sample")
     device = None # placeholder value
 
 These ingredients can then be combined to perform the experiment:
+
+.. jupyter-execute::
+
+    from quantify_core.measurement import MeasurementControl
+    meas_ctrl = MeasurementControl("meas_ctrl")
 
 .. warning::
 
@@ -311,7 +316,7 @@ These ingredients can then be combined to perform the experiment:
     meas_ctrl.setpoints(times)
     meas_ctrl.gettables(t1_gettable)
     label = f"T1 experiment {qubit_name}"
-    dset = meas_ctrl.run(label)
+    dataset = meas_ctrl.run(label)
 
 
 and the resulting dataset can be analyzed using
@@ -319,10 +324,10 @@ and the resulting dataset can be analyzed using
 .. jupyter-execute::
 
     from quantify_core.analysis.t1_analysis import T1Analysis
-    # analyzed_dset = T1Analysis(label=label).run()
+    # analysis = T1Analysis(label=label).run()
 
 .. tip::
-    For a more technical overview of the concepts and terminology, we recommend to consult the section on :ref:`concepts and terminology <sec-concepts-terminology>`
+    For a more technical overview of the concepts and terminology, we recommend to consult the section on :ref:`concepts and terminology <sec-concepts-terminology>`.
 
 
 
