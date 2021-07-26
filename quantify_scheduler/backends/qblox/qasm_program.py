@@ -9,7 +9,7 @@ from typing import List, Union, Optional, Callable
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
-import jsonschema
+
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox import constants
@@ -428,8 +428,6 @@ class QASMProgram:
                 )
         self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {
-            # FIXME: Somehow need to handle SSBIntegrationComplex, but it has the
-            #  same protocol as weighted_integrated_complex
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
         }
