@@ -574,7 +574,28 @@ class PulsarSequencerBase(ABC):
     def _generate_acq_declaration_dict(
         self, acquisitions: List[OpInfo]
     ) -> Dict[str, Any]:
+        """
+        Generates the "acquisitions" entry of the program json. It contains declaration
+        of the acquisitions along with the number of bins and the corresponding index.
+
+        For the name of the acquisition (in the hardware), the acquisition channel
+        (cast to str) is used, and is thus identical to the index. Number of bins is
+        taken to be the highest acq_index specified for that channel.
+
+        Parameters
+        ----------
+        acquisitions:
+            List of the acquisitions assigned to this sequencer.
+
+        Returns
+        -------
+        :
+            The "acquisitions" entry of the program json as a dict. The keys correspond
+            to the names of the acquisitions (i.e. the acq_channel in the scheduler).
+        """
+
         def get_acq_channel(acq: OpInfo) -> int:
+            """Helper to extract the acq_channel."""
             return acq.data["acq_channel"]
 
         unique_channels = set(map(get_acq_channel, acquisitions))
@@ -589,7 +610,7 @@ class PulsarSequencerBase(ABC):
                 raise ValueError(
                     f"Please make sure the lowest bin index used is 0. "
                     f"Found: {min(indices)} as lowest bin for channel {ch}. "
-                    f"Problem occured for port {self.port} with clock {self.clock},"
+                    f"Problem occurred for port {self.port} with clock {self.clock},"
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
             acq_declaration_dict[str(ch)] = {"num_bins": max(indices) + 1, "index": ch}
