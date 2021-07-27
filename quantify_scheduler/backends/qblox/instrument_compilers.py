@@ -139,6 +139,8 @@ class Pulsar_QCM(PulsarBaseband):
 
     sequencer_type = QCMSequencer
     max_sequencers: int = 2
+    markers: dict = {"on": 1, "off": 0}
+    """Marker values to activate/deactivate the O1 marker"""
 
     def _distribute_data(self):
         """
@@ -196,12 +198,15 @@ class Pulsar_QRM(PulsarBaseband):
     """The type of the sequencer."""
     max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
-
+    markers: dict = {"on": 1, "off": 0}
+    """Marker values to activate/deactivate the I1 marker"""
 
 class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
+    markers: dict = {"on": 6, "off": 8}
+    """Marker values to activate/deactivate the O1 marker, and the output switches for O1/O2"""
 
 class Pulsar_QRM_RF(PulsarRF):
     """
@@ -212,3 +217,5 @@ class Pulsar_QRM_RF(PulsarRF):
     """The type of the sequencer."""
     max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
+    markers: dict = {"on": 1, "off": 4}
+    """Marker values to activate/deactivate the I1 marker, and the output switch for O1"""

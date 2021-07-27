@@ -606,14 +606,7 @@ class PulsarSequencerBase(ABC):
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-
-        #In the next revisions, the output markers will not be manually handled anymore
-        if type(self.parent).__name__ == "Pulsar_QCM_RF":
-            qasm.emit(q1asm_instructions.SET_MARKER, 7) #All on
-        elif type(self.parent).__name__ == "Pulsar_QRM_RF":
-            qasm.emit(q1asm_instructions.SET_MARKER, 3) #All on
-        else:
-            qasm.emit(q1asm_instructions.SET_MARKER, 1) 
+        qasm.emit(q1asm_instructions.SET_MARKER, self.parent.markers["on"])
     
         # program body
         pulses = list() if self.pulses is None else self.pulses
@@ -646,12 +639,7 @@ class PulsarSequencerBase(ABC):
             qasm.auto_wait(wait_time)
 
         # program footer
-        if type(self.parent).__name__ == "Pulsar_QCM_RF":
-            qasm.emit(q1asm_instructions.SET_MARKER, 8) #All off
-        elif type(self.parent).__name__ == "Pulsar_QRM_RF":
-            qasm.emit(q1asm_instructions.SET_MARKER, 4)
-        else:
-            qasm.emit(q1asm_instructions.SET_MARKER, 0)
+        qasm.emit(q1asm_instructions.SET_MARKER, self.parent.markers["off"])
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
@@ -876,6 +864,18 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             The maximum amount of sequencers
         """
 
+    @property
+    @abstractmethod
+    def markers(self) -> dict:
+        """
+        Specifies the values necessary to turn the markers on/off.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
+
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
         """
         Generates a mapping from portclock tuples to sequencer names.
@@ -1083,7 +1083,7 @@ class PulsarBaseband(PulsarBase):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-        
+
         if sequencer.clock not in self.parent.resources:
             return
 
