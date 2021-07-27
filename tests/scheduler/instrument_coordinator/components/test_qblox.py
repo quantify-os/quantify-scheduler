@@ -206,21 +206,3 @@ def test_stop_qcm_qrm(make_qcm, make_qrm):
     # Assert
     qcm.instrument.stop_sequencer.assert_called()
     qrm.instrument.stop_sequencer.assert_called()
-
-
-def test_demodulate_trace():
-    # Arrange
-    data = np.ones(1_000_000)
-    freq = 10e6
-    sampling_rate = 1e9
-
-    t = np.arange(0, len(data) / sampling_rate, 1 / sampling_rate)
-    mod_data = waveforms.modulate_waveform(t, data, freq)
-
-    # Act
-    demod_data = qblox._demodulate_trace(
-        freq, mod_data.real, mod_data.imag, sampling_rate
-    )
-
-    # Assert
-    np.testing.assert_allclose(data, demod_data)
