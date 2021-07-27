@@ -528,7 +528,6 @@ class PulsarSequencer:
         compiler.
         """
 
-
     # pylint: disable=too-many-locals
     def generate_qasm_program(
         self,
@@ -588,7 +587,7 @@ class PulsarSequencer:
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
         qasm.emit(q1asm_instructions.SET_MARKER, self.parent.markers["on"])
-    
+
         # program body
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
@@ -743,7 +742,10 @@ class PulsarSequencer:
         acq_dict = self._generate_acq_dict() if len(self.acquisitions) > 0 else None
 
         qasm_program = self.generate_qasm_program(
-            self.parent.total_play_time, awg_dict, acq_dict, repetitions=repetitions,
+            self.parent.total_play_time,
+            awg_dict,
+            acq_dict,
+            repetitions=repetitions,
         )
 
         wf_and_pr_dict = self._generate_waveforms_and_program_dict(
@@ -765,7 +767,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     This class is defined as an abstract base class since the distinctions between the
     different Pulsar devices are defined in subclasses.
-    Effectively, this base class contains the functionality shared by all Pulsar 
+    Effectively, this base class contains the functionality shared by all Pulsar
     devices and serves to avoid repeated code between them.
     """
 
@@ -975,7 +977,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     @abstractmethod
     def assign_frequencies(self, sequencer: PulsarSequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency 
+        An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -991,7 +993,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-    
+
     def prepare(self) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
@@ -1009,7 +1011,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         Updates the Pulsar settings to set all parameters that are determined by the
         compiler.
         """
-
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
@@ -1048,7 +1049,7 @@ class PulsarBaseband(PulsarBase):
     """
     Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should inherit from.
     """
-    
+
     def update_settings(self):
         """
         Updates the Pulsar settings to set all parameters that are determined by the
@@ -1056,21 +1057,28 @@ class PulsarBaseband(PulsarBase):
         calibration parameters.
         """
 
-        #Will be changed when LO leakage correction is decoupled from the sequencer
+        # Will be changed when LO leakage correction is decoupled from the sequencer
         for seq in self.sequencers.values():
             if seq.mixer_corrections is not None:
                 output_index = self.sequencer_to_output_idx[seq.name]
                 if output_index == 0:
-                    self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I / seq.awg_output_volt
-                    self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q / seq.awg_output_volt
+                    self._settings.offset_ch0_path0 = (
+                        seq.mixer_corrections.offset_I / seq.awg_output_volt
+                    )
+                    self._settings.offset_ch0_path1 = (
+                        seq.mixer_corrections.offset_Q / seq.awg_output_volt
+                    )
                 elif output_index == 1:
-                    self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I / seq.awg_output_volt
-                    self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q / seq.awg_output_volt
-
+                    self._settings.offset_ch1_path0 = (
+                        seq.mixer_corrections.offset_I / seq.awg_output_volt
+                    )
+                    self._settings.offset_ch1_path1 = (
+                        seq.mixer_corrections.offset_Q / seq.awg_output_volt
+                    )
 
     def assign_frequencies(self, sequencer: PulsarSequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency 
+        An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -1091,7 +1099,9 @@ class PulsarBaseband(PulsarBase):
             return
 
         clk_freq = self.parent.resources[sequencer.clock]["freq"]
-        lo_compiler = self.parent.instrument_compilers.get(sequencer.associated_ext_lo, None)
+        lo_compiler = self.parent.instrument_compilers.get(
+            sequencer.associated_ext_lo, None
+        )
         if lo_compiler is None:
             sequencer.frequency = clk_freq
             return
@@ -1126,7 +1136,7 @@ class PulsarRF(PulsarBase):
         calibration parameters.
         """
 
-        #Will be changed when LO leakage correction is decoupled from the sequencer
+        # Will be changed when LO leakage correction is decoupled from the sequencer
         for seq in self.sequencers.values():
             if seq.mixer_corrections is not None:
                 output_index = self.sequencer_to_output_idx[seq.name]
@@ -1139,7 +1149,7 @@ class PulsarRF(PulsarBase):
 
     def assign_frequencies(self, sequencer: PulsarSequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency 
+        An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -1168,7 +1178,9 @@ class PulsarRF(PulsarBase):
         output_index = self.sequencer_to_output_idx[sequencer.name]
 
         if_freq = sequencer.frequency
-        lo_freq = self._settings.lo0_freq if (output_index == 0) else self._settings.lo1_freq
+        lo_freq = (
+            self._settings.lo0_freq if (output_index == 0) else self._settings.lo1_freq
+        )
 
         if lo_freq is None and if_freq is None:
             raise ValueError(

@@ -184,6 +184,7 @@ class Pulsar_QRM(PulsarBaseband):
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the I1 marker"""
 
+
 class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
@@ -195,6 +196,7 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 6, "off": 8}
     """Marker values to activate/deactivate the O1 marker, and the output switches for O1/O2"""
+
 
 class Pulsar_QRM_RF(PulsarRF):
     """

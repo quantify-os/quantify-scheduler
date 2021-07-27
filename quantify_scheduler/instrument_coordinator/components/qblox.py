@@ -19,7 +19,11 @@ from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.helpers.waveforms import modulate_waveform
-from quantify_scheduler.backends.types.qblox import PulsarSettings, PulsarRFSettings, SequencerSettings
+from quantify_scheduler.backends.types.qblox import (
+    PulsarSettings,
+    PulsarRFSettings,
+    SequencerSettings,
+)
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -62,6 +66,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         :
             Number of sequencers
         """
+
 
 # pylint: disable=too-many-ancestors
 class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
@@ -170,13 +175,21 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.offset_ch0_path0:
-            self.instrument.set("sequencer0_offset_awg_path0", settings.offset_ch0_path0)
+            self.instrument.set(
+                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1:
-            self.instrument.set("sequencer0_offset_awg_path1", settings.offset_ch0_path1)
+            self.instrument.set(
+                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
+            )
         if settings.offset_ch1_path0:
-            self.instrument.set("sequencer1_offset_awg_path0", settings.offset_ch1_path0)
+            self.instrument.set(
+                "sequencer1_offset_awg_path0", settings.offset_ch1_path0
+            )
         if settings.offset_ch1_path1:
-            self.instrument.set("sequencer1_offset_awg_path1", settings.offset_ch1_path1)
+            self.instrument.set(
+                "sequencer1_offset_awg_path1", settings.offset_ch1_path1
+            )
 
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
@@ -279,7 +292,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         return i_trace, q_trace
 
     def _acquire_ssb_integration_complex(
-        self, i_trace: np.ndarray, q_trace: np.ndarray,
+        self,
+        i_trace: np.ndarray,
+        q_trace: np.ndarray,
     ) -> Tuple[float, float]:
         """
         Performs the required transformation to obtain a
@@ -368,9 +383,13 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.offset_ch0_path0:
-            self.instrument.set("sequencer0_offset_awg_path0", settings.offset_ch0_path0)
+            self.instrument.set(
+                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1:
-            self.instrument.set("sequencer0_offset_awg_path1", settings.offset_ch0_path1)
+            self.instrument.set(
+                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
+            )
 
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
@@ -467,9 +486,13 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             self.instrument.set("lo1_freq", settings.lo1_freq)
 
         if settings.offset_ch0_path0:
-            logger.warning("'offset_ch0_path0' was not set. This functionality is still not present to the Pulsar QRM-RF driver.")
+            logger.warning(
+                "'offset_ch0_path0' was not set. This functionality is still not present to the Pulsar QRM-RF driver."
+            )
         if settings.offset_ch0_path1:
-            logger.warning("'offset_ch0_path1' was not set. This functionality is still not present to the Pulsar QRM-RF driver.")
+            logger.warning(
+                "'offset_ch0_path1' was not set. This functionality is still not present to the Pulsar QRM-RF driver."
+            )
 
 
 # ----------------- Utility -----------------
