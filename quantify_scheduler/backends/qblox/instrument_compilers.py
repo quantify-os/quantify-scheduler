@@ -209,6 +209,8 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
+    sequencer_type = QCMSequencer
+    """The type of the sequencer."""
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencer available in the instrument."""
     markers: dict = {"on": 6, "off": 8}
