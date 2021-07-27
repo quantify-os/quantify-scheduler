@@ -53,6 +53,59 @@
         }
       }
     },
+
+  "qcm_rf0": {
+    "instrument_type": "Pulsar_QCM_RF",
+    "ref": "internal",
+    "complex_output_0": {
+      "line_gain_db": 0,
+      "lo_freq": 6e9,
+      "seq0": {
+        "port": "q2:mw",
+        "clock": "q2.01",
+        "interm_freq": 50e6
+      }
+    },
+    "complex_output_1": {
+      "line_gain_db": 0,
+      "seq1": {
+        "port": "q3:mw",
+        "clock": "q3.01",
+        "interm_freq": null
+      }
+    }
+  },
+  "qrm_rf0": {
+    "instrument_type": "Pulsar_QRM_RF",
+    "ref": "external",
+    "complex_output_0": {
+      "line_gain_db": 0,
+      "mixer_corrections": {
+        "amp_ratio": 1.0,
+        "phase_error": 0,
+        "offset_I": 0.12,
+        "offset_Q": 0.13
+      },
+      "seq0": {
+        "port": "q2:res",
+        "clock": "q2.ro",
+        "interm_freq": null
+      }
+    }
+  },
+
+  "qrm_rf1": {
+    "instrument_type": "Pulsar_QRM_RF",
+    "ref": "external",
+    "complex_output_0": {
+      "line_gain_db": 0,
+      "seq0": {
+        "port": "q3:res",
+        "clock": "q3.ro"
+        }
+      }
+    },
+
   "lo0": {"instrument_type": "LocalOscillator", "lo_freq": null, "power": 1},
   "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
 }
