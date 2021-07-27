@@ -51,13 +51,25 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             PulsarSettings or PulsarRFSettings
         """
 
+    @property
+    @abstractmethod
+    def number_of_sequencers(self) -> int:
+        """
+        Specifies the amount of sequencers available in the Pulsar device.
+
+        Returns
+        -------
+        :
+            Number of sequencers
+        """
+
 # pylint: disable=too-many-ancestors
 class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     """
     Pulsar QCM specific InstrumentCoordinator component.
     """
 
-    number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    number_of_sequencers = NUMBER_OF_SEQUENCERS_QCM
     """Specifies the amount of sequencers available to this QCM."""
     settings_type = PulsarSettings
 
@@ -196,7 +208,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QRM specific InstrumentCoordinator component.
     """
 
-    number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    number_of_sequencers = NUMBER_OF_SEQUENCERS_QRM
     settings_type = PulsarSettings
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
