@@ -794,10 +794,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     Pulsar specific implementation of
     :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
 
-    This class is defined as an abstract base class since the distinction between
-    Pulsar QRM and Pulsar QCM specific implementations are defined in subclasses.
-    Effectively, this base class contains the functionality shared by the Pulsar QRM
-    and Pulsar QCM and serves to avoid code duplication between the two.
+    This class is defined as an abstract base class since the distinctions between the
+    different Pulsar devices are defined in subclasses.
+    Effectively, this base class contains the functionality shared by all Pulsar 
+    devices and serves to avoid repeated code between them.
     """
 
     output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
@@ -990,9 +990,8 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
 
-        
         In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise and error is thrown. If the frequency
+        been set during instantiation. Otherwise an error is thrown. If the frequency
         is overconstraint (i.e. multiple values are somehow specified) an error is
         thrown during assignment.
 
@@ -1067,6 +1066,24 @@ class PulsarBaseband(PulsarBase):
         """
 
     def assign_frequencies(self, sequencer: PulsarSequencerBase):
+        r"""
+        An abstract method that should be overridden. Meant to assign an IF frequency 
+        to each sequencer, or an LO frequency to each output (if applicable).
+        For each sequencer, the following relation is obeyed:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise an error is thrown. If the frequency
+        is overconstraint (i.e. multiple values are somehow specified) an error is
+        thrown during assignment.
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+        
         if sequencer.clock not in self.parent.resources:
             return
 
@@ -1114,6 +1131,24 @@ class PulsarRF(PulsarBase):
                 setattr(self._settings, f"offset_Q_ch{output_index}_freq", seq.mixer_corrections.offset_Q)
 
     def assign_frequencies(self, sequencer: PulsarSequencerBase):
+        r"""
+        An abstract method that should be overridden. Meant to assign an IF frequency 
+        to each sequencer, or an LO frequency to each output (if applicable).
+        For each sequencer, the following relation is obeyed:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise an error is thrown. If the frequency
+        is overconstraint (i.e. multiple values are somehow specified) an error is
+        thrown during assignment.
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+
         if sequencer.clock not in self.parent.resources:
             return
 
