@@ -133,6 +133,14 @@ class PulsarSettings(DataClassJsonMixin):
     acq_mode: str = "SSBIntegrationComplex"
     """The acquisition mode the Pulsar operates in. This setting will most likely
     change in the future."""
+    offset_ch0_path0: float = None
+    """The DC offset on the path 0 of channel 0."""
+    offset_ch0_path1: float = None
+    """The DC offset on the path 1 of channel 0."""
+    offset_ch1_path0: float = None
+    """The DC offset on path 0 of channel 1."""
+    offset_ch1_path1: float = None
+    """The DC offset on path 1 of channel 1."""
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
@@ -160,14 +168,6 @@ class PulsarRFSettings(PulsarSettings):
     """The frequency of Output 0 (O0) LO."""
     lo1_freq: float = None
     """The frequency of Output 1 (O1) LO."""
-    offset_I_ch0: float = None
-    """The DC offset on the I path of Output 0 (O0)."""
-    offset_Q_ch0: float = None
-    """The DC offset on the Q path of Output 0 (O0)."""
-    offset_I_ch1: float = None
-    """The DC offset on the I path of Output 1 (O1)."""
-    offset_Q_ch1: float = None
-    """The DC offset on the Q path of Output 1 (O1)."""
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
@@ -187,7 +187,6 @@ class PulsarRFSettings(PulsarSettings):
             lo0_freq: float = complex_output_0.get("lo_freq")
         if complex_output_1:
             lo1_freq: float = complex_output_1.get("lo_freq")
-
 
         return PulsarRFSettings(ref=ref, lo0_freq=lo0_freq, lo1_freq=lo1_freq)
 

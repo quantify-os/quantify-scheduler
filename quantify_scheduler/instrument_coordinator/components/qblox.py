@@ -157,6 +157,15 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         self.instrument.set("reference_source", settings.ref)
 
+        if settings.offset_ch0_path0:
+            self.instrument.set("sequencer0_offset_awg_path0", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1:
+            self.instrument.set("sequencer0_offset_awg_path1", settings.offset_ch0_path1)
+        if settings.offset_ch1_path0:
+            self.instrument.set("sequencer1_offset_awg_path0", settings.offset_ch1_path0)
+        if settings.offset_ch1_path1:
+            self.instrument.set("sequencer1_offset_awg_path1", settings.offset_ch1_path1)
+
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
         Configures all sequencer specific settings.
@@ -169,12 +178,6 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
             The settings to configure it to.
         """
         self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
@@ -352,6 +355,11 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def _configure_global_settings(self, settings: PulsarSettings):
         self.instrument.set("reference_source", settings.ref)
 
+        if settings.offset_ch0_path0:
+            self.instrument.set("sequencer0_offset_awg_path0", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1:
+            self.instrument.set("sequencer0_offset_awg_path1", settings.offset_ch0_path1)
+
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
         Configures all sequencer specific settings.
@@ -364,12 +372,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             The settings to configure it to.
         """
         self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
@@ -403,24 +405,6 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
 
     settings_type = PulsarRFSettings
 
-    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
-        """
-        Configures all sequencer specific settings.
-
-        Parameters
-        ----------
-        seq_idx
-            Index of the sequencer to configure.
-        settings
-            The settings to configure it to.
-        """
-        self.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-
-        nco_en: bool = settings.nco_en
-        self.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
-        if nco_en:
-            self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
-
     def _configure_global_settings(self, settings: PulsarSettings):
         """
         Configures all settings that are set globally for the whole instrument.
@@ -430,20 +414,21 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         settings
             The settings to configure it to.
         """
-        super()._configure_global_settings(settings)
+        self.instrument.set("reference_source", settings.ref)
+
         if settings.lo0_freq:
-            self.set("lo0_freq", settings.lo0_freq)
+            self.instrument.set("lo0_freq", settings.lo0_freq)
         if settings.lo1_freq:
-            self.set("lo1_freq", settings.lo1_freq)
+            self.instrument.set("lo1_freq", settings.lo1_freq)
 
         if settings.offset_I_ch0:
-            self.set("offset_I_ch0", settings.offset_I_ch0)
+            self.instrument.set("offset_I_ch0", settings.offset_ch0_path0)
         if settings.offset_Q_ch0:
-            self.set("offset_Q_ch0", settings.offset_Q_ch0)
+            self.instrument.set("offset_Q_ch0", settings.offset_ch0_path1)
         if settings.offset_I_ch1:
-            self.set("offset_I_ch1", settings.offset_I_ch1)
+            self.instrument.set("offset_I_ch1", settings.offset_ch1_path0)
         if settings.offset_Q_ch1:
-            self.set("offset_Q_ch1", settings.offset_Q_ch1)
+            self.instrument.set("offset_Q_ch1", settings.offset_ch1_path1)
 
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
@@ -453,24 +438,6 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
 
     settings_type = PulsarRFSettings
 
-    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
-        """
-        Configures all sequencer specific settings.
-
-        Parameters
-        ----------
-        seq_idx
-            Index of the sequencer to configure.
-        settings
-            The settings to configure it to.
-        """
-        self.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-
-        nco_en: bool = settings.nco_en
-        self.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
-        if nco_en:
-            self.set(f"sequencer{seq_idx}_nco_freq", settings.modulation_freq)
-
     def _configure_global_settings(self, settings: PulsarSettings):
         """
         Configures all settings that are set globally for the whole instrument.
@@ -480,15 +447,17 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         settings
             The settings to configure it to.
         """
-        super()._configure_global_settings(settings)
+        self.instrument.set("reference_source", settings.ref)
+
         if settings.lo0_freq:
-            self.set("lo0_freq", settings.lo0_freq)
+            self.instrument.set("lo0_freq", settings.lo0_freq)
         if settings.lo1_freq:
-            self.set("lo1_freq", settings.lo1_freq)
-        if settings.offset_I_ch0:
-            logger.warning("'offset_I_ch0' was not set. This functionality is still not present to the Pulsar QRM-RF driver.")
-        if settings.offset_Q_ch0:
-            logger.warning("'offset_Q_ch0' was not set. This functionality is still not present to the Pulsar QRM-RF driver.")
+            self.instrument.set("lo1_freq", settings.lo1_freq)
+
+        if settings.offset_ch0_path0:
+            logger.warning("'offset_ch0_path0' was not set. This functionality is still not present to the Pulsar QRM-RF driver.")
+        if settings.offset_ch0_path1:
+            logger.warning("'offset_ch0_path1' was not set. This functionality is still not present to the Pulsar QRM-RF driver.")
 
 
 # ----------------- Utility -----------------

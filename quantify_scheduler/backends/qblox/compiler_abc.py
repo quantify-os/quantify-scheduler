@@ -537,16 +537,9 @@ class PulsarSequencerBase(ABC):
     def update_settings(self):
         """
         Updates the sequencer settings to set all parameters that are determined by the
-        compiler. Currently, this only changes the offsets based on the mixer
-        calibration parameters.
+        compiler.
         """
-        if self.mixer_corrections is not None:
-            self._settings.awg_offset_path_0 = (
-                self.mixer_corrections.offset_I / self.awg_output_volt
-            )
-            self._settings.awg_offset_path_1 = (    
-                self.mixer_corrections.offset_Q / self.awg_output_volt
-            )
+
 
     # pylint: disable=too-many-locals
     def generate_qasm_program(
@@ -1055,12 +1048,25 @@ class PulsarBaseband(PulsarBase):
     """
     Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should inherit from.
     """
-
+    
     def update_settings(self):
         """
         Updates the Pulsar settings to set all parameters that are determined by the
-        compiler.
+        compiler. Currently, this only changes the offsets based on the mixer
+        calibration parameters.
         """
+
+        #Will be changed when LO leakage correction is decoupled from the sequencer
+        for seq in self.sequencers.values():
+            if seq.mixer_corrections is not None:
+                output_index = self.sequencer_to_output_idx[seq.name]
+                if output_index == 0:
+                    self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I / seq.awg_output_volt
+                    self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q / seq.awg_output_volt
+                elif output_index == 1:
+                    self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I / seq.awg_output_volt
+                    self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q / seq.awg_output_volt
+
 
     def assign_frequencies(self, sequencer: PulsarSequencerBase):
         r"""
@@ -1125,11 +1131,11 @@ class PulsarRF(PulsarBase):
             if seq.mixer_corrections is not None:
                 output_index = self.sequencer_to_output_idx[seq.name]
                 if output_index == 0:
-                    self._settings.offset_I_ch0 = seq.mixer_corrections.offset_I
-                    self._settings.offset_Q_ch0 = seq.mixer_corrections.offset_Q
+                    self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I
+                    self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q
                 elif output_index == 1:
-                    self._settings.offset_I_ch1 = seq.mixer_corrections.offset_I
-                    self._settings.offset_Q_ch1 = seq.mixer_corrections.offset_Q
+                    self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
+                    self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
 
     def assign_frequencies(self, sequencer: PulsarSequencerBase):
         r"""
