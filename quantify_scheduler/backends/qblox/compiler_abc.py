@@ -794,6 +794,12 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     implementation is temporary and will change when multiplexing is supported by
     the hardware.
     """
+    sequencer_to_output_idx = {"seq0": 0, "seq1": 1}
+    """
+    Dictionary that maps sequencer names to specific (complex) output indices. This
+    implementation is temporary and will change when multiplexing is supported by
+    the hardware.
+    """
 
     def __init__(
         self,
@@ -829,15 +835,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
         self._settings = self.sequencer_type.extract_settings_from_mapping(hw_mapping)
-
-    def _sequencer_to_output_idx(self, seq):
-        seq_index = int(seq.name.split("seq")[1])
-        for key, value in self.output_to_sequencer_idx.items():
-            if seq_index == value:
-                output = key
-        output_index = next(filter(str.isdigit, output))
-        return output_index
-
 
     @property
     @abstractmethod
@@ -1126,9 +1123,13 @@ class PulsarRF(PulsarBase):
         #Will be changed when LO leakage correction is decoupled from the sequencer
         for seq in self.sequencers.values():
             if seq.mixer_corrections is not None:
-                output_index = self._sequencer_to_output_idx(seq.name)
-                setattr(self._settings, f"offset_I_ch{output_index}_freq", seq.mixer_corrections.offset_I)
-                setattr(self._settings, f"offset_Q_ch{output_index}_freq", seq.mixer_corrections.offset_Q)
+                output_index = self.sequencer_to_output_idx[seq.name]
+                if output_index == 0:
+                    self._settings.offset_I_ch0 = seq.mixer_corrections.offset_I
+                    self._settings.offset_Q_ch0 = seq.mixer_corrections.offset_Q
+                elif output_index == 1:
+                    self._settings.offset_I_ch1 = seq.mixer_corrections.offset_I
+                    self._settings.offset_Q_ch1 = seq.mixer_corrections.offset_Q
 
     def assign_frequencies(self, sequencer: PulsarSequencerBase):
         r"""
@@ -1158,10 +1159,10 @@ class PulsarRF(PulsarBase):
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        output_index = self._sequencer_to_output_idx(sequencer.name)
+        output_index = self.sequencer_to_output_idx[sequencer.name]
 
         if_freq = sequencer.frequency
-        lo_freq = getattr(self._settings, f"lo{output_index}_freq")
+        lo_freq = self._settings.lo0_freq if (output_index == 0) else self._settings.lo1_freq
 
         if lo_freq is None and if_freq is None:
             raise ValueError(
@@ -1178,7 +1179,10 @@ class PulsarRF(PulsarBase):
                     f"while it has previously already been set to "
                     f"{lo_freq}!"
                 )
-            setattr(self._settings, f"lo{output_index}_freq", new_lo_freq)
+            if output_index == 0:
+                self._settings.lo0_freq = new_lo_freq
+            elif output_index == 1:
+                self._settings.lo1_freq = new_lo_freq
 
         if lo_freq is not None:
             sequencer.frequency = clk_freq - lo_freq
