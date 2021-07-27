@@ -372,7 +372,6 @@ class QASMProgram:
 
     def _acquire_weighted(self, acquisition: OpInfo, bin: int, idx0: int, idx1: int):
         measurement_idx = acquisition.data["acq_channel"]
-        bin = acquisition.data["acq_index"]
         self.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
             measurement_idx,
