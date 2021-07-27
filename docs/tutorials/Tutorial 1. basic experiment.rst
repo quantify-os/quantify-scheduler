@@ -295,7 +295,7 @@ between X gates on a pair of qubits.
     for duration in np.linspace(20e-9, 60e-9, 6): # NB multiples of 4 ns need to be used due to limitations of the pulsars
         for amp in np.linspace(0.1, 1.0, 10):
             begin = sched.add(Reset('q0', 'q1'))
-            sched.add(X('q0'), ref_op=begin, ref_pt='start')
+            sched.add(X('q0'), ref_op=begin, ref_pt='end')
             # NB we specify a clock for tutorial purposes,
             # Chevron experiments do not necessarily use modulated square pulses
             square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
