@@ -13,6 +13,10 @@ from quantify_scheduler.backends.qblox.compiler_abc import (
     PulsarRF,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
+from quantify_scheduler.backends.qblox.constants import (
+    NUMBER_OF_SEQUENCERS_QCM,
+    NUMBER_OF_SEQUENCERS_QRM,
+)
 
 
 class LocalOscillator(InstrumentCompiler):
@@ -138,7 +142,7 @@ class Pulsar_QCM(PulsarBaseband):
     """
 
     sequencer_type = QCMSequencer
-    max_sequencers: int = 2
+    max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the O1 marker"""
 
@@ -196,7 +200,7 @@ class Pulsar_QRM(PulsarBaseband):
 
     sequencer_type = QRMSequencer
     """The type of the sequencer."""
-    max_sequencers: int = 1
+    max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the I1 marker"""
@@ -205,6 +209,8 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
+    max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    """Maximum number of sequencer available in the instrument."""
     markers: dict = {"on": 6, "off": 8}
     """Marker values to activate/deactivate the O1 marker, and the output switches for O1/O2"""
 
@@ -215,7 +221,7 @@ class Pulsar_QRM_RF(PulsarRF):
 
     sequencer_type = QRMSequencer
     """The type of the sequencer."""
-    max_sequencers: int = 1
+    max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
     markers: dict = {"on": 1, "off": 4}
     """Marker values to activate/deactivate the I1 marker, and the output switch for O1"""
