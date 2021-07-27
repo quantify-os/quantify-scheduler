@@ -370,7 +370,23 @@ class QASMProgram:
             self.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
             self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_weighted(self, acquisition: OpInfo, bin: int, idx0: int, idx1: int):
+    def _acquire_weighted(
+        self, acquisition: OpInfo, bin: int, idx0: int, idx1: int
+    ) -> None:
+        """
+        Adds the instruction for performing acquisitions with weights playback.
+
+        Parameters
+        ----------
+        acquisition
+            The acquisition info for the acquisition to perform.
+        bin
+            The bin to store the result in.
+        idx0
+            Index of the weight waveform played on the I path.
+        idx1
+            Index of the weight waveform played on the Q path.
+        """
         measurement_idx = acquisition.data["acq_channel"]
         self.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
@@ -382,7 +398,17 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_square(self, acquisition: OpInfo, bin: int):
+    def _acquire_square(self, acquisition: OpInfo, bin: int) -> None:
+        """
+        Adds the instruction for performing acquisitions without weights playback.
+
+        Parameters
+        ----------
+        acquisition
+            The acquisition info for the acquisition to perform.
+        bin
+            The bin to store the result in.
+        """
         duration_ns = int(acquisition.duration * 1e9)
         if self.parent.settings.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
