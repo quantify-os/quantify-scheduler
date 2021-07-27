@@ -20,8 +20,6 @@ from quantify_core.data.handling import (
     gen_tuid,
 )
 
-from quantify_scheduler.helpers.waveforms import modulate_waveform
-
 from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.helpers import (
