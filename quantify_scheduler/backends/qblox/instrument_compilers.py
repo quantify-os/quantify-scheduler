@@ -8,7 +8,6 @@ from typing import Optional, Dict, Any
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
-    PulsarSequencerBase,
     PulsarBaseband,
     PulsarRF,
 )
@@ -114,35 +113,15 @@ class LocalOscillator(InstrumentCompiler):
 
 # ---------- pulsar sequencer classes ----------
 
-
-class QCMSequencer(PulsarSequencerBase):
-    """
-    Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
-    specific to a Pulsar QCM sequencer.
-    """
-
-    awg_output_volt = 2.5
-    """Voltage range of the awg output paths."""
-
-
-class QRMSequencer(PulsarSequencerBase):
-    """
-    Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
-    specific to a Pulsar QRM sequencer.
-    """
-
-    awg_output_volt = 0.5
-    """Voltage range of the awg output paths."""
-
-
 # pylint: disable=invalid-name
 class Pulsar_QCM(PulsarBaseband):
     """
     Pulsar QCM specific implementation of the pulsar compiler.
     """
 
-    sequencer_type = QCMSequencer
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    awg_output_volt: float = 2.5
+    """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the O1 marker"""
 
@@ -198,10 +177,10 @@ class Pulsar_QRM(PulsarBaseband):
     Pulsar QRM specific implementation of the pulsar compiler.
     """
 
-    sequencer_type = QRMSequencer
-    """The type of the sequencer."""
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
+    awg_output_volt: float = 0.5
+    """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the I1 marker"""
 
@@ -209,10 +188,11 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
-    sequencer_type = QCMSequencer
-    """The type of the sequencer."""
+
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencer available in the instrument."""
+    awg_output_volt: float = 0.25
+    """Peak output voltage of the AWG"""
     markers: dict = {"on": 6, "off": 8}
     """Marker values to activate/deactivate the O1 marker, and the output switches for O1/O2"""
 
@@ -221,9 +201,9 @@ class Pulsar_QRM_RF(PulsarRF):
     Pulsar QRM-RF specific implementation of the pulsar compiler.
     """
 
-    sequencer_type = QRMSequencer
-    """The type of the sequencer."""
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
+    awg_output_volt: float = 0.25
+    """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 4}
     """Marker values to activate/deactivate the I1 marker, and the output switch for O1"""

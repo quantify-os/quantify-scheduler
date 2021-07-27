@@ -8,7 +8,7 @@ import json
 from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List, Type
+from typing import Optional, Dict, Any, Set, Tuple, List
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -40,6 +40,7 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
+    PulsarSettings,
     SequencerSettings,
     QASMRuntimeSettings,
     MixerCorrections,
@@ -226,7 +227,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
 
 # pylint: disable=too-many-instance-attributes
-class PulsarSequencerBase(ABC):
+class PulsarSequencer:
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
@@ -309,19 +310,6 @@ class PulsarSequencerBase(ABC):
             The name.
         """
         return self._name
-
-    @property
-    @abstractmethod
-    def awg_output_volt(self) -> float:
-        """
-        The output range in volts. This is to be overridden by the subclass to account
-        for the differences between a QCM and a QRM.
-
-        Returns
-        -------
-        :
-            The output range in volts.
-        """
 
     @property
     def has_data(self) -> bool:
@@ -424,25 +412,25 @@ class PulsarSequencerBase(ABC):
                     reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
                 )
 
-            if np.abs(amp_i) > self.awg_output_volt:
+            if np.abs(amp_i) > self.parent.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
                     f"{self.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
-            if np.abs(amp_q) > self.awg_output_volt:
+            if np.abs(amp_q) > self.parent.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
                     f"{self.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
             pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.awg_output_volt,
-                awg_gain_1=amp_q / self.awg_output_volt,
+                awg_gain_0=amp_i / self.parent.awg_output_volt,
+                awg_gain_1=amp_q / self.parent.awg_output_volt,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 waveforms_complex[pulse.uuid] = raw_wf_data
@@ -827,26 +815,38 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
-        self._settings = self.sequencer_type.extract_settings_from_mapping(hw_mapping)
-
-    @property
-    @abstractmethod
-    def sequencer_type(self) -> Type[PulsarSequencerBase]:
-        """
-        Specifies whether the sequencers in this pulsar are QCM_sequencers or
-        QRM_sequencers.
-
-        Returns
-        -------
-        :
-            A pulsar sequencer type
-        """
+        self._settings = self.settings_type.extract_settings_from_mapping(hw_mapping)
 
     @property
     @abstractmethod
     def max_sequencers(self) -> int:
         """
         Specifies the maximum amount of sequencers available to this instrument.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
+
+    @property
+    @abstractmethod
+    def awg_output_volt(self) -> float:
+        """
+        The output range in volts. This is to be overridden by the subclass to account
+        for the differences between a QCM and a QRM.
+
+        Returns
+        -------
+        :
+            The output range in volts.
+        """
+
+    @property
+    @abstractmethod
+    def settings_type(self) -> PulsarSettings:
+        """
+        Specifies the Pulsar Settings class used by the instrument.
 
         Returns
         -------
@@ -912,9 +912,9 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 mapping[port_clock] = f"seq{output_to_seq[io]}"
         return mapping
 
-    def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:
+    def _construct_sequencers(self) -> Dict[str, PulsarSequencer]:
         """
-        Constructs `PulsarSequencerBase` objects for each port and clock combination
+        Constructs `PulsarSequencer` objects for each port and clock combination
         belonging to this device.
 
         Returns
@@ -941,7 +941,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             portclock = portclock_dict["port"], portclock_dict["clock"]
 
             seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = self.sequencer_type(
+            sequencers[seq_name] = PulsarSequencer(
                 self, seq_name, portclock, portclock_dict, lo_name
             )
             if "mixer_corrections" in io_cfg:
@@ -973,7 +973,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                     seq.acquisitions = acq_data_list
 
     @abstractmethod
-    def assign_frequencies(self, sequencer: PulsarSequencerBase):
+    def assign_frequencies(self, sequencer: PulsarSequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency 
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1068,7 +1068,7 @@ class PulsarBaseband(PulsarBase):
                     self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q / seq.awg_output_volt
 
 
-    def assign_frequencies(self, sequencer: PulsarSequencerBase):
+    def assign_frequencies(self, sequencer: PulsarSequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency 
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1137,7 +1137,7 @@ class PulsarRF(PulsarBase):
                     self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
                     self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
 
-    def assign_frequencies(self, sequencer: PulsarSequencerBase):
+    def assign_frequencies(self, sequencer: PulsarSequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency 
         to each sequencer, or an LO frequency to each output (if applicable).
