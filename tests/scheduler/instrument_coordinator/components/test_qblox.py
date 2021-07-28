@@ -11,7 +11,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
@@ -19,7 +18,6 @@ from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-i
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator.components import qblox
-from quantify_scheduler.helpers import waveforms
 
 esp = inspect.getfile(es)
 
