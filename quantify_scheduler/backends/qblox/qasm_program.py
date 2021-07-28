@@ -4,7 +4,7 @@
 from __future__ import annotations
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
-from typing import List, Union, Optional, Callable
+from typing import List, Union, Optional
 
 import numpy as np
 from columnar import columnar
