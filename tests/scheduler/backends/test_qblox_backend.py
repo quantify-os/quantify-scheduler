@@ -675,8 +675,10 @@ def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisi
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
             instr._distribute_data()
             instr._determine_scope_mode_acquisition_sequencer()
-            # TODO
-    pass
+    scope_mode_sequencer = container.instrument_compilers[
+        "qrm0"
+    ]._settings.scope_mode_sequencer
+    assert scope_mode_sequencer == "seq0"
 
 
 def test_container_prepare_baseband(
