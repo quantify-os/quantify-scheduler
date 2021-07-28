@@ -214,7 +214,8 @@ If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband
     Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
 
 
-To summarize:
+Summary
+^^^^^^^
 
 - Pulses are described as parameterized waveforms.
 - Pulses are applied to *ports* at a frequency specified by a *clock*.
