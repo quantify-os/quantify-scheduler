@@ -1067,17 +1067,17 @@ class PulsarBaseband(PulsarBase):
                 output_index = self.sequencer_to_output_idx[seq.name]
                 if output_index == 0:
                     self._settings.offset_ch0_path0 = (
-                        seq.mixer_corrections.offset_I / seq.awg_output_volt
+                        seq.mixer_corrections.offset_I / self.awg_output_volt
                     )
                     self._settings.offset_ch0_path1 = (
-                        seq.mixer_corrections.offset_Q / seq.awg_output_volt
+                        seq.mixer_corrections.offset_Q / self.awg_output_volt
                     )
                 elif output_index == 1:
                     self._settings.offset_ch1_path0 = (
-                        seq.mixer_corrections.offset_I / seq.awg_output_volt
+                        seq.mixer_corrections.offset_I / self.awg_output_volt
                     )
                     self._settings.offset_ch1_path1 = (
-                        seq.mixer_corrections.offset_Q / seq.awg_output_volt
+                        seq.mixer_corrections.offset_Q / self.awg_output_volt
                     )
 
     def assign_frequencies(self, sequencer: PulsarSequencer):
