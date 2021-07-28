@@ -519,6 +519,7 @@ def _channel_index_to_channel_name(acq_channel: int) -> str:
 
 
 def _get_bin_data(acquisitions: dict, acq_channel: int = 0) -> dict:
+    """Returns the bin entry of the acquisition data dict."""
     acq_name = _channel_index_to_channel_name(acq_channel)
     channel_data = acquisitions[acq_name]
     if channel_data["index"] != acq_channel:
