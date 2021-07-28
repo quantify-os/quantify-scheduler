@@ -12,12 +12,12 @@ def test_header():
     skipfiles = {"__init__.py", "conftest.py", "setup.py"}
     skipdirs = {"docs", ".", "tests", "__pycache__", "venv"}
     failures = []
-    quantify_path = Path(__file__).resolve().parent.parent.resolve()
+    quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
     header_lines = [
         "# Repository: https://gitlab.com/quantify-os/quantify-scheduler",
         "# Licensed according to the LICENCE file on the master branch",
     ]
-    for root, _, files in os.walk(quantify_path):
+    for root, _, files in os.walk(quantify_scheduler_path):
         # skip hidden folders, etc
         if any(part.startswith(name) for part in Path(root).parts for name in skipdirs):
             continue
@@ -25,7 +25,7 @@ def test_header():
             if file_name[-3:] == ".py" and file_name not in skipfiles:
                 file_path = Path(root) / file_name
                 with open(file_path, "r") as file:
-                    lines_iter = (line.strip("\r\n") for line in file)
+                    lines_iter = (line.strip() for line in file)
                     line_matches = [
                         expected_line == line
                         for expected_line, line in zip(header_lines, lines_iter)
@@ -37,8 +37,8 @@ def test_header():
 
 
 def test_docs_copyright():
-    quantify_path = Path(__file__).resolve().parent.parent.resolve()
-    conf_file = quantify_path / "docs" / "conf.py"
+    quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
+    conf_file = quantify_scheduler_path / "docs" / "conf.py"
     copyright_found = False
     current_year = str(datetime.datetime.now().year)
     cr_match = 'copyright = "2020-20.*Qblox & Orange Quantum Systems'

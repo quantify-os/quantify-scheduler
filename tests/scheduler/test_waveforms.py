@@ -4,7 +4,7 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
-from quantify.scheduler.waveforms import (
+from quantify_scheduler.waveforms import (
     square,
     drag,
     staircase,

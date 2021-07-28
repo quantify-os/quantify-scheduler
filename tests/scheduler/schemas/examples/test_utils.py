@@ -3,7 +3,7 @@
 # pylint: disable=missing-function-docstring
 
 import pytest
-from quantify.scheduler.schemas.examples import utils
+from quantify_scheduler.schemas.examples import utils
 
 
 @pytest.mark.parametrize(
