@@ -329,6 +329,9 @@ class _QRMAcquisitionManager:
             Tuple[int, int], Tuple[str, str]
         ] = acquisition_mapping
         self.scope_mode_sequencer: Optional[str] = None
+        self.seq_name_to_idx_map = {
+            f"seq{idx}": idx for idx in range(number_of_sequencers)
+        }
 
     @property
     def instrument(self):
@@ -351,15 +354,39 @@ class _QRMAcquisitionManager:
             # Threshold still missing since there is nothing in
             # the acquisition library for it yet.
         }
-        acquisitions: Dict[AcquisitionIndexing, Any] = dict()
-        for acq_channel, acq_index in self.acquisition_mapping.keys():
-            protocol = self._get_protocol(acq_channel, acq_index)
-            acquisition_function: Callable = protocol_to_function_mapping[protocol]
+        self._store_scope_acquisition()
 
-            acquisitions[
-                AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_index)
-            ] = acquisition_function(acq_channel, acq_index)
-        return acquisitions
+        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
+        for seq_idx in range(self.number_of_sequencers):
+            acquisitions = self.instrument.get_acquisitions(seq_idx)
+            for acq_channel, acq_index in self.acquisition_mapping.keys():
+                if self._get_sequencer_index(acq_channel, acq_index) != seq_idx:
+                    continue
+
+                protocol = self._get_protocol(acq_channel, acq_index)
+                acquisition_function: Callable = protocol_to_function_mapping[protocol]
+
+                formatted_acquisitions[
+                    AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_index)
+                ] = acquisition_function(acquisitions, acq_channel, acq_index)
+        return formatted_acquisitions
+
+    def _store_scope_acquisition(self):
+        sequencer_index = self.seq_name_to_idx_map.get(self.scope_mode_sequencer)
+        if sequencer_index is None:
+            return
+
+        if sequencer_index > self.number_of_sequencers:
+            raise ValueError(
+                f"Attempting to retrieve scope mode data from sequencer "
+                f"{sequencer_index}, even though the QRM only has "
+                f"{self.number_of_sequencers} sequencers."
+            )
+        scope_ch_and_idx = self._get_scope_channel_and_index()
+        if scope_ch_and_idx is not None:
+            acq_channel, _ = scope_ch_and_idx
+            acq_name = _channel_index_to_channel_name(acq_channel)
+            self.instrument.store_scope_acquisition(sequencer_index, acq_name)
 
     def _get_protocol(self, acq_channel, acq_index) -> str:
         """
@@ -368,8 +395,21 @@ class _QRMAcquisitionManager:
         """
         return self.acquisition_mapping[(acq_channel, acq_index)][1]
 
+    def _get_sequencer_index(self, acq_channel, acq_index) -> str:
+        """
+        Returns the seq idx corresponding to acq_channel with
+        acq_index.
+        """
+        seq_name = self.acquisition_mapping[(acq_channel, acq_index)][0]
+        return self.seq_name_to_idx_map[seq_name]
+
+    def _get_scope_channel_and_index(self) -> Tuple[int, int]:
+        for key, value in self.acquisition_mapping.items():
+            if value[1] == "trace":
+                return key
+
     def _get_scope_data(
-        self, acq_channel: int = 0, acq_index: int = 0
+        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the scope mode acquisition associated with `acq_channel` and
@@ -387,51 +427,22 @@ class _QRMAcquisitionManager:
         :
             The scope mode data for path0 and path1.
         """
-        del acq_index  # not needed for scope data
-        seq_name_to_idx_map = {
-            f"seq{idx}": idx for idx in range(self.number_of_sequencers)
-        }
-        sequencer_index = seq_name_to_idx_map.get(self.scope_mode_sequencer)
-        if sequencer_index is None:
-            raise ValueError(
-                f"Attempting to retrieve scope mode data, while no "
-                f"sequencer has been assigned to perform this in the "
-                f"compilation."
-            )
-        if sequencer_index > self.number_of_sequencers:
-            raise ValueError(
-                f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}, even though the QRM only has "
-                f"{self.number_of_sequencers} sequencers."
-            )
         acq_name = _channel_index_to_channel_name(acq_channel)
-        self.instrument.store_scope_acquisition(sequencer_index, acq_name)
-        acquisitions = self.instrument.get_acquisitions(sequencer_index)
         scope_data = acquisitions[acq_name]["acquisition"]["scope"]
         for path_label in ("path0", "path1"):
             if scope_data[path_label]["out-of-range"]:
                 logger.warning(
-                    f"The scope mode data of {path_label} of sequencer "
-                    f"{sequencer_index} of {self.parent.name} is out-of-range."
+                    f"The scope mode data of {path_label} of {self.parent.name} with "
+                    f"acq_channel={acq_channel} and acq_index={acq_index} is "
+                    f"out-of-range."
                 )
         # hardware already divides by avg_count for scope mode
         scope_data_i = scope_data["path0"]["data"]
         scope_data_q = scope_data["path1"]["data"]
         return scope_data_i, scope_data_q
 
-    def _get_bin_data(self, acq_channel: int = 0) -> dict:
-        acquisitions = self.instrument.get_acquisitions(0)
-        acq_name = _channel_index_to_channel_name(acq_channel)
-        channel_data = acquisitions[acq_name]
-        if channel_data["index"] != acq_channel:
-            raise RuntimeError(
-                f"Name does not correspond to a valid acquisition for name {acq_name}, "
-                f'which has index {channel_data["index"]}.'
-            )
-        return channel_data["acquisition"]["bins"]
-
     def _get_integration_data(
-        self, acq_channel: int = 0, acq_index: int = 0
+        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
     ) -> Tuple[float, float]:
         """
         Retrieves the integrated acquisition data associated with `acq_channel` and
@@ -449,7 +460,7 @@ class _QRMAcquisitionManager:
         :
             The integrated data for path0 and path1.
         """
-        bin_data = self._get_bin_data(acq_channel)
+        bin_data = _get_bin_data(acquisitions, acq_channel)
         i_data, q_data = (
             bin_data["integration"]["path0"],
             bin_data["integration"]["path1"],
@@ -463,8 +474,10 @@ class _QRMAcquisitionManager:
         # TODO add check if bin data is valid
         return i_data[acq_index], q_data[acq_index]
 
-    def _get_threshold_data(self, acq_channel: int = 0, acq_index: int = 0):
-        bin_data = self._get_bin_data(acq_channel)
+    def _get_threshold_data(
+        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
+    ):
+        bin_data = _get_bin_data(acquisitions, acq_channel)
         i_data, q_data = (
             bin_data["threshold"]["path0"],
             bin_data["threshold"]["path1"],
@@ -482,3 +495,14 @@ class _QRMAcquisitionManager:
 def _channel_index_to_channel_name(acq_channel: int) -> str:
     """Returns the name of the acquisition from the acq_channel."""
     return str(acq_channel)
+
+
+def _get_bin_data(acquisitions: dict, acq_channel: int = 0) -> dict:
+    acq_name = _channel_index_to_channel_name(acq_channel)
+    channel_data = acquisitions[acq_name]
+    if channel_data["index"] != acq_channel:
+        raise RuntimeError(
+            f"Name does not correspond to a valid acquisition for name {acq_name}, "
+            f'which has index {channel_data["index"]}.'
+        )
+    return channel_data["acquisition"]["bins"]
