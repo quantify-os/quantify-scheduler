@@ -6,7 +6,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
-
+import copy
 from typing import Dict, Any
 
 import os
@@ -396,26 +396,28 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
 def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    meas_op = mixed_schedule_with_acquisition.add(Measure("q0"))
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    meas_op = sched.add(Measure("q0"))
     # add another one too quickly
-    mixed_schedule_with_acquisition.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
+    sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
 
-    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
     with pytest.raises(ValueError):
         qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
-def test_wrong_bin_mode(mixed_schedule_with_acquisition):
+def test_wrong_bin_mode(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    mixed_schedule_with_acquisition.add(
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
         SSBIntegrationComplex(
             duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
         )
     )
 
-    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    with pytest.raises(ValueError):
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
+    with pytest.raises(NotImplementedError):
         qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
