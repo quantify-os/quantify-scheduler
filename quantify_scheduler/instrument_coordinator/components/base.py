@@ -24,7 +24,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         NB This is done intentionally to prevent the intances from being garbage
         collected.
         """
-        instance = super().__new__(cls, *args, **kwargs)
+        instance = super().__new__(cls)
         cls._no_gc_intances[instrument.name] = instance
         return instance
 
