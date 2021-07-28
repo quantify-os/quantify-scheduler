@@ -480,7 +480,7 @@ class _QRMAcquisitionManager:
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
-    ):
+    ) -> Tuple[float, float]:
         """
         Retrieves the thresholded acquisition data associated with `acq_channel` and
         `acq_index`.
@@ -496,7 +496,9 @@ class _QRMAcquisitionManager:
 
         Returns
         -------
-
+        :
+            The value of the thresholded acquisition for `acq_channel` and `acq_index`.
+            Should always be 0.0 <= val <= 1.0.
         """
         bin_data = _get_bin_data(acquisitions, acq_channel)
         i_data, q_data = (
