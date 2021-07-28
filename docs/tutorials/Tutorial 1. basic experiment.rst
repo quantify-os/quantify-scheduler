@@ -52,7 +52,8 @@ If everything is done properly, one should observe the following oscillation:
 Bell circuit
 ~~~~~~~~~~~~
 
-We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
+
+We create this experiment using a :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
 
 
 We start by initializing an empty :class:`~quantify_scheduler.types.Schedule`
