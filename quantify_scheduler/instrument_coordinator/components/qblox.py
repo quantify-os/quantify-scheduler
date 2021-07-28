@@ -204,7 +204,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         return False
 
     # pylint: disable=arguments-differ
-    def retrieve_acquisition(self) -> Any:
+    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
         """
         Retrieves the latest acquisition results.
 
@@ -300,6 +300,9 @@ AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
 class _QRMAcquisitionManager:
     """
     Utility class that handles the acquisitions performed with the QRM.
+
+    An instance of this class is meant exist only for a single prepare-start-
+    retrieve_acquisition cycle to prevent stateful behavior.
     """
 
     def __init__(
@@ -308,6 +311,18 @@ class _QRMAcquisitionManager:
         number_of_sequencers: int,
         acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
     ):
+        """
+        Constructor for `_QRMAcquisitionManager`.
+
+        Parameters
+        ----------
+        parent:
+            Reference to the parent qrm ic component.
+        number_of_sequencers:
+            The number of sequencers capable of acquisitions.
+        acquisition_mapping:
+            The acquisition mapping extracted from the schedule.
+        """
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.acquisition_mapping: Dict[
@@ -317,16 +332,26 @@ class _QRMAcquisitionManager:
 
     @property
     def instrument(self):
+        """Returns the QRM driver from the parent ic component."""
         return self.parent.instrument
 
-    def retrieve_acquisition(self) -> Any:
+    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
+        """
+
+
+        Returns
+        -------
+        :
+            The acquisitions with the protocols specified in the `acq_mapping` sorted by
+            the `(acq_channel, acq_index)` as keys.
+        """
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
             "trace": self._get_scope_data,
             # Threshold still missing since there is nothing in
             # the acquisition library for it yet.
         }
-        acquisitions: Dict[Tuple[int, int]] = dict()
+        acquisitions: Dict[AcquisitionIndexing, Any] = dict()
         for acq_channel, acq_index in self.acquisition_mapping.keys():
             protocol = self._get_protocol(acq_channel, acq_index)
             acquisition_function: Callable = protocol_to_function_mapping[protocol]
@@ -346,6 +371,22 @@ class _QRMAcquisitionManager:
     def _get_scope_data(
         self, acq_channel: int = 0, acq_index: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Retrieves the scope mode acquisition associated with `acq_channel` and
+        `acq_index`.
+
+        Parameters
+        ----------
+        acq_channel:
+            The acq_channel to get the scope mode acquisition for.
+        acq_index:
+            The acq_index to get the scope mode acquisition for.
+
+        Returns
+        -------
+        :
+            The scope mode data for path0 and path1.
+        """
         del acq_index  # not needed for scope data
         seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(self.number_of_sequencers)
@@ -392,6 +433,22 @@ class _QRMAcquisitionManager:
     def _get_integration_data(
         self, acq_channel: int = 0, acq_index: int = 0
     ) -> Tuple[float, float]:
+        """
+        Retrieves the integrated acquisition data associated with `acq_channel` and
+        `acq_index`.
+
+        Parameters
+        ----------
+        acq_channel:
+            The acq_channel to get the scope mode acquisition for.
+        acq_index:
+            The acq_index to get the scope mode acquisition for.
+
+        Returns
+        -------
+        :
+            The integrated data for path0 and path1.
+        """
         bin_data = self._get_bin_data(acq_channel)
         i_data, q_data = (
             bin_data["integration"]["path0"],
@@ -422,5 +479,6 @@ class _QRMAcquisitionManager:
 
 
 # ----------------- Utility -----------------
-def _channel_index_to_channel_name(index: int) -> str:
-    return str(index)
+def _channel_index_to_channel_name(acq_channel: int) -> str:
+    """Returns the name of the acquisition from the acq_channel."""
+    return str(acq_channel)

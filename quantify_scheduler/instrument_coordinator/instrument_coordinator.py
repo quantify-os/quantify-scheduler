@@ -167,7 +167,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             instrument.stop()
 
-    def retrieve_acquisition(self) -> Dict[Tuple[int, int]]:
+    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
         """
         Retrieves the latest acquisition results of InstrumentCoordinator components
         with acquisition capabilities.
@@ -178,7 +178,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             The acquisition data per InstrumentCoordinator component.
         """
         # Temporary. Will probably be replaced by xarray
-        acquisitions: Dict[Tuple[int, int]] = dict()
+        acquisitions: Dict[Tuple[int, int], Any] = dict()
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
             acqs = instrument.retrieve_acquisition()
