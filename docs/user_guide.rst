@@ -189,7 +189,6 @@ In order to execute a schedule, one needs both physical instruments to execute t
 Although one could use manually written configuration files and send the compiled files directly to the hardware, the Quantify framework provides different kinds of :class:`~qcodes.instrument.base.Instrument`\s to control the experiments and the management of the configuration files (:numref:`instruments_overview`).
 
 
-
 .. figure:: /images/instruments_overview.svg
     :name: instruments_overview
     :align: center
@@ -198,7 +197,7 @@ Although one could use manually written configuration files and send the compile
     A schematic overview of the different kinds of instruments present in an experiment.
     Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
     On top of the physical instruments is a hardware abstraction layer, that provides a hardware agnostic interface to execute compiled schedules.
-    The instruments responsible for experiment control are treated to be as stateless as possible [#]_ .
+    The instruments responsible for experiment control are treated to be as stateless as possible [*]_ .
     The knowledge about the system that is required to generate the configuration files is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
     Several utility instruments are used to control the flow of the experiments.
 
@@ -323,5 +322,5 @@ and the resulting dataset can be analyzed using
 
 .. rubric:: Footnotes
 
-.. [#] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
+.. [*] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
 
