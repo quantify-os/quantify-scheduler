@@ -50,7 +50,7 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QRM,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import (
-    PulsarBase, PulsarSequencer
+    PulsarSequencer
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
@@ -327,6 +327,10 @@ def test_find_all_port_clock_combinations():
         ("q0:mw", "q0.01"),
         ("q0:res", "q0.ro"),
         ("q1:res", "q1.ro"),
+        ("q3:mw", "q3.01"),
+        ("q2:mw", "q2.01"),
+        ("q2:res", "q2.ro"),
+        ("q3:res", "q3.ro"),
     }
     assert portclocks == answer
 
@@ -334,13 +338,12 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 4
+    assert len(portclock_map.keys()) == 8
 
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class TestPulsar(PulsarBase):
-        max_sequencers = 10
+    class TestPulsar(Pulsar_QCM):
 
         def __init__(self):
             super().__init__(
@@ -349,12 +352,6 @@ def test_contruct_sequencer():
                 total_play_time=1,
                 hw_mapping=HARDWARE_MAPPING["qcm0"],
             )
-
-        def assign_frequencies(self, sequencer):
-            pass
-
-        def update_settings(self):
-            pass
 
         def compile(self, repetitions: int = 1) -> Dict[str, Any]:
             return dict()
