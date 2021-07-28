@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="605px" height="307px" viewBox="0 0 605 307" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="610px" height="330px" viewBox="0 0 610 330" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <title>experiments_control_flow</title>
     <defs>
-        <rect id="path-1" x="201" y="6" width="404" height="299"></rect>
-        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="404" height="299" fill="white">
+        <rect id="path-1" x="201" y="6" width="404" height="320"></rect>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="404" height="320" fill="white">
             <use xlink:href="#path-1"></use>
         </mask>
-        <rect id="path-3" x="274" y="179" width="171" height="126"></rect>
-        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="171" height="126" fill="white">
+        <rect id="path-3" x="274" y="179" width="171" height="147"></rect>
+        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="171" height="147" fill="white">
             <use xlink:href="#path-3"></use>
         </mask>
     </defs>
@@ -16,10 +16,12 @@
         <g id="Group-2" transform="translate(14.000000, 39.000000)">
             <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="153" height="42"></rect>
             <text id="Parameters-of-a-sche" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
-                <tspan x="21" y="29">Parameters of a schedule</tspan>
+                <tspan x="21" y="29">Parameters of a schedule.</tspan>
             </text>
-            <text id="Schedule-settable(s)" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
-                <tspan x="7" y="15">Schedule settable(s)</tspan>
+            <text id="Schedule-Settable(s)" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+                <tspan x="7" y="15">Schedule </tspan>
+                <tspan x="63.1253594" y="15" font-family="AndaleMono, Andale Mono">Settable</tspan>
+                <tspan x="121.118734" y="15">(s)</tspan>
             </text>
         </g>
         <g id="Group-3" transform="translate(14.000000, 115.000000)">
@@ -30,18 +32,20 @@
                 <tspan x="15" y="49">Compile and execute a schedule. </tspan>
                 <tspan x="15" y="59">Returns acquired data.</tspan>
             </text>
-            <text id="Schedule-gettable" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
-                <tspan x="7" y="15">Schedule gettable</tspan>
+            <text id="ScheduleGettable" font-family="AndaleMono, Andale Mono" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+                <tspan x="7" y="15">ScheduleGettable</tspan>
             </text>
         </g>
-        <g id="Group-3-Copy" transform="translate(210.000000, 17.000000)">
-            <rect id="Rectangle-Copy" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="106" height="37"></rect>
+        <g id="Group-3-Copy" transform="translate(210.000000, 10.000000)">
+            <rect id="Rectangle-Copy" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="115" height="44"></rect>
             <text id="Template-function-to" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
                 <tspan x="14" y="20">Template function to </tspan>
-                <tspan x="14" y="30">generate a schedule.</tspan>
+                <tspan x="14" y="30">generate a schedule: </tspan>
+                <tspan x="14" y="40">e.g., </tspan>
+                <tspan x="33.7623125" y="40" font-family="AndaleMono, Andale Mono">t1_sched().</tspan>
             </text>
-            <text id="generate_schedule" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-                <tspan x="7" y="10">generate_schedule</tspan>
+            <text id="Generate-schedule" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+                <tspan x="8" y="10">Generate schedule</tspan>
             </text>
         </g>
         <g id="Group-3-Copy-2" transform="translate(448.000000, 13.000000)">
@@ -50,28 +54,33 @@
                 <tspan x="14" y="20">Generate device config </tspan>
                 <tspan x="14" y="30">and hardware config.</tspan>
             </text>
-            <text id="QuantumDevice" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <text id="QuantumDevice" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
                 <tspan x="7" y="10">QuantumDevice</tspan>
             </text>
         </g>
-        <g id="Group-3-Copy-4" transform="translate(288.000000, 264.000000)">
-            <rect id="Rectangle-Copy" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="146" height="37"></rect>
+        <g id="Group-3-Copy-4" transform="translate(288.000000, 272.000000)">
+            <rect id="Rectangle-Copy" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="146" height="46"></rect>
             <text id="QCoDeS-Instruments-c" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
-                <tspan x="18" y="20">QCoDeS Instruments controlling </tspan>
-                <tspan x="18" y="30">instruments</tspan>
+                <tspan x="18" y="20">QCoDeS </tspan>
+                <tspan x="52.177125" y="20" font-family="AndaleMono, Andale Mono">Instrument</tspan>
+                <tspan x="100.504937" y="20">s </tspan>
+                <tspan x="18" y="30">controlling physical </tspan>
+                <tspan x="18" y="40">instruments.</tspan>
             </text>
             <text id="Physical-instruments" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
                 <tspan x="9" y="10">Physical instruments</tspan>
             </text>
         </g>
-        <g id="Group-3-Copy-5" transform="translate(287.000000, 191.000000)">
-            <rect id="Rectangle-Copy" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="147" height="41"></rect>
+        <g id="Group-3-Copy-5" transform="translate(287.000000, 194.000000)">
+            <rect id="Rectangle-Copy" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="147" height="49"></rect>
             <text id="Hardware-agnostic-in" font-family="LucidaGrande, Lucida Grande" font-size="8" font-weight="normal" letter-spacing="0.032" fill="#1A1919">
                 <tspan x="16" y="24">Hardware agnostic interface to </tspan>
-                <tspan x="16" y="34">execute compiled schedules.</tspan>
+                <tspan x="16" y="34">execute compiled schedules: </tspan>
+                <tspan x="16" y="44">the </tspan>
+                <tspan x="31.0733125" y="44" font-family="AndaleMono, Andale Mono">InstrumentCoordinator.</tspan>
             </text>
-            <text id="Hardware-abstraction" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-                <tspan x="7" y="10">Hardware abstraction Layer</tspan>
+            <text id="Hardware-Abstraction" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+                <tspan x="7" y="10">Hardware Abstraction Layer</tspan>
             </text>
         </g>
         <g id="Group-3-Copy-3" transform="translate(287.000000, 67.000000)">
@@ -80,22 +89,22 @@
                 <tspan x="8" y="28">Compiles a schedule, returns </tspan>
                 <tspan x="8" y="38">files the hardware can execute. </tspan>
             </text>
-            <text id="qcompile" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-                <tspan x="5" y="14">qcompile</tspan>
+            <text id="qcompile()" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+                <tspan x="5" y="14">qcompile()</tspan>
             </text>
         </g>
-        <text id="schedule" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-            <tspan x="225" y="104">schedule</tspan>
+        <text id="Schedule" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="225" y="103.416667">Schedule</tspan>
         </text>
-        <text id="dataset" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-            <tspan x="226" y="194">dataset</tspan>
+        <text id="Dataset" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="227" y="194">Dataset</tspan>
         </text>
-        <g id="Group-6" transform="translate(377.000000, 126.000000)" fill="#1A1919" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04">
-            <text id="compiled-instruction">
-                <tspan x="0" y="10">compiled instructions</tspan>
+        <g id="Group-6" transform="translate(379.000000, 130.000000)" fill="#1A1919" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04">
+            <text id="Compiled-instruction">
+                <tspan x="0" y="10">Compiled instructions</tspan>
                 <tspan x="0" y="22" letter-spacing="0.032"></tspan>
             </text>
-            <g id="Group-5" transform="translate(10.000000, 12.000000)">
+            <g id="Group-5" transform="translate(0.000000, 10.000000)">
                 <text id="•-•-•">
                     <tspan x="0" y="11">	• 	 </tspan>
                     <tspan x="0" y="23">	• 	 </tspan>
@@ -109,15 +118,14 @@
             </g>
         </g>
         <path id="Line-5" d="M437.416684,91.3357899 L437.487,97.335 L465.988236,97.0000692 L466.988167,96.9883053 L467.011695,98.9881669 L466.011764,98.9999308 L437.51,99.335 L437.581378,105.334821 L423.5,98.5 L437.416684,91.3357899 Z" fill="#00CE7D" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M357,121 L357,177 L363,177 L356,191 L349,177 L355,177 L355,121 L357,121 Z" fill="#00CE7D" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M357,121 L357,180 L363,180 L356,194 L349,180 L355,180 L355,121 L357,121 Z" fill="#00CE7D" fill-rule="nonzero"></path>
         <path id="Line-5" d="M92,82 L92,101 L98,101 L91,115 L84,101 L90,101 L90,82 L92,82 Z" fill="#00CE7D" fill-rule="nonzero"></path>
         <path id="Line-5" d="M196,32 L210,39 L196,46 L196,40 L185,40 L185,38 L196,38 L196,32 Z" fill="#00CE7D" fill-rule="nonzero"></path>
         <path id="Line-5" d="M273,76 L287,83 L273,90 L273,84 L258,84 L258,82 L273,82 L273,76 Z" fill="#00CE7D" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M357,121 L357,177 L363,177 L356,191 L349,177 L355,177 L355,121 L357,121 Z" fill="#00CE7D" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M327,232 L327,250 L333,250 L326,264 L319,250 L325,250 L325,232 L327,232 Z" fill="#00CE7D" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M394,233 L401,247 L395,247 L395,265 L393,265 L393,247 L387,247 L394,233 Z" fill="#FE7E79" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M278,160 L278,166 L395,166 L395,168 L278,168 L278,174 L264,167 L278,160 Z" fill="#FE7E79" fill-rule="nonzero"></path>
-        <path id="Line-5" d="M182,160 L182,166 L228,166 L228,168 L182,168 L182,174 L168,167 L182,160 Z" fill="#FE7E79" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M357,243 L357,258 L363,258 L356,272 L349,258 L355,258 L355,243 L357,243 Z" fill="#00CE7D" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M322,243 L329,257 L323,257 L323,273 L321,273 L321,257 L315,257 L322,243 Z" fill="#FE7E79" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M278,160 L278,166 L323,166 L323,168 L278,168 L278,174 L264,167 L278,160 Z" fill="#FE7E79" fill-rule="nonzero"></path>
+        <path id="Line-5" d="M182,160 L182,166 L232,166 L232,168 L182,168 L182,174 L168,167 L182,160 Z" fill="#FE7E79" fill-rule="nonzero"></path>
         <path id="Line-5" d="M437.529411,107.559134 L437.504,113.558 L542.004219,114.000009 L543.00421,114.004228 L542.995772,116.00421 L541.995781,115.999991 L437.495,115.558 L437.47034,121.559009 L423.5,114.5 L437.529411,107.559134 Z" fill="#00CE7D" fill-rule="nonzero"></path>
         <line x1="465.5" y1="51.5" x2="466" y2="98" id="Line-6" stroke="#00CE7D" stroke-width="2" stroke-linecap="square"></line>
         <line x1="541.5" y1="52.5" x2="542" y2="115" id="Line-6-Copy" stroke="#00CE7D" stroke-width="2" stroke-linecap="square"></line>
@@ -133,8 +141,9 @@
                 <path d="M0,0.356186462 L0,27.8913078 L22,27.8913078 L22,6.25080749 L16.007812,0.356186462 L16,0.356186462 L15.800781,0.356186462 L0,0.356186462 Z M1,1.33958365 L15,1.33958365 L15,7.23996679 L21,7.23996679 L21,26.9079106 L1,26.9079106 L1,1.33958365 Z M16,1.73908876 L20.591797,6.2565696 L16,6.2565696 L16,1.73908876 Z M5.414062,13.1883673 L4,14.5808734 L7.535156,18.0573359 L4,21.5337984 L5.416016,22.9263045 L8.949219,19.449842 L10.365234,18.0573359 L8.949219,16.6667513 L5.414062,13.1883673 Z M11,21.0075275 L11,22.9743218 L18,22.9743218 L18,21.0075275 L11,21.0075275 Z" id="Shape" fill="#000000"></path>
             </g>
         </g>
-        <text id="execution" transform="translate(453.000000, 232.500000) rotate(90.000000) translate(-453.000000, -232.500000) " font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
-            <tspan x="424" y="237">execution</tspan>
+        <text id="Experiment-execution" transform="translate(459.500000, 244.000000) rotate(90.000000) translate(-459.500000, -244.000000) " font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+            <tspan x="426.083656" y="241">Experiment </tspan>
+            <tspan x="430.734195" y="256">execution</tspan>
         </text>
         <g id="Group-7" transform="translate(453.000000, 52.000000)">
             <rect id="Rectangle" fill="#FFFFFF" x="78" y="7" width="26" height="30"></rect>
@@ -175,7 +184,7 @@
                 <path d="M11.746,8.3436 C12.6458889,8.1908 12.9904444,8.1832 12.9904444,8.1832 C13.4186111,8.174 13.7682222,7.8068 13.7682222,7.3664 L13.7682222,6.7 C13.7682222,6.26 13.4197778,5.8696 12.9931667,5.8328 C12.9931667,5.8328 12.3281667,5.7748 11.7646667,5.6356 C11.7176111,5.624 11.7176111,5.624 11.7176111,5.624 C11.6709444,5.6016 11.5955,5.4796 11.5496111,5.3528 C11.5037222,5.226 11.3897778,4.7696 11.424,4.6072 C11.424,4.6072 11.424,4.6072 11.5328889,4.452 C12.0621667,3.6988 12.2846111,3.4636 12.2846111,3.4636 C12.5828889,3.148 12.5778333,2.6376 12.2729444,2.3288 L11.7992778,1.8488 C11.4943889,1.54 10.9903889,1.534 10.6792778,1.836 C10.6792778,1.836 10.4008333,2.1056 9.6565,2.524 C9.48616667,2.6192 9.48616667,2.6192 9.48616667,2.6192 C9.27966667,2.6304 9.00822222,2.5936 8.88338889,2.5372 C8.75855556,2.4808 8.40272222,2.3328 8.38872222,2.2956 C8.38872222,2.2956 8.38872222,2.2956 8.38172222,2.2544 C8.23122222,1.3428 8.22188889,0.8 8.22188889,0.8 C8.21411111,0.36 7.8575,0 7.43011111,0 L6.74877778,0 C6.321,0 5.964,0.36 5.95622222,0.8 C5.95622222,0.8 5.94494444,1.4072 5.70966667,2.2368 C5.69488889,2.2892 5.69488889,2.2892 5.69488889,2.2892 C5.66883333,2.342 5.57472222,2.4116 5.48605556,2.4432 C5.397,2.4752 4.97622222,2.5684 4.74172222,2.5664 C4.74172222,2.5664 4.74172222,2.5664 4.54766667,2.4576 C3.80255556,2.04 3.52488889,1.7704 3.52488889,1.7704 C3.21338889,1.4684 2.70977778,1.474 2.40488889,1.7828 L1.93122222,2.2628 C1.62633333,2.5716 1.62127778,3.0824 1.91916667,3.398 C1.91916667,3.398 2.14122222,3.6328 2.67088889,4.3856 C2.77005556,4.5268 2.77005556,4.5268 2.77005556,4.5268 C2.807,4.6752 2.78405556,4.9088 2.71872222,5.0464 C2.65377778,5.184 2.46983333,5.5888 2.4115,5.6184 C2.4115,5.6184 2.4115,5.6184 2.35316667,5.6352 C1.53494444,5.8744 1.1445,5.8828 1.1445,5.8828 C0.716722222,5.892 0.366722222,6.2596 0.366722222,6.6996 L0.366722222,7.3664 C0.366722222,7.8064 0.716722222,8.174 1.1445,8.1832 C1.1445,8.1832 1.47155556,8.1904 2.37144444,8.3432 C2.42005556,8.3516 2.42005556,8.3516 2.42005556,8.3516 C2.46438889,8.3688 2.54061111,8.4956 2.58961111,8.6332 C2.63861111,8.7708 2.76616667,9.2592 2.7335,9.43 C2.7335,9.43 2.7335,9.43 2.61838889,9.5936 C2.08872222,10.346 1.86666667,10.5812 1.86666667,10.5812 C1.56838889,10.8968 1.57422222,11.4076 1.87872222,11.7164 L2.35238889,12.1964 C2.65727778,12.5052 3.16088889,12.5108 3.472,12.2088 C3.472,12.2088 3.75005556,11.9392 4.49555556,11.5216 C4.68611111,11.4144 4.68611111,11.4144 4.68611111,11.4144 C4.91711111,11.4104 5.17883333,11.4392 5.26711111,11.4776 C5.35538889,11.516 5.62916667,11.6644 5.66883333,11.7388 C5.66883333,11.7388 5.66883333,11.7388 5.69022222,11.8144 C5.9255,12.6444 5.93366667,13.0284 5.93366667,13.0284 C5.943,13.4684 6.30077778,13.8284 6.72855556,13.8284 L7.41027778,13.8284 C7.83805556,13.8284 8.19583333,13.4684 8.20477778,13.0284 C8.20477778,13.0284 8.21177778,12.7076 8.36266667,11.796 C8.372,11.7392 8.372,11.7392 8.372,11.7392 C8.39183333,11.688 8.50733333,11.6112 8.62905556,11.5684 C8.75077778,11.526 9.24544444,11.3984 9.47061111,11.4044 C9.47061111,11.4044 9.47061111,11.4044 9.6565,11.5084 C10.4008333,11.926 10.6792778,12.1964 10.6792778,12.1964 C10.9907778,12.4984 11.4943889,12.4928 11.7992778,12.184 L12.2729444,11.7032 C12.5778333,11.3944 12.5828889,10.8836 12.2846111,10.5684 C12.2846111,10.5684 12.0625556,10.3336 11.5328889,9.5808 C11.4173889,9.4164 11.4173889,9.4164 11.4173889,9.4164 C11.3855,9.2452 11.4072778,8.9984 11.466,8.8672 C11.5247222,8.736 11.6744444,8.3636 11.7082778,8.35 C11.7082778,8.35 11.7082778,8.35 11.746,8.3436 Z M7.07466667,9.8884 C5.516,9.8884 4.25133333,8.6076 4.25133333,7.0268 C4.25133333,5.446 5.516,4.1652 7.07466667,4.1652 C8.63527778,4.1652 9.89877778,5.446 9.89877778,7.0268 C9.89877778,8.6076 8.63527778,9.8884 7.07466667,9.8884 Z" id="Shape"></path>
             </g>
         </g>
-        <g id="noun_File_47681" transform="translate(233.000000, 151.000000)" fill="#000000" fill-rule="nonzero">
+        <g id="noun_File_47681" transform="translate(236.000000, 150.000000)" fill="#000000" fill-rule="nonzero">
             <path d="M15.9977778,0.00895555556 L15.9977778,0 L15.9889185,0 L14.7714519,0 L0,0 L0,31 L23,31 L23,7.06076667 L15.9977778,0.00895555556 Z M15.9977778,1.75942222 L21.2540444,7.0525 L15.9977778,7.0525 L15.9977778,1.75942222 Z M1.22666667,29.76 L1.22666667,1.24 L14.7714519,1.24 L14.7714519,8.2925 L21.7736741,8.2925 L21.7736741,29.76 L1.22666667,29.76 Z" id="Shape"></path>
             <g id="noun_Graph_1310708" transform="translate(3.000000, 9.000000)">
                 <path d="M3.37596665,9.57894737 C3.32542719,9.57894737 3.249618,9.55319013 3.19907854,9.52743289 C3.04746017,9.42440394 3.02219044,9.21834604 3.09799963,9.06380261 L6.53468275,3.78356885 C6.5852222,3.70629714 6.66103139,3.65478266 6.7621103,3.62902543 C6.86318922,3.60326819 6.93899841,3.65478266 7.01480759,3.70629714 L11.7655166,7.85321243 L15.0253116,2.88206553 C15.1263905,2.7275221 15.3285484,2.70176486 15.4801667,2.77903658 C15.6317851,2.88206553 15.6570548,3.08812343 15.5812457,3.24266686 L12.1192928,8.52290062 C12.0687534,8.60017233 11.9929442,8.65168681 11.8918652,8.67744404 C11.7907863,8.70320128 11.7149771,8.65168681 11.639168,8.60017233 L6.88845895,4.45325704 L3.65393366,9.45016118 C3.57812448,9.52743289 3.47704556,9.57894737 3.37596665,9.57894737 Z" id="Path"></path>
@@ -188,8 +197,8 @@
         </g>
         <use id="Rectangle" stroke="#979797" mask="url(#mask-2)" stroke-width="2" stroke-dasharray="2,1" xlink:href="#path-1"></use>
         <use id="Rectangle" stroke="#979797" mask="url(#mask-4)" stroke-width="2" stroke-dasharray="4,3" xlink:href="#path-3"></use>
-        <line x1="246.5" y1="54.5" x2="247" y2="83" id="Line-6-Copy" stroke="#00CE7D" stroke-width="2" stroke-linecap="square"></line>
-        <line x1="394" y1="167" x2="394" y2="191" id="Line-6-Copy" stroke="#FE7E79" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="247" y1="55" x2="247" y2="83" id="Line-6-Copy" stroke="#00CE7D" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="322" y1="167" x2="322" y2="194" id="Line-6-Copy" stroke="#FE7E79" stroke-width="2" stroke-linecap="square"></line>
         <g id="Group-4" transform="translate(235.000000, 63.000000)">
             <rect id="Rectangle" fill="#FFFFFF" x="0" y="0" width="22" height="30"></rect>
             <g id="noun_Document_5873" fill="#000000" fill-rule="nonzero">
@@ -201,6 +210,6 @@
             </g>
         </g>
         <line x1="201.5" y1="6.5" x2="168.5" y2="115.5" id="Line-7" stroke="#979797" stroke-dasharray="2,1"></line>
-        <line x1="201.5" y1="305.5" x2="168.5" y2="185.5" id="Line-7" stroke="#979797" stroke-dasharray="2,1"></line>
+        <line x1="201.5" y1="326.5" x2="168.5" y2="185.5" id="Line-7" stroke="#979797" stroke-dasharray="2,1"></line>
     </g>
 </svg>
