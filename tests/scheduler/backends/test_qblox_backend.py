@@ -29,6 +29,7 @@ from quantify_scheduler.pulse_library import (
     SquarePulse,
     StaircasePulse,
 )
+from quantify_scheduler.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.resources import ClockResource, BasebandClockResource
 from quantify_scheduler.compilation import (
     qcompile,
@@ -398,6 +399,20 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
     meas_op = mixed_schedule_with_acquisition.add(Measure("q0"))
     # add another one too quickly
     mixed_schedule_with_acquisition.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
+
+    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    with pytest.raises(ValueError):
+        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
+
+
+def test_wrong_bin_mode(mixed_schedule_with_acquisition):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    mixed_schedule_with_acquisition.add(
+        SSBIntegrationComplex(
+            duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
+        )
+    )
 
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
     with pytest.raises(ValueError):
