@@ -120,29 +120,13 @@ class Pulsar_QCM(PulsarBaseband):
     """
 
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    """Maximum number of sequencers available in the instrument."""
     awg_output_volt: float = 2.5
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the O1 marker"""
-
-    def _distribute_data(self):
-        """
-        Distributes the pulses and acquisitions assigned to this pulsar over the
-        different sequencers based on their portclocks. Overrides the function of the
-        same name in the superclass to raise an exception in case it attempts to
-        distribute acquisitions, since this is not supported by the pulsar QCM.
-
-        Raises
-        ------
-        RuntimeError
-            Pulsar_QCM._acquisitions is not empty.
-        """
-        if len(self._acquisitions) > 0:
-            raise RuntimeError(
-                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
-                f"which is not supported by hardware."
-            )
-        super()._distribute_data()
+    _supports_acquisition: bool = False
+    """Specifies whether the device can perform acquisitions."""
 
     def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
         """
@@ -178,14 +162,16 @@ class Pulsar_QRM(PulsarBaseband):
     """
 
     max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
-    """Maximum number of sequencer available in the instrument."""
+    """Maximum number of sequencers available in the instrument."""
     awg_output_volt: float = 0.5
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 0}
     """Marker values to activate/deactivate the I1 marker"""
+    _supports_acquisition: bool = True
+    """Specifies whether the device can perform acquisitions."""
 
 
-class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
+class Pulsar_QCM_RF(PulsarRF):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
@@ -196,9 +182,11 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 6, "off": 8}
     """
-    Marker values to activate/deactivate the O1 marker, 
+    Marker values to activate/deactivate the O1 marker,
     and the output switches for O1/O2
     """
+    _supports_acquisition: bool = False
+    """Specifies whether the device can perform acquisitions."""
 
 
 class Pulsar_QRM_RF(PulsarRF):
@@ -212,6 +200,8 @@ class Pulsar_QRM_RF(PulsarRF):
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 4}
     """
-    Marker values to activate/deactivate the I1 marker, 
+    Marker values to activate/deactivate the I1 marker,
     and the output switch for O1
     """
+    _supports_acquisition: bool = True
+    """Specifies whether the device can perform acquisitions."""

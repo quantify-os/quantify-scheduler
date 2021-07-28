@@ -159,6 +159,18 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
+    @property
+    @abstractmethod
+    def _supports_acquisition(self) -> bool:
+        """
+        Specifies whether the device can perform acquisitions.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
+
     def add_pulse(self, port: str, clock: str, pulse_info: OpInfo):
         """
         Assigns a certain pulse to this device.
@@ -189,6 +201,14 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             Data structure containing all the information regarding this specific
             acquisition operation.
         """
+
+        if not self._supports_acquisition:
+            raise RuntimeError(
+                f"{self.__class__.__name__} {self.name} does not support acquisitions. "
+                f"Attempting to add acquisition {repr(acq_info)} "
+                f"on port {port} with clock {clock}."
+            )
+
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
@@ -963,8 +983,16 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     def _distribute_data(self):
         """
         Distributes the pulses and acquisitions assigned to this pulsar over the
-        different sequencers based on their portclocks.
+        different sequencers based on their portclocks. Raises an exception in case
+        the device does not support acquisitions.
         """
+
+        if len(self._acquisitions) > 0 and not self._supports_acquisition:
+            raise RuntimeError(
+                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
+                f"which is not supported by hardware."
+            )
+
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
@@ -1048,7 +1076,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
 class PulsarBaseband(PulsarBase):
     """
-    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should 
+    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should
     inherit from.
     """
 
@@ -1130,8 +1158,8 @@ class PulsarBaseband(PulsarBase):
 
 
 class PulsarRF(PulsarBase):
-    """
-    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit 
+    r"""
+    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit
     from.
     """
 
