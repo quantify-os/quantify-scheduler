@@ -49,9 +49,7 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
 )
-from quantify_scheduler.backends.qblox.compiler_abc import (
-    PulsarSequencer
-)
+from quantify_scheduler.backends.qblox.compiler_abc import PulsarSequencer
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
 from quantify_scheduler.backends.qblox import constants
@@ -344,7 +342,6 @@ def test_generate_port_clock_to_device_map():
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
     class TestPulsar(Pulsar_QCM):
-
         def __init__(self):
             super().__init__(
                 parent=None,
