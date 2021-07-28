@@ -33,7 +33,7 @@ Creating a schedule
 -------------------
 
 The most convenient way to interact with a :class:`~quantify_scheduler.types.Schedule` is through the :mod:`quantify_scheduler` API.
-In the following example, we set up an element of a `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ and visualize the circuit.
+In the following example, we will create a function to generate a :class:`~quantify_scheduler.types.Schedule` for a a `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ and visualize one instance of such a circuit.
 
 
 .. jupyter-execute::
@@ -43,16 +43,29 @@ In the following example, we set up an element of a `Bell experiment <https://en
     from quantify_scheduler import Schedule
     from quantify_scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
 
-    sched = Schedule("Bell experiment")
+    def bell_schedule(angles, q0:str, q1:str, repetitions: int):
 
-    sched.add(Reset("q0", "q1"))  # initialize the qubits
-    sched.add(X90(qubit="q0"))
-    # Here we use a timing constraint to explicitly schedule the second gate to start
-    # simultaneously with the first gate.
-    sched.add(X90(qubit="q1"), ref_pt="start", rel_time=0)
-    sched.add(CZ(qC="q0", qT="q1"))
-    sched.add(Rxy(theta=45.0, phi=0, qubit="q0") )  # pick an angle for maximal Bell violation
-    sched.add(Measure("q0", "q1", acq_index=(0, 1)))  # denote where to store the data
+        for acq_index, angle in enumerate(angles):
+
+            sched = Schedule(f"Bell experiment on {q0}-{q1}")
+
+            sched.add(Reset(q0, q1))  # initialize the qubits
+            sched.add(X90(qubit=q0))
+            # Here we use a timing constraint to explicitly schedule the second gate to start
+            # simultaneously with the first gate.
+            sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
+            sched.add(CZ(qC=q0, qT=q1))
+            sched.add(Rxy(theta=angle, phi=0, qubit=q0) )  # pick an angle for maximal Bell violation
+            sched.add(Measure(q0, q1, acq_index=acq_index))  # denote where to store the data
+
+        return sched
+
+
+    sched = bell_schedule(
+        angles=[45.0],
+        q0="q0",
+        q1="q1",
+        repetitions=1024)
 
 
 
@@ -66,6 +79,11 @@ In the following example, we set up an element of a `Bell experiment <https://en
 
 
 For more details on how to create schedules, specify timing constraints and seamlessly mix the gate- and pulse-level descriptions, see :ref:`Tutorial 1 <sec-tutorial1>`.
+
+.. tip::
+
+    Creating schedule generating functions is a convenient design pattern when creating measurement code. See :ref:`the section on execution <sec-user-guide-execution>` for an example of how this is used in practice.
+
 
 .. _sec-compilation:
 
@@ -181,6 +199,8 @@ Similar to the device configuration file, the hardware configuration file can be
 
 Execution
 ---------
+
+.. _sec-user-guide-execution:
 
 .. warning::
 
@@ -332,7 +352,7 @@ and the resulting dataset can be analyzed using
     # analysis = T1Analysis(label=label).run()
 
 .. tip::
-    For a more technical overview of the concepts and terminology, we recommend to consult the section on :ref:`concepts and terminology <sec-concepts-terminology>`.
+    For a more technical overview of the concepts and terminology, we recommend the section on :ref:`concepts and terminology <sec-concepts-terminology>`.
 
 
 
