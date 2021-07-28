@@ -76,6 +76,18 @@ def make_qrm(mocker):
             "get_sequencer_state",
             return_value={"status": "ARMED"},
         )
+        mocker.patch.object(
+            component.instrument,
+            "get_acquisitions",
+            return_value={
+                "0": {
+                    "index": 0,
+                    "acquisition": {
+                        "bins": {"integration": {"path0": [0], "path1": [0]}}
+                    },
+                }
+            },
+        )
 
         return component
 
@@ -156,7 +168,7 @@ def test_retrieve_acquisition_qcm(make_qcm):
 
 def test_retrieve_acquisition_qrm(schedule_with_measurement, make_qrm):
     # Arrange
-    qrm: qblox.PulsarQRMComponent = make_qrm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -166,10 +178,10 @@ def test_retrieve_acquisition_qrm(schedule_with_measurement, make_qrm):
 
         qrm.prepare(prog[qrm.instrument.name])
         qrm.start()
-        acq = qrm.retrieve_acquisition()
+        acq = qrm.retrieve_acquisition(0, 0)
 
-    # Assert
-    assert len(acq) == 2
+        # Assert
+        assert len(acq) == 2
 
 
 def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
