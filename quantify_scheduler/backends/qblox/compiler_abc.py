@@ -41,6 +41,7 @@ from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     PulsarSettings,
+    PulsarRFSettings,
     SequencerSettings,
     QASMRuntimeSettings,
     MixerCorrections,
@@ -1050,6 +1051,9 @@ class PulsarBaseband(PulsarBase):
     Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should inherit from.
     """
 
+    settings_type = PulsarSettings
+    """The settings type used by Pulsar baseband-type devices"""
+
     def update_settings(self):
         """
         Updates the Pulsar settings to set all parameters that are determined by the
@@ -1128,6 +1132,9 @@ class PulsarRF(PulsarBase):
     """
     Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit from.
     """
+
+    settings_type = PulsarRFSettings
+    """The settings type used by Pulsar RF-type devices"""
 
     def update_settings(self):
         """

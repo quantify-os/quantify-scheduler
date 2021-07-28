@@ -209,3 +209,4 @@ class Pulsar_QRM_RF(PulsarRF):
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 4}
     """Marker values to activate/deactivate the I1 marker, and the output switch for O1"""
+    
