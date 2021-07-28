@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Dict
 from qcodes.instrument import parameter
 from qcodes.instrument import base
 from qcodes.utils import validators
@@ -12,6 +12,27 @@ from qcodes.utils import validators
 
 class InstrumentCoordinatorComponentBase(base.Instrument):
     """The InstrumentCoordinator component abstract interface."""
+
+    # NB `_instances` also used by `Instrument` class
+    _no_gc_intances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
+
+    def __new__(
+        cls, instrument: base.InstrumentBase, *args, **kwargs
+    ) -> InstrumentCoordinatorComponentBase:
+        """Keeps track of the intances of this class.
+
+        NB This is done intentionally to prevent the intances from being garbage
+        collected.
+        """
+        instance = super().__new__(cls, *args, **kwargs)
+        cls._no_gc_intances[instrument.name] = instance
+        return instance
+
+    def close(self):
+        """Makes sure the intance reference is realeased so that garbage collector can
+        claim the object"""
+        _ = self._no_gc_intances.pop(self.instrument_ref())
+        super().close()
 
     def __init__(
         self,
