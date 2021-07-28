@@ -47,12 +47,11 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         :
             True if any of the sequencers reports the "RUNNING" status.
         """
-        is_running = False
         for seq_idx in range(self._number_of_sequencers):
             seq_state = self.instrument.get_sequencer_state(seq_idx)
-            if seq_state["Status"] == "RUNNING":
-                is_running = True
-        return is_running
+            if seq_state["status"] == "RUNNING":
+                return True
+        return False
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         timeout_min = timeout_sec // 60

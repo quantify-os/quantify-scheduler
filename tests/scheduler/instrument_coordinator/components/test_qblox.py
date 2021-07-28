@@ -155,6 +155,11 @@ def test_prepare_exception_qrm(make_qrm):
     )
 
 
+def test_is_running(make_qrm):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    assert not qrm.is_running
+
+
 def test_retrieve_acquisition_qcm(make_qcm):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
