@@ -35,18 +35,31 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
     @property
     @abstractmethod
     def _number_of_sequencers(self) -> int:
-        """"""
+        """The number of sequencers this pulsar has."""
 
     @property
     def is_running(self) -> bool:
-        raise False
+        """
+        Finds if any of the sequencers is currently running.
+
+        Returns
+        -------
+        :
+            True if any of the sequencers reports the "RUNNING" status.
+        """
+        is_running = False
+        for seq_idx in range(self._number_of_sequencers):
+            seq_state = self.instrument.get_sequencer_state(seq_idx)
+            if seq_state["Status"] == "RUNNING":
+                is_running = True
+        return is_running
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         timeout_min = timeout_sec // 60
         if timeout_min == 0:
             timeout_min = 1
         for idx in range(self.number_of_sequencers):
-            state = self.instrument.get_sequencer_state(idx, timeout_min)
+            self.instrument.get_sequencer_state(idx, timeout_min)
 
     def start(self) -> None:
         """
@@ -118,10 +131,6 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     @property
     def instrument(self) -> pulsar_qcm.pulsar_qcm_qcodes:
         return super().instrument
-
-    @property
-    def is_running(self) -> bool:
-        return False
 
     def retrieve_acquisition(self) -> None:
         """
@@ -199,10 +208,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     @property
     def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
         return super().instrument
-
-    @property
-    def is_running(self) -> bool:
-        return False
 
     # pylint: disable=arguments-differ
     def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
@@ -334,7 +339,7 @@ class _QRMAcquisitionManager:
 
     def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
         """
-
+        Retrieves all the acquisition data in the correct format.
 
         Returns
         -------
@@ -397,10 +402,15 @@ class _QRMAcquisitionManager:
         seq_name = self.acquisition_mapping[(acq_channel, acq_index)][0]
         return self.seq_name_to_idx_map[seq_name]
 
-    def _get_scope_channel_and_index(self) -> Tuple[int, int]:
+    def _get_scope_channel_and_index(self) -> Optional[Tuple[int, int]]:
+        """
+        Returns the first acq_channel, acq_index pair that uses "Trace" acquisition.
+        Returns None if none of them do.
+        """
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
                 return key
+        return None
 
     def _get_scope_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
@@ -444,10 +454,12 @@ class _QRMAcquisitionManager:
 
         Parameters
         ----------
+        acquisitions:
+            The acquisitions dict as returned by the sequencer.
         acq_channel:
-            The acq_channel to get the scope mode acquisition for.
+            The acq_channel to get integrated acquisition data for.
         acq_index:
-            The acq_index to get the scope mode acquisition for.
+            The acq_index to get the integrated acquisition data for.
 
         Returns
         -------
@@ -471,6 +483,23 @@ class _QRMAcquisitionManager:
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
     ):
+        """
+        Retrieves the thresholded acquisition data associated with `acq_channel` and
+        `acq_index`.
+
+        Parameters
+        ----------
+        acquisitions:
+            The acquisitions dict as returned by the sequencer.
+        acq_channel:
+            The acq_channel to get the thresholded acquisition data for.
+        acq_index:
+            The acq_index to get the thresholded acquisition data for.
+
+        Returns
+        -------
+
+        """
         bin_data = _get_bin_data(acquisitions, acq_channel)
         i_data, q_data = (
             bin_data["threshold"]["path0"],
