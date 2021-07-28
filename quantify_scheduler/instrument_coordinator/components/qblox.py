@@ -192,8 +192,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQRMComponent."""
         assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
-        super().__init__(instrument, **kwargs)
         self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
+        """Holds all the acquisition related logic."""
+        super().__init__(instrument, **kwargs)
 
     @property
     def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
@@ -204,23 +205,16 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         return False
 
     # pylint: disable=arguments-differ
-    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
+    def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
         """
         Retrieves the latest acquisition results.
-
-        Parameters
-        ----------
-        acq_channel
-            TODO
-        acq_index
-            TODO
 
         Returns
         -------
         :
             The acquired data.
         """
-        if self._acquisition_manager is None:
+        if self._acquisition_manager is None:  # No acquisition has been prepared.
             return None
         return self._acquisition_manager.retrieve_acquisition()
 
