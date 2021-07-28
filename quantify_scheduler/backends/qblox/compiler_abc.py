@@ -267,9 +267,7 @@ class PulsarSequencerBase(ABC):
         )
 
         modulation_freq = seq_settings.get("interm_freq", None)
-        nco_en: bool = (
-            False if (modulation_freq == 0 or modulation_freq is None) else True
-        )
+        nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
         self._settings = SequencerSettings(
             nco_en=nco_en,
             sync_en=True,
