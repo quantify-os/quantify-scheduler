@@ -487,13 +487,13 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
 
         if settings.offset_ch0_path0:
             logger.warning(
-                f"'offset_ch0_path0' was not set. This functionality is still " 
-                f"not present in the Pulsar QRM-RF driver."
+                "'offset_ch0_path0' was not set. This functionality is still " 
+                "not present in the Pulsar QRM-RF driver."
             )
         if settings.offset_ch0_path1:
             logger.warning(
-                f"'offset_ch0_path1' was not set. This functionality is still" 
-                f"not present to the Pulsar QRM-RF driver."
+                "'offset_ch0_path1' was not set. This functionality is still" 
+                "not present to the Pulsar QRM-RF driver."
             )
 
 
