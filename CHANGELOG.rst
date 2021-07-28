@@ -8,6 +8,7 @@ Unreleased
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Change of namespace from quantify.scheduler.* to quantify_scheduler.*
+* Mixer corrections in Qblox backend are broken because of switching to real-time modulation
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -21,6 +22,7 @@ Merged branches and closed issues
 * Added Qblox InstrumentCoordinator components (!112)
 * Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
 * Added instrument coordinator reference parameter to transmon element. (!152)
+* Added support for qblox_instruments version 0.4.0 (new acquisition path) (!143)
 
 
 0.3.0 Multiple backends support (2021-05-20)
