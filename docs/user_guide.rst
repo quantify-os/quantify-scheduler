@@ -182,6 +182,12 @@ Similar to the device configuration file, the hardware configuration file can be
 Execution
 ---------
 
+.. warning::
+
+    This section describes functionality that is not fully implemented yet.
+    The documentation describes the intended design and may change as the functionality is added.
+
+
 Different kinds of instruments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
