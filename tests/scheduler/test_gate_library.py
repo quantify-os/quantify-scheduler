@@ -6,8 +6,8 @@ from unittest import TestCase
 
 import numpy as np
 import pytest
-from quantify.scheduler import Operation
-from quantify.scheduler.gate_library import (
+from quantify_scheduler import Operation
+from quantify_scheduler.gate_library import (
     CNOT,
     CZ,
     X90,
@@ -18,7 +18,7 @@ from quantify.scheduler.gate_library import (
     X,
     Y,
 )
-from quantify.scheduler.types import Schedule
+from quantify_scheduler.types import Schedule
 
 
 def test_schedule_add_timing_constraints():

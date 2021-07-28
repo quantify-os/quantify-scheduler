@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import quantify.scheduler.visualization.pulse_scheme as pls
+import quantify_scheduler.visualization.pulse_scheme as pls
 import pytest
 
 cm = 1 / 2.54  # inch to cm conversion
