@@ -1,7 +1,7 @@
 .. _sec-user-guide:
 
-Getting started
-===============
+User guide
+==========
 
 .. jupyter-kernel::
   :id: Scheduler getting started
@@ -55,7 +55,7 @@ In the following example, we will create a function to generate a :class:`~quant
             # simultaneously with the first gate.
             sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
             sched.add(CZ(qC=q0, qT=q1))
-            sched.add(Rxy(theta=angle, phi=0, qubit=q0) )  # pick an angle for maximal Bell violation
+            sched.add(Rxy(theta=angle, phi=0, qubit=q0) )
             sched.add(Measure(q0, q1, acq_index=acq_index))  # denote where to store the data
 
         return sched
@@ -83,6 +83,137 @@ For more details on how to create schedules, specify timing constraints and seam
 .. tip::
 
     Creating schedule generating functions is a convenient design pattern when creating measurement code. See :ref:`the section on execution <sec-user-guide-execution>` for an example of how this is used in practice.
+
+Concepts and terminology
+------------------------
+
+
+Quantify-scheduler can be understood by understanding the following concepts.
+
+- :class:`~quantify_scheduler.types.Schedule`\s describe when an operation needs to be applied.
+- :class:`~quantify_scheduler.types.Operation`\s describe what needs to be done.
+- :class:`~quantify_scheduler.resources.Resource`\s describe where an operation should be applied.
+- :ref:`Compilation <sec-compilation>`: between different abstraction layers and onto a hardware backend.
+
+The following table shows an overview of the different concepts and how these are represented at the quantum-circuit layer and quantum-device layer.
+
+
+.. list-table:: Overview of concepts and their representation at different levels of abstraction.
+    :widths: 25 25 25 25
+    :header-rows: 0
+
+    * -
+      - Concept
+      - Quantum-circuit layer
+      - Quantum-device layer
+    * - When
+      - :class:`~quantify_scheduler.types.Schedule`
+      - --
+      - --
+    * - What
+      - :class:`~quantify_scheduler.types.Operation`
+      - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
+      - parameterized waveforms
+    * - Where
+      - :class:`~quantify_scheduler.resources.Resource`
+      - qubits (:code:`str`)
+      - ports (:code:`str`) & clocks  (:class:`~quantify_scheduler.resources.ClockResource`)
+
+
+
+.. _sec-user-guide-quantum-circuit:
+
+Quantum-circuit layer
+~~~~~~~~~~~~~~~~~~~~~
+The Quantum-circuit description is an idealized mathematical description of a schedule.
+
+Gates and measurements
+^^^^^^^^^^^^^^^^^^^^^^
+In this description operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
+Operations can be represented by (idealized) unitaries acting on qubits.
+The :mod:`~quantify_scheduler.gate_library` contains common operations (including the measurement operation) described at the quantum-circuit level.
+
+The :class:`~quantify_scheduler.gate_library.Measure` is a special operation that represents a measurement on a qubit.
+In addition to the qubit it acts on, one also needs to specify where to store the data.
+
+Qubits
+^^^^^^
+At the gate-level description, operations are applied to qubits.
+Qubits are represented by strings corresponding to the name of a qubit (e.g., :code:`q0`, :code:`q1`, :code:`A1`, :code:`QL`, :code:`qubit_1`, etc.).
+Valid qubits are strings that appear in the :ref:`device configuration file<sec-device-config>` used when compiling the schedule.
+
+
+Visualization
+^^^^^^^^^^^^^
+A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+
+Summary
+^^^^^^^
+
+- Gates are described by unitaries.
+- Gates are applied to qubits.
+- Measurements are applied to qubits.
+- Qubits are represented by strings.
+
+
+.. _sec-user-guide-quantum-device:
+
+Quantum-device layer
+~~~~~~~~~~~~~~~~~~~~~
+
+The quantum-device layer describes waveforms and acquisition protocols applied to a device.
+These waveforms can be used to implement the idealized operations expressed on the quantum-circuit layer, or can be used without specifying a corresponding representation at the quantum-circuit layer.
+
+Pulses and acquisition protocols
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The pulse-level description typically contains parameterization information, such as amplitudes, durations and so forth required to synthesize the waveform on control hardware.
+The :mod:`~quantify_scheduler.pulse_library` contains a collection of commonly used pulses.
+
+Measurements are represented as acquisition protocols.
+Acquisition protocols describe the processing steps to perform on an acquired signal in order to interpret it.
+The :mod:`~quantify_scheduler.acquisition_library` contains a collection of commonly used acquisition protocols.
+
+Ports and clocks
+^^^^^^^^^^^^^^^^
+
+To specify *where* an operation is applied, the quantum-device layer description needs to specify both the location in physical space as well as in frequency space.
+
+For many systems, it is possible to associate a qubit with an element or location on a device that a signal can be applied to.
+We call such a location on a device a port.
+Like qubits, ports are represented as strings (e.g., :code:`P0`, :code:`feedline_in`, :code:`q0:mw_drive`, etc.).
+A port can be associated with a qubit by including the qubit name in the name of the port (separated by a colon :code:`:`).
+
+Associating a qubit can be useful when visualizing a schedule and or to keep configuration files readable.
+Associating a port with a single qubit is not required so as not to complicate matters when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
+
+
+Besides the physical location on a device, a pulse is typically applied at a certain frequency.
+A :class:`~quantify_scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
+Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
+If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband and is assumed to be real-valued.
+
+:numref:`resources_fig` shows how the resources (qubit, port and clock) map to a physical device.
+
+.. figure:: /images/Device_ports_clocks.svg
+    :width: 800
+    :name: resources_fig
+
+    Resources are used to indicate *where* operations are applied.
+    (a) Ports (purple) indicate a location on a device.
+    By prefixing the name of a qubit in a port name (separated by a colon :code:`:`) a port can be associated with a qubit (red), but this is not required.
+    (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition.
+    By prefixing the name of a qubit in a clock name (separated by a colon :code:`:`) a clock can be associated with a qubit (red), but this is not required.
+    Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
+
+
+To summarize:
+
+- Pulses are described as parameterized waveforms.
+- Pulses are applied to *ports* at a frequency specified by a *clock*.
+- Ports and clocks are represented by strings.
+- Acquisition protocols describe the processing steps to perform on an acquired signal in order to interpret it.
+
+
 
 
 .. _sec-compilation:
@@ -350,9 +481,6 @@ and the resulting dataset can be analyzed using
 
     from quantify_core.analysis.t1_analysis import T1Analysis
     # analysis = T1Analysis(label=label).run()
-
-.. tip::
-    For a more technical overview of the concepts and terminology, we recommend the section on :ref:`concepts and terminology <sec-concepts-terminology>`.
 
 
 

@@ -10,7 +10,6 @@ Welcome to Quantify's documentation!
 
    installation
    user_guide
-   concepts_terminology
    tutorials/*
    tutorials/qblox/index
    tutorials/zhinst/index

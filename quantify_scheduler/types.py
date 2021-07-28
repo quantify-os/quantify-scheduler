@@ -27,8 +27,9 @@ if TYPE_CHECKING:
 class Operation(UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
-    how to represent the operation on the Gate, Pulse and/or Logical level.
-    It also contains information on the
+    how to represent the operation on the quantum-circuit and/or the quantum-device
+    layer.
+    It also contains information on where the operation should be applied: the
     :class:`~quantify_scheduler.resources.Resource` s used.
 
     An operation always has the following attributes:
@@ -37,10 +38,22 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     - hash (str): an auto generated unique identifier.
     - name (str): a readable identifier, does not have to be unique.
 
+
+
     An Operation can contain information  on several levels of abstraction.
-    This information is used when different representations. Note that when
+    This information is used when different representations are required. Note that when
     initializing an operation  not all of this information needs to be available
     as operations are typically modified during the compilation steps.
+
+    .. tip::
+
+        :mod:`quantify_scheduler` comes with a :mod:`~quantify_scheduler.gate_library`
+        and a :mod:`~quantify_scheduler.pulse_library` , both containing
+        common operations.
+
+
+    JSON schema of a valid Operation
+    --------------------------------
 
     .. jsonschema:: schemas/operation.json
 
@@ -330,6 +343,40 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
     - operation_dict - a hash table containing the unique :class:`~Operation` s added to the schedule.
     - timing_constraints - a list of all timing constraints added between operations.
+
+    Description
+    -----------
+
+    The :class:`~quantify_scheduler.types.Schedule` is a data structure that is at the
+    core of the Quantify-scheduler.
+    The :class:`~quantify_scheduler.types.Schedule` contains information on *when*
+    operations should be performed.
+
+    When adding an :class:`~quantify_scheduler.types.Operation` to a
+    :class:`~quantify_scheduler.types.Schedule` using the
+    :meth:`~quantify_scheduler.types.Schedule.add` method, it is possible to specify
+    precisely *when* to perform this operation using timing constraints.
+    However, at this point it is not required to specify how to represent this
+    :class:`~quantify_scheduler.types.Operation` on all layers.
+    Instead, this information can be added later during
+    :ref:`compilation <sec-compilation>`.
+    This allows the user to effortlessly mix the gate- and pulse-level descriptions as
+    required for many (calibration) experiments.
+
+
+    The :class:`~quantify_scheduler.types.Schedule` contains information on the
+    :attr:`~quantify_scheduler.types.Schedule.operations` and
+    :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
+    The :attr:`~quantify_scheduler.types.Schedule.operations` is a dictionary of all
+    unique operations used in the schedule and contain the information on *what* operation to apply *where*.
+    The :attr:`~quantify_scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing
+    constraints between operations, i.e. when to apply an operation.
+
+
+
+
+    JSON schema of a valid Schedule
+    -------------------------------
 
     .. jsonschema:: schemas/schedule.json
     """  # pylint: disable=line-too-long

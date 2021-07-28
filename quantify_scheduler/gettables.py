@@ -4,8 +4,6 @@ r"""
 Module containing :class:`~quantify_core.measurement.Gettable`\s for use with
 quantify-scheduler.
 
-Schedule gettables are set up to f
-
 .. warning::
 
     The gettable module is expected to change significantly as the
