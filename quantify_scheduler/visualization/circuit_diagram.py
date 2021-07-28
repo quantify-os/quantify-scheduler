@@ -192,6 +192,8 @@ def _locate_qubit_in_address(qubit_map, address):
     """
     Returns the name of a qubit in  a pulse address.
     """
+    if address is None:
+        raise ValueError("Could not resolve address '{}'".format(address))
     for sub_addr in address.split(":"):
         if sub_addr in qubit_map:
             return sub_addr

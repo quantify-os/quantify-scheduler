@@ -2,7 +2,11 @@
 # Licensed according to the LICENCE file on the master branch
 from typing import Dict, Any
 from qcodes.instrument.base import Instrument
-from qcodes.instrument.parameter import ManualParameter, Parameter
+from qcodes.instrument.parameter import (
+    ManualParameter,
+    Parameter,
+    InstrumentRefParameter,
+)
 from qcodes.utils import validators
 
 
@@ -19,7 +23,8 @@ class TransmonElement(Instrument):
         """
         Initializes the parent class and adds
         :class:`~qcodes.instrument.parameter.Parameter` s /
-        :class:`~qcodes.instrument.parameter.ManualParameter` s to it.
+        :class:`~qcodes.instrument.parameter.ManualParameter` s /
+        :class:`~qcodes.instrument.parameter.InstrumentRefParameter` s to it.
 
         The list of all parameters and their latest (cached) value can be listed as
         follows:
@@ -31,8 +36,22 @@ class TransmonElement(Instrument):
 
             q0.print_readable_snapshot()
 
+        Parameters
+        -----------
+        name:
+            The name of the transmon element.
+
         """
         super().__init__(name, **kwargs)
+        # pylint: disable=fixme
+        # TODO: create DeviceElement parent class and make instrument_coordinator
+        # a parameter of that class, see issue quantify-scheduler#148
+        self.add_parameter(
+            "instrument_coordinator",
+            initial_value=None,
+            parameter_class=InstrumentRefParameter,
+            vals=validators.Strings(),
+        )
         self._add_device_parameters()
 
     def _add_device_parameters(self):
@@ -208,7 +227,6 @@ class TransmonElement(Instrument):
             parameter_class=Parameter,
             set_cmd=False,
         )
-
         acquisition_validator = validators.Enum("SSBIntegrationComplex", "Trace")
         self.add_parameter(
             "acquisition",
