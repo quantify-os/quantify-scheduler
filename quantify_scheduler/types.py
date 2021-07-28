@@ -52,8 +52,7 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         common operations.
 
 
-    JSON schema of a valid Operation
-    --------------------------------
+    **JSON schema of a valid Operation**
 
     .. jsonschema:: schemas/operation.json
 
@@ -344,9 +343,6 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     - operation_dict - a hash table containing the unique :class:`~Operation` s added to the schedule.
     - timing_constraints - a list of all timing constraints added between operations.
 
-    Description
-    -----------
-
     The :class:`~quantify_scheduler.types.Schedule` is a data structure that is at the
     core of the Quantify-scheduler.
     The :class:`~quantify_scheduler.types.Schedule` contains information on *when*
@@ -373,10 +369,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
     constraints between operations, i.e. when to apply an operation.
 
 
-
-
-    JSON schema of a valid Schedule
-    -------------------------------
+    **JSON schema of a valid Schedule**
 
     .. jsonschema:: schemas/schedule.json
     """  # pylint: disable=line-too-long

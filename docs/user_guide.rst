@@ -112,13 +112,12 @@ The following table shows an overview of the different concepts and how these ar
       - --
     * - What
       - :class:`~quantify_scheduler.types.Operation`
-      - unitaries and `POVMs <https://en.wikipedia.org/wiki/POVM>`_
-      - parameterized waveforms
+      - :ref:`Gates and Measurements <sec-user-guide-gates-measurement>`
+      - :ref:`Pulses and acquisition protocols <sec-user-guide-pulses-acq-protocols>`
     * - Where
       - :class:`~quantify_scheduler.resources.Resource`
-      - qubits (:code:`str`)
-      - ports (:code:`str`) & clocks  (:class:`~quantify_scheduler.resources.ClockResource`)
-
+      - :ref:`Qubits <sec-user-guide-qubits>`
+      - :ref:`Ports and clocks <sec-user-guide-ports-clocks>`
 
 
 .. _sec-user-guide-quantum-circuit:
@@ -126,6 +125,9 @@ The following table shows an overview of the different concepts and how these ar
 Quantum-circuit layer
 ~~~~~~~~~~~~~~~~~~~~~
 The Quantum-circuit description is an idealized mathematical description of a schedule.
+
+
+.. _sec-user-guide-gates-measurement:
 
 Gates and measurements
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -135,6 +137,8 @@ The :mod:`~quantify_scheduler.gate_library` contains common operations (includin
 
 The :class:`~quantify_scheduler.gate_library.Measure` is a special operation that represents a measurement on a qubit.
 In addition to the qubit it acts on, one also needs to specify where to store the data.
+
+.. _sec-user-guide-qubits:
 
 Qubits
 ^^^^^^
@@ -164,6 +168,8 @@ Quantum-device layer
 The quantum-device layer describes waveforms and acquisition protocols applied to a device.
 These waveforms can be used to implement the idealized operations expressed on the quantum-circuit layer, or can be used without specifying a corresponding representation at the quantum-circuit layer.
 
+.. _sec-user-guide-pulses-acq-protocols:
+
 Pulses and acquisition protocols
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The pulse-level description typically contains parameterization information, such as amplitudes, durations and so forth required to synthesize the waveform on control hardware.
@@ -172,6 +178,8 @@ The :mod:`~quantify_scheduler.pulse_library` contains a collection of commonly u
 Measurements are represented as acquisition protocols.
 Acquisition protocols describe the processing steps to perform on an acquired signal in order to interpret it.
 The :mod:`~quantify_scheduler.acquisition_library` contains a collection of commonly used acquisition protocols.
+
+.. _sec-user-guide-ports-clocks:
 
 Ports and clocks
 ^^^^^^^^^^^^^^^^
