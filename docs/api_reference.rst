@@ -218,23 +218,31 @@ instrument_coordinator
 
 .. automodule:: quantify_scheduler.instrument_coordinator
     :members:
+    :show-inheritance:
 
-base
-~~~~
+instrument_coordinator
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.instrument_coordinator
+    :members:
+    :show-inheritance:
+
+components.base
+~~~~~~~~~~~~~~~
 
 .. automodule:: quantify_scheduler.instrument_coordinator.components.base
     :members:
     :show-inheritance:
 
-qblox
-~~~~~
+components.qblox
+~~~~~~~~~~~~~~~~
 
 .. automodule:: quantify_scheduler.instrument_coordinator.components.qblox
     :members:
     :show-inheritance:
 
-zhinst
-~~~~~~
+components.zhinst
+~~~~~~~~~~~~~~~~~
 
 .. automodule:: quantify_scheduler.instrument_coordinator.components.zhinst
     :members:
