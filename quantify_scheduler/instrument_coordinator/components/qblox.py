@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple, Callable
+from collections import namedtuple
 
 import logging
 
@@ -15,7 +16,6 @@ from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.instrument_coordinator.components import base
-from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.backends.types.qblox import PulsarSettings, SequencerSettings
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
@@ -204,7 +204,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         return False
 
     # pylint: disable=arguments-differ
-    def retrieve_acquisition(self, acq_channel: int = 0, acq_index: int = 0) -> Any:
+    def retrieve_acquisition(self) -> Any:
         """
         Retrieves the latest acquisition results.
 
@@ -222,7 +222,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         """
         if self._acquisition_manager is None:
             return None
-        return self._acquisition_manager.retrieve_acquisition(acq_channel, acq_index)
+        return self._acquisition_manager.retrieve_acquisition()
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
@@ -294,6 +294,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         self.instrument.set(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
 
+AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
+
+
 class _QRMAcquisitionManager:
     """
     Utility class that handles the acquisitions performed with the QRM.
@@ -316,14 +319,22 @@ class _QRMAcquisitionManager:
     def instrument(self):
         return self.parent.instrument
 
-    def retrieve_acquisition(self, acq_channel: int = 0, acq_index: int = 0) -> Any:
+    def retrieve_acquisition(self) -> Any:
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
             "trace": self._get_scope_data,
+            # Threshold still missing since there is nothing in
+            # the acquisition library for it yet.
         }
-        protocol = self._get_protocol(acq_channel, acq_index)
-        acquisition_function: Callable = protocol_to_function_mapping[protocol]
-        return acquisition_function(acq_channel, acq_index)
+        acquisitions: Dict[Tuple[int, int]] = dict()
+        for acq_channel, acq_index in self.acquisition_mapping.keys():
+            protocol = self._get_protocol(acq_channel, acq_index)
+            acquisition_function: Callable = protocol_to_function_mapping[protocol]
+
+            acquisitions[
+                AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_index)
+            ] = acquisition_function(acq_channel, acq_index)
+        return acquisitions
 
     def _get_protocol(self, acq_channel, acq_index) -> str:
         """

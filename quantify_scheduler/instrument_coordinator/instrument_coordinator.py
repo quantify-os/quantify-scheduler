@@ -3,8 +3,7 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, List
-from collections import OrderedDict
+from typing import Any, Dict, List, Tuple
 
 from qcodes.utils import validators
 from qcodes.instrument import parameter
@@ -168,9 +167,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             instrument.stop()
 
-    def retrieve_acquisition(
-        self, acq_channel: int = 0, acq_index: int = 0
-    ) -> Dict[str, Any]:
+    def retrieve_acquisition(self) -> Dict[Tuple[int, int]]:
         """
         Retrieves the latest acquisition results of InstrumentCoordinator components
         with acquisition capabilities.
@@ -180,15 +177,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per InstrumentCoordinator component.
         """
-        acquisitions = list()
+        # Temporary. Will probably be replaced by xarray
+        acquisitions: Dict[Tuple[int, int]] = dict()
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
-            acq = instrument.retrieve_acquisition(acq_channel, acq_index)
-            if acq is not None:
-                acquisitions.append(acq)
-        if len(acquisitions) > 1:
-            raise ValueError(f"Multiple instruments use the same channel and index.")
-        return acquisitions[0]
+            acqs = instrument.retrieve_acquisition()
+            if acqs is not None:
+                acquisitions.update(acqs)
+        return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """

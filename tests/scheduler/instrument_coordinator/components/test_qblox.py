@@ -178,10 +178,10 @@ def test_retrieve_acquisition_qrm(schedule_with_measurement, make_qrm):
 
         qrm.prepare(prog[qrm.instrument.name])
         qrm.start()
-        acq = qrm.retrieve_acquisition(0, 0)
+        acq = qrm.retrieve_acquisition()
 
         # Assert
-        assert len(acq) == 2
+        assert len(acq[(0, 0)]) == 2
 
 
 def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
