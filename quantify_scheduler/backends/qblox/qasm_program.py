@@ -34,10 +34,10 @@ class QASMProgram:
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
         self.time_last_acquisition_triggered: Optional[int] = None
-        """Time on which the last acquisition was triggered. Is `None` if no previous 
+        """Time on which the last acquisition was triggered. Is `None` if no previous
         acquisition was triggered."""
         self.instructions: List[list] = list()
-        """A list containing the instructions added to the program. The instructions 
+        """A list containing the instructions added to the program. The instructions
         added are in turn a list of the instruction string with arguments."""
 
     @staticmethod
@@ -371,7 +371,7 @@ class QASMProgram:
             self.elapsed_time += constants.GRID_TIME
 
     def _acquire_weighted(
-        self, acquisition: OpInfo, bin: int, idx0: int, idx1: int
+        self, acquisition: OpInfo, bin_idx: int, idx0: int, idx1: int
     ) -> None:
         """
         Adds the instruction for performing acquisitions with weights playback.
@@ -380,7 +380,7 @@ class QASMProgram:
         ----------
         acquisition
             The acquisition info for the acquisition to perform.
-        bin
+        bin_idx
             The bin to store the result in.
         idx0
             Index of the weight waveform played on the I path.
@@ -391,14 +391,14 @@ class QASMProgram:
         self.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
             measurement_idx,
-            bin,
+            bin_idx,
             idx0,
             idx1,
             constants.GRID_TIME,
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_square(self, acquisition: OpInfo, bin: int) -> None:
+    def _acquire_square(self, acquisition: OpInfo, bin_idx: int) -> None:
         """
         Adds the instruction for performing acquisitions without weights playback.
 
@@ -406,8 +406,8 @@ class QASMProgram:
         ----------
         acquisition
             The acquisition info for the acquisition to perform.
-        bin
-            The bin to store the result in.
+        bin_idx
+            The bin_idx to store the result in.
         """
         duration_ns = int(acquisition.duration * 1e9)
         if self.parent.settings.integration_length_acq is None:
@@ -432,7 +432,7 @@ class QASMProgram:
         self.emit(
             q1asm_instructions.ACQUIRE,
             measurement_idx,
-            bin,
+            bin_idx,
             constants.GRID_TIME,
         )
         self.elapsed_time += constants.GRID_TIME
@@ -462,7 +462,8 @@ class QASMProgram:
                     f"t={self.time_last_acquisition_triggered}. Please ensure "
                     f"a minimum interval of "
                     f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
-                    f"acquisitions.\n\nError caused by acquisition:\n{repr(acquisition)}"
+                    f"acquisitions.\n\nError caused by acquisition:\n"
+                    f"{repr(acquisition)}"
                 )
         self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {
@@ -476,16 +477,18 @@ class QASMProgram:
                 f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
             )
 
-        bin = acquisition.data["acq_index"]
+        bin_idx = acquisition.data["acq_index"]
         if acquisition.name == "SSBIntegrationComplex":
             # Since "SSBIntegrationComplex" just has "weighted_integrated_complex" as
             # protocol.
-            self._acquire_square(acquisition, bin=bin)
+            self._acquire_square(acquisition, bin_idx=bin_idx)
         else:
             acquisition_func = protocol_to_acquire_func_mapping.get(
                 acquisition.data["protocol"], None
             )
-            args = [arg for arg in [acquisition, bin, idx0, idx1] if arg is not None]
+            args = [
+                arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
+            ]
             acquisition_func(*args)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
