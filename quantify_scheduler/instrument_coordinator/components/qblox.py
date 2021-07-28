@@ -477,7 +477,6 @@ class _QRMAcquisitionManager:
                 f"{self.parent.name} but only {len(i_data)} values found "
                 f"in acquisition data."
             )
-        # TODO add check if bin data is valid
         return i_data[acq_index], q_data[acq_index]
 
     def _get_threshold_data(
