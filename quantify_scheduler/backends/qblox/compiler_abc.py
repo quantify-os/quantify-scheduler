@@ -437,7 +437,7 @@ class PulsarSequencer:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
                     f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
-                    f"{self.__class__.__name__}.\n"
+                    f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
@@ -445,7 +445,7 @@ class PulsarSequencer:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
                     f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
-                    f"{self.__class__.__name__}.\n"
+                    f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
