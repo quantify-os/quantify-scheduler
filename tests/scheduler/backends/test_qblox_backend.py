@@ -48,10 +48,9 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
-    QCMSequencer,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import (
-    PulsarBase,
+    PulsarBase, PulsarSequencer
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
@@ -341,7 +340,6 @@ def test_generate_port_clock_to_device_map():
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
     class TestPulsar(PulsarBase):
-        sequencer_type = QCMSequencer
         max_sequencers = 10
 
         def __init__(self):
@@ -352,7 +350,7 @@ def test_contruct_sequencer():
                 hw_mapping=HARDWARE_MAPPING["qcm0"],
             )
 
-        def assign_frequencies(self, seq):
+        def assign_frequencies(self, sequencer):
             pass
 
         def update_settings(self):
@@ -365,7 +363,7 @@ def test_contruct_sequencer():
     test_p.sequencers = test_p._construct_sequencers()
     seq_keys = list(test_p.sequencers.keys())
     assert len(seq_keys) == 2
-    assert isinstance(test_p.sequencers[seq_keys[0]], QCMSequencer)
+    assert isinstance(test_p.sequencers[seq_keys[0]], PulsarSequencer)
 
 
 def test_simple_compile(pulse_only_schedule):
