@@ -1048,7 +1048,8 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
 class PulsarBaseband(PulsarBase):
     """
-    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should inherit from.
+    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should 
+    inherit from.
     """
 
     settings_type = PulsarSettings
@@ -1115,10 +1116,10 @@ class PulsarBaseband(PulsarBase):
 
         if lo_freq is None and if_freq is None:
             raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} with "
-                f"port {sequencer.port} and clock {sequencer.clock}. When using an external "
-                f'local oscillator it is required to either supply an "lo_freq" or '
-                f'an "interm_freq". Neither was given.'
+                f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
+                f'an external local oscillator it is required to either supply an '
+                f'"lo_freq" or an "interm_freq". Neither was given.'
             )
 
         if if_freq is not None:
@@ -1130,7 +1131,8 @@ class PulsarBaseband(PulsarBase):
 
 class PulsarRF(PulsarBase):
     """
-    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit from.
+    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit 
+    from.
     """
 
     settings_type = PulsarRFSettings
@@ -1200,8 +1202,8 @@ class PulsarRF(PulsarBase):
             new_lo_freq = clk_freq - if_freq
             if lo_freq is not None and new_lo_freq != lo_freq:
                 raise ValueError(
-                    f"Attempting to set 'lo{output_index}_freq' to frequency {new_lo_freq}, "
-                    f"while it has previously already been set to "
+                    f"Attempting to set 'lo{output_index}_freq' to frequency "
+                    f"{new_lo_freq}, while it has previously already been set to "
                     f"{lo_freq}!"
                 )
             if output_index == 0:

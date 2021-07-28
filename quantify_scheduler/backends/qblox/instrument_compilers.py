@@ -195,7 +195,10 @@ class Pulsar_QCM_RF(PulsarRF, Pulsar_QCM):
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 6, "off": 8}
-    """Marker values to activate/deactivate the O1 marker, and the output switches for O1/O2"""
+    """
+    Marker values to activate/deactivate the O1 marker, 
+    and the output switches for O1/O2
+    """
 
 
 class Pulsar_QRM_RF(PulsarRF):
@@ -208,4 +211,7 @@ class Pulsar_QRM_RF(PulsarRF):
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
     markers: dict = {"on": 1, "off": 4}
-    """Marker values to activate/deactivate the I1 marker, and the output switch for O1"""
+    """
+    Marker values to activate/deactivate the I1 marker, 
+    and the output switch for O1
+    """
