@@ -597,19 +597,22 @@ class PulsarSequencerBase(ABC):
         unique_channels = set(map(get_acq_channel, acquisitions))
 
         acq_declaration_dict = dict()
-        for ch in unique_channels:
+        for channel in unique_channels:
             indices = list()
             for acq in acquisitions:
-                if get_acq_channel(acq) == ch:
+                if get_acq_channel(acq) == channel:
                     indices.append(acq.data["acq_index"])
             if min(indices) != 0:
                 raise ValueError(
                     f"Please make sure the lowest bin index used is 0. "
-                    f"Found: {min(indices)} as lowest bin for channel {ch}. "
+                    f"Found: {min(indices)} as lowest bin for channel {channel}. "
                     f"Problem occurred for port {self.port} with clock {self.clock},"
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
-            acq_declaration_dict[str(ch)] = {"num_bins": max(indices) + 1, "index": ch}
+            acq_declaration_dict[str(channel)] = {
+                "num_bins": max(indices) + 1,
+                "index": channel,
+            }
 
         return acq_declaration_dict
 
