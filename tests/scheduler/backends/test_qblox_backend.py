@@ -17,6 +17,7 @@ import pytest
 import numpy as np
 
 from qcodes.instrument.base import Instrument
+from qblox_instruments import build
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
@@ -41,6 +42,8 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
+    verify_qblox_instruments_version,
+    DriverVersionError,
 )
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import (
@@ -756,3 +759,27 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
+
+
+def test_verify_qblox_instruments_version():
+    verify_qblox_instruments_version(build.__version__)
+
+    nonsense_version = "nonsense.driver.version"
+    with pytest.raises(DriverVersionError) as wrong_version:
+        verify_qblox_instruments_version(nonsense_version)
+
+    with pytest.raises(DriverVersionError) as none_error:
+        verify_qblox_instruments_version(None)
+
+    assert (
+        none_error.value.args[0]
+        == "Qblox DriverVersionError: qblox-instruments version check could not be "
+        "performed. Either the package is not installed correctly or a version < "
+        "0.3.2 was found."
+    )
+    assert (
+        wrong_version.value.args[0]
+        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} "
+        f"not supported by backend. Please install version 0.4.0 to continue to use "
+        f"this backend."
+    )
