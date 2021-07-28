@@ -57,7 +57,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         timeout_min = timeout_sec // 60
         if timeout_min == 0:
             timeout_min = 1
-        for idx in range(self.number_of_sequencers):
+        for idx in range(self._number_of_sequencers):
             self.instrument.get_sequencer_state(idx, timeout_min)
 
     def start(self) -> None:
