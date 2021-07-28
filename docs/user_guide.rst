@@ -305,6 +305,7 @@ The hardware configuration file is used to compile pulses (and acquisition proto
 To do this, it contains information on what control electronics to compile to and the connectivity: which ports are connected to which hardware outputs/inputs, as well as other hardware-specific settings.
 Similar to the device configuration file, the hardware configuration file can be written down manually as JSON or be code generated.
 
+.. _user-guide-example-qblox-config:
 
 .. admonition:: Example Qblox hardware configuration file
     :class: dropdown
@@ -320,7 +321,7 @@ Similar to the device configuration file, the hardware configuration file can be
         json_data = json.loads(path.read_text())
         json_data
 
-
+.. _user-guide-example-zhinst-config:
 
 .. admonition:: Example Zurich Instruments hardware configuration file
     :class: dropdown
