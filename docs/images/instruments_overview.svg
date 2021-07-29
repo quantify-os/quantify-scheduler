@@ -7,10 +7,14 @@
             <text id="Utility-Instruments" font-family="LucidaGrande, Lucida Grande" font-size="14" font-weight="normal" letter-spacing="0.056" fill="#1A1919">
                 <tspan x="11" y="27">Utility Instruments </tspan>
             </text>
-            <text id="MeasurementControl-I" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-                <tspan x="18" y="56">MeasurementControl</tspan>
+            <text id="MeasurementControl," font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+                <tspan x="18" y="55">MeasurementControl</tspan>
+                <tspan x="126.737578" y="55" font-family="LucidaGrande, Lucida Grande">,</tspan>
+                <tspan x="129.941641" y="55"></tspan>
                 <tspan x="18" y="67">InstrumentMonitor</tspan>
-                <tspan x="18" y="78">PlotMonitor_pyqt</tspan>
+                <tspan x="120.696602" y="67" font-family="LucidaGrande, Lucida Grande">,</tspan>
+                <tspan x="123.900664" y="67"></tspan>
+                <tspan x="18" y="79" font-family="LucidaGrande, Lucida Grande">etc. </tspan>
             </text>
         </g>
         <rect id="Rectangle-Copy" stroke="#979797" fill="#7F96AD" x="10.5" y="50.5" width="232" height="113"></rect>
@@ -50,18 +54,21 @@
         <text id="Describe-connections" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
             <tspan x="271" y="107">Describe connections between elements and </tspan>
             <tspan x="271" y="119">to the environment (control hardware). </tspan>
-            <tspan x="271" y="131"></tspan>
-            <tspan x="271" y="143">Generate device config and hardware config. </tspan>
+            <tspan x="271" y="131">Contains a collection of </tspan>
+            <tspan x="389.441406" y="131" font-family="AndaleMono, Andale Mono">DeviceElement</tspan>
+            <tspan x="467.974102" y="131">s.</tspan>
+            <tspan x="271" y="143"></tspan>
+            <tspan x="271" y="155">Generate device config and hardware config. </tspan>
         </text>
         <text id="Represents-an-elemen" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-            <tspan x="271" y="209">Represents an element on the DUT e.g., a </tspan>
+            <tspan x="271" y="209">Represents an element on the DUT, e.g., a </tspan>
             <tspan x="271" y="221" font-family="AndaleMono, Andale Mono">TransmonElement</tspan>
             <tspan x="361.614648" y="221">. </tspan>
         </text>
-        <text id="Represents-the-DUT-e" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-            <tspan x="271" y="90">Represents the DUT e.g., a </tspan>
-            <tspan x="404.54582" y="90" font-family="AndaleMono, Andale Mono">QuantumDevice</tspan>
-            <tspan x="483.078516" y="90">.</tspan>
+        <text id="Represents-the-DUT," font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="271" y="90">Represents the DUT, e.g., a </tspan>
+            <tspan x="407.749883" y="90" font-family="AndaleMono, Andale Mono">QuantumDevice</tspan>
+            <tspan x="486.282578" y="90">.</tspan>
         </text>
         <text id="Manage-parameters-re" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
             <tspan x="271" y="242">Manage parameters required to </tspan>
