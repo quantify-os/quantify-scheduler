@@ -195,3 +195,7 @@ class Pulsar_QRM(PulsarBase):
     """The type of the sequencer."""
     max_sequencers: int = 1
     """Maximum number of sequencer available in the instrument."""
+
+
+class QbloxCluster(compiler_container.CompilerContainer):
+    pass
