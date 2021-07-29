@@ -17,8 +17,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     _no_gc_intances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
-        cls, instrument: base.InstrumentBase, *args, **kwargs
-    ) -> InstrumentCoordinatorComponentBase:
+        cls, instrument: base.InstrumentBase) -> InstrumentCoordinatorComponentBase:
         """Keeps track of the intances of this class.
 
         NB This is done intentionally to prevent the intances from being garbage
