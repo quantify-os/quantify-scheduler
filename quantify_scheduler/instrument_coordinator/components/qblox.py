@@ -174,19 +174,19 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         self.instrument.set("reference_source", settings.ref)
 
-        if settings.offset_ch0_path0:
+        if settings.offset_ch0_path0 is not None:
             self.instrument.set(
                 "sequencer0_offset_awg_path0", settings.offset_ch0_path0
             )
-        if settings.offset_ch0_path1:
+        if settings.offset_ch0_path1 is not None:
             self.instrument.set(
                 "sequencer0_offset_awg_path1", settings.offset_ch0_path1
             )
-        if settings.offset_ch1_path0:
+        if settings.offset_ch1_path0 is not None:
             self.instrument.set(
                 "sequencer1_offset_awg_path0", settings.offset_ch1_path0
             )
-        if settings.offset_ch1_path1:
+        if settings.offset_ch1_path1 is not None:
             self.instrument.set(
                 "sequencer1_offset_awg_path1", settings.offset_ch1_path1
             )
@@ -382,11 +382,11 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def _configure_global_settings(self, settings: PulsarSettings):
         self.instrument.set("reference_source", settings.ref)
 
-        if settings.offset_ch0_path0:
+        if settings.offset_ch0_path0 is not None:
             self.instrument.set(
                 "sequencer0_offset_awg_path0", settings.offset_ch0_path0
             )
-        if settings.offset_ch0_path1:
+        if settings.offset_ch0_path1 is not None:
             self.instrument.set(
                 "sequencer0_offset_awg_path1", settings.offset_ch0_path1
             )
@@ -447,18 +447,18 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         """
         self.instrument.set("reference_source", settings.ref)
 
-        if settings.lo0_freq:
+        if settings.lo0_freq is not None:
             self.instrument.set("lo0_freq", settings.lo0_freq)
-        if settings.lo1_freq:
+        if settings.lo1_freq is not None:
             self.instrument.set("lo1_freq", settings.lo1_freq)
 
-        if settings.offset_I_ch0:
+        if settings.offset_ch0_path0 is not None:
             self.instrument.set("offset_I_ch0", settings.offset_ch0_path0)
-        if settings.offset_Q_ch0:
+        if settings.offset_ch0_path1 is not None:
             self.instrument.set("offset_Q_ch0", settings.offset_ch0_path1)
-        if settings.offset_I_ch1:
+        if settings.offset_ch1_path0 is not None:
             self.instrument.set("offset_I_ch1", settings.offset_ch1_path0)
-        if settings.offset_Q_ch1:
+        if settings.offset_ch1_path1 is not None:
             self.instrument.set("offset_Q_ch1", settings.offset_ch1_path1)
 
 
@@ -480,17 +480,17 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         """
         self.instrument.set("reference_source", settings.ref)
 
-        if settings.lo0_freq:
+        if settings.lo0_freq is not None:
             self.instrument.set("lo0_freq", settings.lo0_freq)
-        if settings.lo1_freq:
+        if settings.lo1_freq is not None:
             self.instrument.set("lo1_freq", settings.lo1_freq)
 
-        if settings.offset_ch0_path0:
+        if settings.offset_ch0_path0 is not None:
             logger.warning(
                 "'offset_ch0_path0' was not set. This functionality is still "
                 "not present in the Pulsar QRM-RF driver."
             )
-        if settings.offset_ch0_path1:
+        if settings.offset_ch0_path1 is not None:
             logger.warning(
                 "'offset_ch0_path1' was not set. This functionality is still "
                 "not present to the Pulsar QRM-RF driver."
