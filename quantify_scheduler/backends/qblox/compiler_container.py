@@ -5,6 +5,8 @@
 from __future__ import annotations
 from typing import Dict, Any, Union
 
+import quantify_core.utilities.general as general
+
 from quantify_scheduler import types
 from quantify_scheduler.helpers.schedule import get_total_duration
 
@@ -112,7 +114,30 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        compiler: type = getattr(compiler_classes, instrument)
+        try:
+            compiler: type = getattr(compiler_classes, instrument)
+            self.add_instrument_compiler(name, compiler, mapping)
+        except AttributeError:
+            # not in instrument compiler, try full path
+            self._add_from_path(name, instrument, mapping)
+
+    def _add_from_path(
+        self, name: str, instrument: str, mapping: Dict[str, Any]
+    ) -> None:
+        """
+        Adds the instrument compiler from a path.
+
+        Parameters
+        ----------
+        name
+            Name of the Instrument.
+        instrument
+            The string that specifies the path to the type of the compiler.
+        mapping
+            Hardware mapping for this instrument.
+        """
+        # TODO rename this function from core. It seems to work for classes too.
+        compiler: type = general.import_func_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(
