@@ -1159,8 +1159,8 @@ class PulsarBaseband(PulsarBase):
 
 class PulsarRF(PulsarBase):
     r"""
-    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should inherit
-    from.
+    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should
+    inherit from.
     """
 
     settings_type = PulsarRFSettings
@@ -1221,9 +1221,10 @@ class PulsarRF(PulsarBase):
 
         if lo_freq is None and if_freq is None:
             raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} with "
-                f"port {sequencer.port} and clock {sequencer.clock}. It is required "
-                f'to either supply an "lo_freq" or an "interm_freq". Neither was given.'
+                f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                f"with port {sequencer.port} and clock {sequencer.clock}. It is "
+                f'required to either supply an "lo_freq" or an "interm_freq". Neither '
+                f"was given."
             )
 
         if if_freq is not None:
