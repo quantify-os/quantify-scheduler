@@ -7,9 +7,9 @@ The :mod:`~quantify_scheduler.backends.zhinst_backend` allows Zurich Instruments
 configured individually or collectively by enabling master/slave configurations via 
 Triggers and Markers.
 
-Instruments can be configured by adding them to the :ref:`hardware configuration file<Example Zurich Instruments hardware configuration file>`.
+Instruments can be configured by adding them to the :ref:`hardware configuration file<user-guide-example-zhinst-config>`.
 The configuration file contains parameters about the Instruments and properties required 
-to map :ref:`Operations <sec-operation>`, which act on qubits, onto physical
+to map :class:`~quantify_scheduler.types.Operation`\s, which act on qubits, onto physical
 properties of the instrument.
 
 

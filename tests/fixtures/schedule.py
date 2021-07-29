@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Description:    Pytest fixtures for quantify scheduler.
+# Description:    Pytest fixtures for quantify-scheduler.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
