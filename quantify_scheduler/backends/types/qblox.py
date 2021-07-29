@@ -3,7 +3,7 @@
 """Python dataclasses for compilation to Qblox hardware."""
 
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
@@ -133,13 +133,13 @@ class PulsarSettings(DataClassJsonMixin):
     acq_mode: str = "SSBIntegrationComplex"
     """The acquisition mode the Pulsar operates in. This setting will most likely
     change in the future."""
-    offset_ch0_path0: float = None
+    offset_ch0_path0: Union[float, None] = None
     """The DC offset on the path 0 of channel 0."""
-    offset_ch0_path1: float = None
+    offset_ch0_path1: Union[float, None] = None
     """The DC offset on the path 1 of channel 0."""
-    offset_ch1_path0: float = None
+    offset_ch1_path0: Union[float, None] = None
     """The DC offset on path 0 of channel 1."""
-    offset_ch1_path1: float = None
+    offset_ch1_path1: Union[float, None] = None
     """The DC offset on path 1 of channel 1."""
 
     @staticmethod
@@ -164,9 +164,9 @@ class PulsarRFSettings(PulsarSettings):
     specified in `SequencerSettings`.
     """
 
-    lo0_freq: float = None
+    lo0_freq: Union[float, None] = None
     """The frequency of Output 0 (O0) LO."""
-    lo1_freq: float = None
+    lo1_freq: Union[float, None] = None
     """The frequency of Output 1 (O1) LO."""
 
     @staticmethod
