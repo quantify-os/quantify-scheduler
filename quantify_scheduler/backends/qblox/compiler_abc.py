@@ -1146,7 +1146,7 @@ class PulsarBaseband(PulsarBase):
             raise ValueError(
                 f"Frequency settings underconstraint for sequencer {sequencer.name} "
                 f"with port {sequencer.port} and clock {sequencer.clock}. When using "
-                f'an external local oscillator it is required to either supply an '
+                f"an external local oscillator it is required to either supply an "
                 f'"lo_freq" or an "interm_freq". Neither was given.'
             )
 
