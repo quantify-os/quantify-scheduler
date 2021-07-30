@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
+    ControlDeviceCompiler,
     PulsarSequencerBase,
     PulsarBase,
 )
@@ -139,7 +140,7 @@ class Pulsar_QCM(PulsarBase):
     sequencer_type = QCMSequencer
     max_sequencers: int = 2
 
-    def _distribute_data(self):
+    def distribute_data(self):
         """
         Distributes the pulses and acquisitions assigned to this pulsar over the
         different sequencers based on their portclocks. Overrides the function of the
@@ -156,7 +157,7 @@ class Pulsar_QCM(PulsarBase):
                 f"Attempting to add acquisitions to {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
             )
-        super()._distribute_data()
+        super().distribute_data()
 
     def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
         """
@@ -197,5 +198,45 @@ class Pulsar_QRM(PulsarBase):
     """Maximum number of sequencer available in the instrument."""
 
 
-class QbloxCluster(compiler_container.CompilerContainer):
-    pass
+class Cluster(ControlDeviceCompiler):
+    def __init__(
+        self,
+        parent: compiler_container.CompilerContainer,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
+        super().__init__(
+            parent=parent,
+            name=name,
+            total_play_time=total_play_time,
+            hw_mapping=hw_mapping,
+        )
+        self.instrument_compilers: dict = self.construct_instrument_compilers()
+
+    def construct_instrument_compilers(self) -> Dict[str, PulsarBase]:
+        return dict()
+
+    def prepare(self) -> None:
+        self.distribute_data()
+        # Need to somehow make this work with ext los, for now we skip this.
+        for compiler in self.instrument_compilers.values():
+            compiler.distribute_data()
+
+    def distribute_data(self) -> None:
+        for compiler in self.instrument_compilers.values():
+            for portclock in compiler.portclocks():
+                if portclock in self._pulses:
+                    compiler.add_pulse(self._pulses[portclock])
+                if portclock in self._acquisitions:
+                    compiler.add_acquisition(self._acquisitions[portclock])
+
+    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+        program = dict()
+        for compiler in self.instrument_compilers.values():
+            instrument_program = compiler.compile(repetitions)
+            if instrument_program is not None:
+                program[compiler.name] = instrument_program
+        if len(program) == 0:
+            program = None
+        return program
