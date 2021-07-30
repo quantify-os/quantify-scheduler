@@ -38,6 +38,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
     def __init__(self, instrument: Instrument, **kwargs) -> None:
         """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
+        assert instrument._get_lo_hw_present() is self._has_internal_lo
 
     @property
     def is_running(self) -> bool:
@@ -67,6 +68,19 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             Number of sequencers
         """
 
+    @property
+    @abstractmethod
+    def _has_internal_lo(self) -> bool:
+        """
+        Specifies whether the device posesses an internal LO
+        (and is thefore an RF module).
+
+        Returns
+        -------
+        :
+            True or False
+        """
+
 
 # pylint: disable=too-many-ancestors
 class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
@@ -77,6 +91,9 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     number_of_sequencers = NUMBER_OF_SEQUENCERS_QCM
     """Specifies the amount of sequencers available to this QCM."""
     settings_type = PulsarSettings
+    """Specifies the settings class used by this component."""
+    _has_internal_lo = False
+    """Specifies whether the device posesses an internal LO."""
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQCMComponent."""
@@ -223,6 +240,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
     number_of_sequencers = NUMBER_OF_SEQUENCERS_QRM
     settings_type = PulsarSettings
+    _has_internal_lo = False
+    """Specifies whether the device posesses an internal LO."""
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQRMComponent."""
@@ -435,6 +454,8 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     """
 
     settings_type = PulsarRFSettings
+    _has_internal_lo = True
+    """Specifies whether the device posesses an internal LO."""
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -468,6 +489,8 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     """
 
     settings_type = PulsarRFSettings
+    _has_internal_lo = True
+    """Specifies whether the device posesses an internal LO."""
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
