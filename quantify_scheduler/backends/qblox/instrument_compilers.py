@@ -242,7 +242,7 @@ class Cluster(ControlDeviceCompiler):
 
     def distribute_data(self) -> None:
         for compiler in self.instrument_compilers.values():
-            for portclock in compiler.portclocks():
+            for portclock in compiler.portclocks:
                 if portclock in self._pulses:
                     compiler.add_pulse(self._pulses[portclock])
                 if portclock in self._acquisitions:
