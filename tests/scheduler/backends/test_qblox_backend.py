@@ -447,7 +447,7 @@ def test_qcm_acquisition_error():
     qcm._acquisitions[0] = 0
 
     with pytest.raises(RuntimeError):
-        qcm._distribute_data()
+        qcm.distribute_data()
 
 
 # --------- Test QASMProgram class ---------
