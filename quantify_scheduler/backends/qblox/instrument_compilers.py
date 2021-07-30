@@ -199,6 +199,9 @@ class Pulsar_QRM(PulsarBase):
 
 
 class Cluster(ControlDeviceCompiler):
+
+    compiler_classes = {"Pulsar_QCM": Pulsar_QCM, "Pulsar_QRM": Pulsar_QRM}
+
     def __init__(
         self,
         parent: compiler_container.CompilerContainer,
@@ -215,7 +218,21 @@ class Cluster(ControlDeviceCompiler):
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
     def construct_instrument_compilers(self) -> Dict[str, PulsarBase]:
-        return dict()
+        instrument_compilers = dict()
+        for name, cfg in self.hw_mapping.items():
+            if not isinstance(cfg, dict):
+                continue  # not an instrument definition
+            if "instrument_type" not in cfg:
+                raise KeyError(
+                    f"Module {name} of cluster {self.name} is specified in "
+                    f"the config, but does not specify an instrument_type."
+                )
+            compiler_type: type = self.compiler_classes[cfg["instrument_type"]]
+            instance = compiler_type(
+                None, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
+            )
+            instrument_compilers[name] = instance
+        return instrument_compilers
 
     def prepare(self) -> None:
         self.distribute_data()
