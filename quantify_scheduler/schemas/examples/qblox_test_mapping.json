@@ -5,6 +5,7 @@
     "instrument_type": "Cluster",
     "cl_qcm0": {
       "instrument_type": "Pulsar_QCM",
+      "ref": "internal",
       "complex_output_0": {
         "line_gain_db": 0,
         "lo_name": "lo0",
@@ -14,6 +15,7 @@
           "interm_freq": 50e6
         }
     }
+  }
   },
   "qcm0": {
     "instrument_type": "Pulsar_QCM",
