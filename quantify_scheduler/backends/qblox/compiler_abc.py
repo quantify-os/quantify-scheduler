@@ -881,6 +881,11 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self._settings = PulsarSettings.extract_settings_from_mapping(hw_mapping)
 
     @property
+    def portclocks(self) -> List[Tuple[str, str]]:
+        """Returns all the port and clocks available to this device."""
+        return list(self.portclock_map.keys())
+
+    @property
     @abstractmethod
     def sequencer_type(self) -> type(PulsarSequencerBase):
         """
@@ -996,7 +1001,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         return sequencers
 
-    def _distribute_data(self):
+    def distribute_data(self):
         """
         Distributes the pulses and acquisitions assigned to this pulsar over the
         different sequencers based on their portclocks.
@@ -1018,7 +1023,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         calculating the relevant frequencies in case an external local oscillator is
         used.
         """
-        self._distribute_data()
+        self.distribute_data()
         for seq in self.sequencers.values():
             seq.align_modulation_frequency_with_ext_lo()
 
