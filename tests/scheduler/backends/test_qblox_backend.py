@@ -10,6 +10,7 @@
 from typing import Dict, Any
 
 import os
+import re
 import inspect
 import json
 import tempfile
@@ -48,6 +49,8 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
+    Pulsar_QCM_RF,
+    Pulsar_QRM_RF,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
@@ -750,3 +753,34 @@ def test_assign_frequencies():
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program['seq1']["settings"]["modulation_freq"] == if1
+
+def test_markers():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    #Test for baseband
+    sched = Schedule("gate_experiment")
+    sched.add(X("q0"))
+    sched.add(X("q2"))
+    sched.add(Measure("q0"))
+    sched.add(Measure("q2"))
+
+    program =  qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def _confirm_correct_markers(device_program, device_compiler):
+        with open(device_program["seq0"]["seq_fn"]) as f:
+            qasm = json.load(f)["program"]
+
+            matches = re.findall(r"set\_mrk +\d+", qasm)
+            assert len(matches) == 2
+
+            on_marker = int(re.findall(r"\d+", matches[0])[0])
+            off_marker = int(re.findall(r"\d+", matches[1])[0])
+
+            assert on_marker == device_compiler.markers["on"]
+            assert off_marker == device_compiler.markers["off"]
+
+    _confirm_correct_markers(program["qcm0"], Pulsar_QCM)
+    _confirm_correct_markers(program["qrm0"], Pulsar_QRM)
+    _confirm_correct_markers(program["qcm_rf0"], Pulsar_QCM_RF)
+    _confirm_correct_markers(program["qrm_rf0"], Pulsar_QRM_RF)
