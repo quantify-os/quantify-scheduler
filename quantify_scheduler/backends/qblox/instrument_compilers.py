@@ -263,7 +263,7 @@ class Cluster(ControlDeviceCompiler):
         program = dict()
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(repetitions)
-            if instrument_program is not None:
+            if instrument_program is not None and len(instrument_program) > 0:
                 program[compiler.name] = instrument_program
         if len(program) == 0:
             program = None
