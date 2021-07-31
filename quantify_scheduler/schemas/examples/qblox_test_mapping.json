@@ -59,7 +59,6 @@
     "ref": "internal",
     "complex_output_0": {
       "line_gain_db": 0,
-      "lo_freq": 6e9,
       "seq0": {
         "port": "q2:mw",
         "clock": "q2.01",
@@ -68,6 +67,7 @@
     },
     "complex_output_1": {
       "line_gain_db": 0,
+      "lo_freq": 5e9,
       "seq1": {
         "port": "q3:mw",
         "clock": "q3.01",
