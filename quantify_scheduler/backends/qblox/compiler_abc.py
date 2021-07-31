@@ -248,7 +248,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
 
 # pylint: disable=too-many-instance-attributes
-class PulsarSequencer:
+class Sequencer:
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
@@ -935,9 +935,9 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 mapping[port_clock] = f"seq{output_to_seq[io]}"
         return mapping
 
-    def _construct_sequencers(self) -> Dict[str, PulsarSequencer]:
+    def _construct_sequencers(self) -> Dict[str, Sequencer]:
         """
-        Constructs `PulsarSequencer` objects for each port and clock combination
+        Constructs `Sequencer` objects for each port and clock combination
         belonging to this device.
 
         Returns
@@ -964,7 +964,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             portclock = portclock_dict["port"], portclock_dict["clock"]
 
             seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = PulsarSequencer(
+            sequencers[seq_name] = Sequencer(
                 self, seq_name, portclock, portclock_dict, lo_name
             )
             if "mixer_corrections" in io_cfg:
@@ -1004,7 +1004,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                     seq.acquisitions = acq_data_list
 
     @abstractmethod
-    def assign_frequencies(self, sequencer: PulsarSequencer):
+    def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1109,7 +1109,7 @@ class PulsarBaseband(PulsarBase):
                         seq.mixer_corrections.offset_Q / self.awg_output_volt
                     )
 
-    def assign_frequencies(self, sequencer: PulsarSequencer):
+    def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1184,7 +1184,7 @@ class PulsarRF(PulsarBase):
                     self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
                     self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
 
-    def assign_frequencies(self, sequencer: PulsarSequencer):
+    def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).

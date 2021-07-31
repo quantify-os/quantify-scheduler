@@ -49,7 +49,7 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
 )
-from quantify_scheduler.backends.qblox.compiler_abc import PulsarSequencer
+from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
 from quantify_scheduler.backends.qblox import constants
@@ -357,7 +357,7 @@ def test_contruct_sequencer():
     test_p.sequencers = test_p._construct_sequencers()
     seq_keys = list(test_p.sequencers.keys())
     assert len(seq_keys) == 2
-    assert isinstance(test_p.sequencers[seq_keys[0]], PulsarSequencer)
+    assert isinstance(test_p.sequencers[seq_keys[0]], Sequencer)
 
 
 def test_simple_compile(pulse_only_schedule):

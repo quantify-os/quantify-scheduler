@@ -25,7 +25,7 @@ class QASMProgram:
     certain instructions with parameters, as well as update the elapsed time.
     """
 
-    def __init__(self, parent: compiler_abc.PulsarSequencer):
+    def __init__(self, parent: compiler_abc.Sequencer):
         self.parent = parent
         """A reference to the sequencer for which we are compiling this program."""
         self.elapsed_time: int = 0
