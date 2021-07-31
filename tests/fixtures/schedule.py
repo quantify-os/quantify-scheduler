@@ -70,6 +70,14 @@ def schedule_with_measurement() -> Schedule:
     schedule.add(Measure("q0"))
     return schedule
 
+@pytest.fixture
+def schedule_with_measurement2() -> Schedule:
+    schedule = Schedule("Basic schedule")
+    schedule.add(Reset("q2"))
+    schedule.add(X90("q2"))
+    schedule.add(Measure("q2"))
+    return schedule
+
 
 @pytest.fixture
 def schedule_with_pulse_info(create_schedule_with_pulse_info) -> Schedule:
