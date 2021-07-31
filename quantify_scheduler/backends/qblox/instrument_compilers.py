@@ -231,7 +231,14 @@ class Cluster(ControlDeviceCompiler):
                     f"Module {name} of cluster {self.name} is specified in "
                     f"the config, but does not specify an instrument_type."
                 )
-            compiler_type: type = self.compiler_classes[cfg["instrument_type"]]
+            instrument_type: str = cfg["instrument_type"]
+            if instrument_type not in self.compiler_classes:
+                raise KeyError(
+                    f"Specified unknown instrument_type {instrument_type} as"
+                    f" a module for cluster {self.name}. Please select one "
+                    f"of: {self.compiler_classes.keys()}."
+                )
+            compiler_type: type = self.compiler_classes[instrument_type]
             instance = compiler_type(
                 None, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
             )
