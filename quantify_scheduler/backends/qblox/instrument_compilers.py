@@ -199,8 +199,12 @@ class Pulsar_QRM(PulsarBase):
 
 
 class Cluster(ControlDeviceCompiler):
+    """
+    Compiler class for a Qblox cluster.
+    """
 
     compiler_classes = {"Pulsar_QCM": Pulsar_QCM, "Pulsar_QRM": Pulsar_QRM}
+    """References to the individual module compiler classes."""
 
     def __init__(
         self,
