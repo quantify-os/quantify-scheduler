@@ -707,8 +707,10 @@ def test_assign_frequencies():
 
     if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
     if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
-    lo0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"].get("lo_freq")
-    lo1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"].get("lo_freq")
+    io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
+    io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("lo_freq")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("lo_freq")
 
     assert if0 is not None
     assert if1 is None
