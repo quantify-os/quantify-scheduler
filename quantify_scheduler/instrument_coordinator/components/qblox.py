@@ -452,7 +452,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
 class PulsarQCMRFComponent(PulsarQCMComponent):
     """
-    Pulsar QCM-RF specific control stack component.
+    Pulsar QCM-RF specific InstrumentCoordinator component.
     """
 
     settings_type = PulsarRFSettings
@@ -488,7 +488,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
     """
-    Pulsar QRM-RF specific stack component.
+    Pulsar QRM-RF specific InstrumentCoordinator component.
     """
 
     settings_type = PulsarRFSettings
