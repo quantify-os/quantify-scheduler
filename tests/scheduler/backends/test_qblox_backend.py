@@ -689,3 +689,64 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
+
+def test_assign_frequencies():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    #Test for baseband
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q0"))
+    sched.add(X("q1"))
+
+    q2_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
+    q3_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
+    lo0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
+
+    program =  qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    assert program["lo0"]["lo_freq"] == lo0
+    assert program["lo1"]["lo_freq"] == lo1
+    assert program["qcm0"]['seq1']["settings"]["modulation_freq"] == if1
+
+    #Test for RF
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q2"))
+    sched.add(X("q3"))
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["seq1"].get("interm_freq")
+    lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
+    q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"]["interm_freq"]
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
+
+    program =  qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    qcm_program = program["qcm_rf0"]
+    assert qcm_program["settings"]["lo0_freq"] == lo0
+    assert qcm_program["settings"]["lo1_freq"] == lo1
+    assert qcm_program['seq1']["settings"]["modulation_freq"] == if1
