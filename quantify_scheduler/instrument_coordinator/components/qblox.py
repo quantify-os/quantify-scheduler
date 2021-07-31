@@ -89,7 +89,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     """
 
     number_of_sequencers = NUMBER_OF_SEQUENCERS_QCM
-    """Specifies the amount of sequencers available to this QCM."""
+    """Specifies the amount of sequencers available in the device."""
     settings_type = PulsarSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = False
@@ -239,7 +239,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     """
 
     number_of_sequencers = NUMBER_OF_SEQUENCERS_QRM
+    """Specifies the amount of sequencers available in the Pulsar device."""
     settings_type = PulsarSettings
+    """Specifies the settings class used by this component."""
     _has_internal_lo = False
     """Specifies whether the device posesses an internal LO."""
 
@@ -454,6 +456,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     """
 
     settings_type = PulsarRFSettings
+    """Specifies the settings class used by this component."""
     _has_internal_lo = True
     """Specifies whether the device posesses an internal LO."""
 
@@ -489,6 +492,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     """
 
     settings_type = PulsarRFSettings
+    """Specifies the settings class used by this component."""
     _has_internal_lo = True
     """Specifies whether the device posesses an internal LO."""
 
