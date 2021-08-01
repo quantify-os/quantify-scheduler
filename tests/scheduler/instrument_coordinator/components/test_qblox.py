@@ -38,7 +38,10 @@ def make_qcm(mocker):
         name: str = "qcm0", serial: str = "dummy"
     ) -> qblox.PulsarQCMComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
-        mocker.patch("pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present", return_value=False)
+        mocker.patch(
+            "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
+            return_value=False,
+        )
         qcm: pulsar_qcm.pulsar_qcm_qcodes = mocker.create_autospec(
             pulsar_qcm.pulsar_qcm_qcodes, instance=True
         )
@@ -64,7 +67,10 @@ def make_qrm(mocker):
         name: str = "qrm0", serial: str = "dummy"
     ) -> qblox.PulsarQRMComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
-        mocker.patch("pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present", return_value=False)
+        mocker.patch(
+            "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
+            return_value=False,
+        )
         qrm: pulsar_qrm.pulsar_qrm_qcodes = mocker.create_autospec(
             pulsar_qrm.pulsar_qrm_qcodes, instance=True
         )
@@ -83,13 +89,17 @@ def make_qrm(mocker):
 
     yield _make_qrm
 
+
 @pytest.fixture
 def make_qcm_rf(mocker):
     def _make_qcm_rf(
         name: str = "qcm_rf0", serial: str = "dummy"
     ) -> qblox.PulsarQCMRFComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
-        mocker.patch("pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present", return_value=True)
+        mocker.patch(
+            "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
+            return_value=True,
+        )
 
         qcm_rf: pulsar_qcm.pulsar_qcm_qcodes = mocker.create_autospec(
             pulsar_qcm.pulsar_qcm_qcodes, instance=True
@@ -110,13 +120,17 @@ def make_qcm_rf(mocker):
 
     yield _make_qcm_rf
 
+
 @pytest.fixture
 def make_qrm_rf(mocker):
     def _make_qrm_rf(
         name: str = "qrm_rf0", serial: str = "dummy"
     ) -> qblox.PulsarQRMRFComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
-        mocker.patch("pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present", return_value=True)
+        mocker.patch(
+            "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
+            return_value=True,
+        )
 
         qrm_rf: pulsar_qrm.pulsar_qrm_qcodes = mocker.create_autospec(
             pulsar_qrm.pulsar_qrm_qcodes, instance=True
@@ -136,12 +150,14 @@ def make_qrm_rf(mocker):
 
     yield _make_qrm_rf
 
+
 def test_initialize_pulsar_qcm_component(make_qcm):
     make_qcm("qblox_qcm0", "1234")
 
 
 def test_initialize_pulsar_qrm_component(make_qrm):
     make_qrm("qblox_qrm0", "1234")
+
 
 def test_initialize_pulsar_qcm_rf_component(make_qcm_rf):
     make_qcm_rf("qblox_qcm_rf0", "1234")
@@ -168,6 +184,7 @@ def test_prepare(schedule_with_measurement, make_qcm, make_qrm):
     # Assert
     qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+
 
 def test_prepare_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
     # Arrange
@@ -220,6 +237,7 @@ def test_prepare_exception_qrm(make_qrm):
         "Invalid program. Attempting to access non-existing sequencer with"
         ' name "idontexist".'
     )
+
 
 def test_prepare_exception_qcm_rf(make_qcm_rf):
     # Arrange
@@ -283,6 +301,7 @@ def test_retrieve_acquisition_qrm(schedule_with_measurement, make_qrm):
     # Assert
     assert len(acq) == 2
 
+
 def test_retrieve_acquisition_qcm_rf(make_qcm_rf):
     # Arrange
     qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
@@ -311,6 +330,7 @@ def test_retrieve_acquisition_qrm_rf(schedule_with_measurement2, make_qrm_rf):
     # Assert
     assert len(acq) == 2
 
+
 def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
@@ -331,6 +351,7 @@ def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
     # Assert
     qcm.instrument.start_sequencer.assert_called()
     qrm.instrument.start_sequencer.assert_called()
+
 
 def test_start_qcm_qrm_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
     # Arrange
@@ -366,6 +387,7 @@ def test_stop_qcm_qrm(make_qcm, make_qrm):
     # Assert
     qcm.instrument.stop_sequencer.assert_called()
     qrm.instrument.stop_sequencer.assert_called()
+
 
 def test_stop_qcm_qrm_rf(make_qcm, make_qrm):
     # Arrange

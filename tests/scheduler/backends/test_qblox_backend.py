@@ -693,11 +693,12 @@ def test_from_mapping(pulse_only_schedule):
             continue
         assert instr_name in container.instrument_compilers
 
+
 def test_assign_frequencies():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    #Test for baseband
+    # Test for baseband
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q1"))
@@ -720,13 +721,13 @@ def test_assign_frequencies():
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    program =  qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
 
     assert program["lo0"]["lo_freq"] == lo0
     assert program["lo1"]["lo_freq"] == lo1
-    assert program["qcm0"]['seq1']["settings"]["modulation_freq"] == if1
+    assert program["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
-    #Test for RF
+    # Test for RF
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
@@ -750,24 +751,25 @@ def test_assign_frequencies():
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    program =  qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     qcm_program = program["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program['seq1']["settings"]["modulation_freq"] == if1
+    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+
 
 def test_markers():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    #Test for baseband
+    # Test for baseband
     sched = Schedule("gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q2"))
     sched.add(Measure("q0"))
     sched.add(Measure("q2"))
 
-    program =  qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
 
     def _confirm_correct_markers(device_program, device_compiler):
         with open(device_program["seq0"]["seq_fn"]) as f:
