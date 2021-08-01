@@ -38,6 +38,7 @@ def make_qcm(mocker):
         name: str = "qcm0", serial: str = "dummy"
     ) -> qblox.PulsarQCMComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
+        mocker.patch("pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present", return_value=False)
         qcm: pulsar_qcm.pulsar_qcm_qcodes = mocker.create_autospec(
             pulsar_qcm.pulsar_qcm_qcodes, instance=True
         )
@@ -63,6 +64,7 @@ def make_qrm(mocker):
         name: str = "qrm0", serial: str = "dummy"
     ) -> qblox.PulsarQRMComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
+        mocker.patch("pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present", return_value=False)
         qrm: pulsar_qrm.pulsar_qrm_qcodes = mocker.create_autospec(
             pulsar_qrm.pulsar_qrm_qcodes, instance=True
         )
@@ -87,14 +89,12 @@ def make_qcm_rf(mocker):
         name: str = "qcm_rf0", serial: str = "dummy"
     ) -> qblox.PulsarQCMRFComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
+        mocker.patch("pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present", return_value=True)
 
-        class pulsar_qcm_rf(pulsar_qcm.pulsar_qcm_qcodes):
-            def _get_lo_hw_present(self):
-                return True
-
-        qcm_rf: pulsar_qcm_rf = mocker.create_autospec(
-            pulsar_qcm_rf, instance=True
+        qcm_rf: pulsar_qcm.pulsar_qcm_qcodes = mocker.create_autospec(
+            pulsar_qcm.pulsar_qcm_qcodes, instance=True
         )
+        print(type(qcm_rf))
         qcm_rf.name = name
         qcm_rf._serial = serial
 
@@ -116,13 +116,10 @@ def make_qrm_rf(mocker):
         name: str = "qrm_rf0", serial: str = "dummy"
     ) -> qblox.PulsarQRMRFComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
+        mocker.patch("pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present", return_value=True)
 
-        class pulsar_qrm_rf(pulsar_qrm.pulsar_qrm_qcodes):
-            def _get_lo_hw_present(self):
-                return True
-
-        qrm_rf: pulsar_qrm_rf = mocker.create_autospec(
-            pulsar_qrm_rf, instance=True
+        qrm_rf: pulsar_qrm.pulsar_qrm_qcodes = mocker.create_autospec(
+            pulsar_qrm.pulsar_qrm_qcodes, instance=True
         )
         qrm_rf.name = name
         qrm_rf._serial = serial
@@ -172,7 +169,7 @@ def test_prepare(schedule_with_measurement, make_qcm, make_qrm):
     qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
-def test_prepare_rf(schedule_with_measurement, make_qcm_rf, make_qrm_rf):
+def test_prepare_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
     # Arrange
     qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
@@ -181,7 +178,7 @@ def test_prepare_rf(schedule_with_measurement, make_qcm_rf, make_qrm_rf):
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = qcompile(schedule_with_measurement2, DEVICE_CFG, HARDWARE_MAPPING)
 
         qcm.prepare(prog["qcm_rf0"])
         qrm.prepare(prog["qrm_rf0"])
@@ -297,14 +294,14 @@ def test_retrieve_acquisition_qcm_rf(make_qcm_rf):
     assert acq is None
 
 
-def test_retrieve_acquisition_qrm_rf(schedule_with_measurement, make_qrm_rf):
+def test_retrieve_acquisition_qrm_rf(schedule_with_measurement2, make_qrm_rf):
     # Arrange
     qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qcm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = qcompile(schedule_with_measurement2, DEVICE_CFG, HARDWARE_MAPPING)
         prog = dict(prog)
 
         qrm_rf.prepare(prog[qrm_rf.instrument.name])
@@ -335,7 +332,7 @@ def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
     qcm.instrument.start_sequencer.assert_called()
     qrm.instrument.start_sequencer.assert_called()
 
-def test_start_qcm_qrm_rf(schedule_with_measurement, make_qcm_rf, make_qrm_rf):
+def test_start_qcm_qrm_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
     # Arrange
     qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm_rf: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
@@ -344,7 +341,7 @@ def test_start_qcm_qrm_rf(schedule_with_measurement, make_qcm_rf, make_qrm_rf):
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = qcompile(schedule_with_measurement2, DEVICE_CFG, HARDWARE_MAPPING)
 
         qcm_rf.prepare(prog["qcm0"])
         qrm_rf.prepare(prog["qrm0"])
