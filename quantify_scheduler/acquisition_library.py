@@ -36,6 +36,8 @@ class Trace(Operation):
         ----------
         port :
             The acquisition port.
+        clock :
+            The clock used to demodulate the acquisition.
         duration :
             The acquisition duration in seconds.
         acq_channel :
