@@ -291,7 +291,7 @@ class TransmonElement(Instrument):
 
     def generate_device_config(self) -> Dict[str, Any]:
         """
-        Generates a valid device config for the quantify scheduler making use of the
+        Generates a valid device config for the quantify-scheduler making use of the
         :func:`quantify_scheduler.compilation.add_pulse_information_transmon` function.
 
         This enables the settings of this qubit to be used in isolation.
