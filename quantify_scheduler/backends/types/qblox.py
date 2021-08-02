@@ -119,7 +119,7 @@ class LOSettings(DataClassJsonMixin):
 
 
 @dataclass
-class BaseSettings(DataClassJsonMixin):
+class _BaseSettings(DataClassJsonMixin):
     hardware_averages: int = 1
     """The number of repetitions of the Schedule."""
     acq_mode: str = "SSBIntegrationComplex"
@@ -128,7 +128,7 @@ class BaseSettings(DataClassJsonMixin):
 
 
 @dataclass
-class PulsarSettings(BaseSettings):
+class PulsarSettings(_BaseSettings):
     """
     Global settings for the pulsar to be set in the InstrumentCoordinator component.
     This is kept separate from the settings that can be set on a per sequencer basis,
