@@ -4,6 +4,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
+# pylint: disable=unused-argument
 from __future__ import annotations
 
 import inspect
@@ -183,8 +184,9 @@ def test_prepare(close_all_instruments, schedule_with_measurement, make_qcm, mak
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
 
-
-def test_prepare_rf(close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf):
+def test_prepare_rf(
+    close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
+):
     # Arrange
     qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
@@ -282,7 +284,9 @@ def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm):
     assert acq is None
 
 
-def test_retrieve_acquisition_qrm(close_all_instruments, schedule_with_measurement, make_qrm):
+def test_retrieve_acquisition_qrm(
+    close_all_instruments, schedule_with_measurement, make_qrm
+):
     # Arrange
     qrm: qblox.PulsarQRMComponent = make_qrm("qcm0", "1234")
 
@@ -311,7 +315,9 @@ def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
     assert acq is None
 
 
-def test_retrieve_acquisition_qrm_rf(close_all_instruments, schedule_with_measurement_q2, make_qrm_rf):
+def test_retrieve_acquisition_qrm_rf(
+    close_all_instruments, schedule_with_measurement_q2, make_qrm_rf
+):
     # Arrange
     qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qcm_rf0", "1234")
 
@@ -329,7 +335,9 @@ def test_retrieve_acquisition_qrm_rf(close_all_instruments, schedule_with_measur
     assert len(acq) == 2
 
 
-def test_start_qcm_qrm(close_all_instruments, schedule_with_measurement, make_qcm, make_qrm):
+def test_start_qcm_qrm(
+    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
+):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
@@ -351,7 +359,9 @@ def test_start_qcm_qrm(close_all_instruments, schedule_with_measurement, make_qc
     qrm.instrument.start_sequencer.assert_called()
 
 
-def test_start_qcm_qrm_rf(close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf):
+def test_start_qcm_qrm_rf(
+    close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
+):
     # Arrange
     qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm_rf: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
