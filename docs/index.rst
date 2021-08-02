@@ -9,21 +9,14 @@ Welcome to Quantify's documentation!
    :glob:
 
    installation
-   usage
+   user_guide
+   tutorials/*
+   tutorials/qblox/index
+   tutorials/zhinst/index
    contributing
    authors
    changelog
 
-
-Tutorials
-==============
-
-.. toctree::
-   :caption: Tutorials
-
-   tutorials/Tutorial 1. basic experiment
-   tutorials/qblox/index
-   tutorials/zhinst/index
 
 API Reference
 ===================
