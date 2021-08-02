@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 from typing import Optional, Dict, Any
+from typing_extensions import Literal
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
@@ -118,24 +119,28 @@ class LOSettings(DataClassJsonMixin):
 
 
 @dataclass
-class PulsarSettings(DataClassJsonMixin):
-    """
-    Global settings for the pulsar to be set in the InstrumentCoordinator component.
-    This is kept separate from the settings that can be set on a per sequencer basis,
-    which are specified in `SequencerSettings`.
-    """
-
-    ref: str
-    """The reference source. Should either be "internal" or "external", will raise an
-    exception in the instrument coordinator component otherwise."""
+class BaseSettings(DataClassJsonMixin):
     hardware_averages: int = 1
     """The number of repetitions of the Schedule."""
     acq_mode: str = "SSBIntegrationComplex"
     """The acquisition mode the Pulsar operates in. This setting will most likely
     change in the future."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+
+@dataclass
+class PulsarSettings(BaseSettings):
+    """
+    Global settings for the pulsar to be set in the InstrumentCoordinator component.
+    This is kept separate from the settings that can be set on a per sequencer basis,
+    which are specified in `SequencerSettings`.
+    """
+
+    ref: Literal["internal", "external"] = "internal"
+    """The reference source. Should either be "internal" or "external", will raise an
+    exception in the instrument coordinator component otherwise."""
+
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -144,8 +149,8 @@ class PulsarSettings(DataClassJsonMixin):
         ----------
         mapping
         """
-        ref: str = mapping["ref"]
-        return PulsarSettings(ref=ref)
+        ref: Literal["internal", "external"] = mapping["ref"]
+        return cls(ref=ref)
 
 
 @dataclass
