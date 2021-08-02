@@ -261,6 +261,7 @@ class Cluster(ControlDeviceCompiler):
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         program = dict()
+        program["settings"] = {"reference_source": self.hw_mapping["ref"]}
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(repetitions)
             if instrument_program is not None and len(instrument_program) > 0:
