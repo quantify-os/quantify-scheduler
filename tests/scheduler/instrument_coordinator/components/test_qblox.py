@@ -186,7 +186,7 @@ def test_prepare(schedule_with_measurement, make_qcm, make_qrm):
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
 
-def test_prepare_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
+def test_prepare_rf(schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf):
     # Arrange
     qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
@@ -195,7 +195,7 @@ def test_prepare_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement2, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
 
         qcm.prepare(prog["qcm_rf0"])
         qrm.prepare(prog["qrm_rf0"])
@@ -313,14 +313,14 @@ def test_retrieve_acquisition_qcm_rf(make_qcm_rf):
     assert acq is None
 
 
-def test_retrieve_acquisition_qrm_rf(schedule_with_measurement2, make_qrm_rf):
+def test_retrieve_acquisition_qrm_rf(schedule_with_measurement_q2, make_qrm_rf):
     # Arrange
     qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qcm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
-        prog = qcompile(schedule_with_measurement2, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
         prog = dict(prog)
 
         qrm_rf.prepare(prog[qrm_rf.instrument.name])
@@ -353,7 +353,7 @@ def test_start_qcm_qrm(schedule_with_measurement, make_qcm, make_qrm):
     qrm.instrument.start_sequencer.assert_called()
 
 
-def test_start_qcm_qrm_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
+def test_start_qcm_qrm_rf(schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf):
     # Arrange
     qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm_rf: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
@@ -362,7 +362,7 @@ def test_start_qcm_qrm_rf(schedule_with_measurement2, make_qcm_rf, make_qrm_rf):
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement2, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
 
         qcm_rf.prepare(prog["qcm0"])
         qrm_rf.prepare(prog["qrm0"])

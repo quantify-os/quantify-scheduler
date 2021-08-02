@@ -72,7 +72,7 @@ def schedule_with_measurement() -> Schedule:
 
 
 @pytest.fixture
-def schedule_with_measurement2() -> Schedule:
+def schedule_with_measurement_q2() -> Schedule:
     schedule = Schedule("Basic schedule")
     schedule.add(Reset("q2"))
     schedule.add(X90("q2"))

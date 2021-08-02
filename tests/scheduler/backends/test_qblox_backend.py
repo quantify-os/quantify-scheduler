@@ -772,8 +772,8 @@ def test_markers():
     program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
 
     def _confirm_correct_markers(device_program, device_compiler):
-        with open(device_program["seq0"]["seq_fn"]) as f:
-            qasm = json.load(f)["program"]
+        with open(device_program["seq0"]["seq_fn"]) as file:
+            qasm = json.load(file)["program"]
 
             matches = re.findall(r"set\_mrk +\d+", qasm)
             assert len(matches) == 2
