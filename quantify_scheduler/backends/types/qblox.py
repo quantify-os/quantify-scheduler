@@ -131,7 +131,10 @@ class PulsarSettings(DataClassJsonMixin):
     """The reference source. Should either be "internal" or "external", will raise an
     exception in the instrument coordinator component otherwise."""
     scope_mode_sequencer: Optional[str] = None
-    """The sequencer that is in responsible for scope mode Acquisitions."""
+    """The name of the sequencer that triggers scope mode Acquisitions. Only a single 
+    sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
+    on the driver as well as used for internal checks. Having multiple sequencers
+    perform trace acquisition will result in an exception being raised."""
 
     @classmethod
     def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
