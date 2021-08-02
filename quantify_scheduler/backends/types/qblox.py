@@ -40,7 +40,7 @@ class OpInfo(DataClassJsonMixin):
     """
 
     name: str
-    """Name of the operation that this pulse/acquisition is a part of."""
+    """Name of the operation that this pulse/acquisition is part of."""
     uuid: str
     """A unique identifier for this pulse/acquisition."""
     data: dict
