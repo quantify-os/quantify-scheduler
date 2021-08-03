@@ -169,6 +169,14 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
                 f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
             )
 
+        number_of_outputs = 4
+        for output_idx in range(number_of_outputs):
+            # set the output to true if in connected_outputs else false
+            self.instrument.set(
+                _get_channel_map_parameter_name(seq_idx, output_idx),
+                output_idx in settings.connected_outputs,
+            )
+
     def wait_done(self, timeout_sec: int = 10) -> None:
         pass
 
@@ -384,6 +392,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
 
 # ----------------- Utility -----------------
+def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
+    path_idx = output_index % 2  # even or odd output
+    return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"
 
 
 @dataclass
