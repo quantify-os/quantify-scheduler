@@ -15,7 +15,7 @@ Tutorial 1. Basic experiments
     :jupyter-download:script:`Tutorial 1. Basic experiment`
 
 .. tip::
-    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short) :ref:`User guide` before proceeding.
+    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short)  :ref:`User guide <sec-user-guide>` before proceeding.
 
 
 The benefit of allowing the user to mix the high-level gate description of a circuit with the lower-level pulse description can be understood through an example.
@@ -52,7 +52,8 @@ If everything is done properly, one should observe the following oscillation:
 Bell circuit
 ~~~~~~~~~~~~
 
-We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
+
+We create this experiment using a :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
 
 
 We start by initializing an empty :class:`~quantify_scheduler.types.Schedule`
@@ -115,7 +116,7 @@ And we can use this to create a default visualization:
     from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
     f, ax = circuit_diagram_matplotlib(sched)
     # all gates are plotted, but it doesn't all fit in a matplotlib figure
-    ax.set_xlim(-.5, 9.5)
+    ax.set_xlim(-.5, 9.5);
 
 
 Datastructure internals
@@ -148,7 +149,7 @@ The timing constraints are stored as a list of pulses.
     sched.data['timing_constraints'][:6]
 
 
-Similar to the schedule, :class:`~quantify_scheduler.Operation` objects are also based on dicts.
+Similar to the schedule, :class:`~quantify_scheduler.types.Operation` objects are also based on dicts.
 
 .. jupyter-execute::
 
@@ -211,7 +212,7 @@ Compilation of pulses onto physical hardware
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file <sec-hardware-config>`.
+The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware configuration file <sec-hardware-config>`.
 
 Here we will use the :class:`~quantify_scheduler.backends.qblox_backend.hardware_compile` made for the Qblox pulsar series hardware.
 
@@ -313,7 +314,7 @@ and reference operators as Gates.
     When adding a Pulse to a schedule, the clock is not automatically added to the resources of the schedule. It may
     be necessary to add this clock manually, as in the final line of the above example
 
-We can also quickly compile using the :func:`!qcompile` function and associate mapping files:
+We can also quickly compile using the :func:`!qcompile` function and associate configuration files:
 
 .. jupyter-execute::
 

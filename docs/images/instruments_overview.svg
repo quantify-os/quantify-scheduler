@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="510px" height="394px" viewBox="0 0 510 394" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Instruments overview</title>
+    <g id="Instruments-overview" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" transform="translate(174.000000, 296.000000)">
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="0.5" y="0.5" width="152" height="90"></rect>
+            <text id="Utility-Instruments" font-family="LucidaGrande, Lucida Grande" font-size="14" font-weight="normal" letter-spacing="0.056" fill="#1A1919">
+                <tspan x="11" y="27">Utility Instruments </tspan>
+            </text>
+            <text id="MeasurementControl," font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+                <tspan x="18" y="55">MeasurementControl</tspan>
+                <tspan x="126.737578" y="55" font-family="LucidaGrande, Lucida Grande">,</tspan>
+                <tspan x="129.941641" y="55"></tspan>
+                <tspan x="18" y="67">InstrumentMonitor</tspan>
+                <tspan x="120.696602" y="67" font-family="LucidaGrande, Lucida Grande">,</tspan>
+                <tspan x="123.900664" y="67"></tspan>
+                <tspan x="18" y="79" font-family="LucidaGrande, Lucida Grande">etc. </tspan>
+            </text>
+        </g>
+        <rect id="Rectangle-Copy" stroke="#979797" fill="#7F96AD" x="10.5" y="50.5" width="232" height="113"></rect>
+        <rect id="Rectangle-Copy-3" stroke="#979797" fill="#EC9A84" x="265.5" y="50.5" width="232" height="113"></rect>
+        <rect id="Rectangle-Copy-4" stroke="#979797" fill="#EC9A84" opacity="0.7" x="265.5" y="173.5" width="232" height="113"></rect>
+        <rect id="Rectangle-Copy-2" stroke="#979797" fill-opacity="0.6" fill="#7F96AD" x="10.5" y="173.5" width="232" height="113"></rect>
+        <text id="Hardware-Abstraction" font-family="LucidaGrande, Lucida Grande" font-size="14" font-weight="normal" letter-spacing="0.056" fill="#1A1919">
+            <tspan x="25" y="72">Hardware Abstraction Layer </tspan>
+        </text>
+        <text id="Physical-Instruments" font-family="LucidaGrande, Lucida Grande" font-size="14" font-weight="normal" letter-spacing="0.056" fill="#1A1919">
+            <tspan x="25" y="191">Physical Instruments </tspan>
+        </text>
+        <text id="Device-Under-Test-(D" font-family="LucidaGrande, Lucida Grande" font-size="14" font-weight="normal" letter-spacing="0.056" fill="#1A1919">
+            <tspan x="297" y="69">Device Under Test (DUT)</tspan>
+        </text>
+        <text id="Device-Elements" font-family="LucidaGrande, Lucida Grande" font-size="14" font-weight="normal" letter-spacing="0.056" fill="#1A1919">
+            <tspan x="282" y="191">Device Elements</tspan>
+        </text>
+        <line x1="254.5" y1="0.5" x2="254.5" y2="287.5" id="Line-3" stroke="#979797" stroke-linecap="square"></line>
+        <text id="The-InstrumentCoordi" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="44" y="90">The </tspan>
+            <tspan x="65.4246484" y="90" font-family="AndaleMono, Andale Mono">InstrumentCoordinator</tspan>
+            <tspan x="192.285156" y="90"> and</tspan>
+            <tspan x="44" y="102" font-family="AndaleMono, Andale Mono">InstrumentCoordinatorComponents.</tspan>
+        </text>
+        <text id="As-stateless-as-poss" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#6D7278">
+            <tspan x="66" y="37">As stateless as possible*</tspan>
+        </text>
+        <text id="quantify-core" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#6D7278">
+            <tspan x="217" y="335">quantify-core</tspan>
+        </text>
+        <text id="Provide-a-hardware-a" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="44" y="121">Provide a hardware agnostic </tspan>
+            <tspan x="44" y="133">interface to execute compiled </tspan>
+            <tspan x="44" y="145">schedules.</tspan>
+        </text>
+        <text id="Describe-connections" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="271" y="107">Describe connections between elements and </tspan>
+            <tspan x="271" y="119">to the environment (control hardware). </tspan>
+            <tspan x="271" y="131">Contains a collection of </tspan>
+            <tspan x="389.441406" y="131" font-family="AndaleMono, Andale Mono">DeviceElement</tspan>
+            <tspan x="467.974102" y="131">s.</tspan>
+            <tspan x="271" y="143"></tspan>
+            <tspan x="271" y="155">Generate device config and hardware config. </tspan>
+        </text>
+        <text id="Represents-an-elemen" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="271" y="209">Represents an element on the DUT, e.g., a </tspan>
+            <tspan x="271" y="221" font-family="AndaleMono, Andale Mono">TransmonElement</tspan>
+            <tspan x="361.614648" y="221">. </tspan>
+        </text>
+        <text id="Represents-the-DUT," font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="271" y="90">Represents the DUT, e.g., a </tspan>
+            <tspan x="407.749883" y="90" font-family="AndaleMono, Andale Mono">QuantumDevice</tspan>
+            <tspan x="486.282578" y="90">.</tspan>
+        </text>
+        <text id="Manage-parameters-re" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="271" y="242">Manage parameters required to </tspan>
+            <tspan x="271" y="254">generate device config relating to an </tspan>
+            <tspan x="271" y="266">element, e.g., the resonance frequency. </tspan>
+        </text>
+        <text id="Instrument-drivers-f" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="44" y="209">Instrument drivers for physical </tspan>
+            <tspan x="44" y="221">instruments: e.g., QCoDeS </tspan>
+            <tspan x="44" y="233" font-family="AndaleMono, Andale Mono">pulsar_qcm_qcodes</tspan>
+            <tspan x="146.696602" y="233">,  </tspan>
+            <tspan x="44" y="245" font-family="AndaleMono, Andale Mono">RohdeSchwarz_SGS100A</tspan>
+            <tspan x="164.819531" y="245">, etc.</tspan>
+        </text>
+        <text id="Controlling-instrume" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+            <tspan x="44" y="264">Controlling instruments during </tspan>
+            <tspan x="44" y="276">experiments.</tspan>
+        </text>
+        <text id="Experiment-Control" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+            <tspan x="69" y="20">Experiment Control</tspan>
+        </text>
+        <text id="Manage-Parameters" font-family="LucidaGrande, Lucida Grande" font-size="12" font-weight="normal" letter-spacing="0.048" fill="#1A1919">
+            <tspan x="324" y="20">Manage Parameters</tspan>
+        </text>
+    </g>
+</svg>
