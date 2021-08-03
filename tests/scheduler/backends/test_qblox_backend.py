@@ -320,7 +320,7 @@ def baseband_square_pulse_schedule():
 
 @pytest.fixture
 def real_square_pulse_schedule():
-    sched = Schedule("fast_square_pulse_schedule")
+    sched = Schedule("real_square_pulse_schedule")
     sched.add(Reset("q0"))
     sched.add(
         SquarePulse(
