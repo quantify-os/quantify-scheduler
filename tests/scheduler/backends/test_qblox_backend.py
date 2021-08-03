@@ -238,7 +238,7 @@ def pulse_only_schedule():
 def pulse_only_schedule_multiplexed():
     sched = Schedule("pulse_only_experiment")
     sched.add(Reset("q0"))
-    op = sched.add(
+    operation = sched.add(
         DRAGPulse(
             G_amp=0.7,
             D_amp=-0.2,
@@ -260,7 +260,7 @@ def pulse_only_schedule_multiplexed():
                 clock="q0.01",
                 t0=8e-9,
             ),
-            ref_op=op,
+            ref_op=operation,
             ref_pt="start",
         )
 
