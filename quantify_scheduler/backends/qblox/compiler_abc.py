@@ -484,6 +484,8 @@ class PulsarSequencerBase(ABC):
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
+            if output_mode == "imag":
+                amp_i, amp_q = amp_q, amp_i
             pulse.pulse_settings = QASMRuntimeSettings(
                 awg_gain_0=amp_i / self.awg_output_volt,
                 awg_gain_1=amp_q / self.awg_output_volt,
