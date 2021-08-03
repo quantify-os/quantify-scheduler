@@ -119,11 +119,11 @@ class Pulsar_QCM(PulsarBaseband):
     Pulsar QCM specific implementation of the pulsar compiler.
     """
 
-    max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencers available in the instrument."""
     awg_output_volt: float = 2.5
     """Peak output voltage of the AWG"""
-    markers: dict = {"on": 1, "off": 0}
+    marker_configuration: dict = {"start": 1, "end": 0}
     """Marker values to activate/deactivate the O1 marker"""
     _supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
@@ -161,11 +161,11 @@ class Pulsar_QRM(PulsarBaseband):
     Pulsar QRM specific implementation of the pulsar compiler.
     """
 
-    max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencers available in the instrument."""
     awg_output_volt: float = 0.5
     """Peak output voltage of the AWG"""
-    markers: dict = {"on": 1, "off": 0}
+    marker_configuration: dict = {"start": 1, "end": 0}
     """Marker values to activate/deactivate the I1 marker"""
     _supports_acquisition: bool = True
     """Specifies whether the device can perform acquisitions."""
@@ -176,11 +176,11 @@ class Pulsar_QCM_RF(PulsarRF):
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
 
-    max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
-    markers: dict = {"on": 6, "off": 8}
+    marker_configuration: dict = {"start": 6, "end": 8}
     """
     Marker values to activate/deactivate the O1 marker,
     and the output switches for O1/O2
@@ -194,11 +194,11 @@ class Pulsar_QRM_RF(PulsarRF):
     Pulsar QRM-RF specific implementation of the pulsar compiler.
     """
 
-    max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
-    markers: dict = {"on": 1, "off": 4}
+    marker_configuration: dict = {"start": 1, "end": 4}
     """
     Marker values to activate/deactivate the I1 marker,
     and the output switch for O1

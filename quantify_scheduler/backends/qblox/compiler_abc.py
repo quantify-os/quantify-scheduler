@@ -607,7 +607,7 @@ class Sequencer:
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        qasm.emit(q1asm_instructions.SET_MARKER, self.parent.markers["on"])
+        qasm.emit(q1asm_instructions.SET_MARKER, self.parent.marker_configuration["start"])
 
         # program body
         pulses = list() if self.pulses is None else self.pulses
@@ -640,7 +640,7 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.emit(q1asm_instructions.SET_MARKER, self.parent.markers["off"])
+        qasm.emit(q1asm_instructions.SET_MARKER, self.parent.marker_configuration["end"])
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
@@ -842,7 +842,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def max_sequencers(self) -> int:
+    def _max_sequencers(self) -> int:
         """
         Specifies the maximum amount of sequencers available to this instrument.
 
@@ -879,9 +879,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def markers(self) -> dict:
+    def marker_configuration(self) -> dict[str, int]:
         """
-        Specifies the values necessary to turn the markers on/off.
+        Specifies the values that the markers need to be set to at the start and end
+        of each program.
 
         Returns
         -------
@@ -972,10 +973,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                     io_cfg["mixer_corrections"]
                 )
 
-        if len(sequencers.keys()) > self.max_sequencers:
+        if len(sequencers.keys()) > self._max_sequencers:
             raise ValueError(
                 f"Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__} is {self.max_sequencers}!"
+                f"Maximum allowed for {self.__class__} is {self._max_sequencers}!"
             )
 
         return sequencers

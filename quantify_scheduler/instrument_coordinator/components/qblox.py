@@ -38,7 +38,12 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
     def __init__(self, instrument: Instrument, **kwargs) -> None:
         """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
-        assert instrument._get_lo_hw_present() is self._has_internal_lo
+        if instrument._get_lo_hw_present() is not self._has_internal_lo:
+            raise RuntimeError(
+                "PulsarInstrumentCoordinatorComponent not compatible with the "
+                "provided instrument. Please confirm whether your device "
+                "is a RF module (has an internal LO)."
+            )
 
     @property
     def is_running(self) -> bool:
@@ -46,7 +51,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
 
     @property
     @abstractmethod
-    def settings_type(self) -> Type[PulsarSettings]:
+    def _settings_type(self) -> Type[PulsarSettings]:
         """
         Specifies the type of qblox settings class that the subclasses use.
 
@@ -72,7 +77,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
     @abstractmethod
     def _has_internal_lo(self) -> bool:
         """
-        Specifies whether the device posesses an internal LO
+        Specifies whether the device possesses an internal LO
         (and is thefore an RF module).
 
         Returns
@@ -90,7 +95,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
     number_of_sequencers = NUMBER_OF_SEQUENCERS_QCM
     """Specifies the amount of sequencers available in the device."""
-    settings_type = PulsarSettings
+    _settings_type = PulsarSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = False
     """Specifies whether the device posesses an internal LO."""
@@ -142,7 +147,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         }
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = self.settings_type.from_dict(settings_entry)
+            pulsar_settings = self._settings_type.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
         for seq_name, seq_cfg in program.items():
@@ -240,7 +245,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
     number_of_sequencers = NUMBER_OF_SEQUENCERS_QRM
     """Specifies the amount of sequencers available in the Pulsar device."""
-    settings_type = PulsarSettings
+    _settings_type = PulsarSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = False
     """Specifies whether the device posesses an internal LO."""
@@ -362,7 +367,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         acq_settings = _AcquisitionSettings()
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = self.settings_type.from_dict(settings_entry)
+            pulsar_settings = self._settings_type.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
             acq_settings.hardware_averages = pulsar_settings.hardware_averages
@@ -455,7 +460,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     Pulsar QCM-RF specific InstrumentCoordinator component.
     """
 
-    settings_type = PulsarRFSettings
+    _settings_type = PulsarRFSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = True
     """Specifies whether the device posesses an internal LO."""
@@ -491,7 +496,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     Pulsar QRM-RF specific InstrumentCoordinator component.
     """
 
-    settings_type = PulsarRFSettings
+    _settings_type = PulsarRFSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = True
     """Specifies whether the device posesses an internal LO."""
