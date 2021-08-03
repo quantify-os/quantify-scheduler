@@ -955,14 +955,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
-
-        Raises
-        ------
-        NotImplementedError
-            When the hardware mapping contains a dictionary, which is assumed to
-            correspond to an output channel, that does not have a name defined in
-            self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
-            real outputs (instead of complex), or when the hardware mapping is invalid.
         """
         valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
@@ -996,6 +988,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary containing the sequencer objects, the keys correspond to the
             names of the sequencers.
+
+        Raises
+        ------
+        ValueError
+            Raised when multiple definitions for the same sequencer is found, i.e. we
+            are attempting to use the same sequencer multiple times in the compilation.
+        ValueError
+            Attempting to use more sequencers than available.
         """
         valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
@@ -1021,10 +1021,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 portclock = seq_cfg["port"], seq_cfg["clock"]
 
                 if seq_name in sequencers:
-                    raise RuntimeError(
-                        f"Attemping to create multiple instances of "
+                    raise ValueError(
+                        f"Attempting to create multiple instances of "
                         f"{seq_name}. Is it defined multiple times in "
-                        f"the hardware mapping?"
+                        f"the hardware configuration?"
                     )
                 connected_outputs = helpers.output_name_to_outputs(io)
 
