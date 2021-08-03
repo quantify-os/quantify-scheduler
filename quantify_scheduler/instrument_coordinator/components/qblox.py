@@ -96,6 +96,13 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
             settings_entry = program.pop("settings")
             pulsar_settings = PulsarSettings.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
+        for seq_idx in range(self.number_of_sequencers):
+            self.instrument.set(f"sequencer{seq_idx}_sync_en", False)
+            for output_idx in range(4):
+                self.instrument.set(
+                    _get_channel_map_parameter_name(seq_idx, output_idx),
+                    False,
+                )
 
         for seq_name, seq_cfg in program.items():
             if seq_name in seq_name_to_idx_map:
@@ -121,7 +128,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         Starts execution of the schedule.
         """
-        for seq_idx in [0, 1]:
+        for seq_idx in range(self.number_of_sequencers):
             state = self.instrument.get_sequencer_state(seq_idx)
             if state["status"] == "ARMED":
                 self.instrument.start_sequencer(seq_idx)
