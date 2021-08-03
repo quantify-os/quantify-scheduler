@@ -946,6 +946,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary containing the sequencer objects, the keys correspond to the
             names of the sequencers.
+
+        Raises
+        ------
+        ValueError
+            Raised when multiple definitions for the same sequencer is found, i.e. we
+            are attempting to use the same sequencer multiple times in the compilation.
+        ValueError
+            Attempting to use more sequencers than available.
         """
         sequencers = dict()
         for io, io_cfg in self.hw_mapping.items():
@@ -963,10 +971,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 portclock = seq_cfg["port"], seq_cfg["clock"]
 
                 if seq_name in sequencers:
-                    raise RuntimeError(
-                        f"Attemping to create multiple instances of "
+                    raise ValueError(
+                        f"Attempting to create multiple instances of "
                         f"{seq_name}. Is it defined multiple times in "
-                        f"the hardware mapping?"
+                        f"the hardware configuration?"
                     )
 
                 sequencers[seq_name] = self.sequencer_type(
