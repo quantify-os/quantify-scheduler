@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, Dict, Any
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
@@ -137,7 +138,7 @@ class Pulsar_QCM(PulsarBase):
     """
 
     sequencer_type = QCMSequencer
-    max_sequencers: int = 6
+    max_sequencers: int = constants.NUMBER_OF_SEQUENCERS_QCM
 
     def _distribute_data(self):
         """
@@ -193,5 +194,5 @@ class Pulsar_QRM(PulsarBase):
 
     sequencer_type = QRMSequencer
     """The type of the sequencer."""
-    max_sequencers: int = 1
+    max_sequencers: int = constants.NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""

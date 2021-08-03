@@ -19,7 +19,7 @@ SAMPLING_RATE = 1_000_000_000  # 1GS/s
 """Sampling rate of the Qblox Pulsar series instruments."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
-NUMBER_OF_SEQUENCERS_QCM = 2
+NUMBER_OF_SEQUENCERS_QCM = 6
 """Number of sequencers supported by Pulsar QCM in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 1
 """Number of sequencers supported by Pulsar QRM in the latest firmware."""
