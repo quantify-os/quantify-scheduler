@@ -907,14 +907,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
-
-        Raises
-        ------
-        NotImplementedError
-            When the hardware mapping contains a dictionary, which is assumed to
-            correspond to an output channel, that does not have a name defined in
-            self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
-            real outputs (instead of complex), or when the hardware mapping is invalid.
         """
         valid_io = (f"complex_output_{i}" for i in [0, 1])
         valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
