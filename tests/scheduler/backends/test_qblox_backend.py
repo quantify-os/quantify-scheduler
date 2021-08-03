@@ -111,7 +111,7 @@ def hardware_cfg_baseband():
 @pytest.fixture
 def hardware_cfg_real_mode():
     yield {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
             "instrument_type": "Pulsar_QCM",
