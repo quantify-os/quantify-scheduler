@@ -419,14 +419,14 @@ class QASMProgram:
                     f"Attempting to perform square acquisition with a "
                     f"duration of {duration_ns} ns. Please ensure the "
                     f"duration is a multiple of {constants.GRID_TIME} "
-                    f"ns.\n\nException caused by {repr(acquisition)}"
+                    f"ns.\n\nException caused by {repr(acquisition)}."
                 )
             self.parent.settings.integration_length_acq = duration_ns
         elif self.parent.settings.integration_length_acq != duration_ns:
             raise ValueError(
-                f"Attempting to set an integration_length of {duration_ns}"
-                f" ns, while this has previously determined to be"
-                f" {self.parent.settings.integration_length_acq}. Please "
+                f"Attempting to set an integration_length of {duration_ns} "
+                f"ns, while this was previously determined to be "
+                f"{self.parent.settings.integration_length_acq}. Please "
                 f"check whether all square acquisitions in the schedule "
                 f"have the same duration."
             )
@@ -460,13 +460,13 @@ class QASMProgram:
                 < constants.MIN_TIME_BETWEEN_ACQUISITIONS
             ):
                 raise ValueError(
-                    f"Attempting to start an acquisition on t={self.elapsed_time}"
-                    f" ns, while the last acquisition was started on "
+                    f"Attempting to start an acquisition at t={self.elapsed_time} "
+                    f"ns, while the last acquisition was started at "
                     f"t={self.time_last_acquisition_triggered}. Please ensure "
                     f"a minimum interval of "
                     f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
                     f"acquisitions.\n\nError caused by acquisition:\n"
-                    f"{repr(acquisition)}"
+                    f"{repr(acquisition)}."
                 )
         self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {
