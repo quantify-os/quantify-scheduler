@@ -157,6 +157,8 @@ class ScheduleVectorAcqGettable:
         acquisition = self.instr_coord.retrieve_acquisition()
         for acq_channel, acq_index in self.channels_and_indices:
             this_acq = acquisition[(acq_channel, acq_index)]
+            if not self.real_imag:
+                this_acq = _iq_to_mag_phase(*this_acq)
             formatted_acq.append(this_acq)
         return formatted_acq
 
