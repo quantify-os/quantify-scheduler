@@ -301,7 +301,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
 """
-Named tuple to clarify how the indexing of acquisitions works inside the 
+Named tuple to clarify how the indexing of acquisitions works inside the
 `_QRMAcquisitionManager`.
 """
 
