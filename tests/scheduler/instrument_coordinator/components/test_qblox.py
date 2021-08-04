@@ -285,3 +285,35 @@ def test_get_integration_data(make_qrm, mock_acquisition_data):
     acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
     data = acq_manager._get_integration_data(mock_acquisition_data, 0, 0)
     assert data == (0.0, 0.0)
+
+
+def test_get_scope_channel_and_index(make_qrm):
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    result = acq_manager._get_scope_channel_and_index()
+    assert result == (0, 0)
+
+
+def test_get_scope_channel_and_index_exception(make_qrm):
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
+        qblox.AcquisitionIndexing(acq_index=1, acq_channel=0): ("seq0", "trace"),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    with pytest.raises(RuntimeError) as execinfo:
+        acq_manager._get_scope_channel_and_index()
+
+    assert (
+        execinfo.value.args[0]
+        == "A scope mode acquisition is defined for both acq_channel 0 with "
+        "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
+        "trace acquisition is allowed per QRM."
+    )
