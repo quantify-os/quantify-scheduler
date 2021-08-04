@@ -330,7 +330,10 @@ class _QRMAcquisitionManager:
         number_of_sequencers
             The number of sequencers capable of acquisitions.
         acquisition_mapping
-            The acquisition mapping extracted from the schedule.
+            The acquisition mapping extracted from the schedule, this mapping links the
+            `acq_channel` and `acq_index` to the sequencer name and acquisition
+            protocol. The key is a tuple (`acq_channel`, `acq_index`), the values
+            (seq_name, protocol).
         """
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
