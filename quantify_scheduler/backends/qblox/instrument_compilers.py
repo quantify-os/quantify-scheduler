@@ -197,6 +197,16 @@ class Pulsar_QRM(PulsarBase):
     """Maximum number of sequencer available in the instrument."""
 
     def _get_acquisition_mapping(self) -> Optional[dict]:
+        """
+        Generates a mapping of acq_channel, acq_index to sequencer name, protocol.
+
+        Returns
+        -------
+        :
+            A dictionary containing tuple(acq_channel, acq_index) as keys and
+            tuple(sequencer name, protocol) as value.
+        """
+
         def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
             return (
                 acquisition.data["acq_channel"],
