@@ -47,7 +47,6 @@ class ScheduleVectorAcqGettable:
         device_cfg: Dict[str, Any],
         hardware_cfg: Dict[str, Any],
         instr_coord: InstrumentCoordinator,
-        acq_instr: str,
         real_imag: bool = True,
         hardware_averages: int = 1024,
     ):
@@ -100,7 +99,6 @@ class ScheduleVectorAcqGettable:
         self.instr_coord = instr_coord
 
         self.hardware_averages = hardware_averages
-        self.acq_instr = acq_instr
         self.real_imag = real_imag
         self.device = device
 
@@ -130,7 +128,6 @@ class ScheduleVectorAcqGettable:
             hardware_mapping=self.mapping_cfg,
         )
 
-        self.instr_coord.acq_instr = self.acq_instr
         self.instr_coord.schedule_kwargs = self.schedule_kwargs
         self.instr_coord.device = self.device
 
@@ -142,12 +139,8 @@ class ScheduleVectorAcqGettable:
 
         # TODO instr_coord components need to be awaited # pylint: disable=fixme
 
-        # TODO Why index on 'acq_instr'. There can be multiple acquisition instruments.
-        # This function should rather return the result of 'retrieve_acquisition' than
-        # doing extra additions to the data.
-        # This will not work because it needs to also know the acq_index
-        # { 'uhfqa0': { [acq_index]: [0,1,1,...] } }
-        i_val, q_val = self.instr_coord.retrieve_acquisition()[self.acq_instr]
+        acq_channel_and_index = (0, 0)
+        i_val, q_val = self.instr_coord.retrieve_acquisition()[acq_channel_and_index]
 
         s21: np.ndarray = i_val + 1j * q_val
         if self.real_imag:
