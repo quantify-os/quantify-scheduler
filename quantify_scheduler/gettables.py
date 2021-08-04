@@ -151,13 +151,14 @@ class ScheduleVectorAcqGettable:
                 return i_val, q_val
 
             return _iq_to_mag_phase(i_val, q_val)
-        else:
-            formatted_acq = list()
-            acquisition = self.instr_coord.retrieve_acquisition()
-            for acq_channel, acq_index in self.channels_and_indices:
-                this_acq = acquisition[(acq_channel, acq_index)]
-                formatted_acq.append(this_acq)
-            return formatted_acq
+
+        # implicit else:
+        formatted_acq = list()
+        acquisition = self.instr_coord.retrieve_acquisition()
+        for acq_channel, acq_index in self.channels_and_indices:
+            this_acq = acquisition[(acq_channel, acq_index)]
+            formatted_acq.append(this_acq)
+        return formatted_acq
 
 
 def _iq_to_mag_phase(i_val: float, q_val: float):
