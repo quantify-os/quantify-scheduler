@@ -13,7 +13,7 @@ quantify-scheduler.
     Expect breaking changes.
 """
 from __future__ import annotations
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, Tuple, List, Optional, Union
 
 import numpy as np
 from qcodes import Parameter
@@ -47,6 +47,7 @@ class ScheduleVectorAcqGettable:
         device_cfg: Dict[str, Any],
         hardware_cfg: Dict[str, Any],
         instr_coord: InstrumentCoordinator,
+        channels_and_indices: Optional[List[Tuple[int, int]]] = None,
         real_imag: bool = True,
         hardware_averages: int = 1024,
     ):
@@ -72,11 +73,12 @@ class ScheduleVectorAcqGettable:
         instr_coord
             An instance of
             :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+        channels_and_indices
+            List containing all the acquisition channels and indices to retrieve, the
+            channels and indices are provided as tuples. If None, (0,0) is used.
         real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
-        acq_instr
-            Name of the instrument that is used to perform the acquisition.
         hardware_averages
             The number of hardware averages.
         """  # pylint: disable=line-too-long
@@ -97,6 +99,7 @@ class ScheduleVectorAcqGettable:
         self.device_cfg = device_cfg
         self.mapping_cfg = hardware_cfg
         self.instr_coord = instr_coord
+        self.channels_and_indices = channels_and_indices
 
         self.hardware_averages = hardware_averages
         self.real_imag = real_imag
@@ -105,7 +108,7 @@ class ScheduleVectorAcqGettable:
         self._evaluated_sched_kwargs = {}
         self._config = {}
 
-    def get(self) -> Tuple[float, float]:
+    def get(self) -> Union[Tuple[float, float], List[Tuple[float, float]]]:
         """
         Start the experimental sequence and retrieve acquisition data.
 
@@ -139,14 +142,27 @@ class ScheduleVectorAcqGettable:
 
         # TODO instr_coord components need to be awaited # pylint: disable=fixme
 
-        acq_channel_and_index = (0, 0)
-        i_val, q_val = self.instr_coord.retrieve_acquisition()[acq_channel_and_index]
+        if self.channels_and_indices is None:
+            acq_channel_and_index = (0, 0)
+            i_val, q_val = self.instr_coord.retrieve_acquisition()[
+                acq_channel_and_index
+            ]
+            if self.real_imag:
+                return i_val, q_val
 
-        s21: np.ndarray = i_val + 1j * q_val
-        if self.real_imag:
-            return (np.real(s21), np.imag(s21))
+            return _iq_to_mag_phase(i_val, q_val)
+        else:
+            formatted_acq = list()
+            acquisition = self.instr_coord.retrieve_acquisition()
+            for acq_channel, acq_index in self.channels_and_indices:
+                this_acq = acquisition[(acq_channel, acq_index)]
+                formatted_acq.append(this_acq)
+            return formatted_acq
 
-        return np.abs(s21), np.angle(s21, deg=True)
+
+def _iq_to_mag_phase(i_val: float, q_val: float):
+    s21: complex = i_val + 1j * q_val
+    return np.abs(s21), np.angle(s21, deg=True)
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
