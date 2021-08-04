@@ -409,6 +409,8 @@ class _QRMAcquisitionManager:
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
                 if ch_and_idx is not None:
+                    # Pylint seems to not care we explicitly check for None
+                    # pylint: disable=unpacking-non-sequence
                     acq_channel, acq_index = ch_and_idx
                     raise RuntimeError(
                         f"A scope mode acquisition is defined for both acq_channel "
