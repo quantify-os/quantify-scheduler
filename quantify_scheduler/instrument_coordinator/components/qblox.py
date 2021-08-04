@@ -409,13 +409,14 @@ class _QRMAcquisitionManager:
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
                 if ch_and_idx is not None:
+                    acq_channel, acq_index = ch_and_idx
                     raise RuntimeError(
                         f"A scope mode acquisition is defined for both acq_channel "
-                        f"{ch_and_idx[0]} with acq_index {ch_and_idx[1]} as well as "
+                        f"{acq_channel} with acq_index {acq_index} as well as "
                         f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
                         f"trace acquisition is allowed per QRM."
                     )
-                ch_and_idx = key
+                ch_and_idx: Tuple[int, int] = key
         return ch_and_idx
 
     def _get_scope_data(
