@@ -692,7 +692,7 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
-def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
+def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
     sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
