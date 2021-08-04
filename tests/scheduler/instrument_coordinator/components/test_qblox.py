@@ -317,3 +317,30 @@ def test_get_scope_channel_and_index_exception(make_qrm):
         "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
         "trace acquisition is allowed per QRM."
     )
+
+
+def test_get_protocol(make_qrm):
+    answer = "trace"
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", answer),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    assert acq_manager._get_protocol(0, 0) == answer
+
+
+def test_get_sequencer_index(make_qrm):
+    answer = 0
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): (
+            f"seq{answer}",
+            "trace",
+        ),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    assert acq_manager._get_sequencer_index(0, 0) == answer
