@@ -905,7 +905,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             sequencer.
         """
         valid_io = (f"complex_output_{i}" for i in [0, 1])
-        valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
+        valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
 
         mapping = dict()
         for io in valid_io:
@@ -950,7 +950,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
             lo_name = io_cfg.get("lo_name", None)
 
-            valid_seq_names = (f"seq{i}" for i in range(self.max_sequencers))
+            valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
             for seq_name in valid_seq_names:
                 if seq_name not in io_cfg:
                     continue
