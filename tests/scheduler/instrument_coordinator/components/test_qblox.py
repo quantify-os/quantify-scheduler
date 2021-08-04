@@ -91,6 +91,40 @@ def fixture_make_qrm(mocker):
     yield _make_qrm
 
 
+@pytest.fixture(name="mock_acquisition_data")
+def fixture_mock_acquisition_data():
+    acq_channel, acq_index_len = 0, 10  # mock 1 channel, N indices
+    avg_count = 10
+    data = {
+        str(acq_channel): {
+            "index": acq_channel,
+            "acquisition": {
+                "scope": {
+                    "path0": {
+                        "data": [0.0] * 2 ** 14,
+                        "out-of-range": False,
+                        "avg_count": avg_count,
+                    },
+                    "path1": {
+                        "data": [0.0] * 2 ** 14,
+                        "out-of-range": False,
+                        "avg_count": avg_count,
+                    },
+                },
+                "bins": {
+                    "integration": {
+                        "path0": [0.0] * acq_index_len,
+                        "path1": [0.0] * acq_index_len,
+                    },
+                    "threshold": [0.12] * acq_index_len,
+                    "avg_cnt": [avg_count] * acq_index_len,
+                },
+            },
+        }
+    }
+    yield data
+
+
 def test_initialize_pulsar_qcm_component(make_qcm):
     make_qcm("qblox_qcm0", "1234")
 
@@ -225,3 +259,25 @@ def test_stop_qcm_qrm(make_qcm, make_qrm):
     # Assert
     qcm.instrument.stop_sequencer.assert_called()
     qrm.instrument.stop_sequencer.assert_called()
+
+
+# ------------------- _QRMAcquisitionManager -------------------
+
+
+def test_qrm_acquisition_manager__init__(make_qrm):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+
+
+def test_get_threshold_data(make_qrm, mock_acquisition_data):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    data = acq_manager._get_threshold_data(mock_acquisition_data, 0, 0)
+    assert data == 0.12
+
+
+def test_get_integration_data(make_qrm, mock_acquisition_data):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    data = acq_manager._get_integration_data(mock_acquisition_data, 0, 0)
+    assert data == (0.0, 0.0)
