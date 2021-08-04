@@ -30,7 +30,7 @@ from quantify_scheduler.pulse_library import (
     SquarePulse,
     StaircasePulse,
 )
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify_scheduler.resources import ClockResource, BasebandClockResource
 from quantify_scheduler.compilation import (
     qcompile,
@@ -785,7 +785,9 @@ def test_container_prepare(pulse_only_schedule):
 
 
 def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
-    sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
+    sched = device_compile(sched, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
