@@ -341,10 +341,11 @@ class _QRMAcquisitionManager:
         Returns
         -------
         :
-            The acquisitions with the protocols specified in the `acq_mapping` sorted by
-            the `(acq_channel, acq_index)` as keys.
+            The acquisitions with the protocols specified in the `acq_mapping` as a
+            `dict` with the `(acq_channel, acq_index)` as keys.
         """
         protocol_to_function_mapping = {
+            # Implicitly covers SSBIntegrationComplex too
             "weighted_integrated_complex": self._get_integration_data,
             "trace": self._get_scope_data,
             # NB thresholded protocol is still missing since there is nothing in
@@ -399,15 +400,26 @@ class _QRMAcquisitionManager:
         seq_name = self.acquisition_mapping[(acq_channel, acq_index)][0]
         return self.seq_name_to_idx_map[seq_name]
 
-    def _get_scope_channel_and_index(self) -> Optional[Tuple[int, int]]:
+    def _get_scope_channel_and_index(self) -> Optional[AcquisitionIndexing]:
         """
         Returns the first `(acq_channel, acq_index)` pair that uses `"trace"`
         acquisition. Returns `None` if none of them do.
         """
+        ch_and_idx: Optional[AcquisitionIndexing] = None
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
-                return key
-        return None
+                if ch_and_idx is not None:
+                    # Pylint seems to not care we explicitly check for None
+                    # pylint: disable=unpacking-non-sequence
+                    acq_channel, acq_index = ch_and_idx
+                    raise RuntimeError(
+                        f"A scope mode acquisition is defined for both acq_channel "
+                        f"{acq_channel} with acq_index {acq_index} as well as "
+                        f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
+                        f"trace acquisition is allowed per QRM."
+                    )
+                ch_and_idx: AcquisitionIndexing = key
+        return ch_and_idx
 
     def _get_scope_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
@@ -482,7 +494,7 @@ class _QRMAcquisitionManager:
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
-    ) -> Tuple[float, float]:
+    ) -> float:
         """
         Retrieves the thresholded acquisition data associated with `acq_channel` and
         `acq_index`.
@@ -503,17 +515,15 @@ class _QRMAcquisitionManager:
             Should always be 0.0 <= val <= 1.0.
         """
         bin_data = self._get_bin_data(acquisitions, acq_channel)
-        i_data, q_data = (
-            bin_data["threshold"]["path0"],
-            bin_data["threshold"]["path1"],
-        )
-        if acq_index > len(i_data):
+        data = bin_data["threshold"]
+
+        if acq_index > len(data):
             raise ValueError(
                 f"Attempting to access acq_index {acq_index} on "
-                f"{self.parent.name} but only {len(i_data)} values found "
+                f"{self.parent.name} but only {len(data)} values found "
                 f"in acquisition data."
             )
-        return i_data[acq_index], q_data[acq_index]
+        return data[acq_index]
 
     @staticmethod
     def _channel_index_to_channel_name(acq_channel: int) -> str:
