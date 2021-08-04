@@ -23,6 +23,7 @@ Merged branches and closed issues
 * Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
 * Added instrument coordinator reference parameter to transmon element. (!152)
 * Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
+* Removed limit in Qblox backend that keeps the QCM sequencer count at 2 (!135)
 
 
 0.3.0 Multiple backends support (2021-05-20)
