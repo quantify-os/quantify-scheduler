@@ -405,10 +405,18 @@ class _QRMAcquisitionManager:
         Returns the first `(acq_channel, acq_index)` pair that uses `"trace"`
         acquisition. Returns `None` if none of them do.
         """
+        ch_and_idx = None
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
-                return key
-        return None
+                if ch_and_idx is not None:
+                    raise RuntimeError(
+                        f"A scope mode acquisition is defined for both acq_channel "
+                        f"{ch_and_idx[0]} with acq_index {ch_and_idx[1]} as well as "
+                        f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
+                        f"trace acquisition is allowed per QRM."
+                    )
+                ch_and_idx = key
+        return ch_and_idx
 
     def _get_scope_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
