@@ -1087,7 +1087,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                         "only one port and clock combination has to "
                         "perform raw trace acquisition per instrument."
                     )
-                scope_acq_seq = seq.name
+            scope_acq_seq = seq.name
 
         self._settings.scope_mode_sequencer = scope_acq_seq
 
