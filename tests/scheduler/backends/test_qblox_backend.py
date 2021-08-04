@@ -692,7 +692,7 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
-def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
+def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
     sched = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
@@ -767,6 +767,12 @@ def test_verify_qblox_instruments_version():
     nonsense_version = "nonsense.driver.version"
     with pytest.raises(DriverVersionError) as wrong_version:
         verify_qblox_instruments_version(nonsense_version)
+    assert (
+        wrong_version.value.args[0]
+        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} "
+        f"not supported by backend. Please install version 0.4.0 to continue to use "
+        f"this backend."
+    )
 
     with pytest.raises(DriverVersionError) as none_error:
         verify_qblox_instruments_version(None)
@@ -776,10 +782,4 @@ def test_verify_qblox_instruments_version():
         == "Qblox DriverVersionError: qblox-instruments version check could not be "
         "performed. Either the package is not installed correctly or a version < "
         "0.3.2 was found."
-    )
-    assert (
-        wrong_version.value.args[0]
-        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} "
-        f"not supported by backend. Please install version 0.4.0 to continue to use "
-        f"this backend."
     )

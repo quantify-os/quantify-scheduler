@@ -3,7 +3,6 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
 from __future__ import annotations
 
 import inspect
@@ -30,8 +29,8 @@ with open(map_f, "r") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-@pytest.fixture
-def make_qcm(mocker):
+@pytest.fixture(name="make_qcm")
+def fixture_make_qcm(mocker):
     def _make_qcm(
         name: str = "qcm0", serial: str = "dummy"
     ) -> qblox.PulsarQCMComponent:
@@ -55,8 +54,8 @@ def make_qcm(mocker):
     yield _make_qcm
 
 
-@pytest.fixture
-def make_qrm(mocker):
+@pytest.fixture(name="make_qrm")
+def fixture_make_qrm(mocker):
     def _make_qrm(
         name: str = "qrm0", serial: str = "dummy"
     ) -> qblox.PulsarQRMComponent:

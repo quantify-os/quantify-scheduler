@@ -173,7 +173,8 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per component.
         """
-        # Temporary. Will probably be replaced by xarray
+        # Temporary. Will probably be replaced by an xarray object
+        # See quantify-core#187, quantify-core#233, quantify-scheduler#36
         acquisitions: Dict[Tuple[int, int], Any] = dict()
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)

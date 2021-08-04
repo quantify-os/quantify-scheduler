@@ -3,7 +3,7 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, Callable
+from typing import Any, Dict, Optional, Tuple, Callable, Union
 from collections import namedtuple
 
 import logging
@@ -75,7 +75,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.stop_sequencer()
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: PulsarSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -86,9 +86,11 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.set("reference_source", settings.ref)
 
-    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
+    def _configure_sequencer_settings(
+        self, seq_idx: int, settings: SequencerSettings
+    ) -> None:
         """
-        Configures all sequencer specific settings.
+        Configures all sequencer-specific settings.
 
         Parameters
         ----------
@@ -144,11 +146,8 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
-        Makes the devices in the InstrumentCoordinator ready for execution of a
-        schedule.
-
-        This involves uploading the waveforms and programs to the sequencers as well as
-        configuring all the settings required. Keep in mind that values set directly
+        Uploads the waveforms and programs to the sequencers and
+        configures all the settings required. Keep in mind that values set directly
         through the driver may be overridden (e.g. the offsets will be set according to
         the specified mixer calibration parameters).
 
@@ -157,7 +156,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         options
             Program to upload to the sequencers. The key is a sequencer, e.g.,
             :code:`"seq0"`, or :code:`"settings"`,
-            the value is the global settings dict or a sequencer specific configuration.
+            the value is the global settings dict or a sequencer-specific configuration.
         """
         program = copy.deepcopy(options)
         seq_name_to_idx_map = {
@@ -208,8 +207,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
         return super().instrument
 
-    # pylint: disable=arguments-differ
-    def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
+    def retrieve_acquisition(self) -> Union[Dict[Tuple[int, int], Any], None]:
         """
         Retrieves the latest acquisition results.
 
@@ -224,19 +222,17 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
-        Makes the devices in the InstrumentCoordinator ready for execution of a
-        schedule.
-
-        This involves uploading the waveforms and programs to the sequencers as well as
-        configuring all the settings required. Keep in mind that values set directly
+        Uploads the waveforms and programs to the sequencers and
+        configures all the settings required. Keep in mind that values set directly
         through the driver may be overridden (e.g. the offsets will be set according to
         the specified mixer calibration parameters).
 
         Parameters
         ----------
         options
-            Program to upload to the sequencers. The key is a sequencer or "settings",
-            the value is the global settings dict or a sequencer specific configuration.
+            Program to upload to the sequencers. The key is a sequencer, e.g.,
+            :code:`"seq0"`, or :code:`"settings"`,
+            the value is the global settings dict or a sequencer-specific configuration.
         """
         program = copy.deepcopy(options)
         seq_name_to_idx_map = {
@@ -283,7 +279,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
-    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
+    def _configure_sequencer_settings(
+        self, seq_idx: int, settings: SequencerSettings
+    ) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
         self.instrument.set(
             f"sequencer{seq_idx}_integration_length_acq",
@@ -299,7 +297,7 @@ class _QRMAcquisitionManager:
     """
     Utility class that handles the acquisitions performed with the QRM.
 
-    An instance of this class is meant exist only for a single prepare-start-
+    An instance of this class is meant to exist only for a single prepare-start-
     retrieve_acquisition cycle to prevent stateful behavior.
     """
 
@@ -314,11 +312,11 @@ class _QRMAcquisitionManager:
 
         Parameters
         ----------
-        parent:
-            Reference to the parent qrm ic component.
-        number_of_sequencers:
+        parent
+            Reference to the parent QRM IC component.
+        number_of_sequencers
             The number of sequencers capable of acquisitions.
-        acquisition_mapping:
+        acquisition_mapping
             The acquisition mapping extracted from the schedule.
         """
         self.parent: PulsarQRMComponent = parent
@@ -333,7 +331,7 @@ class _QRMAcquisitionManager:
 
     @property
     def instrument(self):
-        """Returns the QRM driver from the parent ic component."""
+        """Returns the QRM driver from the parent IC component."""
         return self.parent.instrument
 
     def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
@@ -350,7 +348,7 @@ class _QRMAcquisitionManager:
             # Implicitly covers SSBIntegrationComplex too
             "weighted_integrated_complex": self._get_integration_data,
             "trace": self._get_scope_data,
-            # Threshold still missing since there is nothing in
+            # NB thresholded protocol is still missing since there is nothing in
             # the acquisition library for it yet.
         }
         self._store_scope_acquisition()
@@ -378,13 +376,13 @@ class _QRMAcquisitionManager:
         if sequencer_index > self.number_of_sequencers:
             raise ValueError(
                 f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}, even though the QRM only has "
+                f"{sequencer_index}. QRM has only "
                 f"{self.number_of_sequencers} sequencers."
             )
         scope_ch_and_idx = self._get_scope_channel_and_index()
         if scope_ch_and_idx is not None:
             acq_channel, _ = scope_ch_and_idx
-            acq_name = _channel_index_to_channel_name(acq_channel)
+            acq_name = self._channel_index_to_channel_name(acq_channel)
             self.instrument.store_scope_acquisition(sequencer_index, acq_name)
 
     def _get_protocol(self, acq_channel, acq_index) -> str:
@@ -404,8 +402,8 @@ class _QRMAcquisitionManager:
 
     def _get_scope_channel_and_index(self) -> Optional[Tuple[int, int]]:
         """
-        Returns the first acq_channel, acq_index pair that uses "Trace" acquisition.
-        Returns None if none of them do.
+        Returns the first `(acq_channel, acq_index)` pair that uses `"trace"`
+        acquisition. Returns `None` if none of them do.
         """
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
@@ -421,26 +419,28 @@ class _QRMAcquisitionManager:
 
         Parameters
         ----------
-        acq_channel:
+        acq_channel
             The acq_channel to get the scope mode acquisition for.
-        acq_index:
+        acq_index
             The acq_index to get the scope mode acquisition for.
 
         Returns
         -------
-        :
-            The scope mode data for path0 and path1.
+        scope_data_i
+            The scope mode data for `path0`.
+        scope_data_q
+            The scope mode data for `path1`.
         """
-        acq_name = _channel_index_to_channel_name(acq_channel)
+        acq_name = self._channel_index_to_channel_name(acq_channel)
         scope_data = acquisitions[acq_name]["acquisition"]["scope"]
         for path_label in ("path0", "path1"):
             if scope_data[path_label]["out-of-range"]:
                 logger.warning(
                     f"The scope mode data of {path_label} of {self.parent.name} with "
-                    f"acq_channel={acq_channel} and acq_index={acq_index} is "
+                    f"acq_channel={acq_channel} and acq_index={acq_index} was "
                     f"out-of-range."
                 )
-        # hardware already divides by avg_count for scope mode
+        # NB hardware already divides by avg_count for scope mode
         scope_data_i = scope_data["path0"]["data"]
         scope_data_q = scope_data["path1"]["data"]
         return scope_data_i, scope_data_q
@@ -454,19 +454,21 @@ class _QRMAcquisitionManager:
 
         Parameters
         ----------
-        acquisitions:
+        acquisitions
             The acquisitions dict as returned by the sequencer.
-        acq_channel:
+        acq_channel
             The acq_channel to get integrated acquisition data for.
-        acq_index:
+        acq_index
             The acq_index to get the integrated acquisition data for.
 
         Returns
         -------
-        :
-            The integrated data for path0 and path1.
+        i_data
+            The integrated data for path0.
+        q_data
+            The integrated data for path1.
         """
-        bin_data = _get_bin_data(acquisitions, acq_channel)
+        bin_data = self._get_bin_data(acquisitions, acq_channel)
         i_data, q_data = (
             bin_data["integration"]["path0"],
             bin_data["integration"]["path1"],
@@ -488,11 +490,11 @@ class _QRMAcquisitionManager:
 
         Parameters
         ----------
-        acquisitions:
+        acquisitions
             The acquisitions dict as returned by the sequencer.
-        acq_channel:
+        acq_channel
             The acq_channel to get the thresholded acquisition data for.
-        acq_index:
+        acq_index
             The acq_index to get the thresholded acquisition data for.
 
         Returns
@@ -501,7 +503,7 @@ class _QRMAcquisitionManager:
             The value of the thresholded acquisition for `acq_channel` and `acq_index`.
             Should always be 0.0 <= val <= 1.0.
         """
-        bin_data = _get_bin_data(acquisitions, acq_channel)
+        bin_data = self._get_bin_data(acquisitions, acq_channel)
         data = bin_data["threshold"]
 
         if acq_index > len(data):
@@ -512,20 +514,19 @@ class _QRMAcquisitionManager:
             )
         return data[acq_index]
 
+    @staticmethod
+    def _channel_index_to_channel_name(acq_channel: int) -> str:
+        """Returns the name of the acquisition from the acq_channel."""
+        return str(acq_channel)
 
-# ----------------- Utility -----------------
-def _channel_index_to_channel_name(acq_channel: int) -> str:
-    """Returns the name of the acquisition from the acq_channel."""
-    return str(acq_channel)
-
-
-def _get_bin_data(acquisitions: dict, acq_channel: int = 0) -> dict:
-    """Returns the bin entry of the acquisition data dict."""
-    acq_name = _channel_index_to_channel_name(acq_channel)
-    channel_data = acquisitions[acq_name]
-    if channel_data["index"] != acq_channel:
-        raise RuntimeError(
-            f"Name does not correspond to a valid acquisition for name {acq_name}, "
-            f'which has index {channel_data["index"]}.'
-        )
-    return channel_data["acquisition"]["bins"]
+    @classmethod
+    def _get_bin_data(cls, acquisitions: dict, acq_channel: int = 0) -> dict:
+        """Returns the bin entry of the acquisition data dict."""
+        acq_name = cls._channel_index_to_channel_name(acq_channel)
+        channel_data = acquisitions[acq_name]
+        if channel_data["index"] != acq_channel:
+            raise RuntimeError(
+                f"Name does not correspond to a valid acquisition for name {acq_name}, "
+                f'which has index {channel_data["index"]}.'
+            )
+        return channel_data["acquisition"]["bins"]
