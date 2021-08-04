@@ -377,7 +377,8 @@ class QASMProgram:
         self, acquisition: OpInfo, bin_idx: int, idx0: int, idx1: int
     ) -> None:
         """
-        Adds the instruction for performing acquisitions with weights playback.
+        Adds the instruction for performing acquisitions with weights playback. The
+        weights get multiplied sample-wise with the acquired trace.
 
         Parameters
         ----------
