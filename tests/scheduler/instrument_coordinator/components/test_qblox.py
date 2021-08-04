@@ -80,7 +80,11 @@ def fixture_make_qrm(mocker):
                 "0": {
                     "index": 0,
                     "acquisition": {
-                        "bins": {"integration": {"path0": [0], "path1": [0]}}
+                        "bins": {
+                            "integration": {"path0": [0], "path1": [0]},
+                            "threshold": [0.12],
+                            "avg_cnt": [1],
+                        }
                     },
                 }
             },
