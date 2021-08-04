@@ -480,7 +480,7 @@ class _QRMAcquisitionManager:
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
-    ) -> Tuple[float, float]:
+    ) -> float:
         """
         Retrieves the thresholded acquisition data associated with `acq_channel` and
         `acq_index`.
@@ -501,17 +501,15 @@ class _QRMAcquisitionManager:
             Should always be 0.0 <= val <= 1.0.
         """
         bin_data = _get_bin_data(acquisitions, acq_channel)
-        i_data, q_data = (
-            bin_data["threshold"]["path0"],
-            bin_data["threshold"]["path1"],
-        )
-        if acq_index > len(i_data):
+        data = bin_data["threshold"]
+
+        if acq_index > len(data):
             raise ValueError(
                 f"Attempting to access acq_index {acq_index} on "
-                f"{self.parent.name} but only {len(i_data)} values found "
+                f"{self.parent.name} but only {len(data)} values found "
                 f"in acquisition data."
             )
-        return i_data[acq_index], q_data[acq_index]
+        return data[acq_index]
 
 
 # ----------------- Utility -----------------
