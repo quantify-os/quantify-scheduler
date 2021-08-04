@@ -101,7 +101,53 @@ def hardware_cfg_baseband():
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq0": {"port": "q1:mw", "clock": "q1.01"},
+                "seq1": {"port": "q1:mw", "clock": "q1.01"},
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+    }
+
+
+@pytest.fixture
+def hardware_cfg_multiplexing():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "name": "qcm0",
+            "instrument_type": "Pulsar_QCM",
+            "ref": "int",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq2": {
+                    "port": "q1:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq3": {
+                    "port": "q2:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq4": {
+                    "port": "q3:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq5": {
+                    "port": "q4:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
@@ -145,6 +191,43 @@ def pulse_only_schedule():
             t0=4e-9,
         )
     )
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def pulse_only_schedule_multiplexed():
+    sched = Schedule("pulse_only_experiment")
+    sched.add(Reset("q0"))
+    operation = sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    for i in range(1, 4):
+        sched.add(
+            DRAGPulse(
+                G_amp=0.7,
+                D_amp=-0.2,
+                phase=90,
+                port=f"q{i}:mw",
+                duration=20e-9,
+                clock="q0.01",
+                t0=8e-9,
+            ),
+            ref_op=operation,
+            ref_pt="start",
+        )
+
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
@@ -367,6 +450,15 @@ def test_simple_compile(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_simple_compile_multiplexing(
+    pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
+):
+    """Tests if compilation with only pulses finishes without exceptions"""
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
 def test_identical_pulses_compile(identical_pulses_schedule):

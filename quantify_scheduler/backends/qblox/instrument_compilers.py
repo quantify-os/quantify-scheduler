@@ -137,7 +137,7 @@ class Pulsar_QCM(PulsarBase):
     """
 
     sequencer_type = QCMSequencer
-    max_sequencers: int = 2
+    max_sequencers: int = 6
 
     def _distribute_data(self):
         """
