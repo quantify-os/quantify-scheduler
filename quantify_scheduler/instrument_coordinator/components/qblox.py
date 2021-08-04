@@ -54,6 +54,15 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         return False
 
     def wait_done(self, timeout_sec: int = 10) -> None:
+        """
+        Blocks the instrument until all the sequencers are done running.
+
+        Parameters
+        ----------
+        timeout_sec
+            The timeout in seconds. N.B. the instrument takes the timeout in minutes
+            (int), therefore it is rounded down to whole minutes with a minimum of 1.
+        """
         timeout_min = timeout_sec // 60
         if timeout_min == 0:
             timeout_min = 1
