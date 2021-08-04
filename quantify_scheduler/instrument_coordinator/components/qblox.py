@@ -405,7 +405,7 @@ class _QRMAcquisitionManager:
         Returns the first `(acq_channel, acq_index)` pair that uses `"trace"`
         acquisition. Returns `None` if none of them do.
         """
-        ch_and_idx = None
+        ch_and_idx: Optional[Tuple[int, int]] = None
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
                 if ch_and_idx is not None:
