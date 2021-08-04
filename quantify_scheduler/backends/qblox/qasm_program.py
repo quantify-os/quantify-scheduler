@@ -95,16 +95,17 @@ class QASMProgram:
 
     # --- QOL functions -----
 
-    def set_marker(self, marker_setting: str = "0000"):
+    def set_marker(self, marker_setting: str = "0000") -> None:
         """
         Sets the marker from a string representing a binary number. Each digit
         corresponds to a marker e.g. '0010' sets the second marker to True.
 
         Parameters
         ----------
-        marker_setting:
+        marker_setting
             The string representing a binary number.
         """
+        assert len(marker_setting) == 4, "Maximum of 4 markers expected."
         marker_binary = int(marker_setting, 2)
         self.emit(
             q1asm_instructions.SET_MARKER,
@@ -112,7 +113,7 @@ class QASMProgram:
             comment=f"set markers to {marker_setting}",
         )
 
-    def auto_wait(self, wait_time: int):
+    def auto_wait(self, wait_time: int) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
@@ -166,7 +167,7 @@ class QASMProgram:
 
         self.elapsed_time += wait_time
 
-    def wait_till_start_operation(self, operation: OpInfo):
+    def wait_till_start_operation(self, operation: OpInfo) -> None:
         """
         Waits until the start of a pulse or acquisition.
 
@@ -192,7 +193,7 @@ class QASMProgram:
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
-    def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
+    def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Waits until the start of the pulse, sets the QASMRuntimeSettings and plays the
         pulse.
@@ -209,7 +210,9 @@ class QASMProgram:
         self.wait_till_start_operation(pulse)
         self.auto_play_pulse(pulse, idx0, idx1)
 
-    def _stitched_pulse(self, duration: float, loop_reg: str, idx0: int, idx1: int):
+    def _stitched_pulse(
+        self, duration: float, loop_reg: str, idx0: int, idx1: int
+    ) -> None:
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
         if repetitions > 0:
@@ -241,7 +244,7 @@ class QASMProgram:
             )
         self.elapsed_time += pulse_time_remaining
 
-    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Stitches multiple square pulses together to form one long square pulse.
 
@@ -257,7 +260,7 @@ class QASMProgram:
         self.update_runtime_settings(pulse)
         self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
 
-    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Generates a staircase through offset instructions.
 
@@ -344,7 +347,7 @@ class QASMProgram:
         self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
         self.emit(q1asm_instructions.NEW_LINE)
 
-    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Generates the instructions to play a pulse and updates the timing. Automatically
         takes care of custom pulse behavior.
@@ -416,14 +419,14 @@ class QASMProgram:
                     f"Attempting to perform square acquisition with a "
                     f"duration of {duration_ns} ns. Please ensure the "
                     f"duration is a multiple of {constants.GRID_TIME} "
-                    f"ns.\n\nException caused by {repr(acquisition)}"
+                    f"ns.\n\nException caused by {repr(acquisition)}."
                 )
             self.parent.settings.integration_length_acq = duration_ns
         elif self.parent.settings.integration_length_acq != duration_ns:
             raise ValueError(
-                f"Attempting to set an integration_length of {duration_ns}"
-                f" ns, while this has previously determined to be"
-                f" {self.parent.settings.integration_length_acq}. Please "
+                f"Attempting to set an integration_length of {duration_ns} "
+                f"ns, while this was previously determined to be "
+                f"{self.parent.settings.integration_length_acq}. Please "
                 f"check whether all square acquisitions in the schedule "
                 f"have the same duration."
             )
@@ -457,13 +460,13 @@ class QASMProgram:
                 < constants.MIN_TIME_BETWEEN_ACQUISITIONS
             ):
                 raise ValueError(
-                    f"Attempting to start an acquisition on t={self.elapsed_time}"
-                    f" ns, while the last acquisition was started on "
+                    f"Attempting to start an acquisition at t={self.elapsed_time} "
+                    f"ns, while the last acquisition was started at "
                     f"t={self.time_last_acquisition_triggered}. Please ensure "
                     f"a minimum interval of "
                     f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
                     f"acquisitions.\n\nError caused by acquisition:\n"
-                    f"{repr(acquisition)}"
+                    f"{repr(acquisition)}."
                 )
         self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {

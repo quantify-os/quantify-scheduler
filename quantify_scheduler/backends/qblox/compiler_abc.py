@@ -543,9 +543,9 @@ class PulsarSequencerBase(ABC):
                 continue
             if len(waveforms_data) != 2:
                 raise ValueError(
-                    f"Acquisitions need precisely 2 waveforms (one for I and one for Q)"
-                    f".\n\n{acq} has {len(waveforms_data)} waveforms and is thus "
-                    f"invalid."
+                    f"Acquisitions need 2 waveforms (one for the I quadrature and one "
+                    f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
+                    "waveforms."
                 )
             if acq.uuid not in waveforms_complex:
                 raw_wf_data_real = generate_waveform_data(
@@ -1080,12 +1080,12 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             if has_scope:
                 if scope_acq_seq is not None:
                     raise ValueError(
-                        f"Both sequencer {seq.name} and {scope_acq_seq} of"
-                        f" {self.name} are required to perform scope mode "
-                        f"acquisitions. Only one sequencer per device can "
-                        f"trigger raw trace capture.\n\nPlease ensure that"
-                        f"only one port and clock combination has to "
-                        f"perform raw trace acquisition per instrument."
+                        f"Both sequencer {seq.name} and {scope_acq_seq} of "
+                        f"{self.name} are required to perform scope mode "
+                        "acquisitions. Only one sequencer per device can "
+                        "trigger raw trace capture.\n\nPlease ensure that "
+                        "only one port and clock combination has to "
+                        "perform raw trace acquisition per instrument."
                     )
             scope_acq_seq = seq.name
 
