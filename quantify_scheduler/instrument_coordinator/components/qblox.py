@@ -341,8 +341,8 @@ class _QRMAcquisitionManager:
         Returns
         -------
         :
-            The acquisitions with the protocols specified in the `acq_mapping` sorted by
-            the `(acq_channel, acq_index)` as keys.
+            The acquisitions with the protocols specified in the `acq_mapping` as a
+            `dict` with the `(acq_channel, acq_index)` as keys.
         """
         protocol_to_function_mapping = {
             # Implicitly covers SSBIntegrationComplex too
