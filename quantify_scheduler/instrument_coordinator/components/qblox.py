@@ -400,12 +400,12 @@ class _QRMAcquisitionManager:
         seq_name = self.acquisition_mapping[(acq_channel, acq_index)][0]
         return self.seq_name_to_idx_map[seq_name]
 
-    def _get_scope_channel_and_index(self) -> Optional[Tuple[int, int]]:
+    def _get_scope_channel_and_index(self) -> Optional[AcquisitionIndexing]:
         """
         Returns the first `(acq_channel, acq_index)` pair that uses `"trace"`
         acquisition. Returns `None` if none of them do.
         """
-        ch_and_idx: Optional[Tuple[int, int]] = None
+        ch_and_idx: Optional[AcquisitionIndexing] = None
         for key, value in self.acquisition_mapping.items():
             if value[1] == "trace":
                 if ch_and_idx is not None:
@@ -416,7 +416,7 @@ class _QRMAcquisitionManager:
                         f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
                         f"trace acquisition is allowed per QRM."
                     )
-                ch_and_idx: Tuple[int, int] = key
+                ch_and_idx: AcquisitionIndexing = key
         return ch_and_idx
 
     def _get_scope_data(
