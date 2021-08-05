@@ -7,6 +7,7 @@ from collections import UserDict
 
 import numpy as np
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 
 
@@ -216,3 +217,28 @@ def _generate_waveform_dict(
         }
         wf_dict.update(to_add)
     return wf_dict
+
+
+def to_grid_time(time: float, grid_time_ns=constants.GRID_TIME) -> int:
+    """
+    Takes a float value representing a time in seconds as used by the schedule, and
+    returns the integer valued time in nanoseconds that the sequencer uses.
+
+    Parameters
+    ----------
+    time
+        The time to convert.
+
+    Returns
+    -------
+    :
+        The integer valued nanosecond time.
+    """
+    time_ns = int(round(time * 1e9))
+    if time_ns % grid_time_ns != 0:
+        raise ValueError(
+            f"Attempting to use a time interval of {time_ns} ns. "
+            f"Please ensure that the durations of operations and wait times between"
+            f" operations are multiples of {grid_time_ns} ns."
+        )
+    return time_ns
