@@ -128,32 +128,6 @@ class Pulsar_QCM(PulsarBaseband):
     _supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
 
-    def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
-        """
-        Raises an exception when called since the pulsar QCM does not support
-        acquisitions.
-
-        Parameters
-        ----------
-        port
-            The port the pulse needs to be sent to.
-        clock
-            The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info
-            Data structure containing all the information regarding this specific
-            acquisition operation.
-
-        Raises
-        ------
-        RuntimeError
-            Always.
-        """
-        raise RuntimeError(
-            f"Pulsar QCM {self.name} does not support acquisitions. "
-            f"Attempting to add acquisition {repr(acq_info)} "
-            f"on port {port} with clock {clock}."
-        )
-
 
 # pylint: disable=invalid-name
 class Pulsar_QRM(PulsarBaseband):
