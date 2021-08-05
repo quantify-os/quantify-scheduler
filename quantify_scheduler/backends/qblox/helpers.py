@@ -219,7 +219,7 @@ def _generate_waveform_dict(
     return wf_dict
 
 
-def to_grid_time(time: float, grid_time_ns=constants.GRID_TIME) -> int:
+def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     """
     Takes a float value representing a time in seconds as used by the schedule, and
     returns the integer valued time in nanoseconds that the sequencer uses.
@@ -228,6 +228,8 @@ def to_grid_time(time: float, grid_time_ns=constants.GRID_TIME) -> int:
     ----------
     time
         The time to convert.
+    grid_time_ns
+        The grid time to use in ns.
 
     Returns
     -------
