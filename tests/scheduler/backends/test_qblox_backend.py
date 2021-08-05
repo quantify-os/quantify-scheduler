@@ -6,7 +6,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
-
+import copy
 from typing import Dict, Any
 
 import os
@@ -451,6 +451,19 @@ def test_simple_compile(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_simple_compile_invalid_timing(pulse_only_schedule):
+    """Tests if compilation produces error if not using the grid time"""
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
+        SquarePulse(amp=1, duration=100e-9, port="q0:mw", clock="q0.01"),
+        rel_time=1e-9,  # rel_time of 1 ns makes it start off the 4 ns grid
+    )
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    with pytest.raises(ValueError):
+        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_simple_compile_multiplexing(
