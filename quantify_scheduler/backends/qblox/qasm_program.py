@@ -466,8 +466,8 @@ class QASMProgram:
         if time_ns % constants.GRID_TIME != 0:
             raise ValueError(
                 f"Attempting to use a time interval of {time_ns} ns. "
-                f"Please ensure that the durations of and wait times between "
-                f"operations are multiples of {constants.GRID_TIME} ns."
+                f"Please ensure that the durations of operations and wait times between"
+                f" operations are multiples of {constants.GRID_TIME} ns."
             )
         return time_ns
 
