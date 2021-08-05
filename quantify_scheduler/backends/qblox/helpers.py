@@ -249,5 +249,21 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
 def is_multiple_of_grid_time(
     time: float, grid_time_ns: int = constants.GRID_TIME
 ) -> bool:
+    """
+    Takes a time in seconds and converts it to the ns grid time that the Qblox hardware
+    expects.
+
+    Parameters
+    ----------
+    time:
+        A time in seconds.
+    grid_time_ns
+        A grid time in ns.
+
+    Returns
+    -------
+    :
+        If it the time is a multiple of the grid time.
+    """
     time_ns = int(round(time * 1e9))
     return time_ns % grid_time_ns == 0
