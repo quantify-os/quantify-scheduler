@@ -163,6 +163,16 @@ class QASMProgram:
         ValueError
             If wait time < 0.
         """
+        if not helpers.is_multiple_of_grid_time(
+            operation.timing, grid_time_ns=constants.GRID_TIME
+        ):
+            raise ValueError(
+                f"Start time of operation is invalid. Qblox QCM and QRM "
+                f"enforce a grid time of {constants.GRID_TIME} ns. Please "
+                f"make sure all operations start at an interval of "
+                f"{constants.GRID_TIME}.\n\nOffending operation:\n"
+                f"{repr(operation)}."
+            )
         start_time = helpers.to_grid_time(operation.timing)
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:

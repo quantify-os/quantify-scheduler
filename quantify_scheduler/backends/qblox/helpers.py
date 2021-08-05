@@ -244,3 +244,10 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
             f" operations are multiples of {grid_time_ns} ns."
         )
     return time_ns
+
+
+def is_multiple_of_grid_time(
+    time: float, grid_time_ns: int = constants.GRID_TIME
+) -> bool:
+    time_ns = int(round(time * 1e9))
+    return time_ns % grid_time_ns == 0
