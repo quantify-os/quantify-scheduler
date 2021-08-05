@@ -65,7 +65,7 @@ class InstrumentCompiler(ABC):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        hw_mapping: Optional[Dict[str, Any]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -903,41 +903,25 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
-
-        Raises
-        ------
-        NotImplementedError
-            When the hardware mapping contains a dictionary, which is assumed to
-            correspond to an output channel, that does not have a name defined in
-            self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
-            real outputs (instead of complex), or when the hardware mapping is invalid.
         """
-        output_to_seq = self.output_to_sequencer_idx
+        valid_io = (f"complex_output_{i}" for i in [0, 1])
+        valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
 
         mapping = dict()
-        for io, data in self.hw_mapping.items():
-            if not isinstance(data, dict):
+        for io in valid_io:
+            if io not in self.hw_mapping:
                 continue
 
-            port_clocks = find_all_port_clock_combinations(data)
-            if len(port_clocks) > 1:
-                raise NotImplementedError(
-                    f"{len(port_clocks)} port and clock "
-                    f"combinations specified for output {io} "
-                    f"(sequencer {output_to_seq[io]}). Multiple "
-                    f"sequencers per output is not yet supported "
-                    f"by this backend."
-                )
+            io_cfg = self.hw_mapping[io]
 
-            if len(port_clocks) > 0:
-                port_clock = port_clocks[0]
-                if io not in output_to_seq:
-                    raise NotImplementedError(
-                        f"Attempting to use non-supported output {io}. "
-                        f"Supported output types: "
-                        f"{(str(t) for t in output_to_seq)}"
-                    )
-                mapping[port_clock] = f"seq{output_to_seq[io]}"
+            for seq_name in valid_seq_names:
+                if seq_name not in io_cfg:
+                    continue
+
+                seq_cfg = io_cfg[seq_name]
+                portclock = seq_cfg["port"], seq_cfg["clock"]
+
+                mapping[portclock] = seq_name
         return mapping
 
     def _construct_sequencers(self) -> Dict[str, Sequencer]:
@@ -950,6 +934,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary containing the sequencer objects, the keys correspond to the
             names of the sequencers.
+
+        Raises
+        ------
+        ValueError
+            Raised when multiple definitions for the same sequencer is found, i.e. we
+            are attempting to use the same sequencer multiple times in the compilation.
+        ValueError
+            Attempting to use more sequencers than available.
         """
         sequencers = dict()
         for io, io_cfg in self.hw_mapping.items():
@@ -957,25 +949,30 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 continue
 
             lo_name = io_cfg.get("lo_name", None)
-            portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
-            if len(portclock_dicts) > 1:
-                raise NotImplementedError(
-                    f"{len(portclock_dicts)} port and clock "
-                    f"combinations specified for output {io}. Multiple "
-                    f"sequencers per output is not yet supported "
-                    f"by this backend."
-                )
-            portclock_dict = portclock_dicts[0]
-            portclock = portclock_dict["port"], portclock_dict["clock"]
 
-            seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = Sequencer(
-                self, seq_name, portclock, portclock_dict, lo_name
-            )
-            if "mixer_corrections" in io_cfg:
-                sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
-                    io_cfg["mixer_corrections"]
+            valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
+            for seq_name in valid_seq_names:
+                if seq_name not in io_cfg:
+                    continue
+
+                seq_cfg = io_cfg[seq_name]
+                portclock = seq_cfg["port"], seq_cfg["clock"]
+
+                if seq_name in sequencers:
+                    raise ValueError(
+                        f"Attempting to create multiple instances of "
+                        f"{seq_name}. Is it defined multiple times in "
+                        f"the hardware configuration?"
+                    )
+
+                sequencers[seq_name] = Sequencer(
+                    self, seq_name, portclock, seq_cfg, lo_name
                 )
+
+                if "mixer_corrections" in io_cfg:
+                    sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
+                        io_cfg["mixer_corrections"]
+                    )
 
         if len(sequencers.keys()) > self._max_sequencers:
             raise ValueError(

@@ -157,7 +157,7 @@ def set_and_compile_awg_seqc(
         and hash(current_seqc) == hash(value)
         and current_seqc == value
     ):
-        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequencer"')
+        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence"')
         return
 
     # Set the new 'compiler/sourcestring' value
