@@ -674,7 +674,7 @@ class PulsarSequencerBase(ABC):
                     idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
-            end_time = qasm.to_pulsar_time(total_sequence_time)
+            end_time = qasm.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
             if wait_time < 0:
                 raise RuntimeError(

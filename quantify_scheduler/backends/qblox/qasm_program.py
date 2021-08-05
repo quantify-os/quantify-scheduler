@@ -162,7 +162,7 @@ class QASMProgram:
         ValueError
             If wait time < 0.
         """
-        start_time = self.to_pulsar_time(operation.timing)
+        start_time = self.to_grid_time(operation.timing)
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:
             self.auto_wait(wait_time)
@@ -204,13 +204,13 @@ class QASMProgram:
                     q1asm_instructions.PLAY,
                     idx0,
                     idx1,
-                    self.to_pulsar_time(constants.PULSE_STITCHING_DURATION),
+                    self.to_grid_time(constants.PULSE_STITCHING_DURATION),
                 )
-                self.elapsed_time += repetitions * self.to_pulsar_time(
+                self.elapsed_time += repetitions * self.to_grid_time(
                     constants.PULSE_STITCHING_DURATION
                 )
 
-        pulse_time_remaining = self.to_pulsar_time(
+        pulse_time_remaining = self.to_grid_time(
             duration % constants.PULSE_STITCHING_DURATION
         )
         if pulse_time_remaining > 0:
@@ -261,7 +261,7 @@ class QASMProgram:
         num_steps = pulse.data["num_steps"]
         start_amp = pulse.data["start_amp"]
         final_amp = pulse.data["final_amp"]
-        step_duration = self.to_pulsar_time(pulse.duration / num_steps)
+        step_duration = self.to_grid_time(pulse.duration / num_steps)
 
         amp_step = (final_amp - start_amp) / (num_steps - 1)
         amp_step_immediate = self._expand_from_normalised_range(
@@ -447,7 +447,7 @@ class QASMProgram:
         return int(val * immediate_size // 2)
 
     @staticmethod
-    def to_pulsar_time(time: float) -> int:
+    def to_grid_time(time: float) -> int:
         """
         Takes a float value representing a time in seconds as used by the schedule, and
         returns the integer valued time in nanoseconds that the sequencer uses.
@@ -455,12 +455,12 @@ class QASMProgram:
         Parameters
         ----------
         time
-            The time to convert
+            The time to convert.
 
         Returns
         -------
         :
-            The integer valued nanosecond time
+            The integer valued nanosecond time.
         """
         time_ns = int(round(time * 1e9))
         if time_ns % constants.GRID_TIME != 0:

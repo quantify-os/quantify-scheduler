@@ -684,10 +684,10 @@ def test_staircase_qasm_prog(start_amp, final_amp):
 
 
 def test_to_pulsar_time():
-    time_ns = QASMProgram.to_pulsar_time(8e-9)
+    time_ns = QASMProgram.to_grid_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
-        QASMProgram.to_pulsar_time(7e-9)
+        QASMProgram.to_grid_time(7e-9)
 
 
 def test_loop():
