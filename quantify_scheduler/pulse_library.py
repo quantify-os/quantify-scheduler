@@ -414,29 +414,13 @@ class DRAGPulse(Operation):
     r"""
     DRAG pulse intended for single qubit gates in transmon based systems.
 
-    A DRAG pulse is a gaussian pulse with a
-    derivative component added to the out-of-phase
-    channel to reduce unwanted excitations of
-    the :math:`|1\rangle - |2\rangle` transition.
+    A DRAG pulse is a gaussian pulse with a derivative component added to the
+    out-of-phase channel to reduce unwanted excitations of the
+    :math:`|1\rangle - |2\rangle` transition (:cite:t:`motzoi_simple_2009` and
+    :cite:t:`gambetta_analytic_2011`).
 
     The waveform is generated using :func:`.waveforms.drag` .
-
-    References:
-        1. |citation1|_
-
-        .. _citation1: https://link.aps.org/doi/10.1103/PhysRevA.83.012308
-
-        .. |citation1| replace:: *Gambetta, J. M., Motzoi, F., Merkel, S. T. & Wilhelm, F. K.
-           Analytic control methods for high-fidelity unitary operations
-           in a weakly nonlinear oscillator. Phys. Rev. A 83, 012308 (2011).*
-
-        2. |citation2|_
-
-        .. _citation2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
-
-        .. |citation2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm
-           Phys. Rev. Lett. 103, 110501 (2009).*
-    """  # pylint: enable=line-too-long
+    """
 
     def __init__(
         self,

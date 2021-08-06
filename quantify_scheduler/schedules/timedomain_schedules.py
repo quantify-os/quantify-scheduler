@@ -108,7 +108,7 @@ def t1_sched(
     Schedule sequence
         .. centered:: Reset -- pi -- Idle(tau) -- Measure
 
-    See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
+    See section III.B.2. of :cite:t:`krantz_quantum_2019` for an explanation of the Bloch-Redfield
     model of decoherence and the :math:`T_1` experiment.
 
     Parameters
@@ -124,15 +124,6 @@ def t1_sched(
     -------
     :
         An experiment schedule.
-
-    References
-    ----------
-
-    1. |krantz_t1|_
-
-        .. |krantz_t1| replace:: *Krantz et al. "A Quantum Engineer's Guide to Superconducting Qubits." Applied Physics Reviews (2019).*
-
-        .. _krantz_t1: https://doi.org/10.1063/1.5089550
 
     """
     # ensure times is an iterable when passing floats.
@@ -163,7 +154,7 @@ def ramsey_sched(
     Schedule sequence
         .. centered:: Reset -- pi/2 -- Idle(tau) -- pi/2 -- Measure
 
-    See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
+    See section III.B.2. of :cite:t:`krantz_quantum_2019` for an explanation of the Bloch-Redfield
     model of decoherence and the Ramsey experiment.
 
     Parameters
@@ -185,15 +176,6 @@ def ramsey_sched(
     -------
     :
         An experiment schedule.
-
-    References
-    ----------
-
-    1. |krantz_ramsey|_
-
-        .. |krantz_ramsey| replace:: *Krantz et al. "A Quantum Engineer's Guide to Superconducting Qubits."Applied Physics Reviews (2019).*
-
-        .. _krantz_ramsey: https://doi.org/10.1063/1.5089550
 
     """
     # ensure times is an iterable when passing floats.
@@ -231,7 +213,7 @@ def echo_sched(
     Schedule sequence
         .. centered:: Reset -- pi/2 -- Idle(tau/2) -- pi -- Idle(tau/2) -- pi/2 -- Measure
 
-    See section III.B.2. of Krantz et al. for an explanation of the Bloch-Redfield
+    See section III.B.2. of :cite:t:`krantz_quantum_2019` for an explanation of the Bloch-Redfield
     model of decoherence and the echo experiment.
 
     Parameters
@@ -248,14 +230,6 @@ def echo_sched(
     :
         An experiment schedule.
 
-    References
-    ----------
-
-    1. |krantz_echo|_
-
-        .. |krantz_echo| replace:: *Krantz et al. "A Quantum Engineer's Guide to Superconducting Qubits." Applied Physics Reviews (2019).*
-
-        .. _krantz_echo: https://doi.org/10.1063/1.5089550
 
     """  # pylint: disable=line-too-long
 
