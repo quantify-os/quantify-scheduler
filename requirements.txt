@@ -10,5 +10,5 @@ dataclasses-json
 zhinst-qcodes
 pathvalidate
 typing_extensions
-quantify_core@git+https://gitlab.com/quantify-os/quantify-core@develop
+quantify_core>=0.5.0
 qblox-instruments==0.3.2
