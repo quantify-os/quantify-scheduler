@@ -3,7 +3,7 @@ Changelog
 ===========
 
 
-0.4.0 InstrumentCoordinator and improvements to backends (2021-08-05)
+0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
 
 Breaking changes
