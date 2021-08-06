@@ -287,8 +287,9 @@ def allxy_sched(
 
     for a specific set of combinations of x90, x180, y90, y180 and idle rotations.
 
-    See section 2.3.2 of Reed for an explanation of the AllXY experiment and
-    it's applications in diagnosing errors in single-qubit control pulses.
+    See section 2.3.2 of :cite:t:`reed_entanglement_2013` for an explanation of
+    the AllXY experiment and it's applications in diagnosing errors in single-qubit
+    control pulses.
 
     Parameters
     ----------
@@ -305,14 +306,6 @@ def allxy_sched(
     :
         An experiment schedule.
 
-    References
-    ----------
-
-    1. |reed_allxy|_
-
-        .. |reed_allxy| replace:: *Reed "Entanglement and Quantum Error Correction with Superconducting Qubits." Yale University (2013).*
-
-        .. _reed_allxy: https://arxiv.org/abs/1311.6759
     """
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
