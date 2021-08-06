@@ -1,3 +1,4 @@
+==================
 quantify_scheduler
 ==================
 
@@ -256,3 +257,10 @@ math
 
 .. automodule:: quantify_scheduler.math
     :members:
+
+
+============
+bibliography
+============
+
+.. bibliography::
