@@ -8,10 +8,14 @@ from typing import Optional, Dict, Any, Tuple
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
-    PulsarSequencerBase,
-    PulsarBase,
+    PulsarBaseband,
+    PulsarRF,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
+from quantify_scheduler.backends.qblox.constants import (
+    NUMBER_OF_SEQUENCERS_QCM,
+    NUMBER_OF_SEQUENCERS_QRM,
+)
 
 
 class LocalOscillator(InstrumentCompiler):
@@ -109,121 +113,69 @@ class LocalOscillator(InstrumentCompiler):
 
 # ---------- pulsar sequencer classes ----------
 
-
-class QCMSequencer(PulsarSequencerBase):
-    """
-    Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
-    specific to a Pulsar QCM sequencer.
-    """
-
-    awg_output_volt = 2.5
-    """Voltage range of the awg output paths."""
-
-
-class QRMSequencer(PulsarSequencerBase):
-    """
-    Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
-    specific to a Pulsar QRM sequencer.
-    """
-
-    awg_output_volt = 0.5
-    """Voltage range of the awg output paths."""
-
-
 # pylint: disable=invalid-name
-class Pulsar_QCM(PulsarBase):
+class Pulsar_QCM(PulsarBaseband):
     """
     Pulsar QCM specific implementation of the pulsar compiler.
     """
 
-    sequencer_type = QCMSequencer
-    max_sequencers: int = 6
-
-    def _distribute_data(self):
-        """
-        Distributes the pulses and acquisitions assigned to this pulsar over the
-        different sequencers based on their portclocks. Overrides the function of the
-        same name in the superclass to raise an exception in case it attempts to
-        distribute acquisitions, since this is not supported by the pulsar QCM.
-
-        Raises
-        ------
-        RuntimeError
-            Pulsar_QCM._acquisitions is not empty.
-        """
-        if len(self._acquisitions) > 0:
-            raise RuntimeError(
-                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
-                f"which is not supported by hardware."
-            )
-        super()._distribute_data()
-
-    def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
-        """
-        Raises an exception when called since the pulsar QCM does not support
-        acquisitions.
-
-        Parameters
-        ----------
-        port
-            The port the pulse needs to be sent to.
-        clock
-            The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info
-            Data structure containing all the information regarding this specific
-            acquisition operation.
-
-        Raises
-        ------
-        RuntimeError
-            Always.
-        """
-        raise RuntimeError(
-            f"Pulsar QCM {self.name} does not support acquisitions. "
-            f"Attempting to add acquisition {repr(acq_info)} "
-            f"on port {port} with clock {clock}."
-        )
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
+    """Maximum number of sequencers available in the instrument."""
+    awg_output_volt: float = 2.5
+    """Peak output voltage of the AWG"""
+    marker_configuration: dict = {"start": 1, "end": 0}
+    """Marker values to activate/deactivate the O1 marker"""
+    supports_acquisition: bool = False
+    """Specifies whether the device can perform acquisitions."""
 
 
 # pylint: disable=invalid-name
-class Pulsar_QRM(PulsarBase):
+class Pulsar_QRM(PulsarBaseband):
     """
     Pulsar QRM specific implementation of the pulsar compiler.
     """
 
-    sequencer_type = QRMSequencer
-    """The type of the sequencer."""
-    max_sequencers: int = 1
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    """Maximum number of sequencers available in the instrument."""
+    awg_output_volt: float = 0.5
+    """Peak output voltage of the AWG"""
+    marker_configuration: dict = {"start": 1, "end": 0}
+    """Marker values to activate/deactivate the I1 marker"""
+    supports_acquisition: bool = True
+    """Specifies whether the device can perform acquisitions."""
+
+
+class Pulsar_QCM_RF(PulsarRF):
+    """
+    Pulsar QCM-RF specific implementation of the pulsar compiler.
+    """
+
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencer available in the instrument."""
+    awg_output_volt: float = 0.25
+    """Peak output voltage of the AWG"""
+    marker_configuration: dict = {"start": 6, "end": 8}
+    """
+    Marker values to activate/deactivate the O1 marker,
+    and the output switches for O1/O2
+    """
+    supports_acquisition: bool = False
+    """Specifies whether the device can perform acquisitions."""
 
-    def _get_acquisition_mapping(self) -> Optional[dict]:
-        """
-        Generates a mapping of acq_channel, acq_index to sequencer name, protocol.
 
-        Returns
-        -------
-        :
-            A dictionary containing tuple(acq_channel, acq_index) as keys and
-            tuple(sequencer name, protocol) as value.
-        """
+class Pulsar_QRM_RF(PulsarRF):
+    """
+    Pulsar QRM-RF specific implementation of the pulsar compiler.
+    """
 
-        def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
-            return (
-                acquisition.data["acq_channel"],
-                acquisition.data["acq_index"],
-            ), acquisition.data["protocol"]
-
-        acq_mapping = dict()
-        for sequencer in self.sequencers.values():
-            mapping_items = map(extract_mapping_item, sequencer.acquisitions)
-            for item in mapping_items:
-                acq_mapping[item[0]] = (sequencer.name, item[1])
-
-        return acq_mapping if len(acq_mapping) > 0 else None
-
-    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
-        program = super().compile(repetitions=repetitions)
-        acq_mapping = self._get_acquisition_mapping()
-        if acq_mapping is not None:
-            program["acq_mapping"] = acq_mapping
-        return program
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    """Maximum number of sequencer available in the instrument."""
+    awg_output_volt: float = 0.25
+    """Peak output voltage of the AWG"""
+    marker_configuration: dict = {"start": 1, "end": 4}
+    """
+    Marker values to activate/deactivate the I1 marker,
+    and the output switch for O1
+    """
+    supports_acquisition: bool = True
+    """Specifies whether the device can perform acquisitions."""
