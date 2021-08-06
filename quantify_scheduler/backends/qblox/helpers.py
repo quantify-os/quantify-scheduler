@@ -287,3 +287,28 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
         }
         wf_dict.update(to_add)
     return wf_dict
+
+
+def to_grid_time(time: float) -> int:
+    """
+    Takes a float value representing a time in seconds as used by the schedule, and
+    returns the integer valued time in nanoseconds that the sequencer uses.
+
+    Parameters
+    ----------
+    time
+        The time to convert.
+
+    Returns
+    -------
+    :
+        The integer valued nanosecond time.
+    """
+    time_ns = int(round(time * 1e9))
+    if time_ns % constants.GRID_TIME != 0:
+        raise ValueError(
+            f"Attempting to use a time interval of {time_ns} ns. "
+            f"Please ensure that the durations of operations and wait times between"
+            f" operations are multiples of {constants.GRID_TIME} ns."
+        )
+    return time_ns

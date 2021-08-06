@@ -133,6 +133,14 @@ class PulsarSettings(DataClassJsonMixin):
     acq_mode: str = "SSBIntegrationComplex"
     """The acquisition mode the Pulsar operates in. This setting will most likely
     change in the future."""
+    offset_ch0_path0: Union[float, None] = None
+    """The DC offset on the path 0 of channel 0."""
+    offset_ch0_path1: Union[float, None] = None
+    """The DC offset on the path 1 of channel 0."""
+    offset_ch1_path0: Union[float, None] = None
+    """The DC offset on path 0 of channel 1."""
+    offset_ch1_path1: Union[float, None] = None
+    """The DC offset on path 1 of channel 1."""
 
     @staticmethod
     def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
@@ -146,6 +154,42 @@ class PulsarSettings(DataClassJsonMixin):
         """
         ref: str = mapping["ref"]
         return PulsarSettings(ref=ref)
+
+
+@dataclass
+class PulsarRFSettings(PulsarSettings):
+    """
+    Global settings for the pulsar to be set in the control stack component. This is
+    kept separate from the settings that can be set on a per sequencer basis, which are
+    specified in `SequencerSettings`.
+    """
+
+    lo0_freq: Union[float, None] = None
+    """The frequency of Output 0 (O0) LO."""
+    lo1_freq: Union[float, None] = None
+    """The frequency of Output 1 (O1) LO."""
+
+    @staticmethod
+    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a `PulsarSettings` object from it.
+
+        Parameters
+        ----------
+        mapping
+        """
+        ref: str = mapping["ref"]
+        kwargs = {}
+
+        complex_output_0 = mapping.get("complex_output_0")
+        complex_output_1 = mapping.get("complex_output_1")
+        if complex_output_0:
+            kwargs["lo0_freq"] = complex_output_0.get("lo_freq")
+        if complex_output_1:
+            kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
+
+        return PulsarRFSettings(ref=ref, **kwargs)
 
 
 @dataclass

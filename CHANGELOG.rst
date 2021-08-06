@@ -21,6 +21,7 @@ Merged branches and closed issues
 * Added Qblox InstrumentCoordinator components (!112)
 * Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
 * Added instrument coordinator reference parameter to transmon element. (!152)
+* Removed limit in Qblox backend that keeps the QCM sequencer count at 2 (!135)
 
 
 0.3.0 Multiple backends support (2021-05-20)
@@ -68,6 +69,7 @@ Merged branches and closed issues
 * Fix for issue with acq delay . (!45)
 * Fix for issue #52. (!44)
 * Add artificial detuning to Ramsey schedule (!120)
+* Added support for the Qblox Pulsar QCM-RF/QRM-RF devices (!158)
 
 
 

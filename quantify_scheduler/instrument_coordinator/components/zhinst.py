@@ -147,6 +147,14 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         self.instrument.awg.stop()
 
     def prepare(self, options: ZIDeviceConfig) -> None:
+        """
+        Prepares the component with configurations
+        required to arm the instrument.
+        After this step is complete, the waveform file is uploaded
+        to the LabOne WebServer.
+        """
+
+        super().prepare(options)
         self._data_path = Path(handling.get_datadir())
 
         # Copy the UHFQA waveforms to the waves directory
@@ -155,8 +163,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
-
-        super().prepare(options)
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.device_config is None:
