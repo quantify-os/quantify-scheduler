@@ -1,7 +1,11 @@
-===========
+=========
 Changelog
-===========
+=========
 
+Unreleased
+----------
+
+* Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
