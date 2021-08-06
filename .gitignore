@@ -53,6 +53,7 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+docs/build_errors.log
 
 # PyBuilder
 target/
@@ -90,6 +91,7 @@ ENV/
 
 # IDE settings
 *.sublime-*
+.vscode
 
 # System files
 *.DS_Store

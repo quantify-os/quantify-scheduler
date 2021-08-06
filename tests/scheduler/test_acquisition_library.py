@@ -1,11 +1,23 @@
-from quantify.scheduler.types import Operation
-from quantify.scheduler.enums import BinMode
-from quantify.scheduler.acquisition_library import (
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Unit tests acquisition protocols for use with the quantify_scheduler."""
+
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=eval-used
+from unittest import TestCase
+
+import pytest
+import numpy as np
+from quantify_scheduler.acquisition_library import (
+    NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     Trace,
 )
-from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import DRAGPulse
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.gate_library import X90
+from quantify_scheduler.pulse_library import DRAGPulse
+from quantify_scheduler.types import Operation
 
 
 def test_ssb_integration_complex():
@@ -66,7 +78,7 @@ def test_valid_acquisition():
 
 
 def test_trace():
-    tr = Trace(
+    trace = Trace(
         1234e-9,
         port="q0.res",
         acq_channel=4815162342,
@@ -74,6 +86,144 @@ def test_trace():
         bin_mode=BinMode.AVERAGE,
         t0=12e-9,
     )
-    assert Operation.is_valid(tr)
-    assert tr.data["acquisition_info"][0]["acq_index"] == 4815162342
-    assert tr.data["acquisition_info"][0]["acq_channel"] == 4815162342
+    assert Operation.is_valid(trace)
+    assert trace.data["acquisition_info"][0]["acq_index"] == 4815162342
+    assert trace.data["acquisition_info"][0]["acq_channel"] == 4815162342
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        Trace(
+            duration=16e-9,
+            port="q0.res",
+        ),
+        SSBIntegrationComplex(
+            port="q0.res",
+            clock="q0.01",
+            duration=100e-9,
+        ),
+        NumericalWeightedIntegrationComplex(
+            weights_a=np.zeros(3, dtype=complex),
+            weights_b=np.ones(3, dtype=complex),
+            t=np.linspace(0, 3, 1),
+            port="q0.res",
+            clock="q0.01",
+        ),
+    ],
+)
+def test__repr__(operation: Operation):
+    assert eval(repr(operation)) == operation
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        Trace(
+            duration=16e-9,
+            port="q0.res",
+        ),
+        SSBIntegrationComplex(
+            port="q0.res",
+            clock="q0.01",
+            duration=100e-9,
+        ),
+        NumericalWeightedIntegrationComplex(
+            weights_a=np.zeros(3, dtype=complex),
+            weights_b=np.ones(3, dtype=complex),
+            t=np.linspace(0, 3, 1),
+            port="q0.res",
+            clock="q0.01",
+        ),
+    ],
+)
+def test__str__(operation: Operation):
+    assert isinstance(eval(str(operation)), type(operation))
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        Trace(
+            duration=16e-9,
+            port="q0.res",
+        ),
+        SSBIntegrationComplex(
+            port="q0.res",
+            clock="q0.01",
+            duration=100e-9,
+        ),
+        NumericalWeightedIntegrationComplex(
+            weights_a=np.zeros(3, dtype=complex),
+            weights_b=np.ones(3, dtype=complex),
+            t=np.linspace(0, 3, 1),
+            port="q0.res",
+            clock="q0.01",
+        ),
+    ],
+)
+def test_deserialize(operation: Operation):
+    # Arrange
+    operation_repr: str = repr(operation)
+
+    # Act
+    obj = eval(operation_repr)
+
+    # Assert
+    if isinstance(operation, NumericalWeightedIntegrationComplex):
+        waveforms = operation.data["acquisition_info"][0]["waveforms"]
+        for i, waveform in enumerate(waveforms):
+            assert isinstance(waveform["t"], (np.generic, np.ndarray))
+            assert isinstance(waveform["weights"], (np.generic, np.ndarray))
+            np.testing.assert_array_almost_equal(
+                obj.data["acquisition_info"][0]["waveforms"][i]["t"],
+                waveform["t"],
+                decimal=9,
+            )
+            np.testing.assert_array_almost_equal(
+                obj.data["acquisition_info"][0]["waveforms"][i]["weights"],
+                waveform["weights"],
+                decimal=9,
+            )
+
+            # TestCase().assertDictEqual cannot compare numpy arrays for equality
+            # therefore "unitary" is removed
+            del obj.data["acquisition_info"][0]["waveforms"][i]["t"]
+            del waveform["t"]
+            del obj.data["acquisition_info"][0]["waveforms"][i]["weights"]
+            del waveform["weights"]
+
+    TestCase().assertDictEqual(obj.data, operation.data)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        Trace(
+            duration=16e-9,
+            port="q0.res",
+        ),
+        SSBIntegrationComplex(
+            port="q0.res",
+            clock="q0.01",
+            duration=100e-9,
+        ),
+        NumericalWeightedIntegrationComplex(
+            weights_a=np.zeros(3, dtype=complex),
+            weights_b=np.ones(3, dtype=complex),
+            t=np.linspace(0, 3, 1),
+            port="q0.res",
+            clock="q0.01",
+        ),
+    ],
+)
+def test__repr__modify_not_equal(operation: Operation):
+    # Arrange
+    obj = eval(repr(operation))
+    assert obj == operation
+
+    # Act
+    obj.data["acquisition_info"][0]["foo"] = "bar"
+
+    # Assert
+    assert obj != operation

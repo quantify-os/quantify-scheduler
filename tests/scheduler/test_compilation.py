@@ -1,21 +1,24 @@
-import os
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 import inspect
-import pytest
-import numpy as np
 import json
-import quantify.scheduler.schemas.examples as examples
-from quantify.scheduler.resources import Resource, ClockResource, BasebandClockResource
-from quantify.scheduler.types import Operation
-from quantify.scheduler import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, CNOT, Rxy, CZ
-from quantify.scheduler.pulse_library import SquarePulse
-from quantify.scheduler.compilation import (
-    determine_absolute_timing,
-    validate_config,
-    add_pulse_information_transmon,
-    qcompile,
-)
+import os
 
+import numpy as np
+import pytest
+import quantify_scheduler.schemas.examples as examples
+from quantify_scheduler import Schedule
+from quantify_scheduler.compilation import (
+    add_pulse_information_transmon,
+    determine_absolute_timing,
+    qcompile,
+    validate_config,
+)
+from quantify_scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
+from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
+from quantify_scheduler.types import Operation
 
 esp = inspect.getfile(examples)
 
@@ -134,7 +137,10 @@ def test_missing_edge():
     sched.add(operation=CZ(qC=q0, qT=q1))
     with pytest.raises(
         ValueError,
-        match="Attempting operation 'CZ' on qubits q1 and q0 which lack a connective edge.",
+        match=(
+            "Attempting operation 'CZ' on qubits q1 "
+            "and q0 which lack a connective edge."
+        ),
     ):
         add_pulse_information_transmon(sched, device_cfg=bad_cfg)
 
@@ -148,13 +154,14 @@ def test_empty_sched():
 def test_bad_gate():
     class NotAGate(Operation):
         def __init__(self, q):
+            plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
             data = {
                 "gate_info": {
                     "unitary": np.array(
                         [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]
                     ),
                     "tex": r"bad",
-                    "plot_func": "quantify.scheduler.visualization.circuit_diagram.cnot",
+                    "plot_func": plot_func,
                     "qubits": q,
                     "operation_type": "bad",
                 }
@@ -175,22 +182,24 @@ def test_pulse_and_clock():
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
     op_hash = next(op for op in sched.timing_constraints if op["label"] == op_label)[
-        "operation_hash"
+        "operation_repr"
     ]
-    with pytest.raises(
-        ValueError,
-        match="Operation '{}' contains an unknown clock '{}'; ensure this resource has "
-        "been added to the schedule.".format(op_hash, mystery_clock),
-    ):
+    with pytest.raises(ValueError) as execinfo:
         add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
+
+    assert str(execinfo.value) == (
+        "Operation '{}' contains an unknown clock '{}'; ensure this resource has "
+        "been added to the schedule.".format(op_hash, mystery_clock)
+    )
+
     sched.add_resources([ClockResource(mystery_clock, 6e9)])
     add_pulse_information_transmon(sched, device_cfg=DEVICE_CFG)
 
 
 def test_resource_resolution():
     sched = Schedule("resource_resolution")
-    qcm0_s0 = Resource({"name": "qcm0.s0", "type": "qcm"})
-    qrm0_s0 = Resource({"name": "qrm0.s0", "type": "qrm"})
+    qcm0_s0 = Resource("qcm0.s0", {"name": "qcm0.s0", "type": "qcm"})
+    qrm0_s0 = Resource("qrm0.s0", {"name": "qrm0.s0", "type": "qrm"})
 
     sched.add(Rxy(90, 0, "q0"))
     sched.add(SquarePulse(0.6, 20e-9, "q0:mw_ch", clock=BasebandClockResource.IDENTITY))

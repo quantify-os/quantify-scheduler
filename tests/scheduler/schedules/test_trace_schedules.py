@@ -5,8 +5,8 @@
 # -----------------------------------------------------------------------------
 # pylint: disable=missing-function-docstring
 
-from quantify.scheduler import types
-from quantify.scheduler.schedules import trace_schedules
+from quantify_scheduler import types
+from quantify_scheduler.schedules import trace_schedules
 
 
 def test_trace_schedule():
@@ -17,6 +17,7 @@ def test_trace_schedule():
     pulse_delay = 0
     acquisition_delay = 2e-9
     clock_frequency = 7.04e9
+    repetitions = 10
 
     # Act
     schedule = trace_schedules.trace_schedule(
@@ -29,28 +30,30 @@ def test_trace_schedule():
         port="q0:res",
         clock="q0.ro",
         init_duration=init_duration,
+        repetitions=repetitions,
     )
 
     # Assert
     assert isinstance(schedule, types.Schedule)
     assert schedule.name == "Raw trace acquisition"
+    assert schedule.repetitions == repetitions
     assert schedule.resources["q0.ro"]["freq"] == clock_frequency
     assert len(schedule.timing_constraints) == 3
     # IdlePulse
     idle_pulse_op = schedule.operations[
-        schedule.timing_constraints[0]["operation_hash"]
+        schedule.timing_constraints[0]["operation_repr"]
     ]
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # SquarePulse
     square_pulse_op = schedule.operations[
-        schedule.timing_constraints[1]["operation_hash"]
+        schedule.timing_constraints[1]["operation_repr"]
     ]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
     assert schedule.timing_constraints[1]["rel_time"] == pulse_delay
 
     # Trace
-    trace_acq_op = schedule.operations[schedule.timing_constraints[2]["operation_hash"]]
+    trace_acq_op = schedule.operations[schedule.timing_constraints[2]["operation_repr"]]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
     assert schedule.timing_constraints[2]["rel_time"] == acquisition_delay
 
@@ -59,6 +62,7 @@ def test_two_tone_trace_schedule():
     # Arrange
     init_duration = 1e-5
     integration_time = 1e-6
+    repetitions = 10
 
     # Act
     schedule = trace_schedules.two_tone_trace_schedule(
@@ -76,10 +80,12 @@ def test_two_tone_trace_schedule():
         ro_acquisition_delay=-20e-9,
         ro_integration_time=integration_time,
         init_duration=init_duration,
+        repetitions=repetitions,
     )
 
     # Assert
     assert isinstance(schedule, types.Schedule)
+    assert schedule.repetitions == repetitions
     assert schedule.name == "Two-tone Trace acquisition"
     assert schedule.resources["q0.01"]["freq"] == 6.02e9
     assert schedule.resources["q0:ro"]["freq"] == 6.02e9
@@ -87,13 +93,13 @@ def test_two_tone_trace_schedule():
 
     # IdlePulse
     t_const = schedule.timing_constraints[0]
-    idle_pulse_op = schedule.operations[t_const["operation_hash"]]
+    idle_pulse_op = schedule.operations[t_const["operation_repr"]]
     assert t_const["label"] == "Reset"
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # Qubit pulse
     t_const = schedule.timing_constraints[1]
-    square_pulse_op = schedule.operations[t_const["operation_hash"]]
+    square_pulse_op = schedule.operations[t_const["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert t_const["label"] == "qubit_pulse"
     assert pulse_info["port"] == "q0:mw"
@@ -101,7 +107,7 @@ def test_two_tone_trace_schedule():
 
     # Readout pulse
     t_const = schedule.timing_constraints[2]
-    square_pulse_op = schedule.operations[t_const["operation_hash"]]
+    square_pulse_op = schedule.operations[t_const["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert t_const["label"] == "readout_pulse"
     assert t_const["rel_time"] == 2e-9
@@ -110,7 +116,7 @@ def test_two_tone_trace_schedule():
 
     # Trace Acquisition
     t_const = schedule.timing_constraints[3]
-    trace_op = schedule.operations[t_const["operation_hash"]]
+    trace_op = schedule.operations[t_const["operation_repr"]]
     acq_info = trace_op["acquisition_info"][0]
     assert t_const["label"] == "acquisition"
     assert t_const["rel_time"] == -20e-9

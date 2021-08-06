@@ -15,12 +15,12 @@ Tutorial 1. Basic experiments
     :jupyter-download:script:`Tutorial 1. Basic experiment`
 
 .. tip::
-    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short) :ref:`User guide` before proceeding.
+    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short)  :ref:`User guide <sec-user-guide>` before proceeding.
 
 
 The benefit of allowing the user to mix the high-level gate description of a circuit with the lower-level pulse description can be understood through an example.
 Below we first give an example of basic usage using `Bell violations`.
-We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify.scheduler.types.Schedule`.
+We next show the `Chevron` experiment in which the user is required to mix gate-type and pulse-type information when defining the :class:`~quantify_scheduler.types.Schedule`.
 
 Basics: The Bell experiment
 ---------------------------
@@ -52,22 +52,26 @@ If everything is done properly, one should observe the following oscillation:
 Bell circuit
 ~~~~~~~~~~~~
 
-We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
+
+We create this experiment using a :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
 
 
-We start by initializing an empty :class:`~quantify.scheduler.types.Schedule`
+We start by initializing an empty :class:`~quantify_scheduler.types.Schedule`
 
 .. jupyter-execute::
 
+    # Make output easier to read
+    from rich import pretty
+    pretty.install()
+
     from pathlib import Path
-    from os.path import join
-    from quantify.data.handling import set_datadir
-    set_datadir(join(Path.home(), 'quantify-data'))
-    from quantify.scheduler import Schedule
+    from quantify_core.data.handling import set_datadir
+    set_datadir(Path.home() / 'quantify-data')
+    from quantify_scheduler import Schedule
     sched = Schedule('Bell experiment')
     sched
 
-Under the hood, the :class:`~quantify.scheduler.types.Schedule` is based on a dictionary that can be serialized
+Under the hood, the :class:`~quantify_scheduler.types.Schedule` is based on a dictionary that can be serialized
 
 .. jupyter-execute::
 
@@ -83,11 +87,11 @@ Creating the circuit
 ~~~~~~~~~~~~~~~~~~~~
 
 We will now add some operations to the schedule.
-Because this experiment is most conveniently described on the gate level, we use operations defined in the :mod:`quantify.scheduler.gate_library` .
+Because this experiment is most conveniently described on the gate level, we use operations defined in the :mod:`quantify_scheduler.gate_library` .
 
 .. jupyter-execute::
 
-    from quantify.scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
+    from quantify_scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
     import numpy as np
 
     # we use a regular for loop as we have to unroll the changing theta variable here
@@ -109,15 +113,15 @@ And we can use this to create a default visualization:
 
     %matplotlib inline
 
-    from quantify.scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+    from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
     f, ax = circuit_diagram_matplotlib(sched)
     # all gates are plotted, but it doesn't all fit in a matplotlib figure
-    ax.set_xlim(-.5, 9.5)
+    ax.set_xlim(-.5, 9.5);
 
 
 Datastructure internals
 ~~~~~~~~~~~~~~~~~~~~~~~
-Let's take a look at the internals of the :class:`~quantify.scheduler.types.Schedule`.
+Let's take a look at the internals of the :class:`~quantify_scheduler.types.Schedule`.
 
 .. jupyter-execute::
 
@@ -134,10 +138,9 @@ This allows efficient loading of pulses or gates to memory and also enables effi
 
 .. jupyter-execute::
 
-    from pprint import pprint
     from itertools import islice
     # showing the first 5 elements of the operation dict
-    pprint(dict(islice(sched.data['operation_dict'].items(), 5)))
+    dict(islice(sched.data['operation_dict'].items(), 5))
 
 The timing constraints are stored as a list of pulses.
 
@@ -146,12 +149,12 @@ The timing constraints are stored as a list of pulses.
     sched.data['timing_constraints'][:6]
 
 
-Similar to the schedule, :class:`~quantify.scheduler.Operation` objects are also based on dicts.
+Similar to the schedule, :class:`~quantify_scheduler.types.Operation` objects are also based on dicts.
 
 .. jupyter-execute::
 
     rxy_theta = Rxy(theta=theta, phi=0, qubit=q0)
-    pprint(rxy_theta.data)
+    rxy_theta.data
 
 
 Compilation of a circuit diagram into pulses
@@ -164,23 +167,22 @@ Here we will use a configuration file for a transmon based system that is part o
 .. jupyter-execute::
 
     import json
-    import pprint
     import os, inspect
-    import quantify.scheduler.schemas.examples as es
+    import quantify_scheduler.schemas.examples as es
 
     esp = inspect.getfile(es)
-    cfg_f = os.path.abspath(os.path.join(esp, '..', 'transmon_test_config.json'))
+    cfg_f = Path(esp).parent / 'transmon_test_config.json'
 
 
     with open(cfg_f, 'r') as f:
       transmon_test_config = json.load(f)
 
-    pprint.pprint(transmon_test_config)
+    transmon_test_config
 
 
 .. jupyter-execute::
 
-    from quantify.scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
+    from quantify_scheduler.compilation import add_pulse_information_transmon, determine_absolute_timing
 
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
@@ -188,7 +190,7 @@ Here we will use a configuration file for a transmon based system that is part o
 
 .. jupyter-execute::
 
-    from quantify.scheduler.visualization.pulse_scheme import pulse_diagram_plotly
+    from quantify_scheduler.visualization.pulse_scheme import pulse_diagram_plotly
 
     pulse_diagram_plotly(sched, port_list=["q0:mw", "q0:res", "q0:fl", "q1:mw"], modulation_if = 10e6, sampling_rate = 1e9)
 
@@ -210,20 +212,18 @@ Compilation of pulses onto physical hardware
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file <sec-hardware-config>`.
+The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware configuration file <sec-hardware-config>`.
 
-Here we will use the :class:`~quantify.scheduler.backends.qblox_backend.hardware_compile` made for the Qblox pulsar series hardware.
+Here we will use the :class:`~quantify_scheduler.backends.qblox_backend.hardware_compile` made for the Qblox pulsar series hardware.
 
 .. jupyter-execute::
 
-    import pprint
-
-    cfg_f = os.path.abspath(os.path.join(esp, '..', 'qblox_test_mapping.json'))
+    cfg_f = Path(esp).parent / 'qblox_test_mapping.json'
 
     with open(cfg_f, 'r') as f:
       qblox_test_mapping = json.load(f)
 
-    pprint.pprint(qblox_test_mapping)
+    qblox_test_mapping
 
 
 The Pulsar QCM provides a QCoDeS based Python API. As well as interfacing with real hardware, it provides a mock driver we can use for testing and development, which we will
@@ -241,7 +241,7 @@ also use for demonstration purposes as part of this tutorial:
 
 .. jupyter-execute::
 
-    from quantify.scheduler.backends.qblox_backend import hardware_compile
+    from quantify_scheduler.backends.qblox_backend import hardware_compile
     from pulsar_qcm.pulsar_qcm import pulsar_qcm
     from qcodes import Instrument
 
@@ -288,9 +288,9 @@ between X gates on a pair of qubits.
 
 .. jupyter-execute::
 
-    from quantify.scheduler.gate_library import X, X90, Reset, Measure
-    from quantify.scheduler.pulse_library import SquarePulse
-    from quantify.scheduler.resources import ClockResource
+    from quantify_scheduler.gate_library import X, X90, Reset, Measure
+    from quantify_scheduler.pulse_library import SquarePulse
+    from quantify_scheduler.resources import ClockResource
 
     sched = Schedule("Chevron Experiment")
     for duration in np.linspace(20e-9, 60e-9, 6): # NB multiples of 4 ns need to be used due to limitations of the pulsars
@@ -314,9 +314,9 @@ and reference operators as Gates.
     When adding a Pulse to a schedule, the clock is not automatically added to the resources of the schedule. It may
     be necessary to add this clock manually, as in the final line of the above example
 
-We can also quickly compile using the :func:`!qcompile` function and associate mapping files:
+We can also quickly compile using the :func:`!qcompile` function and associate configuration files:
 
 .. jupyter-execute::
 
-    from quantify.scheduler.compilation import qcompile
+    from quantify_scheduler.compilation import qcompile
     cfg = qcompile(sched, transmon_test_config, qblox_test_mapping)

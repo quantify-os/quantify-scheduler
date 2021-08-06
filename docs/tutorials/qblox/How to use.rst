@@ -10,17 +10,13 @@ that describes your experimental setup. An example of such a config:
     :linenos:
 
     mapping_config = {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
-            "name": "qcm0",
-            "type": "Pulsar_QCM",
-            "mode": "complex",
+            "instrument_type": "Pulsar_QCM",
             "ref": "int",
-            "IP address": "192.168.0.2",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "lo_freq": None,
                 "seq0": {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -30,7 +26,6 @@ that describes your experimental setup. An example of such a config:
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
-                "lo_freq": 7.2e9,
                 "mixer_corrections": {
                     "amp_ratio": 0.9,
                     "phase_error": 7,
@@ -42,12 +37,14 @@ that describes your experimental setup. An example of such a config:
                     "clock": "q1.01",
                     "interm_freq": None
                 }
-            }
+            },
         },
+        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
     }
 
-Here the entry :code:`"backend": "quantify.scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
-that we are using the Qblox backend (specifically the :func:`~quantify.scheduler.backends.qblox_backend.hardware_compile` function).
+Here the entry :code:`"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
+that we are using the Qblox backend (specifically the :func:`~quantify_scheduler.backends.qblox_backend.hardware_compile` function).
 
 Apart from the :code:`"backend"`, each entry in the dictionary corresponds to a device connected to the setup. In the example above, only a
 :ref:`Pulsar QCM <sec-qblox-pulsar>` named :code:`"qcm0"` is specified.

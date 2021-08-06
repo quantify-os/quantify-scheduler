@@ -13,28 +13,16 @@ with open("AUTHORS.rst") as authors_file:
 with open("CHANGELOG.rst") as history_file:
     history = history_file.read()
 
-with open("requirements_dev.txt") as test_reqs:
-    test_requirements = test_reqs.read().splitlines()
+with open("requirements.txt") as installation_requirements_file:
+    requirements = installation_requirements_file.read().splitlines()
 
-requirements = [
-    "numpy",
-    "scipy",
-    "columnar",
-    "matplotlib",
-    "plotly",
-    "jsonschema",
-    "dataclasses-json",
-    "zhinst-qcodes",
-    "pathvalidate",
-    "quantify-core>=0.3.1",
-    "qblox-instruments==0.3.2",
-]
+with open("requirements_setup.txt") as setup_requirements_file:
+    setup_requirements = setup_requirements_file.read().splitlines()
 
-setup_requirements = [
-    "pytest-runner",
-]
+with open("requirements_dev.txt") as test_requirements_file:
+    test_requirements = test_requirements_file.read().splitlines()
 
-version = "0.3.0"
+version = "0.4.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",
@@ -48,14 +36,15 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
-    description="",
+    description="Quantify-scheduler is a python package for writing quantum programs "
+    "featuring a hybrid gate-pulse control model with explicit timing control.",
     install_requires=requirements,
     license="BSD-4 license",
     long_description=readme + "\n\n" + authors + "\n\n" + history,
     include_package_data=True,
     keywords="quantify-scheduler",
     name="quantify-scheduler",
-    packages=find_packages(include=["quantify", "quantify.*"]),
+    packages=find_packages(include=["quantify_scheduler", "quantify_scheduler.*"]),
     package_data={"": ["*.json"]},  # ensures JSON schema are included
     setup_requires=setup_requirements,
     test_suite="tests",

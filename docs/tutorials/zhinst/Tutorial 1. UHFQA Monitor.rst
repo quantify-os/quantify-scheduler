@@ -3,11 +3,11 @@
 Tutorial 1. UHFQA Monitor
 =========================
 
-This tutorial describes how to use :mod:`quantify.scheduler` to generate pulses and acquire monitor data,
+This tutorial describes how to use :mod:`quantify_scheduler` to generate pulses and acquire monitor data,
 also visualized in the Quantum Analyzer Input tab of LabOne, using the UHFQA's AWG.
 
-For this tutorial lets use :func:`~quantify.scheduler.schedules.trace_schedules.trace_schedule` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify.scheduler.acquisition_library.Trace` 
+For this tutorial lets use :func:`~quantify_scheduler.schedules.trace_schedules.trace_schedule` to create a
+pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.acquisition_library.Trace`
 acquisition with pulses of a large fixed duration.
 
 Requirements
@@ -28,8 +28,8 @@ Requirements
     from qcodes.instrument.base import Instrument
     from zhinst.qcodes import UHFQA
 
-    from quantify.scheduler.schedules.trace_schedules import trace_schedule
-    from quantify.scheduler.compilation import qcompile
+    from quantify_scheduler.schedules.trace_schedules import trace_schedule
+    from quantify_scheduler.compilation import qcompile
 
     # Debug only
     # logging.getLogger().setLevel(logging.DEBUG)
@@ -58,11 +58,11 @@ Requirements
     :emphasize-lines: 24
 
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
-        import quantify.scheduler.schemas.examples as examples
+        import quantify_scheduler.schemas.examples as examples
         path = Path(examples.__file__).parent.joinpath(filename)
         return json.loads(path.read_text())
     
-    # Load example configuration from quantify.scheduler.schemas.examples
+    # Load example configuration from quantify_scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
     # Set the UHFQA `ref` trigger(Reference source trigger) option to "none"
@@ -70,7 +70,7 @@ Requirements
     zhinst_hardware_map: Dict[str, Any] = json.loads(
     """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "uhfqa0",
@@ -128,7 +128,7 @@ Requirements
 
     # Resolve the results by querying the UHFQA monitor nodes
     acq_channel_results = dict()
-    for acq_channel, resolve in acq_channel_resolvers_map.items():
+    for acq_channel, resolve in zi_backend.acquisition_resolvers.items():
         acq_channel_results[acq_channel] = resolve()
 
 .. code-block:: python

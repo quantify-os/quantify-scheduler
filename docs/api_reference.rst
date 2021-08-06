@@ -1,39 +1,37 @@
+quantify_scheduler
+==================
 
-quantify.scheduler
-====================
-
-.. automodule:: quantify.scheduler
-    :members:
+.. automodule:: quantify_scheduler
 
 types
 -----
 
-.. automodule:: quantify.scheduler.types
+.. automodule:: quantify_scheduler.types
     :members:
 
 enums
 -----
 
-.. automodule:: quantify.scheduler.enums
+.. automodule:: quantify_scheduler.enums
     :members:
 
 gate_library
 ------------
 
-.. automodule:: quantify.scheduler.gate_library
+.. automodule:: quantify_scheduler.gate_library
     :members:
 
 pulse_library
 -------------
 
-.. automodule:: quantify.scheduler.pulse_library
+.. automodule:: quantify_scheduler.pulse_library
     :members:
 
 
 acquisition_library
 -------------------
 
-.. automodule:: quantify.scheduler.acquisition_library
+.. automodule:: quantify_scheduler.acquisition_library
     :members:
 
 
@@ -42,13 +40,13 @@ acquisition_library
 resources
 ---------
 
-.. automodule:: quantify.scheduler.resources
+.. automodule:: quantify_scheduler.resources
     :members:
 
 waveforms
 ---------
 
-.. automodule:: quantify.scheduler.waveforms
+.. automodule:: quantify_scheduler.waveforms
     :members:
 
 .. _api-compilation:
@@ -56,111 +54,142 @@ waveforms
 schedules
 ---------
 
-.. automodule:: quantify.scheduler.schedules
+.. automodule:: quantify_scheduler.schedules
     :members:
 
 spectroscopy_schedules
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.schedules.spectroscopy_schedules
+.. automodule:: quantify_scheduler.schedules.spectroscopy_schedules
     :members:
 
 timedomain_schedules
 ~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.schedules.timedomain_schedules
+.. automodule:: quantify_scheduler.schedules.timedomain_schedules
     :members:
 
 trace_schedules
 ~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.schedules.trace_schedules
+.. automodule:: quantify_scheduler.schedules.trace_schedules
     :members:
+
+
+device_elements
+---------------
+
+.. automodule:: quantify_scheduler.device_elements
+    :members:
+    :show-inheritance:
+
+.. automodule:: quantify_scheduler.device_elements.transmon_element
+    :members:
+    :show-inheritance:
+
+
 
 compilation
 -----------
 
-.. automodule:: quantify.scheduler.compilation
+.. automodule:: quantify_scheduler.compilation
     :members:
 
 
 frontends
 ---------
 
-.. automodule:: quantify.scheduler.frontends
+.. automodule:: quantify_scheduler.frontends
     :members:
+
+gettables
+---------
+
+.. automodule:: quantify_scheduler.gettables
+    :members:
+
+
 
 backends
 --------
 
-.. automodule:: quantify.scheduler.backends
+.. automodule:: quantify_scheduler.backends
     :members:
 
 qblox_backend
 ~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.backends.qblox_backend
+.. automodule:: quantify_scheduler.backends.qblox_backend
     :members:
 
 zhinst_backend
 ~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.backends.zhinst_backend
+.. automodule:: quantify_scheduler.backends.zhinst_backend
     :members:
 
 types
 ~~~~~
 
-.. automodule:: quantify.scheduler.backends.types.common
+.. automodule:: quantify_scheduler.backends.types.common
     :members:
 
-.. automodule:: quantify.scheduler.backends.types.qblox
+.. automodule:: quantify_scheduler.backends.types.qblox
     :members:
 
-.. automodule:: quantify.scheduler.backends.types.zhinst
+.. automodule:: quantify_scheduler.backends.types.zhinst
     :members:
 
 qblox
 ~~~~~~
 
-.. automodule:: quantify.scheduler.backends.qblox.helpers
+.. automodule:: quantify_scheduler.backends.qblox.helpers
     :members:
 
-.. automodule:: quantify.scheduler.backends.qblox.instrument_compilers
+.. automodule:: quantify_scheduler.backends.qblox.compiler_container
     :members:
 
-.. automodule:: quantify.scheduler.backends.qblox.compiler_abc
+.. automodule:: quantify_scheduler.backends.qblox.instrument_compilers
     :members:
 
-.. automodule:: quantify.scheduler.backends.qblox.constants
+.. automodule:: quantify_scheduler.backends.qblox.compiler_abc
     :members:
 
-.. automodule:: quantify.scheduler.backends.qblox.q1asm_instructions
+.. automodule:: quantify_scheduler.backends.qblox.constants
+    :members:
+
+.. automodule:: quantify_scheduler.backends.qblox.q1asm_instructions
+    :members:
+
+.. automodule:: quantify_scheduler.backends.qblox.qasm_program
+    :members:
+
+.. automodule:: quantify_scheduler.backends.qblox.non_generic
     :members:
 
 
 zhinst
 ~~~~~~
 
-.. automodule:: quantify.scheduler.backends.zhinst.helpers
+.. automodule:: quantify_scheduler.backends.zhinst.helpers
     :members:
 
-.. automodule:: quantify.scheduler.backends.zhinst.resolvers
+.. automodule:: quantify_scheduler.backends.zhinst.resolvers
     :members:
 
-.. automodule:: quantify.scheduler.backends.zhinst.seqc_il_generator
+.. automodule:: quantify_scheduler.backends.zhinst.seqc_il_generator
     :members:
 
-.. automodule:: quantify.scheduler.backends.zhinst.settings
+.. automodule:: quantify_scheduler.backends.zhinst.settings
     :members:
 
 helpers
 -------
 
-.. automodule:: quantify.scheduler.helpers.schedule
+.. automodule:: quantify_scheduler.helpers.schedule
     :members:
 
-.. automodule:: quantify.scheduler.helpers.waveforms
+.. automodule:: quantify_scheduler.helpers.waveforms
     :members:
 
 visualization
@@ -169,20 +198,55 @@ visualization
 pulse_scheme
 ~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.visualization.pulse_scheme
+.. automodule:: quantify_scheduler.visualization.pulse_scheme
     :members:
 
 circuit_diagram
 ~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.visualization.circuit_diagram
+.. automodule:: quantify_scheduler.visualization.circuit_diagram
     :members:
 
 pulse_diagram
 ~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.visualization.pulse_diagram
+.. automodule:: quantify_scheduler.visualization.pulse_diagram
     :members:
+
+instrument_coordinator
+----------------------
+
+.. automodule:: quantify_scheduler.instrument_coordinator
+    :members:
+    :show-inheritance:
+
+instrument_coordinator
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.instrument_coordinator
+    :members:
+    :show-inheritance:
+
+components.base
+~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.components.base
+    :members:
+    :show-inheritance:
+
+components.qblox
+~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.components.qblox
+    :members:
+    :show-inheritance:
+
+components.zhinst
+~~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.components.zhinst
+    :members:
+    :show-inheritance:
 
 miscellaneous
 -------------
@@ -190,5 +254,5 @@ miscellaneous
 math
 ~~~~~~~~~~~~~~~
 
-.. automodule:: quantify.scheduler.math
+.. automodule:: quantify_scheduler.math
     :members:

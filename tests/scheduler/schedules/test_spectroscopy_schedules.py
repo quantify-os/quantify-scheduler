@@ -2,28 +2,24 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-from pathlib import Path
-import json
 import tempfile
-import quantify.scheduler.schemas.examples as es
-from quantify.scheduler.schedules import spectroscopy_schedules as sps
-from quantify.scheduler.compilation import determine_absolute_timing, qcompile
-from quantify.data.handling import set_datadir
+from quantify_core.data.handling import set_datadir
+from quantify_scheduler.schedules import spectroscopy_schedules as sps
+from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.schemas.examples import utils
 
 
 # TODO to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
-path = Path(es.__file__).parent.joinpath("transmon_test_config.json")
-DEVICE_CFG = json.loads(path.read_text())
 
-path = Path(es.__file__).parent.joinpath("qblox_test_mapping.json")
-HARDWARE_MAPPING = json.loads(path.read_text())
+DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 class TestHeterodynceSpecSchedule:
     @classmethod
     def setup_class(cls):
-
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
             "pulse_amp": 0.15,
@@ -33,10 +29,14 @@ class TestHeterodynceSpecSchedule:
             "frequency": 4.48e9,
             "integration_time": 1e-6,
             "acquisition_delay": 220e-9,
-            "buffer_time": 18e-6,
+            "init_duration": 18e-6,
+            "repetitions": 10,
         }
 
         cls.sched = sps.heterodyne_spec_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)
@@ -44,8 +44,8 @@ class TestHeterodynceSpecSchedule:
         labels = ["buffer", "spec_pulse", "acquisition"]
         abs_times = [
             0,
-            self.sched_kwargs["buffer_time"],
-            self.sched_kwargs["buffer_time"] + self.sched_kwargs["acquisition_delay"],
+            self.sched_kwargs["init_duration"],
+            self.sched_kwargs["init_duration"] + self.sched_kwargs["acquisition_delay"],
         ]
 
         for i, constr in enumerate(sched.timing_constraints):
@@ -54,14 +54,15 @@ class TestHeterodynceSpecSchedule:
 
     def test_compiles_device_cfg_only(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG)
+        qcompile(self.sched, DEVICE_CONFIG)
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
 
 
 class TestPulsedSpecSchedule:
@@ -82,10 +83,14 @@ class TestPulsedSpecSchedule:
             "ro_pulse_frequency": 4.48e9,
             "ro_integration_time": 1e-6,
             "ro_acquisition_delay": 220e-9,
-            "buffer_time": 18e-6,
+            "init_duration": 18e-6,
+            "repetitions": 10,
         }
 
         cls.sched = sps.two_tone_spec_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         sched = determine_absolute_timing(self.sched)
@@ -94,12 +99,12 @@ class TestPulsedSpecSchedule:
         labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
 
         t2 = (
-            self.sched_kwargs["buffer_time"]
+            self.sched_kwargs["init_duration"]
             + self.sched_kwargs["spec_pulse_duration"]
             + self.sched_kwargs["ro_pulse_delay"]
         )
         t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
-        abs_times = [0, self.sched_kwargs["buffer_time"], t2, t3]
+        abs_times = [0, self.sched_kwargs["init_duration"], t2, t3]
 
         for i, constr in enumerate(sched.timing_constraints):
             assert constr["label"] == labels[i]
@@ -107,11 +112,12 @@ class TestPulsedSpecSchedule:
 
     def test_compiles_device_cfg_only(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG)
+        qcompile(self.sched, DEVICE_CONFIG)
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CFG, HARDWARE_MAPPING)
+        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
 
     def test_compiles_zi_backend(self):
-        pass
+        # assert that files properly compile
+        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)

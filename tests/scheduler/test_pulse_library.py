@@ -1,12 +1,17 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=eval-used
+from unittest import TestCase
+
 import pytest
-from quantify.scheduler import Operation
-from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import (
+from quantify_scheduler import Operation
+from quantify_scheduler.gate_library import X90
+from quantify_scheduler.pulse_library import (
     DRAGPulse,
     IdlePulse,
+    RampPulse,
+    SoftSquarePulse,
     SquarePulse,
     decompose_long_square_pulse,
 )
@@ -91,18 +96,25 @@ def test_operation_duration_composite_pulse():
     assert dgp1.duration == pytest.approx(15.4e-9)
 
 
-def test_pulses_valid():
-    sqp = SquarePulse(amp=0.5, duration=300e-9, port="p.01", clock="cl0.baseband")
-    msqp = SquarePulse(amp=0.5, duration=300e-9, clock="cl:01", port="p.01")
-    dgp = DRAGPulse(
-        G_amp=0.8, D_amp=-0.3, phase=24.3, duration=20e-9, clock="cl:01", port="p.01"
-    )
-    idle = IdlePulse(duration=50e-9)
-
-    assert Operation.is_valid(sqp)
-    assert Operation.is_valid(msqp)
-    assert Operation.is_valid(dgp)
-    assert Operation.is_valid(idle)
+@pytest.mark.parametrize(
+    "operation",
+    [
+        IdlePulse(duration=50e-9),
+        SquarePulse(amp=0.5, duration=300e-9, port="p.01", clock="cl0.baseband"),
+        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
+        RampPulse(1.0, 16e-9, "q0:mw"),
+        DRAGPulse(
+            G_amp=0.8,
+            D_amp=-0.3,
+            phase=24.3,
+            duration=20e-9,
+            clock="cl:01",
+            port="p.01",
+        ),
+    ],
+)
+def test_pulse_is_valid(operation: Operation):
+    assert Operation.is_valid(operation)
 
 
 def test_decompose_long_square_pulse():
@@ -150,3 +162,74 @@ def test_decompose_long_square_pulse():
         assert sum(
             pulse["pulse_info"][0]["duration"] for pulse in pulses
         ) == pytest.approx(duration)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        IdlePulse(16e-9),
+        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
+        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
+        RampPulse(1.0, 16e-9, "q0:mw"),
+        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+    ],
+)
+def test__repr__(operation: Operation):
+    assert eval(repr(operation)) == operation
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        IdlePulse(16e-9),
+        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
+        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
+        RampPulse(1.0, 16e-9, "q0:mw"),
+        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+    ],
+)
+def test__str__(operation: Operation):
+    assert isinstance(eval(str(operation)), type(operation))
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        IdlePulse(16e-9),
+        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
+        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
+        RampPulse(1.0, 16e-9, "q0:mw"),
+        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+    ],
+)
+def test_deserialize(operation: Operation):
+    # Arrange
+    operation_repr: str = repr(operation)
+
+    # Act
+    obj = eval(operation_repr)
+
+    # Assert
+    TestCase().assertDictEqual(obj.data, operation.data)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        IdlePulse(16e-9),
+        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
+        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
+        RampPulse(1.0, 16e-9, "q0:mw"),
+        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+    ],
+)
+def test__repr__modify_not_equal(operation: Operation):
+    # Arrange
+    obj = eval(repr(operation))
+    assert obj == operation
+
+    # Act
+    obj.data["pulse_info"][0]["foo"] = "bar"
+
+    # Assert
+    assert obj != operation

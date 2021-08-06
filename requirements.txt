@@ -1,0 +1,14 @@
+# quantify installation requirements
+
+numpy
+scipy
+columnar
+matplotlib
+plotly
+jsonschema
+dataclasses-json
+zhinst-qcodes
+pathvalidate
+typing_extensions
+quantify_core>=0.5.0
+qblox-instruments==0.3.2

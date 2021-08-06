@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Description:    Pytest fixtures for quantify scheduler.
+# Description:    Pytest fixtures for quantify-scheduler.
 # Repository:     https://gitlab.com/quantify-os/quantify-scheduler
 # Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
 # -----------------------------------------------------------------------------
@@ -13,13 +13,13 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pytest
-import quantify.scheduler.schemas.examples as examples
-from quantify.scheduler.compilation import (
+import quantify_scheduler.schemas.examples as examples
+from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
 )
-from quantify.scheduler.gate_library import X90, Measure, Reset
-from quantify.scheduler.types import Schedule
+from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.types import Schedule
 
 
 @pytest.fixture

@@ -1,7 +1,16 @@
+# pylint: disable=missing-function-docstring
+
+
 import numpy as np
 import numpy.testing as npt
 import pytest
-from quantify.scheduler.waveforms import square, drag, modulate_wave, rotate_wave
+from quantify_scheduler.waveforms import (
+    square,
+    drag,
+    staircase,
+    modulate_wave,
+    rotate_wave,
+)
 
 
 def test_square_wave():
@@ -11,6 +20,36 @@ def test_square_wave():
     amped_sq_iq = square(np.arange(20), 6.88)
     npt.assert_array_equal(amped_sq_iq.real, np.linspace(6.88, 6.88, 20))
     npt.assert_array_equal(amped_sq_iq.imag, np.linspace(0, 0, 20))
+
+
+def test_staircase():
+    t = np.linspace(0, 1e-6, 20)
+    sig = staircase(t, -1, 2, 4)
+    answer = np.array(
+        [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+        ]
+    )
+    npt.assert_array_equal(sig, answer)
 
 
 def test_drag_ns():

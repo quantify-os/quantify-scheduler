@@ -6,11 +6,11 @@ import json
 import inspect
 from pathlib import Path
 
-from quantify.scheduler import Schedule
-from quantify.scheduler.gate_library import Reset, Measure, Rxy
-from quantify.scheduler.compilation import qcompile
-import quantify.scheduler.visualization.pulse_diagram as plsd
-import quantify.scheduler.schemas.examples as es
+from quantify_scheduler import Schedule
+from quantify_scheduler.gate_library import Reset, Measure, Rxy
+from quantify_scheduler.compilation import qcompile
+import quantify_scheduler.visualization.pulse_diagram as plsd
+import quantify_scheduler.schemas.examples as es
 
 
 esp = inspect.getfile(es)

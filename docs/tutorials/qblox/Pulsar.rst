@@ -9,17 +9,13 @@ Each device in the setup can be individually configured using the entry in the c
     :linenos:
 
     mapping_config = {
-        "backend": "quantify.scheduler.backends.qblox_backend.hardware_compile",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
-            "name": "qcm0",
-            "type": "Pulsar_QCM",
-            "mode": "complex",
+            "instrument_type": "Pulsar_QCM",
             "ref": "int",
-            "IP address": "192.168.0.2",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "lo_freq": None,
                 "seq0": {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -29,7 +25,6 @@ Each device in the setup can be individually configured using the entry in the c
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
-                "lo_freq": 7.2e9,
                 "mixer_corrections": {
                     "amp_ratio": 0.9,
                     "phase_error": 7,
@@ -43,6 +38,8 @@ Each device in the setup can be individually configured using the entry in the c
                 }
             }
         },
+        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
     }
 
 Here we specify a setup containing only a `Pulsar QCM <https://www.qblox.com/pulsar>`_.
@@ -91,7 +88,7 @@ the backend by specifying it as :code:`None`.
 
 Note that the backend also supports correcting for mixer imperfections by digitally pre-distorting the waveforms. This is done
 by setting the offsets on the I and Q output paths and correcting the amplitude and phase (specified in degrees) of the signals through
-:func:`~quantify.scheduler.helpers.waveforms.apply_mixer_skewness_corrections`. The correction parameters need to be specified
+:func:`~quantify_scheduler.helpers.waveforms.apply_mixer_skewness_corrections`. The correction parameters need to be specified
 in :code:`mixer_corrections` as done for :code:`complex_output_1` in the example config.
 
 .. code-block:: python

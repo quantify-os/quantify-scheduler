@@ -1,0 +1,22 @@
+{
+ "type": "object",
+ "description": "JSON schema for a transmon based device configuration.",
+ "additionalProperties": false,
+ "required": [
+  "qubits",
+  "edges"
+ ],
+ "properties": {
+  "backend": {
+   "type": "string",
+   "description": "Specifies the function used for compiling from gate-level to pulse-level description. \nA valid specification is a period separated string e.g., 'quantify_scheduler.compilation.add_pulse_information_transmon'."
+  },
+  "qubits": {
+   "type": "object",
+   "description": "A dictionary with qubit names (str) as keys e.g., 'q0'. \nThe items contain the informtation to compile gates on individual qubits to pulses acting on ports and clocks using the specified backend."
+  },
+  "edges": {
+   "type": "object",
+   "description": "A dictionary with pairs of qubit names separated by a dash (str) as keys e.g., 'q0-q1'. \nThe items contain the informtation to compile gates on pairs of qubits to pulses acting on ports and clocks using the specified backend."}
+ }
+}
