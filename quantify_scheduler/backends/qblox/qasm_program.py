@@ -26,7 +26,7 @@ class QASMProgram:
     certain instructions with parameters, as well as update the elapsed time.
     """
 
-    def __init__(self, parent: compiler_abc.PulsarSequencerBase):
+    def __init__(self, parent: compiler_abc.Sequencer):
         self.parent = parent
         """A reference to the sequencer for which we are compiling this program."""
         self.elapsed_time: int = 0
@@ -266,13 +266,13 @@ class QASMProgram:
 
         amp_step = (final_amp - start_amp) / (num_steps - 1)
         amp_step_immediate = self._expand_from_normalised_range(
-            amp_step / self.parent.awg_output_volt,
+            amp_step / self.parent.parent.awg_output_volt,
             constants.IMMEDIATE_SZ_OFFSET,
             "offset_awg_path0",
             pulse,
         )
         start_amp_immediate = self._expand_from_normalised_range(
-            start_amp / self.parent.awg_output_volt,
+            start_amp / self.parent.parent.awg_output_volt,
             constants.IMMEDIATE_SZ_OFFSET,
             "offset_awg_path0",
             pulse,

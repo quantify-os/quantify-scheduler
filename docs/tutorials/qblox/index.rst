@@ -43,8 +43,8 @@ Supported Instruments
 
 - ✅ QCM
 - ✅ QRM
-- ⬜️ QCM-RF
-- ⬜️ QRM-RF
+- ✅ QCM-RF
+- ✅ QRM-RF
 - ⬜️ Cluster
 - ⬜️ SPI
 

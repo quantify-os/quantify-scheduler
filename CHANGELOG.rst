@@ -69,6 +69,7 @@ Merged branches and closed issues
 * Fix for issue with acq delay . (!45)
 * Fix for issue #52. (!44)
 * Add artificial detuning to Ramsey schedule (!120)
+* Added support for the Qblox Pulsar QCM-RF/QRM-RF devices (!158)
 
 
 
