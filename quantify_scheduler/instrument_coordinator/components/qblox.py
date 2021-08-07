@@ -3,7 +3,9 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from abc import abstractmethod
+from typing import Any, Callable, Dict, Optional, Tuple, Type
+
 
 from dataclasses import dataclass
 import logging
@@ -17,7 +19,11 @@ from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.helpers.waveforms import modulate_waveform
-from quantify_scheduler.backends.types.qblox import PulsarSettings, SequencerSettings
+from quantify_scheduler.backends.types.qblox import (
+    PulsarSettings,
+    PulsarRFSettings,
+    SequencerSettings,
+)
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -32,10 +38,53 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
     def __init__(self, instrument: Instrument, **kwargs) -> None:
         """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
+        if instrument._get_lo_hw_present() is not self._has_internal_lo:
+            raise RuntimeError(
+                "PulsarInstrumentCoordinatorComponent not compatible with the "
+                "provided instrument. Please confirm whether your device "
+                "is a RF module (has an internal LO)."
+            )
 
     @property
     def is_running(self) -> bool:
         raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def _settings_type(self) -> Type[PulsarSettings]:
+        """
+        Specifies the type of qblox settings class that the subclasses use.
+
+        Returns
+        -------
+        :
+            PulsarSettings or PulsarRFSettings
+        """
+
+    @property
+    @abstractmethod
+    def number_of_sequencers(self) -> int:
+        """
+        Specifies the amount of sequencers available in the Pulsar device.
+
+        Returns
+        -------
+        :
+            Number of sequencers
+        """
+
+    @property
+    @abstractmethod
+    def _has_internal_lo(self) -> bool:
+        """
+        Specifies whether the device possesses an internal LO
+        (and is thefore an RF module).
+
+        Returns
+        -------
+        :
+            True or False
+        """
 
 
 # pylint: disable=too-many-ancestors
@@ -44,8 +93,12 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QCM specific InstrumentCoordinator component.
     """
 
-    number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
-    """Specifies the amount of sequencers available to this QCM."""
+    number_of_sequencers = NUMBER_OF_SEQUENCERS_QCM
+    """Specifies the amount of sequencers available in the device."""
+    _settings_type = PulsarSettings
+    """Specifies the settings class used by this component."""
+    _has_internal_lo = False
+    """Specifies whether the device posesses an internal LO."""
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQCMComponent."""
@@ -94,7 +147,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         }
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            pulsar_settings = self._settings_type.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
         for seq_name, seq_cfg in program.items():
@@ -143,6 +196,23 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         self.instrument.set("reference_source", settings.ref)
 
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set(
+                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
+            )
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set(
+                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
+            )
+        if settings.offset_ch1_path0 is not None:
+            self.instrument.set(
+                "sequencer1_offset_awg_path0", settings.offset_ch1_path0
+            )
+        if settings.offset_ch1_path1 is not None:
+            self.instrument.set(
+                "sequencer1_offset_awg_path1", settings.offset_ch1_path1
+            )
+
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
         Configures all sequencer specific settings.
@@ -155,12 +225,6 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
             The settings to configure it to.
         """
         self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
@@ -179,7 +243,12 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QRM specific InstrumentCoordinator component.
     """
 
-    number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    number_of_sequencers = NUMBER_OF_SEQUENCERS_QRM
+    """Specifies the amount of sequencers available in the Pulsar device."""
+    _settings_type = PulsarSettings
+    """Specifies the settings class used by this component."""
+    _has_internal_lo = False
+    """Specifies whether the device posesses an internal LO."""
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQRMComponent."""
@@ -298,7 +367,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         acq_settings = _AcquisitionSettings()
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = PulsarSettings.from_dict(settings_entry)
+            pulsar_settings = self._settings_type.from_dict(settings_entry)
             self._configure_global_settings(pulsar_settings)
 
             acq_settings.hardware_averages = pulsar_settings.hardware_averages
@@ -339,6 +408,15 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     def _configure_global_settings(self, settings: PulsarSettings):
         self.instrument.set("reference_source", settings.ref)
 
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set(
+                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
+            )
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set(
+                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
+            )
+
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings):
         """
         Configures all sequencer specific settings.
@@ -351,12 +429,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             The settings to configure it to.
         """
         self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
@@ -381,6 +453,80 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         pass
+
+
+class PulsarQCMRFComponent(PulsarQCMComponent):
+    """
+    Pulsar QCM-RF specific InstrumentCoordinator component.
+    """
+
+    _settings_type = PulsarRFSettings
+    """Specifies the settings class used by this component."""
+    _has_internal_lo = True
+    """Specifies whether the device posesses an internal LO."""
+
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        self.instrument.set("reference_source", settings.ref)
+
+        if settings.lo0_freq is not None:
+            self.instrument.set("lo0_freq", settings.lo0_freq)
+        if settings.lo1_freq is not None:
+            self.instrument.set("lo1_freq", settings.lo1_freq)
+
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set("offset_I_ch0", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set("offset_Q_ch0", settings.offset_ch0_path1)
+        if settings.offset_ch1_path0 is not None:
+            self.instrument.set("offset_I_ch1", settings.offset_ch1_path0)
+        if settings.offset_ch1_path1 is not None:
+            self.instrument.set("offset_Q_ch1", settings.offset_ch1_path1)
+
+
+class PulsarQRMRFComponent(PulsarQRMComponent):
+    """
+    Pulsar QRM-RF specific InstrumentCoordinator component.
+    """
+
+    _settings_type = PulsarRFSettings
+    """Specifies the settings class used by this component."""
+    _has_internal_lo = True
+    """Specifies whether the device posesses an internal LO."""
+
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        self.instrument.set("reference_source", settings.ref)
+
+        if settings.lo0_freq is not None:
+            self.instrument.set("lo0_freq", settings.lo0_freq)
+        if settings.lo1_freq is not None:
+            self.instrument.set("lo1_freq", settings.lo1_freq)
+
+        if settings.offset_ch0_path0 is not None:
+            logger.warning(
+                "'offset_ch0_path0' was not set. This functionality is not yet"
+                "implemented in the Pulsar QRM-RF driver."
+            )
+        if settings.offset_ch0_path1 is not None:
+            logger.warning(
+                "'offset_ch0_path1' was not set. This functionality is not yet"
+                "implemented in the Pulsar QRM-RF driver."
+            )
 
 
 # ----------------- Utility -----------------

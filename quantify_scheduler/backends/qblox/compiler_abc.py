@@ -40,9 +40,10 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
+    PulsarSettings,
+    PulsarRFSettings,
     SequencerSettings,
     QASMRuntimeSettings,
-    PulsarSettings,
     MixerCorrections,
 )
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -64,7 +65,7 @@ class InstrumentCompiler(ABC):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        hw_mapping: Optional[Dict[str, Any]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -158,6 +159,18 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
+    @property
+    @abstractmethod
+    def _supports_acquisition(self) -> bool:
+        """
+        Specifies whether the device can perform acquisitions.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
+
     def add_pulse(self, port: str, clock: str, pulse_info: OpInfo):
         """
         Assigns a certain pulse to this device.
@@ -188,6 +201,14 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             Data structure containing all the information regarding this specific
             acquisition operation.
         """
+
+        if not self._supports_acquisition:
+            raise RuntimeError(
+                f"{self.__class__.__name__} {self.name} does not support acquisitions. "
+                f"Attempting to add acquisition {repr(acq_info)} "
+                f"on port {port} with clock {clock}."
+            )
+
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
@@ -227,7 +248,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
 
 # pylint: disable=too-many-instance-attributes
-class PulsarSequencerBase(ABC):
+class Sequencer:
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
@@ -262,7 +283,7 @@ class PulsarSequencerBase(ABC):
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
-        self._associated_ext_lo = lo_name
+        self.associated_ext_lo = lo_name
 
         self.instruction_generated_pulses_enabled = seq_settings.get(
             "instruction_generated_pulses_enabled", False
@@ -310,19 +331,6 @@ class PulsarSequencerBase(ABC):
             The name.
         """
         return self._name
-
-    @property
-    @abstractmethod
-    def awg_output_volt(self) -> float:
-        """
-        The output range in volts. This is to be overridden by the subclass to account
-        for the differences between a QCM and a QRM.
-
-        Returns
-        -------
-        :
-            The output range in volts.
-        """
 
     @property
     def has_data(self) -> bool:
@@ -373,52 +381,6 @@ class PulsarSequencerBase(ABC):
                     f"to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
-
-    def align_modulation_frequency_with_ext_lo(self):
-        r"""
-        Sets the frequencies so that the LO and IF frequencies follow the relation:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
-
-        In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown.
-
-        If the frequency is overconstraint (i.e. multiple values are somehow specified)
-        an error will be thrown during assignment (in the setter method of the
-        frequency).
-
-        Raises
-        ------
-        ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
-        """
-        if self.clock not in self.parent.parent.resources:
-            return
-
-        clk_freq = self.parent.parent.resources[self.clock]["freq"]
-        lo_compiler = self.parent.parent.instrument_compilers.get(
-            self._associated_ext_lo, None
-        )
-        if lo_compiler is None:
-            self.frequency = clk_freq
-            return
-
-        if_freq = self.frequency
-        lo_freq = lo_compiler.frequency
-
-        if lo_freq is None and if_freq is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {self.name} with "
-                f"port {self.port} and clock {self.clock}. When using an external "
-                f'local oscillator it is required to either supply an "lo_freq" or '
-                f'an "interm_freq". Neither was given.'
-            )
-
-        if if_freq is not None:
-            lo_compiler.frequency = clk_freq - if_freq
-
-        if lo_freq is not None:
-            self.frequency = clk_freq - lo_freq
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
@@ -471,25 +433,25 @@ class PulsarSequencerBase(ABC):
                     reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
                 )
 
-            if np.abs(amp_i) > self.awg_output_volt:
+            if np.abs(amp_i) > self.parent.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.awg_output_volt} V for "
-                    f"{self.__class__.__name__}.\n"
+                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
+                    f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
-            if np.abs(amp_q) > self.awg_output_volt:
+            if np.abs(amp_q) > self.parent.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.awg_output_volt} V for "
-                    f"{self.__class__.__name__}.\n"
+                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
+                    f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
             pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.awg_output_volt,
-                awg_gain_1=amp_q / self.awg_output_volt,
+                awg_gain_0=amp_i / self.parent.awg_output_volt,
+                awg_gain_1=amp_q / self.parent.awg_output_volt,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 waveforms_complex[pulse.uuid] = raw_wf_data
@@ -584,16 +546,8 @@ class PulsarSequencerBase(ABC):
     def update_settings(self):
         """
         Updates the sequencer settings to set all parameters that are determined by the
-        compiler. Currently, this only changes the offsets based on the mixer
-        calibration parameters.
+        compiler.
         """
-        if self.mixer_corrections is not None:
-            self._settings.awg_offset_path_0 = (
-                self.mixer_corrections.offset_I / self.awg_output_volt
-            )
-            self._settings.awg_offset_path_1 = (
-                self.mixer_corrections.offset_Q / self.awg_output_volt
-            )
 
     # pylint: disable=too-many-locals
     def generate_qasm_program(
@@ -653,7 +607,9 @@ class PulsarSequencerBase(ABC):
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        qasm.emit(q1asm_instructions.SET_MARKER, 1)
+        qasm.emit(
+            q1asm_instructions.SET_MARKER, self.parent.marker_configuration["start"]
+        )
 
         # program body
         pulses = list() if self.pulses is None else self.pulses
@@ -674,7 +630,7 @@ class PulsarSequencerBase(ABC):
                     idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
-            end_time = qasm.to_pulsar_time(total_sequence_time)
+            end_time = qasm.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
             if wait_time < 0:
                 raise RuntimeError(
@@ -686,7 +642,9 @@ class PulsarSequencerBase(ABC):
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.emit(q1asm_instructions.SET_MARKER, 0)
+        qasm.emit(
+            q1asm_instructions.SET_MARKER, self.parent.marker_configuration["end"]
+        )
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
@@ -832,15 +790,21 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     Pulsar specific implementation of
     :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
 
-    This class is defined as an abstract base class since the distinction between
-    Pulsar QRM and Pulsar QCM specific implementations are defined in subclasses.
-    Effectively, this base class contains the functionality shared by the Pulsar QRM
-    and Pulsar QCM and serves to avoid code duplication between the two.
+    This class is defined as an abstract base class since the distinctions between the
+    different Pulsar devices are defined in subclasses.
+    Effectively, this base class contains the functionality shared by all Pulsar
+    devices and serves to avoid repeated code between them.
     """
 
     output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
     """
     Dictionary that maps output names to specific sequencer indices. This
+    implementation is temporary and will change when multiplexing is supported by
+    the hardware.
+    """
+    sequencer_to_output_idx = {"seq0": 0, "seq1": 1}
+    """
+    Dictionary that maps sequencer names to specific (complex) output indices. This
     implementation is temporary and will change when multiplexing is supported by
     the hardware.
     """
@@ -878,7 +842,19 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
-        self._settings = PulsarSettings.extract_settings_from_mapping(hw_mapping)
+        self._settings = self.settings_type.extract_settings_from_mapping(hw_mapping)
+
+    @property
+    @abstractmethod
+    def _max_sequencers(self) -> int:
+        """
+        Specifies the maximum amount of sequencers available to this instrument.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
 
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
@@ -887,22 +863,35 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def sequencer_type(self) -> type(PulsarSequencerBase):
+    def awg_output_volt(self) -> float:
         """
-        Specifies whether the sequencers in this pulsar are QCM_sequencers or
-        QRM_sequencers.
+        The output range in volts. This is to be overridden by the subclass to account
+        for the differences between a QCM and a QRM.
 
         Returns
         -------
         :
-            A pulsar sequencer type
+            The output range in volts.
         """
 
     @property
     @abstractmethod
-    def max_sequencers(self) -> int:
+    def settings_type(self) -> PulsarSettings:
         """
-        Specifies the maximum amount of sequencers available to this instrument.
+        Specifies the Pulsar Settings class used by the instrument.
+
+        Returns
+        -------
+        :
+            The maximum amount of sequencers
+        """
+
+    @property
+    @abstractmethod
+    def marker_configuration(self) -> dict[str, int]:
+        """
+        Specifies the values that the markers need to be set to at the start and end
+        of each program.
 
         Returns
         -------
@@ -919,46 +908,30 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
-
-        Raises
-        ------
-        NotImplementedError
-            When the hardware mapping contains a dictionary, which is assumed to
-            correspond to an output channel, that does not have a name defined in
-            self.OUTPUT_TO_SEQ.keys(). Likely this will occur when attempting to use
-            real outputs (instead of complex), or when the hardware mapping is invalid.
         """
-        output_to_seq = self.output_to_sequencer_idx
+        valid_io = (f"complex_output_{i}" for i in [0, 1])
+        valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
 
         mapping = dict()
-        for io, data in self.hw_mapping.items():
-            if not isinstance(data, dict):
+        for io in valid_io:
+            if io not in self.hw_mapping:
                 continue
 
-            port_clocks = find_all_port_clock_combinations(data)
-            if len(port_clocks) > 1:
-                raise NotImplementedError(
-                    f"{len(port_clocks)} port and clock "
-                    f"combinations specified for output {io} "
-                    f"(sequencer {output_to_seq[io]}). Multiple "
-                    f"sequencers per output is not yet supported "
-                    f"by this backend."
-                )
+            io_cfg = self.hw_mapping[io]
 
-            if len(port_clocks) > 0:
-                port_clock = port_clocks[0]
-                if io not in output_to_seq:
-                    raise NotImplementedError(
-                        f"Attempting to use non-supported output {io}. "
-                        f"Supported output types: "
-                        f"{(str(t) for t in output_to_seq)}"
-                    )
-                mapping[port_clock] = f"seq{output_to_seq[io]}"
+            for seq_name in valid_seq_names:
+                if seq_name not in io_cfg:
+                    continue
+
+                seq_cfg = io_cfg[seq_name]
+                portclock = seq_cfg["port"], seq_cfg["clock"]
+
+                mapping[portclock] = seq_name
         return mapping
 
-    def _construct_sequencers(self) -> Dict[str, PulsarSequencerBase]:
+    def _construct_sequencers(self) -> Dict[str, Sequencer]:
         """
-        Constructs `PulsarSequencerBase` objects for each port and clock combination
+        Constructs `Sequencer` objects for each port and clock combination
         belonging to this device.
 
         Returns
@@ -966,6 +939,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         :
             A dictionary containing the sequencer objects, the keys correspond to the
             names of the sequencers.
+
+        Raises
+        ------
+        ValueError
+            Raised when multiple definitions for the same sequencer is found, i.e. we
+            are attempting to use the same sequencer multiple times in the compilation.
+        ValueError
+            Attempting to use more sequencers than available.
         """
         sequencers = dict()
         for io, io_cfg in self.hw_mapping.items():
@@ -973,30 +954,35 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 continue
 
             lo_name = io_cfg.get("lo_name", None)
-            portclock_dicts = find_inner_dicts_containing_key(io_cfg, "port")
-            if len(portclock_dicts) > 1:
-                raise NotImplementedError(
-                    f"{len(portclock_dicts)} port and clock "
-                    f"combinations specified for output {io}. Multiple "
-                    f"sequencers per output is not yet supported "
-                    f"by this backend."
-                )
-            portclock_dict = portclock_dicts[0]
-            portclock = portclock_dict["port"], portclock_dict["clock"]
 
-            seq_name = f"seq{self.output_to_sequencer_idx[io]}"
-            sequencers[seq_name] = self.sequencer_type(
-                self, seq_name, portclock, portclock_dict, lo_name
-            )
-            if "mixer_corrections" in io_cfg:
-                sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
-                    io_cfg["mixer_corrections"]
+            valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
+            for seq_name in valid_seq_names:
+                if seq_name not in io_cfg:
+                    continue
+
+                seq_cfg = io_cfg[seq_name]
+                portclock = seq_cfg["port"], seq_cfg["clock"]
+
+                if seq_name in sequencers:
+                    raise ValueError(
+                        f"Attempting to create multiple instances of "
+                        f"{seq_name}. Is it defined multiple times in "
+                        f"the hardware configuration?"
+                    )
+
+                sequencers[seq_name] = Sequencer(
+                    self, seq_name, portclock, seq_cfg, lo_name
                 )
 
-        if len(sequencers.keys()) > self.max_sequencers:
+                if "mixer_corrections" in io_cfg:
+                    sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
+                        io_cfg["mixer_corrections"]
+                    )
+
+        if len(sequencers.keys()) > self._max_sequencers:
             raise ValueError(
                 f"Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__} is {self.max_sequencers}!"
+                f"Maximum allowed for {self.__class__} is {self._max_sequencers}!"
             )
 
         return sequencers
@@ -1004,8 +990,16 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     def distribute_data(self):
         """
         Distributes the pulses and acquisitions assigned to this pulsar over the
-        different sequencers based on their portclocks.
+        different sequencers based on their portclocks. Raises an exception in case
+        the device does not support acquisitions.
         """
+
+        if len(self._acquisitions) > 0 and not self._supports_acquisition:
+            raise RuntimeError(
+                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
+                f"which is not supported by hardware."
+            )
+
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
@@ -1016,6 +1010,26 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     seq.acquisitions = acq_data_list
 
+    @abstractmethod
+    def assign_frequencies(self, sequencer: Sequencer):
+        r"""
+        An abstract method that should be overridden. Meant to assign an IF frequency
+        to each sequencer, or an LO frequency to each output (if applicable).
+        For each sequencer, the following relation is obeyed:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise an error is thrown. If the frequency
+        is overconstraint (i.e. multiple values are somehow specified) an error is
+        thrown during assignment.
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+
     def prepare(self) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
@@ -1025,7 +1039,14 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         """
         self.distribute_data()
         for seq in self.sequencers.values():
-            seq.align_modulation_frequency_with_ext_lo()
+            self.assign_frequencies(seq)
+
+    @abstractmethod
+    def update_settings(self):
+        """
+        Updates the Pulsar settings to set all parameters that are determined by the
+        compiler.
+        """
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
@@ -1055,5 +1076,176 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             return None
 
         self._settings.hardware_averages = repetitions
+        self.update_settings()
         program["settings"] = self._settings.to_dict()
         return program
+
+
+class PulsarBaseband(PulsarBase):
+    """
+    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should
+    inherit from.
+    """
+
+    settings_type = PulsarSettings
+    """The settings type used by Pulsar baseband-type devices"""
+
+    def update_settings(self):
+        """
+        Updates the Pulsar settings to set all parameters that are determined by the
+        compiler. Currently, this only changes the offsets based on the mixer
+        calibration parameters.
+        """
+
+        # Will be changed when LO leakage correction is decoupled from the sequencer
+        for seq in self.sequencers.values():
+            if seq.mixer_corrections is not None:
+                output_index = self.sequencer_to_output_idx[seq.name]
+                if output_index == 0:
+                    self._settings.offset_ch0_path0 = (
+                        seq.mixer_corrections.offset_I / self.awg_output_volt
+                    )
+                    self._settings.offset_ch0_path1 = (
+                        seq.mixer_corrections.offset_Q / self.awg_output_volt
+                    )
+                elif output_index == 1:
+                    self._settings.offset_ch1_path0 = (
+                        seq.mixer_corrections.offset_I / self.awg_output_volt
+                    )
+                    self._settings.offset_ch1_path1 = (
+                        seq.mixer_corrections.offset_Q / self.awg_output_volt
+                    )
+
+    def assign_frequencies(self, sequencer: Sequencer):
+        r"""
+        An abstract method that should be overridden. Meant to assign an IF frequency
+        to each sequencer, or an LO frequency to each output (if applicable).
+        For each sequencer, the following relation is obeyed:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise an error is thrown. If the frequency
+        is overconstraint (i.e. multiple values are somehow specified) an error is
+        thrown during assignment.
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+
+        if sequencer.clock not in self.parent.resources:
+            return
+
+        clk_freq = self.parent.resources[sequencer.clock]["freq"]
+        lo_compiler = self.parent.instrument_compilers.get(
+            sequencer.associated_ext_lo, None
+        )
+        if lo_compiler is None:
+            sequencer.frequency = clk_freq
+            return
+
+        if_freq = sequencer.frequency
+        lo_freq = lo_compiler.frequency
+
+        if lo_freq is None and if_freq is None:
+            raise ValueError(
+                f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
+                f"an external local oscillator it is required to either supply an "
+                f'"lo_freq" or an "interm_freq". Neither was given.'
+            )
+
+        if if_freq is not None:
+            lo_compiler.frequency = clk_freq - if_freq
+
+        if lo_freq is not None:
+            sequencer.frequency = clk_freq - lo_freq
+
+
+class PulsarRF(PulsarBase):
+    r"""
+    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should
+    inherit from.
+    """
+
+    settings_type = PulsarRFSettings
+    """The settings type used by Pulsar RF-type devices"""
+
+    def update_settings(self):
+        """
+        Updates the Pulsar settings to set all parameters that are determined by the
+        compiler. Currently, this only changes the offsets based on the mixer
+        calibration parameters.
+        """
+
+        # Will be changed when LO leakage correction is decoupled from the sequencer
+        for seq in self.sequencers.values():
+            if seq.mixer_corrections is not None:
+                output_index = self.sequencer_to_output_idx[seq.name]
+                if output_index == 0:
+                    self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I
+                    self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q
+                elif output_index == 1:
+                    self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
+                    self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
+
+    def assign_frequencies(self, sequencer: Sequencer):
+        r"""
+        An abstract method that should be overridden. Meant to assign an IF frequency
+        to each sequencer, or an LO frequency to each output (if applicable).
+        For each sequencer, the following relation is obeyed:
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+        In this step it is thus expected that either the IF and/or the LO frequency has
+        been set during instantiation. Otherwise an error is thrown. If the frequency
+        is overconstraint (i.e. multiple values are somehow specified) an error is
+        thrown during assignment.
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+
+        if sequencer.clock not in self.parent.resources:
+            return
+
+        clk_freq = self.parent.resources[sequencer.clock]["freq"]
+
+        # Now we have to identify the LO the sequencer is outputting to
+        # We can do this by first checking the Sequencer-Output correspondence
+        # And then use the fact that LOX is connected to OutputX
+
+        output_index = self.sequencer_to_output_idx[sequencer.name]
+
+        if_freq = sequencer.frequency
+        lo_freq = (
+            self._settings.lo0_freq if (output_index == 0) else self._settings.lo1_freq
+        )
+
+        if lo_freq is None and if_freq is None:
+            raise ValueError(
+                f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                f"with port {sequencer.port} and clock {sequencer.clock}. It is "
+                f'required to either supply an "lo_freq" or an "interm_freq". Neither '
+                f"was given."
+            )
+
+        if if_freq is not None:
+            new_lo_freq = clk_freq - if_freq
+            if lo_freq is not None and new_lo_freq != lo_freq:
+                raise ValueError(
+                    f"Attempting to set 'lo{output_index}_freq' to frequency "
+                    f"{new_lo_freq}, while it has previously already been set to "
+                    f"{lo_freq}!"
+                )
+            if output_index == 0:
+                self._settings.lo0_freq = new_lo_freq
+            elif output_index == 1:
+                self._settings.lo1_freq = new_lo_freq
+
+        if lo_freq is not None:
+            sequencer.frequency = clk_freq - lo_freq

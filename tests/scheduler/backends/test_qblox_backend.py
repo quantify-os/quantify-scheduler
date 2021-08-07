@@ -10,6 +10,7 @@
 from typing import Dict, Any
 
 import os
+import re
 import inspect
 import json
 import tempfile
@@ -48,11 +49,10 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
-    QCMSequencer,
+    Pulsar_QCM_RF,
+    Pulsar_QRM_RF,
 )
-from quantify_scheduler.backends.qblox.compiler_abc import (
-    PulsarBase,
-)
+from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
 from quantify_scheduler.backends.qblox import constants
@@ -101,7 +101,53 @@ def hardware_cfg_baseband():
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq0": {"port": "q1:mw", "clock": "q1.01"},
+                "seq1": {"port": "q1:mw", "clock": "q1.01"},
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+    }
+
+
+@pytest.fixture
+def hardware_cfg_multiplexing():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "name": "qcm0",
+            "instrument_type": "Pulsar_QCM",
+            "ref": "int",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq2": {
+                    "port": "q1:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq3": {
+                    "port": "q2:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq4": {
+                    "port": "q3:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+                "seq5": {
+                    "port": "q4:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                },
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
@@ -145,6 +191,43 @@ def pulse_only_schedule():
             t0=4e-9,
         )
     )
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def pulse_only_schedule_multiplexed():
+    sched = Schedule("pulse_only_experiment")
+    sched.add(Reset("q0"))
+    operation = sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    for i in range(1, 4):
+        sched.add(
+            DRAGPulse(
+                G_amp=0.7,
+                D_amp=-0.2,
+                phase=90,
+                port=f"q{i}:mw",
+                duration=20e-9,
+                clock="q0.01",
+                t0=8e-9,
+            ),
+            ref_op=operation,
+            ref_pt="start",
+        )
+
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
@@ -329,6 +412,10 @@ def test_find_all_port_clock_combinations():
         ("q0:res", "q0.ro"),
         ("q1:res", "q1.ro"),
         ("q3:mw", "q3.01"),
+        ("q2:mw", "q2.01"),
+        ("q2:res", "q2.ro"),
+        ("q3:res", "q3.ro"),
+        ("q3:mw", "q3.01"),
     }
     assert portclocks == answer
 
@@ -336,15 +423,12 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 5
+    assert len(portclock_map.keys()) == 8
 
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class TestPulsar(PulsarBase):
-        sequencer_type = QCMSequencer
-        max_sequencers = 10
-
+    class TestPulsar(Pulsar_QCM):
         def __init__(self):
             super().__init__(
                 parent=None,
@@ -360,7 +444,7 @@ def test_contruct_sequencer():
     test_p.sequencers = test_p._construct_sequencers()
     seq_keys = list(test_p.sequencers.keys())
     assert len(seq_keys) == 2
-    assert isinstance(test_p.sequencers[seq_keys[0]], QCMSequencer)
+    assert isinstance(test_p.sequencers[seq_keys[0]], Sequencer)
 
 
 def test_simple_compile(pulse_only_schedule):
@@ -368,6 +452,15 @@ def test_simple_compile(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_simple_compile_multiplexing(
+    pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
+):
+    """Tests if compilation with only pulses finishes without exceptions"""
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
 def test_identical_pulses_compile(identical_pulses_schedule):
@@ -586,17 +679,17 @@ def test_staircase_qasm_prog(start_amp, final_amp):
         init_amp = init_amp - constants.REGISTER_SIZE
 
     final_amp_imm = amp_step_used * (steps_taken - 1) + init_amp
-    awg_output_volt = qcm.sequencers["seq0"].awg_output_volt
+    awg_output_volt = qcm.awg_output_volt
 
     final_amp_volt = 2 * final_amp_imm / constants.IMMEDIATE_SZ_OFFSET * awg_output_volt
     assert final_amp_volt == pytest.approx(final_amp, 1e-3)
 
 
 def test_to_pulsar_time():
-    time_ns = QASMProgram.to_pulsar_time(8e-9)
+    time_ns = QASMProgram.to_grid_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
-        QASMProgram.to_pulsar_time(7e-9)
+        QASMProgram.to_grid_time(7e-9)
 
 
 def test_loop():
@@ -692,3 +785,99 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
+
+
+def test_assign_frequencies():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    # Test for baseband
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q0"))
+    sched.add(X("q1"))
+
+    q2_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
+    q3_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
+    io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
+    io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("lo_freq")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
+
+    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    assert program["lo0"]["lo_freq"] == lo0
+    assert program["lo1"]["lo_freq"] == lo1
+    assert program["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+
+    # Test for RF
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q2"))
+    sched.add(X("q3"))
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["seq1"].get("interm_freq")
+    lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
+    q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"]["interm_freq"]
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
+
+    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    qcm_program = program["qcm_rf0"]
+    assert qcm_program["settings"]["lo0_freq"] == lo0
+    assert qcm_program["settings"]["lo1_freq"] == lo1
+    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+
+
+def test_markers():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    # Test for baseband
+    sched = Schedule("gate_experiment")
+    sched.add(X("q0"))
+    sched.add(X("q2"))
+    sched.add(Measure("q0"))
+    sched.add(Measure("q2"))
+
+    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+    def _confirm_correct_markers(device_program, device_compiler):
+        with open(device_program["seq0"]["seq_fn"]) as file:
+            qasm = json.load(file)["program"]
+
+            matches = re.findall(r"set\_mrk +\d+", qasm)
+            assert len(matches) == 2
+
+            on_marker = int(re.findall(r"\d+", matches[0])[0])
+            off_marker = int(re.findall(r"\d+", matches[1])[0])
+
+            assert on_marker == device_compiler.marker_configuration["start"]
+            assert off_marker == device_compiler.marker_configuration["end"]
+
+    _confirm_correct_markers(program["qcm0"], Pulsar_QCM)
+    _confirm_correct_markers(program["qrm0"], Pulsar_QRM)
+    _confirm_correct_markers(program["qcm_rf0"], Pulsar_QCM_RF)
+    _confirm_correct_markers(program["qrm_rf0"], Pulsar_QRM_RF)

@@ -39,14 +39,6 @@ class MyICC(base_component.InstrumentCoordinatorComponentBase):
         pass
 
 
-@pytest.fixture(autouse=True, name="close_all_instruments")
-def fixture_close_all_instruments():
-    """Makes sure that after startup and teardown all instruments are closed"""
-    Instrument.close_all()
-    yield
-    Instrument.close_all()
-
-
 # cretes a few dummy compoents avialable to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
 def fixture_dummy_components(

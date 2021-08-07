@@ -64,10 +64,25 @@ def basic_schedule() -> Schedule:
 
 @pytest.fixture
 def schedule_with_measurement() -> Schedule:
+    """
+    Simple schedule with gate an measurement on qubit 0
+    """
     schedule = Schedule("Basic schedule")
     schedule.add(Reset("q0"))
     schedule.add(X90("q0"))
     schedule.add(Measure("q0"))
+    return schedule
+
+
+@pytest.fixture
+def schedule_with_measurement_q2() -> Schedule:
+    """
+    Simple schedule with gate an measurement on qubit 2
+    """
+    schedule = Schedule("Basic schedule")
+    schedule.add(Reset("q2"))
+    schedule.add(X90("q2"))
+    schedule.add(Measure("q2"))
     return schedule
 
 
