@@ -400,8 +400,6 @@ def test_retrieve_acquisition_qrm_rf(
         set_datadir(tmp_dir)
         prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
         prog = dict(prog)
-        with open(prog[qrm_rf.instrument.name]["seq0"]["seq_fn"]) as f:
-            s = json.load(f)
 
         qrm_rf.prepare(prog[qrm_rf.instrument.name])
         qrm_rf.start()
