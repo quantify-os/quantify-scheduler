@@ -41,6 +41,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
+    to_grid_time,
 )
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import (
@@ -766,11 +767,11 @@ def test_staircase_qasm_prog(start_amp, final_amp):
     assert final_amp_volt == pytest.approx(final_amp, 1e-3)
 
 
-def test_to_pulsar_time():
-    time_ns = QASMProgram.to_grid_time(8e-9)
+def test_to_grid_time():
+    time_ns = to_grid_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
-        QASMProgram.to_grid_time(7e-9)
+        to_grid_time(7e-9)
 
 
 def test_loop():

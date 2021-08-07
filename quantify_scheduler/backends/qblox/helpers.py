@@ -8,6 +8,7 @@ from collections import UserDict
 import numpy as np
 from typing_extensions import Literal
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 
 

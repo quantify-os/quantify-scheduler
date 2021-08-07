@@ -293,6 +293,14 @@ class Sequencer:
         self.mixer_corrections = None
 
     @property
+    def connected_outputs(self) -> Tuple[int, ...]:
+        return self._settings.connected_outputs
+
+    @property
+    def output_mode(self) -> Literal["complex", "real", "imag"]:
+        return helpers.output_mode_from_outputs(self._settings.connected_outputs)
+
+    @property
     def portclock(self) -> Tuple[str, str]:
         """
         A tuple containing the unique port and clock combination for this sequencer.
@@ -678,7 +686,7 @@ class Sequencer:
                     idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
-            end_time = qasm.to_grid_time(total_sequence_time)
+            end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
             if wait_time < 0:
                 raise RuntimeError(
@@ -842,19 +850,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
     different Pulsar devices are defined in subclasses.
     Effectively, this base class contains the functionality shared by all Pulsar
     devices and serves to avoid repeated code between them.
-    """
-
-    output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
-    """
-    Dictionary that maps output names to specific sequencer indices. This
-    implementation is temporary and will change when multiplexing is supported by
-    the hardware.
-    """
-    sequencer_to_output_idx = {"seq0": 0, "seq1": 1}
-    """
-    Dictionary that maps sequencer names to specific (complex) output indices. This
-    implementation is temporary and will change when multiplexing is supported by
-    the hardware.
     """
 
     def __init__(
@@ -1154,21 +1149,23 @@ class PulsarBaseband(PulsarBase):
         # Will be changed when LO leakage correction is decoupled from the sequencer
         for seq in self.sequencers.values():
             if seq.mixer_corrections is not None:
-                output_index = self.sequencer_to_output_idx[seq.name]
-                if output_index == 0:
-                    self._settings.offset_ch0_path0 = (
-                        seq.mixer_corrections.offset_I / self.awg_output_volt
-                    )
-                    self._settings.offset_ch0_path1 = (
-                        seq.mixer_corrections.offset_Q / self.awg_output_volt
-                    )
-                elif output_index == 1:
-                    self._settings.offset_ch1_path0 = (
-                        seq.mixer_corrections.offset_I / self.awg_output_volt
-                    )
-                    self._settings.offset_ch1_path1 = (
-                        seq.mixer_corrections.offset_Q / self.awg_output_volt
-                    )
+                for output_index in seq.connected_outputs:
+                    if output_index == 0:
+                        self._settings.offset_ch0_path0 = (
+                            seq.mixer_corrections.offset_I / self.awg_output_volt
+                        )
+                    elif output_index == 1:
+                        self._settings.offset_ch0_path1 = (
+                            seq.mixer_corrections.offset_Q / self.awg_output_volt
+                        )
+                    elif output_index == 2:
+                        self._settings.offset_ch1_path0 = (
+                            seq.mixer_corrections.offset_I / self.awg_output_volt
+                        )
+                    else:
+                        self._settings.offset_ch1_path1 = (
+                            seq.mixer_corrections.offset_Q / self.awg_output_volt
+                        )
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
@@ -1236,14 +1233,17 @@ class PulsarRF(PulsarBase):
 
         # Will be changed when LO leakage correction is decoupled from the sequencer
         for seq in self.sequencers.values():
+            self.validate_output_mode(seq)
             if seq.mixer_corrections is not None:
-                output_index = self.sequencer_to_output_idx[seq.name]
-                if output_index == 0:
-                    self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I
-                    self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q
-                elif output_index == 1:
-                    self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
-                    self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
+                for output in seq.connected_outputs:
+                    if output == 0:
+                        self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I
+                    elif output == 1:
+                        self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q
+                    elif output == 2:
+                        self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
+                    else:
+                        self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
@@ -1273,33 +1273,48 @@ class PulsarRF(PulsarBase):
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        output_index = self.sequencer_to_output_idx[sequencer.name]
-
-        if_freq = sequencer.frequency
-        lo_freq = (
-            self._settings.lo0_freq if (output_index == 0) else self._settings.lo1_freq
-        )
-
-        if lo_freq is None and if_freq is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} "
-                f"with port {sequencer.port} and clock {sequencer.clock}. It is "
-                f'required to either supply an "lo_freq" or an "interm_freq". Neither '
-                f"was given."
+        self.validate_output_mode(sequencer)
+        for real_output in sequencer.connected_outputs:
+            if real_output % 2 != 0:
+                # We will only use real output 0 and 2,
+                # since 1 and 3 are part of the same
+                # complex outputs.
+                continue
+            complex_output = 0 if real_output == 0 else 1
+            if_freq = sequencer.frequency
+            lo_freq = (
+                self._settings.lo0_freq
+                if (complex_output == 0)
+                else self._settings.lo1_freq
             )
 
-        if if_freq is not None:
-            new_lo_freq = clk_freq - if_freq
-            if lo_freq is not None and new_lo_freq != lo_freq:
+            if lo_freq is None and if_freq is None:
                 raise ValueError(
-                    f"Attempting to set 'lo{output_index}_freq' to frequency "
-                    f"{new_lo_freq}, while it has previously already been set to "
-                    f"{lo_freq}!"
+                    f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                    f"with port {sequencer.port} and clock {sequencer.clock}. It is "
+                    f'required to either supply an "lo_freq" or an "interm_freq". Neither '
+                    f"was given."
                 )
-            if output_index == 0:
-                self._settings.lo0_freq = new_lo_freq
-            elif output_index == 1:
-                self._settings.lo1_freq = new_lo_freq
 
-        if lo_freq is not None:
-            sequencer.frequency = clk_freq - lo_freq
+            if if_freq is not None:
+                new_lo_freq = clk_freq - if_freq
+                if lo_freq is not None and new_lo_freq != lo_freq:
+                    raise ValueError(
+                        f"Attempting to set 'lo{complex_output}_freq' to frequency "
+                        f"{new_lo_freq}, while it has previously already been set to "
+                        f"{lo_freq}!"
+                    )
+                if complex_output == 0:
+                    self._settings.lo0_freq = new_lo_freq
+                elif complex_output == 1:
+                    self._settings.lo1_freq = new_lo_freq
+
+            if lo_freq is not None:
+                sequencer.frequency = clk_freq - lo_freq
+
+    def validate_output_mode(self, sequencer: Sequencer):
+        if sequencer.output_mode is not "complex":
+            raise ValueError(
+                f"Attempting to use {self.__class__.__name__} in real "
+                f"mode, but this is not supported for Qblox RF modules."
+            )
