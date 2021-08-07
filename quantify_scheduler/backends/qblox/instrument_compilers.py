@@ -3,7 +3,7 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
@@ -11,7 +11,7 @@ from quantify_scheduler.backends.qblox.compiler_abc import (
     PulsarBaseband,
     PulsarRF,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
+from quantify_scheduler.backends.types.qblox import LOSettings
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
