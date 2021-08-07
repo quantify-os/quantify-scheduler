@@ -170,7 +170,7 @@ class QASMProgram:
                 f"Start time of operation is invalid. Qblox QCM and QRM "
                 f"enforce a grid time of {constants.GRID_TIME} ns. Please "
                 f"make sure all operations start at an interval of "
-                f"{constants.GRID_TIME}.\n\nOffending operation:\n"
+                f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
                 f"{repr(operation)}."
             )
         start_time = helpers.to_grid_time(operation.timing)

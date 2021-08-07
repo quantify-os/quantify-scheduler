@@ -466,6 +466,19 @@ def test_simple_compile_invalid_timing(pulse_only_schedule):
         qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
 
 
+def test_simple_compile_invalid_schedule_duration(pulse_only_schedule):
+    """Tests if compilation produces error duration is not multiple of 4 ns."""
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
+        SquarePulse(amp=1, duration=101e-9, port="q0:mw", clock="q0.01"),
+        rel_time=4e-9,  # duration of 101 makes the end time not a multiple of 4
+    )
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    with pytest.raises(ValueError):
+        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+
 def test_simple_compile_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
