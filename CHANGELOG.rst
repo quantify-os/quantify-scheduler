@@ -1,29 +1,66 @@
-===========
+=========
 Changelog
-===========
+=========
 
 Unreleased
 ----------
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-* Change of namespace from quantify.scheduler.* to quantify_scheduler.*
 * Mixer corrections in Qblox backend are broken because of the switch to real-time modulation. The support of mixer corrections in the Qblox firmware is under development.
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
+* Qblox Backend - Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
 
-* Feature: Added zhinst backend option to enable Calibration mode, Closes #103. (!123)
-* Added acquisitions to circuit diagram (!93)
-* Added Chirp and Staircase pulses; and efficient implementation in Qblox backend (!106)
-* Added InstrumentCoordinator (!70)
-* Feature: Added InstrumentCoordinator property is_running, Closes #113 (!140)
-* Feature: Added InstrumentCoordinator wait_done method, Closes #113 (!140)
-* Added Qblox InstrumentCoordinator components (!112)
+0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
+---------------------------------------------------------------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Change of namespace from quantify.scheduler.* to quantify_scheduler.*
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Changes the namespace from quantify.scheduler to quantify_scheduler (!124)
+* InstrumentCoordinator - Add is_running property and wait_done method. Closes #133 (!140)
+* InstrumentCoordinator - Add instrument coordinator reference parameter to transmon element (!152)
+* InstrumentCoordinator - Prefix serialized settings for ZI ControlStack components. (!149)
+* InstrumentCoordinator - Refactored ControlStack name to InstrumentCoordinator (!151)
+* InstrumentCoordinator - Make use of InstrumentRefParameters (!144)
+* InstrumentCoordinator - Add controlstack class (!70)
+* InstrumentCoordinator - Add Zurich Instruments InstrumentCoordinatorComponent. (!99)
+* InstrumentCoordinator - Add Qblox InstrumentCoordinatorComponent. (!112)
+* InstrumentCoordinator - Avoid garbage collection for instrument coordinator components (!162)
+* Qblox backend - Removed limit in Qblox backend that keeps the QCM sequencer count at 2 (!135)
+* Qblox backend - Restructured compilation using external local oscillators. (!116)
+* Qblox backend - Added Chirp and Staircase pulses; and efficient implementation for QD spin qubit experiments (!106)
+* Qblox backend - Only run `start_sequencer` on pulsar instruments which have been armed (!156)
+* Zhinst backend - Assert current with new sequence program to skip compilation (!131)
+* Zhinst backend - Deserialize zhinst settings from JSON to ZISettingsBuilder (!130)
+* Zhinst backend - Add waveform mixer skewness corrections (!103)
+* Zhinst backend - Add backend option to enable Calibration mode (#103, !123)
+* Zhinst backend - Replace weights string array with a numerical array in JSON format (!148)
+* Zhinst backend - Add grouping of instrument settings (!133)
+* Zhinst backend - Add qcompile tests for the zurich instruments backend (!118)
+* Zhinst backend - Add repetitions parameter (!138)
+* Zhinst backend - Fixes the bug where the seqc in the datadir is not copied to the webserver location. (!165)
+* Fix for circuit diagram plotting failure after pulse scheduling (#157, !163)
+* Fixed typo in the gate_info of the Y gate in the gate_library (!155)
+* Add artificial detuning in Ramsey Schedule and bug fixes (!120)
+* Use individual loggers per python file (!134)
+* Recolour draw circuit diagram mpl (!96)
+* Fix issues with timedomain schedules (!145)
 * Renamed input parameters of quantify_scheduler.schedules.* functions. (!136)
-* Added instrument coordinator reference parameter to transmon element. (!152)
-* Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
-* Removed limit in Qblox backend that keeps the QCM sequencer count at 2 (!135)
+* Added acquisitions to circuit diagram (!93)
+* Add string representations to acquisition protocols of the acquisitions library (!114)
+* Transmon element and config generation (!75)
+* Rename operation_hash to operation_repr (!122)
+* Add types.Schedule from_json conversion (!119)
+* Add missing return types (!121)
+* Add serialization to Operations (!110)
+
 
 
 0.3.0 Multiple backends support (2021-05-20)
@@ -68,7 +105,7 @@ Merged branches and closed issues
 * Fixed datadir related bugs. (!54)
 * Added Station implementation. (!52)
 * Pulsar backend v0.2.2 check. (!48)
-* Fix for issue with acq delay . (!45)
+* Fix for issue with acq delay. (!45)
 * Fix for issue #52. (!44)
 * Add artificial detuning to Ramsey schedule (!120)
 * Added support for the Qblox Pulsar QCM-RF/QRM-RF devices (!158)
