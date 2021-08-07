@@ -676,10 +676,13 @@ class PulsarSequencerBase(ABC):
 
             if not is_multiple_of_grid_time(total_sequence_time):
                 raise ValueError(
-                    f"The total duration of the schedule is {total_sequence_time} s, "
-                    f"which is not a multiple of {GRID_TIME} ns. The Qblox QCM and QRM "
-                    f"require that the total duration of the Schedule is a multiple of "
-                    f"{GRID_TIME} ns."
+                    f"The total duration of the schedule is {total_sequence_time} s or "
+                    f"({int(round(total_sequence_time*1e9))} ns) which is not a "
+                    f"multiple of {GRID_TIME} ns. The Qblox QCM and QRM require that "
+                    f"the total duration of the Schedule is a multiple of {GRID_TIME} "
+                    f"ns.\n\nThis can be ensured e.g. by making making the duration of "
+                    f"your pulses multiples of {GRID_TIME} ns and playing them on a "
+                    f"{GRID_TIME} ns grid."
                 )
             end_time = to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
