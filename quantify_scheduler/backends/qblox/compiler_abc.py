@@ -29,8 +29,8 @@ from quantify_scheduler.backends.qblox.helpers import (
     _generate_waveform_dict,
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
-    find_all_port_clock_combinations,
-    find_inner_dicts_containing_key,
+    to_grid_time,
+    is_multiple_of_grid_time,
 )
 from quantify_scheduler.backends.qblox.constants import (
     GRID_TIME,
@@ -630,7 +630,17 @@ class Sequencer:
                     idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
-            end_time = qasm.to_pulsar_time(total_sequence_time)
+            if not is_multiple_of_grid_time(total_sequence_time):
+                raise ValueError(
+                    f"The total duration of the schedule is {total_sequence_time} s or "
+                    f"({int(round(total_sequence_time*1e9))} ns) which is not a "
+                    f"multiple of {GRID_TIME} ns. The Qblox QCM and QRM require that "
+                    f"the total duration of the Schedule is a multiple of {GRID_TIME} "
+                    f"ns.\n\nThis can be ensured e.g. by making making the duration of "
+                    f"your pulses multiples of {GRID_TIME} ns and playing them on a "
+                    f"{GRID_TIME} ns grid."
+                )
+            end_time = to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
             if wait_time < 0:
                 raise RuntimeError(

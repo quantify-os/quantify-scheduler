@@ -6,7 +6,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
-
+import copy
 from typing import Dict, Any
 
 import os
@@ -41,6 +41,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
+    to_grid_time,
 )
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import (
@@ -453,6 +454,32 @@ def test_simple_compile(pulse_only_schedule):
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
+def test_simple_compile_invalid_timing(pulse_only_schedule):
+    """Tests if compilation produces error if not using the grid time"""
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
+        SquarePulse(amp=1, duration=100e-9, port="q0:mw", clock="q0.01"),
+        rel_time=1e-9,  # rel_time of 1 ns makes it start off the 4 ns grid
+    )
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    with pytest.raises(ValueError):
+        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_simple_compile_invalid_schedule_duration(pulse_only_schedule):
+    """Tests if compilation produces error duration is not multiple of 4 ns."""
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
+        SquarePulse(amp=1, duration=101e-9, port="q0:mw", clock="q0.01"),
+        rel_time=4e-9,  # duration of 101 makes the end time not a multiple of 4
+    )
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    with pytest.raises(ValueError):
+        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+
+
 def test_simple_compile_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
@@ -684,11 +711,11 @@ def test_staircase_qasm_prog(start_amp, final_amp):
     assert final_amp_volt == pytest.approx(final_amp, 1e-3)
 
 
-def test_to_pulsar_time():
-    time_ns = QASMProgram.to_pulsar_time(8e-9)
+def test_to_grid_time():
+    time_ns = to_grid_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
-        QASMProgram.to_pulsar_time(7e-9)
+        to_grid_time(7e-9)
 
 
 def test_loop():
