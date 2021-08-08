@@ -17,14 +17,14 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     _no_gc_intances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
-        cls, instrument: base.InstrumentBase, *args, **kwargs
+        cls, instrument: base.InstrumentBase
     ) -> InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
         NB This is done intentionally to prevent the instances from being garbage
         collected.
         """
-        instance = super().__new__(cls, *args, **kwargs)
+        instance = super().__new__(cls)
         cls._no_gc_intances[instrument.name] = instance
         return instance
 
