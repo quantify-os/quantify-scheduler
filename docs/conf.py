@@ -52,7 +52,7 @@ extensions = [
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
     "scanpydoc.elegant_typehints",
-    # "enum_tools.autoenum",
+    "sphinxcontrib.bibtex",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -79,6 +79,9 @@ intersphinx_mapping = {
     "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
     "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
 }
+
+bibtex_bibfiles = ["refs.bib"]
+bibtex_reference_style = "author_year"
 
 
 # The suffix(es) of source filenames.

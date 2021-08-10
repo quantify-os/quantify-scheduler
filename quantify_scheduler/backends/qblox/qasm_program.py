@@ -14,6 +14,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.qblox import helpers
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_abc
@@ -27,7 +28,7 @@ class QASMProgram:
     certain instructions with parameters, as well as update the elapsed time.
     """
 
-    def __init__(self, parent: compiler_abc.PulsarSequencerBase):
+    def __init__(self, parent: compiler_abc.Sequencer):
         self.parent = parent
         """A reference to the sequencer for which we are compiling this program."""
         self.elapsed_time: int = 0
@@ -95,24 +96,29 @@ class QASMProgram:
 
     # --- QOL functions -----
 
-    def set_marker(self, marker_setting: str = "0000"):
+    def set_marker(self, marker_setting: Union[str, int] = "0000") -> None:
         """
         Sets the marker from a string representing a binary number. Each digit
         corresponds to a marker e.g. '0010' sets the second marker to True.
 
         Parameters
         ----------
-        marker_setting:
+        marker_setting
             The string representing a binary number.
         """
-        marker_binary = int(marker_setting, 2)
+        if isinstance(marker_setting, str):
+            assert len(marker_setting) == 4, "Maximum of 4 markers expected."
+            marker_binary = int(marker_setting, 2)
+        else:
+            assert marker_setting <= 0b1111
+            marker_binary = marker_setting
         self.emit(
             q1asm_instructions.SET_MARKER,
             marker_binary,
             comment=f"set markers to {marker_setting}",
         )
 
-    def auto_wait(self, wait_time: int):
+    def auto_wait(self, wait_time: int) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
@@ -166,7 +172,7 @@ class QASMProgram:
 
         self.elapsed_time += wait_time
 
-    def wait_till_start_operation(self, operation: OpInfo):
+    def wait_till_start_operation(self, operation: OpInfo) -> None:
         """
         Waits until the start of a pulse or acquisition.
 
@@ -180,7 +186,17 @@ class QASMProgram:
         ValueError
             If wait time < 0.
         """
-        start_time = self.to_pulsar_time(operation.timing)
+        if not helpers.is_multiple_of_grid_time(
+            operation.timing, grid_time_ns=constants.GRID_TIME
+        ):
+            raise ValueError(
+                f"Start time of operation is invalid. Qblox QCM and QRM "
+                f"enforce a grid time of {constants.GRID_TIME} ns. Please "
+                f"make sure all operations start at an interval of "
+                f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
+                f"{repr(operation)}."
+            )
+        start_time = helpers.to_grid_time(operation.timing)
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:
             self.auto_wait(wait_time)
@@ -192,7 +208,7 @@ class QASMProgram:
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
-    def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
+    def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Waits until the start of the pulse, sets the QASMRuntimeSettings and plays the
         pulse.
@@ -209,7 +225,9 @@ class QASMProgram:
         self.wait_till_start_operation(pulse)
         self.auto_play_pulse(pulse, idx0, idx1)
 
-    def _stitched_pulse(self, duration: float, loop_reg: str, idx0: int, idx1: int):
+    def _stitched_pulse(
+        self, duration: float, loop_reg: str, idx0: int, idx1: int
+    ) -> None:
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
         if repetitions > 0:
@@ -222,13 +240,13 @@ class QASMProgram:
                     q1asm_instructions.PLAY,
                     idx0,
                     idx1,
-                    self.to_pulsar_time(constants.PULSE_STITCHING_DURATION),
+                    helpers.to_grid_time(constants.PULSE_STITCHING_DURATION),
                 )
-                self.elapsed_time += repetitions * self.to_pulsar_time(
+                self.elapsed_time += repetitions * helpers.to_grid_time(
                     constants.PULSE_STITCHING_DURATION
                 )
 
-        pulse_time_remaining = self.to_pulsar_time(
+        pulse_time_remaining = helpers.to_grid_time(
             duration % constants.PULSE_STITCHING_DURATION
         )
         if pulse_time_remaining > 0:
@@ -241,7 +259,7 @@ class QASMProgram:
             )
         self.elapsed_time += pulse_time_remaining
 
-    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Stitches multiple square pulses together to form one long square pulse.
 
@@ -257,7 +275,7 @@ class QASMProgram:
         self.update_runtime_settings(pulse)
         self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
 
-    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Generates a staircase through offset instructions.
 
@@ -279,17 +297,17 @@ class QASMProgram:
         num_steps = pulse.data["num_steps"]
         start_amp = pulse.data["start_amp"]
         final_amp = pulse.data["final_amp"]
-        step_duration = self.to_pulsar_time(pulse.duration / num_steps)
+        step_duration = helpers.to_grid_time(pulse.duration / num_steps)
 
         amp_step = (final_amp - start_amp) / (num_steps - 1)
         amp_step_immediate = self._expand_from_normalised_range(
-            amp_step / self.parent.awg_output_volt,
+            amp_step / self.parent.parent.awg_output_volt,
             constants.IMMEDIATE_SZ_OFFSET,
             "offset_awg_path0",
             pulse,
         )
         start_amp_immediate = self._expand_from_normalised_range(
-            start_amp / self.parent.awg_output_volt,
+            start_amp / self.parent.parent.awg_output_volt,
             constants.IMMEDIATE_SZ_OFFSET,
             "offset_awg_path0",
             pulse,
@@ -344,7 +362,7 @@ class QASMProgram:
         self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
         self.emit(q1asm_instructions.NEW_LINE)
 
-    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Generates the instructions to play a pulse and updates the timing. Automatically
         takes care of custom pulse behavior.
@@ -374,7 +392,8 @@ class QASMProgram:
         self, acquisition: OpInfo, bin_idx: int, idx0: int, idx1: int
     ) -> None:
         """
-        Adds the instruction for performing acquisitions with weights playback.
+        Adds the instruction for performing acquisitions with weights playback. The
+        weights get multiplied sample-wise with the acquired trace.
 
         Parameters
         ----------
@@ -416,14 +435,14 @@ class QASMProgram:
                     f"Attempting to perform square acquisition with a "
                     f"duration of {duration_ns} ns. Please ensure the "
                     f"duration is a multiple of {constants.GRID_TIME} "
-                    f"ns.\n\nException caused by {repr(acquisition)}"
+                    f"ns.\n\nException caused by {repr(acquisition)}."
                 )
             self.parent.settings.integration_length_acq = duration_ns
         elif self.parent.settings.integration_length_acq != duration_ns:
             raise ValueError(
-                f"Attempting to set an integration_length of {duration_ns}"
-                f" ns, while this has previously determined to be"
-                f" {self.parent.settings.integration_length_acq}. Please "
+                f"Attempting to set an integration_length of {duration_ns} "
+                f"ns, while this was previously determined to be "
+                f"{self.parent.settings.integration_length_acq}. Please "
                 f"check whether all square acquisitions in the schedule "
                 f"have the same duration."
             )
@@ -457,13 +476,13 @@ class QASMProgram:
                 < constants.MIN_TIME_BETWEEN_ACQUISITIONS
             ):
                 raise ValueError(
-                    f"Attempting to start an acquisition on t={self.elapsed_time}"
-                    f" ns, while the last acquisition was started on "
+                    f"Attempting to start an acquisition at t={self.elapsed_time} "
+                    f"ns, while the last acquisition was started at "
                     f"t={self.time_last_acquisition_triggered}. Please ensure "
                     f"a minimum interval of "
                     f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
                     f"acquisitions.\n\nError caused by acquisition:\n"
-                    f"{repr(acquisition)}"
+                    f"{repr(acquisition)}."
                 )
         self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {
@@ -583,31 +602,6 @@ class QASMProgram:
                 f"-1.0 <= param <= 1.0 for {repr(operation)}."
             )
         return int(val * immediate_size // 2)
-
-    @staticmethod
-    def to_pulsar_time(time: float) -> int:
-        """
-        Takes a float value representing a time in seconds as used by the schedule, and
-        returns the integer valued time in nanoseconds that the sequencer uses.
-
-        Parameters
-        ----------
-        time
-            The time to convert
-
-        Returns
-        -------
-        :
-            The integer valued nanosecond time
-        """
-        time_ns = int(round(time * 1e9))
-        if time_ns % constants.GRID_TIME != 0:
-            raise ValueError(
-                f"Attempting to use a time interval of {time_ns} ns. "
-                f"Please ensure that the durations of and wait times between "
-                f"operations are multiples of {constants.GRID_TIME} ns."
-            )
-        return time_ns
 
     def __str__(self) -> str:
         """
