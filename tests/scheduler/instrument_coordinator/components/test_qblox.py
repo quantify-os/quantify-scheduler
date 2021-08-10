@@ -12,7 +12,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
@@ -20,7 +19,6 @@ from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-i
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator.components import qblox
-from quantify_scheduler.helpers import waveforms
 
 esp = inspect.getfile(es)
 
@@ -33,8 +31,8 @@ with open(map_f, "r") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-@pytest.fixture
-def make_qcm(mocker):
+@pytest.fixture(name="make_qcm")
+def fixture_make_qcm(mocker):
     def _make_qcm(
         name: str = "qcm0", serial: str = "dummy"
     ) -> qblox.PulsarQCMComponent:
@@ -62,8 +60,8 @@ def make_qcm(mocker):
     yield _make_qcm
 
 
-@pytest.fixture
-def make_qrm(mocker):
+@pytest.fixture(name="make_qrm")
+def fixture_make_qrm(mocker):
     def _make_qrm(
         name: str = "qrm0", serial: str = "dummy"
     ) -> qblox.PulsarQRMComponent:
@@ -85,10 +83,60 @@ def make_qrm(mocker):
             "get_sequencer_state",
             return_value={"status": "ARMED"},
         )
+        mocker.patch.object(
+            component.instrument,
+            "get_acquisitions",
+            return_value={
+                "0": {
+                    "index": 0,
+                    "acquisition": {
+                        "bins": {
+                            "integration": {"path0": [0], "path1": [0]},
+                            "threshold": [0.12],
+                            "avg_cnt": [1],
+                        }
+                    },
+                }
+            },
+        )
 
         return component
 
     yield _make_qrm
+
+
+@pytest.fixture(name="mock_acquisition_data")
+def fixture_mock_acquisition_data():
+    acq_channel, acq_index_len = 0, 10  # mock 1 channel, N indices
+    avg_count = 10
+    data = {
+        str(acq_channel): {
+            "index": acq_channel,
+            "acquisition": {
+                "scope": {
+                    "path0": {
+                        "data": [0.0] * 2 ** 14,
+                        "out-of-range": False,
+                        "avg_count": avg_count,
+                    },
+                    "path1": {
+                        "data": [0.0] * 2 ** 14,
+                        "out-of-range": False,
+                        "avg_count": avg_count,
+                    },
+                },
+                "bins": {
+                    "integration": {
+                        "path0": [0.0] * acq_index_len,
+                        "path1": [0.0] * acq_index_len,
+                    },
+                    "threshold": [0.12] * acq_index_len,
+                    "avg_cnt": [avg_count] * acq_index_len,
+                },
+            },
+        }
+    }
+    yield data
 
 
 @pytest.fixture
@@ -142,6 +190,22 @@ def make_qrm_rf(mocker):
             component.instrument,
             "get_sequencer_state",
             return_value={"status": "ARMED"},
+        )
+        mocker.patch.object(
+            component.instrument,
+            "get_acquisitions",
+            return_value={
+                "0": {
+                    "index": 0,
+                    "acquisition": {
+                        "bins": {
+                            "integration": {"path0": [0], "path1": [0]},
+                            "threshold": [0.12],
+                            "avg_cnt": [1],
+                        }
+                    },
+                }
+            },
         )
 
         return component
@@ -273,6 +337,16 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     )
 
 
+def test_is_running(make_qrm):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    assert not qrm.is_running
+
+
+def test_wait_done(make_qrm):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    qrm.wait_done()
+
+
 def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
@@ -288,7 +362,7 @@ def test_retrieve_acquisition_qrm(
     close_all_instruments, schedule_with_measurement, make_qrm
 ):
     # Arrange
-    qrm: qblox.PulsarQRMComponent = make_qrm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -300,8 +374,8 @@ def test_retrieve_acquisition_qrm(
         qrm.start()
         acq = qrm.retrieve_acquisition()
 
-    # Assert
-    assert len(acq) == 2
+        # Assert
+        assert len(acq[(0, 0)]) == 2
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
@@ -319,7 +393,7 @@ def test_retrieve_acquisition_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qrm_rf
 ):
     # Arrange
-    qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -332,7 +406,7 @@ def test_retrieve_acquisition_qrm_rf(
         acq = qrm_rf.retrieve_acquisition()
 
     # Assert
-    assert len(acq) == 2
+    assert len(acq[(0, 0)]) == 2
 
 
 def test_start_qcm_qrm(
@@ -411,19 +485,82 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
     qrm_rf.instrument.stop_sequencer.assert_called()
 
 
-def test_demodulate_trace():
-    # Arrange
-    data = np.ones(1_000_000)
-    freq = 10e6
-    sampling_rate = 1e9
+# ------------------- _QRMAcquisitionManager -------------------
 
-    t = np.arange(0, len(data) / sampling_rate, 1 / sampling_rate)
-    mod_data = waveforms.modulate_waveform(t, data, freq)
 
-    # Act
-    demod_data = qblox._demodulate_trace(
-        freq, mod_data.real, mod_data.imag, sampling_rate
+def test_qrm_acquisition_manager__init__(make_qrm):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+
+
+def test_get_threshold_data(make_qrm, mock_acquisition_data):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    data = acq_manager._get_threshold_data(mock_acquisition_data, 0, 0)
+    assert data == 0.12
+
+
+def test_get_integration_data(make_qrm, mock_acquisition_data):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    data = acq_manager._get_integration_data(mock_acquisition_data, 0, 0)
+    assert data == (0.0, 0.0)
+
+
+def test_get_scope_channel_and_index(make_qrm):
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    result = acq_manager._get_scope_channel_and_index()
+    assert result == (0, 0)
+
+
+def test_get_scope_channel_and_index_exception(make_qrm):
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
+        qblox.AcquisitionIndexing(acq_index=1, acq_channel=0): ("seq0", "trace"),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    with pytest.raises(RuntimeError) as execinfo:
+        acq_manager._get_scope_channel_and_index()
+
+    assert (
+        execinfo.value.args[0]
+        == "A scope mode acquisition is defined for both acq_channel 0 with "
+        "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
+        "trace acquisition is allowed per QRM."
     )
 
-    # Assert
-    np.testing.assert_allclose(data, demod_data)
+
+def test_get_protocol(make_qrm):
+    answer = "trace"
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", answer),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    assert acq_manager._get_protocol(0, 0) == answer
+
+
+def test_get_sequencer_index(make_qrm):
+    answer = 0
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): (
+            f"seq{answer}",
+            "trace",
+        ),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._number_of_sequencers, acq_mapping
+    )
+    assert acq_manager._get_sequencer_index(0, 0) == answer

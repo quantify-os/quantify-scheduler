@@ -73,6 +73,7 @@ def trace_schedule(
         Trace(
             duration=integration_time,
             port=port,
+            clock=clock,
             acq_index=0,
             acq_channel=0,
         ),
@@ -187,6 +188,7 @@ def two_tone_trace_schedule(
         Trace(
             duration=ro_integration_time,
             port=ro_pulse_port,
+            clock=ro_pulse_clock,
             acq_index=0,
             acq_channel=0,
         ),

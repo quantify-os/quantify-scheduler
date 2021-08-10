@@ -3,8 +3,7 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, List
-from collections import OrderedDict
+from typing import Any, Dict, List, Tuple
 
 from qcodes.utils import validators
 from qcodes.instrument import parameter
@@ -164,7 +163,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             instrument.stop()
 
-    def retrieve_acquisition(self) -> Dict[str, Any]:
+    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
         """
         Retrieves the latest acquisition results of the components
         with acquisition capabilities.
@@ -174,13 +173,15 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per component.
         """
-        acq_dict = OrderedDict()
+        # Temporary. Will probably be replaced by an xarray object
+        # See quantify-core#187, quantify-core#233, quantify-scheduler#36
+        acquisitions: Dict[Tuple[int, int], Any] = dict()
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
-            acq = instrument.retrieve_acquisition()
-            if acq is not None:
-                acq_dict[instrument.name] = acq
-        return acq_dict
+            acqs = instrument.retrieve_acquisition()
+            if acqs is not None:
+                acquisitions.update(acqs)
+        return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """

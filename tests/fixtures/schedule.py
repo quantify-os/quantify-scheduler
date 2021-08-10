@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pytest
-import quantify_scheduler.schemas.examples as examples
+from quantify_scheduler.schemas import examples
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,

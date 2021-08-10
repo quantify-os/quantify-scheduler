@@ -20,8 +20,6 @@ from quantify_core.data.handling import (
     gen_tuid,
 )
 
-from quantify_scheduler.helpers.waveforms import modulate_waveform
-
 from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.helpers import (
@@ -30,7 +28,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
     to_grid_time,
-    is_multiple_of_grid_time,
 )
 from quantify_scheduler.backends.qblox.constants import (
     GRID_TIME,
@@ -161,7 +158,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def _supports_acquisition(self) -> bool:
+    def supports_acquisition(self) -> bool:
         """
         Specifies whether the device can perform acquisitions.
 
@@ -202,7 +199,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             acquisition operation.
         """
 
-        if not self._supports_acquisition:
+        if not self.supports_acquisition:
             raise RuntimeError(
                 f"{self.__class__.__name__} {self.name} does not support acquisitions. "
                 f"Attempting to add acquisition {repr(acq_info)} "
@@ -289,10 +286,12 @@ class Sequencer:
             "instruction_generated_pulses_enabled", False
         )
 
+        modulation_freq = seq_settings.get("interm_freq", None)
+        nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
         self._settings = SequencerSettings(
-            nco_en=False,
+            nco_en=nco_en,
             sync_en=True,
-            modulation_freq=seq_settings.get("interm_freq", None),
+            modulation_freq=modulation_freq,
         )
         self.mixer_corrections = None
 
@@ -381,6 +380,8 @@ class Sequencer:
                     f"to {self._settings.modulation_freq}."
                 )
         self._settings.modulation_freq = freq
+        if freq != 0:
+            self._settings.nco_en = True
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
@@ -418,13 +419,14 @@ class Sequencer:
         """
         waveforms_complex = dict()
         for pulse in self.pulses:
-            reserved_pulse_id = non_generic.check_reserved_pulse_id(pulse)
+            reserved_pulse_id = (
+                non_generic.check_reserved_pulse_id(pulse)
+                if self.instruction_generated_pulses_enabled
+                else None
+            )
             if reserved_pulse_id is None:
                 raw_wf_data = generate_waveform_data(
                     pulse.data, sampling_rate=SAMPLING_RATE
-                )
-                raw_wf_data = self._apply_corrections_to_waveform(
-                    raw_wf_data, pulse.duration, pulse.timing
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
             else:
@@ -457,7 +459,7 @@ class Sequencer:
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return _generate_waveform_dict(waveforms_complex)
 
-    def _generate_acq_dict(self) -> Dict[str, Any]:
+    def _generate_weights_dict(self) -> Dict[str, Any]:
         """
         Generates the dictionary that corresponds that contains the acq weights
         waveforms in the format accepted by the driver.
@@ -495,12 +497,23 @@ class Sequencer:
         """
         waveforms_complex = dict()
         for acq in self.acquisitions:
+            waveforms_data = acq.data["waveforms"]
+            if len(waveforms_data) == 0:
+                continue  # e.g. scope acquisition
+            if acq.name == "SSBIntegrationComplex":
+                continue
+            if len(waveforms_data) != 2:
+                raise ValueError(
+                    f"Acquisitions need 2 waveforms (one for the I quadrature and one "
+                    f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
+                    "waveforms."
+                )
             if acq.uuid not in waveforms_complex:
                 raw_wf_data_real = generate_waveform_data(
-                    acq.data["waveforms"][0], sampling_rate=SAMPLING_RATE
+                    waveforms_data[0], sampling_rate=SAMPLING_RATE
                 )
                 raw_wf_data_imag = generate_waveform_data(
-                    acq.data["waveforms"][1], sampling_rate=SAMPLING_RATE
+                    waveforms_data[1], sampling_rate=SAMPLING_RATE
                 )
                 self._settings.duration = len(raw_wf_data_real)
                 if not (
@@ -515,33 +528,54 @@ class Sequencer:
                 waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
         return _generate_waveform_dict(waveforms_complex)
 
-    def _apply_corrections_to_waveform(
-        self, waveform_data: np.ndarray, time_duration: float, t0: Optional[float] = 0
-    ) -> np.ndarray:
+    def _generate_acq_declaration_dict(
+        self, acquisitions: List[OpInfo]
+    ) -> Dict[str, Any]:
         """
-        Applies all the needed pre-processing on the waveform data. This includes mixer
-        corrections and modulation.
+        Generates the "acquisitions" entry of the program json. It contains declaration
+        of the acquisitions along with the number of bins and the corresponding index.
+
+        For the name of the acquisition (in the hardware), the acquisition channel
+        (cast to str) is used, and is thus identical to the index. Number of bins is
+        taken to be the highest acq_index specified for that channel.
 
         Parameters
         ----------
-        waveform_data
-            The data to correct.
-        time_duration
-            Total time is seconds that the waveform is used.
-        t0
-            The start time of the pulse/acquisition. This is used for instance to make
-            the make the phase change continuously when the start time is not zero.
+        acquisitions:
+            List of the acquisitions assigned to this sequencer.
 
         Returns
         -------
         :
-            The waveform data after applying all the transformations.
+            The "acquisitions" entry of the program json as a dict. The keys correspond
+            to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
-        t = np.linspace(t0, time_duration + t0, int(time_duration * SAMPLING_RATE))
-        corrected_wf = modulate_waveform(t, waveform_data, self.frequency)
-        if self.mixer_corrections is not None:
-            corrected_wf = self.mixer_corrections.correct_skewness(corrected_wf)
-        return corrected_wf
+
+        def get_acq_channel(acq: OpInfo) -> int:
+            """Helper to extract the acq_channel."""
+            return acq.data["acq_channel"]
+
+        unique_channels = set(map(get_acq_channel, acquisitions))
+
+        acq_declaration_dict = dict()
+        for channel in unique_channels:
+            indices = list()
+            for acq in acquisitions:
+                if get_acq_channel(acq) == channel:
+                    indices.append(acq.data["acq_index"])
+            if min(indices) != 0:
+                raise ValueError(
+                    f"Please make sure the lowest bin index used is 0. "
+                    f"Found: {min(indices)} as lowest bin for channel {channel}. "
+                    f"Problem occurred for port {self.port} with clock {self.clock},"
+                    f"which corresponds to {self.name} of {self.parent.name}."
+                )
+            acq_declaration_dict[str(channel)] = {
+                "num_bins": max(indices) + 1,
+                "index": channel,
+            }
+
+        return acq_declaration_dict
 
     def update_settings(self):
         """
@@ -554,7 +588,7 @@ class Sequencer:
         self,
         total_sequence_time: float,
         awg_dict: Optional[Dict[str, Any]] = None,
-        acq_dict: Optional[Dict[str, Any]] = None,
+        weights_dict: Optional[Dict[str, Any]] = None,
         repetitions: Optional[int] = 1,
     ) -> str:
         """
@@ -588,7 +622,7 @@ class Sequencer:
             Dictionary containing the pulse waveform data and the index that is assigned
             to the I and Q waveforms, as generated by the `generate_awg_dict` function.
             This is used to extract the relevant indexes when adding a play instruction.
-        acq_dict
+        weights_dict
             Dictionary containing the acquisition waveform data and the index that is
             assigned to the I and Q waveforms, as generated by the `generate_acq_dict`
             function. This is used to extract the relevant indexes when adding an
@@ -607,9 +641,7 @@ class Sequencer:
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        qasm.emit(
-            q1asm_instructions.SET_MARKER, self.parent.marker_configuration["start"]
-        )
+        qasm.set_marker(self.parent.marker_configuration["start"])
 
         # program body
         pulses = list() if self.pulses is None else self.pulses
@@ -624,22 +656,14 @@ class Sequencer:
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
                 if operation.is_acquisition:
-                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, acq_dict)
+                    idx0, idx1 = self.get_indices_from_wf_dict(
+                        operation.uuid, weights_dict
+                    )
                     qasm.wait_till_start_then_acquire(operation, idx0, idx1)
                 else:
                     idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
-            if not is_multiple_of_grid_time(total_sequence_time):
-                raise ValueError(
-                    f"The total duration of the schedule is {total_sequence_time} s or "
-                    f"({int(round(total_sequence_time*1e9))} ns) which is not a "
-                    f"multiple of {GRID_TIME} ns. The Qblox QCM and QRM require that "
-                    f"the total duration of the Schedule is a multiple of {GRID_TIME} "
-                    f"ns.\n\nThis can be ensured e.g. by making making the duration of "
-                    f"your pulses multiples of {GRID_TIME} ns and playing them on a "
-                    f"{GRID_TIME} ns grid."
-                )
             end_time = to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
             if wait_time < 0:
@@ -652,9 +676,7 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.emit(
-            q1asm_instructions.SET_MARKER, self.parent.marker_configuration["end"]
-        )
+        qasm.set_marker(self.parent.marker_configuration["end"])
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
@@ -662,8 +684,8 @@ class Sequencer:
     @staticmethod
     def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
         """
-        Takes a awg_dict or acq_dict and extracts the waveform indices based off of the
-        uuid of the pulse/acquisition.
+        Takes a waveforms_dict or weights_dict and extracts the waveform indices based
+        off of the uuid of the pulse/acquisition.
 
         Parameters
         ----------
@@ -687,8 +709,9 @@ class Sequencer:
     @staticmethod
     def _generate_waveforms_and_program_dict(
         program: str,
-        awg_dict: Dict[str, Any],
-        acq_dict: Optional[Dict[str, Any]] = None,
+        waveforms_dict: Dict[str, Any],
+        weights_dict: Optional[Dict[str, Any]] = None,
+        acq_decl_dict: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Generates the full waveforms and program dict that is to be uploaded to the
@@ -699,10 +722,10 @@ class Sequencer:
         ----------
         program
             The compiled QASM program as a string.
-        awg_dict
+        waveforms_dict
             The dictionary containing all the awg data and indices. This is expected to
             be of the form generated by the `generate_awg_dict` method.
-        acq_dict
+        weights_dict
             The dictionary containing all the acq data and indices. This is expected to
             be of the form generated by the `generate_acq_dict` method.
 
@@ -713,10 +736,11 @@ class Sequencer:
         """
         compiled_dict = dict()
         compiled_dict["program"] = program
-        compiled_dict["waveforms"] = dict()
-        compiled_dict["waveforms"]["awg"] = awg_dict
-        if acq_dict is not None:
-            compiled_dict["waveforms"]["acq"] = acq_dict
+        compiled_dict["waveforms"] = waveforms_dict
+        if weights_dict is not None:
+            compiled_dict["weights"] = weights_dict
+        if acq_decl_dict is not None:
+            compiled_dict["acquisitions"] = acq_decl_dict
         return compiled_dict
 
     @staticmethod
@@ -774,17 +798,26 @@ class Sequencer:
             return None
 
         awg_dict = self._generate_awg_dict()
-        acq_dict = self._generate_acq_dict() if len(self.acquisitions) > 0 else None
+        weights_dict = None
+        if self.parent.supports_acquisition:
+            weights_dict = (
+                self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
+            )
+        acq_declaration_dict = (
+            self._generate_acq_declaration_dict(self.acquisitions)
+            if len(self.acquisitions) > 0
+            else None
+        )
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
             awg_dict,
-            acq_dict,
+            weights_dict,
             repetitions=repetitions,
         )
 
         wf_and_pr_dict = self._generate_waveforms_and_program_dict(
-            qasm_program, awg_dict, acq_dict
+            qasm_program, awg_dict, weights_dict, acq_declaration_dict
         )
 
         json_filename = self._dump_waveforms_and_program_json(
@@ -999,7 +1032,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         the device does not support acquisitions.
         """
 
-        if len(self._acquisitions) > 0 and not self._supports_acquisition:
+        if len(self._acquisitions) > 0 and not self.supports_acquisition:
             raise RuntimeError(
                 f"Attempting to add acquisitions to {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
@@ -1043,6 +1076,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         used.
         """
         self._distribute_data()
+        self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
 
@@ -1052,6 +1086,38 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         Updates the Pulsar settings to set all parameters that are determined by the
         compiler.
         """
+
+    def _determine_scope_mode_acquisition_sequencer(self) -> None:
+        """
+        Finds which sequencer has to perform raw trace acquisitions and adds it to the
+        `scope_mode_sequencer` of the settings.
+
+        Raises
+        ------
+        ValueError
+            Multiple sequencers have to perform trace acquisition. This is not
+            supported by the hardware.
+        """
+
+        def is_scope_acquisition(acquisition: OpInfo) -> bool:
+            return acquisition.data["protocol"] == "trace"
+
+        scope_acq_seq = None
+        for seq in self.sequencers.values():
+            has_scope = any(map(is_scope_acquisition, seq.acquisitions))
+            if has_scope:
+                if scope_acq_seq is not None:
+                    raise ValueError(
+                        f"Both sequencer {seq.name} and {scope_acq_seq} of "
+                        f"{self.name} are required to perform scope mode "
+                        "acquisitions. Only one sequencer per device can "
+                        "trigger raw trace capture.\n\nPlease ensure that "
+                        "only one port and clock combination has to "
+                        "perform raw trace acquisition per instrument."
+                    )
+                scope_acq_seq = seq.name
+
+        self._settings.scope_mode_sequencer = scope_acq_seq
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
@@ -1083,7 +1149,36 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self._settings.hardware_averages = repetitions
         self.update_settings()
         program["settings"] = self._settings.to_dict()
+        if self.supports_acquisition:
+            acq_mapping = self._get_acquisition_mapping()
+            if acq_mapping is not None:
+                program["acq_mapping"] = acq_mapping
         return program
+
+    def _get_acquisition_mapping(self) -> Optional[dict]:
+        """
+        Generates a mapping of acq_channel, acq_index to sequencer name, protocol.
+
+        Returns
+        -------
+        :
+            A dictionary containing tuple(acq_channel, acq_index) as keys and
+            tuple(sequencer name, protocol) as value.
+        """
+
+        def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
+            return (
+                acquisition.data["acq_channel"],
+                acquisition.data["acq_index"],
+            ), acquisition.data["protocol"]
+
+        acq_mapping = dict()
+        for sequencer in self.sequencers.values():
+            mapping_items = map(extract_mapping_item, sequencer.acquisitions)
+            for item in mapping_items:
+                acq_mapping[item[0]] = (sequencer.name, item[1])
+
+        return acq_mapping if len(acq_mapping) > 0 else None
 
 
 class PulsarBaseband(PulsarBase):
