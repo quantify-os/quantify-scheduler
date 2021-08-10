@@ -17,7 +17,7 @@ QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
-class TestHeterodynceSpecSchedule:
+class TestHeterodyneSpecSchedule:
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)

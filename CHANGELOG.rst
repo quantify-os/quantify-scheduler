@@ -5,7 +5,14 @@ Changelog
 Unreleased
 ----------
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Mixer corrections in Qblox backend are broken because of the switch to real-time modulation. The support of mixer corrections in the Qblox firmware is under development.
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
+* Qblox Backend - Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------

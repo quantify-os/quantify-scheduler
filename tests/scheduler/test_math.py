@@ -1,10 +1,7 @@
-# -----------------------------------------------------------------------------
-# Description:    Tests for Math utility functions module.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 import pytest
-import quantify_scheduler.math as math
+from quantify_scheduler import math
 
 
 @pytest.mark.parametrize(

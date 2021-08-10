@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Pytest fixtures for quantify-scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
 import inspect
@@ -13,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pytest
-import quantify_scheduler.schemas.examples as examples
+from quantify_scheduler.schemas import examples
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
@@ -65,7 +63,7 @@ def basic_schedule() -> Schedule:
 @pytest.fixture
 def schedule_with_measurement() -> Schedule:
     """
-    Simple schedule with gate an measurement on qubit 0
+    Simple schedule with gate an measurement on qubit 0.
     """
     schedule = Schedule("Basic schedule")
     schedule.add(Reset("q0"))
@@ -77,7 +75,7 @@ def schedule_with_measurement() -> Schedule:
 @pytest.fixture
 def schedule_with_measurement_q2() -> Schedule:
     """
-    Simple schedule with gate an measurement on qubit 2
+    Simple schedule with gate an measurement on qubit 2.
     """
     schedule = Schedule("Basic schedule")
     schedule.add(Reset("q2"))

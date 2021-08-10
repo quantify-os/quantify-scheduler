@@ -15,9 +15,10 @@ class Trace(Operation):
         self,
         duration: float,
         port: str,
+        clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -35,6 +36,8 @@ class Trace(Operation):
         ----------
         port :
             The acquisition port.
+        clock :
+            The clock used to demodulate the acquisition.
         duration :
             The acquisition duration in seconds.
         acq_channel :
@@ -73,6 +76,7 @@ class Trace(Operation):
                         "duration": duration,
                         "t0": t0,
                         "port": port,
+                        "clock": clock,
                         "acq_channel": acq_channel,
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
@@ -203,7 +207,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,

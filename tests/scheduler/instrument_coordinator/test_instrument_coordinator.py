@@ -263,7 +263,7 @@ def test_retrieve_acquisition(
     instrument_coordinator.add_component(component1)
     instrument_coordinator.add_component(component2)
 
-    component1.retrieve_acquisition.return_value = {0: [1, 2, 3, 4]}
+    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
     component2.retrieve_acquisition.return_value = None
 
     # Act
@@ -272,7 +272,7 @@ def test_retrieve_acquisition(
     # Assert
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
-    assert {"ic_dev0": {0: [1, 2, 3, 4]}} == data
+    assert {(0, 0): [1, 2, 3, 4]} == data
 
 
 def test_wait_done(close_all_instruments, instrument_coordinator, dummy_components):

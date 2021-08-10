@@ -18,6 +18,7 @@ import pytest
 import numpy as np
 
 from qcodes.instrument.base import Instrument
+from qblox_instruments import build
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
@@ -30,17 +31,20 @@ from quantify_scheduler.pulse_library import (
     SquarePulse,
     StaircasePulse,
 )
+from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify_scheduler.resources import ClockResource, BasebandClockResource
 from quantify_scheduler.compilation import (
     qcompile,
     determine_absolute_timing,
     device_compile,
 )
-
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
+    verify_qblox_instruments_version,
+    DriverVersionError,
     to_grid_time,
 )
 from quantify_scheduler.backends import qblox_backend as qb
@@ -454,32 +458,6 @@ def test_simple_compile(pulse_only_schedule):
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
-def test_simple_compile_invalid_timing(pulse_only_schedule):
-    """Tests if compilation produces error if not using the grid time"""
-    sched = copy.deepcopy(pulse_only_schedule)
-    sched.add(
-        SquarePulse(amp=1, duration=100e-9, port="q0:mw", clock="q0.01"),
-        rel_time=1e-9,  # rel_time of 1 ns makes it start off the 4 ns grid
-    )
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    with pytest.raises(ValueError):
-        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
-
-
-def test_simple_compile_invalid_schedule_duration(pulse_only_schedule):
-    """Tests if compilation produces error duration is not multiple of 4 ns."""
-    sched = copy.deepcopy(pulse_only_schedule)
-    sched.add(
-        SquarePulse(amp=1, duration=101e-9, port="q0:mw", clock="q0.01"),
-        rel_time=4e-9,  # duration of 101 makes the end time not a multiple of 4
-    )
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    with pytest.raises(ValueError):
-        qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
-
-
 def test_simple_compile_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
@@ -510,6 +488,34 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
+
+def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    meas_op = sched.add(Measure("q0"))
+    # add another one too quickly
+    sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
+
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
+    with pytest.raises(ValueError):
+        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
+
+
+def test_wrong_bin_mode(pulse_only_schedule):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
+        SSBIntegrationComplex(
+            duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
+        )
+    )
+
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
+    with pytest.raises(NotImplementedError):
+        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
 def test_compile_with_rel_time(
@@ -582,8 +588,6 @@ def test_emit():
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm.instructions) == 2
-    with pytest.raises(SyntaxError):
-        qasm.emit(q1asm_instructions.ACQUIRE, 0, 1, 120, "argument too many")
 
 
 def test_auto_wait():
@@ -607,6 +611,7 @@ def test_wait_till_start_then_play():
     minimal_pulse_data = {"duration": 20e-9}
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="test_pulse",
         uuid="test_pulse",
         data=minimal_pulse_data,
         timing=4e-9,
@@ -623,6 +628,7 @@ def test_wait_till_start_then_play():
     assert qasm.instructions[2][1] == q1asm_instructions.PLAY
 
     pulse = qb.OpInfo(
+        name="test_pulse",
         uuid="test_pulse",
         data=minimal_pulse_data,
         timing=1e-9,
@@ -633,8 +639,19 @@ def test_wait_till_start_then_play():
 
 
 def test_wait_till_start_then_acquire():
-    minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    minimal_pulse_data = {
+        "duration": 20e-9,
+        "acq_index": 0,
+        "acq_channel": 1,
+        "bin_mode": BinMode.AVERAGE,
+        "protocol": "SSBIntegrationComplex",
+    }
+    acq = qb.OpInfo(
+        name="SSBIntegrationComplex",
+        uuid="test_acq",
+        data=minimal_pulse_data,
+        timing=4e-9,
+    )
     qrm = Pulsar_QRM(
         None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
     )
@@ -647,7 +664,9 @@ def test_wait_till_start_then_acquire():
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(
+        name="test_acq", uuid="test_acq", data=minimal_pulse_data, timing=4e-9
+    )
     expanded_val = QASMProgram._expand_from_normalised_range(
         1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
     )
@@ -665,6 +684,7 @@ def test_pulse_stitching_qasm_prog():
     }
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="stitched_square_pulse",
         uuid="stitched_square_pulse",
         data=minimal_pulse_data,
         timing=4e-9,
@@ -685,6 +705,7 @@ def test_staircase_qasm_prog(start_amp, final_amp):
 
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="staircase",
         uuid="staircase",
         data=s_ramp_pulse.data["pulse_info"][0],
         timing=4e-9,
@@ -711,7 +732,7 @@ def test_staircase_qasm_prog(start_amp, final_amp):
     assert final_amp_volt == pytest.approx(final_amp, 1e-3)
 
 
-def test_to_grid_time():
+def test_to_pulsar_time():
     time_ns = to_grid_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
@@ -765,6 +786,29 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
+def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
+    sched = device_compile(sched, DEVICE_CFG)
+    container = compiler_container.CompilerContainer.from_mapping(
+        sched, HARDWARE_MAPPING
+    )
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+    qb._assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        device_compilers=container.instrument_compilers,
+        portclock_mapping=portclock_map,
+    )
+    for instr in container.instrument_compilers.values():
+        if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
+            instr._distribute_data()
+            instr._determine_scope_mode_acquisition_sequencer()
+    scope_mode_sequencer = container.instrument_compilers[
+        "qrm0"
+    ]._settings.scope_mode_sequencer
+    assert scope_mode_sequencer == "seq0"
+
+
 def test_container_prepare_baseband(
     baseband_square_pulse_schedule, hardware_cfg_baseband
 ):
@@ -811,6 +855,30 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
+
+
+def test_verify_qblox_instruments_version():
+    verify_qblox_instruments_version(build.__version__)
+
+    nonsense_version = "nonsense.driver.version"
+    with pytest.raises(DriverVersionError) as wrong_version:
+        verify_qblox_instruments_version(nonsense_version)
+    assert (
+        wrong_version.value.args[0]
+        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} "
+        f"not supported by backend. Please install version 0.4.0 to continue to use "
+        f"this backend."
+    )
+
+    with pytest.raises(DriverVersionError) as none_error:
+        verify_qblox_instruments_version(None)
+
+    assert (
+        none_error.value.args[0]
+        == "Qblox DriverVersionError: qblox-instruments version check could not be "
+        "performed. Either the package is not installed correctly or a version < "
+        "0.3.2 was found."
+    )
 
 
 def test_assign_frequencies():
