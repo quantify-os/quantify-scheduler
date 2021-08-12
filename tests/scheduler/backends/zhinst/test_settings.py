@@ -137,7 +137,10 @@ def test_zi_settings_serialize_wave(mocker):
     assert np_savetext.call_args_list == calls
 
     args, _ = np_savetext.call_args
-    np.testing.assert_array_equal(args[1], np.reshape(wave, (24, -1)))
+    csv_bug_scale_factor = 2 ** 15 - 1  # See issue quantify-scheduler#175
+    np.testing.assert_array_equal(
+        args[1], np.reshape(wave / csv_bug_scale_factor, (24, -1))
+    )
 
     touch.assert_called()
 
