@@ -1329,9 +1329,9 @@ def _assemble_uhfqa_sequence(
             if device.last_seq_wait_clocks < 2000:
                 logger.warning(
                     f"The last_seq_wait_clocks={device.last_seq_wait_clocks}\n"
-                    + f"is less than 2000!\n"
-                    + f"Proceed with caution. Terminate and increase the\n"
-                    + f"number if the QAS has an integration error!"
+                    + "is less than 2000!\n"
+                    + "Proceed with caution. Terminate and increase the\n"
+                    + "number if the QAS has an integration error!"
                 )
             current_clock += seqc_il_generator.add_wait(
                 seqc_gen,
