@@ -13,7 +13,23 @@ from quantify_scheduler.instrument_coordinator.components import base
 
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The InstrumentCoordinator class is a collection of InstrumentCoordinator components.
+    The InstrumentCoordinator serves as the central interface of the hardware
+    abstraction layer. It provides a standardized interface to execute Schedules on
+    control hardware.
+
+    The InstrumentCoordinator has two main functionalities exposed to the user,
+    the ability to configure the instrument coordinator
+    :mod:`~quantify_scheduler.instrument_coordinator.components` representing physical
+    instruments,  and the ability to execute experiments.
+
+    .. todo::
+
+        add code example on adding and removing instruments
+
+        add code example on executing an experiment.
+
+
+    class is a collection of InstrumentCoordinator components.
 
     This class provides a high level interface to:
 
