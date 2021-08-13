@@ -66,16 +66,19 @@ qasm_program
 
 types
 -----
+
 common
 ~~~~~~
 
 .. automodule:: quantify_scheduler.backends.types.common
     :members:
+
 qblox
 ~~~~~~
 
 .. automodule:: quantify_scheduler.backends.types.qblox
     :members:
+
 zhinst
 ~~~~~~
 
@@ -174,17 +177,11 @@ instrument_coordinator
     :members:
     :show-inheritance:
 
-instrument_coordinator
-----------------------
-
-.. automodule:: quantify_scheduler.instrument_coordinator.instrument_coordinator
-    :members:
-    :show-inheritance:
 
 components
 ----------
 
-.. automodule:: quantify_scheduler.instrument_coordinator.instrument_coordinator.components
+.. automodule:: quantify_scheduler.instrument_coordinator.components
     :members:
     :show-inheritance:
 
@@ -258,7 +255,7 @@ visualization
 =============
 
 
-.. automodule:: quantify_scheduler.visualization.visualization
+.. automodule:: quantify_scheduler.visualization
     :members:
 
 

@@ -19,7 +19,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     The InstrumentCoordinator has two main functionalities exposed to the user,
     the ability to configure the instrument coordinator
-    :mod:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.components`
+    :mod:`~quantify_scheduler.instrument_coordinator.components`
     representing physical instruments,  and the ability to execute experiments.
 
     .. todo::
