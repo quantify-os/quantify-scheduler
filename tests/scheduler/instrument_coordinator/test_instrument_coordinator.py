@@ -39,13 +39,13 @@ class MyICC(base_component.InstrumentCoordinatorComponentBase):
         pass
 
 
-# cretes a few dummy compoents avialable to be used in each test
+# creates a few dummy components avialable to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
 def fixture_dummy_components(
     mocker, request
 ) -> base_component.InstrumentCoordinatorComponentBase:
 
-    # Crete a QCoDeS intrument for realistic emulation
+    # Create a QCoDeS intrument for realistic emulation
     instruments = [Instrument(f"dev{i}") for i in range(3)]
     components = []
 
