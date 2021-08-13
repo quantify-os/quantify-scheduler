@@ -1068,7 +1068,9 @@ def _compile_for_uhfqa(
         instructions,
     )
     logger.debug(seqc)
-    settings_builder.with_compiler_sourcestring(awg_index, seqc)
+
+    # Hack to always trigger recompile for uhfqa
+    settings_builder.with_compiler_sourcestring(awg_index, seqc, True)
 
     # Apply waveforms to AWG
     _add_wave_nodes(device, awg_index, waveforms_dict, waveform_table, settings_builder)

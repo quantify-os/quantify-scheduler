@@ -132,9 +132,15 @@ def set_and_compile_awg_seqc(
     awg_index: int,
     node: str,
     value: str,
+    always_recompile: bool = False,
 ):
     """
     Uploads and compiles the AWG sequencer program.
+
+    HACK note: the bool always_recompile is used to
+    always trigger a recompile, especially if the
+    waveform has changed but the original implementation
+    does not detect this condition!
 
     Parameters
     ----------
@@ -156,6 +162,7 @@ def set_and_compile_awg_seqc(
         len(current_seqc) == len(value)
         and hash(current_seqc) == hash(value)
         and current_seqc == value
+        and (not always_recompile)
     ):
         print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence"')
         return

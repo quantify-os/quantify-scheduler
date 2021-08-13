@@ -948,11 +948,16 @@ class ZISettingsBuilder:
         )
 
     def with_compiler_sourcestring(
-        self, awg_index: int, seqc: str
+        self, awg_index: int, seqc: str, always_recompile: bool = False
     ) -> ZISettingsBuilder:
         """
         Adds the sequencer compiler sourcestring
         setting for the Instruments awg by index.
+
+        HACK note: the bool always_recompile is used to
+        always trigger a recompile, especially if the
+        waveform has changed but the original implementation
+        does not detect this condition!
 
         Parameters
         ----------
@@ -968,7 +973,11 @@ class ZISettingsBuilder:
             ZISetting(
                 "compiler/sourcestring",
                 seqc,
-                partial(zi_helpers.set_and_compile_awg_seqc, awg_index=awg_index),
+                partial(
+                    zi_helpers.set_and_compile_awg_seqc,
+                    awg_index=awg_index,
+                    always_recompile=always_recompile,
+                ),
             ),
         )
 
