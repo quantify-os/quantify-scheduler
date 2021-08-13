@@ -66,7 +66,7 @@ DEVICE_CLOCK_RATES: Dict[zhinst.DeviceType, Dict[int, int]] = {
     zhinst.DeviceType.UHFQA: zi_helpers.get_clock_rates(1.8e9),
 }
 
-UHFQA_READOUT_CHANNELS = 10
+NUM_UHFQA_READOUT_CHANNELS = 10
 MAX_QAS_INTEGRATION_LENGTH = 4096
 
 
@@ -423,13 +423,15 @@ def get_execution_table(
 
     def get_instruction(timeslot_index: int, uuid: int) -> zhinst.Instruction:
         if uuid in cached_schedule.acqid_acqinfo_dict:
-            return get_measure_instruction(
+            measure_instruction = get_measure_instruction(
                 uuid, timeslot_index, output, cached_schedule, instrument_info
             )
+            return measure_instruction
         if uuid in cached_schedule.pulseid_pulseinfo_dict:
-            return get_wave_instruction(
+            wave_instruction = get_wave_instruction(
                 uuid, timeslot_index, output, cached_schedule, instrument_info
             )
+            return wave_instruction
 
         raise RuntimeError(
             f"Undefined instruction for uuid={uuid} timeslot={timeslot_index}"
@@ -1015,9 +1017,9 @@ def _compile_for_uhfqa(
     ).with_sigouts(0, (1, 1)).with_awg_time(
         0, device.clock_select
     ).with_qas_integration_weights_real(
-        range(10), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+        range(NUM_UHFQA_READOUT_CHANNELS), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
     ).with_qas_integration_weights_imag(
-        range(10), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+        range(NUM_UHFQA_READOUT_CHANNELS), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
     ).with_sigout_offset(
         0, mixer_corrections.dc_offset_I
     ).with_sigout_offset(
@@ -1104,9 +1106,9 @@ def _compile_for_uhfqa(
             ).with_qas_monitor_length(
                 integration_length
             ).with_qas_integration_weights_real(
-                range(UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
+                range(NUM_UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
             ).with_qas_integration_weights_imag(
-                range(UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
+                range(NUM_UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
             )
 
             monitor_nodes = (
@@ -1151,7 +1153,7 @@ def _compile_for_uhfqa(
                 cached_schedule.schedule.repetitions
             )
             # .with_qas_rotations(
-            #     range(UHFQA_READOUT_CHANNELS), 0
+            #     range(NUM_UHFQA_READOUT_CHANNELS), 0
             # )
 
             # Create partial function for delayed execution
