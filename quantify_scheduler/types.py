@@ -656,7 +656,7 @@ class CompiledSchedule(Schedule):
 
     The :class:`CompiledSchedule` differs from it's parent class :class:`.Schedule` in
     that it is considered immutable (no new operations or resources can be added), and
-    that it contains an extra
+    that it contains :attr:`~.compiled_instructions`.
 
     .. tip::
 
@@ -672,16 +672,6 @@ class CompiledSchedule(Schedule):
             self.data.update(data)
 
         super().__init__(name=name, repetitions=repetitions, data=data)
-
-    @classmethod
-    def is_valid(cls, schedule) -> bool:
-        """
-        Checks the schedule validity according to its schema.
-        """
-        # TODO update with complied_schedule.json
-        scheme = general.load_json_schema(__file__, "schedule.json")
-        jsonschema.validate(schedule.data, scheme)
-        return True  # if not exception was raised during validation
 
     def add(  # pylint: disable=too-many-arguments
         self,
@@ -723,3 +713,15 @@ class CompiledSchedule(Schedule):
         values contain the instructions to be executed by that component.
         """
         return self.data["compiled_instructions"]
+
+    @classmethod
+    def is_valid(cls, schedule) -> bool:
+        """
+        Checks if the contents of the schedule are valid according to its schema.
+        Additionally checks if the schedule is an instance of CompiledSchedule
+        """
+        valid_schedule = super().is_valid(schedule)
+        if valid_schedule:
+            return isinstance(schedule, CompiledSchedule)
+
+        return False

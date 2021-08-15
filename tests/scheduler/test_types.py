@@ -6,7 +6,7 @@ import json
 
 import numpy as np
 import pytest
-from quantify_scheduler import Operation, Schedule
+from quantify_scheduler import Operation, Schedule, CompiledSchedule
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.gate_library import (
     CNOT,
@@ -22,6 +22,21 @@ from quantify_scheduler.gate_library import (
 from quantify_scheduler.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
+
+
+@pytest.fixture(scope="module", autouse=False)
+def t1_schedule():
+    schedule = Schedule("T1", 10)
+    qubit = "q0"
+    times = np.arange(0, 20e-6, 2e-6)
+    for i, tau in enumerate(times):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(X(qubit), label=f"pi {i}")
+        schedule.add(
+            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+        )
+
+    return schedule
 
 
 def test_schedule_properties():
@@ -219,3 +234,13 @@ def test_schedule_from_json():
     # Assert
     assert schedule == result
     assert schedule.data == result.data
+
+
+def test_t1_sched_valid(t1_schedule):
+    """
+    Tests that the test schedule is a valid Schedule and an invalid CompiledSchedule
+    """
+    test_schedule = t1_schedule
+    assert Schedule.is_valid(test_schedule)
+
+    assert not CompiledSchedule.is_valid(test_schedule)
