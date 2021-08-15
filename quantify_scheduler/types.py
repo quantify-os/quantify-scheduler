@@ -665,13 +665,14 @@ class CompiledSchedule(Schedule):
 
     """
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
+    def __init__(self, schedule: Schedule) -> None:
+
+        # validate the input data to ensure it is valid schedule data
+        UserDict.__init__(self)
+
         # ensure keys exist
         self.data["compiled_instructions"] = {}
-        if data is not None:
-            self.data.update(data)
-
-        super().__init__(name=name, repetitions=repetitions, data=data)
+        self.data.update(schedule.data)
 
     def add(  # pylint: disable=too-many-arguments
         self,

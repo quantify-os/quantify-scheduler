@@ -1,4 +1,5 @@
 # pylint: disable=missing-module-docstring
+# pylint: disable=redefined-outer-name
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
@@ -244,3 +245,13 @@ def test_t1_sched_valid(t1_schedule):
     assert Schedule.is_valid(test_schedule)
 
     assert not CompiledSchedule.is_valid(test_schedule)
+
+
+def test_compiled_t1_sched_valid(t1_schedule):
+    """
+    Tests that the test schedule is a valid Schedule and a valid CompiledSchedule
+    """
+    test_schedule = CompiledSchedule(t1_schedule)
+
+    assert Schedule.is_valid(test_schedule)
+    assert CompiledSchedule.is_valid(test_schedule)
