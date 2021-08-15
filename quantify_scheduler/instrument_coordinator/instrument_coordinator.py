@@ -3,12 +3,15 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING
 
 from qcodes.utils import validators
 from qcodes.instrument import parameter
 from qcodes.instrument import base as qcodes_base
 from quantify_scheduler.instrument_coordinator.components import base
+
+
+from quantify_scheduler.types import CompiledSchedule
 
 
 class InstrumentCoordinator(qcodes_base.Instrument):
@@ -136,27 +139,35 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     def prepare(
         self,
-        options: Dict[str, Any],
+        compiled_schedule: CompiledSchedule,
     ) -> None:
         """
-        Prepares each component in the list by name with
-        parameters.
+        Prepares each component for execution of a schedule.
 
-        The parameters such as sequence programs, waveforms and other
-        settings are used to arm the instrument so it is ready to execute
-        the experiment.
+        It attempts to configure all instrument coordinator components for which
+        compiled instructions, typically consisting of a combination of sequence
+        programs, waveforms and other instrument settings, are available in the
+        compiled schedule.
+
 
         Parameters
         ----------
-        options
-            The arguments per component required to arm the instrument.
+        compiled_schedule
+            A schedule containing the information required to execute the program.
 
         Raises
         ------
         KeyError
-            Undefined component name.
+            Undefined component name if the compiled schedule contains instructions
         """
-        for instrument_name, args in options.items():
+        if not CompiledSchedule.is_valid(compiled_schedule):
+            raise TypeError(f"{compiled_schedule} is not a valid CompiledSchedule")
+
+        # N.B. this would a good place to store a reference to the last executed
+        # schedule that the InstrumentCoordinator has touched.
+
+        compiled_instructions = compiled_schedule["compiled_instructions"]
+        for instrument_name, args in compiled_instructions.items():
             self.get_component(instrument_name).prepare(args)
 
     def start(self) -> None:

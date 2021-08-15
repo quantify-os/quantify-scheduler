@@ -14,6 +14,7 @@ from unittest.mock import call
 
 import pytest
 from qcodes import Instrument
+from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 
@@ -214,8 +215,14 @@ def test_prepare(
     )
 
     # Act
+    test_sched = Schedule(name="test_schedule")
     args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
-    instrument_coordinator.prepare(args)
+    test_sched["compiled_instructions"] = args
+    compiled_sched = CompiledSchedule(test_sched)
+    print(compiled_sched)
+    print(compiled_sched.data)
+
+    instrument_coordinator.prepare(compiled_sched)
 
     # Assert
     assert get_component_spy.call_args_list == [call("ic_dev0"), call("ic_dev1")]

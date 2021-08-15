@@ -481,7 +481,7 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
 
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
@@ -527,7 +527,7 @@ def test_compile_with_rel_time(
         pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_MAPPING
     )
 
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
@@ -540,7 +540,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     full_program = qcompile(
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     with open(qcm0_seq0_json) as file:
         wf_and_prog = json.load(file)
@@ -560,7 +560,7 @@ def test_compile_with_pulse_stitching(
     set_datadir(tmp_dir.name)
     sched.repetitions = 11
     full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
@@ -908,11 +908,12 @@ def test_assign_frequencies():
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert program["lo0"]["lo_freq"] == lo0
-    assert program["lo1"]["lo_freq"] == lo1
-    assert program["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+    assert compiled_instructions["lo0"]["lo_freq"] == lo0
+    assert compiled_instructions["lo1"]["lo_freq"] == lo1
+    assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
     # Test for RF
     sched = Schedule("two_gate_experiment")
@@ -938,8 +939,9 @@ def test_assign_frequencies():
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
-    qcm_program = program["qcm_rf0"]
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qcm_program = compiled_instructions["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
@@ -956,7 +958,8 @@ def test_markers():
     sched.add(Measure("q0"))
     sched.add(Measure("q2"))
 
-    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    program = compiled_schedule["compiled_instructions"]
 
     def _confirm_correct_markers(device_program, device_compiler):
         with open(device_program["seq0"]["seq_fn"]) as file:
