@@ -706,12 +706,14 @@ class CompiledSchedule(Schedule):
         """
         A dictionary containing compiled instructions.
 
-        The contents of this dictionary
-        depend on the backend that the instructions have been compiled for, but
-        should adhere to the following structure.
-        Keys are names of instances of
-        :class:`~.components.base.InstrumentCoordinatorComponentBase` and
-        values contain the instructions to be executed by that component.
+        The contents of this dictionary depend on the backend it was compiled for.
+        However, we assume that the general format consists of a dictionary in which
+        the keys are instrument names corresponding to components added to a
+        :class:`~.instrument_coordinator.InstrumentCoordinator`, and the
+        values are the instructions for that component.
+
+        These values typically contain a combination of sequence files, waveform
+        defintions, and parameters to configure on the instrument.
         """
         return self.data["compiled_instructions"]
 

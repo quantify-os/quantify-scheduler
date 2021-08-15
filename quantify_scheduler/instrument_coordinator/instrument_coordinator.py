@@ -25,21 +25,42 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     :mod:`~quantify_scheduler.instrument_coordinator.components`
     representing physical instruments,  and the ability to execute experiments.
 
-    .. todo::
 
-        add code example on adding and removing instruments
+    .. admonition:: Executing a a schedule using the instrument coordinator
+        :class: dropdown
 
-        add code example on executing an experiment.
+        To execute a :class:`~quantify_scheduler.types.Schedule` , one needs to first
+        compile a schedule and then configure all the instrument coordinator components
+        using :meth:`~.InstrumentCoordinator.prepare`.
+        After starting the experiment, the results can be retrieved using
+        :meth:`~.InstrumentCoordinator.retrieve_acquisition`.
+
+        .. code-block::
+
+            from quantify_scheduler.compilation import qcompile
+
+            my_sched         # a quantify Schedule descring the experiment to perform
+            device_config    # a config file describing the quantum device
+            hardware_config. # a config file describing the connection to the hardware
+            compiled_sched = qcompile(my_sched, device_config, hardware_config)
+
+            instrument_coordinator.prepare(compiled_sched)
+            instrument_coordinator.start()
+            dataset = instrument_coordinator.retrieve_acquisition()
+
+    .. admonition:: Adding components to the instrument coordinator
+        :class: dropdown
+
+        In order to distribute compiled instructions and execute an experiment,
+        the instrument coordinator needs to have references to the individual
+        instrument coordinator components. The can be added using
+        :meth:`~.InstrumentCoordinator.add_component`.
 
 
-    class is a collection of InstrumentCoordinator components.
+        .. code-block::
 
-    This class provides a high level interface to:
+            instrument_coordinator.add_component(qcm_component)
 
-    1. Arm instruments with sequence programs,
-       waveforms and other settings.
-    2. Start and stop the components.
-    3. Get the results.
     """
 
     def __init__(self, name: str) -> None:
@@ -183,6 +204,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         self._last_schedule = compiled_schedule
 
         compiled_instructions = compiled_schedule["compiled_instructions"]
+        # compiled instructions are expected to follow the structure of a dict
+        # with keys corresponding to instrument names (icc components) and values
+        # containing to instructions in the format specific to that type of hardware.
+        # see also the specification in the CompiledSchedule class.
         for instrument_name, args in compiled_instructions.items():
             self.get_component(instrument_name).prepare(args)
 
