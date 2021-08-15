@@ -646,3 +646,80 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         self.data["timing_constraints"].append(timing_constr)
 
         return label
+
+
+# pylint: disable=too-many-ancestors
+class CompiledSchedule(Schedule):
+    """
+    A :class:`.Schedule` that contains compiled instructions ready for execution using
+    the :class:`~.instrument_coordinator.InstrumentCoordinator`.
+
+    The :class:`CompiledSchedule` differs from it's parent class :class:`.Schedule` in
+    that it is considered immutable (no new operations or resources can be added), and
+    that it contains an extra
+
+    .. tip::
+
+        A :class:`~.CompiledSchedule` can be obtained by compiling a
+        :class:`~.Schedule` using :func:`~quantify_scheduler.compilation.qcompile`.
+
+    """
+
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
+        # ensure keys exist
+        self.data["compiled_instructions"] = {}
+        if data is not None:
+            self.data.update(data)
+
+        super().__init__(name=name, repetitions=repetitions, data=data)
+
+    @classmethod
+    def is_valid(cls, schedule) -> bool:
+        """
+        Checks the schedule validity according to its schema.
+        """
+        # TODO update with complied_schedule.json
+        scheme = general.load_json_schema(__file__, "schedule.json")
+        jsonschema.validate(schedule.data, scheme)
+        return True  # if not exception was raised during validation
+
+    def add(  # pylint: disable=too-many-arguments
+        self,
+        operation: Operation,
+        rel_time: float = 0,
+        ref_op: str = None,
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
+        label: str = None,
+    ) -> str:
+        """
+        No operations can be added, a CompiledSchedule is immutable.
+        """
+
+        raise TypeError(
+            f"{self} is a CompiledSchedule. "
+            "No operations can be added to this schedule."
+        )
+
+    def add_resource(self, resource) -> None:
+        """
+        No resource can be added, a CompiledSchedule is immutable.
+        """
+        raise TypeError(
+            f"{self} is a CompiledSchedule. "
+            "No operations can be added to this schedule."
+        )
+
+    @property
+    def compiled_instructions(self) -> Dict[str, Resource]:
+        """
+        A dictionary containing compiled instructions.
+
+        The contents of this dictionary
+        depend on the backend that the instructions have been compiled for, but
+        should adhere to the following structure.
+        Keys are names of instances of
+        :class:`~.components.base.InstrumentCoordinatorComponentBase` and
+        values contain the instructions to be executed by that component.
+        """
+        return self.data["compiled_instructions"]
