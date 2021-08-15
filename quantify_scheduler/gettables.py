@@ -34,7 +34,7 @@ class ScheduleVectorAcqGettable:
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the `Schedule` using the `schedule_function`, this is then compiled and finally
     executed by the
-    :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+    :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
     """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments
@@ -72,7 +72,7 @@ class ScheduleVectorAcqGettable:
             The hardware configuration dictionary.
         instr_coord
             An instance of
-            :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+            :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
         real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
