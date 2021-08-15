@@ -52,6 +52,21 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             docstring="A list containing the names of all components that"
             " are part of this InstrumentCoordinator.",
         )
+        self._last_schedule = None
+
+    @property
+    def last_schedule(self) -> CompiledSchedule:
+        """
+        Returns the last schedule used to prepare the instrument coordinator.
+
+        This feature is intended to aid users in debugging.
+        """
+        if self._last_schedule is None:
+            raise ValueError(
+                "No CompiledSchedule was handled by the instrument "
+                "coordinator. Try calling the .prepare() method with a Schedule."
+            )
+        return self._last_schedule
 
     @property
     def is_running(self) -> bool:
@@ -163,8 +178,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         if not CompiledSchedule.is_valid(compiled_schedule):
             raise TypeError(f"{compiled_schedule} is not a valid CompiledSchedule")
 
-        # N.B. this would a good place to store a reference to the last executed
-        # schedule that the InstrumentCoordinator has touched.
+        # Adds a reference to the last prepared schedule this can be accessed through
+        # the self.last_schedule property.
+        self._last_schedule = compiled_schedule
 
         compiled_instructions = compiled_schedule["compiled_instructions"]
         for instrument_name, args in compiled_instructions.items():

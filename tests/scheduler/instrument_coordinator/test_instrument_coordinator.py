@@ -219,8 +219,6 @@ def test_prepare(
     args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
     test_sched["compiled_instructions"] = args
     compiled_sched = CompiledSchedule(test_sched)
-    print(compiled_sched)
-    print(compiled_sched.data)
 
     instrument_coordinator.prepare(compiled_sched)
 
@@ -297,3 +295,25 @@ def test_wait_done(close_all_instruments, instrument_coordinator, dummy_componen
     # Assert
     component1.wait_done.assert_called_with(timeout)
     component2.wait_done.assert_called_with(timeout)
+
+
+def test_last_schedule_property(
+    close_all_instruments, instrument_coordinator, dummy_components
+):
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
+
+    # assert that first there is no schedule prepared yet
+    with pytest.raises(ValueError):
+        instrument_coordinator.last_schedule()
+
+    test_sched = Schedule(name="test_schedule")
+    compiled_sched = CompiledSchedule(test_sched)
+
+    # assert that the uploaded schedule is retrieved
+    instrument_coordinator.prepare(compiled_sched)
+    last_sched = instrument_coordinator.last_schedule
+
+    assert last_sched == compiled_sched
