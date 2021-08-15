@@ -37,7 +37,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Keyword Arguments
         -----------------
-        modules : List[ModuleType], optional
+        modules : List[ModuleType], *optional*
             A list of custom modules containing serializable classes, by default []
         """
         extended_modules: List[ModuleType] = kwargs.pop("modules", list())

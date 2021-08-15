@@ -31,3 +31,5 @@ py:class classmethod
 
 # exceptions added for quantify that are assumed to be because of #11975
 py:class module
+py:obj List
+py:obj ModuleType
