@@ -39,6 +39,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     3. Get the results.
     """
 
+    # see https://stackoverflow.com/questions/22096187/ \
+    # how-to-make-sphinx-respect-importing-classes-into-package-with-init-py
+    __module__ = "quantify_scheduler.instrument_coordinator"
+
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.add_parameter(
