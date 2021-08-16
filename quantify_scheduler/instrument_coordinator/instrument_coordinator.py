@@ -13,12 +13,12 @@ from quantify_scheduler.instrument_coordinator.components import base
 
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The InstrumentCoordinator serves as the central interface of the hardware
+    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware
     abstraction layer. It provides a standardized interface to execute Schedules on
     control hardware.
 
-    The InstrumentCoordinator has two main functionalities exposed to the user,
-    the ability to configure the its
+    The :class:`~.InstrumentCoordinator` has two main functionalities exposed to the
+    user, the ability to configure its
     :mod:`~quantify_scheduler.instrument_coordinator.components`
     representing physical instruments,  and the ability to execute experiments.
 
