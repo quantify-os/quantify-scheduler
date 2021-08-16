@@ -4,9 +4,9 @@
 from __future__ import annotations
 import importlib
 import logging
+from copy import deepcopy
 from typing_extensions import Literal
 
-from copy import deepcopy
 import jsonschema
 from quantify_core.utilities.general import load_json_schema
 
