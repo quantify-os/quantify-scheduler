@@ -31,13 +31,13 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         The list of serializable classes can be extended with custom classes by
         providing the `modules` keyword argument. These classes have to implement
-        :class:`~quantify_scheduler.types.Operation` and overload the :func:`__str__`
-        and :func:`__repr__` functions in order to serialize and deserialize domain
+        :class:`~quantify_scheduler.types.Operation` and overload the :code:`__str__`
+        and :code:`__repr__` methods in order to serialize and deserialize domain
         objects into a valid JSON-format.
 
         Keyword Arguments
         -----------------
-        modules : List[ModuleType], optional
+        modules : List[ModuleType], *optional*
             A list of custom modules containing serializable classes, by default []
         """
         extended_modules: List[ModuleType] = kwargs.pop("modules", list())
@@ -93,7 +93,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
     def decode_quantify_type(self, obj: str) -> object:
         """
         Returns the deserialized result of a possible known type stored in the
-        :attr:`~.ScheduleJSONDecoder.classes` property.
+        :class:`~.ScheduleJSONDecoder` .classes property.
 
         For better security the usage of `eval` has been replaced in favour of
         :func:`ast.literal_eval`.
