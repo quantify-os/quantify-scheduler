@@ -16,12 +16,12 @@ from quantify_scheduler.types import CompiledSchedule
 
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The InstrumentCoordinator serves as the central interface of the hardware
+    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware
     abstraction layer. It provides a standardized interface to execute Schedules on
     control hardware.
 
-    The InstrumentCoordinator has two main functionalities exposed to the user,
-    the ability to configure the instrument coordinator
+    The :class:`~.InstrumentCoordinator` has two main functionalities exposed to the
+    user, the ability to configure its
     :mod:`~quantify_scheduler.instrument_coordinator.components`
     representing physical instruments,  and the ability to execute experiments.
 
@@ -62,6 +62,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument_coordinator.add_component(qcm_component)
 
     """
+
+    # see https://stackoverflow.com/questions/22096187/ \
+    # how-to-make-sphinx-respect-importing-classes-into-package-with-init-py
+    __module__ = "quantify_scheduler.instrument_coordinator"
 
     def __init__(self, name: str) -> None:
         super().__init__(name)

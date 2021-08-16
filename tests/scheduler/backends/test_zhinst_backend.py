@@ -806,6 +806,7 @@ def test_uhfqa_sequence1(
       playWave(w0);	// clock=4 n_instr=0
       wait(25);	// 	// clock=4 n_instr=25
       setTrigger(integration_trigger);	// clock=29 n_instr=1
+      wait(2000);	// 	// clock=30 n_instr=2000
     }
     setTrigger(0);	// Reset triggers n_instr=1
     """
@@ -868,6 +869,7 @@ def test_uhfqa_sequence2(
       waitDigTrigger(2, 1);	// clock=0
       playWave(w0);	// clock=0 n_instr=0
       setTrigger(integration_trigger);	// clock=0 n_instr=1
+      wait(2000);	// 	// clock=1 n_instr=2000
     }
     setTrigger(0);	// Reset triggers n_instr=1
     """
