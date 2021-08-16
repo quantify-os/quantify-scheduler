@@ -9,8 +9,8 @@ import re
 from types import ModuleType
 from typing import Any, Dict, List, Type
 import jsonschema
-from quantify_scheduler.helpers import inspect as inspect_helpers
 from quantify_core.utilities.general import load_json_schema
+from quantify_scheduler.helpers import inspect as inspect_helpers
 
 
 class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
