@@ -8,7 +8,28 @@ import ast
 import re
 from types import ModuleType
 from typing import Any, Dict, List, Type
+import jsonschema
 from quantify_scheduler.helpers import inspect as inspect_helpers
+from quantify_core.utilities.general import load_json_schema
+
+
+class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
+    """
+    A mixin that adds validation utilities to classes that have
+    a data attribute like a :class:`UserDict` based on JSONSchema.
+
+    This requires the class to have a class variable "schema_filename"
+    """
+
+    @classmethod
+    def is_valid(cls, object_to_be_validated) -> bool:
+        """Checks if the object is valid according to its schema."""
+        # schema_filename = "schedule.json"
+
+        scheme = load_json_schema(__file__, cls.schema_filename)
+        jsonschema.validate(object_to_be_validated.data, scheme)
+        # _ = object_to_be_validated.hash  # test that the hash property evaluates
+        return True  # if not exception was raised during validation
 
 
 class ScheduleJSONDecoder(json.JSONDecoder):

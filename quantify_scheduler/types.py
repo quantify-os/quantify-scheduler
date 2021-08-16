@@ -6,6 +6,7 @@ from __future__ import annotations
 import inspect
 import json
 import ast
+from abc import ABC
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
@@ -17,6 +18,7 @@ import numpy as np
 from typing_extensions import Literal
 from quantify_core.utilities import general
 from quantify_scheduler import json_utils
+from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler import resources
 from quantify_scheduler import enums
 
@@ -24,7 +26,7 @@ if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
 
 
-class Operation(UserDict):  # pylint: disable=too-many-ancestors
+class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
     how to represent the operation on the quantum-circuit and/or the quantum-device
@@ -62,6 +64,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         Two different Operations containing the same information generate the
         same hash and are considered identical.
     """
+
+    schema_filename = "operation.json"
 
     def __init__(self, name: str, data: dict = None) -> None:
         super().__init__()
@@ -294,12 +298,18 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
                     )
 
     @classmethod
-    def is_valid(cls, operation) -> bool:
-        """Checks if the operation is valid according to its schema."""
-        scheme = general.load_json_schema(__file__, "operation.json")
-        jsonschema.validate(operation.data, scheme)
-        _ = operation.hash  # test that the hash property evaluates
-        return True  # if not exception was raised during validation
+    def is_valid(cls, object_to_be_validated) -> bool:
+        """
+        Checks if the contents of the object_to_be_validated are valid
+        according to the schema.
+        Additionally checks if the hash property of the object evaluates correctly.
+        """
+        valid_operation = super().is_valid(object_to_be_validated)
+        if valid_operation:
+            _ = object_to_be_validated.hash  # test that the hash property evaluates
+            return True
+
+        return False
 
     @property
     def valid_gate(self) -> bool:
@@ -332,87 +342,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         return False
 
 
-class Schedule(UserDict):  # pylint: disable=too-many-ancestors
-    """
-    A collection of :class:`~Operation` objects and timing constraints
-    that define relations between the operations.
-
-    The Schedule data structure is based on a dictionary.
-    This dictionary contains:
-
-    - operation_dict - a hash table containing the unique :class:`~Operation` s added to the schedule.
-    - timing_constraints - a list of all timing constraints added between operations.
-
-    The :class:`~quantify_scheduler.types.Schedule` is a data structure that is at the
-    core of the Quantify-scheduler.
-    The :class:`~quantify_scheduler.types.Schedule` contains information on *when*
-    operations should be performed.
-
-    When adding an :class:`~quantify_scheduler.types.Operation` to a
-    :class:`~quantify_scheduler.types.Schedule` using the
-    :meth:`~quantify_scheduler.types.Schedule.add` method, it is possible to specify
-    precisely *when* to perform this operation using timing constraints.
-    However, at this point it is not required to specify how to represent this
-    :class:`~quantify_scheduler.types.Operation` on all layers.
-    Instead, this information can be added later during
-    :ref:`compilation <sec-compilation>`.
-    This allows the user to effortlessly mix the gate- and pulse-level descriptions as
-    required for many (calibration) experiments.
-
-
-    The :class:`~quantify_scheduler.types.Schedule` contains information on the
-    :attr:`~quantify_scheduler.types.Schedule.operations` and
-    :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
-    The :attr:`~quantify_scheduler.types.Schedule.operations` is a dictionary of all
-    unique operations used in the schedule and contain the information on *what* operation to apply *where*.
-    The :attr:`~quantify_scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing
-    constraints between operations, i.e. when to apply an operation.
-
-
-    **JSON schema of a valid Schedule**
-
-    .. jsonschema:: schemas/schedule.json
-    """  # pylint: disable=line-too-long
-
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
-        """
-        Initialize a new instance of Schedule.
-
-        Parameters
-        ----------
-        name :
-            The name of the schedule
-        repetitions :
-            The amount of times the schedule will be repeated, by default 1
-        data :
-            A dictionary containing a pre-existing schedule., by default None
-
-        Raises
-        ------
-        NotImplementedError
-        """
-
-        # validate the input data to ensure it is valid schedule data
-        super().__init__()
-
-        # ensure keys exist
-        self.data["operation_dict"] = {}
-        self.data["timing_constraints"] = []
-        self.data["resource_dict"] = {}
-        self.data["name"] = "nameless"
-        self.data["repetitions"] = repetitions
-
-        # This is used to define baseband pulses and is expected to always be present
-        # in any schedule.
-        self.add_resource(
-            resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
-        )
-
-        if name is not None:
-            self.data["name"] = name
-
-        if data is not None:
-            self.data.update(data)
+class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
+    pass
 
     @property
     def name(self) -> str:
@@ -488,6 +419,14 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         """
         return self.data["resource_dict"]
 
+    def __repr__(self) -> str:
+        return '{} "{}" containing ({}) {}  (unique) operations.'.format(
+            self.__class__.__name__,
+            self.data["name"],
+            len(self.data["operation_dict"]),
+            len(self.data["timing_constraints"]),
+        )
+
     def to_json(self) -> str:
         """
         Converts the Schedule data structure to a JSON string.
@@ -519,6 +458,91 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
         return Schedule(name, data=schedule_data)
 
+
+class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
+    """
+    A collection of :class:`~Operation` objects and timing constraints
+    that define relations between the operations.
+
+    The Schedule data structure is based on a dictionary.
+    This dictionary contains:
+
+    - operation_dict - a hash table containing the unique :class:`~Operation` s added to the schedule.
+    - timing_constraints - a list of all timing constraints added between operations.
+
+    The :class:`~quantify_scheduler.types.Schedule` is a data structure that is at the
+    core of the Quantify-scheduler.
+    The :class:`~quantify_scheduler.types.Schedule` contains information on *when*
+    operations should be performed.
+
+    When adding an :class:`~quantify_scheduler.types.Operation` to a
+    :class:`~quantify_scheduler.types.Schedule` using the
+    :meth:`~quantify_scheduler.types.Schedule.add` method, it is possible to specify
+    precisely *when* to perform this operation using timing constraints.
+    However, at this point it is not required to specify how to represent this
+    :class:`~quantify_scheduler.types.Operation` on all layers.
+    Instead, this information can be added later during
+    :ref:`compilation <sec-compilation>`.
+    This allows the user to effortlessly mix the gate- and pulse-level descriptions as
+    required for many (calibration) experiments.
+
+
+    The :class:`~quantify_scheduler.types.Schedule` contains information on the
+    :attr:`~quantify_scheduler.types.Schedule.operations` and
+    :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
+    The :attr:`~quantify_scheduler.types.Schedule.operations` is a dictionary of all
+    unique operations used in the schedule and contain the information on *what* operation to apply *where*.
+    The :attr:`~quantify_scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing
+    constraints between operations, i.e. when to apply an operation.
+
+
+    **JSON schema of a valid Schedule**
+
+    .. jsonschema:: schemas/schedule.json
+    """  # pylint: disable=line-too-long
+
+    schema_filename = "schedule.json"
+
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
+        """
+        Initialize a new instance of Schedule.
+
+        Parameters
+        ----------
+        name :
+            The name of the schedule
+        repetitions :
+            The amount of times the schedule will be repeated, by default 1
+        data :
+            A dictionary containing a pre-existing schedule., by default None
+
+        Raises
+        ------
+        NotImplementedError
+        """
+
+        # validate the input data to ensure it is valid schedule data
+        super().__init__()
+
+        # ensure keys exist
+        self.data["operation_dict"] = {}
+        self.data["timing_constraints"] = []
+        self.data["resource_dict"] = {}
+        self.data["name"] = "nameless"
+        self.data["repetitions"] = repetitions
+
+        # This is used to define baseband pulses and is expected to always be present
+        # in any schedule.
+        self.add_resource(
+            resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
+        )
+
+        if name is not None:
+            self.data["name"] = name
+
+        if data is not None:
+            self.data.update(data)
+
     def add_resources(self, resources_list: list) -> None:
         """Add wrapper for adding multiple resources"""
         for resource in resources_list:
@@ -533,22 +557,6 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
             raise ValueError("Key {} is already present".format(resource.name))
 
         self.data["resource_dict"][resource.name] = resource
-
-    def __repr__(self) -> str:
-        return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
-            self.data["name"],
-            len(self.data["operation_dict"]),
-            len(self.data["timing_constraints"]),
-        )
-
-    @classmethod
-    def is_valid(cls, schedule) -> bool:
-        """
-        Checks the schedule validity according to its schema.
-        """
-        scheme = general.load_json_schema(__file__, "schedule.json")
-        jsonschema.validate(schedule.data, scheme)
-        return True  # if not exception was raised during validation
 
     # pylint: disable=too-many-arguments
     def add(
@@ -649,12 +657,12 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
 
 
 # pylint: disable=too-many-ancestors
-class CompiledSchedule(Schedule):
+class CompiledSchedule(ScheduleBase):
     """
-    A :class:`.Schedule` that contains compiled instructions ready for execution using
+    A schedule that contains compiled instructions ready for execution using
     the :class:`~.instrument_coordinator.InstrumentCoordinator`.
 
-    The :class:`CompiledSchedule` differs from it's parent class :class:`.Schedule` in
+    The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
     that it is considered immutable (no new operations or resources can be added), and
     that it contains :attr:`~.compiled_instructions`.
 
@@ -665,41 +673,19 @@ class CompiledSchedule(Schedule):
 
     """
 
+    schema_filename = "schedule.json"
+
     def __init__(self, schedule: Schedule) -> None:
 
         # validate the input data to ensure it is valid schedule data
-        UserDict.__init__(self)
+        super().__init__()
 
         # ensure keys exist
         self.data["compiled_instructions"] = {}
-        self.data.update(schedule.data)
 
-    def add(  # pylint: disable=too-many-arguments
-        self,
-        operation: Operation,
-        rel_time: float = 0,
-        ref_op: str = None,
-        ref_pt: Literal["start", "center", "end"] = "end",
-        ref_pt_new: Literal["start", "center", "end"] = "start",
-        label: str = None,
-    ) -> str:
-        """
-        No operations can be added, a CompiledSchedule is immutable.
-        """
-
-        raise TypeError(
-            f"{self} is a CompiledSchedule. "
-            "No operations can be added to this schedule."
-        )
-
-    def add_resource(self, resource) -> None:
-        """
-        No resource can be added, a CompiledSchedule is immutable.
-        """
-        raise TypeError(
-            f"{self} is a CompiledSchedule. "
-            "No operations can be added to this schedule."
-        )
+        # deepcopy is used to prevent side effects when the
+        # original (mutable) schedule is modified
+        self.data.update(deepcopy(schedule.data))
 
     @property
     def compiled_instructions(self) -> Dict[str, Resource]:
@@ -718,13 +704,14 @@ class CompiledSchedule(Schedule):
         return self.data["compiled_instructions"]
 
     @classmethod
-    def is_valid(cls, schedule) -> bool:
+    def is_valid(cls, object_to_be_validated) -> bool:
         """
-        Checks if the contents of the schedule are valid according to its schema.
-        Additionally checks if the schedule is an instance of CompiledSchedule
+        Checks if the contents of the object_to_be_validated are valid
+        according to the schema. Additionally checks if the object_to_be_validated is
+        an instance of :class:`~.CompiledSchedule`
         """
-        valid_schedule = super().is_valid(schedule)
+        valid_schedule = super().is_valid(object_to_be_validated)
         if valid_schedule:
-            return isinstance(schedule, CompiledSchedule)
+            return isinstance(object_to_be_validated, CompiledSchedule)
 
         return False
