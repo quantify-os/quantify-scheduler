@@ -3,7 +3,7 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple
 
 from qcodes.utils import validators
 from qcodes.instrument import parameter
