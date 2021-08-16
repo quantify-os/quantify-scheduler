@@ -33,3 +33,4 @@ py:class classmethod
 py:class module
 py:obj List
 py:obj ModuleType
+py:class UserDict

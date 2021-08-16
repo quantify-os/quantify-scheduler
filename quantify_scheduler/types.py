@@ -13,7 +13,6 @@ from enum import Enum
 from typing import Any, Dict, List, TYPE_CHECKING
 from uuid import uuid4
 
-import jsonschema
 import numpy as np
 from typing_extensions import Literal
 from quantify_core.utilities import general
@@ -342,8 +341,45 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         return False
 
 
+# pylint: disable=too-many-ancestors
 class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
-    pass
+    """
+    The :class:`~quantify_scheduler.types.ScheduleBase` is a data structure that is at
+    the core of the Quantify-scheduler and describes when what operations are applied
+    where.
+
+    The :class:`~quantify_scheduler.types.ScheduleBase` is a collection of
+    :class:`~Operation` objects and timing constraints that define relations between
+    the operations.
+
+    The schedule data structure is based on a dictionary.
+    This dictionary contains:
+
+    - operation_dict - a hash table containing the unique :class:`~Operation` s added
+        to the schedule.
+    - timing_constraints - a list of all timing constraints added between operations.
+
+    The :class:`~quantify_scheduler.types.Schedule` provides an API to create schedules.
+    The :class:`~quantify_scheduler.types.CompiledSchedule` represents a schedule after
+    it has been compiled for execution on a backend.
+
+
+    The :class:`~quantify_scheduler.types.Schedule` contains information on the
+    :attr:`~quantify_scheduler.types.ScheduleBase.operations` and
+    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
+    The :attr:`~quantify_scheduler.types.ScheduleBase.operations` is a dictionary of all
+    unique operations used in the schedule and contain the information on *what*
+    operation to apply *where*.
+    The :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints` is a list of
+    dictionaries describing timing constraints between operations, i.e. when to apply
+    an operation.
+
+
+    **JSON schema of a valid Schedule**
+
+    .. jsonschema:: schemas/schedule.json
+
+    """
 
     @property
     def name(self) -> str:
@@ -401,7 +437,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         The label is used as a unique identifier that can be used as a reference for
         other operations, the operation_repr refers to the string representation of a
-        operation in :attr:`~Schedule.operations`.
+        operation in :attr:`~.ScheduleBase.operations`.
 
         .. note::
 
@@ -461,44 +497,19 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
-    A collection of :class:`~Operation` objects and timing constraints
-    that define relations between the operations.
+    A modifiable schedule.
 
-    The Schedule data structure is based on a dictionary.
-    This dictionary contains:
+    Operations :class:`~quantify_scheduler.types.Operation` can be added using the
+    :meth:`~quantify_scheduler.types.Schedule.add` method, allowing precise
+    specification *when* to perform an operation using timing constraints.
 
-    - operation_dict - a hash table containing the unique :class:`~Operation` s added to the schedule.
-    - timing_constraints - a list of all timing constraints added between operations.
-
-    The :class:`~quantify_scheduler.types.Schedule` is a data structure that is at the
-    core of the Quantify-scheduler.
-    The :class:`~quantify_scheduler.types.Schedule` contains information on *when*
-    operations should be performed.
-
-    When adding an :class:`~quantify_scheduler.types.Operation` to a
-    :class:`~quantify_scheduler.types.Schedule` using the
-    :meth:`~quantify_scheduler.types.Schedule.add` method, it is possible to specify
-    precisely *when* to perform this operation using timing constraints.
-    However, at this point it is not required to specify how to represent this
+    When adding an operation, it is not required to specify how to represent this
     :class:`~quantify_scheduler.types.Operation` on all layers.
     Instead, this information can be added later during
     :ref:`compilation <sec-compilation>`.
     This allows the user to effortlessly mix the gate- and pulse-level descriptions as
     required for many (calibration) experiments.
 
-
-    The :class:`~quantify_scheduler.types.Schedule` contains information on the
-    :attr:`~quantify_scheduler.types.Schedule.operations` and
-    :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
-    The :attr:`~quantify_scheduler.types.Schedule.operations` is a dictionary of all
-    unique operations used in the schedule and contain the information on *what* operation to apply *where*.
-    The :attr:`~quantify_scheduler.types.Schedule.timing_constraints` is a list of dictionaries describing timing
-    constraints between operations, i.e. when to apply an operation.
-
-
-    **JSON schema of a valid Schedule**
-
-    .. jsonschema:: schemas/schedule.json
     """  # pylint: disable=line-too-long
 
     schema_filename = "schedule.json"
@@ -577,7 +588,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         the operations.
         The reference operation (:code:`"ref_op"`) is specified using its label
         property.
-        See also :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
+        See also :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
 
         Parameters
         ----------
