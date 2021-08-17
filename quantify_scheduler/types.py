@@ -424,9 +424,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         The time can be specified with respect to a reference point (:code:`"ref_pt"')
         on the reference operation (:code:`"ref_op"`) and a reference point on the next
         added operation (:code:`"ref_pt_new"').
-        A reference point can be either the "start", "center", or "end" of an operations.
-        The reference operation (:code:`"ref_op"`) is specified using its label
-        property.
+        A reference point can be either the "start", "center", or "end" of an
+        operation. The reference operation (:code:`"ref_op"`) is specified using its
+        label property.
 
         Each item in the list represents a timing constraint and is a dictionary with
         the following keys:

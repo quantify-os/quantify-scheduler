@@ -4,6 +4,7 @@
 from __future__ import annotations
 import importlib
 import logging
+from copy import deepcopy
 from typing_extensions import Literal
 
 import jsonschema
@@ -390,6 +391,9 @@ def qcompile(
 
         Add a schema for the hardware config.
     """
+    # to prevent the original input schedule from being modified.
+    schedule = deepcopy(schedule)
+
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 

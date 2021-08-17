@@ -5,6 +5,10 @@ Changelog
 Unreleased
 ----------
 
+
+
+
+
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Mixer corrections in Qblox backend are broken because of the switch to real-time modulation. The support of mixer corrections in the Qblox firmware is under development.
@@ -13,6 +17,10 @@ Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
 * Qblox Backend - Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
+* Docs - Fixed missing files in API reference (!176)
+* InstrumentCoordinator - CompiledSchedule class added to specify interfaces of InstrumentCoordinator and compilation functions (#174, !177)
+* Compilation - qcompile no longer modifies schedules (#102, !178)
+
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
