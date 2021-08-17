@@ -81,6 +81,7 @@ class Trace(Operation):
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "trace",
+                        "acq_return_type": float,  # FIXME not correct
                     }
                 ],
             }
@@ -189,6 +190,7 @@ class WeightedIntegratedComplex(Operation):
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "weighted_integrated_complex",
+                        "acq_return_type": complex,
                     }
                 ],
             }

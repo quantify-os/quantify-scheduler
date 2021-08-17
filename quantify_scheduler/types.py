@@ -9,6 +9,7 @@ import ast
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
+from pydoc import locate
 from enum import Enum
 from typing import Any, Dict, List, TYPE_CHECKING
 from uuid import uuid4
@@ -263,6 +264,10 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
             ):
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
+            # types lead to problems when serialized without casting to string first
+            if "<class " in str(acq_info["acq_return_type"]):
+                acq_info["acq_return_type"] = str(acq_info["acq_return_type"])
+
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform:
                     waveform["t"] = np.array2string(
@@ -287,6 +292,14 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         for acq_info in self.data["acquisition_info"]:
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
                 acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
+
+            # this workaround is required because we cannot easily specify types and
+            # serialize easy.  We should change the implementation to dataclasses #159
+            if "<class " in str(acq_info["acq_return_type"]):
+                # first remove the class prefix
+                ret_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
+                # and then use locate to retrieve the type class
+                acq_info["acq_return_type"] = locate(ret_type_str)
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
