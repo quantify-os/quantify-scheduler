@@ -198,7 +198,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         Raises
         ------
         KeyError
-            Undefined component name if the compiled schedule contains instructions
+            If the compiled schedule contains instructions for a component 
+            absent in the instrument coordinator.
+        TypeError
+            If the schedule provided is not a valid ``CompiledSchedule``.
         """
         if not CompiledSchedule.is_valid(compiled_schedule):
             raise TypeError(f"{compiled_schedule} is not a valid CompiledSchedule")
