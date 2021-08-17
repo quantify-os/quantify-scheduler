@@ -79,8 +79,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         )
         self._last_schedule = None
 
-    @property
-    def last_schedule(self) -> CompiledSchedule:
+    def get_last_schedule(self) -> CompiledSchedule:
         """
         Returns the last schedule used to prepare the instrument coordinator.
 
@@ -198,7 +197,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         Raises
         ------
         KeyError
-            If the compiled schedule contains instructions for a component 
+            If the compiled schedule contains instructions for a component
             absent in the instrument coordinator.
         TypeError
             If the schedule provided is not a valid ``CompiledSchedule``.
