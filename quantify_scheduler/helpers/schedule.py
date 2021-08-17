@@ -7,7 +7,7 @@ from itertools import chain
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 

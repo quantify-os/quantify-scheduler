@@ -34,7 +34,7 @@ class ScheduleVectorAcqGettable:
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the `Schedule` using the `schedule_function`, this is then compiled and finally
     executed by the
-    :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+    :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
     """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments
@@ -72,7 +72,7 @@ class ScheduleVectorAcqGettable:
             The hardware configuration dictionary.
         instr_coord
             An instance of
-            :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+            :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
         channels_and_indices
             List containing all the acquisition channels and indices to retrieve, the
             channels and indices are provided as tuples. If None, (0,0) is used.

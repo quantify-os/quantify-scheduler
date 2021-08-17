@@ -14,6 +14,7 @@ from unittest.mock import call
 
 import pytest
 from qcodes import Instrument
+from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 
@@ -39,13 +40,13 @@ class MyICC(base_component.InstrumentCoordinatorComponentBase):
         pass
 
 
-# cretes a few dummy compoents avialable to be used in each test
+# creates a few dummy components avialable to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
 def fixture_dummy_components(
     mocker, request
 ) -> base_component.InstrumentCoordinatorComponentBase:
 
-    # Crete a QCoDeS intrument for realistic emulation
+    # Create a QCoDeS intrument for realistic emulation
     instruments = [Instrument(f"dev{i}") for i in range(3)]
     components = []
 
@@ -214,8 +215,12 @@ def test_prepare(
     )
 
     # Act
+    test_sched = Schedule(name="test_schedule")
     args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
-    instrument_coordinator.prepare(args)
+    test_sched["compiled_instructions"] = args
+    compiled_sched = CompiledSchedule(test_sched)
+
+    instrument_coordinator.prepare(compiled_sched)
 
     # Assert
     assert get_component_spy.call_args_list == [call("ic_dev0"), call("ic_dev1")]
@@ -290,3 +295,23 @@ def test_wait_done(close_all_instruments, instrument_coordinator, dummy_componen
     # Assert
     component1.wait_done.assert_called_with(timeout)
     component2.wait_done.assert_called_with(timeout)
+
+
+def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_components):
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
+
+    # assert that first there is no schedule prepared yet
+    with pytest.raises(ValueError):
+        instrument_coordinator.last_schedule()
+
+    test_sched = Schedule(name="test_schedule")
+    compiled_sched = CompiledSchedule(test_sched)
+
+    # assert that the uploaded schedule is retrieved
+    instrument_coordinator.prepare(compiled_sched)
+    last_sched = instrument_coordinator.last_schedule()
+
+    assert last_sched == compiled_sched

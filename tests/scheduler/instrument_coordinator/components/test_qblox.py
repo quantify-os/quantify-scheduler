@@ -238,7 +238,10 @@ def test_prepare(close_all_instruments, schedule_with_measurement, make_qcm, mak
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule = qcompile(
+            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
 
         qcm.prepare(prog["qcm0"])
         qrm.prepare(prog["qrm0"])
@@ -259,7 +262,10 @@ def test_prepare_rf(
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
 
         qcm.prepare(prog["qcm_rf0"])
         qrm.prepare(prog["qrm_rf0"])
@@ -367,7 +373,10 @@ def test_retrieve_acquisition_qrm(
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule = qcompile(
+            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
         prog = dict(prog)
 
         qrm.prepare(prog[qrm.instrument.name])
@@ -398,7 +407,10 @@ def test_retrieve_acquisition_qrm_rf(
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
-        prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
         prog = dict(prog)
 
         qrm_rf.prepare(prog[qrm_rf.instrument.name])
@@ -420,7 +432,10 @@ def test_start_qcm_qrm(
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule = qcompile(
+            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
 
         qcm.prepare(prog["qcm0"])
         qrm.prepare(prog["qrm0"])
@@ -444,7 +459,10 @@ def test_start_qcm_qrm_rf(
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        prog = qcompile(schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
 
         qcm_rf.prepare(prog["qcm_rf0"])
         qrm_rf.prepare(prog["qrm_rf0"])
