@@ -79,7 +79,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         )
         self._last_schedule = None
 
-    def get_last_schedule(self) -> CompiledSchedule:
+    def last_schedule(self) -> CompiledSchedule:
         """
         Returns the last schedule used to prepare the instrument coordinator.
 

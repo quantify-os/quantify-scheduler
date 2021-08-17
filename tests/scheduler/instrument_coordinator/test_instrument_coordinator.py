@@ -297,9 +297,7 @@ def test_wait_done(close_all_instruments, instrument_coordinator, dummy_componen
     component2.wait_done.assert_called_with(timeout)
 
 
-def test_get_last_schedule(
-    close_all_instruments, instrument_coordinator, dummy_components
-):
+def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_components):
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
     instrument_coordinator.add_component(component1)
@@ -307,13 +305,13 @@ def test_get_last_schedule(
 
     # assert that first there is no schedule prepared yet
     with pytest.raises(ValueError):
-        instrument_coordinator.get_last_schedule()
+        instrument_coordinator.last_schedule()
 
     test_sched = Schedule(name="test_schedule")
     compiled_sched = CompiledSchedule(test_sched)
 
     # assert that the uploaded schedule is retrieved
     instrument_coordinator.prepare(compiled_sched)
-    last_sched = instrument_coordinator.get_last_schedule()
+    last_sched = instrument_coordinator.last_schedule()
 
     assert last_sched == compiled_sched
