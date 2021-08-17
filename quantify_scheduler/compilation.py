@@ -17,7 +17,7 @@ from quantify_scheduler.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.types import Schedule
+from quantify_scheduler.types import Schedule, CompiledSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,10 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~quantify_scheduler.types.Schedule.timing_constraints`. It does this by:
+    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`. It does this by:
 
-        1. iterating over all and elements in the :attr:`~quantify_scheduler.types.Schedule.timing_constraints`.
+        1. iterating over all and elements in the
+            :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -358,14 +359,15 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
-) -> Schedule:
+) -> CompiledSchedule:
     """
-    Compile and assemble a schedule into deployables.
+    Compile and assemble a :class:`~.Schedule` into a a :class:`~.CompiledSchedule`
+    ready for execution using the :class:`~.InstrumentCoordinator`.
 
     Parameters
     ----------
     schedule
-        To be compiled.
+        The schedule to be compiled.
     device_cfg
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
@@ -386,7 +388,7 @@ def qcompile(
 
     .. todo::
 
-        Add a schema for the hardware mapping.
+        Add a schema for the hardware config.
     """
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
@@ -399,9 +401,16 @@ def qcompile(
         hardware_compile = getattr(importlib.import_module(mod), cls)
         # pylint: disable=fixme
         # FIXME: still contains a hardcoded argument in the kwargs
-        return hardware_compile(schedule, hardware_map=hardware_mapping, **kwargs)
+        compiled_instructions = hardware_compile(
+            schedule, hardware_map=hardware_mapping, **kwargs
+        )
+        # add the compiled instructions to the schedule data structure
+        schedule["compiled_instructions"] = compiled_instructions
 
-    return schedule
+    # Mark the schedule as a compiled schedule
+    compiled_schedule = CompiledSchedule(schedule)
+
+    return compiled_schedule
 
 
 def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:

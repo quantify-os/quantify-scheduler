@@ -11,6 +11,9 @@ from qcodes.instrument import base as qcodes_base
 from quantify_scheduler.instrument_coordinator.components import base
 
 
+from quantify_scheduler.types import CompiledSchedule
+
+
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
     The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware
@@ -22,21 +25,42 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     :mod:`~quantify_scheduler.instrument_coordinator.components`
     representing physical instruments,  and the ability to execute experiments.
 
-    .. todo::
 
-        add code example on adding and removing instruments
+    .. admonition:: Executing a a schedule using the instrument coordinator
+        :class: dropdown
 
-        add code example on executing an experiment.
+        To execute a :class:`~quantify_scheduler.types.Schedule` , one needs to first
+        compile a schedule and then configure all the instrument coordinator components
+        using :meth:`~.InstrumentCoordinator.prepare`.
+        After starting the experiment, the results can be retrieved using
+        :meth:`~.InstrumentCoordinator.retrieve_acquisition`.
+
+        .. code-block::
+
+            from quantify_scheduler.compilation import qcompile
+
+            my_sched         # a quantify Schedule descring the experiment to perform
+            device_config    # a config file describing the quantum device
+            hardware_config. # a config file describing the connection to the hardware
+            compiled_sched = qcompile(my_sched, device_config, hardware_config)
+
+            instrument_coordinator.prepare(compiled_sched)
+            instrument_coordinator.start()
+            dataset = instrument_coordinator.retrieve_acquisition()
+
+    .. admonition:: Adding components to the instrument coordinator
+        :class: dropdown
+
+        In order to distribute compiled instructions and execute an experiment,
+        the instrument coordinator needs to have references to the individual
+        instrument coordinator components. The can be added using
+        :meth:`~.InstrumentCoordinator.add_component`.
 
 
-    class is a collection of InstrumentCoordinator components.
+        .. code-block::
 
-    This class provides a high level interface to:
+            instrument_coordinator.add_component(qcm_component)
 
-    1. Arm instruments with sequence programs,
-       waveforms and other settings.
-    2. Start and stop the components.
-    3. Get the results.
     """
 
     # see https://stackoverflow.com/questions/22096187/ \
@@ -53,6 +77,20 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             docstring="A list containing the names of all components that"
             " are part of this InstrumentCoordinator.",
         )
+        self._last_schedule = None
+
+    def last_schedule(self) -> CompiledSchedule:
+        """
+        Returns the last schedule used to prepare the instrument coordinator.
+
+        This feature is intended to aid users in debugging.
+        """
+        if self._last_schedule is None:
+            raise ValueError(
+                "No CompiledSchedule was handled by the instrument "
+                "coordinator. Try calling the .prepare() method with a Schedule."
+            )
+        return self._last_schedule
 
     @property
     def is_running(self) -> bool:
@@ -140,27 +178,43 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     def prepare(
         self,
-        options: Dict[str, Any],
+        compiled_schedule: CompiledSchedule,
     ) -> None:
         """
-        Prepares each component in the list by name with
-        parameters.
+        Prepares each component for execution of a schedule.
 
-        The parameters such as sequence programs, waveforms and other
-        settings are used to arm the instrument so it is ready to execute
-        the experiment.
+        It attempts to configure all instrument coordinator components for which
+        compiled instructions, typically consisting of a combination of sequence
+        programs, waveforms and other instrument settings, are available in the
+        compiled schedule.
+
 
         Parameters
         ----------
-        options
-            The arguments per component required to arm the instrument.
+        compiled_schedule
+            A schedule containing the information required to execute the program.
 
         Raises
         ------
         KeyError
-            Undefined component name.
+            If the compiled schedule contains instructions for a component
+            absent in the instrument coordinator.
+        TypeError
+            If the schedule provided is not a valid ``CompiledSchedule``.
         """
-        for instrument_name, args in options.items():
+        if not CompiledSchedule.is_valid(compiled_schedule):
+            raise TypeError(f"{compiled_schedule} is not a valid CompiledSchedule")
+
+        # Adds a reference to the last prepared schedule this can be accessed through
+        # the self.last_schedule property.
+        self._last_schedule = compiled_schedule
+
+        compiled_instructions = compiled_schedule["compiled_instructions"]
+        # compiled instructions are expected to follow the structure of a dict
+        # with keys corresponding to instrument names (icc components) and values
+        # containing to instructions in the format specific to that type of hardware.
+        # see also the specification in the CompiledSchedule class.
+        for instrument_name, args in compiled_instructions.items():
             self.get_component(instrument_name).prepare(args)
 
     def start(self) -> None:
