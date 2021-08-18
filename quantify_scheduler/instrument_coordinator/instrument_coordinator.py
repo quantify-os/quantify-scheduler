@@ -77,6 +77,16 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             docstring="A list containing the names of all components that"
             " are part of this InstrumentCoordinator.",
         )
+
+        self.add_parameter(
+            "timeout",
+            unit="s",
+            initial_value=60,
+            vals=validators.Numbers(min_value=0),
+            parameter_class=parameter.ManualParameter,
+            docstring="The timeout used for waiting for the experiment to complete when retrieving acquisitions.",
+        )
+
         self._last_schedule = None
 
     def last_schedule(self) -> CompiledSchedule:
@@ -247,6 +257,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per component.
         """
+
+        self.wait_done(timeout_sec=self.timeout())
+
         # Temporary. Will probably be replaced by an xarray object
         # See quantify-core#187, quantify-core#233, quantify-scheduler#36
         acquisitions: Dict[Tuple[int, int], Any] = dict()

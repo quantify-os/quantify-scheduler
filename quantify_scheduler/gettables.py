@@ -140,6 +140,8 @@ class ScheduleVectorAcqGettable:
         # Run experiment
         self.instr_coord.start()
 
+
+
         # TODO instr_coord components need to be awaited # pylint: disable=fixme
 
         if self.channels_and_indices is None:
