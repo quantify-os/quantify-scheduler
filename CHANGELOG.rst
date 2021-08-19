@@ -18,6 +18,7 @@ Merged branches and closed issues
 * Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
 * Qblox Backend - Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
 * Docs - Fixed missing files in API reference (!176)
+* InstrumentCoordinator - Fixed a bug where results where retrieved before experiments completed (!179)
 * InstrumentCoordinator - CompiledSchedule class added to specify interfaces of InstrumentCoordinator and compilation functions (#174, !177)
 * Compilation - qcompile no longer modifies schedules (#102, !178)
 
