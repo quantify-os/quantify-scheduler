@@ -26,7 +26,6 @@ def mock_setup(request):
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
-
     mock_hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "ic_qcm0": {
@@ -56,7 +55,11 @@ def mock_setup(request):
             },
         },
         "ic_lo_ro": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
-        "ic_lo_mw0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "ic_lo_mw0": {
+            "instrument_type": "LocalOscillator",
+            "lo_freq": None,
+            "power": 1,
+        },
     }
 
     quantum_device.hardware_config(mock_hardware_cfg)

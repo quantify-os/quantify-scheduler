@@ -24,7 +24,9 @@ from quantify_scheduler import types
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.helpers.schedule import extract_acquisition_metadata_from_schedule
+from quantify_scheduler.helpers.schedule import (
+    extract_acquisition_metadata_from_schedule,
+)
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
@@ -48,7 +50,7 @@ class ScheduleVectorAcqGettable:
         schedule_kwargs: Dict[str, Any],
         real_imag: bool = True,
         batched=False,
-        max_batch_size:int=1024,
+        max_batch_size: int = 1024,
     ):
         """
         Create a new instance of ScheduleVectorAcqGettable which is used to do I and Q
@@ -88,8 +90,7 @@ class ScheduleVectorAcqGettable:
             self.unit = ["V", "deg"]
 
         self.batched = batched
-        self.batch_size=max_batch_size
-
+        self.batch_size = max_batch_size
 
         # schedule arguments
         self.schedule_function = schedule_function
@@ -98,8 +99,6 @@ class ScheduleVectorAcqGettable:
 
         # the quantum device object containing setup configuration information
         self.quantum_device = quantum_device
-
-
 
     def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
         """
@@ -142,32 +141,34 @@ class ScheduleVectorAcqGettable:
 
         # Currently only supported for weighted integration assert that the schedule is
         # compatible with that.
-        assert acq_metadata['bin_mode']== BinMode.AVERAGE
-        assert acq_metadata['acq_return_type'] == complex
+        assert acq_metadata["bin_mode"] == BinMode.AVERAGE
+        assert acq_metadata["acq_return_type"] == complex
 
         # initialize an empty dataset, acq_channels will be keys,
         # and the values will be numpy arrays of dtype complex
         # with shape 1*len(acq_indices)
         acquired_data = instr_coordinator.retrieve_acquisition()
         dataset = {}
-        for acq_channel, acq_indices in acq_metadata['acq_indices'].items():
+        for acq_channel, acq_indices in acq_metadata["acq_indices"].items():
             dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
             for acq_idx in acq_indices:
                 val = acquired_data[(acq_channel, acq_idx)]
-                dataset[acq_channel][acq_idx] = val[0]+1j*val[1]
+                dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
         # reshape to the format required by the MeasurementControl
 
         # currently this gettable only supports one acquisition channel
-        if len(dataset.keys())!= 1:
-            raise ValueError("Expected a single channel in the retrieved acquisitions "
-                f"{dataset.keys()=}")
+        if len(dataset.keys()) != 1:
+            raise ValueError(
+                "Expected a single channel in the retrieved acquisitions "
+                f"{dataset.keys()=}"
+            )
 
         # N.B. this only works if there is a single channel i.e., len(dataset.keys())==1
         for vals in dataset.values():
             if self.batched is False:
                 # for iterative mode, we expect only a single value.
-                assert(len(vals)) == 1
+                assert (len(vals)) == 1
 
             if self.real_imag:
                 return vals.real, vals.imag

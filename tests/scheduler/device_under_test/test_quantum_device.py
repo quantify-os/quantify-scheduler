@@ -1,4 +1,3 @@
-
 import pytest
 from quantify_scheduler.compilation import (
     validate_config,
@@ -8,9 +7,11 @@ from quantify_scheduler.compilation import (
 # https://stackoverflow.com/questions/38748257/\
 # disable-autouse-fixtures-on-specific-pytest-marks
 
+
 @pytest.fixture(autouse=True)
 def close_all_instruments():
     pass
+
 
 def test_QuantumDevice_generate_device_config(mock_setup):
 

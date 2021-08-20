@@ -409,7 +409,6 @@ def extract_acquisition_metadata_from_schedule(schedule: ScheduleBase):
         https://gitlab.com/quantify-os/quantify-core/-/merge_requests/212
     """
 
-
     cached_sched = CachedSchedule(schedule)
 
     # a list of all the channels used in this acquisition
@@ -420,24 +419,25 @@ def extract_acquisition_metadata_from_schedule(schedule: ScheduleBase):
     for i, acq_protocol in enumerate(cached_sched.acqid_acqinfo_dict.values()):
         if i == 0:
             # the protocol and bin mode of the first
-            protocol = acq_protocol['protocol']
-            bin_mode = acq_protocol['bin_mode']
+            protocol = acq_protocol["protocol"]
+            bin_mode = acq_protocol["bin_mode"]
             acq_return_type = acq_protocol["acq_return_type"]
 
         # test for limitation 1, all acquisition protocols in a schedule must be the same kind
-        assert acq_protocol['protocol'] == protocol
-        assert acq_protocol['bin_mode'] == bin_mode
-        assert acq_protocol['acq_return_type'] == acq_return_type
+        assert acq_protocol["protocol"] == protocol
+        assert acq_protocol["bin_mode"] == bin_mode
+        assert acq_protocol["acq_return_type"] == acq_return_type
 
         # add the individual channel
-        if acq_protocol['acq_channel'] not in acq_indices.keys():
-            acq_indices[acq_protocol['acq_channel']] = []
+        if acq_protocol["acq_channel"] not in acq_indices.keys():
+            acq_indices[acq_protocol["acq_channel"]] = []
 
-        acq_indices[acq_protocol['acq_channel']].append(acq_protocol['acq_index'])
+        acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
-
-    acquisition_metadata = {'acq_protocol': protocol,
-                            "bin_mode": bin_mode,
-                            "acq_indices": acq_indices,
-                           "acq_return_type": acq_return_type}
+    acquisition_metadata = {
+        "acq_protocol": protocol,
+        "bin_mode": bin_mode,
+        "acq_indices": acq_indices,
+        "acq_return_type": acq_return_type,
+    }
     return acquisition_metadata

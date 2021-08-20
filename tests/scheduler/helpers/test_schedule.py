@@ -437,6 +437,7 @@ def test_get_schedule_time_offset(
     assert offset1 == 0.0
     assert offset2 == init_duration
 
+
 @pytest.mark.xfail(reason="not implemented")
 def test_extract_acquisition_metadata_from_schedule():
     # FIXME Test not implemented

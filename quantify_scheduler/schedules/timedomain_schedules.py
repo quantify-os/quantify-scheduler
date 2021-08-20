@@ -136,7 +136,10 @@ def t1_sched(
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
-            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+            Measure(qubit, acq_index=i),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {i}",
         )
     return schedule
 
@@ -197,7 +200,7 @@ def ramsey_sched(
         schedule.add(
             Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau
         )
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
@@ -244,7 +247,7 @@ def echo_sched(
         schedule.add(X90(qubit))
         schedule.add(X(qubit), ref_pt="start", rel_time=tau / 2)
         schedule.add(X90(qubit), ref_pt="start", rel_time=tau / 2)
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
@@ -283,6 +286,11 @@ def allxy_sched(
 
     """
 
+    print(f"{element_select_idx=}")
+    element_idxs = np.asarray(element_select_idx)
+    element_idxs = element_idxs.reshape(element_idxs.shape or (1,))
+
+    print(f"{element_idxs=}")
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
     # the AllXY experiment
     allxy_combinations = [
@@ -309,17 +317,22 @@ def allxy_sched(
         [(90, 90), (90, 90)],
     ]
     schedule = Schedule("AllXY", repetitions)
-    for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
-        if element_select_idx in ("All", i):
-            schedule.add(Reset(qubit), label=f"Reset {i}")
-            schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
-            schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
-            schedule.add(Measure(qubit), label=f"Measurement {i}")
-        elif element_select_idx > len(allxy_combinations) or element_select_idx < 0:
+
+    print(f"{element_select_idx=}")
+    for i, elt_idx in enumerate(element_idxs):
+        # check index valid
+        if elt_idx > len(allxy_combinations) or elt_idx < 0:
             raise ValueError(
-                f"Invalid index selected: {element_select_idx}. "
+                f"Invalid index selected: {elt_idx}. "
                 "Index must be in range 0 to 21 inclusive."
             )
+
+        ((th0, phi0), (th1, phi1)) = allxy_combinations[elt_idx]
+
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
+        schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
