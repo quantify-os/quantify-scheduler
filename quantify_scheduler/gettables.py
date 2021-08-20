@@ -17,7 +17,8 @@ from typing import Any, Callable, Dict, Tuple, List, Optional, Union
 
 import numpy as np
 from qcodes import Parameter
-from qcodes.instrument.base import Instrument
+
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 from quantify_scheduler import types
 from quantify_scheduler.enums import BinMode
@@ -42,14 +43,10 @@ class ScheduleVectorAcqGettable:
     # pylint: disable=line-too-long
     def __init__(
         self,
-        device: Instrument,
+        quantum_device: QuantumDevice,
         schedule_function: Callable[..., types.Schedule],
         schedule_kwargs: Dict[str, Any],
-        device_cfg: Dict[str, Any],
-        hardware_cfg: Dict[str, Any],
-        instr_coord: InstrumentCoordinator,
         real_imag: bool = True,
-        hardware_averages: int = 1024,
         batched=False,
         max_batch_size:int=1024,
     ):
@@ -59,7 +56,7 @@ class ScheduleVectorAcqGettable:
 
         Parameters
         ----------
-        device
+        quantum_device
             The qcodes instrument.
         schedule_function
             A function which returns a :class:`~quantify_scheduler.types.Schedule`.
@@ -68,18 +65,9 @@ class ScheduleVectorAcqGettable:
             a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
             evaluated every time :code:`.get()` is called before being passed to the
             :code:`schedule_function`.
-        device_cfg
-            The device configuration dictionary.
-        hardware_cfg
-            The hardware configuration dictionary.
-        instr_coord
-            An instance of
-            :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
         real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
-        hardware_averages
-            The number of hardware averages.
         batched
             used to indicate if the experiment is performed in batches or in an
             iterative fashion.
@@ -88,7 +76,9 @@ class ScheduleVectorAcqGettable:
             mode. Can be used to split a program up in parts if required due to hardware
             constraints.
         """  # pylint: disable=line-too-long
-        if real_imag:
+
+        self.real_imag = real_imag
+        if self.real_imag:
             self.name = ["I", "Q"]
             self.label = ["Voltage I", "Voltage Q"]
             self.unit = ["V", "V"]
@@ -98,20 +88,17 @@ class ScheduleVectorAcqGettable:
             self.unit = ["V", "deg"]
 
         self.batched = batched
-
-        self.schedule_function = schedule_function
-        self.schedule_kwargs = schedule_kwargs
-
-        self.device_cfg = device_cfg
-        self.mapping_cfg = hardware_cfg
-        self.instr_coord = instr_coord
-
-        self.hardware_averages = hardware_averages
-        self.real_imag = real_imag
-        self.device = device
         self.batch_size=max_batch_size
 
+
+        # schedule arguments
+        self.schedule_function = schedule_function
+        self.schedule_kwargs = schedule_kwargs
         self._evaluated_sched_kwargs = {}
+
+        # the quantum device object containing setup configuration information
+        self.quantum_device = quantum_device
+
 
 
     def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
@@ -133,24 +120,23 @@ class ScheduleVectorAcqGettable:
 
         # FIXME: this is still required but should be set to the schedule upon
         # initialization
-        sched.repetitions = self.hardware_averages
+
+        sched.repetitions = self.quantum_device.cfg_nr_averages()
         compiled_schedule = qcompile(
             schedule=sched,
-            device_cfg=self.device_cfg,
-            hardware_mapping=self.mapping_cfg,
+            device_cfg=self.quantum_device.generate_device_config(),
+            hardware_mapping=self.quantum_device.generate_hardware_config(),
         )
 
-        # self.instr_coord.schedule_kwargs = self.schedule_kwargs
-        # self.instr_coord.device = self.device
-
+        instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         # Upload the schedule and configure the instrument coordinator
-        self.instr_coord.prepare(compiled_schedule)
+        instr_coordinator.prepare(compiled_schedule)
 
         # Run experiment
-        self.instr_coord.start()
+        instr_coordinator.start()
 
         # retrieve the acquisition results
-        # FIXME: all of this reshaping should happen inside the instrument coordinator
+        # FIXME: this reshaping should happen inside the instrument coordinator
         # FIXME2: the acq_metadata should be an attribute of the compiled schedule
         acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
@@ -162,7 +148,7 @@ class ScheduleVectorAcqGettable:
         # initialize an empty dataset, acq_channels will be keys,
         # and the values will be numpy arrays of dtype complex
         # with shape 1*len(acq_indices)
-        acquired_data = self.instr_coord.retrieve_acquisition()
+        acquired_data = instr_coordinator.retrieve_acquisition()
         dataset = {}
         for acq_channel, acq_indices in acq_metadata['acq_indices'].items():
             dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
@@ -187,11 +173,6 @@ class ScheduleVectorAcqGettable:
                 return vals.real, vals.imag
             # implicit else
             return np.abs(vals), np.angle(vals, deg=True)
-
-
-def _iq_to_mag_phase(i_val: float, q_val: float):
-    s21: complex = i_val + 1j * q_val
-    return np.abs(s21), np.angle(s21, deg=True)
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
