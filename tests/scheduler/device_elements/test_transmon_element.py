@@ -7,7 +7,7 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
 from quantify_scheduler.compilation import validate_config
-from quantify_scheduler.device_elements.transmon_element import TransmonElement
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 
 
 @pytest.fixture
