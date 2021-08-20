@@ -20,9 +20,10 @@ from qcodes import Parameter
 from qcodes.instrument.base import Instrument
 
 from quantify_scheduler import types
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-
+from quantify_scheduler.helpers.schedule import extract_acquisition_metadata_from_schedule
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
@@ -47,9 +48,10 @@ class ScheduleVectorAcqGettable:
         device_cfg: Dict[str, Any],
         hardware_cfg: Dict[str, Any],
         instr_coord: InstrumentCoordinator,
-        channels_and_indices: Optional[List[Tuple[int, int]]] = None,
         real_imag: bool = True,
         hardware_averages: int = 1024,
+        batched=False,
+        max_batch_size:int=1024,
     ):
         """
         Create a new instance of ScheduleVectorAcqGettable which is used to do I and Q
@@ -73,14 +75,18 @@ class ScheduleVectorAcqGettable:
         instr_coord
             An instance of
             :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
-        channels_and_indices
-            List containing all the acquisition channels and indices to retrieve, the
-            channels and indices are provided as tuples. If None, (0,0) is used.
         real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
         hardware_averages
             The number of hardware averages.
+        batched
+            used to indicate if the experiment is performed in batches or in an
+            iterative fashion.
+        max_batch_size:
+            determines the maximum number of points to acquire when acquiring in batched
+            mode. Can be used to split a program up in parts if required due to hardware
+            constraints.
         """  # pylint: disable=line-too-long
         if real_imag:
             self.name = ["I", "Q"]
@@ -91,7 +97,7 @@ class ScheduleVectorAcqGettable:
             self.label = ["Magnitude", "Phase"]
             self.unit = ["V", "deg"]
 
-        self.batched = False
+        self.batched = batched
 
         self.schedule_function = schedule_function
         self.schedule_kwargs = schedule_kwargs
@@ -99,16 +105,16 @@ class ScheduleVectorAcqGettable:
         self.device_cfg = device_cfg
         self.mapping_cfg = hardware_cfg
         self.instr_coord = instr_coord
-        self.channels_and_indices = channels_and_indices
 
         self.hardware_averages = hardware_averages
         self.real_imag = real_imag
         self.device = device
+        self.batch_size=max_batch_size
 
         self._evaluated_sched_kwargs = {}
-        self._config = {}
 
-    def get(self) -> Union[Tuple[float, float], List[Tuple[float, float]]]:
+
+    def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
         """
         Start the experimental sequence and retrieve acquisition data.
 
@@ -128,42 +134,59 @@ class ScheduleVectorAcqGettable:
         # FIXME: this is still required but should be set to the schedule upon
         # initialization
         sched.repetitions = self.hardware_averages
-        self._config = qcompile(
+        compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.device_cfg,
             hardware_mapping=self.mapping_cfg,
         )
 
-        self.instr_coord.schedule_kwargs = self.schedule_kwargs
-        self.instr_coord.device = self.device
+        # self.instr_coord.schedule_kwargs = self.schedule_kwargs
+        # self.instr_coord.device = self.device
 
         # Upload the schedule and configure the instrument coordinator
-        self.instr_coord.prepare(self._config)
+        self.instr_coord.prepare(compiled_schedule)
 
         # Run experiment
         self.instr_coord.start()
 
-        # TODO instr_coord components need to be awaited # pylint: disable=fixme
+        # retrieve the acquisition results
+        # FIXME: all of this reshaping should happen inside the instrument coordinator
+        # FIXME2: the acq_metadata should be an attribute of the compiled schedule
+        acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
-        if self.channels_and_indices is None:
-            acq_channel_and_index = (0, 0)
-            i_val, q_val = self.instr_coord.retrieve_acquisition()[
-                acq_channel_and_index
-            ]
+        # Currently only supported for weighted integration assert that the schedule is
+        # compatible with that.
+        assert acq_metadata['bin_mode']== BinMode.AVERAGE
+        assert acq_metadata['acq_return_type'] == complex
+
+        # initialize an empty dataset, acq_channels will be keys,
+        # and the values will be numpy arrays of dtype complex
+        # with shape 1*len(acq_indices)
+        acquired_data = self.instr_coord.retrieve_acquisition()
+        dataset = {}
+        for acq_channel, acq_indices in acq_metadata['acq_indices'].items():
+            dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
+            for acq_idx in acq_indices:
+                val = acquired_data[(acq_channel, acq_idx)]
+                dataset[acq_channel][acq_idx] = val[0]+1j*val[1]
+
+        # reshape to the format required by the MeasurementControl
+
+        # currently this gettable only supports one acquisition channel
+        if len(dataset.keys())!= 1:
+            raise ValueError("Expected a single channel in the retrieved acquisitions "
+                f"{dataset.keys()=}")
+
+        # N.B. this only works if there is a single channel i.e., len(dataset.keys())==1
+        for vals in dataset.values():
+            if self.batched is False:
+                # for iterative mode, we expect only a single value.
+                assert(len(vals)) == 1
+
             if self.real_imag:
-                return i_val, q_val
-
-            return _iq_to_mag_phase(i_val, q_val)
-
-        # implicit else:
-        formatted_acq = list()
-        acquisition = self.instr_coord.retrieve_acquisition()
-        for acq_channel_acq_index_tuple in self.channels_and_indices:
-            this_acq = acquisition[acq_channel_acq_index_tuple]
-            if not self.real_imag:
-                this_acq = _iq_to_mag_phase(*this_acq)
-            formatted_acq.append(this_acq)
-        return formatted_acq
+                return vals.real, vals.imag
+            # implicit else
+            return np.abs(vals), np.angle(vals, deg=True)
 
 
 def _iq_to_mag_phase(i_val: float, q_val: float):

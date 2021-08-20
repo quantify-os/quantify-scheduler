@@ -10,6 +10,7 @@ import numpy as np
 from quantify_core.utilities import general
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.types import ScheduleBase
 
 
 class CachedSchedule:
@@ -390,3 +391,53 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
             acqid_acqinfo_dict[acq_id] = acq_info
 
     return acqid_acqinfo_dict
+
+
+def extract_acquisition_metadata_from_schedule(schedule: ScheduleBase):
+    """
+
+    Requirements
+        - acquisition metadata should be sufficient to initialize the xarray dataset
+          with the associated labels.
+    Limitations
+        - All acquisition protocols used in a schedule must be of the same type.
+        - acquisition indices per channel are unique.
+        - acquisition indices used for each channel are the same.
+        - No support for feedback yet (number of datapionts per acquisition index is
+          assumed to be given by the repetitions global property).
+
+        https://gitlab.com/quantify-os/quantify-core/-/merge_requests/212
+    """
+
+
+    cached_sched = CachedSchedule(schedule)
+
+    # a list of all the channels used in this acquisition
+    acq_channels: list = []
+    # a dictionary containing the acquisition indices used for each channel
+    acq_indices: dict = {}
+
+    for i, acq_protocol in enumerate(cached_sched.acqid_acqinfo_dict.values()):
+        if i == 0:
+            # the protocol and bin mode of the first
+            protocol = acq_protocol['protocol']
+            bin_mode = acq_protocol['bin_mode']
+            acq_return_type = acq_protocol["acq_return_type"]
+
+        # test for limitation 1, all acquisition protocols in a schedule must be the same kind
+        assert acq_protocol['protocol'] == protocol
+        assert acq_protocol['bin_mode'] == bin_mode
+        assert acq_protocol['acq_return_type'] == acq_return_type
+
+        # add the individual channel
+        if acq_protocol['acq_channel'] not in acq_indices.keys():
+            acq_indices[acq_protocol['acq_channel']] = []
+
+        acq_indices[acq_protocol['acq_channel']].append(acq_protocol['acq_index'])
+
+
+    acquisition_metadata = {'acq_protocol': protocol,
+                            "bin_mode": bin_mode,
+                            "acq_indices": acq_indices,
+                           "acq_return_type": acq_return_type}
+    return acquisition_metadata

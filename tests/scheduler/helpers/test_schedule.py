@@ -5,6 +5,7 @@
 # pylint: disable=too-many-locals
 from __future__ import annotations
 
+import pytest
 from quantify_scheduler.gate_library import X90, Measure, Reset
 from quantify_scheduler.helpers.schedule import (
     get_acq_info_by_uuid,
@@ -435,3 +436,8 @@ def test_get_schedule_time_offset(
     assert offset0 == 0.0
     assert offset1 == 0.0
     assert offset2 == init_duration
+
+@pytest.mark.xfail(reason="not implemented")
+def test_extract_acquisition_metadata_from_schedule():
+    # FIXME Test not implemented
+    assert False
