@@ -4,6 +4,7 @@
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Optional, Tuple, Union
 
+from quantify_scheduler.enums import BinMode
 import numpy as np
 from .types import Operation
 
@@ -430,6 +431,7 @@ class Measure(Operation):
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
+        bin_mode: BinMode = None,
         data: Optional[dict] = None,
     ):
         """
@@ -473,6 +475,7 @@ class Measure(Operation):
                     "qubits": list(qubits),
                     "acq_channel": acq_channel,
                     "acq_index": acq_index,
+                    "bin_mode": bin_mode,
                     "operation_type": "measure",
                 },
             }

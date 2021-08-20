@@ -4,7 +4,7 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
-from typing import Union
+from typing import Union, List
 from typing_extensions import Literal
 import numpy as np
 from quantify_scheduler.types import Schedule
@@ -286,11 +286,9 @@ def allxy_sched(
 
     """
 
-    print(f"{element_select_idx=}")
     element_idxs = np.asarray(element_select_idx)
     element_idxs = element_idxs.reshape(element_idxs.shape or (1,))
 
-    print(f"{element_idxs=}")
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
     # the AllXY experiment
     allxy_combinations = [
@@ -333,6 +331,34 @@ def allxy_sched(
         schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
         schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
         schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+    return schedule
+
+
+def readout_calibration_sched(
+    qubit: str,
+    prepared_states: List[int],
+    repetitions: int = 1,
+) -> Schedule:
+    """
+    A schedule for readout calibration. Prepares a state and immediately performs
+    a measurement.
+    """
+
+    schedule = Schedule("AllXY", repetitions)
+
+    for i, prep_state in enumerate(prepared_states):
+
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        if prep_state == 0:
+            pass
+        elif prep_state == 1:
+            schedule.add(Rxy(qubit=qubit, theta=180, phi=0))
+        elif prep_state == 2:
+            raise NotImplementedError()
+        else:
+            raise ValueError(f"Prepared state ({prep_state})must be either 0, 1 or 2")
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+
     return schedule
 
 

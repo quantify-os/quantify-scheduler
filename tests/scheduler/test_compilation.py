@@ -4,7 +4,7 @@
 import inspect
 import json
 import os
-
+from quantify_scheduler.enums import BinMode
 from copy import deepcopy
 import numpy as np
 import pytest
@@ -228,3 +228,32 @@ def test_schedule_modified():
 
     # Fails if schedule is modified
     assert copy_of_sched == sched
+
+
+def test_measurement_specification_of_binmode():
+
+    qubit = "q0"
+
+    schedule = Schedule("binmode-test", 1)
+    schedule.add(Reset(qubit), label=f"Reset {0}")
+    schedule.add(
+        Measure(qubit, acq_index=0, bin_mode=BinMode.APPEND), label=f"Measurement {0}"
+    )
+
+    comp_sched = qcompile(schedule, device_cfg=DEVICE_CFG)
+
+    for key, value in comp_sched.data["operation_dict"].items():
+        if "Measure" in key:
+            assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.APPEND
+
+    schedule = Schedule("binmode-test", 1)
+    schedule.add(Reset(qubit), label=f"Reset {0}")
+    schedule.add(
+        Measure(qubit, acq_index=0, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}"
+    )
+
+    comp_sched = qcompile(schedule, device_cfg=DEVICE_CFG)
+
+    for key, value in comp_sched.data["operation_dict"].items():
+        if "Measure" in key:
+            assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
