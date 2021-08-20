@@ -180,7 +180,6 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
 
-                # FIXME add test for this
                 # If the user specifies bin-mode use that otherwise use a default
                 # better would be to get it from the config file in the "or"
                 bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE

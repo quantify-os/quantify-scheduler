@@ -234,6 +234,9 @@ def test_measurement_specification_of_binmode():
 
     qubit = "q0"
 
+    ##################
+    # Append selected
+    ##################
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
     schedule.add(
@@ -246,11 +249,29 @@ def test_measurement_specification_of_binmode():
         if "Measure" in key:
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.APPEND
 
+    ##################
+    # AVERAGE selected
+    ##################
+
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
     schedule.add(
         Measure(qubit, acq_index=0, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}"
     )
+
+    comp_sched = qcompile(schedule, device_cfg=DEVICE_CFG)
+
+    for key, value in comp_sched.data["operation_dict"].items():
+        if "Measure" in key:
+            assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
+
+    ######################################################
+    # Not specified uses default average mode
+    ######################################################
+
+    schedule = Schedule("binmode-test", 1)
+    schedule.add(Reset(qubit), label=f"Reset {0}")
+    schedule.add(Measure(qubit, acq_index=0), label=f"Measurement {0}")
 
     comp_sched = qcompile(schedule, device_cfg=DEVICE_CFG)
 
