@@ -14,3 +14,4 @@ def close_all_instruments():
     Instrument.close_all()
     yield
     Instrument.close_all()
+

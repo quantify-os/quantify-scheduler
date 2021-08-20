@@ -143,6 +143,12 @@ transmon_element
 .. automodule:: quantify_scheduler.device_under_test.transmon_element
     :members:
 
+quantum_device
+--------------
+
+.. automodule:: quantify_scheduler.device_under_test.quantum_device
+    :members:
+
 
 helpers
 =======
