@@ -124,6 +124,9 @@ class ScheduleVectorAcqGettable:
         # generate a schedule using the evaluated keyword arguments dict
         sched = self.schedule_function(**self._evaluated_sched_kwargs)
         # compile and assign to attributes for debugging purposes
+
+        # FIXME: this is still required but should be set to the schedule upon
+        # initialization
         sched.repetitions = self.hardware_averages
         self._config = qcompile(
             schedule=sched,

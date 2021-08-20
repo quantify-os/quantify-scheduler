@@ -90,7 +90,8 @@ def rabi_sched(
             ),
             label=f"Rabi_pulse {i}",
         )
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        # N.B. acq_channel is not specified
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
 
     return schedule
 
