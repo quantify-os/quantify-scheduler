@@ -252,6 +252,7 @@ class TestT1Sched:
         sched = ts.t1_sched(**sched_kwargs)
         sched = qcompile(sched, DEVICE_CONFIG)
 
+    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         assert len(self.sched.operations) == 3  # init, pi and measure
 
@@ -303,6 +304,7 @@ class TestRamseySchedDetuning:
         sched = qcompile(sched, DEVICE_CONFIG)
         assert any(op["rel_time"] == 3e-6 for op in sched.timing_constraints)
 
+    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
 
@@ -350,6 +352,7 @@ class TestRamseySched:
         sched = ts.ramsey_sched(**sched_kwargs)
         sched = qcompile(sched, DEVICE_CONFIG)
 
+    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
 
@@ -399,6 +402,7 @@ class TestEchoSched:
             if (i - 4) % 5 == 0:
                 assert constr["label"][:11] == "Measurement"
 
+    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         # 4 for an echo
         assert len(self.sched.operations) == 4  # init, x90, X and measure
@@ -432,6 +436,7 @@ class TestAllXYSched:
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
+    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         # 7 operations (x90, y90, X180, Y180, idle, reset, measurement)
         assert len(self.sched.operations) == 7
@@ -465,6 +470,7 @@ class TestAllXYSchedElement:
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
+    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         # 4 operations (X180, Y180, reset, measurement)
         assert len(self.sched.operations) == 4

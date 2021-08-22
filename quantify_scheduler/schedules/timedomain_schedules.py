@@ -253,7 +253,7 @@ def echo_sched(
 
 def allxy_sched(
     qubit: str,
-    element_select_idx: Union[Literal["All"], int] = "All",
+    element_select_idx: Union[np.ndarray, int] = np.arange(21),
     repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -274,8 +274,7 @@ def allxy_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
     element_select_idx
-        the index of the particular element of the AllXY experiment to exectute -
-        or :code:`"All"` for all elemements of the sequence.
+        the index of the particular element of the AllXY experiment to exectute.
     repetitions
         The amount of times the Schedule will be repeated.
 
