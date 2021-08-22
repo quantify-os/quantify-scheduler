@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import pytest
 from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.enums import BinMode
+import numpy as np
 from quantify_scheduler.helpers.schedule import (
     get_acq_info_by_uuid,
     get_acq_uuid,
@@ -17,6 +19,7 @@ from quantify_scheduler.helpers.schedule import (
     get_pulse_uuid,
     get_schedule_time_offset,
     get_total_duration,
+    extract_acquisition_metadata_from_schedule,
 )
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.schedules import spectroscopy_schedules
@@ -438,7 +441,16 @@ def test_get_schedule_time_offset(
     assert offset2 == init_duration
 
 
-@pytest.mark.xfail(reason="not implemented")
-def test_extract_acquisition_metadata_from_schedule():
-    # FIXME Test not implemented
-    assert False
+def test_extract_acquisition_metadata_from_schedule(complied_two_qubit_t1_schedule):
+    comp_t1_sched = complied_two_qubit_t1_schedule
+    acq_metadata = extract_acquisition_metadata_from_schedule(comp_t1_sched)
+
+    assert acq_metadata["acq_protocol"] == "weighted_integrated_complex"
+    assert acq_metadata["bin_mode"] == BinMode.AVERAGE
+    assert acq_metadata["acq_return_type"] == complex
+
+    acq_indices = acq_metadata["acq_indices"]
+    # keys correspond to acquisition channels
+    assert set(acq_indices.keys()) == {0, 1}
+    assert acq_indices[0] == acq_indices[1]
+    assert acq_indices[0] == list(np.arange(20))

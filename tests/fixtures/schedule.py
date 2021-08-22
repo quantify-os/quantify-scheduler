@@ -10,14 +10,16 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import numpy as np
 import pytest
 from quantify_scheduler.schemas import examples
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
 )
-from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.gate_library import X, X90, Measure, Reset
 from quantify_scheduler.types import Schedule
+from quantify_scheduler.compilation import qcompile
 
 
 @pytest.fixture
@@ -87,3 +89,38 @@ def schedule_with_measurement_q2() -> Schedule:
 @pytest.fixture
 def schedule_with_pulse_info(create_schedule_with_pulse_info) -> Schedule:
     return create_schedule_with_pulse_info()
+
+
+@pytest.fixture
+def complied_two_qubit_t1_schedule(load_example_config):
+    """
+    a schedule performing T1 on two-qubits simultaneously
+    """
+    device_config = load_example_config()
+
+    qubits = ["q0", "q1"]
+    repetitions = 1024
+    schedule = Schedule("Multi-qubit T1", repetitions)
+
+    times = np.arange(0, 60e-6, 3e-6)
+
+    for i, tau in enumerate(times):
+        schedule.add(Reset(qubits[0], qubits[1]), label=f"Reset {i}")
+        schedule.add(X(qubits[0]), label=f"pi {i} {qubits[0]}")
+        schedule.add(X(qubits[1]), label=f"pi {i} {qubits[1]}", ref_pt="start")
+
+        schedule.add(
+            Measure(qubits[0], acq_index=i, acq_channel=0),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {qubits[0]}{i}",
+        )
+        schedule.add(
+            Measure(qubits[1], acq_index=i, acq_channel=1),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {qubits[1]}{i}",
+        )
+
+    comp_t1_sched = qcompile(schedule, device_config)
+    return comp_t1_sched
