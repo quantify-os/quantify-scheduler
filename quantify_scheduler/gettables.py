@@ -141,15 +141,15 @@ class ScheduleVectorAcqGettable:
 
         # Currently only supported for weighted integration assert that the schedule is
         # compatible with that.
-        assert acq_metadata["bin_mode"] == BinMode.AVERAGE
-        assert acq_metadata["acq_return_type"] == complex
+        assert acq_metadata.bin_mode == BinMode.AVERAGE
+        assert acq_metadata.acq_return_type == complex
 
         # initialize an empty dataset, acq_channels will be keys,
         # and the values will be numpy arrays of dtype complex
         # with shape 1*len(acq_indices)
         acquired_data = instr_coordinator.retrieve_acquisition()
         dataset = {}
-        for acq_channel, acq_indices in acq_metadata["acq_indices"].items():
+        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
             dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
             for acq_idx in acq_indices:
                 val = acquired_data[(acq_channel, acq_idx)]

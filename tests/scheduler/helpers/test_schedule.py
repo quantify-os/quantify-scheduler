@@ -445,12 +445,11 @@ def test_extract_acquisition_metadata_from_schedule(complied_two_qubit_t1_schedu
     comp_t1_sched = complied_two_qubit_t1_schedule
     acq_metadata = extract_acquisition_metadata_from_schedule(comp_t1_sched)
 
-    assert acq_metadata["acq_protocol"] == "weighted_integrated_complex"
-    assert acq_metadata["bin_mode"] == BinMode.AVERAGE
-    assert acq_metadata["acq_return_type"] == complex
+    assert acq_metadata.acq_protocol == "weighted_integrated_complex"
+    assert acq_metadata.bin_mode == BinMode.AVERAGE
+    assert acq_metadata.acq_return_type == complex
 
-    acq_indices = acq_metadata["acq_indices"]
     # keys correspond to acquisition channels
-    assert set(acq_indices.keys()) == {0, 1}
-    assert acq_indices[0] == acq_indices[1]
-    assert acq_indices[0] == list(np.arange(20))
+    assert set(acq_metadata.acq_indices.keys()) == {0, 1}
+    assert acq_metadata.acq_indices[0] == acq_metadata.acq_indices[1]
+    assert acq_metadata.acq_indices[0] == list(np.arange(20))

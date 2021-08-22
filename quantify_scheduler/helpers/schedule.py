@@ -10,7 +10,7 @@ import numpy as np
 from quantify_core.utilities import general
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.types import ScheduleBase
+from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
 
 
 class CachedSchedule:
@@ -393,9 +393,22 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
     return acqid_acqinfo_dict
 
 
-def extract_acquisition_metadata_from_schedule(schedule: ScheduleBase) -> Dict:
+def extract_acquisition_metadata_from_schedule(
+    schedule: ScheduleBase,
+) -> AcquisitionMetadata:
     """
     Extracts acquisition metadata from a schedule.
+
+    This function operates under certain assumptions with respect to the schedule.
+    - The acquisition_metadata should be sufficient to initialize the xarray dataset
+    (described in quantify-core !212)
+    that executing the schedule will result in.
+    - All measurements in the schedule use the same acquisition protocol.
+    - The used acquisition index channel combinations for each measurement are unique.
+    - The used acquisition indices for each channel are the same.
+    - The number of data points per acquisition index assumed to be given by the
+        schedule's repetition property. This implies no support for feedback.
+
 
     Parameters
     ----------
@@ -409,25 +422,14 @@ def extract_acquisition_metadata_from_schedule(schedule: ScheduleBase) -> Dict:
         The acquisition metadata, a dictionary specifying the
         acquisition protocol, bin-mode, return-type of the acquisition protocol, and
         the acquisition indices for each channel.
-        The keys of the dictionary are "acq_protocol" , "bin_mode", "acq_indices", and
-        "acq_return_type".
-
-    This function operates under certain assumptions with respect to the schedule.
-
-    - The acquisition_metadata should be sufficient to initialize the xarray dataset
-    (described in quantify-core !212)
-    that executing the schedule will result in.
-    - All measurements in the schedule use the same acquisition protocol.
-    - The used acquisition index channel combinations for each measurement are unique.
-    - The used acquisition indices for each channel are the same.
-    - The number of data points per acquisition index assumed to be given by the
-        schedule's repetition property. This implies no support for feedback.
     """
-
+    # convert to a cached schedule to have useful metadata available.
     cached_sched = CachedSchedule(schedule)
 
     # a dictionary containing the acquisition indices used for each channel
     acq_indices: dict = {}
+
+    # loop over the individual acquisitions in the schedule to extract the relevant info
 
     for i, acq_protocol in enumerate(cached_sched.acqid_acqinfo_dict.values()):
         if i == 0:
@@ -448,11 +450,11 @@ def extract_acquisition_metadata_from_schedule(schedule: ScheduleBase) -> Dict:
 
         acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
-    # This could be improved by turning this dictionary into a dataclass.
-    acquisition_metadata = {
-        "acq_protocol": protocol,
-        "bin_mode": bin_mode,
-        "acq_indices": acq_indices,
-        "acq_return_type": acq_return_type,
-    }
-    return acquisition_metadata
+    # combine the information in the acq metada dataclass.
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol=protocol,
+        bin_mode=bin_mode,
+        acq_indices=acq_indices,
+        acq_return_type=acq_return_type,
+    )
+    return acq_metadata

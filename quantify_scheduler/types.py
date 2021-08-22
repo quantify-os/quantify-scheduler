@@ -8,10 +8,11 @@ import json
 import ast
 from abc import ABC
 from collections import UserDict
+from dataclasses import dataclass
 from copy import deepcopy
 from pydoc import locate
 from enum import Enum
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, List, Type, TYPE_CHECKING
 from uuid import uuid4
 
 import numpy as np
@@ -21,6 +22,7 @@ from quantify_scheduler import json_utils
 from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler import resources
 from quantify_scheduler import enums
+
 
 if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
@@ -739,3 +741,34 @@ class CompiledSchedule(ScheduleBase):
             return isinstance(object_to_be_validated, CompiledSchedule)
 
         return False
+
+
+@dataclass
+class AcquisitionMetadata:
+    """
+    Class to provide a description of the shape and type of data that a schedule will
+    return when executed.
+
+    Parameters
+    ----------
+    acq_protocol
+        The acquisition protocol that is used for all acquisitions in the schedule.
+    bin_mode
+        How the data is stored in the bins indexed by acq_channel and acq_index.
+    acq_return_type
+        the datatype returned by the individual acquisitions.
+    acq_indices
+        a dictionary containing the acquisition channel as key and a list of acquisition
+        indices that are used for every channel.
+
+
+    .. note::
+
+        The acquisition protocol, bin-mode and return types are assumed to be the same
+        for all acquisitions in a schedule.
+    """
+
+    acq_protocol: str
+    bin_mode: enums.BinMode
+    acq_return_type: Type
+    acq_indices: Dict[int, List[int]]
