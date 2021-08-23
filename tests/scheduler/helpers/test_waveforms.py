@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import inspect
 from typing import List
+from unittest.case import TestCase
 
 import numpy as np
 import pytest
@@ -12,6 +13,8 @@ import pytest
 from quantify_scheduler.gate_library import X90
 from quantify_scheduler.helpers.schedule import get_pulse_uuid
 from quantify_scheduler.helpers.waveforms import (
+    area_pulse,
+    area_pulses,
     exec_custom_waveform_function,
     exec_waveform_function,
     get_waveform,
@@ -314,3 +317,41 @@ def test_modulate_waveform():
     # Assert
     assert np.allclose(waveform.real, expected_real)
     assert np.allclose(waveform.imag, expected_imag)
+
+
+def test_area_pulse() -> None:
+    pulse = {
+        "wf_func": "quantify_scheduler.waveforms.square",
+        "amp": 1,
+        "duration": 1e-08,
+        "phase": 0,
+        "t0": 0,
+        "clock": "cl0.baseband",
+        "port": "LP",
+    }
+    result = area_pulse(pulse, int(1e9))
+    TestCase().assertAlmostEqual(result, 1e-8)
+
+
+def test_area_pulses() -> None:
+    test_list = [
+        {
+            "wf_func": "quantify_scheduler.waveforms.square",
+            "amp": 1,
+            "duration": 1e-08,
+            "phase": 0,
+            "t0": 0,
+            "clock": "cl0.baseband",
+            "port": "LP",
+        },
+        {
+            "wf_func": "quantify_scheduler.waveforms.ramp",
+            "amp": 1,
+            "duration": 1e-08,
+            "t0": 0,
+            "clock": "cl0.baseband",
+            "port": "LP",
+        },
+    ]
+    result = area_pulses(test_list, int(1e9))
+    TestCase().assertAlmostEqual(result, 1.5e-8)
