@@ -46,6 +46,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     verify_qblox_instruments_version,
     DriverVersionError,
     to_grid_time,
+    generate_uuid_from_wf_data,
 )
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import (
@@ -879,6 +880,19 @@ def test_verify_qblox_instruments_version():
         "performed. Either the package is not installed correctly or a version < "
         "0.3.2 was found."
     )
+
+
+def test_generate_uuid_from_wf_data():
+    arr0 = np.arange(10000)
+    arr1 = np.arange(10000)
+    arr2 = np.arange(10000) + 1
+
+    hash0 = generate_uuid_from_wf_data(arr0)
+    hash1 = generate_uuid_from_wf_data(arr1)
+    hash2 = generate_uuid_from_wf_data(arr2)
+
+    assert hash0 == hash1
+    assert hash1 != hash2
 
 
 def test_assign_frequencies():
