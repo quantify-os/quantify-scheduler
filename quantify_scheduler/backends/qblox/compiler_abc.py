@@ -1168,9 +1168,12 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
             return (
-                acquisition.data["acq_channel"],
-                acquisition.data["acq_index"],
-            ), acquisition.data["protocol"]
+                (
+                    acquisition.data["acq_channel"],
+                    acquisition.data["acq_index"],
+                ),
+                acquisition.data["protocol"],
+            )
 
         acq_mapping = dict()
         for sequencer in self.sequencers.values():

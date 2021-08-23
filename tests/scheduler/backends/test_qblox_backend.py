@@ -48,9 +48,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import (
-    QASMRuntimeSettings,
-)
+from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
