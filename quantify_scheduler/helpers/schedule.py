@@ -458,3 +458,38 @@ def extract_acquisition_metadata_from_schedule(
         acq_return_type=acq_return_type,
     )
     return acq_metadata
+
+
+# FIXME obvious code repetition with function above. Need to somehow merge these two.
+def _extract_acquisition_metadata_from_acquisitions(
+    acquisitions,
+) -> AcquisitionMetadata:
+    acq_indices: dict = {}
+    for i, acq in enumerate(acquisitions):
+        acq_protocol = acq.data
+        if i == 0:
+            # the protocol and bin mode of the first
+            protocol = acq_protocol["protocol"]
+            bin_mode = acq_protocol["bin_mode"]
+            acq_return_type = acq_protocol["acq_return_type"]
+
+        # test for limitation 1, all acquisition protocols in a schedule must be
+        # the same kind
+        assert acq_protocol["protocol"] == protocol
+        assert acq_protocol["bin_mode"] == bin_mode
+        assert acq_protocol["acq_return_type"] == acq_return_type
+
+        # add the individual channel
+        if acq_protocol["acq_channel"] not in acq_indices.keys():
+            acq_indices[acq_protocol["acq_channel"]] = []
+
+        acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
+
+    # combine the information in the acq metada dataclass.
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol=protocol,
+        bin_mode=bin_mode,
+        acq_indices=acq_indices,
+        acq_return_type=acq_return_type,
+    )
+    return acq_metadata

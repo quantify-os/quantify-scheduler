@@ -20,6 +20,7 @@ from quantify_core.data.handling import (
     gen_tuid,
 )
 
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.helpers import (
@@ -46,6 +47,9 @@ from quantify_scheduler.backends.types.qblox import (
 
 from quantify_scheduler.backends.qblox import reserved_registers
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
+from quantify_scheduler.helpers.schedule import (
+    _extract_acquisition_metadata_from_acquisitions,
+)
 
 
 class InstrumentCompiler(ABC):
@@ -573,7 +577,8 @@ class Sequencer:
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
             acq_declaration_dict[str(channel)] = {
-                "num_bins": max(indices) + 1,
+                "num_bins": max(indices)
+                + 1,  # FIXME should be mutiplied by nr of repetitions for append mode
                 "index": channel,
             }
 
@@ -648,6 +653,27 @@ class Sequencer:
         # program body
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
+
+        # ############
+        if len(acquisitions) > 1:
+            acq_metadata = _extract_acquisition_metadata_from_acquisitions(
+                self.acquisitions
+            )
+            # If bin mode append is used certain registers need to be initialized
+            # in the header part of the schedule
+            if acq_metadata.bin_mode == BinMode.APPEND:
+                for acq_channel in acq_metadata.acq_indices.keys():
+                    acq_bin_idx_reg = getattr(
+                        reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
+                    )
+                    qasm.emit(
+                        q1asm_instructions.MOVE,
+                        0,
+                        acq_bin_idx_reg,
+                        comment=f"Initialize acquisition bin_idx for ch{acq_channel}",
+                    )
+        # ############
+
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
 
