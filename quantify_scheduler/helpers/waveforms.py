@@ -458,3 +458,48 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     norm_data_i = data.imag / amp_imag if amp_imag != 0.0 else np.zeros(data.imag.shape)
     rescaled_data = norm_data_r + 1.0j * norm_data_i
     return rescaled_data, amp_real, amp_imag
+
+
+def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
+    """
+    Calculates the area of a set of pulses.
+
+    Parameters
+    ----------
+    pulses
+        List of dictinary with information of the pulses
+    sampling_rate
+        Sampling rate for the pulse
+
+    Returns
+    -------
+    :
+        The area formed by all the pulses
+    """
+    area: float = 0.0
+    for pulse in pulses:
+        area += area_pulse(pulse, sampling_rate)
+    return area
+
+
+def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
+    """
+    Calculates the area of a set of pulses.
+
+    Parameters
+    ----------
+    pulse
+        The dictionary with information of the pulse
+    sampling_rate
+        Sampling rate for the pulse
+
+    Returns
+    -------
+
+    :
+        The area defined by the pulse
+    """
+    assert sampling_rate > 0
+    waveform: np.ndarray = get_waveform(pulse, sampling_rate)
+    # Nice to have: Give the user the option to choose integration algorithm
+    return waveform.sum() / sampling_rate
