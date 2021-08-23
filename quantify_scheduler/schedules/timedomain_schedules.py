@@ -316,7 +316,6 @@ def allxy_sched(
     ]
     schedule = Schedule("AllXY", repetitions)
 
-    print(f"{element_select_idx=}")
     for i, elt_idx in enumerate(element_idxs):
         # check index valid
         if elt_idx > len(allxy_combinations) or elt_idx < 0:
