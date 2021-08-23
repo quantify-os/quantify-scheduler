@@ -441,8 +441,8 @@ def test_get_schedule_time_offset(
     assert offset2 == init_duration
 
 
-def test_extract_acquisition_metadata_from_schedule(complied_two_qubit_t1_schedule):
-    comp_t1_sched = complied_two_qubit_t1_schedule
+def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedule):
+    comp_t1_sched = compiled_two_qubit_t1_schedule
     acq_metadata = extract_acquisition_metadata_from_schedule(comp_t1_sched)
 
     assert acq_metadata.acq_protocol == "weighted_integrated_complex"

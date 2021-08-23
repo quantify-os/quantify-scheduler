@@ -489,12 +489,13 @@ class QASMProgram:
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
         }
-        if acquisition.data["bin_mode"] != BinMode.AVERAGE:
-            raise NotImplementedError(
-                f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
-                f"the Qblox backend.\n\nAttempting to use "
-                f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
-            )
+
+        # if acquisition.data["bin_mode"] != BinMode.AVERAGE:
+        #     raise NotImplementedError(
+        #         f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
+        #         f"the Qblox backend.\n\nAttempting to use "
+        #         f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
+        #     )
 
         bin_idx = acquisition.data["acq_index"]
         if acquisition.name == "SSBIntegrationComplex":

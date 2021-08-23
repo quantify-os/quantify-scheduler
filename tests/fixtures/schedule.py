@@ -3,6 +3,7 @@
 """Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
+
 import inspect
 import json
 import os
@@ -92,7 +93,7 @@ def schedule_with_pulse_info(create_schedule_with_pulse_info) -> Schedule:
 
 
 @pytest.fixture
-def complied_two_qubit_t1_schedule(load_example_config):
+def compiled_two_qubit_t1_schedule(load_example_config):
     """
     a schedule performing T1 on two-qubits simultaneously
     """

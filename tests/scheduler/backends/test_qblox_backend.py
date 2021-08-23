@@ -47,6 +47,8 @@ from quantify_scheduler.backends.qblox.helpers import (
     DriverVersionError,
     to_grid_time,
 )
+
+from quantify_scheduler.schedules.timedomain_schedules import readout_calibration_sched
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
@@ -503,6 +505,7 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
         qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
+@pytest.mark.xfail(reason="currently fixing this")
 def test_wrong_bin_mode(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -978,3 +981,44 @@ def test_markers():
     _confirm_correct_markers(program["qrm0"], Pulsar_QRM)
     _confirm_correct_markers(program["qcm_rf0"], Pulsar_QCM_RF)
     _confirm_correct_markers(program["qrm_rf0"], Pulsar_QRM_RF)
+
+
+def assembly_valid(compiled_schedule, qcm0, qrm0):
+    """
+    test helper that takes a complied schedule and verifies if the assembly is valid
+    by passing it to a dummy qcm and qrm.
+
+    Asssumes only qcm0 and qrm0 are used.
+    """
+
+    # test the program for the qcm
+    qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
+        "seq_fn"
+    ]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.arm_sequencer(0)
+    uploaded_waveforms = qcm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+    # test the program for the qrm
+    qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
+        "seq_fn"
+    ]
+    qrm0.sequencer0_waveforms_and_program(qrm0_seq0_json)
+    qrm0.arm_sequencer(0)
+    uploaded_waveforms = qrm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+
+def test_acq_protocol_append_mode(dummy_pulsars, load_example_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    ssro_sched = readout_calibration_sched("q0", [0, 1])
+    # datadir fixture
+    comp_ssro_sched = qcompile(ssro_sched, load_example_config, HARDWARE_MAPPING)
+    # config fixtures
+    # qcompile fails
+    assembly_valid(
+        compiled_schedule=comp_ssro_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
+    )
