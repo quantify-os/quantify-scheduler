@@ -174,6 +174,20 @@ def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
 
 
 def generate_uuid_from_wf_data(wf_data: np.ndarray) -> str:
+    """
+    Creates a unique identifier from the waveform data, using a hash. Identical arrays
+    yield identical strings within the same process.
+
+    Parameters
+    ----------
+    wf_data:
+        The data to generate the unique id for.
+
+    Returns
+    -------
+    :
+        A unique identifier.
+    """
     return str(hash(wf_data.tobytes()))
 
 
