@@ -173,6 +173,10 @@ def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
     return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
 
+def generate_uuid_from_wf_data(wf_data: np.ndarray) -> str:
+    return str(hash(wf_data.tobytes()))
+
+
 def _generate_waveform_dict(
     waveforms_complex: Dict[str, np.ndarray]
 ) -> Dict[str, dict]:

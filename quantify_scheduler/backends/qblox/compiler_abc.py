@@ -28,6 +28,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
     to_grid_time,
+    generate_uuid_from_wf_data,
 )
 from quantify_scheduler.backends.qblox.constants import (
     GRID_TIME,
@@ -429,11 +430,12 @@ class Sequencer:
                     pulse.data, sampling_rate=SAMPLING_RATE
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
+                pulse.uuid = generate_uuid_from_wf_data(raw_wf_data)
             else:
-                pulse.uuid = reserved_pulse_id
                 raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
                     reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
                 )
+                pulse.uuid = reserved_pulse_id
 
             if np.abs(amp_i) > self.parent.awg_output_volt:
                 raise ValueError(
