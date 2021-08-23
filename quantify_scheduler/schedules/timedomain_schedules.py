@@ -344,7 +344,7 @@ def readout_calibration_sched(
     a measurement.
     """
 
-    schedule = Schedule("AllXY", repetitions)
+    schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
 
     for i, prep_state in enumerate(prepared_states):
 

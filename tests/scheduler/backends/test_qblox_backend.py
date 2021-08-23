@@ -1016,7 +1016,7 @@ def test_acq_protocol_append_mode(dummy_pulsars, load_example_config):
 
     ssro_sched = readout_calibration_sched("q0", [0, 1])
     # datadir fixture
-    comp_ssro_sched = qcompile(ssro_sched, load_example_config, HARDWARE_MAPPING)
+    comp_ssro_sched = qcompile(ssro_sched, load_example_config(), HARDWARE_MAPPING)
     # config fixtures
     # qcompile fails
     assembly_valid(
