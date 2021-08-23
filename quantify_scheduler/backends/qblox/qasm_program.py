@@ -414,6 +414,7 @@ class QASMProgram:
             idx0,
             idx1,
             constants.GRID_TIME,
+            comment=f"Store acq in acq_channel:{measurement_idx}, bin_idx:{bin_idx}",
         )
         self.elapsed_time += constants.GRID_TIME
 
@@ -490,26 +491,53 @@ class QASMProgram:
             "weighted_integrated_complex": self._acquire_weighted,
         }
 
-        # if acquisition.data["bin_mode"] != BinMode.AVERAGE:
-        #     raise NotImplementedError(
-        #         f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
-        #         f"the Qblox backend.\n\nAttempting to use "
-        #         f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
-        #     )
+        if acquisition.data["bin_mode"] == BinMode.AVERAGE:
 
-        bin_idx = acquisition.data["acq_index"]
-        if acquisition.name == "SSBIntegrationComplex":
-            # Since "SSBIntegrationComplex" just has "weighted_integrated_complex" as
-            # protocol.
-            self._acquire_square(acquisition, bin_idx=bin_idx)
-        else:
-            acquisition_func = protocol_to_acquire_func_mapping.get(
-                acquisition.data["protocol"], None
-            )
-            args = [
-                arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
-            ]
-            acquisition_func(*args)
+            bin_idx = acquisition.data["acq_index"]
+            if acquisition.name == "SSBIntegrationComplex":
+                # Since "SSBIntegrationComplex" just has "weighted_integrated_complex"
+                # as protocol.
+                self._acquire_square(acquisition, bin_idx=bin_idx)
+            else:
+                acquisition_func = protocol_to_acquire_func_mapping.get(
+                    acquisition.data["protocol"], None
+                )
+                args = [
+                    arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
+                ]
+                acquisition_func(*args)
+
+
+        ##############################################################
+        elif acquisition.data["bin_mode"] == BinMode.APPEND:
+        ##############################################################
+            if acquisition.data["protocol"] == "trace":
+                raise NotImplementedError(
+                    f"Invalid combination of bin_mode and acquisition protocol, "
+                    f"{BinMode.APPEND} is currently only supported in combination with "
+                    f"the weighted integration based protocols in the Qblox backend."
+                    f"\n\nAttempting to use {acquisition.data['bin_mode']} for "
+                    f"operation {repr(acquisition)}."
+                )
+            else:
+                # FIXME: bin_idx needs to be based on a register N*acq_index
+                bin_idx = acquisition.data["acq_index"]
+
+                bin_append_register = "R9"
+                if acquisition.name == "SSBIntegrationComplex":
+                    # Since "SSBIntegrationComplex" just has
+                    # "weighted_integrated_complex" as protocol.
+                    self._acquire_square(acquisition, bin_idx=bin_append_register)
+                else:
+                    acquisition_func = protocol_to_acquire_func_mapping.get(
+                        acquisition.data["protocol"], None
+                    )
+                    args = [
+                        arg
+                        for arg in [acquisition, bin_append_register, idx0, idx1]
+                        if arg is not None
+                    ]
+                    acquisition_func(*args)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
