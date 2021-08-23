@@ -276,7 +276,7 @@ def identical_pulses_schedule():
     )
     sched.add(
         DRAGPulse(
-            G_amp=0.7,
+            G_amp=0.8,
             D_amp=-0.2,
             phase=90,
             port="q0:mw",
@@ -470,7 +470,15 @@ def test_identical_pulses_compile(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    qcompile(identical_pulses_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+    compiled_schedule = qcompile(
+        identical_pulses_schedule, DEVICE_CFG, HARDWARE_MAPPING
+    )
+
+    seq_fn = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
+    with open(seq_fn) as f:
+        prog = json.load(f)
+    assert len(prog["waveforms"]) == 2
 
 
 def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
