@@ -161,7 +161,7 @@ class ScheduleVectorAcqGettable:
         if len(dataset.keys()) != 1:
             raise ValueError(
                 "Expected a single channel in the retrieved acquisitions "
-                f"{dataset.keys()=}"
+                f"dataset.keys={dataset.keys()}"
             )
 
         # N.B. this only works if there is a single channel i.e., len(dataset.keys())==1
