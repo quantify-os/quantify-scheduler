@@ -5,7 +5,7 @@ Contains registers that are reserved for a specific function by the qblox backen
 """
 
 # Reserved register in the QASM assembly
-REGISTER_LOOP: str = "R2"
+REGISTER_LOOP: str = "R0"  # used as the main loop counter
 
 
 # Registers reserved for managing acquisition registers
@@ -35,10 +35,3 @@ REGISTER_ACQ_WEIGHT_IDX0_CH4: str = "R40"
 REGISTER_ACQ_WEIGHT_IDX1_CH4: str = "R41"
 REGISTER_ACQ_WEIGHT_IDX0_CH5: str = "R42"
 REGISTER_ACQ_WEIGHT_IDX1_CH5: str = "R45"
-
-
-# constant registers for acquisition, exist because acquire_weighted requires
-# either all arguments be registers
-# REGISTER_
-
-# REGISTER_ACQ_CHANNEL_IMM =

@@ -43,6 +43,8 @@ from quantify_scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
     MixerCorrections,
 )
+
+from quantify_scheduler.backends.qblox import reserved_registers
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 
@@ -636,7 +638,7 @@ class Sequencer:
             The generated QASM program.
         """
         loop_label = "start"
-        loop_register = "R0"
+        loop_register = reserved_registers.REGISTER_LOOP
 
         qasm = QASMProgram(parent=self)
         # program header
