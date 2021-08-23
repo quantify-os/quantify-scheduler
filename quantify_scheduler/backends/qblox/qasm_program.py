@@ -11,10 +11,13 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import (
+    q1asm_instructions,
+    constants,
+    reserved_registers,
+    helpers,
+)
 from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.backends.qblox import helpers
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_abc
@@ -507,10 +510,9 @@ class QASMProgram:
                 ]
                 acquisition_func(*args)
 
-
         ##############################################################
         elif acquisition.data["bin_mode"] == BinMode.APPEND:
-        ##############################################################
+            ##############################################################
             if acquisition.data["protocol"] == "trace":
                 raise NotImplementedError(
                     f"Invalid combination of bin_mode and acquisition protocol, "
@@ -520,24 +522,83 @@ class QASMProgram:
                     f"operation {repr(acquisition)}."
                 )
             else:
+                # add  a line break for visual separation of acquisition
+                self.emit("")
                 # FIXME: bin_idx needs to be based on a register N*acq_index
                 bin_idx = acquisition.data["acq_index"]
 
-                bin_append_register = "R9"
+                acq_channel = acquisition.data["acq_channel"]
+                acq_bin_idx_reg = getattr(
+                    reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
+                )
+
                 if acquisition.name == "SSBIntegrationComplex":
                     # Since "SSBIntegrationComplex" just has
                     # "weighted_integrated_complex" as protocol.
-                    self._acquire_square(acquisition, bin_idx=bin_append_register)
+                    self._acquire_square(acquisition, bin_idx=acq_bin_idx_reg)
+
                 else:
                     acquisition_func = protocol_to_acquire_func_mapping.get(
                         acquisition.data["protocol"], None
                     )
-                    args = [
-                        arg
-                        for arg in [acquisition, bin_append_register, idx0, idx1]
-                        if arg is not None
-                    ]
-                    acquisition_func(*args)
+
+                    # FIXME move to preamble
+
+                    # Need to store values in registers as the acquire weighted
+                    # requires either all register inputs or all immediate values
+
+                    acq_channel_reg = getattr(
+                        reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
+                    )
+
+                    acq_idx0_reg = getattr(
+                        reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX0_CH{acq_channel}"
+                    )
+                    acq_idx1_reg = getattr(
+                        reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
+                    )
+
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        acq_channel,
+                        acq_channel_reg,
+                        comment=f"Store acq_channel in {acq_channel_reg}.",
+                    )
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx0,
+                        acq_idx0_reg,
+                        comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                    )
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx1,
+                        acq_idx1_reg,
+                        comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                    )
+
+                    # args = [
+                    #     arg
+                    #     for arg in [acquisition, acq_bin_idx_reg, idx0, idx1]
+                    #     if arg is not None
+                    # ]
+                    # acquisition_func(*args)
+                    acquisition_func(
+                        acquisition=acquisition,
+                        bin_idx=acq_bin_idx_reg,
+                        idx0=acq_idx0_reg,
+                        idx1=acq_idx1_reg,
+                    )
+
+                    self.emit(
+                        q1asm_instructions.ADD,
+                        acq_bin_idx_reg,
+                        1,
+                        acq_bin_idx_reg,
+                        comment=f"Increment bin_idx for ch{acq_channel}",
+                    )
+                # add  a line break for visual separation of acquisition
+                self.emit("")
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
