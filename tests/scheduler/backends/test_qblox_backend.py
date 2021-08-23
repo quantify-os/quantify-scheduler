@@ -476,8 +476,8 @@ def test_identical_pulses_compile(identical_pulses_schedule):
     )
 
     seq_fn = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
-    with open(seq_fn) as f:
-        prog = json.load(f)
+    with open(seq_fn) as file:
+        prog = json.load(file)
     assert len(prog["waveforms"]) == 2
 
 
