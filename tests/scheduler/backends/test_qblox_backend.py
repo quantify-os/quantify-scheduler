@@ -90,7 +90,7 @@ def hardware_cfg_baseband():
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
-            "instrument_type": "QcmModule",
+            "instrument_type": "Pulsar_QCM",
             "ref": "int",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -117,7 +117,7 @@ def hardware_cfg_multiplexing():
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
-            "instrument_type": "QcmModule",
+            "instrument_type": "Pulsar_QCM",
             "ref": "int",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -841,7 +841,7 @@ def test_container_add_from_type(pulse_only_schedule):
 
 def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", "QcmModule", HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 

@@ -189,10 +189,10 @@ class Cluster(ControlDeviceCompiler):
     """
 
     compiler_classes: Dict[str, type] = {
-        "QcmModule": QcmModule,
-        "QrmModule": QrmModule,
-        "QcmRfModule": QcmRfModule,
-        "QrmRfModule": QrmRfModule,
+        "QCM": QcmModule,
+        "QRM": QrmModule,
+        "QCM_RF": QcmRfModule,
+        "QRM_RF": QrmRfModule,
     }
     """References to the individual module compiler classes."""
     supports_acquisition: bool = True
@@ -264,10 +264,10 @@ class Cluster(ControlDeviceCompiler):
 
 
 COMPILER_MAPPING: Dict[str, type] = {
-    "QcmModule": QcmModule,
-    "QrmModule": QrmModule,
-    "QcmRfModule": QcmRfModule,
-    "QrmRfModule": QrmRfModule,
+    "Pulsar_QCM": QcmModule,
+    "Pulsar_QRM": QrmModule,
+    "Pulsar_QCM_RF": QcmRfModule,
+    "Pulsar_QRM_RF": QrmRfModule,
     "Cluster": Cluster,
     "LocalOscillator": LocalOscillator,
 }
