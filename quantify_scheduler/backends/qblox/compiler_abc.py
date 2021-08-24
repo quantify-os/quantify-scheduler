@@ -535,7 +535,9 @@ class Sequencer:
         return _generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_declaration_dict(
-        self, acquisitions: List[OpInfo]
+        self,
+        acquisitions: List[OpInfo],
+        repetitions: int,
     ) -> Dict[str, Any]:
         """
         Generates the "acquisitions" entry of the program json. It contains declaration
@@ -549,6 +551,8 @@ class Sequencer:
         ----------
         acquisitions:
             List of the acquisitions assigned to this sequencer.
+        repetitions:
+            The number of times to repeat execution of the schedule.
 
         Returns
         -------
@@ -557,32 +561,64 @@ class Sequencer:
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
 
-        def get_acq_channel(acq: OpInfo) -> int:
-            """Helper to extract the acq_channel."""
-            return acq.data["acq_channel"]
+        # acquisition metadata for acquisitions relevant to this sequencer only
+        acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
 
-        unique_channels = set(map(get_acq_channel, acquisitions))
-
+        # initialize an empty dictionary for the format required by pulsar
         acq_declaration_dict = dict()
-        for channel in unique_channels:
-            indices = list()
-            for acq in acquisitions:
-                if get_acq_channel(acq) == channel:
-                    indices.append(acq.data["acq_index"])
-            if min(indices) != 0:
+        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+
+            # Some sanity checks on the input for easier debugging.
+            if min(acq_indices) != 0:
                 raise ValueError(
                     f"Please make sure the lowest bin index used is 0. "
-                    f"Found: {min(indices)} as lowest bin for channel {channel}. "
+                    f"Found: {min(acq_indices)} as lowest bin for channel {acq_channel}. "
                     f"Problem occurred for port {self.port} with clock {self.clock},"
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
-            acq_declaration_dict[str(channel)] = {
-                "num_bins": max(indices)
-                + 1,  # FIXME should be mutiplied by nr of repetitions for append mode
-                "index": channel,
+            if len(acq_indices) != max(acq_indices) + 1:
+                raise ValueError(
+                    f"Please make sure the used bins increment by 1 starting from "
+                    f"0. Found: {max(acq_indices)} as the highest bin out of "
+                    f"{len(acq_indices)} for channel {acq_channel}, indicating "
+                    f"an acquisition_index was skipped. "
+                    f"Problem occurred for port {self.port} with clock {self.clock},"
+                    f"which corresponds to {self.name} of {self.parent.name}."
+                )
+
+            # Add the acquisition metadata to the acquisition declaration dict
+            if acq_metadata.bin_mode == BinMode.APPEND:
+                num_bins = repetitions * (max(acq_indices) + 1)
+            else:
+                num_bins = max(acq_indices) + 1
+
+            acq_declaration_dict[str(acq_channel)] = {
+                "num_bins": num_bins,
+                "index": acq_channel,
             }
 
         return acq_declaration_dict
+
+        # def get_acq_channel(acq: OpInfo) -> int:
+        #     """Helper to extract the acq_channel."""
+        #     return acq.data["acq_channel"]
+
+        # unique_channels = set(map(get_acq_channel, acquisitions))
+
+        # acq_declaration_dict = dict()
+        # for channel in unique_channels:
+        #     indices = list()
+        #     for acq in acquisitions:
+        #         if get_acq_channel(acq) == channel:
+        #             indices.append(acq.data["acq_index"])
+
+        #     acq_declaration_dict[str(channel)] = {
+        #         "num_bins": max(indices)
+        #         + 1,  # FIXME should be mutiplied by nr of repetitions for append mode
+        #         "index": channel,
+        #     }
+
+        # return acq_declaration_dict
 
     def update_settings(self):
         """
@@ -832,7 +868,9 @@ class Sequencer:
                 self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
             )
         acq_declaration_dict = (
-            self._generate_acq_declaration_dict(self.acquisitions)
+            self._generate_acq_declaration_dict(
+                acquisitions=self.acquisitions, repetitions=repetitions
+            )
             if len(self.acquisitions) > 0
             else None
         )

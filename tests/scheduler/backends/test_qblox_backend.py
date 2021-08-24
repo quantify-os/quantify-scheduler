@@ -48,7 +48,10 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 
-from quantify_scheduler.schedules.timedomain_schedules import readout_calibration_sched
+from quantify_scheduler.schedules.timedomain_schedules import (
+    readout_calibration_sched,
+    allxy_sched,
+)
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
@@ -1010,13 +1013,62 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     assert uploaded_waveforms is not None
 
 
-def test_acq_protocol_append_mode(dummy_pulsars, load_example_config):
+def test_acq_protocol_append_mode_valid_assembly(dummy_pulsars, load_example_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-
-    ssro_sched = readout_calibration_sched("q0", [0, 1])
+    repetitions = 256
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=256)
     comp_ssro_sched = qcompile(ssro_sched, load_example_config(), HARDWARE_MAPPING)
 
     assembly_valid(
         compiled_schedule=comp_ssro_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
     )
+
+    with open(
+        comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+
+def test_acq_declaration_dict_append_mode(load_example_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    repetitions = 256
+
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    comp_ssro_sched = qcompile(ssro_sched, load_example_config(), HARDWARE_MAPPING)
+
+    with open(
+        comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0"}
+    assert acquisitions["0"] == {"num_bins": 2 * 256, "index": 0}
+
+    # FIXME test the following properties
+    # test acquisition bin idx for channel initialized in header
+    # test correct registers used for channel.
+    # test bin idx incremented.
+
+
+def test_acq_declaration_dict_bin_avg_mode(load_example_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    allxy = allxy_sched("q0")
+    comp_allxy_sched = qcompile(allxy, load_example_config(), HARDWARE_MAPPING)
+
+    with open(
+        comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0"}
+    assert acquisitions["0"] == {"num_bins": 21, "index": 0}
