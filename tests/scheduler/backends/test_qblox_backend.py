@@ -800,7 +800,7 @@ def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisi
     )
     for instr in container.instrument_compilers.values():
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
-            instr._distribute_data()
+            instr.distribute_data()
             instr._determine_scope_mode_acquisition_sequencer()
     scope_mode_sequencer = container.instrument_compilers[
         "qrm0"
