@@ -259,3 +259,14 @@ class Cluster(ControlDeviceCompiler):
         if len(program) == 0:
             program = None
         return program
+
+
+COMPILER_MAPPING: Dict[str, type] = {
+    "Pulsar_QCM": Pulsar_QCM,
+    "Pulsar_QRM": Pulsar_QRM,
+    "Pulsar_QCM_RF": Pulsar_QCM_RF,
+    "Pulsar_QRM_RF": Pulsar_QRM_RF,
+    "Cluster": Cluster,
+    "LocalOscillator": LocalOscillator,
+}
+"""Maps the names in the hardware config to their appropriate compiler classes."""
