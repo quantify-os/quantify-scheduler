@@ -486,9 +486,6 @@ class _QRMAcquisitionManager:
             f"seq{idx}": idx for idx in range(number_of_sequencers)
         }
 
-        print(f"{acquisition_metadata=}")
-        print("Passed succesfully")
-
     @property
     def instrument(self):
         """Returns the QRM driver from the parent IC component."""

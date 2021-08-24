@@ -141,28 +141,50 @@ class ScheduleVectorAcqGettable:
 
         # Currently only supported for weighted integration assert that the schedule is
         # compatible with that.
-        assert acq_metadata.bin_mode == BinMode.AVERAGE
         assert acq_metadata.acq_return_type == complex
-
-        # initialize an empty dataset, acq_channels will be keys,
-        # and the values will be numpy arrays of dtype complex
-        # with shape 1*len(acq_indices)
         acquired_data = instr_coordinator.retrieve_acquisition()
-        dataset = {}
-        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-            dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
-            for acq_idx in acq_indices:
-                val = acquired_data[(acq_channel, acq_idx)]
-                dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
-        # reshape to the format required by the MeasurementControl
+        if acq_metadata.bin_mode == BinMode.AVERAGE:
+            # assert acq_metadata.bin_mode == BinMode.AVERAGE
+            # initialize an empty dataset, acq_channels will be keys,
+            # and the values will be numpy arrays of dtype complex
+            # with shape 1*len(acq_indices)
+            dataset = {}
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
+                for acq_idx in acq_indices:
+                    val = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
-        # currently this gettable only supports one acquisition channel
-        if len(dataset.keys()) != 1:
-            raise ValueError(
-                "Expected a single channel in the retrieved acquisitions "
-                f"dataset.keys={dataset.keys()}"
+            # reshape to the format required by the MeasurementControl
+
+            # currently this gettable only supports one acquisition channel
+            if len(dataset.keys()) != 1:
+                raise ValueError(
+                    "Expected a single channel in the retrieved acquisitions "
+                    f"dataset.keys={dataset.keys()}"
+                )
+
+        elif acq_metadata.bin_mode == BinMode.APPEND:
+
+            dataset = {}
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(
+                    len(acq_indices) * compiled_schedule.repetitions, dtype=complex
+                )
+                acq_stride = len(acq_indices)
+                for acq_idx in acq_indices:
+                    vals = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel][acq_idx::acq_stride] = vals[0] + 1j * vals[1]
+
+                    # dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
+
+        else:
+            raise NotImplementedError(
+                f"Bin mode ({acq_metadata.bin_mode}) not supported"
             )
+
+        # Reshaping of the data before returning
 
         # N.B. this only works if there is a single channel i.e., len(dataset.keys())==1
         for vals in dataset.values():
@@ -170,6 +192,8 @@ class ScheduleVectorAcqGettable:
                 # for iterative mode, we expect only a single value.
                 assert (len(vals)) == 1
 
+            # N.B. if there would be multiple channels the return would be outside
+            # of this forloop
             if self.real_imag:
                 return vals.real, vals.imag
             # implicit else
