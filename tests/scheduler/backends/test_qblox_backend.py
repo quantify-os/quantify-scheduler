@@ -675,7 +675,7 @@ def test_wait_till_start_then_acquire():
         "acq_index": 0,
         "acq_channel": 1,
         "bin_mode": BinMode.AVERAGE,
-        "protocol": "SSBIntegrationComplex",
+        "protocol": "ssb_integration_complex",
     }
     acq = qb.OpInfo(
         name="SSBIntegrationComplex",
@@ -687,7 +687,7 @@ def test_wait_till_start_then_acquire():
         None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
     )
     qasm = QASMProgram(qrm.sequencers["seq0"])
-    qasm.wait_till_start_then_acquire(acq, 0, 1)
+    qasm.wait_till_start_then_acquire(acq, None, None)
     assert len(qasm.instructions) == 2
     assert qasm.instructions[0][1] == q1asm_instructions.WAIT
     assert qasm.instructions[1][1] == q1asm_instructions.ACQUIRE
