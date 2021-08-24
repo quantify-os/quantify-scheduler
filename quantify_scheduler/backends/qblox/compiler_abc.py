@@ -248,7 +248,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 class Sequencer:
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
-    distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
+    distinction between Pulsar QcmModule and Pulsar QrmModule is made by the subclasses.
     """
 
     def __init__(
@@ -909,7 +909,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def awg_output_volt(self) -> float:
         """
         The output range in volts. This is to be overridden by the subclass to account
-        for the differences between a QCM and a QRM.
+        for the differences between a QcmModule and a QrmModule.
 
         Returns
         -------
@@ -1191,7 +1191,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
 class QbloxBasebandModule(QbloxBaseModule):
     """
-    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should
+    Abstract implementation that the Pulsar QcmModule and Pulsar QrmModule baseband modules should
     inherit from.
     """
 
@@ -1274,7 +1274,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
 class QbloxRFModule(QbloxBaseModule):
     r"""
-    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should
+    Abstract implementation that the Pulsar QcmModule-RF and Pulsar QrmModule-RF modules should
     inherit from.
     """
 

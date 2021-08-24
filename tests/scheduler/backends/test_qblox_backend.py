@@ -50,10 +50,10 @@ from quantify_scheduler.backends.qblox.helpers import (
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
 from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QCM,
-    QRM,
-    QCM_RF,
-    QRM_RF,
+    QcmModule,
+    QrmModule,
+    QcmRfModule,
+    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
@@ -90,7 +90,7 @@ def hardware_cfg_baseband():
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
-            "instrument_type": "QCM",
+            "instrument_type": "QcmModule",
             "ref": "int",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -117,7 +117,7 @@ def hardware_cfg_multiplexing():
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "name": "qcm0",
-            "instrument_type": "QCM",
+            "instrument_type": "QcmModule",
             "ref": "int",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -431,7 +431,7 @@ def test_generate_port_clock_to_device_map():
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class TestPulsar(QCM):
+    class TestPulsar(QcmModule):
         def __init__(self):
             super().__init__(
                 parent=None,
@@ -566,7 +566,9 @@ def test_compile_with_pulse_stitching(
 
 
 def test_qcm_acquisition_error():
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qcm._acquisitions[0] = 0
 
     with pytest.raises(RuntimeError):
@@ -577,7 +579,9 @@ def test_qcm_acquisition_error():
 
 
 def test_emit():
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qasm = QASMProgram(qcm)
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
@@ -586,7 +590,9 @@ def test_emit():
 
 
 def test_auto_wait():
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.auto_wait(120)
     assert len(qasm.instructions) == 1
@@ -610,7 +616,9 @@ def test_wait_till_start_then_play():
         timing=4e-9,
         pulse_settings=runtime_settings,
     )
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.wait_till_start_then_play(pulse, 0, 1)
     assert len(qasm.instructions) == 3
@@ -643,7 +651,9 @@ def test_wait_till_start_then_acquire():
         data=minimal_pulse_data,
         timing=4e-9,
     )
-    qrm = QRM(None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"])
+    qrm = QrmModule(
+        None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
+    )
     qasm = QASMProgram(qrm.sequencers["seq0"])
     qasm.wait_till_start_then_acquire(acq, 0, 1)
     assert len(qasm.instructions) == 2
@@ -679,7 +689,9 @@ def test_pulse_stitching_qasm_prog():
         timing=4e-9,
         pulse_settings=runtime_settings,
     )
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.wait_till_start_then_play(pulse, 0, 1)
     assert qasm.instructions[2][2] == "20,R2"
@@ -698,7 +710,9 @@ def test_staircase_qasm_prog(start_amp, final_amp):
         timing=4e-9,
         pulse_settings=runtime_settings,
     )
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.wait_till_start_then_play(pulse, 0, 1)
 
@@ -728,7 +742,9 @@ def test_loop():
     num_rep = 10
     reg = "R0"
 
-    qcm = QCM(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"])
+    qcm = QcmModule(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
     with qasm.loop(reg, "this_loop", repetitions=num_rep):
@@ -818,16 +834,16 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
 
 def test_container_add_from_type(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", QCM, HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", QcmModule, HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["qcm0"], QCM)
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
 
 def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", "QCM", HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", "QcmModule", HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["qcm0"], QCM)
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
 
 def test_from_mapping(pulse_only_schedule):
@@ -957,7 +973,7 @@ def test_markers():
             assert on_marker == device_compiler.marker_configuration["start"]
             assert off_marker == device_compiler.marker_configuration["end"]
 
-    _confirm_correct_markers(program["qcm0"], QCM)
-    _confirm_correct_markers(program["qrm0"], QRM)
-    _confirm_correct_markers(program["qcm_rf0"], QCM_RF)
-    _confirm_correct_markers(program["qrm_rf0"], QRM_RF)
+    _confirm_correct_markers(program["qcm0"], QcmModule)
+    _confirm_correct_markers(program["qrm0"], QrmModule)
+    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
+    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)

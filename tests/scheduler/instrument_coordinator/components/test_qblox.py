@@ -553,7 +553,7 @@ def test_get_scope_channel_and_index_exception(make_qrm):
         execinfo.value.args[0]
         == "A scope mode acquisition is defined for both acq_channel 0 with "
         "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
-        "trace acquisition is allowed per QRM."
+        "trace acquisition is allowed per QrmModule."
     )
 
 

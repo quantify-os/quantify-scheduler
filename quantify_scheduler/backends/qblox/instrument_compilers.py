@@ -116,9 +116,9 @@ class LocalOscillator(InstrumentCompiler):
 # ---------- pulsar sequencer classes ----------
 
 # pylint: disable=invalid-name
-class QCM(QbloxBasebandModule):
+class QcmModule(QbloxBasebandModule):
     """
-    QCM specific implementation of the pulsar compiler.
+    QcmModule specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -132,9 +132,9 @@ class QCM(QbloxBasebandModule):
 
 
 # pylint: disable=invalid-name
-class QRM(QbloxBasebandModule):
+class QrmModule(QbloxBasebandModule):
     """
-    QRM specific implementation of the pulsar compiler.
+    QrmModule specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -147,9 +147,9 @@ class QRM(QbloxBasebandModule):
     """Specifies whether the device can perform acquisitions."""
 
 
-class QCM_RF(QbloxRFModule):
+class QcmRfModule(QbloxRFModule):
     """
-    QCM-RF specific implementation of the pulsar compiler.
+    QcmModule-RF specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -165,9 +165,9 @@ class QCM_RF(QbloxRFModule):
     """Specifies whether the device can perform acquisitions."""
 
 
-class QRM_RF(QbloxRFModule):
+class QrmRfModule(QbloxRFModule):
     """
-    QRM-RF specific implementation of the pulsar compiler.
+    QrmModule-RF specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -189,10 +189,10 @@ class Cluster(ControlDeviceCompiler):
     """
 
     compiler_classes: Dict[str, type] = {
-        "QCM": QCM,
-        "QRM": QRM,
-        "QCM_RF": QCM_RF,
-        "QRM_RF": QRM_RF,
+        "QcmModule": QcmModule,
+        "QrmModule": QrmModule,
+        "QcmRfModule": QcmRfModule,
+        "QrmRfModule": QrmRfModule,
     }
     """References to the individual module compiler classes."""
     supports_acquisition: bool = True
@@ -264,10 +264,10 @@ class Cluster(ControlDeviceCompiler):
 
 
 COMPILER_MAPPING: Dict[str, type] = {
-    "QCM": QCM,
-    "QRM": QRM,
-    "QCM_RF": QCM_RF,
-    "QRM_RF": QRM_RF,
+    "QcmModule": QcmModule,
+    "QrmModule": QrmModule,
+    "QcmRfModule": QcmRfModule,
+    "QrmRfModule": QrmRfModule,
     "Cluster": Cluster,
     "LocalOscillator": LocalOscillator,
 }

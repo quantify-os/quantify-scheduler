@@ -173,11 +173,11 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
 # pylint: disable=too-many-ancestors
 class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     """
-    Pulsar QCM specific InstrumentCoordinator component.
+    Pulsar QcmModule specific InstrumentCoordinator component.
     """
 
     _number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
-    """Specifies the amount of sequencers available to this QCM."""
+    """Specifies the amount of sequencers available to this QcmModule."""
     _settings_type = PulsarSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = False
@@ -199,7 +199,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         Returns
         -------
         :
-            QCM returns None since the QCM has no acquisition.
+            QcmModule returns None since the QcmModule has no acquisition.
         """
         return None
 
@@ -250,7 +250,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     """
-    Pulsar QRM specific InstrumentCoordinator component.
+    Pulsar QrmModule specific InstrumentCoordinator component.
     """
 
     _number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -357,7 +357,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
 class PulsarQCMRFComponent(PulsarQCMComponent):
     """
-    Pulsar QCM-RF specific InstrumentCoordinator component.
+    Pulsar QcmModule-RF specific InstrumentCoordinator component.
     """
 
     _settings_type = PulsarRFSettings
@@ -393,7 +393,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
     """
-    Pulsar QRM-RF specific InstrumentCoordinator component.
+    Pulsar QrmModule-RF specific InstrumentCoordinator component.
     """
 
     _settings_type = PulsarRFSettings
@@ -420,12 +420,12 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         if settings.offset_ch0_path0 is not None:
             logger.warning(
                 "'offset_ch0_path0' was not set. This functionality is not yet"
-                "implemented in the Pulsar QRM-RF driver."
+                "implemented in the Pulsar QrmModule-RF driver."
             )
         if settings.offset_ch0_path1 is not None:
             logger.warning(
                 "'offset_ch0_path1' was not set. This functionality is not yet"
-                "implemented in the Pulsar QRM-RF driver."
+                "implemented in the Pulsar QrmModule-RF driver."
             )
 
 
@@ -438,7 +438,7 @@ Named tuple to clarify how the indexing of acquisitions works inside the
 
 class _QRMAcquisitionManager:
     """
-    Utility class that handles the acquisitions performed with the QRM.
+    Utility class that handles the acquisitions performed with the QrmModule.
 
     An instance of this class is meant to exist only for a single prepare-start-
     retrieve_acquisition cycle to prevent stateful behavior.
@@ -456,7 +456,7 @@ class _QRMAcquisitionManager:
         Parameters
         ----------
         parent
-            Reference to the parent QRM IC component.
+            Reference to the parent QrmModule IC component.
         number_of_sequencers
             The number of sequencers capable of acquisitions.
         acquisition_mapping
@@ -477,7 +477,7 @@ class _QRMAcquisitionManager:
 
     @property
     def instrument(self):
-        """Returns the QRM driver from the parent IC component."""
+        """Returns the QrmModule driver from the parent IC component."""
         return self.parent.instrument
 
     def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
@@ -522,7 +522,7 @@ class _QRMAcquisitionManager:
         if sequencer_index > self.number_of_sequencers:
             raise ValueError(
                 f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}. QRM has only "
+                f"{sequencer_index}. QrmModule has only "
                 f"{self.number_of_sequencers} sequencers."
             )
         scope_ch_and_idx = self._get_scope_channel_and_index()
@@ -562,7 +562,7 @@ class _QRMAcquisitionManager:
                         f"A scope mode acquisition is defined for both acq_channel "
                         f"{acq_channel} with acq_index {acq_index} as well as "
                         f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
-                        f"trace acquisition is allowed per QRM."
+                        f"trace acquisition is allowed per QrmModule."
                     )
                 ch_and_idx: AcquisitionIndexing = key
         return ch_and_idx

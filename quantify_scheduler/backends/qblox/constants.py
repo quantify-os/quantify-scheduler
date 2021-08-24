@@ -22,6 +22,6 @@ SAMPLING_RATE = 1_000_000_000  # 1GS/s
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
 NUMBER_OF_SEQUENCERS_QCM = 2
-"""Number of sequencers supported by Pulsar QCM in the latest firmware."""
+"""Number of sequencers supported by Pulsar QcmModule in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 1
-"""Number of sequencers supported by Pulsar QRM in the latest firmware."""
+"""Number of sequencers supported by Pulsar QrmModule in the latest firmware."""
