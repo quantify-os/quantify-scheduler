@@ -30,6 +30,7 @@ class CompilerContainer:
         "Pulsar_QCM_RF": compiler_classes.Pulsar_QCM_RF,
         "Pulsar_QRM_RF": compiler_classes.Pulsar_QRM_RF,
         "Cluster": compiler_classes.Cluster,
+        "LocalOscillator": compiler_classes.LocalOscillator,
     }
     """Maps the names in the hardware config to their appropriate compiler classes."""
 
