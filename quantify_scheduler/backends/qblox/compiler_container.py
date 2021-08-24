@@ -24,6 +24,14 @@ class CompilerContainer:
     It is recommended to construct this object using the `from_mapping` factory method.
     """
 
+    compiler_mapping: Dict[str, type] = {
+        "Pulsar_QCM": compiler_classes.Pulsar_QCM,
+        "Pulsar_QRM": compiler_classes.Pulsar_QRM,
+        "Pulsar_QCM_RF": compiler_classes.Pulsar_QCM_RF,
+        "Pulsar_QRM_RF": compiler_classes.Pulsar_QRM_RF,
+        "Cluster": compiler_classes.Cluster,
+    }
+
     def __init__(self, schedule: types.Schedule):
         """
         Constructor for the instrument container.
@@ -114,11 +122,10 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        try:
-            compiler: type = getattr(compiler_classes, instrument)
+        if instrument in self.compiler_mapping:
+            compiler: type = self.compiler_mapping[instrument]
             self.add_instrument_compiler(name, compiler, mapping)
-        except AttributeError:
-            # not in instrument compiler, try full path
+        else:
             self._add_from_path(name, instrument, mapping)
 
     def _add_from_path(
