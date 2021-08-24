@@ -1196,6 +1196,18 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self.update_settings()
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
+            # Add both acquisition metadata (a summary) and acq_mapping
+            # add acq_metadata
+            print("* " * 20)
+            print(self.sequencers)
+            program["acq_metadata"] = dict()
+
+            for sequencer in self.sequencers.values():
+                acq_metadata = _extract_acquisition_metadata_from_acquisitions(
+                    sequencer.acquisitions
+                )
+                program["acq_metadata"][sequencer.name] = acq_metadata
+            # add acq_mapping
             acq_mapping = self._get_acquisition_mapping()
             if acq_mapping is not None:
                 program["acq_mapping"] = acq_mapping

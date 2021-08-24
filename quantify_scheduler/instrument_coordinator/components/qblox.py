@@ -21,6 +21,7 @@ from quantify_scheduler.backends.types.qblox import (
     PulsarRFSettings,
     SequencerSettings,
 )
+from quantify_scheduler.types import AcquisitionMetadata
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -303,9 +304,14 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
         if "acq_mapping" in program:  # Resets everything to do with acquisition.
+
             acq_mapping = program.pop("acq_mapping")
+            acq_metadata = program.pop("acq_metadata")
             self._acquisition_manager = _QRMAcquisitionManager(
-                self, self._number_of_sequencers, acquisition_mapping=acq_mapping
+                self,
+                number_of_sequencers=self._number_of_sequencers,
+                acquisition_mapping=acq_mapping,
+                acquisition_metadata=acq_metadata,
             )
         else:
             self._acquisition_manager = None
@@ -449,6 +455,7 @@ class _QRMAcquisitionManager:
         parent: PulsarQRMComponent,
         number_of_sequencers: int,
         acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
+        acquisition_metadata: AcquisitionMetadata,
     ):
         """
         Constructor for `_QRMAcquisitionManager`.
@@ -464,16 +471,23 @@ class _QRMAcquisitionManager:
             `acq_channel` and `acq_index` to the sequencer name and acquisition
             protocol. The key is a tuple (`acq_channel`, `acq_index`), the values
             (seq_name, protocol).
+        acquisition_metadata
+            Provides a summary of the used channels bins and acquisition protocols.
         """
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.acquisition_mapping: Dict[
             Tuple[int, int], Tuple[str, str]
         ] = acquisition_mapping
+        self.acquisition_metadata: AcquisitionMetadata = acquisition_metadata
+
         self.scope_mode_sequencer: Optional[str] = None
         self.seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(number_of_sequencers)
         }
+
+        print(f"{acquisition_metadata=}")
+        print("Passed succesfully")
 
     @property
     def instrument(self):
@@ -490,6 +504,7 @@ class _QRMAcquisitionManager:
             The acquisitions with the protocols specified in the `acq_mapping` as a
             `dict` with the `(acq_channel, acq_index)` as keys.
         """
+
         protocol_to_function_mapping = {
             # Implicitly covers SSBIntegrationComplex too
             "weighted_integrated_complex": self._get_integration_data,
@@ -500,18 +515,39 @@ class _QRMAcquisitionManager:
         self._store_scope_acquisition()
 
         formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
+
+        # iterate over sequencers (typically 4 per QRM)
         for seq_idx in range(self.number_of_sequencers):
+            acq_metadata = self.acquisition_metadata[f"seq{seq_idx}"]
+            acquisition_function: Callable = protocol_to_function_mapping[
+                acq_metadata.acq_protocol
+            ]
+
+            # retrieve the raw data from the qrm sequencer module
             acquisitions = self.instrument.get_acquisitions(seq_idx)
-            for acq_channel, acq_index in self.acquisition_mapping.keys():
-                if self._get_sequencer_index(acq_channel, acq_index) != seq_idx:
-                    continue
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                # the acquisition function retrieves the right part of the acquisitions
+                # data structure returned by the qrm
+                i_vals, q_vals = acquisition_function(
+                    acquisitions=acquisitions, acq_channel=acq_channel
+                )
 
-                protocol = self._get_protocol(acq_channel, acq_index)
-                acquisition_function: Callable = protocol_to_function_mapping[protocol]
+                # the qblox compilation backend verifies that the
+                # acquisition indices start at 0 and increment in steps of 1.
+                # this enables us to simply stride over the bin_idx as if they
+                # correspond to acq_indices.
+                for acq_idx in acq_indices:
+                    acq_stride = len(acq_indices)
+                    # N.B. the stride idx ensures that in append mode all data
+                    # corresponding to the same acq_index appears in the
+                    # same acq_ch, acq_idx part of the returend formatted acquisitions.
+                    formatted_acquisitions[
+                        AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
+                    ] = (
+                        np.array(i_vals[acq_idx::acq_stride]),
+                        np.array(q_vals[acq_idx::acq_stride]),
+                    )
 
-                formatted_acquisitions[
-                    AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_index)
-                ] = acquisition_function(acquisitions, acq_channel, acq_index)
         return formatted_acquisitions
 
     def _store_scope_acquisition(self):
@@ -625,7 +661,9 @@ class _QRMAcquisitionManager:
         q_data
             The integrated data for path1.
         """
+
         bin_data = self._get_bin_data(acquisitions, acq_channel)
+
         i_data, q_data = (
             bin_data["integration"]["path0"],
             bin_data["integration"]["path1"],
@@ -636,7 +674,10 @@ class _QRMAcquisitionManager:
                 f"{self.parent.name} but only {len(i_data)} values found "
                 f"in acquisition data."
             )
-        return i_data[acq_index], q_data[acq_index]
+
+        # FIXME: acq_index is completely ignored. Remove from arguements
+        # return i_data[acq_index], q_data[acq_index]
+        return i_data, q_data
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
