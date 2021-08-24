@@ -666,7 +666,7 @@ class QASMProgram:
 
             sched = Schedule("example")
             container = compiler_container.CompilerContainer(sched)
-            qcm = instrument_compilers.Pulsar_QCM(
+            qcm = instrument_compilers.QCM(
                 container,
                 "qcm0",
                 total_play_time=10,

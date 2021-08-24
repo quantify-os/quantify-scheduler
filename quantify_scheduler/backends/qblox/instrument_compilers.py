@@ -116,9 +116,9 @@ class LocalOscillator(InstrumentCompiler):
 # ---------- pulsar sequencer classes ----------
 
 # pylint: disable=invalid-name
-class Pulsar_QCM(PulsarBaseband):
+class QCM(PulsarBaseband):
     """
-    Pulsar QCM specific implementation of the pulsar compiler.
+    QCM specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -132,9 +132,9 @@ class Pulsar_QCM(PulsarBaseband):
 
 
 # pylint: disable=invalid-name
-class Pulsar_QRM(PulsarBaseband):
+class QRM(PulsarBaseband):
     """
-    Pulsar QRM specific implementation of the pulsar compiler.
+    QRM specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -147,7 +147,7 @@ class Pulsar_QRM(PulsarBaseband):
     """Specifies whether the device can perform acquisitions."""
 
 
-class Pulsar_QCM_RF(PulsarRF):
+class QCM_RF(PulsarRF):
     """
     Pulsar QCM-RF specific implementation of the pulsar compiler.
     """
@@ -165,7 +165,7 @@ class Pulsar_QCM_RF(PulsarRF):
     """Specifies whether the device can perform acquisitions."""
 
 
-class Pulsar_QRM_RF(PulsarRF):
+class QRM_RF(PulsarRF):
     """
     Pulsar QRM-RF specific implementation of the pulsar compiler.
     """
@@ -189,8 +189,10 @@ class Cluster(ControlDeviceCompiler):
     """
 
     compiler_classes: Dict[str, type] = {
-        "QCM": Pulsar_QCM,
-        "QRM": Pulsar_QRM,
+        "QCM": QCM,
+        "QRM": QRM,
+        "QCM_RF": QCM_RF,
+        "QRM_RF": QRM_RF,
     }
     """References to the individual module compiler classes."""
     supports_acquisition: bool = True
@@ -262,10 +264,10 @@ class Cluster(ControlDeviceCompiler):
 
 
 COMPILER_MAPPING: Dict[str, type] = {
-    "Pulsar_QCM": Pulsar_QCM,
-    "Pulsar_QRM": Pulsar_QRM,
-    "Pulsar_QCM_RF": Pulsar_QCM_RF,
-    "Pulsar_QRM_RF": Pulsar_QRM_RF,
+    "QCM": QCM,
+    "QRM": QRM,
+    "QCM_RF": QCM_RF,
+    "QRM_RF": QRM_RF,
     "Cluster": Cluster,
     "LocalOscillator": LocalOscillator,
 }
