@@ -572,9 +572,10 @@ class Sequencer:
             if min(acq_indices) != 0:
                 raise ValueError(
                     f"Please make sure the lowest bin index used is 0. "
-                    f"Found: {min(acq_indices)} as lowest bin for channel {acq_channel}. "
-                    f"Problem occurred for port {self.port} with clock {self.clock},"
-                    f"which corresponds to {self.name} of {self.parent.name}."
+                    f"Found: {min(acq_indices)} as lowest bin for channel "
+                    f"{acq_channel}. Problem occurred for port {self.port} with"
+                    f" clock {self.clock}, which corresponds to {self.name} of "
+                    f"{self.parent.name}."
                 )
             if len(acq_indices) != max(acq_indices) + 1:
                 raise ValueError(
@@ -598,27 +599,6 @@ class Sequencer:
             }
 
         return acq_declaration_dict
-
-        # def get_acq_channel(acq: OpInfo) -> int:
-        #     """Helper to extract the acq_channel."""
-        #     return acq.data["acq_channel"]
-
-        # unique_channels = set(map(get_acq_channel, acquisitions))
-
-        # acq_declaration_dict = dict()
-        # for channel in unique_channels:
-        #     indices = list()
-        #     for acq in acquisitions:
-        #         if get_acq_channel(acq) == channel:
-        #             indices.append(acq.data["acq_index"])
-
-        #     acq_declaration_dict[str(channel)] = {
-        #         "num_bins": max(indices)
-        #         + 1,  # FIXME should be mutiplied by nr of repetitions for append mode
-        #         "index": channel,
-        #     }
-
-        # return acq_declaration_dict
 
     def update_settings(self):
         """
