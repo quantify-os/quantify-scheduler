@@ -931,7 +931,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def marker_configuration(self) -> dict[str, int]:
+    def marker_configuration(self) -> Dict[str, int]:
         """
         Specifies the values that the markers need to be set to at the start and end
         of each program.
