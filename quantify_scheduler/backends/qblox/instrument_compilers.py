@@ -8,6 +8,8 @@ from typing import Optional, Dict, Any
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
+    ControlDeviceCompiler,
+    PulsarBase,
     PulsarBaseband,
     PulsarRF,
 )
