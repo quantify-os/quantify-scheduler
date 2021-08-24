@@ -145,7 +145,7 @@ class PulsarSettings(_BaseSettings):
     which are specified in `SequencerSettings`.
     """
 
-    ref: Literal["internal", "external"] = "internal"
+    ref: str = "internal"
     """The reference source. Should either be "internal" or "external", will raise an
     exception in the instrument coordinator component otherwise."""
 
@@ -159,7 +159,8 @@ class PulsarSettings(_BaseSettings):
         ----------
         mapping
         """
-        ref: Literal["internal", "external"] = mapping["ref"]
+        ref: str = mapping["ref"]
+        assert ref in ("internal", "external")
         return cls(ref=ref)
 
 
@@ -176,8 +177,8 @@ class PulsarRFSettings(PulsarSettings):
     lo1_freq: Union[float, None] = None
     """The frequency of Output 1 (O1) LO."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -196,7 +197,7 @@ class PulsarRFSettings(PulsarSettings):
         if complex_output_1:
             kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
 
-        return PulsarRFSettings(ref=ref, **kwargs)
+        return cls(ref=ref, **kwargs)
 
 
 @dataclass

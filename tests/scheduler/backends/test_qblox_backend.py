@@ -91,7 +91,7 @@ def hardware_cfg_baseband():
         "qcm0": {
             "name": "qcm0",
             "instrument_type": "Pulsar_QCM",
-            "ref": "int",
+            "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
@@ -118,7 +118,7 @@ def hardware_cfg_multiplexing():
         "qcm0": {
             "name": "qcm0",
             "instrument_type": "Pulsar_QCM",
-            "ref": "int",
+            "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
