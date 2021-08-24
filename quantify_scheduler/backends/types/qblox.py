@@ -40,6 +40,8 @@ class OpInfo(DataClassJsonMixin):
     needed to play it.
     """
 
+    name: str
+    """Name of the operation that this pulse/acquisition is part of."""
     uuid: str
     """A unique identifier for this pulse/acquisition."""
     data: dict
@@ -83,7 +85,7 @@ class OpInfo(DataClassJsonMixin):
 
     def __repr__(self):
         repr_string = 'Acquisition "' if self.is_acquisition else 'Pulse "'
-        repr_string += str(self.uuid)
+        repr_string += f"{str(self.name)} - {str(self.uuid)}"
         repr_string += f'" (t={self.timing} to {self.timing+self.duration})'
         repr_string += f" data={self.data}"
         return repr_string
@@ -120,11 +122,11 @@ class LOSettings(DataClassJsonMixin):
 
 @dataclass
 class _BaseSettings(DataClassJsonMixin):
-    hardware_averages: int = 1
-    """The number of repetitions of the Schedule."""
-    acq_mode: str = "SSBIntegrationComplex"
-    """The acquisition mode the Pulsar operates in. This setting will most likely
-    change in the future."""
+    scope_mode_sequencer: Optional[str] = None
+    """The name of the sequencer that triggers scope mode Acquisitions. Only a single
+    sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
+    on the driver as well as used for internal checks. Having multiple sequencers
+    perform trace acquisition will result in an exception being raised."""
     offset_ch0_path0: Union[float, None] = None
     """The DC offset on the path 0 of channel 0."""
     offset_ch0_path1: Union[float, None] = None
@@ -222,6 +224,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Duration of the acquisition. This is a temporary addition for not yet merged the
     InstrumentCoordinator to function properly. This will be removed in a later
     version!"""
+    integration_length_acq: Optional[int] = None
+    """Integration length for acquisitions. Must be a multiple of 4 ns."""
 
 
 @dataclass

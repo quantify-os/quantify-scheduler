@@ -7,6 +7,7 @@ from collections import UserDict
 
 import numpy as np
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 
 
@@ -15,7 +16,7 @@ try:
 except ImportError:
     driver_version = None
 
-SUPPORTED_DRIVER_VERSIONS = ("0.3.2",)
+SUPPORTED_DRIVER_VERSIONS = ("0.4.0",)
 
 
 class DriverVersionError(Exception):
@@ -24,7 +25,7 @@ class DriverVersionError(Exception):
     """
 
 
-def verify_qblox_instruments_version():
+def verify_qblox_instruments_version(version=driver_version):
     """
     Verifies whether the installed version is supported by the qblox_backend.
 
@@ -33,15 +34,15 @@ def verify_qblox_instruments_version():
     DriverVersionError
         When an incorrect or no installation of qblox-instruments was found.
     """
-    if driver_version is None:
+    if version is None:
         raise DriverVersionError(
             "Qblox DriverVersionError: qblox-instruments version check could not be "
             "performed. Either the package is not installed "
             "correctly or a version < 0.3.2 was found."
         )
-    if driver_version not in SUPPORTED_DRIVER_VERSIONS:
+    if version not in SUPPORTED_DRIVER_VERSIONS:
         message = (
-            f"Qblox DriverVersionError: Installed driver version {driver_version}"
+            f"Qblox DriverVersionError: Installed driver version {version}"
             f" not supported by backend."
         )
         message += (
@@ -218,7 +219,7 @@ def _generate_waveform_dict(
     return wf_dict
 
 
-def to_grid_time(time: float) -> int:
+def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     """
     Takes a float value representing a time in seconds as used by the schedule, and
     returns the integer valued time in nanoseconds that the sequencer uses.
@@ -227,6 +228,8 @@ def to_grid_time(time: float) -> int:
     ----------
     time
         The time to convert.
+    grid_time_ns
+        The grid time to use in ns.
 
     Returns
     -------
@@ -234,10 +237,33 @@ def to_grid_time(time: float) -> int:
         The integer valued nanosecond time.
     """
     time_ns = int(round(time * 1e9))
-    if time_ns % constants.GRID_TIME != 0:
+    if time_ns % grid_time_ns != 0:
         raise ValueError(
             f"Attempting to use a time interval of {time_ns} ns. "
             f"Please ensure that the durations of operations and wait times between"
-            f" operations are multiples of {constants.GRID_TIME} ns."
+            f" operations are multiples of {grid_time_ns} ns."
         )
     return time_ns
+
+
+def is_multiple_of_grid_time(
+    time: float, grid_time_ns: int = constants.GRID_TIME
+) -> bool:
+    """
+    Takes a time in seconds and converts it to the ns grid time that the Qblox hardware
+    expects.
+
+    Parameters
+    ----------
+    time:
+        A time in seconds.
+    grid_time_ns
+        A grid time in ns.
+
+    Returns
+    -------
+    :
+        If it the time is a multiple of the grid time.
+    """
+    time_ns = int(round(time * 1e9))
+    return time_ns % grid_time_ns == 0

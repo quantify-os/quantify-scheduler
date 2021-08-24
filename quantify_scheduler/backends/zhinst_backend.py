@@ -1322,6 +1322,23 @@ def _assemble_uhfqa_sequence(
                 device.device_type,
                 comment=f"clock={current_clock}",
             )
+            """
+            Adds a waiting time after playing the last sequence to wait
+            for the QAS to process and not time out.
+            """
+            if device.last_seq_wait_clocks < 2000:
+                logger.warning(
+                    f"The last_seq_wait_clocks={device.last_seq_wait_clocks}\n"
+                    + "is less than 2000!\n"
+                    + "Proceed with caution. Terminate and increase the\n"
+                    + "number if the QAS has an integration error!"
+                )
+            current_clock += seqc_il_generator.add_wait(
+                seqc_gen,
+                device.last_seq_wait_clocks,
+                device.device_type,
+                comment=f"\t// clock={current_clock}",
+            )
         else:
             current_clock += seqc_il_generator.add_play_wave(
                 seqc_gen,

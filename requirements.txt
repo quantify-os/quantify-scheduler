@@ -11,4 +11,4 @@ zhinst-qcodes
 pathvalidate
 typing_extensions
 quantify_core>=0.5.0
-qblox-instruments==0.3.2
+qblox-instruments==0.4.0

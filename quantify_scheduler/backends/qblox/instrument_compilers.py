@@ -11,7 +11,7 @@ from quantify_scheduler.backends.qblox.compiler_abc import (
     PulsarBaseband,
     PulsarRF,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
+from quantify_scheduler.backends.types.qblox import LOSettings
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -125,7 +125,7 @@ class Pulsar_QCM(PulsarBaseband):
     """Peak output voltage of the AWG"""
     marker_configuration: dict = {"start": 1, "end": 0}
     """Marker values to activate/deactivate the O1 marker"""
-    _supports_acquisition: bool = False
+    supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
 
 
@@ -141,7 +141,7 @@ class Pulsar_QRM(PulsarBaseband):
     """Peak output voltage of the AWG"""
     marker_configuration: dict = {"start": 1, "end": 0}
     """Marker values to activate/deactivate the I1 marker"""
-    _supports_acquisition: bool = True
+    supports_acquisition: bool = True
     """Specifies whether the device can perform acquisitions."""
 
 
@@ -159,7 +159,7 @@ class Pulsar_QCM_RF(PulsarRF):
     Marker values to activate/deactivate the O1 marker,
     and the output switches for O1/O2
     """
-    _supports_acquisition: bool = False
+    supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
 
 
@@ -177,7 +177,7 @@ class Pulsar_QRM_RF(PulsarRF):
     Marker values to activate/deactivate the I1 marker,
     and the output switch for O1
     """
-    _supports_acquisition: bool = True
+    supports_acquisition: bool = True
     """Specifies whether the device can perform acquisitions."""
 
 

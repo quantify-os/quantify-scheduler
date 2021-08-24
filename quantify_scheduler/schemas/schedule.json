@@ -56,6 +56,11 @@
     "resource_dict": {
       "type": "object",
       "description": "A dictionary of resources."
+    },
+    "compiled_instructions": {
+      "type": "object",
+      "description": "A containing compiled instructions."
     }
+
   }
 }

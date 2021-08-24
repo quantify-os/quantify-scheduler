@@ -19,9 +19,9 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     def __new__(
         cls, instrument: base.InstrumentBase
     ) -> InstrumentCoordinatorComponentBase:
-        """Keeps track of the intances of this class.
+        """Keeps track of the instances of this class.
 
-        NB This is done intentionally to prevent the intances from being garbage
+        NB This is done intentionally to prevent the instances from being garbage
         collected.
         """
         instance = super().__new__(cls)
@@ -29,7 +29,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         return instance
 
     def close(self):
-        """Makes sure the intance reference is realeased so that garbage collector can
+        """Makes sure the instances reference is released so that garbage collector can
         claim the object"""
         _ = self._no_gc_intances.pop(self.instrument_ref())
         super().close()

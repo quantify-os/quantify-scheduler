@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 
+from copy import deepcopy
 import numpy as np
 import pytest
 import quantify_scheduler.schemas.examples as examples
@@ -207,3 +208,23 @@ def test_resource_resolution():
 
     sched.add_resources([qcm0_s0, qrm0_s0])
     sched = qcompile(sched, DEVICE_CFG)
+
+
+def test_schedule_modified():
+    q0, q1 = ("q0", "q1")
+
+    ref_label_1 = "my_label"
+    sched = Schedule("Test experiment")
+    sched.add(Reset(q0, q1))
+    sched.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
+    sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Measure(q0, q1), label="M0")
+
+    copy_of_sched = deepcopy(sched)
+    # to verify equality of schedule object works
+    assert copy_of_sched == sched
+
+    _ = qcompile(sched, DEVICE_CFG)
+
+    # Fails if schedule is modified
+    assert copy_of_sched == sched

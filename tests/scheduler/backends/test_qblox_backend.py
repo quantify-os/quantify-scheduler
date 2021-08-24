@@ -6,7 +6,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
-
+import copy
 from typing import Dict, Any
 
 import os
@@ -18,6 +18,7 @@ import pytest
 import numpy as np
 
 from qcodes.instrument.base import Instrument
+from qblox_instruments import build
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
@@ -30,22 +31,24 @@ from quantify_scheduler.pulse_library import (
     SquarePulse,
     StaircasePulse,
 )
+from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify_scheduler.resources import ClockResource, BasebandClockResource
 from quantify_scheduler.compilation import (
     qcompile,
     determine_absolute_timing,
     device_compile,
 )
-
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
+    verify_qblox_instruments_version,
+    DriverVersionError,
+    to_grid_time,
 )
 from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import (
-    QASMRuntimeSettings,
-)
+from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     Pulsar_QCM,
     Pulsar_QRM,
@@ -477,13 +480,41 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
 
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
+
+def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    meas_op = sched.add(Measure("q0"))
+    # add another one too quickly
+    sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
+
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
+    with pytest.raises(ValueError):
+        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
+
+
+def test_wrong_bin_mode(pulse_only_schedule):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched = copy.deepcopy(pulse_only_schedule)
+    sched.add(
+        SSBIntegrationComplex(
+            duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
+        )
+    )
+
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
+    with pytest.raises(NotImplementedError):
+        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
 def test_compile_with_rel_time(
@@ -495,7 +526,7 @@ def test_compile_with_rel_time(
         pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_MAPPING
     )
 
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
@@ -508,7 +539,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     full_program = qcompile(
         mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
     )
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     with open(qcm0_seq0_json) as file:
         wf_and_prog = json.load(file)
@@ -528,7 +559,7 @@ def test_compile_with_pulse_stitching(
     set_datadir(tmp_dir.name)
     sched.repetitions = 11
     full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
-    qcm0_seq0_json = full_program["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
@@ -556,8 +587,6 @@ def test_emit():
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm.instructions) == 2
-    with pytest.raises(SyntaxError):
-        qasm.emit(q1asm_instructions.ACQUIRE, 0, 1, 120, "argument too many")
 
 
 def test_auto_wait():
@@ -581,6 +610,7 @@ def test_wait_till_start_then_play():
     minimal_pulse_data = {"duration": 20e-9}
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="test_pulse",
         uuid="test_pulse",
         data=minimal_pulse_data,
         timing=4e-9,
@@ -597,6 +627,7 @@ def test_wait_till_start_then_play():
     assert qasm.instructions[2][1] == q1asm_instructions.PLAY
 
     pulse = qb.OpInfo(
+        name="test_pulse",
         uuid="test_pulse",
         data=minimal_pulse_data,
         timing=1e-9,
@@ -607,8 +638,19 @@ def test_wait_till_start_then_play():
 
 
 def test_wait_till_start_then_acquire():
-    minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    minimal_pulse_data = {
+        "duration": 20e-9,
+        "acq_index": 0,
+        "acq_channel": 1,
+        "bin_mode": BinMode.AVERAGE,
+        "protocol": "SSBIntegrationComplex",
+    }
+    acq = qb.OpInfo(
+        name="SSBIntegrationComplex",
+        uuid="test_acq",
+        data=minimal_pulse_data,
+        timing=4e-9,
+    )
     qrm = Pulsar_QRM(
         None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
     )
@@ -621,7 +663,9 @@ def test_wait_till_start_then_acquire():
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(uuid="test_acq", data=minimal_pulse_data, timing=4e-9)
+    acq = qb.OpInfo(
+        name="test_acq", uuid="test_acq", data=minimal_pulse_data, timing=4e-9
+    )
     expanded_val = QASMProgram._expand_from_normalised_range(
         1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
     )
@@ -639,6 +683,7 @@ def test_pulse_stitching_qasm_prog():
     }
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="stitched_square_pulse",
         uuid="stitched_square_pulse",
         data=minimal_pulse_data,
         timing=4e-9,
@@ -659,6 +704,7 @@ def test_staircase_qasm_prog(start_amp, final_amp):
 
     runtime_settings = QASMRuntimeSettings(1, 1)
     pulse = qb.OpInfo(
+        name="staircase",
         uuid="staircase",
         data=s_ramp_pulse.data["pulse_info"][0],
         timing=4e-9,
@@ -686,10 +732,10 @@ def test_staircase_qasm_prog(start_amp, final_amp):
 
 
 def test_to_pulsar_time():
-    time_ns = QASMProgram.to_grid_time(8e-9)
+    time_ns = to_grid_time(8e-9)
     assert time_ns == 8
     with pytest.raises(ValueError):
-        QASMProgram.to_grid_time(7e-9)
+        to_grid_time(7e-9)
 
 
 def test_loop():
@@ -737,6 +783,29 @@ def test_container_prepare(pulse_only_schedule):
         container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
     )
     assert container.instrument_compilers["lo0"].frequency is not None
+
+
+def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
+    sched = device_compile(sched, DEVICE_CFG)
+    container = compiler_container.CompilerContainer.from_mapping(
+        sched, HARDWARE_MAPPING
+    )
+    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+    qb._assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        device_compilers=container.instrument_compilers,
+        portclock_mapping=portclock_map,
+    )
+    for instr in container.instrument_compilers.values():
+        if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
+            instr._distribute_data()
+            instr._determine_scope_mode_acquisition_sequencer()
+    scope_mode_sequencer = container.instrument_compilers[
+        "qrm0"
+    ]._settings.scope_mode_sequencer
+    assert scope_mode_sequencer == "seq0"
 
 
 def test_container_prepare_baseband(
@@ -787,6 +856,30 @@ def test_from_mapping(pulse_only_schedule):
         assert instr_name in container.instrument_compilers
 
 
+def test_verify_qblox_instruments_version():
+    verify_qblox_instruments_version(build.__version__)
+
+    nonsense_version = "nonsense.driver.version"
+    with pytest.raises(DriverVersionError) as wrong_version:
+        verify_qblox_instruments_version(nonsense_version)
+    assert (
+        wrong_version.value.args[0]
+        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} "
+        f"not supported by backend. Please install version 0.4.0 to continue to use "
+        f"this backend."
+    )
+
+    with pytest.raises(DriverVersionError) as none_error:
+        verify_qblox_instruments_version(None)
+
+    assert (
+        none_error.value.args[0]
+        == "Qblox DriverVersionError: qblox-instruments version check could not be "
+        "performed. Either the package is not installed correctly or a version < "
+        "0.3.2 was found."
+    )
+
+
 def test_assign_frequencies():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -814,11 +907,12 @@ def test_assign_frequencies():
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert program["lo0"]["lo_freq"] == lo0
-    assert program["lo1"]["lo_freq"] == lo1
-    assert program["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+    assert compiled_instructions["lo0"]["lo_freq"] == lo0
+    assert compiled_instructions["lo1"]["lo_freq"] == lo1
+    assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
     # Test for RF
     sched = Schedule("two_gate_experiment")
@@ -844,8 +938,9 @@ def test_assign_frequencies():
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
-    qcm_program = program["qcm_rf0"]
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qcm_program = compiled_instructions["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
@@ -862,7 +957,8 @@ def test_markers():
     sched.add(Measure("q0"))
     sched.add(Measure("q2"))
 
-    program = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    program = compiled_schedule["compiled_instructions"]
 
     def _confirm_correct_markers(device_program, device_compiler):
         with open(device_program["seq0"]["seq_fn"]) as file:
