@@ -493,6 +493,7 @@ class _QRMAcquisitionManager:
         protocol_to_function_mapping = {
             # Implicitly covers SSBIntegrationComplex too
             "weighted_integrated_complex": self._get_integration_data,
+            "ssb_integration_complex": self._get_integration_data,
             "trace": self._get_scope_data,
             # NB thresholded protocol is still missing since there is nothing in
             # the acquisition library for it yet.
