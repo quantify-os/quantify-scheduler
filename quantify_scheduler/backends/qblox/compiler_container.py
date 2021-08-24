@@ -31,6 +31,7 @@ class CompilerContainer:
         "Pulsar_QRM_RF": compiler_classes.Pulsar_QRM_RF,
         "Cluster": compiler_classes.Cluster,
     }
+    """Maps the names in the hardware config to their appropriate compiler classes."""
 
     def __init__(self, schedule: types.Schedule):
         """
