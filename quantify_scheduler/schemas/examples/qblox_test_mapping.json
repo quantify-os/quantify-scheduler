@@ -4,7 +4,7 @@
     "ref": "internal",
     "instrument_type": "Cluster",
     "cl_qcm0": {
-      "instrument_type": "Pulsar_QCM",
+      "instrument_type": "QCM",
       "ref": "internal",
       "complex_output_0": {
         "line_gain_db": 0,

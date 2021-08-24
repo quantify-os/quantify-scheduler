@@ -189,8 +189,8 @@ class Cluster(ControlDeviceCompiler):
     """
 
     compiler_classes: Dict[str, type] = {
-        "Pulsar_QCM": Pulsar_QCM,
-        "Pulsar_QRM": Pulsar_QRM,
+        "QCM": Pulsar_QCM,
+        "QRM": Pulsar_QRM,
     }
     """References to the individual module compiler classes."""
     supports_acquisition: bool = True
