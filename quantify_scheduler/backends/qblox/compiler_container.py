@@ -12,6 +12,16 @@ from quantify_scheduler.helpers.schedule import get_total_duration
 
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
 
+COMPILER_MAPPING: Dict[str, type] = {
+    "Pulsar_QCM": compiler_classes.Pulsar_QCM,
+    "Pulsar_QRM": compiler_classes.Pulsar_QRM,
+    "Pulsar_QCM_RF": compiler_classes.Pulsar_QCM_RF,
+    "Pulsar_QRM_RF": compiler_classes.Pulsar_QRM_RF,
+    "Cluster": compiler_classes.Cluster,
+    "LocalOscillator": compiler_classes.LocalOscillator,
+}
+"""Maps the names in the hardware config to their appropriate compiler classes."""
+
 
 class CompilerContainer:
     """
@@ -23,16 +33,6 @@ class CompilerContainer:
 
     It is recommended to construct this object using the `from_mapping` factory method.
     """
-
-    compiler_mapping: Dict[str, type] = {
-        "Pulsar_QCM": compiler_classes.Pulsar_QCM,
-        "Pulsar_QRM": compiler_classes.Pulsar_QRM,
-        "Pulsar_QCM_RF": compiler_classes.Pulsar_QCM_RF,
-        "Pulsar_QRM_RF": compiler_classes.Pulsar_QRM_RF,
-        "Cluster": compiler_classes.Cluster,
-        "LocalOscillator": compiler_classes.LocalOscillator,
-    }
-    """Maps the names in the hardware config to their appropriate compiler classes."""
 
     def __init__(self, schedule: types.Schedule):
         """
@@ -124,8 +124,8 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        if instrument in self.compiler_mapping:
-            compiler: type = self.compiler_mapping[instrument]
+        if instrument in COMPILER_MAPPING:
+            compiler: type = COMPILER_MAPPING[instrument]
             self.add_instrument_compiler(name, compiler, mapping)
         else:
             self._add_from_path(name, instrument, mapping)
