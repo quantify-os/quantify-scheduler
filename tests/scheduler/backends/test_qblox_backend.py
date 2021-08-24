@@ -353,6 +353,19 @@ def gate_only_schedule():
 
 
 @pytest.fixture
+def duplicate_measure_schedule():
+    sched = Schedule("gate_only_schedule")
+    sched.add(Reset("q0"))
+    x_gate = sched.add(X("q0"))
+    sched.add(Measure("q0", acq_index=0), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
+    sched.add(Measure("q0", acq_index=1), ref_op=x_gate, rel_time=3e-6, ref_pt="end")
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
 def baseband_square_pulse_schedule():
     sched = Schedule("baseband_square_pulse_schedule")
     sched.add(Reset("q0"))
@@ -479,6 +492,17 @@ def test_identical_pulses_compile(identical_pulses_schedule):
     with open(seq_fn) as file:
         prog = json.load(file)
     assert len(prog["waveforms"]) == 2
+
+
+def test_compile_measure(duplicate_measure_schedule):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    full_program = qcompile(duplicate_measure_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+
+    with open(qrm0_seq0_json) as file:
+        wf_and_prog = json.load(file)
+    assert len(wf_and_prog["weights"]) == 0
 
 
 def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
