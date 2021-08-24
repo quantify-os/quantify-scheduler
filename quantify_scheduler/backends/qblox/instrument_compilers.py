@@ -9,9 +9,9 @@ from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox.compiler_abc import (
     InstrumentCompiler,
     ControlDeviceCompiler,
-    PulsarBase,
-    PulsarBaseband,
-    PulsarRF,
+    QbloxBaseModule,
+    QbloxBasebandModule,
+    QbloxRFModule,
 )
 from quantify_scheduler.backends.types.qblox import LOSettings
 from quantify_scheduler.backends.qblox.constants import (
@@ -116,7 +116,7 @@ class LocalOscillator(InstrumentCompiler):
 # ---------- pulsar sequencer classes ----------
 
 # pylint: disable=invalid-name
-class QCM(PulsarBaseband):
+class QCM(QbloxBasebandModule):
     """
     QCM specific implementation of the pulsar compiler.
     """
@@ -132,7 +132,7 @@ class QCM(PulsarBaseband):
 
 
 # pylint: disable=invalid-name
-class QRM(PulsarBaseband):
+class QRM(QbloxBasebandModule):
     """
     QRM specific implementation of the pulsar compiler.
     """
@@ -147,9 +147,9 @@ class QRM(PulsarBaseband):
     """Specifies whether the device can perform acquisitions."""
 
 
-class QCM_RF(PulsarRF):
+class QCM_RF(QbloxRFModule):
     """
-    Pulsar QCM-RF specific implementation of the pulsar compiler.
+    QCM-RF specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -165,9 +165,9 @@ class QCM_RF(PulsarRF):
     """Specifies whether the device can perform acquisitions."""
 
 
-class QRM_RF(PulsarRF):
+class QRM_RF(QbloxRFModule):
     """
-    Pulsar QRM-RF specific implementation of the pulsar compiler.
+    QRM-RF specific implementation of the pulsar compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -213,7 +213,7 @@ class Cluster(ControlDeviceCompiler):
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
-    def construct_instrument_compilers(self) -> Dict[str, PulsarBase]:
+    def construct_instrument_compilers(self) -> Dict[str, QbloxBaseModule]:
         instrument_compilers = dict()
         for name, cfg in self.hw_mapping.items():
             if not isinstance(cfg, dict):

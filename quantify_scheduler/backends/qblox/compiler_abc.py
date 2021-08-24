@@ -253,7 +253,7 @@ class Sequencer:
 
     def __init__(
         self,
-        parent: PulsarBase,
+        parent: QbloxBaseModule,
         name: str,
         portclock: Tuple[str, str],
         seq_settings: dict,
@@ -828,7 +828,7 @@ class Sequencer:
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class PulsarBase(ControlDeviceCompiler, ABC):
+class QbloxBaseModule(ControlDeviceCompiler, ABC):
     """
     Pulsar specific implementation of
     :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
@@ -1189,7 +1189,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         return acq_mapping if len(acq_mapping) > 0 else None
 
 
-class PulsarBaseband(PulsarBase):
+class QbloxBasebandModule(QbloxBaseModule):
     """
     Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should
     inherit from.
@@ -1272,7 +1272,7 @@ class PulsarBaseband(PulsarBase):
             sequencer.frequency = clk_freq - lo_freq
 
 
-class PulsarRF(PulsarBase):
+class QbloxRFModule(QbloxBaseModule):
     r"""
     Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should
     inherit from.
