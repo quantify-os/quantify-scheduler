@@ -188,8 +188,13 @@ class Cluster(ControlDeviceCompiler):
     Compiler class for a Qblox cluster.
     """
 
-    compiler_classes = {"Pulsar_QCM": Pulsar_QCM, "Pulsar_QRM": Pulsar_QRM}
+    compiler_classes: Dict[str, type] = {
+        "Pulsar_QCM": Pulsar_QCM,
+        "Pulsar_QRM": Pulsar_QRM,
+    }
     """References to the individual module compiler classes."""
+    supports_acquisition: bool = True
+    """Specifies that the Cluster supports performing acquisitions."""
 
     def __init__(
         self,
