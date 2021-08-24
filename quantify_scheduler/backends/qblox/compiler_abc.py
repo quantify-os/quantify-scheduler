@@ -502,7 +502,7 @@ class Sequencer:
             waveforms_data = acq.data["waveforms"]
             if len(waveforms_data) == 0:
                 continue  # e.g. scope acquisition
-            if acq.name == "SSBIntegrationComplex":
+            if acq.data["protocol"] == "ssb_integration_complex":
                 continue
             if len(waveforms_data) != 2:
                 raise ValueError(
@@ -510,13 +510,17 @@ class Sequencer:
                     f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
                     "waveforms."
                 )
+            raw_wf_data_real = generate_waveform_data(
+                waveforms_data[0], sampling_rate=SAMPLING_RATE
+            )
+            raw_wf_data_imag = generate_waveform_data(
+                waveforms_data[1], sampling_rate=SAMPLING_RATE
+            )
+            acq.uuid = "{}_{}".format(
+                generate_uuid_from_wf_data(raw_wf_data_real),
+                generate_uuid_from_wf_data(raw_wf_data_imag),
+            )
             if acq.uuid not in waveforms_complex:
-                raw_wf_data_real = generate_waveform_data(
-                    waveforms_data[0], sampling_rate=SAMPLING_RATE
-                )
-                raw_wf_data_imag = generate_waveform_data(
-                    waveforms_data[1], sampling_rate=SAMPLING_RATE
-                )
                 self._settings.duration = len(raw_wf_data_real)
                 if not (
                     np.all(np.isreal(raw_wf_data_real))
