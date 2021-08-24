@@ -491,7 +491,6 @@ class _QRMAcquisitionManager:
             `dict` with the `(acq_channel, acq_index)` as keys.
         """
         protocol_to_function_mapping = {
-            # Implicitly covers SSBIntegrationComplex too
             "weighted_integrated_complex": self._get_integration_data,
             "ssb_integration_complex": self._get_integration_data,
             "trace": self._get_scope_data,
