@@ -194,7 +194,8 @@ class Cluster(ControlDeviceCompiler):
         "QCM_RF": QcmRfModule,
         "QRM_RF": QrmRfModule,
     }
-    """References to the individual module compiler classes."""
+    """References to the individual module compiler classes that can be used by the
+    cluster."""
     supports_acquisition: bool = True
     """Specifies that the Cluster supports performing acquisitions."""
 
@@ -214,6 +215,9 @@ class Cluster(ControlDeviceCompiler):
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
     def construct_instrument_compilers(self) -> Dict[str, QbloxBaseModule]:
+        """
+        Constructs the compilers for the modules inside the cluster.
+        """
         instrument_compilers = dict()
         for name, cfg in self.hw_mapping.items():
             if not isinstance(cfg, dict):
@@ -244,6 +248,10 @@ class Cluster(ControlDeviceCompiler):
             compiler.distribute_data()
 
     def distribute_data(self) -> None:
+        """
+        Distributes the pulses and acquisitions assigned to the cluster over the
+        individual module compilers.
+        """
         for compiler in self.instrument_compilers.values():
             for portclock in compiler.portclocks:
                 if portclock in self._pulses:
