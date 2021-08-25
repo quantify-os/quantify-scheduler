@@ -246,7 +246,7 @@ def test_dccompensation_pulse_amp() -> None:
         amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
     )
 
-    pulse2 = DCCompensationPulse(
+    pulse2 = DCCompensationPulse.create_square_compensation(
         duration=1e-8,
         pulses=[pulse0, pulse1],
         sampling_rate=int(1e9),
@@ -259,7 +259,9 @@ def test_dccompensation_pulse_modulated() -> None:
     clock = ClockResource("clock", 1.0)
     pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock)
     with pytest.raises(ValueError):
-        DCCompensationPulse(amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9))
+        DCCompensationPulse.create_square_compensation(
+            amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
+        )
 
 
 def test_dccompensation_pulse_duration() -> None:
@@ -270,7 +272,7 @@ def test_dccompensation_pulse_duration() -> None:
         amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
     )
 
-    pulse2 = DCCompensationPulse(
+    pulse2 = DCCompensationPulse.create_square_compensation(
         amp=1,
         pulses=[pulse0, pulse1],
         sampling_rate=int(1e9),
@@ -285,7 +287,7 @@ def test_dccompensation_pulse_both_params() -> None:
         pulse0 = SquarePulse(
             amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
         )
-        DCCompensationPulse(
+        DCCompensationPulse.create_square_compensation(
             amp=1,
             duration=1e-8,
             pulses=[pulse0],

@@ -484,44 +484,13 @@ class DRAGPulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class DCCompensationPulse(SquarePulse):
+class DCCompensationPulse:
     """
     Calculates a SquarePulse to counteract charging effects based on a list of pulses.
-
-    Parameters
-    ----------
-    pulses
-        List of pulses to compensate
-    amp
-        Desired amplitude of the DCCompensationPulse.
-        Leave to None to calculate the value for compensation,
-        in this case you must assign a value to duration.
-        The sign of the amplitude is ignored and ajusted
-        automatically to perform the compensation.
-    duration
-        Desired pulse duration in seconds.
-        Leave to None to calculate the value for compensation,
-        in this case you must assign a value to amp.
-        The sign of the value of amp given in the previous step
-        is ajusted to perform the compensation.
-    port
-        Port to perform the compensation. Any pulse that does not
-        belong to the specified port is ignored.
-    clock
-        Clock used to modulate the pulse.
-    phase
-        Phase of the pulse in degrees.
-    t0
-        Time in seconds when to start the pulses relative to the start time
-        of the Operation in the Schedule.
-    data
-        The operation's dictionary, by default None
-        Note: if the data parameter is not None all other parameters are
-        overwritten using the contents of data.
     """
 
-    def __init__(
-        self,
+    @staticmethod
+    def create_square_compensation(
         pulses: List[Operation],
         sampling_rate: int,
         port: str,
@@ -529,7 +498,51 @@ class DCCompensationPulse(SquarePulse):
         amp: Optional[float] = None,
         duration: Optional[float] = None,
         data: Optional[Dict[str, Any]] = None,
-    ) -> None:
+    ) -> SquarePulse:
+        """
+        Calculates a SquarePulse to counteract charging effects based on a list of pulses.
+
+        Parameters
+        ----------
+        pulses
+            List of pulses to compensate
+        sampling_rate
+            Resolution to calculate the enclosure of the
+            pulses to calculate the area to compensate.
+        amp
+            Desired amplitude of the DCCompensationPulse.
+            Leave to None to calculate the value for compensation,
+            in this case you must assign a value to duration.
+            The sign of the amplitude is ignored and ajusted
+            automatically to perform the compensation.
+        duration
+            Desired pulse duration in seconds.
+            Leave to None to calculate the value for compensation,
+            in this case you must assign a value to amp.
+            The sign of the value of amp given in the previous step
+            is ajusted to perform the compensation.
+        port
+            Port to perform the compensation. Any pulse that does not
+            belong to the specified port is ignored.
+        clock
+            Clock used to modulate the pulse.
+        phase
+            Phase of the pulse in degrees.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+
+        Returns
+        -------
+
+        :
+            Returns a SquarePulse object that compensates all pulses passed as
+            argument
+        """
         # Make sure that the list contains at least one element
         assert len(pulses) > 0
 
@@ -552,14 +565,14 @@ class DCCompensationPulse(SquarePulse):
                 c_amp = -abs(amp)
             else:
                 c_amp = abs(amp)
-            c_duration = area / c_amp
+            c_duration = abs(area / c_amp)
         else:
             raise ValueError(
                 "The `DCCompensationPulse` allows either amp or duration to "
                 + "be specified, not both. Both amp and duration were passed."
             )
 
-        super().__init__(
+        return SquarePulse(
             amp=c_amp,
             duration=c_duration,
             port=port,
