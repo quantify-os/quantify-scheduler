@@ -120,7 +120,7 @@ class LOSettings(DataClassJsonMixin):
 
 
 @dataclass
-class _BaseSettings(DataClassJsonMixin):
+class BaseModuleSettings(DataClassJsonMixin):
     scope_mode_sequencer: Optional[str] = None
     """The name of the sequencer that triggers scope mode Acquisitions. Only a single
     sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
@@ -137,7 +137,17 @@ class _BaseSettings(DataClassJsonMixin):
 
 
 @dataclass
-class PulsarSettings(_BaseSettings):
+class BasebandModuleSettings(BaseModuleSettings):
+    @classmethod
+    def extract_settings_from_mapping(
+        cls, mapping: Dict[str, Any]
+    ) -> BasebandModuleSettings:
+        del mapping  # not used
+        return cls()
+
+
+@dataclass
+class PulsarSettings(BaseModuleSettings):
     """
     Global settings for the pulsar to be set in the InstrumentCoordinator component.
     This is kept separate from the settings that can be set on a per sequencer basis,
@@ -164,7 +174,7 @@ class PulsarSettings(_BaseSettings):
 
 
 @dataclass
-class PulsarRFSettings(PulsarSettings):
+class RFModuleSettings(BaseModuleSettings):
     """
     Global settings for the pulsar to be set in the control stack component. This is
     kept separate from the settings that can be set on a per sequencer basis, which are
@@ -177,7 +187,7 @@ class PulsarRFSettings(PulsarSettings):
     """The frequency of Output 1 (O1) LO."""
 
     @classmethod
-    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -186,8 +196,7 @@ class PulsarRFSettings(PulsarSettings):
         ----------
         mapping
         """
-        ref: str = mapping["ref"]
-        kwargs = {}
+        kwargs = dict()
 
         complex_output_0 = mapping.get("complex_output_0")
         complex_output_1 = mapping.get("complex_output_1")
@@ -196,7 +205,17 @@ class PulsarRFSettings(PulsarSettings):
         if complex_output_1:
             kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
 
-        return cls(ref=ref, **kwargs)
+        return cls(**kwargs)
+
+
+@dataclass
+class PulsarRFSettings(RFModuleSettings, PulsarSettings):
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
+        rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
+        pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
+        combined_settings = {**rf_settings.to_dict(), **pulsar_settings.to_dict()}
+        return cls(**combined_settings)
 
 
 @dataclass

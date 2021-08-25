@@ -49,6 +49,7 @@ from quantify_scheduler.backends.qblox.helpers import (
 )
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
+from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QrmModule,
@@ -800,7 +801,7 @@ def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisi
     )
     for instr in container.instrument_compilers.values():
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
-            instr.distribute_data()
+            instr.prepare()
             instr._determine_scope_mode_acquisition_sequencer()
     scope_mode_sequencer = container.instrument_compilers[
         "qrm0"
@@ -977,3 +978,11 @@ def test_markers():
     _confirm_correct_markers(program["qrm0"], QrmModule)
     _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
     _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
+
+
+# ------------------- types -------------------
+
+
+def test_pulsar_rf_extract_from_mapping():
+    hw_map = HARDWARE_MAPPING["qcm_rf0"]
+    types.PulsarRFSettings.extract_settings_from_mapping(hw_map)

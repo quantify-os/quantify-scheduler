@@ -8,7 +8,7 @@ import json
 from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List
+from typing import Optional, Dict, Any, Set, Tuple, List, Union
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -37,8 +37,11 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
+    BaseModuleSettings,
     PulsarSettings,
+    BasebandModuleSettings,
     PulsarRFSettings,
+    RFModuleSettings,
     SequencerSettings,
     QASMRuntimeSettings,
     MixerCorrections,
@@ -885,7 +888,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
-        self._settings = self.settings_type.extract_settings_from_mapping(hw_mapping)
+        self.is_pulsar: bool = True
+        """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
+        by the cluster compiler if needed."""
+        self._settings: Union[
+            BaseModuleSettings, None
+        ] = None  # set in the prepare method.
 
     @property
     @abstractmethod
@@ -1080,6 +1088,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         calculating the relevant frequencies in case an external local oscillator is
         used.
         """
+        self._settings = self.settings_type.extract_settings_from_mapping(
+            self.hw_mapping
+        )
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
@@ -1195,8 +1206,10 @@ class QbloxBasebandModule(QbloxBaseModule):
     modules.
     """
 
-    settings_type = PulsarSettings
-    """The settings type used by Pulsar baseband-type devices"""
+    @property
+    def settings_type(self) -> type:
+        """The settings type used by Pulsar baseband-type devices"""
+        return PulsarSettings if self.is_pulsar else BasebandModuleSettings
 
     def update_settings(self):
         """
@@ -1278,8 +1291,10 @@ class QbloxRFModule(QbloxBaseModule):
     modules.
     """
 
-    settings_type = PulsarRFSettings
-    """The settings type used by Pulsar RF-type devices"""
+    @property
+    def settings_type(self) -> type:
+        """The settings type used by Pulsar RF-type devices"""
+        return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def update_settings(self):
         """

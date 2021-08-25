@@ -238,6 +238,9 @@ class Cluster(ControlDeviceCompiler):
             instance = compiler_type(
                 None, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
             )
+            assert hasattr(instance, "is_pulsar")
+            instance.is_pulsar = False
+
             instrument_compilers[name] = instance
         return instrument_compilers
 
