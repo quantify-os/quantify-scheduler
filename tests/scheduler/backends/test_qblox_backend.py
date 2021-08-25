@@ -48,7 +48,10 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
+from quantify_scheduler.backends.types.qblox import (
+    QASMRuntimeSettings,
+    BasebandModuleSettings,
+)
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
@@ -986,3 +989,13 @@ def test_markers():
 def test_pulsar_rf_extract_from_mapping():
     hw_map = HARDWARE_MAPPING["qcm_rf0"]
     types.PulsarRFSettings.extract_settings_from_mapping(hw_map)
+
+
+def test_cluster_settings(pulse_only_schedule):
+    container = compiler_container.CompilerContainer.from_mapping(
+        pulse_only_schedule, HARDWARE_MAPPING
+    )
+    cluster_compiler = container.instrument_compilers["cluster0"]
+    cluster_compiler.prepare()
+    cl_qcm0 = cluster_compiler.instrument_compilers["cl_qcm0"]
+    assert isinstance(cl_qcm0._settings, BasebandModuleSettings)

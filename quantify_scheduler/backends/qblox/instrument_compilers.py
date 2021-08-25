@@ -236,7 +236,7 @@ class Cluster(ControlDeviceCompiler):
                 )
             compiler_type: type = self.compiler_classes[instrument_type]
             instance = compiler_type(
-                None, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
+                self, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
             )
             assert hasattr(instance, "is_pulsar")
             instance.is_pulsar = False
@@ -246,9 +246,8 @@ class Cluster(ControlDeviceCompiler):
 
     def prepare(self) -> None:
         self.distribute_data()
-        # Need to somehow make this work with ext los, for now we skip this.
         for compiler in self.instrument_compilers.values():
-            compiler.distribute_data()
+            compiler.prepare()
 
     def distribute_data(self) -> None:
         """

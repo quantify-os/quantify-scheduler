@@ -1200,6 +1200,34 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         return acq_mapping if len(acq_mapping) > 0 else None
 
 
+def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
+    if sequencer.clock not in container.resources:
+        return
+
+    clk_freq = container.resources[sequencer.clock]["freq"]
+    lo_compiler = container.instrument_compilers.get(sequencer.associated_ext_lo, None)
+    if lo_compiler is None:
+        sequencer.frequency = clk_freq
+        return
+
+    if_freq = sequencer.frequency
+    lo_freq = lo_compiler.frequency
+
+    if lo_freq is None and if_freq is None:
+        raise ValueError(
+            f"Frequency settings underconstraint for sequencer {sequencer.name} "
+            f"with port {sequencer.port} and clock {sequencer.clock}. When using "
+            f"an external local oscillator it is required to either supply an "
+            f'"lo_freq" or an "interm_freq". Neither was given.'
+        )
+
+    if if_freq is not None:
+        lo_compiler.frequency = clk_freq - if_freq
+
+    if lo_freq is not None:
+        sequencer.frequency = clk_freq - lo_freq
+
+
 class QbloxBasebandModule(QbloxBaseModule):
     """
     Abstract class with all the shared functionality between the QRM and QCM baseband
@@ -1255,34 +1283,10 @@ class QbloxBasebandModule(QbloxBaseModule):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-
-        if sequencer.clock not in self.parent.resources:
-            return
-
-        clk_freq = self.parent.resources[sequencer.clock]["freq"]
-        lo_compiler = self.parent.instrument_compilers.get(
-            sequencer.associated_ext_lo, None
-        )
-        if lo_compiler is None:
-            sequencer.frequency = clk_freq
-            return
-
-        if_freq = sequencer.frequency
-        lo_freq = lo_compiler.frequency
-
-        if lo_freq is None and if_freq is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} "
-                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
-                f"an external local oscillator it is required to either supply an "
-                f'"lo_freq" or an "interm_freq". Neither was given.'
-            )
-
-        if if_freq is not None:
-            lo_compiler.frequency = clk_freq - if_freq
-
-        if lo_freq is not None:
-            sequencer.frequency = clk_freq - lo_freq
+        if self.is_pulsar:
+            _assign_frequency_with_ext_lo(sequencer, self.parent)
+        else:
+            _assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
 
 class QbloxRFModule(QbloxBaseModule):
