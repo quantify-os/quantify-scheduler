@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 from typing import Optional, Dict, Any, Union
-from typing_extensions import Literal
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
