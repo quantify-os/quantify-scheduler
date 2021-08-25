@@ -1191,8 +1191,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
 class QbloxBasebandModule(QbloxBaseModule):
     """
-    Abstract implementation that the Pulsar QcmModule and Pulsar QrmModule baseband modules should
-    inherit from.
+    Abstract class with all the shared functionality between the QRM and QCM baseband
+    modules.
     """
 
     settings_type = PulsarSettings
@@ -1274,8 +1274,8 @@ class QbloxBasebandModule(QbloxBaseModule):
 
 class QbloxRFModule(QbloxBaseModule):
     r"""
-    Abstract implementation that the Pulsar QcmModule-RF and Pulsar QrmModule-RF modules should
-    inherit from.
+    Abstract class with all the shared functionality between the QRM-RF and QCM-RF
+    modules.
     """
 
     settings_type = PulsarRFSettings
