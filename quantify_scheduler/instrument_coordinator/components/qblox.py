@@ -12,7 +12,6 @@ import copy
 from abc import abstractmethod
 
 import numpy as np
-import cluster
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
