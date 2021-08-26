@@ -10,8 +10,8 @@
         "line_gain_db": 0,
         "lo_name": "lo0",
         "seq0": {
-          "port": "q3:mw",
-          "clock": "q3.01",
+          "port": "q4:mw",
+          "clock": "q4.01",
           "interm_freq": 50e6
         }
     }
