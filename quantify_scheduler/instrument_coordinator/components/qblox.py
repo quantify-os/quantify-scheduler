@@ -727,7 +727,11 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             self.cluster_modules[name].prepare(comp_options)
 
     def retrieve_acquisition(self) -> Any:
-        pass
+        acquisitions: Dict[Tuple[int, int], Any] = dict()
+        for comp in self.cluster_modules.values():
+            comp_acq = comp.retrieve_acquisition()
+            acquisitions.update(comp_acq)
+        return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         for comp in self.cluster_modules.values():
