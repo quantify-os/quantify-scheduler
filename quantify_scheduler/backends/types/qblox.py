@@ -121,6 +121,8 @@ class LOSettings(DataClassJsonMixin):
 
 @dataclass
 class BaseModuleSettings(DataClassJsonMixin):
+    """Shared settings between all the Qblox modules."""
+
     scope_mode_sequencer: Optional[str] = None
     """The name of the sequencer that triggers scope mode Acquisitions. Only a single
     sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
@@ -138,10 +140,23 @@ class BaseModuleSettings(DataClassJsonMixin):
 
 @dataclass
 class BasebandModuleSettings(BaseModuleSettings):
+    """
+    Settings for a baseband module.
+    """
+
     @classmethod
     def extract_settings_from_mapping(
         cls, mapping: Dict[str, Any]
     ) -> BasebandModuleSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a `BasebandModuleSettings` object from it. Class exists to ensure that the
+        cluster baseband modules don't need special treatment in the rest of the code.
+
+        Parameters
+        ----------
+        mapping
+        """
         del mapping  # not used
         return cls()
 
@@ -190,7 +205,7 @@ class RFModuleSettings(BaseModuleSettings):
     def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
-        a `PulsarSettings` object from it.
+        an `RFModuleSettings` object from it.
 
         Parameters
         ----------
@@ -210,8 +225,21 @@ class RFModuleSettings(BaseModuleSettings):
 
 @dataclass
 class PulsarRFSettings(RFModuleSettings, PulsarSettings):
+    """
+    Settings specific for a Pulsar RF. Effectively, combines the pulsar specific
+    settings with the RF specific settings.
+    """
+
     @classmethod
     def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        an `PulsarRFSettings` object from it.
+
+        Parameters
+        ----------
+        mapping
+        """
         rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
         pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
         combined_settings = {**rf_settings.to_dict(), **pulsar_settings.to_dict()}
