@@ -206,6 +206,28 @@ def pulse_only_schedule():
 
 
 @pytest.fixture
+def cluster_only_schedule():
+    sched = Schedule("cluster_only_schedule")
+    sched.add(Reset("q4"))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q4:mw",
+            duration=20e-9,
+            clock="q4.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q4:mw", clock="q4.01"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q4.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
 def pulse_only_schedule_multiplexed():
     sched = Schedule("pulse_only_experiment")
     sched.add(Reset("q0"))
@@ -459,6 +481,12 @@ def test_simple_compile(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_compile_cluster(cluster_only_schedule):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_simple_compile_multiplexing(

@@ -256,10 +256,13 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         """
         for compiler in self.instrument_compilers.values():
             for portclock in compiler.portclocks:
+                port, clock = portclock
                 if portclock in self._pulses:
-                    compiler.add_pulse(self._pulses[portclock])
+                    for pulse in self._pulses[portclock]:
+                        compiler.add_pulse(port, clock, pulse)
                 if portclock in self._acquisitions:
-                    compiler.add_acquisition(self._acquisitions[portclock])
+                    for acq in self._acquisitions[portclock]:
+                        compiler.add_acquisition(port, clock, acq)
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         program = dict()
