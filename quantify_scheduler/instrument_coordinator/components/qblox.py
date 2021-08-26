@@ -712,8 +712,8 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             comp.stop()
 
     def _configure_cmm_settings(self, settings):
-        if "ref" in settings:
-            self.instrument.set("reference_source", settings["ref"])
+        if "reference_source" in settings:
+            self.instrument.set("reference_source", settings["reference_source"])
 
     def prepare(self, options: Any) -> None:
         settings = options.pop("settings")
