@@ -34,7 +34,8 @@ from quantify_scheduler.backends.qblox.constants import (
     SAMPLING_RATE,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import compiler_container
+
+# from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     BaseModuleSettings,
@@ -62,7 +63,7 @@ class InstrumentCompiler(ABC):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
+        parent: "CompilerContainer",
         name: str,
         total_play_time: float,
         hw_mapping: Optional[Dict[str, Any]] = None,
@@ -129,7 +130,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
+        parent: "CompilerContainer",
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -857,7 +858,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
+        parent: "CompilerContainer",
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],

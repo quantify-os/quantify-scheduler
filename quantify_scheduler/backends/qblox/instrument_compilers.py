@@ -6,13 +6,7 @@ from __future__ import annotations
 from typing import Optional, Dict, Any
 
 from quantify_scheduler.backends.qblox import compiler_container
-from quantify_scheduler.backends.qblox.compiler_abc import (
-    InstrumentCompiler,
-    ControlDeviceCompiler,
-    QbloxBaseModule,
-    QbloxBasebandModule,
-    QbloxRFModule,
-)
+from quantify_scheduler.backends.qblox import compiler_abc
 from quantify_scheduler.backends.types.qblox import LOSettings
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
@@ -20,7 +14,7 @@ from quantify_scheduler.backends.qblox.constants import (
 )
 
 
-class LocalOscillator(InstrumentCompiler):
+class LocalOscillator(compiler_abc.InstrumentCompiler):
     """
     Implementation of an `InstrumentCompiler` that compiles for a generic LO. The main
     difference between this class and the other compiler classes is that it doesn't take
@@ -116,7 +110,7 @@ class LocalOscillator(InstrumentCompiler):
 # ---------- pulsar sequencer classes ----------
 
 # pylint: disable=invalid-name
-class QcmModule(QbloxBasebandModule):
+class QcmModule(compiler_abc.QbloxBasebandModule):
     """
     QcmModule specific implementation of the pulsar compiler.
     """
@@ -132,7 +126,7 @@ class QcmModule(QbloxBasebandModule):
 
 
 # pylint: disable=invalid-name
-class QrmModule(QbloxBasebandModule):
+class QrmModule(compiler_abc.QbloxBasebandModule):
     """
     QrmModule specific implementation of the pulsar compiler.
     """
@@ -147,7 +141,7 @@ class QrmModule(QbloxBasebandModule):
     """Specifies whether the device can perform acquisitions."""
 
 
-class QcmRfModule(QbloxRFModule):
+class QcmRfModule(compiler_abc.QbloxRFModule):
     """
     QcmModule-RF specific implementation of the pulsar compiler.
     """
@@ -165,7 +159,7 @@ class QcmRfModule(QbloxRFModule):
     """Specifies whether the device can perform acquisitions."""
 
 
-class QrmRfModule(QbloxRFModule):
+class QrmRfModule(compiler_abc.QbloxRFModule):
     """
     QrmModule-RF specific implementation of the pulsar compiler.
     """
@@ -183,7 +177,7 @@ class QrmRfModule(QbloxRFModule):
     """Specifies whether the device can perform acquisitions."""
 
 
-class Cluster(ControlDeviceCompiler):
+class Cluster(compiler_abc.ControlDeviceCompiler):
     """
     Compiler class for a Qblox cluster.
     """
@@ -214,9 +208,15 @@ class Cluster(ControlDeviceCompiler):
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
-    def construct_instrument_compilers(self) -> Dict[str, QbloxBaseModule]:
+    def construct_instrument_compilers(self) -> Dict[str, "QbloxBaseModule"]:
         """
         Constructs the compilers for the modules inside the cluster.
+
+        Returns
+        -------
+        :
+            A dictionary with the name of the instrument as key and the value its
+            compiler.
         """
         instrument_compilers = dict()
         for name, cfg in self.hw_mapping.items():
