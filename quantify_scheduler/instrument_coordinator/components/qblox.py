@@ -697,18 +697,18 @@ ClusterModule = Union[
 class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     def __init__(self, instrument: Instrument, **kwargs) -> None:
         super().__init__(instrument, **kwargs)
-        self.cluster_modules: Dict[str, ClusterModule] = dict()
+        self._cluster_modules: Dict[str, ClusterModule] = dict()
 
     @property
     def is_running(self) -> bool:
-        return any([comp.is_running for comp in self.cluster_modules.values()])
+        return any([comp.is_running for comp in self._cluster_modules.values()])
 
     def start(self) -> None:
-        for comp in self.cluster_modules.values():
+        for comp in self._cluster_modules.values():
             comp.start()
 
     def stop(self) -> None:
-        for comp in self.cluster_modules.values():
+        for comp in self._cluster_modules.values():
             comp.stop()
 
     def _configure_cmm_settings(self, settings):
@@ -719,22 +719,22 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         settings = options.pop("settings")
         self._configure_cmm_settings(settings=settings)
         for name, comp_options in options.items():
-            if name not in self.cluster_modules:
+            if name not in self._cluster_modules:
                 raise KeyError(
                     f"Attempting to prepare module {name} of cluster {self.name}, while"
                     f" module has not been added to the cluster component."
                 )
-            self.cluster_modules[name].prepare(comp_options)
+            self._cluster_modules[name].prepare(comp_options)
 
     def retrieve_acquisition(self) -> Any:
         acquisitions: Dict[Tuple[int, int], Any] = dict()
-        for comp in self.cluster_modules.values():
+        for comp in self._cluster_modules.values():
             comp_acq = comp.retrieve_acquisition()
             acquisitions.update(comp_acq)
         return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
-        for comp in self.cluster_modules.values():
+        for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
 
     def write_raw(self, cmd: str) -> None:
