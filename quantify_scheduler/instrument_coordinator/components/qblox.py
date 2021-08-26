@@ -699,6 +699,12 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = dict()
 
+    def add_module(self, *module: Instrument):
+        for mod in module:
+            self._cluster_modules[
+                mod.name
+            ] = _construct_component_from_instrument_driver(mod)
+
     @property
     def is_running(self) -> bool:
         return any([comp.is_running for comp in self._cluster_modules.values()])
@@ -742,3 +748,37 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def ask_raw(self, cmd: str) -> str:
         return self.instrument.ask_raw(cmd)
+
+
+def _construct_component_from_instrument_driver(
+    driver: Instrument,
+) -> ClusterModule:
+    """
+    Determines the correct and constructs an ic component from the qblox_instruments
+    driver.
+
+    Parameters
+    ----------
+    driver
+        The instrument driver.
+
+    Returns
+    -------
+    :
+        The correct ic component.
+    """
+    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm)
+    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm):
+        raise TypeError(
+            f"Invalid driver type passed for {driver.name}. Cannot "
+            f"construct an instrument coordinator component for "
+            f"type {type(driver)}."
+        )
+    is_rf: bool = driver._get_lo_hw_present()
+    icc_class: type = {
+        (True, False): PulsarQCMComponent,
+        (True, True): PulsarQCMRFComponent,
+        (False, False): PulsarQRMComponent,
+        (False, True): PulsarQRMRFComponent,
+    }[(is_qcm, is_rf)]
+    return icc_class(driver)
