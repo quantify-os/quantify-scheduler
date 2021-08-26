@@ -173,7 +173,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
 # pylint: disable=too-many-ancestors
 class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     """
-    Pulsar QcmModule specific InstrumentCoordinator component.
+    Pulsar QCM specific InstrumentCoordinator component.
     """
 
     _number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -250,7 +250,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     """
-    Pulsar QrmModule specific InstrumentCoordinator component.
+    Pulsar QRM specific InstrumentCoordinator component.
     """
 
     _number_of_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -357,7 +357,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
 class PulsarQCMRFComponent(PulsarQCMComponent):
     """
-    Pulsar QcmModule-RF specific InstrumentCoordinator component.
+    Pulsar QCM-RF specific InstrumentCoordinator component.
     """
 
     _settings_type = PulsarRFSettings
@@ -393,7 +393,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
     """
-    Pulsar QrmModule-RF specific InstrumentCoordinator component.
+    Pulsar QRM-RF specific InstrumentCoordinator component.
     """
 
     _settings_type = PulsarRFSettings
@@ -522,7 +522,7 @@ class _QRMAcquisitionManager:
         if sequencer_index > self.number_of_sequencers:
             raise ValueError(
                 f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}. QrmModule has only "
+                f"{sequencer_index}. A QRM has only "
                 f"{self.number_of_sequencers} sequencers."
             )
         scope_ch_and_idx = self._get_scope_channel_and_index()
