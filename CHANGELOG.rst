@@ -17,6 +17,7 @@ Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
 * Qblox Backend - Added support for qblox_instruments version 0.4.0 (new acquisition path). (!143)
+* Qblox Backend - Waveforms are now compared using the normalized data array rather than the parameterized description (!182)
 * Docs - Fixed missing files in API reference (!176)
 * InstrumentCoordinator - CompiledSchedule class added to specify interfaces of InstrumentCoordinator and compilation functions (#174, !177)
 * Compilation - qcompile no longer modifies schedules (#102, !178)

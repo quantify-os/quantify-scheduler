@@ -484,7 +484,15 @@ class DRAGPulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class DCCompensationPulse(SquarePulse):
+def create_dc_compensation_pulse(
+    pulses: List[Operation],
+    sampling_rate: int,
+    port: str,
+    t0: float = 0,
+    amp: Optional[float] = None,
+    duration: Optional[float] = None,
+    data: Optional[Dict[str, Any]] = None,
+) -> SquarePulse:
     """
     Calculates a SquarePulse to counteract charging effects based on a list of pulses.
 
@@ -492,6 +500,9 @@ class DCCompensationPulse(SquarePulse):
     ----------
     pulses
         List of pulses to compensate
+    sampling_rate
+        Resolution to calculate the enclosure of the
+        pulses to calculate the area to compensate.
     amp
         Desired amplitude of the DCCompensationPulse.
         Leave to None to calculate the value for compensation,
@@ -518,74 +529,68 @@ class DCCompensationPulse(SquarePulse):
         The operation's dictionary, by default None
         Note: if the data parameter is not None all other parameters are
         overwritten using the contents of data.
+
+    Returns
+    -------
+
+    :
+        Returns a SquarePulse object that compensates all pulses passed as
+        argument
     """
+    # Make sure that the list contains at least one element
+    assert len(pulses) > 0
 
-    def __init__(
-        self,
-        pulses: List[Operation],
-        sampling_rate: int,
-        port: str,
-        t0: float = 0,
-        amp: Optional[float] = None,
-        duration: Optional[float] = None,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        # Make sure that the list contains at least one element
-        assert len(pulses) > 0
+    pulse_info_list: List[Dict[str, Any]] = _extract_pulses(pulses, port)
 
-        pulse_info_list: List[Dict[str, Any]] = DCCompensationPulse._extract_pulses(
-            pulses, port
-        )
+    # Calculate the area given by the list of pulses
+    area: float = area_pulses(pulse_info_list, sampling_rate)
 
-        # Calculate the area given by the list of pulses
-        area: float = area_pulses(pulse_info_list, sampling_rate)
-
-        # Calculate the compensation amplitude and duration based on area
-        c_duration: float
-        c_amp: float
-        if amp is None and duration is not None:
-            assert duration > 0
-            c_duration = duration
-            c_amp = -area / c_duration
-        elif amp is not None and duration is None:
-            if area > 0:
-                c_amp = -abs(amp)
-            else:
-                c_amp = abs(amp)
-            c_duration = area / c_amp
+    # Calculate the compensation amplitude and duration based on area
+    c_duration: float
+    c_amp: float
+    if amp is None and duration is not None:
+        assert duration > 0
+        c_duration = duration
+        c_amp = -area / c_duration
+    elif amp is not None and duration is None:
+        if area > 0:
+            c_amp = -abs(amp)
         else:
-            raise ValueError(
-                "The `DCCompensationPulse` allows either amp or duration to "
-                + "be specified, not both. Both amp and duration were passed."
-            )
-
-        super().__init__(
-            amp=c_amp,
-            duration=c_duration,
-            port=port,
-            clock=BasebandClockResource.IDENTITY,
-            phase=0,
-            t0=t0,
-            data=data,
+            c_amp = abs(amp)
+        c_duration = abs(area / c_amp)
+    else:
+        raise ValueError(
+            "The `DCCompensationPulse` allows either amp or duration to "
+            + "be specified, not both. Both amp and duration were passed."
         )
 
-    @staticmethod
-    def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
-        # Collect all pulses for the given port
-        pulse_info_list: List[Dict[str, Any]] = list()
+    return SquarePulse(
+        amp=c_amp,
+        duration=c_duration,
+        port=port,
+        clock=BasebandClockResource.IDENTITY,
+        phase=0,
+        t0=t0,
+        data=data,
+    )
 
-        for pulse in pulses:
-            for pulse_info in pulse["pulse_info"]:
-                if (
-                    pulse_info["port"] == port
-                    and pulse_info["clock"] == BasebandClockResource.IDENTITY
-                ):
-                    pulse_info_list.append(pulse_info)
 
-        if len(pulse_info_list) == 0:
-            raise ValueError(
-                "`DCCompensationPulse` needs at least one pulse with"
-                + "clock=BasebandClockResource.IDENTITY for the port {}".format(port)
-            )
+def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
+    # Collect all pulses for the given port
+    pulse_info_list: List[Dict[str, Any]] = list()
 
-        return pulse_info_list
+    for pulse in pulses:
+        for pulse_info in pulse["pulse_info"]:
+            if (
+                pulse_info["port"] == port
+                and pulse_info["clock"] == BasebandClockResource.IDENTITY
+            ):
+                pulse_info_list.append(pulse_info)
+
+    if len(pulse_info_list) == 0:
+        raise ValueError(
+            "`DCCompensationPulse` needs at least one pulse with"
+            + "clock=BasebandClockResource.IDENTITY for the port {}".format(port)
+        )
+
+    return pulse_info_list

@@ -41,8 +41,6 @@ class OpInfo(DataClassJsonMixin):
 
     name: str
     """Name of the operation that this pulse/acquisition is part of."""
-    uuid: str
-    """A unique identifier for this pulse/acquisition."""
     data: dict
     """The pulse/acquisition info taken from the `data` property of the
     pulse/acquisition in the schedule."""
@@ -51,6 +49,8 @@ class OpInfo(DataClassJsonMixin):
     Note that this is a combination of the start time "t_abs" of the schedule
     operation, and the t0 of the pulse/acquisition which specifies a time relative
     to "t_abs"."""
+    uuid: Optional[str] = None
+    """A unique identifier for this pulse/acquisition."""
     pulse_settings: Optional[QASMRuntimeSettings] = None
     """Settings that are to be set by the sequencer before playing this
     pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
