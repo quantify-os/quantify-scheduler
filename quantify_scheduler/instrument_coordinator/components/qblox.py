@@ -825,8 +825,8 @@ def _construct_component_from_instrument_driver(
     :
         The correct ic component.
     """
-    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm)
-    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm):
+    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
+    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
         raise TypeError(
             f"Invalid driver type passed for {driver.name}. Cannot "
             f"construct an instrument coordinator component for "
