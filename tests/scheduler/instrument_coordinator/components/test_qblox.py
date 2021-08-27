@@ -508,21 +508,21 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
 
 def test_qrm_acquisition_manager__init__(make_qrm):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
 
 
 def test_get_threshold_data(make_qrm, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
     data = acq_manager._get_threshold_data(mock_acquisition_data, 0, 0)
     assert data == 0.12
 
 
 def test_get_integration_data(make_qrm, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {})
+    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
     data = acq_manager._get_integration_data(mock_acquisition_data, 0, 0)
-    assert data == (0.0, 0.0)
+    assert data == ([0.0] * 10, [0.0] * 10)
 
 
 def test_get_scope_channel_and_index(make_qrm):
@@ -531,7 +531,7 @@ def test_get_scope_channel_and_index(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping
+        qrm, qrm._number_of_sequencers, acq_mapping, None
     )
     result = acq_manager._get_scope_channel_and_index()
     assert result == (0, 0)
@@ -544,7 +544,7 @@ def test_get_scope_channel_and_index_exception(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping
+        qrm, qrm._number_of_sequencers, acq_mapping, None
     )
     with pytest.raises(RuntimeError) as execinfo:
         acq_manager._get_scope_channel_and_index()
@@ -564,7 +564,7 @@ def test_get_protocol(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping
+        qrm, qrm._number_of_sequencers, acq_mapping, None
     )
     assert acq_manager._get_protocol(0, 0) == answer
 
@@ -579,6 +579,6 @@ def test_get_sequencer_index(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping
+        qrm, qrm._number_of_sequencers, acq_mapping, None
     )
     assert acq_manager._get_sequencer_index(0, 0) == answer

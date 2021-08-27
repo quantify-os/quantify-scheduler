@@ -562,23 +562,24 @@ class QASMProgram:
                     acq_channel_reg,
                     comment=f"Store acq_channel in {acq_channel_reg}.",
                 )
-                self.emit(
-                    q1asm_instructions.MOVE,
-                    idx0,
-                    acq_idx0_reg,
-                    comment=f"Store idx of acq I wave in {acq_idx0_reg}",
-                )
-                self.emit(
-                    q1asm_instructions.MOVE,
-                    idx1,
-                    acq_idx1_reg,
-                    comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
-                )
 
                 # explicit checking of acquisition function to ensure right
                 # explict passing of arguments over list comprehension of args for
                 # readability.
                 if acquisition_func == self._acquire_weighted:
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx0,
+                        acq_idx0_reg,
+                        comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                    )
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx1,
+                        acq_idx1_reg,
+                        comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                    )
+
                     acquisition_func(
                         acquisition=acquisition,
                         bin_idx=acq_bin_idx_reg,
