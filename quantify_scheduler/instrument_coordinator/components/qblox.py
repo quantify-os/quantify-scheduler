@@ -692,11 +692,12 @@ class _QRMAcquisitionManager:
 ClusterModule = Union[
     PulsarQCMComponent, PulsarQRMComponent, PulsarQRMRFComponent, PulsarQCMRFComponent
 ]
+"""Type that combines all the possible modules for a cluster."""
 
 
 class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     """
-    Class that represents
+    Class that represents an instrument coordinator component for a Qblox cluster.
     """
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
