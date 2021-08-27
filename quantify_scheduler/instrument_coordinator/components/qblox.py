@@ -695,11 +695,33 @@ ClusterModule = Union[
 
 
 class ClusterComponent(base.InstrumentCoordinatorComponentBase):
+    """
+    Class that represents
+    """
+
     def __init__(self, instrument: Instrument, **kwargs) -> None:
+        """
+        Create a new instance of the ClusterComponent.
+
+        Parameters
+        ----------
+        instrument:
+            Reference to the cluster driver object.
+        kwargs
+            Keyword arguments.
+        """
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = dict()
 
-    def add_module(self, *module: Instrument):
+    def add_module(self, *module: Instrument) -> None:
+        """
+        Add a module to the cluster.
+
+        Parameters
+        ----------
+        module:
+            The driver of the module to add.
+        """
         for mod in module:
             self._cluster_modules[
                 mod.name
@@ -707,21 +729,40 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     @property
     def is_running(self) -> bool:
+        """Returns true if any of the modules are currently running."""
         return any([comp.is_running for comp in self._cluster_modules.values()])
 
     def start(self) -> None:
+        """Starts all the modules in the cluster."""
         for comp in self._cluster_modules.values():
             comp.start()
 
     def stop(self) -> None:
+        """Stops all the modules in the cluster."""
         for comp in self._cluster_modules.values():
             comp.stop()
 
-    def _configure_cmm_settings(self, settings):
+    def _configure_cmm_settings(self, settings: Dict[str, Any]):
+        """
+        Sets all the settings of the cmm that have been provided by the backend.
+
+        Parameters
+        ----------
+        settings:
+            A dictionary containing all the settings to set.
+        """
         if "reference_source" in settings:
             self.instrument.set("reference_source", settings["reference_source"])
 
     def prepare(self, options: Any) -> None:
+        """
+        Prepares the cluster component for execution of a schedule.
+
+        Parameters
+        ----------
+        options:
+            The compiled instructions to configure the cluster to.
+        """
         settings = options.pop("settings")
         self._configure_cmm_settings(settings=settings)
         for name, comp_options in options.items():
@@ -733,6 +774,14 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             self._cluster_modules[name].prepare(comp_options)
 
     def retrieve_acquisition(self) -> Any:
+        """
+        Retrieves all the data from the instruments.
+
+        Returns
+        -------
+        :
+            The acquired data.
+        """
         acquisitions: Dict[Tuple[int, int], Any] = dict()
         for comp in self._cluster_modules.values():
             comp_acq = comp.retrieve_acquisition()
@@ -740,6 +789,14 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
+        """
+        Blocks until all the components are idle.
+
+        Parameters
+        ----------
+        timeout_sec:
+            The time in seconds until the instrument is considered to have timed out.
+        """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
 
