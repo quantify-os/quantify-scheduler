@@ -488,6 +488,7 @@ class QASMProgram:
         protocol_to_acquire_func_mapping = {
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
+            "ssb_integration_complex": self._acquire_square,
         }
         if acquisition.data["bin_mode"] != BinMode.AVERAGE:
             raise NotImplementedError(
@@ -497,18 +498,19 @@ class QASMProgram:
             )
 
         bin_idx = acquisition.data["acq_index"]
-        if acquisition.name == "SSBIntegrationComplex":
-            # Since "SSBIntegrationComplex" just has "weighted_integrated_complex" as
-            # protocol.
-            self._acquire_square(acquisition, bin_idx=bin_idx)
-        else:
-            acquisition_func = protocol_to_acquire_func_mapping.get(
-                acquisition.data["protocol"], None
+
+        acquisition_func = protocol_to_acquire_func_mapping.get(
+            acquisition.data["protocol"], None
+        )
+        if acquisition_func is None:
+            raise ValueError(
+                f"Attempting to use protocol "
+                f"\"{acquisition.data['protocol']}\", which is not defined"
+                f" in Qblox backend.\n\nError triggered because of acquisition"
+                f" {repr(acquisition)}."
             )
-            args = [
-                arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
-            ]
-            acquisition_func(*args)
+        args = [arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None]
+        acquisition_func(*args)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
