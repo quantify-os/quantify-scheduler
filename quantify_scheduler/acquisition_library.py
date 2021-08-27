@@ -201,7 +201,7 @@ class WeightedIntegratedComplex(Operation):
         return self._get_signature(acq_info)
 
 
-class SSBIntegrationComplex(WeightedIntegratedComplex):
+class SSBIntegrationComplex(Operation):
     def __init__(
         self,
         port: str,
@@ -273,20 +273,33 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             "amp": (0 + 1j),
         }
 
-        super().__init__(
-            waveform_i,
-            waveform_q,
-            port,
-            clock,
-            duration,
-            acq_channel,
-            acq_index,
-            bin_mode,
-            phase,
-            t0,
-            data,
-        )
-        self.data["name"] = "SSBIntegrationComplex"
+        if phase != 0:
+            # Because of how clock interfaces were changed.
+            raise NotImplementedError("Non-zero phase not yet implemented")
+
+        if data is None:
+            data = {
+                "name": "SSBIntegrationComplex",
+                "acquisition_info": [
+                    {
+                        "waveforms": [waveform_i, waveform_q],
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                        "duration": duration,
+                        "phase": phase,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "protocol": "ssb_integration_complex",
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
 
 
 class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):

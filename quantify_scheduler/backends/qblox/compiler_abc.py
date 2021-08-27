@@ -29,6 +29,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_names_from_uuid,
     verify_qblox_instruments_version,
     to_grid_time,
+    generate_uuid_from_wf_data,
 )
 from quantify_scheduler.backends.qblox.constants import (
     GRID_TIME,
@@ -435,11 +436,12 @@ class Sequencer:
                     pulse.data, sampling_rate=SAMPLING_RATE
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
+                pulse.uuid = generate_uuid_from_wf_data(raw_wf_data)
             else:
-                pulse.uuid = reserved_pulse_id
                 raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
                     reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
                 )
+                pulse.uuid = reserved_pulse_id
 
             if np.abs(amp_i) > self.parent.awg_output_volt:
                 raise ValueError(
@@ -506,7 +508,7 @@ class Sequencer:
             waveforms_data = acq.data["waveforms"]
             if len(waveforms_data) == 0:
                 continue  # e.g. scope acquisition
-            if acq.name == "SSBIntegrationComplex":
+            if acq.data["protocol"] == "ssb_integration_complex":
                 continue
             if len(waveforms_data) != 2:
                 raise ValueError(
@@ -514,13 +516,17 @@ class Sequencer:
                     f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
                     "waveforms."
                 )
+            raw_wf_data_real = generate_waveform_data(
+                waveforms_data[0], sampling_rate=SAMPLING_RATE
+            )
+            raw_wf_data_imag = generate_waveform_data(
+                waveforms_data[1], sampling_rate=SAMPLING_RATE
+            )
+            acq.uuid = "{}_{}".format(
+                generate_uuid_from_wf_data(raw_wf_data_real),
+                generate_uuid_from_wf_data(raw_wf_data_imag),
+            )
             if acq.uuid not in waveforms_complex:
-                raw_wf_data_real = generate_waveform_data(
-                    waveforms_data[0], sampling_rate=SAMPLING_RATE
-                )
-                raw_wf_data_imag = generate_waveform_data(
-                    waveforms_data[1], sampling_rate=SAMPLING_RATE
-                )
                 self._settings.duration = len(raw_wf_data_real)
                 if not (
                     np.all(np.isreal(raw_wf_data_real))
@@ -1224,9 +1230,12 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
             return (
-                acquisition.data["acq_channel"],
-                acquisition.data["acq_index"],
-            ), acquisition.data["protocol"]
+                (
+                    acquisition.data["acq_channel"],
+                    acquisition.data["acq_index"],
+                ),
+                acquisition.data["protocol"],
+            )
 
         acq_mapping = dict()
         for sequencer in self.sequencers.values():

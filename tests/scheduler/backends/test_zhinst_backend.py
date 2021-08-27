@@ -151,9 +151,9 @@ def create_uhfqa_mock(mocker):
         def create_uhfqa_awg(i: int) -> uhfqa.AWG:
             _sequence_params = {
                 "sequence_parameters": {
-                    "clock_rate": 1.8e9,  # GSa/s
+                    "clock_rate": 1.8e9,
                 }
-            }
+            }  # GSa/s
 
             def get_string(value: str):
                 if value == "directory":
@@ -223,9 +223,9 @@ def create_hdawg_mock(mocker):
             # Section: 4.14.3 Constansts and Variables (page 181)
             _sequence_params = {
                 "sequence_parameters": {
-                    "clock_rate": 2.4e9,  # GSa/s
+                    "clock_rate": 2.4e9,
                 }
-            }
+            }  # GSa/s
 
             def get_string(value: str):
                 if value == "directory":

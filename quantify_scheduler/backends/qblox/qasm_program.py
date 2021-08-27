@@ -492,23 +492,27 @@ class QASMProgram:
         protocol_to_acquire_func_mapping = {
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
+            "ssb_integration_complex": self._acquire_square,
         }
 
         if acquisition.data["bin_mode"] == BinMode.AVERAGE:
 
             bin_idx = acquisition.data["acq_index"]
-            if acquisition.name == "SSBIntegrationComplex":
-                # Since "SSBIntegrationComplex" just has "weighted_integrated_complex"
-                # as protocol.
-                self._acquire_square(acquisition, bin_idx=bin_idx)
-            else:
-                acquisition_func = protocol_to_acquire_func_mapping.get(
-                    acquisition.data["protocol"], None
+
+            acquisition_func = protocol_to_acquire_func_mapping.get(
+                acquisition.data["protocol"], None
+            )
+            if acquisition_func is None:
+                raise ValueError(
+                    f"Attempting to use protocol "
+                    f"\"{acquisition.data['protocol']}\", which is not defined"
+                    f" in Qblox backend.\n\nError triggered because of acquisition"
+                    f" {repr(acquisition)}."
                 )
-                args = [
-                    arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
-                ]
-                acquisition_func(*args)
+            args = [
+                arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
+            ]
+            acquisition_func(*args)
 
         ##############################################################
         elif acquisition.data["bin_mode"] == BinMode.APPEND:
@@ -532,71 +536,70 @@ class QASMProgram:
                     reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
                 )
 
-                if acquisition.name == "SSBIntegrationComplex":
-                    # Since "SSBIntegrationComplex" just has
-                    # "weighted_integrated_complex" as protocol.
-                    self._acquire_square(acquisition, bin_idx=acq_bin_idx_reg)
+                acquisition_func = protocol_to_acquire_func_mapping.get(
+                    acquisition.data["protocol"], None
+                )
 
-                else:
-                    acquisition_func = protocol_to_acquire_func_mapping.get(
-                        acquisition.data["protocol"], None
-                    )
+                # FIXME move to preamble
 
-                    # FIXME move to preamble
+                # Need to store values in registers as the acquire weighted
+                # requires either all register inputs or all immediate values
 
-                    # Need to store values in registers as the acquire weighted
-                    # requires either all register inputs or all immediate values
+                acq_channel_reg = getattr(
+                    reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
+                )
 
-                    acq_channel_reg = getattr(
-                        reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
-                    )
+                acq_idx0_reg = getattr(
+                    reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX0_CH{acq_channel}"
+                )
+                acq_idx1_reg = getattr(
+                    reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
+                )
 
-                    acq_idx0_reg = getattr(
-                        reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX0_CH{acq_channel}"
-                    )
-                    acq_idx1_reg = getattr(
-                        reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
-                    )
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    acq_channel,
+                    acq_channel_reg,
+                    comment=f"Store acq_channel in {acq_channel_reg}.",
+                )
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    idx0,
+                    acq_idx0_reg,
+                    comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                )
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    idx1,
+                    acq_idx1_reg,
+                    comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                )
 
-                    self.emit(
-                        q1asm_instructions.MOVE,
-                        acq_channel,
-                        acq_channel_reg,
-                        comment=f"Store acq_channel in {acq_channel_reg}.",
-                    )
-                    self.emit(
-                        q1asm_instructions.MOVE,
-                        idx0,
-                        acq_idx0_reg,
-                        comment=f"Store idx of acq I wave in {acq_idx0_reg}",
-                    )
-                    self.emit(
-                        q1asm_instructions.MOVE,
-                        idx1,
-                        acq_idx1_reg,
-                        comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
-                    )
-
-                    # args = [
-                    #     arg
-                    #     for arg in [acquisition, acq_bin_idx_reg, idx0, idx1]
-                    #     if arg is not None
-                    # ]
-                    # acquisition_func(*args)
+                # explicit checking of acquisition function to ensure right
+                # explict passing of arguments over list comprehension of args for
+                # readability.
+                if acquisition_func == self._acquire_weighted:
                     acquisition_func(
                         acquisition=acquisition,
                         bin_idx=acq_bin_idx_reg,
                         idx0=acq_idx0_reg,
                         idx1=acq_idx1_reg,
                     )
-
-                    self.emit(
-                        q1asm_instructions.ADD,
-                        acq_bin_idx_reg,
-                        1,
-                        acq_bin_idx_reg,
-                        comment=f"Increment bin_idx for ch{acq_channel}",
+                elif acquisition_func == self._acquire_square:
+                    acquisition_func(
+                        acquisition=acquisition,
+                        bin_idx=acq_bin_idx_reg,
                     )
+                else:
+                    raise NotImplementedError
+
+                self.emit(
+                    q1asm_instructions.ADD,
+                    acq_bin_idx_reg,
+                    1,
+                    acq_bin_idx_reg,
+                    comment=f"Increment bin_idx for ch{acq_channel}",
+                )
                 # add  a line break for visual separation of acquisition
                 self.emit("")
 

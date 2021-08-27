@@ -173,6 +173,27 @@ def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
     return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
 
+def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
+    """
+    Creates a unique identifier from the waveform data, using a hash. Identical arrays
+    yield identical strings within the same process.
+
+    Parameters
+    ----------
+    wf_data:
+        The data to generate the unique id for.
+    decimals:
+        The number of decimal places to consider.
+
+    Returns
+    -------
+    :
+        A unique identifier.
+    """
+    waveform_hash = hash(wf_data.round(decimals=decimals).tobytes())
+    return str(waveform_hash)
+
+
 def _generate_waveform_dict(
     waveforms_complex: Dict[str, np.ndarray]
 ) -> Dict[str, dict]:
