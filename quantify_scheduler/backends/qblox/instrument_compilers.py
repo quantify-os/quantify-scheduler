@@ -112,7 +112,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
 # pylint: disable=invalid-name
 class QcmModule(compiler_abc.QbloxBasebandModule):
     """
-    QcmModule specific implementation of the pulsar compiler.
+    QCM specific implementation of the qblox compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -128,7 +128,7 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
 # pylint: disable=invalid-name
 class QrmModule(compiler_abc.QbloxBasebandModule):
     """
-    QrmModule specific implementation of the pulsar compiler.
+    QRM specific implementation of the qblox compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
@@ -143,7 +143,7 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
 
 class QcmRfModule(compiler_abc.QbloxRFModule):
     """
-    QcmModule-RF specific implementation of the pulsar compiler.
+    QCM-RF specific implementation of the qblox compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
@@ -161,7 +161,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
 
 class QrmRfModule(compiler_abc.QbloxRFModule):
     """
-    QrmModule-RF specific implementation of the pulsar compiler.
+    QRM-RF specific implementation of the qblox compiler.
     """
 
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
