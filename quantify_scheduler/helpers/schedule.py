@@ -400,14 +400,16 @@ def extract_acquisition_metadata_from_schedule(
     Extracts acquisition metadata from a schedule.
 
     This function operates under certain assumptions with respect to the schedule.
+
     - The acquisition_metadata should be sufficient to initialize the xarray dataset
-    (described in quantify-core !212)
-    that executing the schedule will result in.
+      (described in quantify-core !212)
+      that executing the schedule will result in.
     - All measurements in the schedule use the same acquisition protocol.
     - The used acquisition index channel combinations for each measurement are unique.
     - The used acquisition indices for each channel are the same.
-    - The number of data points per acquisition index assumed to be given by the
-        schedule's repetition property. This implies no support for feedback.
+    - When :class:`~quantify_scheduler.enums.BinMode` is :code:`APPEND` The number of
+      data points per acquisition index assumed to be given by the
+      schedule's repetition property. This implies no support for feedback.
 
 
     Parameters
@@ -419,9 +421,9 @@ def extract_acquisition_metadata_from_schedule(
     Returns
     -------
     :
-        The acquisition metadata, a dictionary specifying the
-        acquisition protocol, bin-mode, return-type of the acquisition protocol, and
-        the acquisition indices for each channel.
+        The acquisition metadata provides a summary of the
+        acquisition protocol, bin-mode, return-type and acquisition indices
+        of the acquisitions in the schedule.
     """
     # convert to a cached schedule to have useful metadata available.
     cached_sched = CachedSchedule(schedule)
