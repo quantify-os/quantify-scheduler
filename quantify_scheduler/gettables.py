@@ -30,6 +30,7 @@ from quantify_scheduler.helpers.schedule import (
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
+# FIXME: rename to ScheduleGettableSingleQubit
 class ScheduleVectorAcqGettable:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
