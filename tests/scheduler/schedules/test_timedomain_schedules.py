@@ -252,9 +252,8 @@ class TestT1Sched:
         sched = ts.t1_sched(**sched_kwargs)
         sched = qcompile(sched, DEVICE_CONFIG)
 
-    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
-        assert len(self.sched.operations) == 3  # init, pi and measure
+        assert len(self.sched.operations) == 2 + 21  # init, pi and measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -304,9 +303,8 @@ class TestRamseySchedDetuning:
         sched = qcompile(sched, DEVICE_CONFIG)
         assert any(op["rel_time"] == 3e-6 for op in sched.timing_constraints)
 
-    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
-        assert len(self.sched.operations) == 3 + len(self.sched_kwargs["times"])
+        assert len(self.sched.operations) == 2 + len(self.sched_kwargs["times"]) * 2
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -352,9 +350,8 @@ class TestRamseySched:
         sched = ts.ramsey_sched(**sched_kwargs)
         sched = qcompile(sched, DEVICE_CONFIG)
 
-    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
-        assert len(self.sched.operations) == 4  # init, x90, Rxy(90,0) and measure
+        assert len(self.sched.operations) == 23  # init, x90, Rxy(90,0) and 20 * measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -402,10 +399,9 @@ class TestEchoSched:
             if (i - 4) % 5 == 0:
                 assert constr["label"][:11] == "Measurement"
 
-    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         # 4 for an echo
-        assert len(self.sched.operations) == 4  # init, x90, X and measure
+        assert len(self.sched.operations) == 23  # init, x90, X and 20x measure
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -436,10 +432,9 @@ class TestAllXYSched:
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
-    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         # 7 operations (x90, y90, X180, Y180, idle, reset, measurement)
-        assert len(self.sched.operations) == 7
+        assert len(self.sched.operations) == 6 + 21
 
     def test_compiles_qblox_backend(self):
         # assert that files properly compile
@@ -470,7 +465,6 @@ class TestAllXYSchedElement:
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
-    @pytest.mark.xfail(reason="#182: Every measurement counted as a unique operation.")
     def test_operations(self):
         # 4 operations (X180, Y180, reset, measurement)
         assert len(self.sched.operations) == 4
