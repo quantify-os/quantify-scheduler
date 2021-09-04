@@ -596,8 +596,13 @@ class Sequencer:
             # Add the acquisition metadata to the acquisition declaration dict
             if acq_metadata.bin_mode == BinMode.APPEND:
                 num_bins = repetitions * (max(acq_indices) + 1)
-            else:
+            elif acq_metadata.bin_mode == BinMode.AVERAGE:
                 num_bins = max(acq_indices) + 1
+            else:
+                # currently the BinMode enum only has average and append.
+                # this check exists to catch unexpected errors if we add more
+                # BinModes in the future.
+                raise NotImplementedError()
 
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
@@ -1203,7 +1208,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
             # Add both acquisition metadata (a summary) and acq_mapping
-            # add acq_metadata
+
             program["acq_metadata"] = dict()
 
             for sequencer in self.sequencers.values():
@@ -1211,7 +1216,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                     sequencer.acquisitions
                 )
                 program["acq_metadata"][sequencer.name] = acq_metadata
-            # add acq_mapping
+
             acq_mapping = self._get_acquisition_mapping()
             if acq_mapping is not None:
                 program["acq_mapping"] = acq_mapping

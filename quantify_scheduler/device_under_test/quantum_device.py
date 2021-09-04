@@ -1,8 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+"""
+Module containing the QuantumDevice object.
+"""
 
-
-from typing import Dict, Any
+from typing import Dict, Any, List
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import (
     ManualParameter,
@@ -20,8 +22,10 @@ class QuantumDevice(Instrument):
     representations of elements on a device (e.g, a transmon qubit) containing
     the (calibrated) control-pulse parameters.
 
-    This object can be used to generate configuration files compatible with the
-    :func:`~quantify_scheduler.compilation.add_pulse_information_transmon` function.
+    This object can be used to generate configuration files for the compilation step
+    from the gate-level to the pulse level description.
+    These configuration files should be compatible with the
+    :func:`~quantify_scheduler.compilation.qcompile` function.
     """
 
     def __init__(self, name: str) -> None:
@@ -120,7 +124,7 @@ class QuantumDevice(Instrument):
 
     def get_component(self, name: str) -> Instrument:
         """
-        Returns the InstrumentCoordinator component by name.
+        Returns a component by name.
 
         Parameters
         ----------
@@ -164,9 +168,9 @@ class QuantumDevice(Instrument):
             raise ValueError(f"'{component.name}' has already been added!")
 
         if not isinstance(component, Instrument):
-            raise TypeError(
-                f"{repr(component)} is not " f"{base.__name__}.{Instrument.__name__}."
-            )
+            # check can be improved to see if it is also a valid device element.
+            # this requires a base class for device elements that does not exist yet.
+            raise TypeError(f"{repr(component)} is not a QCoDeS instrument.")
 
         components: List[str] = self.components()
         # add the component by name

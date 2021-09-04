@@ -257,6 +257,8 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per component.
         """
+        # FIXME: update the description of the return type of the instrument
+        # coordinator
 
         self.wait_done(timeout_sec=self.timeout())
 

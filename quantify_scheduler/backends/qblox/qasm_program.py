@@ -527,7 +527,7 @@ class QASMProgram:
                 )
             else:
                 # add  a line break for visual separation of acquisition
-                self.emit("")
+                self.emit(q1asm_instructions.NEW_LINE)
                 # FIXME: bin_idx needs to be based on a register N*acq_index
                 bin_idx = acquisition.data["acq_index"]
 
@@ -592,7 +592,12 @@ class QASMProgram:
                         bin_idx=acq_bin_idx_reg,
                     )
                 else:
-                    raise NotImplementedError
+                    # "weighted_integrated_complex" and "ssb_integration_complex"
+                    # are defined as keys in
+                    raise NotImplementedError(
+                        "BinMode.APPEND is only compatible with acquisition protocols"
+                        ' "ssb_integration_complex" and "ssb_integration_complex"'
+                    )
 
                 self.emit(
                     q1asm_instructions.ADD,
@@ -602,7 +607,7 @@ class QASMProgram:
                     comment=f"Increment bin_idx for ch{acq_channel}",
                 )
                 # add  a line break for visual separation of acquisition
-                self.emit("")
+                self.emit(q1asm_instructions.NEW_LINE)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
