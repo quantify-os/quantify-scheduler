@@ -748,18 +748,17 @@ class QASMProgram:
 
         .. jupyter-execute::
 
-            import inspect, os, json
+            import inspect, json
             from quantify_scheduler.types import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-            import quantify_scheduler.schemas.examples as es
+            from quantify_scheduler.schemas.examples import utils
             from quantify_scheduler.backends.qblox import (
                 instrument_compilers, compiler_container
             )
 
-            esp = inspect.getfile(es)
-            map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
-            with open(map_f, "r") as f:
-                HARDWARE_MAPPING = json.load(f)
+            HARDWARE_MAPPING = utils.load_json_example_scheme(
+                "qblox_test_mapping.json"
+            )
 
             sched = Schedule("example")
             container = compiler_container.CompilerContainer(sched)
@@ -775,7 +774,7 @@ class QASMProgram:
                 qasm.auto_wait(100)
 
             qasm.instructions
-        """  # FIXME replace json.load() quantify-scheduler#132 #pylint: disable=fixme
+        """
         comment = f"iterator for loop with label {label}"
 
         def gen_start():

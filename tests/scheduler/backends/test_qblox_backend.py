@@ -1059,13 +1059,15 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 
 
 def test_acq_protocol_append_mode_valid_assembly_ssro(
-    dummy_pulsars, load_example_config
+    dummy_pulsars, load_example_transmon_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(ssro_sched, load_example_config(), HARDWARE_MAPPING)
+    comp_ssro_sched = qcompile(
+        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
 
     assembly_valid(
         compiled_schedule=comp_ssro_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
@@ -1101,13 +1103,13 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
 
 
 def test_acq_protocol_average_mode_valid_assembly_allxy(
-    dummy_pulsars, load_example_config
+    dummy_pulsars, load_example_transmon_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
-    comp_allxy_sched = qcompile(sched, load_example_config(), HARDWARE_MAPPING)
+    comp_allxy_sched = qcompile(sched, load_example_transmon_config(), HARDWARE_MAPPING)
 
     assembly_valid(
         compiled_schedule=comp_allxy_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
@@ -1143,14 +1145,16 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     assert list(program) == list(exp_program)
 
 
-def test_acq_declaration_dict_append_mode(load_example_config):
+def test_acq_declaration_dict_append_mode(load_example_transmon_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     repetitions = 256
 
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(ssro_sched, load_example_config(), HARDWARE_MAPPING)
+    comp_ssro_sched = qcompile(
+        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
 
     with open(
         comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
@@ -1163,12 +1167,12 @@ def test_acq_declaration_dict_append_mode(load_example_config):
     assert acquisitions["0"] == {"num_bins": 2 * 256, "index": 0}
 
 
-def test_acq_declaration_dict_bin_avg_mode(load_example_config):
+def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     allxy = allxy_sched("q0")
-    comp_allxy_sched = qcompile(allxy, load_example_config(), HARDWARE_MAPPING)
+    comp_allxy_sched = qcompile(allxy, load_example_transmon_config(), HARDWARE_MAPPING)
 
     with open(
         comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
