@@ -23,6 +23,7 @@ from qblox_instruments import build
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
 
+import quantify_scheduler
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.gate_library import Reset, Measure, X
 from quantify_scheduler.pulse_library import (
@@ -1073,6 +1074,20 @@ def test_acq_protocol_append_mode_valid_assembly(dummy_pulsars, load_example_con
     ) as file:
         qrm0_seq_instructions = json.load(file)
 
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{ssro_sched.name}_qrm0_seq0_instr.json",
+    )
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"].split("\n"))
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"].split("\n"))
+
+    assert list(program) == list(exp_program)
+
 
 def test_acq_declaration_dict_append_mode(load_example_config):
     tmp_dir = tempfile.TemporaryDirectory()
@@ -1116,3 +1131,13 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_config):
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+def _strip_comments(program):
+    # helper function for comparing programs
+    stripped_program = []
+    for l in program:
+        if "#" in l:
+            l = l.split("#")[0]
+        stripped_program.append(l)
+    return stripped_program

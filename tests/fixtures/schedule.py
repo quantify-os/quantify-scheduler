@@ -1,3 +1,8 @@
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=missing-module-docstring
+
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Pytest fixtures for quantify-scheduler."""
@@ -33,6 +38,18 @@ def load_example_config() -> Dict[str, Any]:
         return json.loads(json_str)
 
     yield _load_example_config
+
+
+@pytest.fixture
+def load_example_hardware_config() -> Dict[str, Any]:
+    def _load_example_hardware_config(filename: str = "qblox_test_mapping.json"):
+        examples_path = inspect.getfile(examples)
+
+        file_path = os.path.abspath(os.path.join(examples_path, "..", filename))
+        json_str = Path(file_path).read_text()
+        return json.loads(json_str)
+
+    yield _load_example_hardware_config
 
 
 @pytest.fixture
