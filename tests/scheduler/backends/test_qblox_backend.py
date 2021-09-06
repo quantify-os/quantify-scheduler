@@ -1058,11 +1058,13 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     assert uploaded_waveforms is not None
 
 
-def test_acq_protocol_append_mode_valid_assembly(dummy_pulsars, load_example_config):
+def test_acq_protocol_append_mode_valid_assembly_ssro(
+    dummy_pulsars, load_example_config
+):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
-    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=256)
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     comp_ssro_sched = qcompile(ssro_sched, load_example_config(), HARDWARE_MAPPING)
 
     assembly_valid(
@@ -1081,6 +1083,58 @@ def test_acq_protocol_append_mode_valid_assembly(dummy_pulsars, load_example_con
         "baseline_qblox_assembly",
         f"{ssro_sched.name}_qrm0_seq0_instr.json",
     )
+
+    # To regenerate the baseline image for this test uncomment these lines.
+    #
+    # import shutil
+    # shutil.copy(
+    #     comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     baseline_assembly,
+    # )
+
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"].split("\n"))
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"].split("\n"))
+
+    assert list(program) == list(exp_program)
+
+
+def test_acq_protocol_average_mode_valid_assembly_allxy(
+    dummy_pulsars, load_example_config
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    repetitions = 256
+    sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
+    comp_allxy_sched = qcompile(sched, load_example_config(), HARDWARE_MAPPING)
+
+    assembly_valid(
+        compiled_schedule=comp_allxy_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
+    )
+
+    with open(
+        comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{sched.name}_qrm0_seq0_instr.json",
+    )
+
+    # To regenerate the baseline image for this test uncomment these lines.
+
+    # import shutil
+    #
+    # shutil.copy(
+    #     comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     baseline_assembly,
+    # )
+
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
     program = _strip_comments(qrm0_seq_instructions["program"].split("\n"))
@@ -1108,11 +1162,6 @@ def test_acq_declaration_dict_append_mode(load_example_config):
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 2 * 256, "index": 0}
 
-    # FIXME test the following properties
-    # test acquisition bin idx for channel initialized in header
-    # test correct registers used for channel.
-    # test bin idx incremented.
-
 
 def test_acq_declaration_dict_bin_avg_mode(load_example_config):
     tmp_dir = tempfile.TemporaryDirectory()
@@ -1136,8 +1185,9 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_config):
 def _strip_comments(program):
     # helper function for comparing programs
     stripped_program = []
-    for l in program:
-        if "#" in l:
-            l = l.split("#")[0]
-        stripped_program.append(l)
+    for line in program:
+        if "#" in line:
+            line = line.split("#")[0]
+        line = line.rstrip()  # remove trailing whitespace
+        stripped_program.append(line)
     return stripped_program
