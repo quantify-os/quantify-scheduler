@@ -5,12 +5,12 @@
 # pylint: disable=too-many-locals
 
 import pytest
-from quantify_scheduler.gettables import ScheduleVectorAcqGettable
+from quantify_scheduler.gettables import ScheduleGettableSingleChannel
 
 
 @pytest.mark.xfail(reason="not implemented")
-def test_ScheduleVectorAcqGettable():
+def test_ScheduleGettableSingleChannel():
     # FIXME Test not implemented
-    gettable = ScheduleVectorAcqGettable
+    gettable = ScheduleGettableSingleChannel
 
     assert False

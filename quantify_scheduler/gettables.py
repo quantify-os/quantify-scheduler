@@ -31,7 +31,7 @@ from quantify_scheduler.helpers.schedule import (
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
 # FIXME: rename to ScheduleGettableSingleQubit
-class ScheduleVectorAcqGettable:
+class ScheduleGettableSingleChannel:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
     set to return either static (demodulated) I and Q values or magnitude and phase.
@@ -54,7 +54,7 @@ class ScheduleVectorAcqGettable:
         max_batch_size: int = 1024,
     ):
         """
-        Create a new instance of ScheduleVectorAcqGettable which is used to do I and Q
+        Create a new instance of ScheduleGettableSingleChannel which is used to do I and Q
         acquisition.
 
         Parameters
