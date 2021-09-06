@@ -120,28 +120,28 @@ def compiled_two_qubit_t1_schedule(load_example_transmon_config):
     """
     device_config = load_example_transmon_config()
 
-    qubits = ["q0", "q1"]
+    q0, q1 = ("q0", "q1")
     repetitions = 1024
     schedule = Schedule("Multi-qubit T1", repetitions)
 
     times = np.arange(0, 60e-6, 3e-6)
 
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubits[0], qubits[1]), label=f"Reset {i}")
-        schedule.add(X(qubits[0]), label=f"pi {i} {qubits[0]}")
-        schedule.add(X(qubits[1]), label=f"pi {i} {qubits[1]}", ref_pt="start")
+        schedule.add(Reset(q0, q1), label=f"Reset {i}")
+        schedule.add(X(q0), label=f"pi {i} {q0}")
+        schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(qubits[0], acq_index=i, acq_channel=0),
+            Measure(q0, acq_index=i, acq_channel=0),
             ref_pt="start",
             rel_time=tau,
-            label=f"Measurement {qubits[0]}{i}",
+            label=f"Measurement {q0}{i}",
         )
         schedule.add(
-            Measure(qubits[1], acq_index=i, acq_channel=1),
+            Measure(q1, acq_index=i, acq_channel=1),
             ref_pt="start",
             rel_time=tau,
-            label=f"Measurement {qubits[1]}{i}",
+            label=f"Measurement {q1}{i}",
         )
 
     comp_t1_sched = qcompile(schedule, device_config)
