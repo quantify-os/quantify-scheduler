@@ -293,12 +293,30 @@ class Sequencer:
 
         modulation_freq = seq_settings.get("interm_freq", None)
         nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
-        self._settings = SequencerSettings(
-            nco_en=nco_en,
-            sync_en=True,
-            modulation_freq=modulation_freq,
+        self._settings = (
+            SequencerSettings(  # initial settings. Some may be overridden later
+                nco_en=nco_en,
+                sync_en=True,
+                modulation_freq=modulation_freq,
+            )
         )
         self.mixer_corrections = None
+
+    def determine_sync_en(self) -> Optional[bool]:
+        """
+        Determines whether to enable party-line synchronization.
+
+        Returns
+        -------
+        :
+            Whether to use party-line synchronization. None is used to skip configuring
+            the setting.
+        """
+        # It should return False if only one pulsar is used in the schedule, but this is
+        # not yet implemented.
+        if self.parent.is_pulsar:
+            return True
+        return None
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -592,6 +610,7 @@ class Sequencer:
         Updates the sequencer settings to set all parameters that are determined by the
         compiler.
         """
+        self._settings.sync_en = self.determine_sync_en()
 
     # pylint: disable=too-many-locals
     def generate_qasm_program(
