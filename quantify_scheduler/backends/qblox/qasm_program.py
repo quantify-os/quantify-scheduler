@@ -532,6 +532,7 @@ class QASMProgram:
                 bin_idx = acquisition.data["acq_index"]
 
                 acq_channel = acquisition.data["acq_channel"]
+                # gettattr should be avoided, for bin allocation see #190 .
                 acq_bin_idx_reg = getattr(
                     reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
                 )
@@ -539,11 +540,6 @@ class QASMProgram:
                 acquisition_func = protocol_to_acquire_func_mapping.get(
                     acquisition.data["protocol"], None
                 )
-
-                # FIXME move to preamble
-
-                # Need to store values in registers as the acquire weighted
-                # requires either all register inputs or all immediate values
 
                 acq_channel_reg = getattr(
                     reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
@@ -556,6 +552,8 @@ class QASMProgram:
                     reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
                 )
 
+                # Need to store values in registers as the acquire weighted
+                # requires either all register inputs or all immediate values
                 self.emit(
                     q1asm_instructions.MOVE,
                     acq_channel,

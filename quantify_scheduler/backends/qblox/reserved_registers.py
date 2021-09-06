@@ -4,6 +4,9 @@
 Contains registers that are reserved for a specific function by the qblox backend.
 """
 
+# N.B. this implementation will be replaced with a dynamic allocation of registers
+# in a future version. For more details see #190.
+
 # Reserved register in the QASM assembly
 REGISTER_LOOP: str = "R0"  # used as the main loop counter
 
