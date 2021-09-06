@@ -137,7 +137,7 @@ class ScheduleVectorAcqGettable:
 
         # retrieve the acquisition results
         # FIXME: this reshaping should happen inside the instrument coordinator
-        # FIXME2: the acq_metadata should be an attribute of the compiled schedule
+        # FIXME: the acq_metadata should be an attribute of the compiled schedule
         acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
         # Currently only supported for weighted integration assert that the schedule is
