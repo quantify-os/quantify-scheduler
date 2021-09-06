@@ -137,7 +137,7 @@ class ScheduleVectorAcqGettable:
 
         # retrieve the acquisition results
         # FIXME: this reshaping should happen inside the instrument coordinator
-        # FIXME2: the acq_metadata should be an attribute of the compiled schedule
+        # FIXME: the acq_metadata should be an attribute of the compiled schedule
         acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
         # Currently only supported for weighted integration assert that the schedule is
@@ -163,7 +163,7 @@ class ScheduleVectorAcqGettable:
             if len(dataset.keys()) != 1:
                 raise ValueError(
                     "Expected a single channel in the retrieved acquisitions "
-                    f"dataset.keys={dataset.keys()}"
+                    f"dataset.keys={dataset.keys()}."
                 )
 
         elif acq_metadata.bin_mode == BinMode.APPEND:
@@ -182,7 +182,7 @@ class ScheduleVectorAcqGettable:
 
         else:
             raise NotImplementedError(
-                f"Bin mode ({acq_metadata.bin_mode}) not supported"
+                f"Bin mode ({acq_metadata.bin_mode}) not supported."
             )
 
         # Reshaping of the data before returning
@@ -194,7 +194,7 @@ class ScheduleVectorAcqGettable:
                 assert (len(vals)) == 1
 
             # N.B. if there would be multiple channels the return would be outside
-            # of this forloop
+            # of this for loop
             if self.real_imag:
                 return vals.real, vals.imag
             # implicit else

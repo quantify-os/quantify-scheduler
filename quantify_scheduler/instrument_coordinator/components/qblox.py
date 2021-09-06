@@ -672,7 +672,7 @@ class _QRMAcquisitionManager:
                 f"in acquisition data."
             )
 
-        # FIXME: acq_index is completely ignored. Remove from arguements
+        # FIXME: acq_index is completely ignored. Remove from arguments
         # return i_data[acq_index], q_data[acq_index]
         return i_data, q_data
 
