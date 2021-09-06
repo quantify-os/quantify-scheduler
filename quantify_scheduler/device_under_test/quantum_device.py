@@ -167,13 +167,10 @@ class QuantumDevice(Instrument):
         if not isinstance(component, Instrument):
             # FIXME: check if it is also a valid device element. # pylint: disable=fixme
             # This requires a base class for device elements that does not exist yet.
-            # See also `InstrumentCoordinatorComponentBase`
+            # See also `InstrumentCoordinatorComponentBase`.
             raise TypeError(f"{repr(component)} is not a QCoDeS instrument.")
 
-        components: List[str] = self.components()
-        # add the component by name
-        components.append(component.name)
-        self.components.set(components)
+        self.components().append(component.name)  # list gets updated in place
 
     def remove_component(self, name: str) -> None:
         """
@@ -185,5 +182,4 @@ class QuantumDevice(Instrument):
             The component name.
         """
 
-        # list gets updated in place
-        self.components().remove(name)
+        self.components().remove(name)  # list gets updated in place

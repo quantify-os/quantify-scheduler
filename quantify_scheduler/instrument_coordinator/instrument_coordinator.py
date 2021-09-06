@@ -167,10 +167,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
                 f"{base.__name__}.{base.InstrumentCoordinatorComponentBase.__name__}."
             )
 
-        components: List[str] = self.components()
-        # add the component by name
-        components.append(component.name)
-        self.components.set(components)
+        self.components().append(component.name)  # list gets updated in place
 
     def remove_component(self, name: str) -> None:
         """
@@ -182,8 +179,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             The component name.
         """
 
-        # list gets updated in place
-        self.components().remove(name)
+        self.components().remove(name)  # list gets updated in place
 
     def prepare(
         self,
