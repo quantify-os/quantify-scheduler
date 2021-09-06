@@ -1,23 +1,15 @@
-import pathlib
-from typing import Union
-
 import pytest
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
-from quantify_core.utilities._tests_helpers import (
-    rmdir_recursive,
-    remove_target_then_copy_from,
-)
-
 
 # pylint: disable=redefined-outer-name
-@pytest.fixture(scope="session", autouse=False)
+@pytest.fixture(scope="module", autouse=False)
 def mock_setup(request):
     """
-    Returns a mock setup
+    Returns a mock setup.
     """
 
     # importing from init_mock will execute all the code in the module which
