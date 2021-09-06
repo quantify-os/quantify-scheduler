@@ -9,6 +9,8 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
 from quantify_scheduler.compilation import validate_config
 from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 
+pytestmark = pytest.mark.usefixtures("close_all_instruments")
+
 
 @pytest.fixture
 def q_0() -> TransmonElement:

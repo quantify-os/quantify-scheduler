@@ -20,6 +20,8 @@ import quantify_scheduler.schemas.examples as es
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator.components import qblox
 
+pytestmark = pytest.mark.usefixtures("close_all_instruments")
+
 esp = inspect.getfile(es)
 
 cfg_f = Path(esp).parent / "transmon_test_config.json"
