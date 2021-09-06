@@ -66,12 +66,13 @@ def mock_setup(request):
     quantum_device.hardware_config(mock_hardware_cfg)
 
     def cleanup_instruments():
-        for instr in list(quantum_device._all_instruments):
-            try:
-                inst = quantum_device.find_instrument(instr)
-                inst.close()
-            except KeyError:
-                pass
+        # NB only close the instruments this fixture is responsible for to avoid
+        # hard to debug side effects
+        meas_ctrl.close()
+        instrument_coordinator.close()
+        q0.close()
+        q1.close()
+        quantum_device.close()
 
     request.addfinalizer(cleanup_instruments)
 
