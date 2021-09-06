@@ -355,7 +355,7 @@ def readout_calibration_sched(
         elif prep_state == 2:
             raise NotImplementedError()
         else:
-            raise ValueError(f"Prepared state ({prep_state})must be either 0, 1 or 2")
+            raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
         schedule.add(
             Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND),
             label=f"Measurement {i}",
