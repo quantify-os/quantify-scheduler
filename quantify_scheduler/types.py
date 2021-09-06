@@ -295,13 +295,14 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
                 acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
+            # FIXME # pylint: disable=fixme
             # this workaround is required because we cannot easily specify types and
-            # serialize easy.  We should change the implementation to dataclasses #159
+            # serialize easy. We should change the implementation to dataclasses #159
             if "<class " in str(acq_info["acq_return_type"]):
                 # first remove the class prefix
-                ret_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
+                return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
                 # and then use locate to retrieve the type class
-                acq_info["acq_return_type"] = locate(ret_type_str)
+                acq_info["acq_return_type"] = locate(return_type_str)
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
