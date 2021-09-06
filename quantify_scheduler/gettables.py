@@ -217,6 +217,12 @@ def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
     :
         The `parameters` dictionary, but with the parameters replaced by their current
         value.
+
+    Raises
+    ------
+    TypeError
+        If a parameter returns None
+
     """
     evaluated_parameters = dict()
 
@@ -224,6 +230,14 @@ def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(val, Parameter):
             # evaluate the parameter
             evaluated_parameters[key] = val.get()
+            # verify that the parameter has a value, a missing value typically indicates
+            # that it was not initialized.
+            if evaluated_parameters[key] is None:
+                raise TypeError(
+                    f"{key}: parameter {val} returns None. "
+                    "It is possible this parameter was not configured correctly."
+                )
+
         else:
             evaluated_parameters[key] = val
 
