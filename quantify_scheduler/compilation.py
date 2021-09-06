@@ -369,7 +369,7 @@ def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
 ) -> CompiledSchedule:
     """
-    Compile and assemble a :class:`~.Schedule` into a a :class:`~.CompiledSchedule`
+    Compile and assemble a :class:`~.Schedule` into a :class:`~.CompiledSchedule`
     ready for execution using the :class:`~.InstrumentCoordinator`.
 
     Parameters

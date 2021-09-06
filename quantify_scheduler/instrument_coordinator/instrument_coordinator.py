@@ -26,7 +26,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     representing physical instruments,  and the ability to execute experiments.
 
 
-    .. admonition:: Executing a a schedule using the instrument coordinator
+    .. admonition:: Executing a schedule using the instrument coordinator
         :class: dropdown
 
         To execute a :class:`~quantify_scheduler.types.Schedule` , one needs to first
@@ -39,10 +39,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
             from quantify_scheduler.compilation import qcompile
 
-            my_sched         # a quantify Schedule descring the experiment to perform
-            device_config    # a config file describing the quantum device
-            hardware_config. # a config file describing the connection to the hardware
-            compiled_sched = qcompile(my_sched, device_config, hardware_config)
+            my_sched: Schedule = ...  # a Schedule describing the experiment to perform
+            device_config: dict = ...  # a config file describing the quantum device
+            hardware_config: dict = ...  # a config file describing the connection to the hardware
+            compiled_sched: CompiledSchedule = qcompile(my_sched, device_config, hardware_config)
 
             instrument_coordinator.prepare(compiled_sched)
             instrument_coordinator.start()
@@ -53,15 +53,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
         In order to distribute compiled instructions and execute an experiment,
         the instrument coordinator needs to have references to the individual
-        instrument coordinator components. The can be added using
+        instrument coordinator components. They can be added using
         :meth:`~.InstrumentCoordinator.add_component`.
-
 
         .. code-block::
 
             instrument_coordinator.add_component(qcm_component)
 
-    """
+    """  # pylint: disable=line-too-long
 
     # see https://stackoverflow.com/questions/22096187/ \
     # how-to-make-sphinx-respect-importing-classes-into-package-with-init-py
@@ -220,10 +219,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         self._last_schedule = compiled_schedule
 
         compiled_instructions = compiled_schedule["compiled_instructions"]
-        # compiled instructions are expected to follow the structure of a dict
-        # with keys corresponding to instrument names (icc components) and values
-        # containing to instructions in the format specific to that type of hardware.
-        # see also the specification in the CompiledSchedule class.
+        # Compiled instructions are expected to follow the structure of a dict
+        # with keys corresponding to instrument names (InstrumentCoordinatorComponent's)
+        # and values containing instructions in the format specific to that type
+        # of hardware. See also the specification in the CompiledSchedule class.
         for instrument_name, args in compiled_instructions.items():
             self.get_component(instrument_name).prepare(args)
 
