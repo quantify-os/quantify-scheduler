@@ -258,13 +258,8 @@ class SequencerSettings(DataClassJsonMixin):
 
     nco_en: bool
     """Specifies whether the NCO will be used or not."""
-
-    # None is allowed because the cluster modules don't have this parameter. This should
-    # probably be refactored to treat this separately.
-    sync_en: Optional[bool]
-    """Enables party-line synchronization. `None` explicitly tells the IC to skip
-    configuring this parameter."""
-
+    sync_en: bool
+    """Enables party-line synchronization."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
     awg_offset_path_0: float = 0.0
@@ -272,6 +267,10 @@ class SequencerSettings(DataClassJsonMixin):
     awg_offset_path_1: float = 0.0
     """Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
     when using IQ mixers."""
+    duration: int = 0
+    """Duration of the acquisition. This is a temporary addition for not yet merged the
+    InstrumentCoordinator to function properly. This will be removed in a later
+    version!"""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
 
