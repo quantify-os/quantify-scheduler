@@ -570,7 +570,7 @@ class QASMProgram:
             # Explicit checking of acquisition function to ensure right
             # explicit passing of arguments over list comprehension of args for
             # readability.
-            if acquisition_func is self._acquire_weighted:
+            if acquisition_func == self._acquire_weighted:
                 self.emit(
                     q1asm_instructions.MOVE,
                     idx0,
@@ -590,7 +590,7 @@ class QASMProgram:
                     idx0=acq_idx0_reg,
                     idx1=acq_idx1_reg,
                 )
-            elif acquisition_func is self._acquire_square:
+            elif acquisition_func == self._acquire_square:
                 acquisition_func(
                     acquisition=acquisition,
                     bin_idx=acq_bin_idx_reg,
