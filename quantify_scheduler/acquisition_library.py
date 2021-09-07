@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+# pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
 from typing import Any, Dict, List, Optional, Union
 
@@ -81,7 +82,7 @@ class Trace(Operation):
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "trace",
-                        "acq_return_type": float,  # FIXME not correct
+                        "acq_return_type": np.ndarray,
                     }
                 ],
             }

@@ -9,11 +9,11 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
 from quantify_core.utilities import general
 from quantify_scheduler import types
+from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox
-from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
 
 
 class CachedSchedule:
