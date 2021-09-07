@@ -116,12 +116,7 @@ class ScheduleGettableSingleChannel:
 
         # generate a schedule using the evaluated keyword arguments dict
         sched = self.schedule_function(**self._evaluated_sched_kwargs)
-        # compile and assign to attributes for debugging purposes
 
-        # FIXME: this is still required but should be set to the schedule upon
-        # initialization
-
-        sched.repetitions = self.quantum_device.cfg_nr_averages()
         compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.quantum_device.generate_device_config(),
@@ -129,15 +124,12 @@ class ScheduleGettableSingleChannel:
         )
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
-        # Upload the schedule and configure the instrument coordinator
         instr_coordinator.prepare(compiled_schedule)
-
-        # Run experiment
         instr_coordinator.start()
 
         # retrieve the acquisition results
-        # FIXME: this reshaping should happen inside the instrument coordinator
-        # FIXME: the acq_metadata should be an attribute of the compiled schedule
+        # pylint: disable=fixme
+        # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
         # Currently only supported for weighted integration assert that the schedule is
@@ -145,11 +137,9 @@ class ScheduleGettableSingleChannel:
         assert acq_metadata.acq_return_type == complex
         acquired_data = instr_coordinator.retrieve_acquisition()
 
+        # FIXME: this reshaping should happen inside the instrument coordinator
+        # blocked by quantify-core#187, and quantify-core#233
         if acq_metadata.bin_mode == BinMode.AVERAGE:
-            # assert acq_metadata.bin_mode == BinMode.AVERAGE
-            # initialize an empty dataset, acq_channels will be keys,
-            # and the values will be numpy arrays of dtype complex
-            # with shape 1*len(acq_indices)
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
@@ -157,9 +147,7 @@ class ScheduleGettableSingleChannel:
                     val = acquired_data[(acq_channel, acq_idx)]
                     dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
-            # reshape to the format required by the MeasurementControl
-
-            # currently this gettable only supports one acquisition channel
+            # This gettable only supports one acquisition channel
             if len(dataset.keys()) != 1:
                 raise ValueError(
                     "Expected a single channel in the retrieved acquisitions "
@@ -167,7 +155,6 @@ class ScheduleGettableSingleChannel:
                 )
 
         elif acq_metadata.bin_mode == BinMode.APPEND:
-
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(
@@ -177,8 +164,6 @@ class ScheduleGettableSingleChannel:
                 for acq_idx in acq_indices:
                     vals = acquired_data[(acq_channel, acq_idx)]
                     dataset[acq_channel][acq_idx::acq_stride] = vals[0] + 1j * vals[1]
-
-                    # dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
         else:
             raise NotImplementedError(
