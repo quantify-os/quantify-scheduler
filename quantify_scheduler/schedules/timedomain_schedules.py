@@ -347,7 +347,8 @@ def readout_calibration_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
     prepared_states
-        the states to prepare the qubit in before measuring.
+        the states to prepare the qubit in before measuring as in integer corresponding
+        to the ground (0), first-excited (1) or second-excited (2) state.
     repetitions
         The number of shots to acquire, sets the number of times the schedule will
         be repeated.
@@ -356,6 +357,13 @@ def readout_calibration_sched(
     -------
     :
         An experiment schedule.
+
+    Raises
+    ------
+    ValueError
+        If the prepared state is not either 0, 1, or 2.
+    NotImplementedError
+        If the prepared state is 2.
     """
 
     schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
@@ -368,7 +376,10 @@ def readout_calibration_sched(
         elif prep_state == 1:
             schedule.add(Rxy(qubit=qubit, theta=180, phi=0))
         elif prep_state == 2:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                "Preparing the qubit in the second excited (2) "
+                "state is not supported yet."
+            )
         else:
             raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
         schedule.add(

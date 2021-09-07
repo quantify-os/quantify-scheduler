@@ -431,7 +431,7 @@ class Measure(Operation):
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
-        bin_mode: BinMode = None,
+        bin_mode: Union[BinMode, None] = None,
         data: Optional[dict] = None,
     ):
         """
@@ -448,6 +448,10 @@ class Measure(Operation):
             Acquisition channel on which the measurement is performed
         acq_index
             Index of the register where the measurement is stored.
+        bin_mode
+            The binning mode that is to be used. If not None, it will overwrite
+            the binning mode used for Measurements in the quantum-circuit to
+            quantum-device compilation step.
         data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
