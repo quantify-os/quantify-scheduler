@@ -602,7 +602,7 @@ class Sequencer:
                 # currently the BinMode enum only has average and append.
                 # this check exists to catch unexpected errors if we add more
                 # BinModes in the future.
-                raise NotImplementedError()
+                raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
 
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
