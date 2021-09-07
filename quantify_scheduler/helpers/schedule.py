@@ -453,14 +453,13 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
 ) -> AcquisitionMetadata:
     """
     Private function containing the logic of extract_acquisition_metadata_from_schedule.
-    logic is factored out as to work around limitations of the different interfaces
+    The logic is factored out as to work around limitations of the different interfaces
     required.
 
     Parameters
     ----------
     acquisition_protocols
         A list of acquisition protocols.
-
     """
     acq_indices: dict = {}
 
