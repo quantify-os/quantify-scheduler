@@ -83,7 +83,8 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             initial_value=60,
             vals=validators.Numbers(min_value=0),
             parameter_class=parameter.ManualParameter,
-            docstring="The timeout used for waiting for the experiment to complete when retrieving acquisitions.",
+            docstring="The timeout used for waiting for the experiment to complete "
+            "when retrieving acquisitions.",
         )
 
         self._last_schedule = None
@@ -253,7 +254,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             The acquisition data per component.
         """
         # FIXME: update the description of the return type of the instrument
-        # coordinator
+        # coordinator # pylint: disable=fixme
 
         self.wait_done(timeout_sec=self.timeout())
 
