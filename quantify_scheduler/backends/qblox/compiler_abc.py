@@ -681,7 +681,6 @@ class Sequencer:
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
 
-        # ############
         if len(acquisitions) > 1:
             acq_metadata = _extract_acquisition_metadata_from_acquisitions(
                 self.acquisitions
@@ -699,7 +698,6 @@ class Sequencer:
                         acq_bin_idx_reg,
                         comment=f"Initialize acquisition bin_idx for ch{acq_channel}",
                     )
-        # ############
 
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
