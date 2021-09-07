@@ -513,7 +513,6 @@ class _QRMAcquisitionManager:
 
         formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
 
-        # iterate over sequencers (typically 4 per QRM)
         for seq_idx in range(self.number_of_sequencers):
             acq_metadata = self.acquisition_metadata[f"seq{seq_idx}"]
             acquisition_function: Callable = protocol_to_function_mapping[
@@ -523,7 +522,7 @@ class _QRMAcquisitionManager:
             # retrieve the raw data from the qrm sequencer module
             acquisitions = self.instrument.get_acquisitions(seq_idx)
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-                # the acquisition function retrieves the right part of the acquisitions
+                # the acquisition_function retrieves the right part of the acquisitions
                 # data structure returned by the qrm
                 i_vals, q_vals = acquisition_function(
                     acquisitions=acquisitions, acq_channel=acq_channel
@@ -537,7 +536,7 @@ class _QRMAcquisitionManager:
                     acq_stride = len(acq_indices)
                     # N.B. the stride idx ensures that in append mode all data
                     # corresponding to the same acq_index appears in the
-                    # same acq_ch, acq_idx part of the returend formatted acquisitions.
+                    # same acq_ch, acq_idx part of the returned formatted acquisitions.
                     formatted_acquisitions[
                         AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
                     ] = (

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 class CachedSchedule:
     """
-    The CachedSchedule class wraps around the types.Schedule
+    The CachedSchedule class wraps around the Schedule
     class and populates the lookup dictionaries that are
     used for compilation of the backends.
     """
@@ -411,8 +411,8 @@ def extract_acquisition_metadata_from_schedule(
     - The used acquisition indices for each channel are the same.
     - When :class:`~quantify_scheduler.enums.BinMode` is :code:`APPEND` The number of
       data points per acquisition index assumed to be given by the
-      schedule's repetition property. This implies no support for feedback.
-
+      schedule's repetition property. This implies no support for feedback (conditional
+      measurements).
 
     Parameters
     ----------
@@ -437,7 +437,7 @@ def extract_acquisition_metadata_from_schedule(
         If the return type of the acquisitions is different.
 
 
-    """
+    """  # FIXME update when quantify-core!212 spec is ready # pylint: disable=fixme
     # convert to a cached schedule to have useful metadata available.
     cached_sched = CachedSchedule(schedule)
 
@@ -461,7 +461,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
     acquisition_protocols
         A list of acquisition protocols.
     """
-    acq_indices: dict = {}
+    acq_indices: Dict[int, List[int]] = {}
 
     for i, acq_protocol in enumerate(acquisition_protocols):
         if i == 0:
@@ -470,7 +470,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
             bin_mode = acq_protocol["bin_mode"]
             acq_return_type = acq_protocol["acq_return_type"]
 
-        # test for limitation 1, all acquisition protocols in a schedule must be
+        # test limitation: all acquisition protocols in a schedule must be of
         # the same kind
         assert acq_protocol["protocol"] == protocol
         assert acq_protocol["bin_mode"] == bin_mode

@@ -1033,7 +1033,7 @@ def test_markers():
 
 def assembly_valid(compiled_schedule, qcm0, qrm0):
     """
-    test helper that takes a complied schedule and verifies if the assembly is valid
+    Test helper that takes a compiled schedule and verifies if the assembly is valid
     by passing it to a dummy qcm and qrm.
 
     Asssumes only qcm0 and qrm0 are used.
@@ -1065,16 +1065,18 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     set_datadir(tmp_dir.name)
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(
+    compiled_ssro_sched = qcompile(
         ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
     )
 
     assembly_valid(
-        compiled_schedule=comp_ssro_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
+        compiled_schedule=compiled_ssro_sched,
+        qcm0=dummy_pulsars[0],
+        qrm0=dummy_pulsars[0],
     )
 
     with open(
-        comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
     ) as file:
         qrm0_seq_instructions = json.load(file)
 
@@ -1090,14 +1092,14 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     #
     # import shutil
     # shutil.copy(
-    #     comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
     #     baseline_assembly,
     # )
 
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
-    program = _strip_comments(qrm0_seq_instructions["program"].split("\n"))
-    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"].split("\n"))
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
 
     assert list(program) == list(exp_program)
 
@@ -1109,14 +1111,18 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     set_datadir(tmp_dir.name)
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
-    comp_allxy_sched = qcompile(sched, load_example_transmon_config(), HARDWARE_MAPPING)
+    compiled_allxy_sched = qcompile(
+        sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
 
     assembly_valid(
-        compiled_schedule=comp_allxy_sched, qcm0=dummy_pulsars[0], qrm0=dummy_pulsars[0]
+        compiled_schedule=compiled_allxy_sched,
+        qcm0=dummy_pulsars[0],
+        qrm0=dummy_pulsars[0],
     )
 
     with open(
-        comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
     ) as file:
         qrm0_seq_instructions = json.load(file)
 
@@ -1128,19 +1134,19 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
         f"{sched.name}_qrm0_seq0_instr.json",
     )
 
-    # To regenerate the baseline image for this test uncomment these lines.
+    # To regenerate the baseline assembly for this test uncomment these lines.
 
     # import shutil
     #
     # shutil.copy(
-    #     comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
     #     baseline_assembly,
     # )
 
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
-    program = _strip_comments(qrm0_seq_instructions["program"].split("\n"))
-    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"].split("\n"))
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
 
     assert list(program) == list(exp_program)
 
@@ -1152,12 +1158,12 @@ def test_acq_declaration_dict_append_mode(load_example_transmon_config):
     repetitions = 256
 
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(
+    compiled_ssro_sched = qcompile(
         ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
     )
 
     with open(
-        comp_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
     ) as file:
         qrm0_seq_instructions = json.load(file)
 
@@ -1172,10 +1178,12 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     set_datadir(tmp_dir.name)
 
     allxy = allxy_sched("q0")
-    comp_allxy_sched = qcompile(allxy, load_example_transmon_config(), HARDWARE_MAPPING)
+    compiled_allxy_sched = qcompile(
+        allxy, load_example_transmon_config(), HARDWARE_MAPPING
+    )
 
     with open(
-        comp_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
     ) as file:
         qrm0_seq_instructions = json.load(file)
 
@@ -1186,10 +1194,10 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
 
 
-def _strip_comments(program):
+def _strip_comments(program: str):
     # helper function for comparing programs
     stripped_program = []
-    for line in program:
+    for line in program.split("\n"):
         if "#" in line:
             line = line.split("#")[0]
         line = line.rstrip()  # remove trailing whitespace

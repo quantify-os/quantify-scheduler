@@ -597,8 +597,6 @@ class QASMProgram:
                     bin_idx=acq_bin_idx_reg,
                 )
             else:
-                # "weighted_integrated_complex" and "ssb_integration_complex"
-                # are defined as keys in
                 raise NotImplementedError(
                     "BinMode.APPEND is only compatible with acquisition protocols "
                     "'ssb_integration_complex' and 'ssb_integration_complex'."
