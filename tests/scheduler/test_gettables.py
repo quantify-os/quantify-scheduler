@@ -169,7 +169,6 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
 
     sched_kwargs = {
         "qubit": qubit.name,
-        #         "prepared_states": prep_state,
         "prepared_states": [0, 1],
         "repetitions": repetitions,
     }
