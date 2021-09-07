@@ -602,7 +602,7 @@ class Sequencer:
                 # currently the BinMode enum only has average and append.
                 # this check exists to catch unexpected errors if we add more
                 # BinModes in the future.
-                raise NotImplementedError()
+                raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
 
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
@@ -681,7 +681,6 @@ class Sequencer:
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
 
-        # ############
         if len(acquisitions) > 1:
             acq_metadata = _extract_acquisition_metadata_from_acquisitions(
                 self.acquisitions
@@ -699,7 +698,6 @@ class Sequencer:
                         acq_bin_idx_reg,
                         comment=f"Initialize acquisition bin_idx for ch{acq_channel}",
                     )
-        # ############
 
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
