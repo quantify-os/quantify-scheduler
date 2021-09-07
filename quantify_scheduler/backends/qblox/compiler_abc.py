@@ -670,7 +670,7 @@ class Sequencer:
             The generated QASM program.
         """
         loop_label = "start"
-        loop_register = reserved_registers.REGISTER_LOOP
+        loop_register = reserved_registers.REGISTER_REPETITIONS_LOOP
 
         qasm = QASMProgram(parent=self)
         # program header

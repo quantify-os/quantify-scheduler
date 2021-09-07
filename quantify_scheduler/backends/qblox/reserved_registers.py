@@ -8,7 +8,7 @@ Contains registers that are reserved for a specific function by the qblox backen
 # in a future version. For more details see #190.
 
 # Reserved register in the QASM assembly
-REGISTER_LOOP: str = "R0"  # used as the main loop counter
+REGISTER_REPETITIONS_LOOP: str = "R0"  # used as the main loop counter
 
 
 # Registers reserved for managing acquisition registers
