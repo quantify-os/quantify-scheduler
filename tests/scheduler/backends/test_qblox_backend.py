@@ -540,22 +540,6 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
         qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
-@pytest.mark.xfail(reason="currently fixing this")
-def test_wrong_bin_mode(pulse_only_schedule):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    sched = copy.deepcopy(pulse_only_schedule)
-    sched.add(
-        SSBIntegrationComplex(
-            duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
-        )
-    )
-
-    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
-    with pytest.raises(NotImplementedError):
-        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
-
-
 def test_compile_with_rel_time(
     dummy_pulsars, pulse_only_schedule_with_operation_timing
 ):
