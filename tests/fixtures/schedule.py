@@ -8,17 +8,11 @@
 """Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
-
-import inspect
-import json
-import os
 from copy import deepcopy
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
 import pytest
-from quantify_scheduler.schemas import examples
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
@@ -26,40 +20,50 @@ from quantify_scheduler.compilation import (
 from quantify_scheduler.gate_library import X, X90, Measure, Reset
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.schemas.examples import utils
+
+# load here to avoid loading every time a fixture is used
+DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 @pytest.fixture
-def load_example_config() -> Dict[str, Any]:
-    def _load_example_config(filename: str = "transmon_test_config.json"):
-        examples_path = inspect.getfile(examples)
+def load_example_transmon_config() -> Dict[str, Any]:
+    def _load_example_transmon_config():
+        return dict(DEVICE_CONFIG)
 
-        file_path = os.path.abspath(os.path.join(examples_path, "..", filename))
-        json_str = Path(file_path).read_text()
-        return json.loads(json_str)
-
-    yield _load_example_config
+    yield _load_example_transmon_config
 
 
 @pytest.fixture
-def load_example_hardware_config() -> Dict[str, Any]:
-    def _load_example_hardware_config(filename: str = "qblox_test_mapping.json"):
-        examples_path = inspect.getfile(examples)
+def load_example_qblox_hardware_config() -> Dict[str, Any]:
+    def _load_example_qblox_hardware_config():
+        return dict(QBLOX_HARDWARE_MAPPING)
 
-        file_path = os.path.abspath(os.path.join(examples_path, "..", filename))
-        json_str = Path(file_path).read_text()
-        return json.loads(json_str)
-
-    yield _load_example_hardware_config
+    yield _load_example_qblox_hardware_config
 
 
 @pytest.fixture
-def create_schedule_with_pulse_info(load_example_config, basic_schedule: Schedule):
+def load_example_zhinst_hardware_config() -> Dict[str, Any]:
+    def _load_example_qblox_hardware_config():
+        return dict(ZHINST_HARDWARE_MAPPING)
+
+    yield _load_example_qblox_hardware_config
+
+
+@pytest.fixture
+def create_schedule_with_pulse_info(
+    load_example_transmon_config, basic_schedule: Schedule
+):
     def _create_schedule_with_pulse_info(
         schedule: Optional[Schedule] = None, device_config: Optional[dict] = None
     ) -> Schedule:
         _schedule = schedule if schedule is not None else deepcopy(basic_schedule)
         _device_config = (
-            device_config if device_config is not None else load_example_config()
+            device_config
+            if device_config is not None
+            else load_example_transmon_config()
         )
         add_pulse_information_transmon(_schedule, _device_config)
         determine_absolute_timing(_schedule)
@@ -110,34 +114,34 @@ def schedule_with_pulse_info(create_schedule_with_pulse_info) -> Schedule:
 
 
 @pytest.fixture
-def compiled_two_qubit_t1_schedule(load_example_config):
+def compiled_two_qubit_t1_schedule(load_example_transmon_config):
     """
     a schedule performing T1 on two-qubits simultaneously
     """
-    device_config = load_example_config()
+    device_config = load_example_transmon_config()
 
-    qubits = ["q0", "q1"]
+    q0, q1 = ("q0", "q1")
     repetitions = 1024
     schedule = Schedule("Multi-qubit T1", repetitions)
 
     times = np.arange(0, 60e-6, 3e-6)
 
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubits[0], qubits[1]), label=f"Reset {i}")
-        schedule.add(X(qubits[0]), label=f"pi {i} {qubits[0]}")
-        schedule.add(X(qubits[1]), label=f"pi {i} {qubits[1]}", ref_pt="start")
+        schedule.add(Reset(q0, q1), label=f"Reset {i}")
+        schedule.add(X(q0), label=f"pi {i} {q0}")
+        schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(qubits[0], acq_index=i, acq_channel=0),
+            Measure(q0, acq_index=i, acq_channel=0),
             ref_pt="start",
             rel_time=tau,
-            label=f"Measurement {qubits[0]}{i}",
+            label=f"Measurement {q0}{i}",
         )
         schedule.add(
-            Measure(qubits[1], acq_index=i, acq_channel=1),
+            Measure(q1, acq_index=i, acq_channel=1),
             ref_pt="start",
             rel_time=tau,
-            label=f"Measurement {qubits[1]}{i}",
+            label=f"Measurement {q1}{i}",
         )
 
     comp_t1_sched = qcompile(schedule, device_config)

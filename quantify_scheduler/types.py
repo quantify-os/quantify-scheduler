@@ -295,13 +295,14 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
                 acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
+            # FIXME # pylint: disable=fixme
             # this workaround is required because we cannot easily specify types and
-            # serialize easy.  We should change the implementation to dataclasses #159
+            # serialize easy. We should change the implementation to dataclasses #159
             if "<class " in str(acq_info["acq_return_type"]):
                 # first remove the class prefix
-                ret_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
+                return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
                 # and then use locate to retrieve the type class
-                acq_info["acq_return_type"] = locate(ret_type_str)
+                acq_info["acq_return_type"] = locate(return_type_str)
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
@@ -749,19 +750,6 @@ class AcquisitionMetadata:
     Class to provide a description of the shape and type of data that a schedule will
     return when executed.
 
-    Parameters
-    ----------
-    acq_protocol
-        The acquisition protocol that is used for all acquisitions in the schedule.
-    bin_mode
-        How the data is stored in the bins indexed by acq_channel and acq_index.
-    acq_return_type
-        the datatype returned by the individual acquisitions.
-    acq_indices
-        a dictionary containing the acquisition channel as key and a list of acquisition
-        indices that are used for every channel.
-
-
     .. note::
 
         The acquisition protocol, bin-mode and return types are assumed to be the same
@@ -769,6 +757,11 @@ class AcquisitionMetadata:
     """
 
     acq_protocol: str
+    """The acquisition protocol that is used for all acquisitions in the schedule."""
     bin_mode: enums.BinMode
+    """How the data is stored in the bins indexed by acq_channel and acq_index."""
     acq_return_type: Type
+    """The datatype returned by the individual acquisitions."""
     acq_indices: Dict[int, List[int]]
+    """A dictionary containing the acquisition channel as key and a list of acquisition
+    indices that are used for every channel."""

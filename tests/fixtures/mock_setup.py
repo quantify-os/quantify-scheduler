@@ -46,7 +46,7 @@ def tmp_test_data_dir(request, tmp_path_factory):
 @pytest.fixture(scope="module", autouse=False)
 def mock_setup(request, tmp_test_data_dir):
     """
-    Returns a mock setup
+    Returns a mock setup.
     """
     set_datadir(tmp_test_data_dir)
 
@@ -74,12 +74,13 @@ def mock_setup(request, tmp_test_data_dir):
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
     def cleanup_instruments():
-        for instr in list(quantum_device._all_instruments):
-            try:
-                inst = quantum_device.find_instrument(instr)
-                inst.close()
-            except KeyError:
-                pass
+        # NB only close the instruments this fixture is responsible for to avoid
+        # hard to debug side effects
+        meas_ctrl.close()
+        instrument_coordinator.close()
+        q0.close()
+        q1.close()
+        quantum_device.close()
 
     request.addfinalizer(cleanup_instruments)
 

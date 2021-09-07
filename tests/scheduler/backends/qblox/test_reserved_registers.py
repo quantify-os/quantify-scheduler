@@ -3,8 +3,6 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-module-docstring
 
-
-from inspect import getmembers
 from quantify_scheduler.backends.qblox import reserved_registers
 
 

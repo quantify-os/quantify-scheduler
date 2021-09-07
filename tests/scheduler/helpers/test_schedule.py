@@ -75,10 +75,10 @@ def test_get_info_by_uuid_are_unique(
 def test_get_acq_info_by_uuid(
     create_schedule_with_pulse_info,
     schedule_with_measurement: Schedule,
-    load_example_config,
+    load_example_transmon_config,
 ):
     # Arrange
-    device_config = load_example_config()
+    device_config = load_example_transmon_config()
     device_config["qubits"]["q0"]["params"]["acquisition"] = "SSBIntegrationComplex"
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
@@ -257,10 +257,10 @@ def test_get_port_timeline_with_duplicate_op(
 def test_get_port_timeline_with_acquisition(
     create_schedule_with_pulse_info,
     schedule_with_measurement: Schedule,
-    load_example_config,
+    load_example_transmon_config,
 ):
     # Arrange
-    device_config = load_example_config()
+    device_config = load_example_transmon_config()
     device_config["qubits"]["q0"]["params"]["acquisition"] = "SSBIntegrationComplex"
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)

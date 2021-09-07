@@ -29,7 +29,7 @@ class QuantumDevice(Instrument):
     """
 
     def __init__(self, name: str) -> None:
-        super().__init__(name)
+        super().__init__(name=name)
 
         self.add_parameter(
             "components",
@@ -40,14 +40,11 @@ class QuantumDevice(Instrument):
             " are located on this QuantumDevice.",
         )
 
-        device_cfg_backend_validator = validators.Enum(
-            "quantify_scheduler.compilation.add_pulse_information_transmon"
-        )
+        default_cfg = "quantify_scheduler.compilation.add_pulse_information_transmon"
+        device_cfg_backend_validator = validators.Enum(default_cfg)
         self.add_parameter(
             "device_cfg_backend",
-            initial_value=(
-                "quantify_scheduler.compilation.add_pulse_information_transmon"
-            ),
+            initial_value=default_cfg,
             parameter_class=ManualParameter,
             vals=device_cfg_backend_validator,
         )
@@ -77,7 +74,7 @@ class QuantumDevice(Instrument):
             vals=validators.Ints(min_value=1),
         )
 
-        # fixme, this should be generated and not be user-provided
+        # FIXME: this should be generated and not be user-provided
         self.add_parameter("hardware_config", parameter_class=ManualParameter)
 
     def generate_hardware_config(self) -> Dict[str, Any]:
@@ -108,7 +105,7 @@ class QuantumDevice(Instrument):
 
         """
 
-        # initialize an dictionary with the right structure
+        # initialize a dictionary with the right structure
         device_configuration = {
             "backend": self.device_cfg_backend(),
             "qubits": {},
@@ -143,7 +140,7 @@ class QuantumDevice(Instrument):
         """
         if name in self.components():
             return self.find_instrument(name)
-        raise KeyError(f"'{name}' is not a component of {self.name}!")
+        raise KeyError(f"'{name}' is not a component of {self.name}.")
 
     def add_component(
         self,
@@ -165,17 +162,15 @@ class QuantumDevice(Instrument):
             If :code:`component` is not an instance of the base component.
         """
         if component.name in self.components():
-            raise ValueError(f"'{component.name}' has already been added!")
+            raise ValueError(f"'{component.name}' has already been added.")
 
         if not isinstance(component, Instrument):
-            # check can be improved to see if it is also a valid device element.
-            # this requires a base class for device elements that does not exist yet.
+            # FIXME: check if it is also a valid device element. # pylint: disable=fixme
+            # This requires a base class for device elements that does not exist yet.
+            # See also `InstrumentCoordinatorComponentBase`.
             raise TypeError(f"{repr(component)} is not a QCoDeS instrument.")
 
-        components: List[str] = self.components()
-        # add the component by name
-        components.append(component.name)
-        self.components.set(components)
+        self.components().append(component.name)  # list gets updated in place
 
     def remove_component(self, name: str) -> None:
         """
@@ -187,5 +182,4 @@ class QuantumDevice(Instrument):
             The component name.
         """
 
-        # list gets updated in place
-        self.components().remove(name)
+        self.components().remove(name)  # list gets updated in place
