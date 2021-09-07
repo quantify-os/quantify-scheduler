@@ -341,6 +341,21 @@ def readout_calibration_sched(
     """
     A schedule for readout calibration. Prepares a state and immediately performs
     a measurement.
+
+    Parameters
+    ----------
+    qubit
+        the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+    prepared_states
+        the states to prepare the qubit in before measuring.
+    repetitions
+        The number of shots to acquire, sets the number of times the schedule will
+        be repeated.
+
+    Returns
+    -------
+    :
+        An experiment schedule.
     """
 
     schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
