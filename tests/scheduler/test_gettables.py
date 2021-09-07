@@ -11,15 +11,80 @@ import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules.timedomain_schedules import allxy_sched
+from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.gettables import ScheduleGettableSingleChannel
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.types import AcquisitionMetadata
 
 # this is taken from the qblox backend and is used to make the tuple indexing of
 # acquisitions more explicit. See also #179 of quantify-scheduler
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
+
+
+def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
+
+    qubit = quantum_device.get_component("q0")
+
+    # manual parameter for testing purposes
+    ro_freq = ManualParameter("ro_freq", initial_value=5e9, unit="Hz")
+
+    schedule_kwargs = {
+        "pulse_amp": qubit.ro_pulse_amp,
+        "pulse_duration": qubit.ro_pulse_duration,
+        "frequency": ro_freq,
+        "acquisition_delay": qubit.ro_acq_delay,
+        "integration_time": qubit.ro_acq_integration_time,
+        "port": qubit.ro_port,
+        "clock": qubit.ro_clock,
+        "init_duration": qubit.init_duration,
+        "repetitions": quantum_device.cfg_nr_averages(),
+    }
+
+    # Prepare the mock data the spectroscopy schedule
+
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="ssb_integration_complex",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=complex,
+        acq_indices={0: [0]},
+    )
+
+    data = 1 * np.exp(1j * np.deg2rad(45))
+
+    acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
+
+    mocker.patch.object(
+        mock_setup["instrument_coordinator"],
+        "retrieve_acquisition",
+        return_value=acq_indices_data,
+    )
+
+    # Configure the gettable
+    spec_gettable = ScheduleGettableSingleChannel(
+        quantum_device=quantum_device,
+        schedule_function=heterodyne_spec_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=False,
+    )
+
+    freqs = np.linspace(5e9, 6e9, 11)
+    meas_ctrl.settables(ro_freq)
+    meas_ctrl.setpoints(freqs)
+    meas_ctrl.gettables(spec_gettable)
+    label = f"Heterodyne spectroscopy {qubit.name}"
+    dset = meas_ctrl.run(label)
+
+    exp_data = np.ones(len(freqs)) * data
+    # Assert that the data is coming out correctly.
+    np.testing.assert_array_equal(dset.x0, freqs)
+    np.testing.assert_array_equal(dset.y0, abs(exp_data))
+    np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
+
 
 # test a batched case
 def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
@@ -84,13 +149,10 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     np.testing.assert_array_equal(dset.y0 + 1j * dset.y1, data)
 
 
-# test a batched case
-
-
 # test an append mode case
 
 
-# this is probably useful somewhere, it kind of illustrates the weir reshaping in the
+# this is probably useful somewhere, it illustrates the reshaping in the
 # instrument coordinator
 def _reshape_array_into_acq_return_type(
     data: np.ndarray, acq_metadata: AcquisitionMetadata
