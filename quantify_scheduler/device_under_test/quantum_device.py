@@ -4,7 +4,7 @@
 Module containing the QuantumDevice object.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import (
     ManualParameter,

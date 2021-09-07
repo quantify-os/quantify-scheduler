@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+# pylint: disable=comparison-with-callable
 """QASM program class for Qblox backend."""
 from __future__ import annotations
 from contextlib import contextmanager
@@ -534,7 +535,7 @@ class QASMProgram:
 
             # Add a line break for visual separation of acquisition.
             self.emit(q1asm_instructions.NEW_LINE)
-            # FIXME: bin_idx needs to be based on a register N*acq_index
+
             bin_idx = acquisition.data["acq_index"]
 
             acq_channel = acquisition.data["acq_channel"]
