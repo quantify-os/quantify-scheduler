@@ -3,12 +3,12 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=too-many-locals
+# pylint: disable=invalid-name
 from __future__ import annotations
 
-import pytest
+import numpy as np
 from quantify_scheduler.gate_library import X90, Measure, Reset
 from quantify_scheduler.enums import BinMode
-import numpy as np
 from quantify_scheduler.helpers.schedule import (
     get_acq_info_by_uuid,
     get_acq_uuid,

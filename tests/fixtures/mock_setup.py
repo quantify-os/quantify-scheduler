@@ -1,11 +1,8 @@
 import pathlib
 
-import pytest
 import os
-from quantify_core.utilities._tests_helpers import (
-    rmdir_recursive,
-    remove_target_then_copy_from,
-)
+import pytest
+from quantify_core.utilities._tests_helpers import rmdir_recursive
 from quantify_core.measurement.control import MeasurementControl
 from quantify_core.data.handling import (
     get_datadir,
@@ -26,8 +23,8 @@ def tmp_test_data_dir(request, tmp_path_factory):
     """
 
     # disable this if you want to look at the generated datafiles for debugging.
-    USE_TEMP_DIR = True
-    if USE_TEMP_DIR:
+    use_temp_dir = True
+    if use_temp_dir:
         temp_data_dir = tmp_path_factory.mktemp("temp_data")
 
         def cleanup_tmp():
