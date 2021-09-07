@@ -10,7 +10,10 @@ from typing import Dict, Tuple, Any
 import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.schedules.timedomain_schedules import allxy_sched
+from quantify_scheduler.schedules.timedomain_schedules import (
+    allxy_sched,
+    readout_calibration_sched,
+)
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.gettables import ScheduleGettableSingleChannel
 from quantify_scheduler.helpers.schedule import (
@@ -149,7 +152,68 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     np.testing.assert_array_equal(dset.y0 + 1j * dset.y1, data)
 
 
-# test an append mode case
+# test a batched case
+def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
+
+    repetitions = 256
+    qubit = quantum_device.get_component("q0")
+
+    prep_state = ManualParameter("prep_state", label="Prepared qubit state", unit="")
+    prep_state.batched = True
+
+    # extra repetition index will not be required after the new data format
+    repetition_par = ManualParameter("repetition", label="Repetition", unit="#")
+    repetition_par.batched = True
+
+    sched_kwargs = {
+        "qubit": qubit.name,
+        #         "prepared_states": prep_state,
+        "prepared_states": [0, 1],
+        "repetitions": repetitions,
+    }
+
+    quantum_device.cfg_nr_averages(repetitions)
+
+    # Prepare the mock data the ideal SSRO data
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    comp_ssro_sched = qcompile(ssro_sched, quantum_device.generate_device_config())
+
+    data = np.tile(np.arange(2), repetitions) * np.exp(1j)
+
+    acq_indices_data = _reshape_array_into_acq_return_type(
+        data, extract_acquisition_metadata_from_schedule(comp_ssro_sched)
+    )
+
+    mocker.patch.object(
+        mock_setup["instrument_coordinator"],
+        "retrieve_acquisition",
+        return_value=acq_indices_data,
+    )
+
+    # Configure the gettable
+
+    ssro_gettable = ScheduleGettableSingleChannel(
+        quantum_device=quantum_device,
+        schedule_function=readout_calibration_sched,
+        schedule_kwargs=sched_kwargs,
+        real_imag=True,
+        batched=True,
+        max_batch_size=1024,
+    )
+
+    meas_ctrl.settables([prep_state, repetition_par])
+    meas_ctrl.setpoints_grid([np.arange(2), np.arange(repetitions)])
+    meas_ctrl.gettables(ssro_gettable)
+    label = f"SSRO {qubit.name}"
+    dset = meas_ctrl.run(label)
+
+    # Assert that the data is coming out correctly.
+    np.testing.assert_array_equal(dset.x0, np.tile(np.arange(2), repetitions))
+    np.testing.assert_array_equal(dset.x1, np.repeat(np.arange(repetitions), 2))
+
+    np.testing.assert_array_equal(dset.y0 + 1j * dset.y1, data)
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the
