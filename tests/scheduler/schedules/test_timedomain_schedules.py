@@ -237,7 +237,7 @@ class TestT1Sched(_CompilesAllBackends):
         sched = qcompile(sched, load_example_transmon_config())
 
     def test_operations(self):
-        assert len(self.sched.operations) == 2 + 21  # init, pi and measure
+        assert len(self.sched.operations) == 2 + 21  # init, pi and 21*measure
 
 
 class TestRamseySchedDetuning(_CompilesAllBackends):
@@ -320,7 +320,9 @@ class TestRamseySched(_CompilesAllBackends):
         sched = qcompile(sched, load_example_transmon_config())
 
     def test_operations(self):
-        assert len(self.sched.operations) == 23  # init, x90, Rxy(90,0) and 20 * measure
+        assert (
+            len(self.sched.operations) == 3 + 20
+        )  # init, x90, Rxy(90,0) and 20 * measure
 
 
 class TestEchoSched(_CompilesAllBackends):
@@ -387,7 +389,7 @@ class TestAllXYSched(_CompilesAllBackends):
                 assert constr["label"][:11] == "Measurement"
 
     def test_operations(self):
-        # 7 operations (x90, y90, X180, Y180, idle, reset, measurement)
+        # 6 +21 operations (x90, y90, X180, Y180, idle, reset, 21*measurement)
         assert len(self.sched.operations) == 6 + 21
 
 

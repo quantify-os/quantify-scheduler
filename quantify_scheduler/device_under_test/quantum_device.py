@@ -41,12 +41,11 @@ class QuantumDevice(Instrument):
         )
 
         default_cfg = "quantify_scheduler.compilation.add_pulse_information_transmon"
-        device_cfg_backend_validator = validators.Enum(default_cfg)
         self.add_parameter(
             "device_cfg_backend",
             initial_value=default_cfg,
             parameter_class=ManualParameter,
-            vals=device_cfg_backend_validator,
+            vals=validators.Strings(),
         )
 
         self.add_parameter(
@@ -74,24 +73,32 @@ class QuantumDevice(Instrument):
             vals=validators.Ints(min_value=1),
         )
 
-        # FIXME: this should be generated and not be user-provided
-        self.add_parameter("hardware_config", parameter_class=ManualParameter)
+        self.add_parameter(
+            "hardware_config",
+            docstring="The hardware configuration file used for compiling from the "
+            "quantum-device layer to a hardware backend.",
+            parameter_class=ManualParameter,
+            vals=validators.Dict(),
+        )
 
     def generate_hardware_config(self) -> Dict[str, Any]:
         """
         Generates a valid hardware configuration describing the quantum device.
 
+        Returns
+        -------
+            The hardware configuration file used for compiling from the quantum-device
+            layer to a hardware backend.
+
+
         The hardware config should be valid input for the
         :func:`quantify_scheduler.compilation.qcompile` function.
 
-        .. note:
+        .. warning:
 
             The config currently has to be specified by the user using the
             :code:`hardware_config` parameter.
         """
-
-        # currently this has to be set by the user, in the future this should be
-        # code generated.
         return self.hardware_config()
 
     def generate_device_config(self) -> Dict[str, Any]:

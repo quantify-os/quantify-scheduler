@@ -131,10 +131,17 @@ zhinst_backend
     :members:
 
 
-device_elements
-===============
+device_under_test
+=================
 
 .. automodule:: quantify_scheduler.device_under_test
+    :members:
+
+
+quantum_device
+--------------
+
+.. automodule:: quantify_scheduler.device_under_test.quantum_device
     :members:
 
 transmon_element
@@ -143,11 +150,6 @@ transmon_element
 .. automodule:: quantify_scheduler.device_under_test.transmon_element
     :members:
 
-quantum_device
---------------
-
-.. automodule:: quantify_scheduler.device_under_test.quantum_device
-    :members:
 
 
 helpers
