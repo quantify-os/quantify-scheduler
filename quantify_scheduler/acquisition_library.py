@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+# pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
 from typing import Any, Dict, List, Optional, Union
 
@@ -81,6 +82,7 @@ class Trace(Operation):
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "trace",
+                        "acq_return_type": np.ndarray,
                     }
                 ],
             }
@@ -189,9 +191,15 @@ class WeightedIntegratedComplex(Operation):
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "weighted_integrated_complex",
+                        "acq_return_type": complex,
                     }
                 ],
             }
+        # certain fields are required in the acquisition data
+        if not "acq_return_type" in data["acquisition_info"][0]:
+            data["acquisition_info"][0]["acq_return_type"] = complex
+            data["acquisition_info"][0]["protocol"] = "weighted_integrated_complex"
+
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
@@ -289,10 +297,16 @@ class SSBIntegrationComplex(Operation):
                         "acq_channel": acq_channel,
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
+                        "acq_return_type": complex,
                         "protocol": "ssb_integration_complex",
                     }
                 ],
             }
+        # certain fields are required in the acquisition data
+        if not "acq_return_type" in data["acquisition_info"][0]:
+            data["acquisition_info"][0]["acq_return_type"] = complex
+            data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
+
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:

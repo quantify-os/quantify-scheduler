@@ -8,9 +8,11 @@ import json
 import ast
 from abc import ABC
 from collections import UserDict
+from dataclasses import dataclass
 from copy import deepcopy
+from pydoc import locate
 from enum import Enum
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, List, Type, TYPE_CHECKING
 from uuid import uuid4
 
 import numpy as np
@@ -20,6 +22,7 @@ from quantify_scheduler import json_utils
 from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler import resources
 from quantify_scheduler import enums
+
 
 if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
@@ -263,6 +266,10 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
             ):
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
+            # types lead to problems when serialized without casting to string first
+            if "<class " in str(acq_info["acq_return_type"]):
+                acq_info["acq_return_type"] = str(acq_info["acq_return_type"])
+
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform:
                     waveform["t"] = np.array2string(
@@ -287,6 +294,15 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         for acq_info in self.data["acquisition_info"]:
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
                 acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
+
+            # FIXME # pylint: disable=fixme
+            # this workaround is required because we cannot easily specify types and
+            # serialize easy. We should change the implementation to dataclasses #159
+            if "<class " in str(acq_info["acq_return_type"]):
+                # first remove the class prefix
+                return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
+                # and then use locate to retrieve the type class
+                acq_info["acq_return_type"] = locate(return_type_str)
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
@@ -726,3 +742,26 @@ class CompiledSchedule(ScheduleBase):
             return isinstance(object_to_be_validated, CompiledSchedule)
 
         return False
+
+
+@dataclass
+class AcquisitionMetadata:
+    """
+    Class to provide a description of the shape and type of data that a schedule will
+    return when executed.
+
+    .. note::
+
+        The acquisition protocol, bin-mode and return types are assumed to be the same
+        for all acquisitions in a schedule.
+    """
+
+    acq_protocol: str
+    """The acquisition protocol that is used for all acquisitions in the schedule."""
+    bin_mode: enums.BinMode
+    """How the data is stored in the bins indexed by acq_channel and acq_index."""
+    acq_return_type: Type
+    """The datatype returned by the individual acquisitions."""
+    acq_indices: Dict[int, List[int]]
+    """A dictionary containing the acquisition channel as key and a list of acquisition
+    indices that are used for every channel."""

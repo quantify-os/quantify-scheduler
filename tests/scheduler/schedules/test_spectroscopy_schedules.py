@@ -6,18 +6,13 @@ import tempfile
 from quantify_core.data.handling import set_datadir
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 from quantify_scheduler.compilation import determine_absolute_timing, qcompile
-from quantify_scheduler.schemas.examples import utils
-
+from .compiles_all_backends import _CompilesAllBackends
 
 # TODO to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
 
-DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
-ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
-
-class TestHeterodyneSpecSchedule:
+class TestHeterodyneSpecSchedule(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
@@ -52,20 +47,12 @@ class TestHeterodyneSpecSchedule:
             assert constr["label"] == labels[i]
             assert constr["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self):
+    def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CONFIG)
-
-    def test_compiles_qblox_backend(self):
-        # assert that files properly compile
-        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
-
-    def test_compiles_zi_backend(self):
-        # assert that files properly compile
-        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
+        qcompile(self.sched, load_example_transmon_config())
 
 
-class TestPulsedSpecSchedule:
+class TestPulsedSpecSchedule(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
@@ -110,14 +97,6 @@ class TestPulsedSpecSchedule:
             assert constr["label"] == labels[i]
             assert constr["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self):
+    def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.sched, DEVICE_CONFIG)
-
-    def test_compiles_qblox_backend(self):
-        # assert that files properly compile
-        qcompile(self.sched, DEVICE_CONFIG, QBLOX_HARDWARE_MAPPING)
-
-    def test_compiles_zi_backend(self):
-        # assert that files properly compile
-        qcompile(self.sched, DEVICE_CONFIG, ZHINST_HARDWARE_MAPPING)
+        qcompile(self.sched, load_example_transmon_config())

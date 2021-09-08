@@ -56,7 +56,8 @@ In the following example, we will create a function to generate a :class:`~quant
             sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
             sched.add(CZ(qC=q0, qT=q1))
             sched.add(Rxy(theta=angle, phi=0, qubit=q0) )
-            sched.add(Measure(q0, q1, acq_index=acq_index))  # denote where to store the data
+            sched.add(Measure(q0, acq_index=acq_index))  # denote where to store the data
+            sched.add(Measure(q1, acq_index=acq_index), ref_pt="start")
 
         return sched
 

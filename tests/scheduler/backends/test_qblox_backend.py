@@ -23,6 +23,7 @@ from qblox_instruments import build
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
 
+import quantify_scheduler
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.gate_library import Reset, Measure, X
 from quantify_scheduler.pulse_library import (
@@ -47,6 +48,11 @@ from quantify_scheduler.backends.qblox.helpers import (
     DriverVersionError,
     to_grid_time,
     generate_uuid_from_wf_data,
+)
+
+from quantify_scheduler.schedules.timedomain_schedules import (
+    readout_calibration_sched,
+    allxy_sched,
 )
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
@@ -534,21 +540,6 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
         qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
-def test_wrong_bin_mode(pulse_only_schedule):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    sched = copy.deepcopy(pulse_only_schedule)
-    sched.add(
-        SSBIntegrationComplex(
-            duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
-        )
-    )
-
-    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
-    with pytest.raises(NotImplementedError):
-        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
-
-
 def test_compile_with_rel_time(
     dummy_pulsars, pulse_only_schedule_with_operation_timing
 ):
@@ -1022,3 +1013,177 @@ def test_markers():
     _confirm_correct_markers(program["qrm0"], Pulsar_QRM)
     _confirm_correct_markers(program["qcm_rf0"], Pulsar_QCM_RF)
     _confirm_correct_markers(program["qrm_rf0"], Pulsar_QRM_RF)
+
+
+def assembly_valid(compiled_schedule, qcm0, qrm0):
+    """
+    Test helper that takes a compiled schedule and verifies if the assembly is valid
+    by passing it to a dummy qcm and qrm.
+
+    Asssumes only qcm0 and qrm0 are used.
+    """
+
+    # test the program for the qcm
+    qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
+        "seq_fn"
+    ]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.arm_sequencer(0)
+    uploaded_waveforms = qcm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+    # test the program for the qrm
+    qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
+        "seq_fn"
+    ]
+    qrm0.sequencer0_waveforms_and_program(qrm0_seq0_json)
+    qrm0.arm_sequencer(0)
+    uploaded_waveforms = qrm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+
+def test_acq_protocol_append_mode_valid_assembly_ssro(
+    dummy_pulsars, load_example_transmon_config
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    repetitions = 256
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    compiled_ssro_sched = qcompile(
+        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    assembly_valid(
+        compiled_schedule=compiled_ssro_sched,
+        qcm0=dummy_pulsars[0],
+        qrm0=dummy_pulsars[0],
+    )
+
+    with open(
+        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{ssro_sched.name}_qrm0_seq0_instr.json",
+    )
+
+    # To regenerate the baseline image for this test uncomment these lines.
+    #
+    # import shutil
+    # shutil.copy(
+    #     compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     baseline_assembly,
+    # )
+
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+
+    assert list(program) == list(exp_program)
+
+
+def test_acq_protocol_average_mode_valid_assembly_allxy(
+    dummy_pulsars, load_example_transmon_config
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    repetitions = 256
+    sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
+    compiled_allxy_sched = qcompile(
+        sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    assembly_valid(
+        compiled_schedule=compiled_allxy_sched,
+        qcm0=dummy_pulsars[0],
+        qrm0=dummy_pulsars[0],
+    )
+
+    with open(
+        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{sched.name}_qrm0_seq0_instr.json",
+    )
+
+    # To regenerate the baseline assembly for this test uncomment these lines.
+
+    # import shutil
+    #
+    # shutil.copy(
+    #     compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     baseline_assembly,
+    # )
+
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+
+    assert list(program) == list(exp_program)
+
+
+def test_acq_declaration_dict_append_mode(load_example_transmon_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    repetitions = 256
+
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    compiled_ssro_sched = qcompile(
+        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    with open(
+        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0"}
+    assert acquisitions["0"] == {"num_bins": 2 * 256, "index": 0}
+
+
+def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    allxy = allxy_sched("q0")
+    compiled_allxy_sched = qcompile(
+        allxy, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    with open(
+        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0"}
+    assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+def _strip_comments(program: str):
+    # helper function for comparing programs
+    stripped_program = []
+    for line in program.split("\n"):
+        if "#" in line:
+            line = line.split("#")[0]
+        line = line.rstrip()  # remove trailing whitespace
+        stripped_program.append(line)
+    return stripped_program
