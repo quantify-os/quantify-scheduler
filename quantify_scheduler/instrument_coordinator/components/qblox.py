@@ -106,17 +106,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.set("reference_source", settings.ref)
 
-        self.instrument.set("reference_source", settings.ref)
-
-        if settings.offset_ch0_path0 is not None:
-            self.instrument.set(
-                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
-            )
-        if settings.offset_ch0_path1 is not None:
-            self.instrument.set(
-                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
-            )
-
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
@@ -241,6 +230,25 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        super()._configure_global_settings(settings)
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set("out1_dac_offset", settings.offset_ch0_path1)
+        if settings.offset_ch1_path0 is not None:
+            self.instrument.set("out2_dac_offset", settings.offset_ch1_path0)
+        if settings.offset_ch1_path1 is not None:
+            self.instrument.set("out3_dac_offset", settings.offset_ch1_path1)
+
 
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
@@ -343,6 +351,21 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        super()._configure_global_settings(settings)
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set("out1_dac_offset", settings.offset_ch0_path1)
+
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
@@ -382,13 +405,13 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
             self.instrument.set("lo1_freq", settings.lo1_freq)
 
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("offset_I_ch0", settings.offset_ch0_path0)
+            self.instrument.set("out0_dac_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("offset_Q_ch0", settings.offset_ch0_path1)
+            self.instrument.set("out0_dac_offset_path1", settings.offset_ch0_path1)
         if settings.offset_ch1_path0 is not None:
-            self.instrument.set("offset_I_ch1", settings.offset_ch1_path0)
+            self.instrument.set("out1_dac_offset_path0", settings.offset_ch1_path0)
         if settings.offset_ch1_path1 is not None:
-            self.instrument.set("offset_Q_ch1", settings.offset_ch1_path1)
+            self.instrument.set("out1_dac_offset_path1", settings.offset_ch1_path1)
 
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
@@ -418,15 +441,9 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             self.instrument.set("lo1_freq", settings.lo1_freq)
 
         if settings.offset_ch0_path0 is not None:
-            logger.warning(
-                "'offset_ch0_path0' was not set. This functionality is not yet"
-                "implemented in the Pulsar QRM-RF driver."
-            )
+            self.instrument.set("out0_dac_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            logger.warning(
-                "'offset_ch0_path1' was not set. This functionality is not yet"
-                "implemented in the Pulsar QRM-RF driver."
-            )
+            self.instrument.set("out0_dac_offset_path1", settings.offset_ch0_path1)
 
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
