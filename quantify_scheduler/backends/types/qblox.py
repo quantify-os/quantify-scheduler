@@ -143,7 +143,7 @@ class BasebandModuleSettings(BaseModuleSettings):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any]
+        cls, mapping: Dict[str, Any], **kwargs
     ) -> BasebandModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -155,7 +155,7 @@ class BasebandModuleSettings(BaseModuleSettings):
         mapping
         """
         del mapping  # not used
-        return cls()
+        return cls(**kwargs)
 
 
 @dataclass
@@ -171,7 +171,9 @@ class PulsarSettings(BaseModuleSettings):
     exception in the instrument coordinator component otherwise."""
 
     @classmethod
-    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
+    def extract_settings_from_mapping(
+        cls, mapping: Dict[str, Any], **kwargs
+    ) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -182,7 +184,7 @@ class PulsarSettings(BaseModuleSettings):
         """
         ref: str = mapping["ref"]
         assert ref in ("internal", "external")
-        return cls(ref=ref)
+        return cls(ref=ref, **kwargs)
 
 
 @dataclass
@@ -199,7 +201,9 @@ class RFModuleSettings(BaseModuleSettings):
     """The frequency of Output 1 (O1) LO."""
 
     @classmethod
-    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> RFModuleSettings:
+    def extract_settings_from_mapping(
+        cls, mapping: Dict[str, Any], **kwargs
+    ) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         an `RFModuleSettings` object from it.
@@ -208,16 +212,17 @@ class RFModuleSettings(BaseModuleSettings):
         ----------
         mapping
         """
-        kwargs = dict()
+        rf_settings = dict()
 
         complex_output_0 = mapping.get("complex_output_0")
         complex_output_1 = mapping.get("complex_output_1")
         if complex_output_0:
-            kwargs["lo0_freq"] = complex_output_0.get("lo_freq")
+            rf_settings["lo0_freq"] = complex_output_0.get("lo_freq")
         if complex_output_1:
-            kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
+            rf_settings["lo1_freq"] = complex_output_1.get("lo_freq")
 
-        return cls(**kwargs)
+        combined_settings = {**rf_settings, **kwargs}
+        return cls(**combined_settings)
 
 
 @dataclass
@@ -228,7 +233,9 @@ class PulsarRFSettings(RFModuleSettings, PulsarSettings):
     """
 
     @classmethod
-    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
+    def extract_settings_from_mapping(
+        cls, mapping: Dict[str, Any], **kwargs
+    ) -> PulsarRFSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         an `PulsarRFSettings` object from it.
@@ -239,7 +246,11 @@ class PulsarRFSettings(RFModuleSettings, PulsarSettings):
         """
         rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
         pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
-        combined_settings = {**rf_settings.to_dict(), **pulsar_settings.to_dict()}
+        combined_settings = {
+            **rf_settings.to_dict(),
+            **pulsar_settings.to_dict(),
+            **kwargs,
+        }
         return cls(**combined_settings)
 
 

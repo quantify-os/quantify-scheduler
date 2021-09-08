@@ -1140,10 +1140,41 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
+        self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
+
+    def _configure_mixer_offsets(
+        self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
+    ) -> BaseModuleSettings:
+        """
+        We configure the mixer offsets in a later step such that it can be normalized
+        depending on the device used.
+        """
+        supported_outputs = ("complex_output_0", "complex_output_1")
+        for output_idx, output_label in enumerate(supported_outputs):
+            if output_label not in hw_mapping:
+                continue
+
+            output_cfg = hw_mapping[output_label]
+            if output_idx == 0:
+                settings.offset_ch0_path0 = (
+                    output_cfg.get("dc_mixer_offset_I", 0.0) / self.awg_output_volt
+                )
+                settings.offset_ch0_path1 = (
+                    output_cfg.get("dc_mixer_offset_Q", 0.0) / self.awg_output_volt
+                )
+            else:
+                settings.offset_ch1_path0 = (
+                    output_cfg.get("dc_mixer_offset_I", 0.0) / self.awg_output_volt
+                )
+                settings.offset_ch1_path1 = (
+                    output_cfg.get("dc_mixer_offset_Q", 0.0) / self.awg_output_volt
+                )
+
+        return settings
 
     @abstractmethod
     def update_settings(self):
