@@ -30,7 +30,6 @@ from quantify_scheduler.helpers.schedule import (
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
-# FIXME: rename to ScheduleGettableSingleQubit
 class ScheduleGettableSingleChannel:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
@@ -50,7 +49,7 @@ class ScheduleGettableSingleChannel:
         schedule_function: Callable[..., types.Schedule],
         schedule_kwargs: Dict[str, Any],
         real_imag: bool = True,
-        batched=False,
+        batched: bool = False,
         max_batch_size: int = 1024,
     ):
         """
@@ -60,7 +59,8 @@ class ScheduleGettableSingleChannel:
         Parameters
         ----------
         quantum_device
-            The qcodes instrument.
+            The qcodes instrument representing the quantum device under test (DUT)
+            containing quantum device properties and setup configuration information.
         schedule_function
             A function which returns a :class:`~quantify_scheduler.types.Schedule`.
         schedule_kwargs
@@ -72,11 +72,11 @@ class ScheduleGettableSingleChannel:
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
         batched
-            used to indicate if the experiment is performed in batches or in an
+            Used to indicate if the experiment is performed in batches or in an
             iterative fashion.
         max_batch_size:
-            determines the maximum number of points to acquire when acquiring in batched
-            mode. Can be used to split a program up in parts if required due to hardware
+            Determines the maximum number of points to acquire when acquiring in batched
+            mode. Can be used to split up a program in parts if required due to hardware
             constraints.
         """  # pylint: disable=line-too-long
 
@@ -132,8 +132,8 @@ class ScheduleGettableSingleChannel:
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
-        # Currently only supported for weighted integration assert that the schedule is
-        # compatible with that.
+        # Currently only supported for weighted integration.
+        # Assert that the schedule is compatible with that.
         assert acq_metadata.acq_return_type == complex
         acquired_data = instr_coordinator.retrieve_acquisition()
 
