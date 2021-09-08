@@ -1,5 +1,22 @@
 {
   "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+  "cluster0": {
+    "ref": "internal",
+    "instrument_type": "Cluster",
+    "cl_qcm0": {
+      "instrument_type": "QCM",
+      "ref": "internal",
+      "complex_output_0": {
+        "line_gain_db": 0,
+        "lo_name": "lo0",
+        "seq0": {
+          "port": "q4:mw",
+          "clock": "q4.01",
+          "interm_freq": 50e6
+        }
+    }
+  }
+  },
   "qcm0": {
     "instrument_type": "Pulsar_QCM",
     "ref": "internal",

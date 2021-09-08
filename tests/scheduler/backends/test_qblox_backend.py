@@ -23,6 +23,7 @@ from qblox_instruments import build
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
 
+import quantify_scheduler
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.gate_library import Reset, Measure, X
 from quantify_scheduler.pulse_library import (
@@ -48,13 +49,22 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
     generate_uuid_from_wf_data,
 )
+
+from quantify_scheduler.schedules.timedomain_schedules import (
+    readout_calibration_sched,
+    allxy_sched,
+)
 from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import QASMRuntimeSettings
+from quantify_scheduler.backends.types.qblox import (
+    QASMRuntimeSettings,
+    BasebandModuleSettings,
+)
+from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.instrument_compilers import (
-    Pulsar_QCM,
-    Pulsar_QRM,
-    Pulsar_QCM_RF,
-    Pulsar_QRM_RF,
+    QcmModule,
+    QrmModule,
+    QcmRfModule,
+    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
@@ -92,7 +102,7 @@ def hardware_cfg_baseband():
         "qcm0": {
             "name": "qcm0",
             "instrument_type": "Pulsar_QCM",
-            "ref": "int",
+            "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
@@ -119,7 +129,7 @@ def hardware_cfg_multiplexing():
         "qcm0": {
             "name": "qcm0",
             "instrument_type": "Pulsar_QCM",
-            "ref": "int",
+            "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
@@ -198,6 +208,28 @@ def pulse_only_schedule():
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    determine_absolute_timing(sched)
+    return sched
+
+
+@pytest.fixture
+def cluster_only_schedule():
+    sched = Schedule("cluster_only_schedule")
+    sched.add(Reset("q4"))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q4:mw",
+            duration=20e-9,
+            clock="q4.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q4:mw", clock="q4.01"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q4.01", freq=5e9)])
     determine_absolute_timing(sched)
     return sched
 
@@ -432,6 +464,8 @@ def test_find_all_port_clock_combinations():
         ("q2:mw", "q2.01"),
         ("q2:res", "q2.ro"),
         ("q3:res", "q3.ro"),
+        ("q3:mw", "q3.01"),
+        ("q4:mw", "q4.01"),
     }
     assert portclocks == answer
 
@@ -439,12 +473,12 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 8
+    assert len(portclock_map.keys()) == 9
 
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencer():
-    class TestPulsar(Pulsar_QCM):
+    class TestPulsar(QcmModule):
         def __init__(self):
             super().__init__(
                 parent=None,
@@ -468,6 +502,12 @@ def test_simple_compile(pulse_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+
+
+def test_compile_cluster(cluster_only_schedule):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
 
 
 def test_simple_compile_multiplexing(
@@ -534,21 +574,6 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
         qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
-def test_wrong_bin_mode(pulse_only_schedule):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    sched = copy.deepcopy(pulse_only_schedule)
-    sched.add(
-        SSBIntegrationComplex(
-            duration=100e-9, port="q0:res", clock="q0.ro", bin_mode=BinMode.APPEND
-        )
-    )
-
-    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
-    with pytest.raises(NotImplementedError):
-        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
-
-
 def test_compile_with_rel_time(
     dummy_pulsars, pulse_only_schedule_with_operation_timing
 ):
@@ -598,20 +623,20 @@ def test_compile_with_pulse_stitching(
 
 
 def test_qcm_acquisition_error():
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qcm._acquisitions[0] = 0
 
     with pytest.raises(RuntimeError):
-        qcm._distribute_data()
+        qcm.distribute_data()
 
 
 # --------- Test QASMProgram class ---------
 
 
 def test_emit():
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm)
@@ -622,7 +647,7 @@ def test_emit():
 
 
 def test_auto_wait():
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
@@ -648,7 +673,7 @@ def test_wait_till_start_then_play():
         timing=4e-9,
         pulse_settings=runtime_settings,
     )
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
@@ -683,7 +708,7 @@ def test_wait_till_start_then_acquire():
         data=minimal_pulse_data,
         timing=4e-9,
     )
-    qrm = Pulsar_QRM(
+    qrm = QrmModule(
         None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
     )
     qasm = QASMProgram(qrm.sequencers["seq0"])
@@ -721,7 +746,7 @@ def test_pulse_stitching_qasm_prog():
         timing=4e-9,
         pulse_settings=runtime_settings,
     )
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
@@ -742,7 +767,7 @@ def test_staircase_qasm_prog(start_amp, final_amp):
         timing=4e-9,
         pulse_settings=runtime_settings,
     )
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
@@ -774,7 +799,7 @@ def test_loop():
     num_rep = 10
     reg = "R0"
 
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
@@ -832,7 +857,7 @@ def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisi
     )
     for instr in container.instrument_compilers.values():
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
-            instr._distribute_data()
+            instr.prepare()
             instr._determine_scope_mode_acquisition_sequencer()
     scope_mode_sequencer = container.instrument_compilers[
         "qrm0"
@@ -866,16 +891,16 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
 
 def test_container_add_from_type(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", Pulsar_QCM, HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", QcmModule, HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["qcm0"], Pulsar_QCM)
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
 
 def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
     assert "qcm0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["qcm0"], Pulsar_QCM)
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
 
 def test_from_mapping(pulse_only_schedule):
@@ -1018,7 +1043,199 @@ def test_markers():
             assert on_marker == device_compiler.marker_configuration["start"]
             assert off_marker == device_compiler.marker_configuration["end"]
 
-    _confirm_correct_markers(program["qcm0"], Pulsar_QCM)
-    _confirm_correct_markers(program["qrm0"], Pulsar_QRM)
-    _confirm_correct_markers(program["qcm_rf0"], Pulsar_QCM_RF)
-    _confirm_correct_markers(program["qrm_rf0"], Pulsar_QRM_RF)
+    _confirm_correct_markers(program["qcm0"], QcmModule)
+    _confirm_correct_markers(program["qrm0"], QrmModule)
+    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
+    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
+
+
+# ------------------- types -------------------
+
+
+def test_pulsar_rf_extract_from_mapping():
+    hw_map = HARDWARE_MAPPING["qcm_rf0"]
+    types.PulsarRFSettings.extract_settings_from_mapping(hw_map)
+
+
+def test_cluster_settings(pulse_only_schedule):
+    container = compiler_container.CompilerContainer.from_mapping(
+        pulse_only_schedule, HARDWARE_MAPPING
+    )
+    cluster_compiler = container.instrument_compilers["cluster0"]
+    cluster_compiler.prepare()
+    cl_qcm0 = cluster_compiler.instrument_compilers["cl_qcm0"]
+    assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
+
+
+def assembly_valid(compiled_schedule, qcm0, qrm0):
+    """
+    Test helper that takes a compiled schedule and verifies if the assembly is valid
+    by passing it to a dummy qcm and qrm.
+
+    Asssumes only qcm0 and qrm0 are used.
+    """
+
+    # test the program for the qcm
+    qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
+        "seq_fn"
+    ]
+    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.arm_sequencer(0)
+    uploaded_waveforms = qcm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+    # test the program for the qrm
+    qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
+        "seq_fn"
+    ]
+    qrm0.sequencer0_waveforms_and_program(qrm0_seq0_json)
+    qrm0.arm_sequencer(0)
+    uploaded_waveforms = qrm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+
+def test_acq_protocol_append_mode_valid_assembly_ssro(
+    dummy_pulsars, load_example_transmon_config
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    repetitions = 256
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    compiled_ssro_sched = qcompile(
+        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    assembly_valid(
+        compiled_schedule=compiled_ssro_sched,
+        qcm0=dummy_pulsars[0],
+        qrm0=dummy_pulsars[0],
+    )
+
+    with open(
+        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{ssro_sched.name}_qrm0_seq0_instr.json",
+    )
+
+    # To regenerate the baseline image for this test uncomment these lines.
+    #
+    # import shutil
+    # shutil.copy(
+    #     compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     baseline_assembly,
+    # )
+
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+
+    assert list(program) == list(exp_program)
+
+
+def test_acq_protocol_average_mode_valid_assembly_allxy(
+    dummy_pulsars, load_example_transmon_config
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    repetitions = 256
+    sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
+    compiled_allxy_sched = qcompile(
+        sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    assembly_valid(
+        compiled_schedule=compiled_allxy_sched,
+        qcm0=dummy_pulsars[0],
+        qrm0=dummy_pulsars[0],
+    )
+
+    with open(
+        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{sched.name}_qrm0_seq0_instr.json",
+    )
+
+    # To regenerate the baseline assembly for this test uncomment these lines.
+
+    # import shutil
+    #
+    # shutil.copy(
+    #     compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+    #     baseline_assembly,
+    # )
+
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+
+    assert list(program) == list(exp_program)
+
+
+def test_acq_declaration_dict_append_mode(load_example_transmon_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    repetitions = 256
+
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    compiled_ssro_sched = qcompile(
+        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    with open(
+        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0"}
+    assert acquisitions["0"] == {"num_bins": 2 * 256, "index": 0}
+
+
+def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    allxy = allxy_sched("q0")
+    compiled_allxy_sched = qcompile(
+        allxy, load_example_transmon_config(), HARDWARE_MAPPING
+    )
+
+    with open(
+        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    ) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0"}
+    assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+def _strip_comments(program: str):
+    # helper function for comparing programs
+    stripped_program = []
+    for line in program.split("\n"):
+        if "#" in line:
+            line = line.split("#")[0]
+        line = line.rstrip()  # remove trailing whitespace
+        stripped_program.append(line)
+    return stripped_program

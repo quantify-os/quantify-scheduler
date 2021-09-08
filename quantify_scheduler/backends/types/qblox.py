@@ -117,16 +117,9 @@ class LOSettings(DataClassJsonMixin):
 
 
 @dataclass
-class PulsarSettings(DataClassJsonMixin):
-    """
-    Global settings for the pulsar to be set in the InstrumentCoordinator component.
-    This is kept separate from the settings that can be set on a per sequencer basis,
-    which are specified in `SequencerSettings`.
-    """
+class BaseModuleSettings(DataClassJsonMixin):
+    """Shared settings between all the Qblox modules."""
 
-    ref: str
-    """The reference source. Should either be "internal" or "external", will raise an
-    exception in the instrument coordinator component otherwise."""
     scope_mode_sequencer: Optional[str] = None
     """The name of the sequencer that triggers scope mode Acquisitions. Only a single
     sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
@@ -141,6 +134,42 @@ class PulsarSettings(DataClassJsonMixin):
     offset_ch1_path1: Union[float, None] = None
     """The DC offset on path 1 of channel 1."""
 
+
+@dataclass
+class BasebandModuleSettings(BaseModuleSettings):
+    """
+    Settings for a baseband module.
+    """
+
+    @classmethod
+    def extract_settings_from_mapping(
+        cls, mapping: Dict[str, Any]
+    ) -> BasebandModuleSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a `BasebandModuleSettings` object from it. Class exists to ensure that the
+        cluster baseband modules don't need special treatment in the rest of the code.
+
+        Parameters
+        ----------
+        mapping
+        """
+        del mapping  # not used
+        return cls()
+
+
+@dataclass
+class PulsarSettings(BaseModuleSettings):
+    """
+    Global settings for the pulsar to be set in the InstrumentCoordinator component.
+    This is kept separate from the settings that can be set on a per sequencer basis,
+    which are specified in `SequencerSettings`.
+    """
+
+    ref: str = "internal"
+    """The reference source. Should either be "internal" or "external", will raise an
+    exception in the instrument coordinator component otherwise."""
+
     @classmethod
     def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
         """
@@ -152,11 +181,12 @@ class PulsarSettings(DataClassJsonMixin):
         mapping
         """
         ref: str = mapping["ref"]
+        assert ref in ("internal", "external")
         return cls(ref=ref)
 
 
 @dataclass
-class PulsarRFSettings(PulsarSettings):
+class RFModuleSettings(BaseModuleSettings):
     """
     Global settings for the pulsar to be set in the control stack component. This is
     kept separate from the settings that can be set on a per sequencer basis, which are
@@ -168,18 +198,17 @@ class PulsarRFSettings(PulsarSettings):
     lo1_freq: Union[float, None] = None
     """The frequency of Output 1 (O1) LO."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
-        a `PulsarSettings` object from it.
+        an `RFModuleSettings` object from it.
 
         Parameters
         ----------
         mapping
         """
-        ref: str = mapping["ref"]
-        kwargs = {}
+        kwargs = dict()
 
         complex_output_0 = mapping.get("complex_output_0")
         complex_output_1 = mapping.get("complex_output_1")
@@ -188,7 +217,30 @@ class PulsarRFSettings(PulsarSettings):
         if complex_output_1:
             kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
 
-        return PulsarRFSettings(ref=ref, **kwargs)
+        return cls(**kwargs)
+
+
+@dataclass
+class PulsarRFSettings(RFModuleSettings, PulsarSettings):
+    """
+    Settings specific for a Pulsar RF. Effectively, combines the pulsar specific
+    settings with the RF specific settings.
+    """
+
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        an `PulsarRFSettings` object from it.
+
+        Parameters
+        ----------
+        mapping
+        """
+        rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
+        pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
+        combined_settings = {**rf_settings.to_dict(), **pulsar_settings.to_dict()}
+        return cls(**combined_settings)
 
 
 @dataclass

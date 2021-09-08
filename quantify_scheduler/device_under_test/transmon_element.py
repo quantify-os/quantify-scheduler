@@ -31,7 +31,7 @@ class TransmonElement(Instrument):
 
         .. jupyter-execute::
 
-            from quantify_scheduler.device_elements import transmon_element
+            from quantify_scheduler.device_under_test import transmon_element
             q0 = transmon_element.TransmonElement("q0")
 
             q0.print_readable_snapshot()

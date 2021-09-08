@@ -21,6 +21,7 @@ from quantify_scheduler.backends.types.qblox import (
     PulsarRFSettings,
     SequencerSettings,
 )
+from quantify_scheduler.types import AcquisitionMetadata
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -181,7 +182,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     _settings_type = PulsarSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = False
-    """Specifies whether the device posesses an internal LO."""
+    """Specifies whether the device possesses an internal LO."""
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQCMComponent."""
@@ -303,9 +304,14 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
         if "acq_mapping" in program:  # Resets everything to do with acquisition.
+
             acq_mapping = program.pop("acq_mapping")
+            acq_metadata = program.pop("acq_metadata")
             self._acquisition_manager = _QRMAcquisitionManager(
-                self, self._number_of_sequencers, acquisition_mapping=acq_mapping
+                self,
+                number_of_sequencers=self._number_of_sequencers,
+                acquisition_mapping=acq_mapping,
+                acquisition_metadata=acq_metadata,
             )
         else:
             self._acquisition_manager = None
@@ -363,7 +369,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     _settings_type = PulsarRFSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = True
-    """Specifies whether the device posesses an internal LO."""
+    """Specifies whether the device possesses an internal LO."""
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -399,7 +405,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     _settings_type = PulsarRFSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = True
-    """Specifies whether the device posesses an internal LO."""
+    """Specifies whether the device possesses an internal LO."""
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -449,6 +455,7 @@ class _QRMAcquisitionManager:
         parent: PulsarQRMComponent,
         number_of_sequencers: int,
         acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
+        acquisition_metadata: AcquisitionMetadata,
     ):
         """
         Constructor for `_QRMAcquisitionManager`.
@@ -464,12 +471,16 @@ class _QRMAcquisitionManager:
             `acq_channel` and `acq_index` to the sequencer name and acquisition
             protocol. The key is a tuple (`acq_channel`, `acq_index`), the values
             (seq_name, protocol).
+        acquisition_metadata
+            Provides a summary of the used channels bins and acquisition protocols.
         """
         self.parent: PulsarQRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.acquisition_mapping: Dict[
             Tuple[int, int], Tuple[str, str]
         ] = acquisition_mapping
+        self.acquisition_metadata: AcquisitionMetadata = acquisition_metadata
+
         self.scope_mode_sequencer: Optional[str] = None
         self.seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(number_of_sequencers)
@@ -490,6 +501,7 @@ class _QRMAcquisitionManager:
             The acquisitions with the protocols specified in the `acq_mapping` as a
             `dict` with the `(acq_channel, acq_index)` as keys.
         """
+
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
             "ssb_integration_complex": self._get_integration_data,
@@ -500,18 +512,38 @@ class _QRMAcquisitionManager:
         self._store_scope_acquisition()
 
         formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
+
         for seq_idx in range(self.number_of_sequencers):
+            acq_metadata = self.acquisition_metadata[f"seq{seq_idx}"]
+            acquisition_function: Callable = protocol_to_function_mapping[
+                acq_metadata.acq_protocol
+            ]
+
+            # retrieve the raw data from the qrm sequencer module
             acquisitions = self.instrument.get_acquisitions(seq_idx)
-            for acq_channel, acq_index in self.acquisition_mapping.keys():
-                if self._get_sequencer_index(acq_channel, acq_index) != seq_idx:
-                    continue
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                # the acquisition_function retrieves the right part of the acquisitions
+                # data structure returned by the qrm
+                i_vals, q_vals = acquisition_function(
+                    acquisitions=acquisitions, acq_channel=acq_channel
+                )
 
-                protocol = self._get_protocol(acq_channel, acq_index)
-                acquisition_function: Callable = protocol_to_function_mapping[protocol]
+                # the qblox compilation backend verifies that the
+                # acquisition indices start at 0 and increment in steps of 1.
+                # this enables us to simply stride over the bin_idx as if they
+                # correspond to acq_indices.
+                for acq_idx in acq_indices:
+                    acq_stride = len(acq_indices)
+                    # N.B. the stride idx ensures that in append mode all data
+                    # corresponding to the same acq_index appears in the
+                    # same acq_ch, acq_idx part of the returned formatted acquisitions.
+                    formatted_acquisitions[
+                        AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
+                    ] = (
+                        np.array(i_vals[acq_idx::acq_stride]),
+                        np.array(q_vals[acq_idx::acq_stride]),
+                    )
 
-                formatted_acquisitions[
-                    AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_index)
-                ] = acquisition_function(acquisitions, acq_channel, acq_index)
         return formatted_acquisitions
 
     def _store_scope_acquisition(self):
@@ -522,7 +554,7 @@ class _QRMAcquisitionManager:
         if sequencer_index > self.number_of_sequencers:
             raise ValueError(
                 f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}. QRM has only "
+                f"{sequencer_index}. A QRM has only "
                 f"{self.number_of_sequencers} sequencers."
             )
         scope_ch_and_idx = self._get_scope_channel_and_index()
@@ -568,18 +600,15 @@ class _QRMAcquisitionManager:
         return ch_and_idx
 
     def _get_scope_data(
-        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
+        self, acquisitions: dict, acq_channel: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Retrieves the scope mode acquisition associated with `acq_channel` and
-        `acq_index`.
+        Retrieves the scope mode acquisition associated with an `acq_channel`.
 
         Parameters
         ----------
         acq_channel
             The acq_channel to get the scope mode acquisition for.
-        acq_index
-            The acq_index to get the scope mode acquisition for.
 
         Returns
         -------
@@ -594,8 +623,7 @@ class _QRMAcquisitionManager:
             if scope_data[path_label]["out-of-range"]:
                 logger.warning(
                     f"The scope mode data of {path_label} of {self.parent.name} with "
-                    f"acq_channel={acq_channel} and acq_index={acq_index} was "
-                    f"out-of-range."
+                    f"acq_channel={acq_channel}  was out-of-range."
                 )
         # NB hardware already divides by avg_count for scope mode
         scope_data_i = scope_data["path0"]["data"]
@@ -603,20 +631,15 @@ class _QRMAcquisitionManager:
         return scope_data_i, scope_data_q
 
     def _get_integration_data(
-        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
+        self, acquisitions: dict, acq_channel: int = 0
     ) -> Tuple[float, float]:
         """
-        Retrieves the integrated acquisition data associated with `acq_channel` and
-        `acq_index`.
+        Retrieves the integrated acquisition data associated with an `acq_channel`.
 
         Parameters
         ----------
         acquisitions
             The acquisitions dict as returned by the sequencer.
-        acq_channel
-            The acq_channel to get integrated acquisition data for.
-        acq_index
-            The acq_index to get the integrated acquisition data for.
 
         Returns
         -------
@@ -625,18 +648,15 @@ class _QRMAcquisitionManager:
         q_data
             The integrated data for path1.
         """
+
         bin_data = self._get_bin_data(acquisitions, acq_channel)
+
         i_data, q_data = (
             bin_data["integration"]["path0"],
             bin_data["integration"]["path1"],
         )
-        if acq_index > len(i_data):
-            raise ValueError(
-                f"Attempting to access acq_index {acq_index} on "
-                f"{self.parent.name} but only {len(i_data)} values found "
-                f"in acquisition data."
-            )
-        return i_data[acq_index], q_data[acq_index]
+
+        return i_data, q_data
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
@@ -687,3 +707,156 @@ class _QRMAcquisitionManager:
                 f'which has index {channel_data["index"]}.'
             )
         return channel_data["acquisition"]["bins"]
+
+
+ClusterModule = Union[
+    PulsarQCMComponent, PulsarQRMComponent, PulsarQRMRFComponent, PulsarQCMRFComponent
+]
+"""Type that combines all the possible modules for a cluster."""
+
+
+class ClusterComponent(base.InstrumentCoordinatorComponentBase):
+    """
+    Class that represents an instrument coordinator component for a Qblox cluster.
+    """
+
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
+        """
+        Create a new instance of the ClusterComponent.
+
+        Parameters
+        ----------
+        instrument:
+            Reference to the cluster driver object.
+        kwargs
+            Keyword arguments.
+        """
+        super().__init__(instrument, **kwargs)
+        self._cluster_modules: Dict[str, ClusterModule] = dict()
+
+    def add_module(self, *module: Instrument) -> None:
+        """
+        Add a module to the cluster.
+
+        Parameters
+        ----------
+        module:
+            The driver of the module to add.
+        """
+        for mod in module:
+            self._cluster_modules[
+                mod.name
+            ] = _construct_component_from_instrument_driver(mod)
+
+    @property
+    def is_running(self) -> bool:
+        """Returns true if any of the modules are currently running."""
+        return any([comp.is_running for comp in self._cluster_modules.values()])
+
+    def start(self) -> None:
+        """Starts all the modules in the cluster."""
+        for comp in self._cluster_modules.values():
+            comp.start()
+
+    def stop(self) -> None:
+        """Stops all the modules in the cluster."""
+        for comp in self._cluster_modules.values():
+            comp.stop()
+
+    def _configure_cmm_settings(self, settings: Dict[str, Any]):
+        """
+        Sets all the settings of the cmm that have been provided by the backend.
+
+        Parameters
+        ----------
+        settings:
+            A dictionary containing all the settings to set.
+        """
+        if "reference_source" in settings:
+            self.instrument.set("reference_source", settings["reference_source"])
+
+    def prepare(self, options: Any) -> None:
+        """
+        Prepares the cluster component for execution of a schedule.
+
+        Parameters
+        ----------
+        options:
+            The compiled instructions to configure the cluster to.
+        """
+        settings = options.pop("settings")
+        self._configure_cmm_settings(settings=settings)
+        for name, comp_options in options.items():
+            if name not in self._cluster_modules:
+                raise KeyError(
+                    f"Attempting to prepare module {name} of cluster {self.name}, while"
+                    f" module has not been added to the cluster component."
+                )
+            self._cluster_modules[name].prepare(comp_options)
+
+    def retrieve_acquisition(self) -> Any:
+        """
+        Retrieves all the data from the instruments.
+
+        Returns
+        -------
+        :
+            The acquired data.
+        """
+        acquisitions: Dict[Tuple[int, int], Any] = dict()
+        for comp in self._cluster_modules.values():
+            comp_acq = comp.retrieve_acquisition()
+            acquisitions.update(comp_acq)
+        return acquisitions
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        """
+        Blocks until all the components are idle.
+
+        Parameters
+        ----------
+        timeout_sec:
+            The time in seconds until the instrument is considered to have timed out.
+        """
+        for comp in self._cluster_modules.values():
+            comp.wait_done(timeout_sec=timeout_sec)
+
+    def write_raw(self, cmd: str) -> None:
+        self.instrument.write_raw(cmd)
+
+    def ask_raw(self, cmd: str) -> str:
+        return self.instrument.ask_raw(cmd)
+
+
+def _construct_component_from_instrument_driver(
+    driver: Instrument,
+) -> ClusterModule:
+    """
+    Determines the correct and constructs an ic component from the qblox_instruments
+    driver.
+
+    Parameters
+    ----------
+    driver
+        The instrument driver.
+
+    Returns
+    -------
+    :
+        The correct ic component.
+    """
+    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
+    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
+        raise TypeError(
+            f"Invalid driver type passed for {driver.name}. Cannot "
+            f"construct an instrument coordinator component for "
+            f"type {type(driver)}."
+        )
+    is_rf: bool = driver._get_lo_hw_present()
+    icc_class: type = {
+        (True, False): PulsarQCMComponent,
+        (True, True): PulsarQCMRFComponent,
+        (False, False): PulsarQRMComponent,
+        (False, True): PulsarQRMRFComponent,
+    }[(is_qcm, is_rf)]
+    return icc_class(driver)

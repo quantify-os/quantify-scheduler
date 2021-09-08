@@ -10,6 +10,7 @@ from typing_extensions import Literal
 import jsonschema
 from quantify_core.utilities.general import load_json_schema
 
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify_scheduler.pulse_library import (
     DRAGPulse,
@@ -178,6 +179,11 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
         if op["gate_info"]["operation_type"] == "measure":
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
+
+                # If the user specifies bin-mode use that otherwise use a default
+                # better would be to get it from the config file in the "or"
+                bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE
+
                 if q_cfg["params"]["acquisition"] == "SSBIntegrationComplex":
                     # readout pulse
                     op.add_pulse(
@@ -196,6 +202,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             acq_index=op["gate_info"]["acq_index"][idx],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
+                            bin_mode=bin_mode,
                         )
                     )
 
@@ -362,7 +369,7 @@ def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
 ) -> CompiledSchedule:
     """
-    Compile and assemble a :class:`~.Schedule` into a a :class:`~.CompiledSchedule`
+    Compile and assemble a :class:`~.Schedule` into a :class:`~.CompiledSchedule`
     ready for execution using the :class:`~.InstrumentCoordinator`.
 
     Parameters

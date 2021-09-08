@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+# pylint: disable=comparison-with-callable
 """QASM program class for Qblox backend."""
 from __future__ import annotations
 from contextlib import contextmanager
@@ -11,10 +12,13 @@ from columnar import columnar
 from columnar.exceptions import TableOverflowError
 
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import (
+    q1asm_instructions,
+    constants,
+    reserved_registers,
+    helpers,
+)
 from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.backends.qblox import helpers
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_abc
@@ -190,7 +194,7 @@ class QASMProgram:
             operation.timing, grid_time_ns=constants.GRID_TIME
         ):
             raise ValueError(
-                f"Start time of operation is invalid. Qblox QCM and QRM "
+                f"Start time of operation is invalid. Qblox QcmModule and QRM "
                 f"enforce a grid time of {constants.GRID_TIME} ns. Please "
                 f"make sure all operations start at an interval of "
                 f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
@@ -414,6 +418,7 @@ class QASMProgram:
             idx0,
             idx1,
             constants.GRID_TIME,
+            comment=f"Store acq in acq_channel:{measurement_idx}, bin_idx:{bin_idx}",
         )
         self.elapsed_time += constants.GRID_TIME
 
@@ -484,33 +489,128 @@ class QASMProgram:
                     f"acquisitions.\n\nError caused by acquisition:\n"
                     f"{repr(acquisition)}."
                 )
+
         self.time_last_acquisition_triggered = self.elapsed_time
         protocol_to_acquire_func_mapping = {
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
             "ssb_integration_complex": self._acquire_square,
         }
-        if acquisition.data["bin_mode"] != BinMode.AVERAGE:
-            raise NotImplementedError(
-                f"Invalid bin_mode, only {BinMode.AVERAGE} is currently supported by "
-                f"the Qblox backend.\n\nAttempting to use "
-                f"{acquisition.data['bin_mode']} for operation {repr(acquisition)}."
+
+        ################################################################################
+        # BinMode.AVERAGE
+        ################################################################################
+        if acquisition.data["bin_mode"] == BinMode.AVERAGE:
+
+            bin_idx = acquisition.data["acq_index"]
+
+            acquisition_func = protocol_to_acquire_func_mapping.get(
+                acquisition.data["protocol"], None
+            )
+            if acquisition_func is None:
+                raise ValueError(
+                    f"Attempting to use protocol "
+                    f"'{acquisition.data['protocol']}', which is not defined"
+                    f" in Qblox backend.\n\nError triggered because of acquisition"
+                    f" {repr(acquisition)}."
+                )
+            args = [
+                arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
+            ]
+            acquisition_func(*args)
+
+        ################################################################################
+        # BinMode.APPEND
+        ################################################################################
+
+        elif acquisition.data["bin_mode"] == BinMode.APPEND:
+            if acquisition.data["protocol"] == "trace":
+                raise NotImplementedError(
+                    f"Invalid combination of bin_mode and acquisition protocol, "
+                    f"{BinMode.APPEND} is currently only supported in combination with "
+                    f"the weighted integration based protocols in the Qblox backend."
+                    f"\n\nAttempting to use {acquisition.data['bin_mode']} for "
+                    f"operation {repr(acquisition)}."
+                )
+
+            # Add a line break for visual separation of acquisition.
+            self.emit(q1asm_instructions.NEW_LINE)
+
+            bin_idx = acquisition.data["acq_index"]
+
+            acq_channel = acquisition.data["acq_channel"]
+            # gettattr should be avoided, for bin allocation see #190
+            acq_bin_idx_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
             )
 
-        bin_idx = acquisition.data["acq_index"]
-
-        acquisition_func = protocol_to_acquire_func_mapping.get(
-            acquisition.data["protocol"], None
-        )
-        if acquisition_func is None:
-            raise ValueError(
-                f"Attempting to use protocol "
-                f"\"{acquisition.data['protocol']}\", which is not defined"
-                f" in Qblox backend.\n\nError triggered because of acquisition"
-                f" {repr(acquisition)}."
+            acquisition_func = protocol_to_acquire_func_mapping.get(
+                acquisition.data["protocol"], None
             )
-        args = [arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None]
-        acquisition_func(*args)
+
+            acq_channel_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
+            )
+
+            acq_idx0_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX0_CH{acq_channel}"
+            )
+            acq_idx1_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
+            )
+
+            # Need to store values in registers as the acquire weighted
+            # requires either all register inputs or all immediate values
+            self.emit(
+                q1asm_instructions.MOVE,
+                acq_channel,
+                acq_channel_reg,
+                comment=f"Store acq_channel in {acq_channel_reg}.",
+            )
+
+            # Explicit checking of acquisition function to ensure right
+            # explicit passing of arguments over list comprehension of args for
+            # readability.
+            if acquisition_func == self._acquire_weighted:
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    idx0,
+                    acq_idx0_reg,
+                    comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                )
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    idx1,
+                    acq_idx1_reg,
+                    comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                )
+
+                acquisition_func(
+                    acquisition=acquisition,
+                    bin_idx=acq_bin_idx_reg,
+                    idx0=acq_idx0_reg,
+                    idx1=acq_idx1_reg,
+                )
+            elif acquisition_func == self._acquire_square:
+                acquisition_func(
+                    acquisition=acquisition,
+                    bin_idx=acq_bin_idx_reg,
+                )
+            else:
+                raise NotImplementedError(
+                    "BinMode.APPEND is only compatible with acquisition protocols "
+                    "'ssb_integration_complex' and 'ssb_integration_complex'."
+                )
+
+            self.emit(
+                q1asm_instructions.ADD,
+                acq_bin_idx_reg,
+                1,
+                acq_bin_idx_reg,
+                comment=f"Increment bin_idx for ch{acq_channel}",
+            )
+            # Add a line break for visual separation of acquisition.
+            self.emit(q1asm_instructions.NEW_LINE)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -653,22 +753,21 @@ class QASMProgram:
 
         .. jupyter-execute::
 
-            import inspect, os, json
+            import inspect, json
             from quantify_scheduler.types import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-            import quantify_scheduler.schemas.examples as es
+            from quantify_scheduler.schemas.examples import utils
             from quantify_scheduler.backends.qblox import (
                 instrument_compilers, compiler_container
             )
 
-            esp = inspect.getfile(es)
-            map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
-            with open(map_f, "r") as f:
-                HARDWARE_MAPPING = json.load(f)
+            HARDWARE_MAPPING = utils.load_json_example_scheme(
+                "qblox_test_mapping.json"
+            )
 
             sched = Schedule("example")
             container = compiler_container.CompilerContainer(sched)
-            qcm = instrument_compilers.Pulsar_QCM(
+            qcm = instrument_compilers.QcmModule(
                 container,
                 "qcm0",
                 total_play_time=10,
@@ -680,7 +779,7 @@ class QASMProgram:
                 qasm.auto_wait(100)
 
             qasm.instructions
-        """  # FIXME replace json.load() quantify-scheduler#132 #pylint: disable=fixme
+        """
         comment = f"iterator for loop with label {label}"
 
         def gen_start():

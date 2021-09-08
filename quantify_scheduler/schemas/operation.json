@@ -80,7 +80,7 @@
        "type": "object",
        "additionalProperties": true,
        "description": "Info to generate an individual acquisition.",
-       "required": ["port", "t0"],
+       "required": ["port", "t0", "acq_channel", "acq_index", "acq_return_type"],
        "properties": {
          "port":
          {
@@ -101,7 +101,22 @@
          {
            "description": "The duration of the acquisition in seconds.",
            "type": ["number"]
+         },
+         "acq_channel":
+         {
+           "description": "The acquisition channel to use.",
+           "type": ["number"]
+         },
+         "acq_index":
+         {
+           "description": "The acquisition index where to store the result of the acquisition protocol.",
+           "type": ["number"]
+         },
+         "acq_return_type":
+         {
+           "description": "Describes the return type of an acquisition performed using this protocol."
          }
+
        }
      }
    },

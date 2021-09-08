@@ -8,7 +8,7 @@ import json
 from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List
+from typing import Optional, Dict, Any, Set, Tuple, List, Union
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -20,6 +20,7 @@ from quantify_core.data.handling import (
     gen_tuid,
 )
 
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.helpers import (
@@ -35,15 +36,24 @@ from quantify_scheduler.backends.qblox.constants import (
     SAMPLING_RATE,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import compiler_container
+
+# from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
+    BaseModuleSettings,
     PulsarSettings,
+    BasebandModuleSettings,
     PulsarRFSettings,
+    RFModuleSettings,
     SequencerSettings,
     QASMRuntimeSettings,
 )
+
+from quantify_scheduler.backends.qblox import reserved_registers
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
+from quantify_scheduler.helpers.schedule import (
+    _extract_acquisition_metadata_from_acquisitions,
+)
 
 
 class InstrumentCompiler(ABC):
@@ -59,7 +69,7 @@ class InstrumentCompiler(ABC):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
+        parent: "CompilerContainer",
         name: str,
         total_play_time: float,
         hw_mapping: Optional[Dict[str, Any]] = None,
@@ -126,7 +136,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
+        parent: "CompilerContainer",
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -248,12 +258,12 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 class Sequencer:
     """
     Abstract base class that specify the compilation steps on the sequencer level. The
-    distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
+    distinction between Pulsar QcmModule and Pulsar QrmModule is made by the subclasses.
     """
 
     def __init__(
         self,
-        parent: PulsarBase,
+        parent: QbloxBaseModule,
         name: str,
         portclock: Tuple[str, str],
         seq_settings: dict,
@@ -533,7 +543,9 @@ class Sequencer:
         return _generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_declaration_dict(
-        self, acquisitions: List[OpInfo]
+        self,
+        acquisitions: List[OpInfo],
+        repetitions: int,
     ) -> Dict[str, Any]:
         """
         Generates the "acquisitions" entry of the program json. It contains declaration
@@ -547,6 +559,8 @@ class Sequencer:
         ----------
         acquisitions:
             List of the acquisitions assigned to this sequencer.
+        repetitions:
+            The number of times to repeat execution of the schedule.
 
         Returns
         -------
@@ -555,28 +569,46 @@ class Sequencer:
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
 
-        def get_acq_channel(acq: OpInfo) -> int:
-            """Helper to extract the acq_channel."""
-            return acq.data["acq_channel"]
+        # acquisition metadata for acquisitions relevant to this sequencer only
+        acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
 
-        unique_channels = set(map(get_acq_channel, acquisitions))
-
+        # initialize an empty dictionary for the format required by pulsar
         acq_declaration_dict = dict()
-        for channel in unique_channels:
-            indices = list()
-            for acq in acquisitions:
-                if get_acq_channel(acq) == channel:
-                    indices.append(acq.data["acq_index"])
-            if min(indices) != 0:
+        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+
+            # Some sanity checks on the input for easier debugging.
+            if min(acq_indices) != 0:
                 raise ValueError(
                     f"Please make sure the lowest bin index used is 0. "
-                    f"Found: {min(indices)} as lowest bin for channel {channel}. "
+                    f"Found: {min(acq_indices)} as lowest bin for channel "
+                    f"{acq_channel}. Problem occurred for port {self.port} with"
+                    f" clock {self.clock}, which corresponds to {self.name} of "
+                    f"{self.parent.name}."
+                )
+            if len(acq_indices) != max(acq_indices) + 1:
+                raise ValueError(
+                    f"Please make sure the used bins increment by 1 starting from "
+                    f"0. Found: {max(acq_indices)} as the highest bin out of "
+                    f"{len(acq_indices)} for channel {acq_channel}, indicating "
+                    f"an acquisition_index was skipped. "
                     f"Problem occurred for port {self.port} with clock {self.clock},"
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
-            acq_declaration_dict[str(channel)] = {
-                "num_bins": max(indices) + 1,
-                "index": channel,
+
+            # Add the acquisition metadata to the acquisition declaration dict
+            if acq_metadata.bin_mode == BinMode.APPEND:
+                num_bins = repetitions * (max(acq_indices) + 1)
+            elif acq_metadata.bin_mode == BinMode.AVERAGE:
+                num_bins = max(acq_indices) + 1
+            else:
+                # currently the BinMode enum only has average and append.
+                # this check exists to catch unexpected errors if we add more
+                # BinModes in the future.
+                raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
+
+            acq_declaration_dict[str(acq_channel)] = {
+                "num_bins": num_bins,
+                "index": acq_channel,
             }
 
         return acq_declaration_dict
@@ -640,7 +672,7 @@ class Sequencer:
             The generated QASM program.
         """
         loop_label = "start"
-        loop_register = "R0"
+        loop_register = reserved_registers.REGISTER_REPETITIONS_LOOP
 
         qasm = QASMProgram(parent=self)
         # program header
@@ -650,6 +682,25 @@ class Sequencer:
         # program body
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
+
+        if len(acquisitions) > 1:
+            acq_metadata = _extract_acquisition_metadata_from_acquisitions(
+                self.acquisitions
+            )
+            # If bin mode append is used certain registers need to be initialized
+            # in the header part of the schedule
+            if acq_metadata.bin_mode == BinMode.APPEND:
+                for acq_channel in acq_metadata.acq_indices.keys():
+                    acq_bin_idx_reg = getattr(
+                        reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
+                    )
+                    qasm.emit(
+                        q1asm_instructions.MOVE,
+                        0,
+                        acq_bin_idx_reg,
+                        comment=f"Initialize acquisition bin_idx for ch{acq_channel}",
+                    )
+
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
 
@@ -808,7 +859,9 @@ class Sequencer:
                 self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
             )
         acq_declaration_dict = (
-            self._generate_acq_declaration_dict(self.acquisitions)
+            self._generate_acq_declaration_dict(
+                acquisitions=self.acquisitions, repetitions=repetitions
+            )
             if len(self.acquisitions) > 0
             else None
         )
@@ -832,7 +885,7 @@ class Sequencer:
         return {"seq_fn": json_filename, "settings": settings_dict}
 
 
-class PulsarBase(ControlDeviceCompiler, ABC):
+class QbloxBaseModule(ControlDeviceCompiler, ABC):
     """
     Pulsar specific implementation of
     :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
@@ -858,7 +911,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
+        parent: "CompilerContainer",
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -889,7 +942,12 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
-        self._settings = self.settings_type.extract_settings_from_mapping(hw_mapping)
+        self.is_pulsar: bool = True
+        """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
+        by the cluster compiler if needed."""
+        self._settings: Union[
+            BaseModuleSettings, None
+        ] = None  # set in the prepare method.
 
     @property
     @abstractmethod
@@ -904,11 +962,16 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         """
 
     @property
+    def portclocks(self) -> List[Tuple[str, str]]:
+        """Returns all the port and clocks available to this device."""
+        return list(self.portclock_map.keys())
+
+    @property
     @abstractmethod
     def awg_output_volt(self) -> float:
         """
         The output range in volts. This is to be overridden by the subclass to account
-        for the differences between a QCM and a QRM.
+        for the differences between a QcmModule and a QrmModule.
 
         Returns
         -------
@@ -930,7 +993,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def marker_configuration(self) -> dict[str, int]:
+    def marker_configuration(self) -> Dict[str, int]:
         """
         Specifies the values that the markers need to be set to at the start and end
         of each program.
@@ -1024,7 +1087,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
 
         return sequencers
 
-    def _distribute_data(self):
+    def distribute_data(self):
         """
         Distributes the pulses and acquisitions assigned to this pulsar over the
         different sequencers based on their portclocks. Raises an exception in case
@@ -1074,7 +1137,10 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         calculating the relevant frequencies in case an external local oscillator is
         used.
         """
-        self._distribute_data()
+        self._settings = self.settings_type.extract_settings_from_mapping(
+            self.hw_mapping
+        )
+        self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
@@ -1149,6 +1215,16 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         self.update_settings()
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
+            # Add both acquisition metadata (a summary) and acq_mapping
+
+            program["acq_metadata"] = dict()
+
+            for sequencer in self.sequencers.values():
+                acq_metadata = _extract_acquisition_metadata_from_acquisitions(
+                    sequencer.acquisitions
+                )
+                program["acq_metadata"][sequencer.name] = acq_metadata
+
             acq_mapping = self._get_acquisition_mapping()
             if acq_mapping is not None:
                 program["acq_mapping"] = acq_mapping
@@ -1183,14 +1259,44 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         return acq_mapping if len(acq_mapping) > 0 else None
 
 
-class PulsarBaseband(PulsarBase):
+def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
+    if sequencer.clock not in container.resources:
+        return
+
+    clk_freq = container.resources[sequencer.clock]["freq"]
+    lo_compiler = container.instrument_compilers.get(sequencer.associated_ext_lo, None)
+    if lo_compiler is None:
+        sequencer.frequency = clk_freq
+        return
+
+    if_freq = sequencer.frequency
+    lo_freq = lo_compiler.frequency
+
+    if lo_freq is None and if_freq is None:
+        raise ValueError(
+            f"Frequency settings underconstraint for sequencer {sequencer.name} "
+            f"with port {sequencer.port} and clock {sequencer.clock}. When using "
+            f"an external local oscillator it is required to either supply an "
+            f'"lo_freq" or an "interm_freq". Neither was given.'
+        )
+
+    if if_freq is not None:
+        lo_compiler.frequency = clk_freq - if_freq
+
+    if lo_freq is not None:
+        sequencer.frequency = clk_freq - lo_freq
+
+
+class QbloxBasebandModule(QbloxBaseModule):
     """
-    Abstract implementation that the Pulsar QCM and Pulsar QRM baseband modules should
-    inherit from.
+    Abstract class with all the shared functionality between the QRM and QCM baseband
+    modules.
     """
 
-    settings_type = PulsarSettings
-    """The settings type used by Pulsar baseband-type devices"""
+    @property
+    def settings_type(self) -> type:
+        """The settings type used by Pulsar baseband-type devices"""
+        return PulsarSettings if self.is_pulsar else BasebandModuleSettings
 
     def update_settings(self):
         """
@@ -1216,44 +1322,22 @@ class PulsarBaseband(PulsarBase):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-
-        if sequencer.clock not in self.parent.resources:
-            return
-
-        clk_freq = self.parent.resources[sequencer.clock]["freq"]
-        lo_compiler = self.parent.instrument_compilers.get(
-            sequencer.associated_ext_lo, None
-        )
-        if lo_compiler is None:
-            sequencer.frequency = clk_freq
-            return
-
-        if_freq = sequencer.frequency
-        lo_freq = lo_compiler.frequency
-
-        if lo_freq is None and if_freq is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} "
-                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
-                f"an external local oscillator it is required to either supply an "
-                f'"lo_freq" or an "interm_freq". Neither was given.'
-            )
-
-        if if_freq is not None:
-            lo_compiler.frequency = clk_freq - if_freq
-
-        if lo_freq is not None:
-            sequencer.frequency = clk_freq - lo_freq
+        if self.is_pulsar:
+            _assign_frequency_with_ext_lo(sequencer, self.parent)
+        else:
+            _assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
 
-class PulsarRF(PulsarBase):
+class QbloxRFModule(QbloxBaseModule):
     r"""
-    Abstract implementation that the Pulsar QCM-RF and Pulsar QRM-RF modules should
-    inherit from.
+    Abstract class with all the shared functionality between the QRM-RF and QCM-RF
+    modules.
     """
 
-    settings_type = PulsarRFSettings
-    """The settings type used by Pulsar RF-type devices"""
+    @property
+    def settings_type(self) -> type:
+        """The settings type used by Pulsar RF-type devices"""
+        return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def update_settings(self):
         """
