@@ -131,12 +131,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             The settings to configure it to.
         """
         self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
