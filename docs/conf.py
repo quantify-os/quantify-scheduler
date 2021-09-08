@@ -47,7 +47,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx-jsonschema",
     "jupyter_sphinx",
-    "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
@@ -213,7 +212,6 @@ texinfo_documents = [
 # avoid duplicate label warning even when manual label has been used
 suppress_warnings = ["autosectionlabel.*"]
 
-blockdiag_html_image_format = "SVG"
 
 # used by scanpydoc.elegant_typehints to correctly link to external docs
 qualname_overrides = {
