@@ -45,12 +45,6 @@
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo1",
-      "mixer_corrections": {
-        "amp_ratio": 1.0,
-        "phase_error": 0,
-        "offset_I": 0.1,
-        "offset_Q": 0.0
-      },
       "seq0": {
         "port": "q0:res",
         "clock": "q0.ro",
@@ -97,12 +91,6 @@
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_freq": 7.2e9,
-      "mixer_corrections": {
-        "amp_ratio": 1.0,
-        "phase_error": 0,
-        "offset_I": 0.12,
-        "offset_Q": 0.13
-      },
       "seq0": {
         "port": "q2:res",
         "clock": "q2.ro",
