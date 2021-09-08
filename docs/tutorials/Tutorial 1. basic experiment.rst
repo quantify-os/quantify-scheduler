@@ -95,13 +95,15 @@ Because this experiment is most conveniently described on the gate level, we use
     import numpy as np
 
     # we use a regular for loop as we have to unroll the changing theta variable here
-    for theta in np.linspace(0, 360, 21):
+    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
         sched.add(Reset(q0, q1))
         sched.add(X90(q0))
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         sched.add(CZ(q0, q1))
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1, acq_index=(0, 0)), label='M {:.2f} deg'.format(theta))
+
+        sched.add(Measure(q0, acq_index=acq_idx), label='M q0 {:.2f} deg'.format(theta))
+        sched.add(Measure(q1, acq_index=acq_idx), label='M q1 {:.2f} deg'.format(theta), ref_pt="start")
 
 
 Visualizing the circuit
@@ -187,7 +189,6 @@ Here we will use a configuration file for a transmon based system that is part o
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-
 .. jupyter-execute::
 
     from quantify_scheduler.visualization.pulse_scheme import pulse_diagram_plotly
@@ -201,13 +202,16 @@ Compilation of pulses onto physical hardware
 .. jupyter-execute::
 
     sched = Schedule('Bell experiment')
-    for theta in np.linspace(0, 360, 21):
+    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
         sched.add(Reset(q0, q1))
         sched.add(X90(q0))
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         # sched.add(CZ(q0, q1)) # FIXME Commented out because of not implemented error
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1, acq_index=(0, 0)), label='M {:.2f} deg'.format(theta))
+
+        sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx} {theta:.2f} deg")
+        sched.add(Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx} {theta:.2f} deg", ref_pt="start")
+
 
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
@@ -293,6 +297,8 @@ between X gates on a pair of qubits.
     from quantify_scheduler.resources import ClockResource
 
     sched = Schedule("Chevron Experiment")
+    acq_idx = 0
+
     for duration in np.linspace(20e-9, 60e-9, 6): # NB multiples of 4 ns need to be used due to limitations of the pulsars
         for amp in np.linspace(0.1, 1.0, 10):
             begin = sched.add(Reset('q0', 'q1'))
@@ -302,7 +308,12 @@ between X gates on a pair of qubits.
             square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
             sched.add(X90('q0'), ref_op=square)
             sched.add(X90('q1'), ref_op=square)
-            sched.add(Measure('q0', 'q1', acq_index=(0,0)))
+            sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
+            sched.add(Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx}", ref_pt="start")
+
+            acq_idx +=1
+
+
     sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
 
