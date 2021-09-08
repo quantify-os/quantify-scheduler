@@ -259,14 +259,5 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables party-line synchronization."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
-    awg_offset_path_0: float = 0.0
-    """Sets the DC offset on path 0. This is used e.g. for calibration of lo leakage."""
-    awg_offset_path_1: float = 0.0
-    """Sets the DC offset on path 1. This is used e.g. for calibration of lo leakage
-    when using IQ mixers."""
-    duration: int = 0
-    """Duration of the acquisition. This is a temporary addition for not yet merged the
-    InstrumentCoordinator to function properly. This will be removed in a later
-    version!"""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
