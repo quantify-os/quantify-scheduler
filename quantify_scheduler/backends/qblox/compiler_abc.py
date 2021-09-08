@@ -31,10 +31,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
     generate_uuid_from_wf_data,
 )
-from quantify_scheduler.backends.qblox.constants import (
-    GRID_TIME,
-    SAMPLING_RATE,
-)
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
 # from quantify_scheduler.backends.qblox import compiler_container
@@ -435,13 +432,13 @@ class Sequencer:
             )
             if reserved_pulse_id is None:
                 raw_wf_data = generate_waveform_data(
-                    pulse.data, sampling_rate=SAMPLING_RATE
+                    pulse.data, sampling_rate=constants.SAMPLING_RATE
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
                 pulse.uuid = generate_uuid_from_wf_data(raw_wf_data)
             else:
                 raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
-                    reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
+                    reserved_pulse_id, pulse.data, sampling_rate=constants.SAMPLING_RATE
                 )
                 pulse.uuid = reserved_pulse_id
 
@@ -519,10 +516,10 @@ class Sequencer:
                     "waveforms."
                 )
             raw_wf_data_real = generate_waveform_data(
-                waveforms_data[0], sampling_rate=SAMPLING_RATE
+                waveforms_data[0], sampling_rate=constants.SAMPLING_RATE
             )
             raw_wf_data_imag = generate_waveform_data(
-                waveforms_data[1], sampling_rate=SAMPLING_RATE
+                waveforms_data[1], sampling_rate=constants.SAMPLING_RATE
             )
             acq.uuid = "{}_{}".format(
                 generate_uuid_from_wf_data(raw_wf_data_real),
@@ -676,7 +673,7 @@ class Sequencer:
 
         qasm = QASMProgram(parent=self)
         # program header
-        qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
+        qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.set_marker(self.parent.marker_configuration["start"])
 
         # program body
@@ -732,7 +729,7 @@ class Sequencer:
 
         # program footer
         qasm.set_marker(self.parent.marker_configuration["end"])
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
 
@@ -1153,6 +1150,23 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         We configure the mixer offsets in a later step such that it can be normalized
         depending on the device used.
         """
+
+        def extract_normalized_offset(param_name: str, cfg: Dict[str, Any]) -> float:
+            normalized_offset = cfg.get(param_name, 0.0) / self.awg_output_volt
+            if (
+                normalized_offset < constants.MIN_MIXER_DC_OFFSET
+                or normalized_offset > constants.MAX_MIXER_DC_OFFSET
+            ):
+                raise ValueError(
+                    f"Attempting to set {param_name} to {cfg.get(param_name, 0.0)} on "
+                    f"instrument {self.name}. This parameter is can only be set to "
+                    f"values between "
+                    f"{constants.MIN_MIXER_DC_OFFSET*self.awg_output_volt} and "
+                    f"{constants.MAX_MIXER_DC_OFFSET*self.awg_output_volt}. Please "
+                    f"configure this correctly in the hardware config."
+                )
+            return normalized_offset
+
         supported_outputs = ("complex_output_0", "complex_output_1")
         for output_idx, output_label in enumerate(supported_outputs):
             if output_label not in hw_mapping:
@@ -1160,18 +1174,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             output_cfg = hw_mapping[output_label]
             if output_idx == 0:
-                settings.offset_ch0_path0 = (
-                    output_cfg.get("dc_mixer_offset_I", 0.0) / self.awg_output_volt
+                settings.offset_ch0_path0 = extract_normalized_offset(
+                    "dc_mixer_offset_I", output_cfg
                 )
-                settings.offset_ch0_path1 = (
-                    output_cfg.get("dc_mixer_offset_Q", 0.0) / self.awg_output_volt
+                settings.offset_ch0_path1 = extract_normalized_offset(
+                    "dc_mixer_offset_Q", output_cfg
                 )
             else:
-                settings.offset_ch1_path0 = (
-                    output_cfg.get("dc_mixer_offset_I", 0.0) / self.awg_output_volt
+                settings.offset_ch1_path0 = extract_normalized_offset(
+                    "dc_mixer_offset_I", output_cfg
                 )
-                settings.offset_ch1_path1 = (
-                    output_cfg.get("dc_mixer_offset_Q", 0.0) / self.awg_output_volt
+                settings.offset_ch1_path1 = extract_normalized_offset(
+                    "dc_mixer_offset_Q", output_cfg
                 )
 
         return settings
