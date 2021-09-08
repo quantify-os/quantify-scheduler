@@ -25,3 +25,7 @@ NUMBER_OF_SEQUENCERS_QCM = 2
 """Number of sequencers supported by Pulsar QCM in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 1
 """Number of sequencers supported by Pulsar QRM in the latest firmware."""
+MIN_MIXER_PHASE_ERROR = -45
+MAX_MIXER_PHASE_ERROR = 45
+MIN_MIXER_AMP_RATIO = 0.5
+MAX_MIXER_AMP_RATIO = 2.0
