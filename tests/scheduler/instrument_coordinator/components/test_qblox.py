@@ -523,7 +523,7 @@ def test_get_threshold_data(make_qrm, mock_acquisition_data):
 def test_get_integration_data(make_qrm, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
-    data = acq_manager._get_integration_data(mock_acquisition_data, 0, 0)
+    data = acq_manager._get_integration_data(mock_acquisition_data, acq_channel=0)
     assert data == ([0.0] * 10, [0.0] * 10)
 
 

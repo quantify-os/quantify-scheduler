@@ -600,18 +600,15 @@ class _QRMAcquisitionManager:
         return ch_and_idx
 
     def _get_scope_data(
-        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
+        self, acquisitions: dict, acq_channel: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Retrieves the scope mode acquisition associated with `acq_channel` and
-        `acq_index`.
+        Retrieves the scope mode acquisition associated with an `acq_channel`.
 
         Parameters
         ----------
         acq_channel
             The acq_channel to get the scope mode acquisition for.
-        acq_index
-            The acq_index to get the scope mode acquisition for.
 
         Returns
         -------
@@ -626,8 +623,7 @@ class _QRMAcquisitionManager:
             if scope_data[path_label]["out-of-range"]:
                 logger.warning(
                     f"The scope mode data of {path_label} of {self.parent.name} with "
-                    f"acq_channel={acq_channel} and acq_index={acq_index} was "
-                    f"out-of-range."
+                    f"acq_channel={acq_channel}  was out-of-range."
                 )
         # NB hardware already divides by avg_count for scope mode
         scope_data_i = scope_data["path0"]["data"]
@@ -635,20 +631,15 @@ class _QRMAcquisitionManager:
         return scope_data_i, scope_data_q
 
     def _get_integration_data(
-        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
+        self, acquisitions: dict, acq_channel: int = 0
     ) -> Tuple[float, float]:
         """
-        Retrieves the integrated acquisition data associated with `acq_channel` and
-        `acq_index`.
+        Retrieves the integrated acquisition data associated with an `acq_channel`.
 
         Parameters
         ----------
         acquisitions
             The acquisitions dict as returned by the sequencer.
-        acq_channel
-            The acq_channel to get integrated acquisition data for.
-        acq_index
-            The acq_index to get the integrated acquisition data for.
 
         Returns
         -------
@@ -664,12 +655,6 @@ class _QRMAcquisitionManager:
             bin_data["integration"]["path0"],
             bin_data["integration"]["path1"],
         )
-        if acq_index > len(i_data):
-            raise ValueError(
-                f"Attempting to access acq_index {acq_index} on "
-                f"{self.parent.name} but only {len(i_data)} values found "
-                f"in acquisition data."
-            )
 
         return i_data, q_data
 
