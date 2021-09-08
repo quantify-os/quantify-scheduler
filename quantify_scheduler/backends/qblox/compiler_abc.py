@@ -42,7 +42,6 @@ from quantify_scheduler.backends.types.qblox import (
     PulsarRFSettings,
     SequencerSettings,
     QASMRuntimeSettings,
-    MixerCorrections,
 )
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
@@ -294,7 +293,6 @@ class Sequencer:
             sync_en=True,
             modulation_freq=modulation_freq,
         )
-        self.mixer_corrections = None
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -1018,11 +1016,6 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                     self, seq_name, portclock, seq_cfg, lo_name
                 )
 
-                if "mixer_corrections" in io_cfg:
-                    sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
-                        io_cfg["mixer_corrections"]
-                    )
-
         if len(sequencers.keys()) > self._max_sequencers:
             raise ValueError(
                 f"Attempting to construct too many sequencer compilers. "
@@ -1202,28 +1195,8 @@ class PulsarBaseband(PulsarBase):
     def update_settings(self):
         """
         Updates the Pulsar settings to set all parameters that are determined by the
-        compiler. Currently, this only changes the offsets based on the mixer
-        calibration parameters.
+        compiler.
         """
-
-        # Will be changed when LO leakage correction is decoupled from the sequencer
-        for seq in self.sequencers.values():
-            if seq.mixer_corrections is not None:
-                output_index = self.sequencer_to_output_idx[seq.name]
-                if output_index == 0:
-                    self._settings.offset_ch0_path0 = (
-                        seq.mixer_corrections.offset_I / self.awg_output_volt
-                    )
-                    self._settings.offset_ch0_path1 = (
-                        seq.mixer_corrections.offset_Q / self.awg_output_volt
-                    )
-                elif output_index == 1:
-                    self._settings.offset_ch1_path0 = (
-                        seq.mixer_corrections.offset_I / self.awg_output_volt
-                    )
-                    self._settings.offset_ch1_path1 = (
-                        seq.mixer_corrections.offset_Q / self.awg_output_volt
-                    )
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
@@ -1285,20 +1258,8 @@ class PulsarRF(PulsarBase):
     def update_settings(self):
         """
         Updates the Pulsar settings to set all parameters that are determined by the
-        compiler. Currently, this only changes the offsets based on the mixer
-        calibration parameters.
+        compiler.
         """
-
-        # Will be changed when LO leakage correction is decoupled from the sequencer
-        for seq in self.sequencers.values():
-            if seq.mixer_corrections is not None:
-                output_index = self.sequencer_to_output_idx[seq.name]
-                if output_index == 0:
-                    self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I
-                    self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q
-                elif output_index == 1:
-                    self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
-                    self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""

@@ -6,9 +6,6 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
-import numpy as np
-
-from quantify_scheduler.helpers.waveforms import apply_mixer_skewness_corrections
 
 
 @dataclass
@@ -221,43 +218,3 @@ class SequencerSettings(DataClassJsonMixin):
     version!"""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
-
-
-@dataclass
-class MixerCorrections(DataClassJsonMixin):
-    """
-    Data structure that holds all the mixer correction parameters to compensate for
-    skewness/lo feed-through. This class is used to correct the waveforms to compensate
-    for skewness and to set the `SequencerSettings`.
-    """
-
-    amp_ratio: float = 1.0
-    """Amplitude ratio between the I and Q paths to correct for the imbalance in the
-    two path in the IQ mixer."""
-    phase_error: float = 0.0
-    """Phase shift used to compensate for quadrature errors."""
-    offset_I: float = 0.0  # pylint: disable=invalid-name
-    """DC offset on the I path used to compensate for lo feed-through."""
-    offset_Q: float = 0.0  # pylint: disable=invalid-name
-    """DC offset on the Q path used to compensate for lo feed-through."""
-
-    def correct_skewness(self, waveform: np.ndarray) -> np.ndarray:
-        """
-        Applies the pre-distortion needed to compensate for amplitude and phase errors
-        in the IQ mixer. In practice this is simply a wrapper around the
-        `apply_mixer_skewness_corrections` function, that uses the attributes specified
-        here.
-
-        Parameters
-        ----------
-        waveform:
-            The (complex-valued) waveform before correction.
-
-        Returns
-        -------
-        :
-            The complex-valued waveform after correction.
-        """
-        return apply_mixer_skewness_corrections(
-            waveform, self.amp_ratio, self.phase_error
-        )
