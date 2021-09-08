@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-import quantify_scheduler.schemas.examples as examples
+from quantify_scheduler.schemas import examples
 
 
 def load_json_example_scheme(filename: str) -> Dict[str, Any]:

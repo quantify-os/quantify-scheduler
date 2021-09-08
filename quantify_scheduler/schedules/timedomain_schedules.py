@@ -4,7 +4,7 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
-from typing import Union
+from typing import Union, List
 from typing_extensions import Literal
 import numpy as np
 from quantify_scheduler.types import Schedule
@@ -12,6 +12,7 @@ from quantify_scheduler.pulse_library import SquarePulse, IdlePulse, DRAGPulse
 from quantify_scheduler.gate_library import Rxy, X, X90, Reset, Measure
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.enums import BinMode
 
 # pylint: disable=too-many-arguments
 def rabi_sched(
@@ -90,7 +91,8 @@ def rabi_sched(
             ),
             label=f"Rabi_pulse {i}",
         )
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        # N.B. acq_channel is not specified
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
 
     return schedule
 
@@ -135,7 +137,10 @@ def t1_sched(
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
-            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+            Measure(qubit, acq_index=i),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {i}",
         )
     return schedule
 
@@ -196,7 +201,7 @@ def ramsey_sched(
         schedule.add(
             Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau
         )
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
@@ -243,13 +248,13 @@ def echo_sched(
         schedule.add(X90(qubit))
         schedule.add(X(qubit), ref_pt="start", rel_time=tau / 2)
         schedule.add(X90(qubit), ref_pt="start", rel_time=tau / 2)
-        schedule.add(Measure(qubit), label=f"Measurement {i}")
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
 def allxy_sched(
     qubit: str,
-    element_select_idx: Union[Literal["All"], int] = "All",
+    element_select_idx: Union[np.ndarray, int] = np.arange(21),
     repetitions: int = 1,
 ) -> Schedule:
     # pylint: disable=line-too-long
@@ -270,8 +275,7 @@ def allxy_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
     element_select_idx
-        the index of the particular element of the AllXY experiment to exectute -
-        or :code:`"All"` for all elemements of the sequence.
+        the index of the particular element of the AllXY experiment to exectute.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -281,6 +285,9 @@ def allxy_sched(
         An experiment schedule.
 
     """
+
+    element_idxs = np.asarray(element_select_idx)
+    element_idxs = element_idxs.reshape(element_idxs.shape or (1,))
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
     # the AllXY experiment
@@ -308,17 +315,78 @@ def allxy_sched(
         [(90, 90), (90, 90)],
     ]
     schedule = Schedule("AllXY", repetitions)
-    for i, ((th0, phi0), (th1, phi1)) in enumerate(allxy_combinations):
-        if element_select_idx in ("All", i):
-            schedule.add(Reset(qubit), label=f"Reset {i}")
-            schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
-            schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
-            schedule.add(Measure(qubit), label=f"Measurement {i}")
-        elif element_select_idx > len(allxy_combinations) or element_select_idx < 0:
+
+    for i, elt_idx in enumerate(element_idxs):
+        # check index valid
+        if elt_idx > len(allxy_combinations) or elt_idx < 0:
             raise ValueError(
-                f"Invalid index selected: {element_select_idx}. "
+                f"Invalid index selected: {elt_idx}. "
                 "Index must be in range 0 to 21 inclusive."
             )
+
+        ((th0, phi0), (th1, phi1)) = allxy_combinations[elt_idx]
+
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
+        schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+    return schedule
+
+
+def readout_calibration_sched(
+    qubit: str,
+    prepared_states: List[int],
+    repetitions: int = 1,
+) -> Schedule:
+    """
+    A schedule for readout calibration. Prepares a state and immediately performs
+    a measurement.
+
+    Parameters
+    ----------
+    qubit
+        the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+    prepared_states
+        the states to prepare the qubit in before measuring as in integer corresponding
+        to the ground (0), first-excited (1) or second-excited (2) state.
+    repetitions
+        The number of shots to acquire, sets the number of times the schedule will
+        be repeated.
+
+    Returns
+    -------
+    :
+        An experiment schedule.
+
+    Raises
+    ------
+    ValueError
+        If the prepared state is not either 0, 1, or 2.
+    NotImplementedError
+        If the prepared state is 2.
+    """
+
+    schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
+
+    for i, prep_state in enumerate(prepared_states):
+
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        if prep_state == 0:
+            pass
+        elif prep_state == 1:
+            schedule.add(Rxy(qubit=qubit, theta=180, phi=0))
+        elif prep_state == 2:
+            raise NotImplementedError(
+                "Preparing the qubit in the second excited (2) "
+                "state is not supported yet."
+            )
+        else:
+            raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
+        schedule.add(
+            Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND),
+            label=f"Measurement {i}",
+        )
+
     return schedule
 
 

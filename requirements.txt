@@ -7,7 +7,7 @@ matplotlib
 plotly
 jsonschema
 dataclasses-json
-zhinst-qcodes
+zhinst-qcodes<0.2
 pathvalidate
 typing_extensions
 quantify_core>=0.5.0

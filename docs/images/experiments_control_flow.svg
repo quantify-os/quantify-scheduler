@@ -99,12 +99,13 @@
         <text id="Dataset" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
             <tspan x="227" y="194">Dataset</tspan>
         </text>
-        <g id="Group-6" transform="translate(379.000000, 130.000000)" fill="#1A1919" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04">
-            <text id="Compiled-instruction">
-                <tspan x="0" y="10">Compiled instructions</tspan>
-                <tspan x="0" y="22" letter-spacing="0.032"></tspan>
+        <g id="Group-6" transform="translate(379.000000, 131.000000)" fill="#1A1919" font-size="10" font-weight="normal" letter-spacing="0.04">
+            <text id="CompiledSchedule" font-family="AndaleMono, Andale Mono">
+                <tspan x="0" y="9">CompiledSchedule</tspan>
+                <tspan x="96.655625" y="9" font-family="LucidaGrande, Lucida Grande"></tspan>
+                <tspan x="0" y="20" font-family="LucidaGrande, Lucida Grande" letter-spacing="0.032"></tspan>
             </text>
-            <g id="Group-5" transform="translate(0.000000, 10.000000)">
+            <g id="Group-5" transform="translate(0.000000, 9.000000)" font-family="LucidaGrande, Lucida Grande">
                 <text id="•-•-•">
                     <tspan x="0" y="11">	• 	 </tspan>
                     <tspan x="0" y="23">	• 	 </tspan>
