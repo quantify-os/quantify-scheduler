@@ -261,3 +261,9 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies the frequency of the modulation."""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
+    mixer_corr_phase_offset_degree: float = 0.0
+    """The phase shift to apply between the I and Q channels, to correct for quadrature
+    errors."""
+    mixer_corr_gain_ratio: float = 1.0
+    """The gain ratio to apply in order to correct for imbalances in the two mixer
+    paths."""
