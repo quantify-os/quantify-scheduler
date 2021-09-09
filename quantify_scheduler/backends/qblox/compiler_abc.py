@@ -1402,11 +1402,14 @@ class QbloxRFModule(QbloxBaseModule):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
+        resources = (
+            self.parent.resources if self.is_pulsar else self.parent.parent.resources
+        )
 
-        if sequencer.clock not in self.parent.resources:
+        if sequencer.clock not in resources:
             return
 
-        clk_freq = self.parent.resources[sequencer.clock]["freq"]
+        clk_freq = resources[sequencer.clock]["freq"]
 
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
