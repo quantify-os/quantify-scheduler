@@ -1148,7 +1148,24 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     ) -> BaseModuleSettings:
         """
         We configure the mixer offsets in a later step such that it can be normalized
-        depending on the device used.
+        depending on the type of instrument used.
+
+        Parameters
+        ----------
+        settings
+            The settings dataclass to which to add the dc offsets.
+        hw_mapping
+            The hardware configuration.
+
+        Returns
+        -------
+        :
+            The settings dataclass after adding the normalized offsets
+
+        Raises
+        ------
+        ValueError
+            An offset was used outside of the allowed range.
         """
 
         def extract_normalized_offset(param_name: str, cfg: Dict[str, Any]) -> float:
