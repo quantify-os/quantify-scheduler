@@ -283,6 +283,20 @@ class SequencerSettings(DataClassJsonMixin):
     def initialize_from_config_dict(
         cls, seq_settings: Dict[str, Any]
     ) -> SequencerSettings:
+        """
+        Instantiates an instance of this class, with initial parameters determined from
+        the sequencer configuration dictionary.
+
+        Parameters
+        ----------
+        seq_settings:
+            The sequencer configuration dict.
+
+        Returns
+        -------
+        :
+            The class with initial values.
+        """
         modulation_freq: Union[float, None] = seq_settings.get("interm_freq", None)
         nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
 
