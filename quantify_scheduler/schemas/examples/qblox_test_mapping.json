@@ -15,6 +15,18 @@
           "interm_freq": 50e6
         }
     }
+  },
+    "cl_qcm_rf0": {
+      "instrument_type": "QCM_RF",
+      "ref": "internal",
+      "complex_output_0": {
+        "line_gain_db": 0,
+        "seq0": {
+          "port": "q5:mw",
+          "clock": "q5.01",
+          "interm_freq": 50e6
+        }
+    }
   }
   },
   "qcm0": {
