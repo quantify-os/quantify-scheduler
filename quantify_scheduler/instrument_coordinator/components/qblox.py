@@ -825,8 +825,9 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         acquisitions: Dict[Tuple[int, int], Any] = dict()
         for comp in self._cluster_modules.values():
             comp_acq = comp.retrieve_acquisition()
-            acquisitions.update(comp_acq)
-        return acquisitions
+            if comp_acq is not None:
+                acquisitions.update(comp_acq)
+        return acquisitions if len(acquisitions) > 0 else None
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
