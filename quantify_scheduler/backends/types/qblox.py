@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
+from quantify_scheduler.backends.qblox import constants
 
 
 @dataclass
@@ -297,11 +298,41 @@ class SequencerSettings(DataClassJsonMixin):
         :
             The class with initial values.
         """
+
+        def extract_and_verify_range(
+            param_name: str,
+            settings: Dict[str, Any],
+            default_value: float,
+            min_value: float,
+            max_value: float,
+        ) -> float:
+            val: float = settings.get(param_name, default_value)
+            if val < min_value or val > max_value:
+                raise ValueError(
+                    f"Attempting to configure {param_name} to {val} for the sequencer "
+                    f"specified with port {settings.get('port', '[port invalid!]')} and"
+                    f" clock {settings.get('clock', '[clock invalid!]')}, while the "
+                    f"hardware requires it to be between {min_value} and {max_value}."
+                )
+            return val
+
         modulation_freq: Union[float, None] = seq_settings.get("interm_freq", None)
         nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
 
-        mixer_amp_ratio = seq_settings.get("mixer_amp_ratio", 1.0)
-        mixer_phase_error = seq_settings.get("mixer_phase_error", 0.0)
+        mixer_amp_ratio = extract_and_verify_range(
+            "mixer_amp_ratio",
+            seq_settings,
+            1.0,
+            constants.MIN_MIXER_AMP_RATIO,
+            constants.MAX_MIXER_AMP_RATIO,
+        )
+        mixer_phase_error = extract_and_verify_range(
+            "mixer_phase_error",
+            seq_settings,
+            0.0,
+            constants.MIN_MIXER_PHASE_ERROR,
+            constants.MAX_MIXER_PHASE_ERROR,
+        )
 
         settings = cls(
             nco_en=nco_en,
