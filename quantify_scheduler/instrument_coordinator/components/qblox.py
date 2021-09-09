@@ -127,6 +127,14 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             self.instrument.set(
                 f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
             )
+        self.instrument.set(
+            f"sequencer{seq_idx}_mixer_corr_phase_offset_degree",
+            settings.mixer_corr_phase_offset_degree,
+        )
+        self.instrument.set(
+            f"sequencer{seq_idx}_mixer_corr_gain_ratio",
+            settings.mixer_corr_gain_ratio,
+        )
 
     @property
     @abstractmethod
