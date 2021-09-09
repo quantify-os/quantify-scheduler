@@ -270,11 +270,30 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables party-line synchronization."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
-    integration_length_acq: Optional[int] = None
-    """Integration length for acquisitions. Must be a multiple of 4 ns."""
     mixer_corr_phase_offset_degree: float = 0.0
     """The phase shift to apply between the I and Q channels, to correct for quadrature
     errors."""
     mixer_corr_gain_ratio: float = 1.0
     """The gain ratio to apply in order to correct for imbalances in the two mixer
     paths."""
+    integration_length_acq: Optional[int] = None
+    """Integration length for acquisitions. Must be a multiple of 4 ns."""
+
+    @classmethod
+    def initialize_from_config_dict(
+        cls, seq_settings: Dict[str, Any]
+    ) -> SequencerSettings:
+        modulation_freq: Union[float, None] = seq_settings.get("interm_freq", None)
+        nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
+
+        mixer_amp_ratio = seq_settings.get("mixer_amp_ratio", 1.0)
+        mixer_phase_error = seq_settings.get("mixer_phase_error", 0.0)
+
+        settings = cls(
+            nco_en=nco_en,
+            sync_en=True,
+            modulation_freq=modulation_freq,
+            mixer_corr_gain_ratio=mixer_amp_ratio,
+            mixer_corr_phase_offset_degree=mixer_phase_error,
+        )
+        return settings

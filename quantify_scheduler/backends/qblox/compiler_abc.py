@@ -296,12 +296,8 @@ class Sequencer:
             "instruction_generated_pulses_enabled", False
         )
 
-        modulation_freq = seq_settings.get("interm_freq", None)
-        nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
-        self._settings = SequencerSettings(
-            nco_en=nco_en,
-            sync_en=True,
-            modulation_freq=modulation_freq,
+        self._settings = SequencerSettings.initialize_from_config_dict(
+            seq_settings=seq_settings
         )
 
     @property
