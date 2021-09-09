@@ -30,4 +30,8 @@ MAX_MIXER_PHASE_ERROR = 45
 MIN_MIXER_AMP_RATIO = 0.5
 MAX_MIXER_AMP_RATIO = 2.0
 MIN_MIXER_DC_OFFSET = -1.0
+"""Lowest value the dc dac offset can have. This value is normalized w.r.t. the output
+range."""
 MAX_MIXER_DC_OFFSET = 1.0
+"""Highest value the dc dac offset can have. This value is normalized w.r.t. the output
+range."""

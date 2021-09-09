@@ -280,6 +280,9 @@ class Sequencer:
             sequencer. The first value is the port, second is the clock.
         seq_settings
             Sequencer settings dictionary.
+        lo_name
+            The name of the local oscillator instrument connected to the same output via
+            an IQ mixer. This is used for frequency calculations.
         """
         self.parent = parent
         self._name = name
