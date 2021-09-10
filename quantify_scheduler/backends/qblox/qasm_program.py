@@ -546,67 +546,59 @@ class QASMProgram:
                 acquisition.data["protocol"], None
             )
 
-            acq_channel_reg = self._register_manager.allocate_register()
-
-            acq_idx0_reg = self._register_manager.allocate_register()
-            acq_idx1_reg = self._register_manager.allocate_register()
-
-            # Need to store values in registers as the acquire weighted
-            # requires either all register inputs or all immediate values
-            self.emit(
-                q1asm_instructions.MOVE,
-                acq_channel,
-                acq_channel_reg,
-                comment=f"Store acq_channel in {acq_channel_reg}.",
-            )
-
-            # Explicit checking of acquisition function to ensure right
-            # explicit passing of arguments over list comprehension of args for
-            # readability.
-            if acquisition_func == self._acquire_weighted:
+            with self.temp_register(3) as (acq_channel_reg, acq_idx0_reg, acq_idx1_reg):
+                # Need to store values in registers as the acquire weighted
+                # requires either all register inputs or all immediate values
                 self.emit(
                     q1asm_instructions.MOVE,
-                    idx0,
-                    acq_idx0_reg,
-                    comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                    acq_channel,
+                    acq_channel_reg,
+                    comment=f"Store acq_channel in {acq_channel_reg}.",
                 )
+
+                # Explicit checking of acquisition function to ensure right
+                # explicit passing of arguments over list comprehension of args for
+                # readability.
+                if acquisition_func == self._acquire_weighted:
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx0,
+                        acq_idx0_reg,
+                        comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                    )
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx1,
+                        acq_idx1_reg,
+                        comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                    )
+
+                    acquisition_func(
+                        acquisition=acquisition,
+                        bin_idx=acq_bin_idx_reg,
+                        idx0=acq_idx0_reg,
+                        idx1=acq_idx1_reg,
+                    )
+                elif acquisition_func == self._acquire_square:
+                    acquisition_func(
+                        acquisition=acquisition,
+                        bin_idx=acq_bin_idx_reg,
+                    )
+                else:
+                    raise NotImplementedError(
+                        "BinMode.APPEND is only compatible with acquisition protocols "
+                        "'ssb_integration_complex' and 'ssb_integration_complex'."
+                    )
+
                 self.emit(
-                    q1asm_instructions.MOVE,
-                    idx1,
-                    acq_idx1_reg,
-                    comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                    q1asm_instructions.ADD,
+                    acq_bin_idx_reg,
+                    1,
+                    acq_bin_idx_reg,
+                    comment=f"Increment bin_idx for ch{acq_channel}",
                 )
-
-                acquisition_func(
-                    acquisition=acquisition,
-                    bin_idx=acq_bin_idx_reg,
-                    idx0=acq_idx0_reg,
-                    idx1=acq_idx1_reg,
-                )
-            elif acquisition_func == self._acquire_square:
-                acquisition_func(
-                    acquisition=acquisition,
-                    bin_idx=acq_bin_idx_reg,
-                )
-            else:
-                raise NotImplementedError(
-                    "BinMode.APPEND is only compatible with acquisition protocols "
-                    "'ssb_integration_complex' and 'ssb_integration_complex'."
-                )
-
-            self.emit(
-                q1asm_instructions.ADD,
-                acq_bin_idx_reg,
-                1,
-                acq_bin_idx_reg,
-                comment=f"Increment bin_idx for ch{acq_channel}",
-            )
-            # Add a line break for visual separation of acquisition.
-            self.emit(q1asm_instructions.NEW_LINE)
-
-            self._register_manager.free_register(acq_idx0_reg)
-            self._register_manager.free_register(acq_idx1_reg)
-            self._register_manager.free_register(acq_channel_reg)
+                # Add a line break for visual separation of acquisition.
+                self.emit(q1asm_instructions.NEW_LINE)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
