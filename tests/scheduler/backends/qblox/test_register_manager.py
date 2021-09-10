@@ -1,0 +1,55 @@
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=missing-module-docstring
+
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Tests for Qblox backend register manager."""
+import pytest
+from quantify_scheduler.backends.qblox import register_manager
+
+
+class TestRegisterManager:
+    @pytest.fixture(name="make_rm")
+    def fixture_make_rm(self):
+        return register_manager.RegisterManager()
+
+    def test_available_registers(self, make_rm):
+        rm = make_rm
+        assert rm.available_registers == rm._available_registers
+
+    def test_allocate_register(self, make_rm):
+        rm = make_rm
+        initial_amount_of_registers = len(rm.available_registers)
+        rm.allocate_register()
+
+        assert len(rm.available_registers) == initial_amount_of_registers - 1
+
+    def test_free_register(self, make_rm):
+        rm = make_rm
+        reg = rm.allocate_register()
+        assert reg not in rm.available_registers
+        rm.free_register(reg)
+        assert reg in rm.available_registers
+
+
+@pytest.mark.parametrize(
+    "register, is_valid",
+    [
+        ("R0", True),
+        ("R1", True),
+        ("R64", True),
+        ("R-1", False),
+        ("S2", False),
+        ("R65", False),
+        ("R2a", False),
+        ("hello@qblox.com", False),
+    ],
+)
+def test__verify_invalid_register(register: str, is_valid: bool):
+    if is_valid:
+        register_manager._verify_valid_register(register)
+    else:
+        with pytest.raises(ValueError):
+            register_manager._verify_valid_register(register)
