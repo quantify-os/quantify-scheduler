@@ -2,6 +2,7 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-module-docstring
+# pylint: disable=no-self-use
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
@@ -16,22 +17,22 @@ class TestRegisterManager:
         return register_manager.RegisterManager()
 
     def test_available_registers(self, make_rm):
-        rm = make_rm
-        assert rm.available_registers == rm._available_registers
+        pool = make_rm
+        assert pool.available_registers == pool._available_registers
 
     def test_allocate_register(self, make_rm):
-        rm = make_rm
-        initial_amount_of_registers = len(rm.available_registers)
-        rm.allocate_register()
+        pool = make_rm
+        initial_amount_of_registers = len(pool.available_registers)
+        pool.allocate_register()
 
-        assert len(rm.available_registers) == initial_amount_of_registers - 1
+        assert len(pool.available_registers) == initial_amount_of_registers - 1
 
     def test_free_register(self, make_rm):
-        rm = make_rm
-        reg = rm.allocate_register()
-        assert reg not in rm.available_registers
-        rm.free_register(reg)
-        assert reg in rm.available_registers
+        pool = make_rm
+        reg = pool.allocate_register()
+        assert reg not in pool.available_registers
+        pool.free_register(reg)
+        assert reg in pool.available_registers
 
 
 @pytest.mark.parametrize(
