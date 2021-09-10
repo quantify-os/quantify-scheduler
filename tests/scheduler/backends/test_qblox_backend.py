@@ -777,6 +777,21 @@ def test_loop():
     assert int(num_rep_used) == num_rep
 
 
+@pytest.mark.parametrize("amount", [1, 2, 3, 40])
+def test_temp_register(amount):
+    qcm = Pulsar_QCM(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
+    qasm = QASMProgram(qcm.sequencers["seq0"])
+    with qasm.temp_register(amount) as registers:
+        if isinstance(registers, str):
+            registers = [registers]
+        for reg in registers:
+            assert reg not in qasm._register_manager.available_registers
+    for reg in registers:
+        assert reg in qasm._register_manager.available_registers
+
+
 # --------- Test compilation functions ---------
 def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)

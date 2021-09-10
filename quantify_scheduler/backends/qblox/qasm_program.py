@@ -786,3 +786,13 @@ class QASMProgram:
 
         self.emit(q1asm_instructions.LOOP, register, f"@{label}")
         self._register_manager.free_register(register)
+
+    @contextmanager
+    def temp_register(self, amount: int = 1):
+        registers: List[str] = list()
+        for _ in range(amount):
+            registers.append(self._register_manager.allocate_register())
+        yield registers if len(registers) > 1 else registers[0]
+
+        for reg in registers:
+            self._register_manager.free_register(reg)
