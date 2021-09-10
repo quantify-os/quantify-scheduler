@@ -8,12 +8,32 @@ from quantify_scheduler.backends.qblox import constants
 
 
 class RegisterManager:
+    """
+    Utility class that keeps track of all then registers that are still available.
+    """
+
     def __init__(self):
+        """
+        Instantiates the `RegisterManager`
+        """
         self._available_registers: Set[str] = {
             f"R{idx}" for idx in range(constants.NUMBER_OF_REGISTERS)
         }
 
     def allocate_register(self) -> str:
+        """
+        Allocates a register to be used within the q1asm program.
+
+        Returns
+        -------
+        :
+            A register that can be used.
+
+        Raises
+        ------
+        IndexError
+            When the RegisterManager runs out of registers to allocate.
+        """
         if len(self.available_registers) < 1:
             raise IndexError(
                 "Out of registers. Attempting to use more registers than "
@@ -27,15 +47,63 @@ class RegisterManager:
         return first_element
 
     def free_register(self, register: str):
+        """
+        Frees up a register to be reused.
+
+        Parameters
+        ----------
+        register:
+            The register to free up.
+
+        Raises
+        ------
+        ValueError
+            The value provided is not a valid register.
+        RuntimeError
+            Attempting to free a register that is already free.
+        """
         _verify_valid_register(register)
+        if register in self.available_registers:
+            raise RuntimeError(
+                f'Attempting to free register "{register}", but this register is not in'
+                f"use."
+            )
         self._available_registers.add(register)
 
     @property
     def available_registers(self) -> Set[str]:
+        """
+        Getter for the available registers.
+
+        Returns
+        -------
+        :
+            A set containing all the available registers.
+        """
         return self._available_registers
 
 
 def _verify_valid_register(register_name: str):
+    """
+    Verifies whether the passed name is a valid register name. Raises on any of the
+    conditions:
+
+        1. `register_name` does not start with "R" or
+        2. `register_name` does not have an integer next
+        3. the integer is higher than the number of registers in the sequence processor
+        4. the integer is negative valued
+
+    Parameters
+    ----------
+    register_name:
+        The register to verify.
+
+    Raises
+    -------
+    ValueError
+        Invalid register name passed.
+    """
+
     def raise_error():
         raise ValueError(
             f'Invalid register "{register_name}"! The correct format is "R" followed by'
