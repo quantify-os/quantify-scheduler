@@ -780,7 +780,21 @@ class QASMProgram:
         self._register_manager.free_register(register)
 
     @contextmanager
-    def temp_register(self, amount: int = 1):
+    def temp_register(self, amount: int = 1) -> Union[List[str], str]:
+        """
+        Context manager for using a register temporarily. Frees up the register
+        afterwards.
+
+        Parameters
+        ----------
+        amount
+            The amount of registers to temporarily use.
+
+        Yields
+        ------
+        :
+            Either a single register or a list of registers.
+        """
         registers: List[str] = list()
         for _ in range(amount):
             registers.append(self._register_manager.allocate_register())
