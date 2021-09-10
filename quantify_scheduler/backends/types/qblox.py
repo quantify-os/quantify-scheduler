@@ -57,6 +57,7 @@ class OpInfo(DataClassJsonMixin):
     parameter to change the pulse amplitude, instead of changing the waveform. This
     allows to reuse the same waveform multiple times despite a difference in
     amplitude."""
+    bin_idx_register: Optional[str] = None
 
     @property
     def duration(self) -> float:
