@@ -293,77 +293,72 @@ class QASMProgram:
         """
         del idx0, idx1  # not used
 
-        offs_reg = self._register_manager.allocate_register()
-        offs_reg_zero = self._register_manager.allocate_register()
+        with self.temp_register(2) as (offs_reg, offs_reg_zero):
+            num_steps = pulse.data["num_steps"]
+            start_amp = pulse.data["start_amp"]
+            final_amp = pulse.data["final_amp"]
+            step_duration = helpers.to_grid_time(pulse.duration / num_steps)
 
-        num_steps = pulse.data["num_steps"]
-        start_amp = pulse.data["start_amp"]
-        final_amp = pulse.data["final_amp"]
-        step_duration = helpers.to_grid_time(pulse.duration / num_steps)
-
-        amp_step = (final_amp - start_amp) / (num_steps - 1)
-        amp_step_immediate = self._expand_from_normalised_range(
-            amp_step / self.parent.parent.awg_output_volt,
-            constants.IMMEDIATE_SZ_OFFSET,
-            "offset_awg_path0",
-            pulse,
-        )
-        start_amp_immediate = self._expand_from_normalised_range(
-            start_amp / self.parent.parent.awg_output_volt,
-            constants.IMMEDIATE_SZ_OFFSET,
-            "offset_awg_path0",
-            pulse,
-        )
-        if start_amp_immediate < 0:
-            start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
-
-        self.emit(
-            q1asm_instructions.SET_AWG_GAIN,
-            constants.IMMEDIATE_SZ_GAIN // 2,
-            constants.IMMEDIATE_SZ_GAIN // 2,
-            comment="set gain to known value",
-        )
-        self.emit(
-            q1asm_instructions.MOVE,
-            start_amp_immediate,
-            offs_reg,
-            comment="keeps track of the offsets",
-        )
-        self.emit(
-            q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
-        )
-        self.emit(q1asm_instructions.NEW_LINE)
-        with self.loop(f"ramp{len(self.instructions)}", repetitions=num_steps):
-            self.emit(q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero)
-            self.emit(
-                q1asm_instructions.UPDATE_PARAMETERS,
-                constants.GRID_TIME,
+            amp_step = (final_amp - start_amp) / (num_steps - 1)
+            amp_step_immediate = self._expand_from_normalised_range(
+                amp_step / self.parent.parent.awg_output_volt,
+                constants.IMMEDIATE_SZ_OFFSET,
+                "offset_awg_path0",
+                pulse,
             )
-            self.elapsed_time += constants.GRID_TIME
-            if amp_step_immediate >= 0:
-                self.emit(
-                    q1asm_instructions.ADD,
-                    offs_reg,
-                    amp_step_immediate,
-                    offs_reg,
-                    comment=f"next incr offs by {amp_step_immediate}",
-                )
-            else:
-                self.emit(
-                    q1asm_instructions.SUB,
-                    offs_reg,
-                    -amp_step_immediate,
-                    offs_reg,
-                    comment=f"next incr offs by {amp_step_immediate}",
-                )
-            self.auto_wait(step_duration - constants.GRID_TIME)
-        self.elapsed_time += step_duration * (num_steps - 1) if num_steps > 1 else 0
+            start_amp_immediate = self._expand_from_normalised_range(
+                start_amp / self.parent.parent.awg_output_volt,
+                constants.IMMEDIATE_SZ_OFFSET,
+                "offset_awg_path0",
+                pulse,
+            )
+            if start_amp_immediate < 0:
+                start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
 
-        self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
-        self.emit(q1asm_instructions.NEW_LINE)
+            self.emit(
+                q1asm_instructions.SET_AWG_GAIN,
+                constants.IMMEDIATE_SZ_GAIN // 2,
+                constants.IMMEDIATE_SZ_GAIN // 2,
+                comment="set gain to known value",
+            )
+            self.emit(
+                q1asm_instructions.MOVE,
+                start_amp_immediate,
+                offs_reg,
+                comment="keeps track of the offsets",
+            )
+            self.emit(
+                q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
+            )
+            self.emit(q1asm_instructions.NEW_LINE)
+            with self.loop(f"ramp{len(self.instructions)}", repetitions=num_steps):
+                self.emit(q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero)
+                self.emit(
+                    q1asm_instructions.UPDATE_PARAMETERS,
+                    constants.GRID_TIME,
+                )
+                self.elapsed_time += constants.GRID_TIME
+                if amp_step_immediate >= 0:
+                    self.emit(
+                        q1asm_instructions.ADD,
+                        offs_reg,
+                        amp_step_immediate,
+                        offs_reg,
+                        comment=f"next incr offs by {amp_step_immediate}",
+                    )
+                else:
+                    self.emit(
+                        q1asm_instructions.SUB,
+                        offs_reg,
+                        -amp_step_immediate,
+                        offs_reg,
+                        comment=f"next incr offs by {amp_step_immediate}",
+                    )
+                self.auto_wait(step_duration - constants.GRID_TIME)
+            self.elapsed_time += step_duration * (num_steps - 1) if num_steps > 1 else 0
 
-        self._register_manager.free_register(offs_reg)
-        self._register_manager.free_register(offs_reg_zero)
+            self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
+            self.emit(q1asm_instructions.NEW_LINE)
 
     def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
