@@ -779,12 +779,10 @@ class QASMProgram:
         register = self._register_manager.allocate_register()
         comment = f"iterator for loop with label {label}"
 
-        def gen_start():
-            self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
-            self.emit(q1asm_instructions.NEW_LINE, label=label)
+        self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
+        self.emit(q1asm_instructions.NEW_LINE, label=label)
 
-        try:
-            yield gen_start()
-        finally:
-            self.emit(q1asm_instructions.LOOP, register, f"@{label}")
-            self._register_manager.free_register(register)
+        yield
+
+        self.emit(q1asm_instructions.LOOP, register, f"@{label}")
+        self._register_manager.free_register(register)
