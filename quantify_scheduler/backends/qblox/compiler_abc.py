@@ -720,6 +720,17 @@ class Sequencer:
     def _initialize_append_mode_registers(
         self, qasm: QASMProgram, acquisitions: List[OpInfo]
     ):
+        """
+        Adds the instructions to initialize the registers needed to use the append
+        bin mode to the program. This should be added in the header.
+
+        Parameters
+        ----------
+        qasm:
+            The program to add the instructions to.
+        acquisitions:
+            A list with all the acquisitions to consider.
+        """
         channel_to_reg = dict()
         for acq in acquisitions:
             if acq.data["bin_mode"] != BinMode.APPEND:
