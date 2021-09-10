@@ -681,26 +681,7 @@ class Sequencer:
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
 
-        channel_to_reg = dict()
-        for acq in acquisitions:
-            if acq.data["bin_mode"] != BinMode.APPEND:
-                continue
-
-            channel = acq.data["acq_channel"]
-            if channel in channel_to_reg:
-                acq_bin_idx_reg = channel_to_reg[channel]
-            else:
-                acq_bin_idx_reg = self.register_manager.allocate_register()
-                channel_to_reg[channel] = acq_bin_idx_reg
-
-                qasm.emit(
-                    q1asm_instructions.MOVE,
-                    0,
-                    acq_bin_idx_reg,
-                    comment=f"Initialize acquisition bin_idx for "
-                    f"ch{acq.data['acq_channel']}",
-                )
-            acq.bin_idx_register = acq_bin_idx_reg
+        self._initialize_append_mode_registers(qasm, acquisitions)
 
         # program body
         op_list = pulses + acquisitions
@@ -735,6 +716,30 @@ class Sequencer:
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
+
+    def _initialize_append_mode_registers(
+        self, qasm: QASMProgram, acquisitions: List[OpInfo]
+    ):
+        channel_to_reg = dict()
+        for acq in acquisitions:
+            if acq.data["bin_mode"] != BinMode.APPEND:
+                continue
+
+            channel = acq.data["acq_channel"]
+            if channel in channel_to_reg:
+                acq_bin_idx_reg = channel_to_reg[channel]
+            else:
+                acq_bin_idx_reg = self.register_manager.allocate_register()
+                channel_to_reg[channel] = acq_bin_idx_reg
+
+                qasm.emit(
+                    q1asm_instructions.MOVE,
+                    0,
+                    acq_bin_idx_reg,
+                    comment=f"Initialize acquisition bin_idx for "
+                    f"ch{acq.data['acq_channel']}",
+                )
+            acq.bin_idx_register = acq_bin_idx_reg
 
     @staticmethod
     def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:

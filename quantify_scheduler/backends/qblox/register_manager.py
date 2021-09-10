@@ -21,7 +21,10 @@ class RegisterManager:
                 "caused e.g. by attempting to use too many acquisition "
                 "channels."
             )
-        return self._available_registers.pop()
+        # to ensure deterministic behavior as sets are unsorted
+        first_element = sorted(self._available_registers)[0]
+        self._available_registers.remove(first_element)
+        return first_element
 
     def free_register(self, register: str):
         _verify_valid_register(register)

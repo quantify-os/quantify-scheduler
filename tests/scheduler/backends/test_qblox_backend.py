@@ -1073,6 +1073,7 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     # To regenerate the baseline image for this test uncomment these lines.
     #
     # import shutil
+    #
     # shutil.copy(
     #     compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
     #     baseline_assembly,
