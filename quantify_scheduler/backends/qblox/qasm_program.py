@@ -392,7 +392,11 @@ class QASMProgram:
             self.elapsed_time += constants.GRID_TIME
 
     def _acquire_weighted(
-        self, acquisition: OpInfo, bin_idx: int, idx0: int, idx1: int
+        self,
+        acquisition: OpInfo,
+        bin_idx: Union[int, str],
+        idx0: Union[int, str],
+        idx1: Union[int, str],
     ) -> None:
         """
         Adds the instruction for performing acquisitions with weights playback. The
@@ -421,7 +425,7 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_square(self, acquisition: OpInfo, bin_idx: int) -> None:
+    def _acquire_square(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
         """
         Adds the instruction for performing acquisitions without weights playback.
 
@@ -535,8 +539,6 @@ class QASMProgram:
             # Add a line break for visual separation of acquisition.
             self.emit(q1asm_instructions.NEW_LINE)
 
-            bin_idx = acquisition.data["acq_index"]
-
             acq_channel = acquisition.data["acq_channel"]
             acq_bin_idx_reg = acquisition.bin_idx_register
 
@@ -602,7 +604,6 @@ class QASMProgram:
             # Add a line break for visual separation of acquisition.
             self.emit(q1asm_instructions.NEW_LINE)
 
-            self._register_manager.free_register(acq_bin_idx_reg)
             self._register_manager.free_register(acq_idx0_reg)
             self._register_manager.free_register(acq_idx1_reg)
             self._register_manager.free_register(acq_channel_reg)
