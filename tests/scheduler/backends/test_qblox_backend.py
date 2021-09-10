@@ -717,7 +717,7 @@ def test_pulse_stitching_qasm_prog():
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert qasm.instructions[2][2][:4] == "20,R"
+    assert qasm.instructions[2][2] == "20,R0"
 
 
 @pytest.mark.parametrize("start_amp, final_amp", [(-1.1, 2.1), (1.23456, -2)])
