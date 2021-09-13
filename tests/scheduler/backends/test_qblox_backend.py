@@ -677,7 +677,7 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
     for seq in (f"seq{i}" for i in range(3)):
-        assert seq in full_program["qcm0"]
+        assert seq in full_program.compiled_instructions["qcm0"]
 
 
 # --------- Test QASMProgram class ---------

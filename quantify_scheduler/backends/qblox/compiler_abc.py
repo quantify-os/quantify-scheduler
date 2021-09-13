@@ -441,7 +441,7 @@ class Sequencer:
                     pulse.data, sampling_rate=SAMPLING_RATE
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
-                pulse.uuid = generate_uuid_from_wf_data(raw_wf_data)
+                pulse.uuid = helpers.generate_uuid_from_wf_data(raw_wf_data)
             else:
                 raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
                     reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
@@ -579,8 +579,8 @@ class Sequencer:
                 waveforms_data[1], sampling_rate=SAMPLING_RATE
             )
             acq.uuid = "{}_{}".format(
-                generate_uuid_from_wf_data(raw_wf_data_real),
-                generate_uuid_from_wf_data(raw_wf_data_imag),
+                helpers.generate_uuid_from_wf_data(raw_wf_data_real),
+                helpers.generate_uuid_from_wf_data(raw_wf_data_imag),
             )
             if acq.uuid not in waveforms_complex:
                 self._settings.duration = len(raw_wf_data_real)
