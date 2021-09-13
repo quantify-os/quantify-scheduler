@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+# pylint: disable=comparison-with-callable
 """QASM program class for Qblox backend."""
 from __future__ import annotations
 from contextlib import contextmanager
@@ -9,10 +10,15 @@ from typing import List, Union, Optional
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
-from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox import constants
+
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.backends.qblox import (
+    q1asm_instructions,
+    constants,
+    reserved_registers,
+    helpers,
+)
 from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.backends.qblox import helpers
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_abc
@@ -32,8 +38,12 @@ class QASMProgram:
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
+        self.time_last_acquisition_triggered: Optional[int] = None
+        """Time on which the last acquisition was triggered. Is `None` if no previous
+        acquisition was triggered."""
         self.instructions: List[list] = list()
-        """A list containing the instructions added to the program"""
+        """A list containing the instructions added to the program. The instructions
+        added are in turn a list of the instruction string with arguments."""
 
     @staticmethod
     def get_instruction_as_list(
@@ -69,12 +79,6 @@ class QASMProgram:
         SyntaxError
             More arguments passed than the sequencer allows.
         """
-        max_args_amount = 3
-        if len(args) > max_args_amount:
-            raise SyntaxError(
-                f"Too many arguments supplied to `get_instruction_as_list` for "
-                f"instruction {instruction}."
-            )
         instr_args = ",".join(str(arg) for arg in args)
 
         label_str = f"{label}:" if label is not None else ""
@@ -96,11 +100,34 @@ class QASMProgram:
 
     # --- QOL functions -----
 
-    def auto_wait(self, wait_time: int):
+    def set_marker(self, marker_setting: Union[str, int] = "0000") -> None:
+        """
+        Sets the marker from a string representing a binary number. Each digit
+        corresponds to a marker e.g. '0010' sets the second marker to True.
+
+        Parameters
+        ----------
+        marker_setting
+            The string representing a binary number.
+        """
+        if isinstance(marker_setting, str):
+            assert len(marker_setting) == 4, "Maximum of 4 markers expected."
+            marker_binary = int(marker_setting, 2)
+        else:
+            assert marker_setting <= 0b1111
+            marker_binary = marker_setting
+        self.emit(
+            q1asm_instructions.SET_MARKER,
+            marker_binary,
+            comment=f"set markers to {marker_setting}",
+        )
+
+    def auto_wait(self, wait_time: int) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
-        instructions.
+        instructions. If the number of wait instructions is too high (>4), a loop will
+        be used.
 
         Parameters
         ----------
@@ -149,7 +176,7 @@ class QASMProgram:
 
         self.elapsed_time += wait_time
 
-    def wait_till_start_operation(self, operation: OpInfo):
+    def wait_till_start_operation(self, operation: OpInfo) -> None:
         """
         Waits until the start of a pulse or acquisition.
 
@@ -163,6 +190,16 @@ class QASMProgram:
         ValueError
             If wait time < 0.
         """
+        if not helpers.is_multiple_of_grid_time(
+            operation.timing, grid_time_ns=constants.GRID_TIME
+        ):
+            raise ValueError(
+                f"Start time of operation is invalid. Qblox QCM and QRM "
+                f"enforce a grid time of {constants.GRID_TIME} ns. Please "
+                f"make sure all operations start at an interval of "
+                f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
+                f"{repr(operation)}."
+            )
         start_time = helpers.to_grid_time(operation.timing)
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:
@@ -175,7 +212,7 @@ class QASMProgram:
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
-    def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int):
+    def wait_till_start_then_play(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Waits until the start of the pulse, sets the QASMRuntimeSettings and plays the
         pulse.
@@ -192,7 +229,9 @@ class QASMProgram:
         self.wait_till_start_operation(pulse)
         self.auto_play_pulse(pulse, idx0, idx1)
 
-    def _stitched_pulse(self, duration: float, loop_reg: str, idx0: int, idx1: int):
+    def _stitched_pulse(
+        self, duration: float, loop_reg: str, idx0: int, idx1: int
+    ) -> None:
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
         if repetitions > 0:
@@ -224,7 +263,7 @@ class QASMProgram:
             )
         self.elapsed_time += pulse_time_remaining
 
-    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_stitched_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Stitches multiple square pulses together to form one long square pulse.
 
@@ -233,14 +272,14 @@ class QASMProgram:
         pulse
             The pulse to play.
         idx0
-            Index in the awg_dict corresponding to the waveform for the I channel.
+            Index in the waveforms_dict corresponding to the waveform for the I channel.
         idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel.
+            Index in the waveforms_dict corresponding to the waveform for the Q channel.
         """
         self.update_runtime_settings(pulse)
         self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
 
-    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int):
+    def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Generates a staircase through offset instructions.
 
@@ -327,7 +366,7 @@ class QASMProgram:
         self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
         self.emit(q1asm_instructions.NEW_LINE)
 
-    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int):
+    def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
         Generates the instructions to play a pulse and updates the timing. Automatically
         takes care of custom pulse behavior.
@@ -337,9 +376,9 @@ class QASMProgram:
         pulse
             The pulse to play.
         idx0
-            Index in the awg_dict corresponding to the waveform for the I channel.
+            Index in the waveforms_dict corresponding to the waveform for the I channel.
         idx1
-            Index in the awg_dict corresponding to the waveform for the Q channel.
+            Index in the waveforms_dict corresponding to the waveform for the Q channel.
         """
         reserved_pulse_mapping = {
             "stitched_square_pulse": self.play_stitched_pulse,
@@ -352,6 +391,226 @@ class QASMProgram:
             self.update_runtime_settings(pulse)
             self.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
             self.elapsed_time += constants.GRID_TIME
+
+    def _acquire_weighted(
+        self, acquisition: OpInfo, bin_idx: int, idx0: int, idx1: int
+    ) -> None:
+        """
+        Adds the instruction for performing acquisitions with weights playback. The
+        weights get multiplied sample-wise with the acquired trace.
+
+        Parameters
+        ----------
+        acquisition
+            The acquisition info for the acquisition to perform.
+        bin_idx
+            The bin to store the result in.
+        idx0
+            Index of the weight waveform played on the I path.
+        idx1
+            Index of the weight waveform played on the Q path.
+        """
+        measurement_idx = acquisition.data["acq_channel"]
+        self.emit(
+            q1asm_instructions.ACQUIRE_WEIGHED,
+            measurement_idx,
+            bin_idx,
+            idx0,
+            idx1,
+            constants.GRID_TIME,
+            comment=f"Store acq in acq_channel:{measurement_idx}, bin_idx:{bin_idx}",
+        )
+        self.elapsed_time += constants.GRID_TIME
+
+    def _acquire_square(self, acquisition: OpInfo, bin_idx: int) -> None:
+        """
+        Adds the instruction for performing acquisitions without weights playback.
+
+        Parameters
+        ----------
+        acquisition
+            The acquisition info for the acquisition to perform.
+        bin_idx
+            The bin_idx to store the result in.
+        """
+        duration_ns = int(acquisition.duration * 1e9)
+        if self.parent.settings.integration_length_acq is None:
+            if duration_ns % constants.GRID_TIME != 0:
+                raise ValueError(
+                    f"Attempting to perform square acquisition with a "
+                    f"duration of {duration_ns} ns. Please ensure the "
+                    f"duration is a multiple of {constants.GRID_TIME} "
+                    f"ns.\n\nException caused by {repr(acquisition)}."
+                )
+            self.parent.settings.integration_length_acq = duration_ns
+        elif self.parent.settings.integration_length_acq != duration_ns:
+            raise ValueError(
+                f"Attempting to set an integration_length of {duration_ns} "
+                f"ns, while this was previously determined to be "
+                f"{self.parent.settings.integration_length_acq}. Please "
+                f"check whether all square acquisitions in the schedule "
+                f"have the same duration."
+            )
+
+        measurement_idx = acquisition.data["acq_channel"]
+        self.emit(
+            q1asm_instructions.ACQUIRE,
+            measurement_idx,
+            bin_idx,
+            constants.GRID_TIME,
+        )
+        self.elapsed_time += constants.GRID_TIME
+
+    def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int) -> None:
+        """
+        Automatically adds an acquisition. Keeps track of the time since the last
+        acquisition was started to prevent FIFO errors.
+
+        Parameters
+        ----------
+        acquisition:
+            The acquisition to start.
+        idx0:
+            Index of the waveform in the weights dict to use as weights for path0.
+        idx1:
+            Index of the waveform in the weights dict to use as weights for path1.
+        """
+        if self.time_last_acquisition_triggered is not None:
+            if (
+                self.elapsed_time - self.time_last_acquisition_triggered
+                < constants.MIN_TIME_BETWEEN_ACQUISITIONS
+            ):
+                raise ValueError(
+                    f"Attempting to start an acquisition at t={self.elapsed_time} "
+                    f"ns, while the last acquisition was started at "
+                    f"t={self.time_last_acquisition_triggered}. Please ensure "
+                    f"a minimum interval of "
+                    f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
+                    f"acquisitions.\n\nError caused by acquisition:\n"
+                    f"{repr(acquisition)}."
+                )
+
+        self.time_last_acquisition_triggered = self.elapsed_time
+        protocol_to_acquire_func_mapping = {
+            "trace": self._acquire_square,
+            "weighted_integrated_complex": self._acquire_weighted,
+            "ssb_integration_complex": self._acquire_square,
+        }
+
+        ################################################################################
+        # BinMode.AVERAGE
+        ################################################################################
+        if acquisition.data["bin_mode"] == BinMode.AVERAGE:
+
+            bin_idx = acquisition.data["acq_index"]
+
+            acquisition_func = protocol_to_acquire_func_mapping.get(
+                acquisition.data["protocol"], None
+            )
+            if acquisition_func is None:
+                raise ValueError(
+                    f"Attempting to use protocol "
+                    f"'{acquisition.data['protocol']}', which is not defined"
+                    f" in Qblox backend.\n\nError triggered because of acquisition"
+                    f" {repr(acquisition)}."
+                )
+            args = [
+                arg for arg in [acquisition, bin_idx, idx0, idx1] if arg is not None
+            ]
+            acquisition_func(*args)
+
+        ################################################################################
+        # BinMode.APPEND
+        ################################################################################
+
+        elif acquisition.data["bin_mode"] == BinMode.APPEND:
+            if acquisition.data["protocol"] == "trace":
+                raise NotImplementedError(
+                    f"Invalid combination of bin_mode and acquisition protocol, "
+                    f"{BinMode.APPEND} is currently only supported in combination with "
+                    f"the weighted integration based protocols in the Qblox backend."
+                    f"\n\nAttempting to use {acquisition.data['bin_mode']} for "
+                    f"operation {repr(acquisition)}."
+                )
+
+            # Add a line break for visual separation of acquisition.
+            self.emit(q1asm_instructions.NEW_LINE)
+
+            bin_idx = acquisition.data["acq_index"]
+
+            acq_channel = acquisition.data["acq_channel"]
+            # gettattr should be avoided, for bin allocation see #190
+            acq_bin_idx_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
+            )
+
+            acquisition_func = protocol_to_acquire_func_mapping.get(
+                acquisition.data["protocol"], None
+            )
+
+            acq_channel_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
+            )
+
+            acq_idx0_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX0_CH{acq_channel}"
+            )
+            acq_idx1_reg = getattr(
+                reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
+            )
+
+            # Need to store values in registers as the acquire weighted
+            # requires either all register inputs or all immediate values
+            self.emit(
+                q1asm_instructions.MOVE,
+                acq_channel,
+                acq_channel_reg,
+                comment=f"Store acq_channel in {acq_channel_reg}.",
+            )
+
+            # Explicit checking of acquisition function to ensure right
+            # explicit passing of arguments over list comprehension of args for
+            # readability.
+            if acquisition_func == self._acquire_weighted:
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    idx0,
+                    acq_idx0_reg,
+                    comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                )
+                self.emit(
+                    q1asm_instructions.MOVE,
+                    idx1,
+                    acq_idx1_reg,
+                    comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                )
+
+                acquisition_func(
+                    acquisition=acquisition,
+                    bin_idx=acq_bin_idx_reg,
+                    idx0=acq_idx0_reg,
+                    idx1=acq_idx1_reg,
+                )
+            elif acquisition_func == self._acquire_square:
+                acquisition_func(
+                    acquisition=acquisition,
+                    bin_idx=acq_bin_idx_reg,
+                )
+            else:
+                raise NotImplementedError(
+                    "BinMode.APPEND is only compatible with acquisition protocols "
+                    "'ssb_integration_complex' and 'ssb_integration_complex'."
+                )
+
+            self.emit(
+                q1asm_instructions.ADD,
+                acq_bin_idx_reg,
+                1,
+                acq_bin_idx_reg,
+                comment=f"Increment bin_idx for ch{acq_channel}",
+            )
+            # Add a line break for visual separation of acquisition.
+            self.emit(q1asm_instructions.NEW_LINE)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -369,8 +628,7 @@ class QASMProgram:
             dict.
         """
         self.wait_till_start_operation(acquisition)
-        self.emit(q1asm_instructions.ACQUIRE, idx0, idx1, constants.GRID_TIME)
-        self.elapsed_time += constants.GRID_TIME
+        self.auto_acquire(acquisition, idx0, idx1)
 
     def update_runtime_settings(self, operation: OpInfo):
         """
@@ -495,18 +753,17 @@ class QASMProgram:
 
         .. jupyter-execute::
 
-            import inspect, os, json
+            import inspect, json
             from quantify_scheduler.types import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-            import quantify_scheduler.schemas.examples as es
+            from quantify_scheduler.schemas.examples import utils
             from quantify_scheduler.backends.qblox import (
                 instrument_compilers, compiler_container
             )
 
-            esp = inspect.getfile(es)
-            map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
-            with open(map_f, "r") as f:
-                HARDWARE_MAPPING = json.load(f)
+            HARDWARE_MAPPING = utils.load_json_example_scheme(
+                "qblox_test_mapping.json"
+            )
 
             sched = Schedule("example")
             container = compiler_container.CompilerContainer(sched)
@@ -522,7 +779,7 @@ class QASMProgram:
                 qasm.auto_wait(100)
 
             qasm.instructions
-        """  # FIXME replace json.load() quantify-scheduler#132 #pylint: disable=fixme
+        """
         comment = f"iterator for loop with label {label}"
 
         def gen_start():

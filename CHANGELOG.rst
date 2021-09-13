@@ -5,7 +5,32 @@ Changelog
 Unreleased
 ----------
 
-* Docs - Added bibliography with sphinxcontrib-bibtex extension (!171)
+
+
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Mixer corrections in Qblox backend are broken because of the switch to real-time modulation. The support of mixer corrections in the Qblox firmware is under development.
+* The `schedules.timedomain_schedules.allxy_sched` function no longer accepts the string "All" as an argument to the `element_select_idx` keyword.
+* * The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Compilation - Added the ability to specify the BinMode at the quantum-circuit layer (#183, !180).
+* Compilation - qcompile no longer modifies schedules (#102, !178).
+* Control - Added a first version of the QuantumDevice object (#148, !180).
+* Control - A single-qubit ScheduleGettable has been added (#36, !180).
+* Docs - Added bibliography with sphinxcontrib-bibtex extension (!171).
+* Docs - Fixed missing files in API reference (!176).
+* InstrumentCoordinator - CompiledSchedule class added to specify interfaces of InstrumentCoordinator and compilation functions (#174, !177).
+* InstrumentCoordinator - CompiledSchedule.last_schedule method added to provide access to last executed schedule (#167, !177).
+* Qblox Backend - Added support for qblox_instruments version 0.4.0 (new acquisition path) (!143).
+* Qblox Backend - Waveforms are now compared using the normalized data array rather than the parameterized description (!182).
+* Qblox Backend - Support for append bin mode (#184, !180).
+* Updated existing schedules to make use of the acquisition index (#180, !180).
+* Added a function to extract acquisition metadata from a schedule (#179, !180).
+
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------

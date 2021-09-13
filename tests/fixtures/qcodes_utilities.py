@@ -1,8 +1,6 @@
-# -----------------------------------------------------------------------------
-# Description:    Pytest fixtures for quantify-scheduler.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
 
@@ -10,7 +8,7 @@ import pytest
 from qcodes import Instrument
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=False)
 def close_all_instruments():
     """Makes sure that after startup and teardown all instruments are closed"""
     Instrument.close_all()

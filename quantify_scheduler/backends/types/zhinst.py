@@ -120,6 +120,10 @@ class Device(DataClassJsonMixin):
     n_channels :
         The number of physical channels of this ZI Instrument.
         This field is automatically populated.
+    last_seq_wait_clocks :
+        The number of clocks tics to wait between the last sequence
+        for the QAS to process and not time out. (default = 2000)
+        [Only relevant for UHFQA]
     """
 
     name: str
@@ -132,6 +136,7 @@ class Device(DataClassJsonMixin):
     channel_3: Optional[Output] = None
     clock_select: Optional[int] = 0
     channelgrouping: int = 0
+    last_seq_wait_clocks: int = 2000
     mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     device_type: DeviceType = DeviceType.NONE
     clock_rate: Optional[int] = field(init=False)

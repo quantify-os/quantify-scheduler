@@ -39,8 +39,8 @@ class OpInfo(DataClassJsonMixin):
     needed to play it.
     """
 
-    uuid: str
-    """A unique identifier for this pulse/acquisition."""
+    name: str
+    """Name of the operation that this pulse/acquisition is part of."""
     data: dict
     """The pulse/acquisition info taken from the `data` property of the
     pulse/acquisition in the schedule."""
@@ -49,6 +49,8 @@ class OpInfo(DataClassJsonMixin):
     Note that this is a combination of the start time "t_abs" of the schedule
     operation, and the t0 of the pulse/acquisition which specifies a time relative
     to "t_abs"."""
+    uuid: Optional[str] = None
+    """A unique identifier for this pulse/acquisition."""
     pulse_settings: Optional[QASMRuntimeSettings] = None
     """Settings that are to be set by the sequencer before playing this
     pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
@@ -82,7 +84,7 @@ class OpInfo(DataClassJsonMixin):
 
     def __repr__(self):
         repr_string = 'Acquisition "' if self.is_acquisition else 'Pulse "'
-        repr_string += str(self.uuid)
+        repr_string += f"{str(self.name)} - {str(self.uuid)}"
         repr_string += f'" (t={self.timing} to {self.timing+self.duration})'
         repr_string += f" data={self.data}"
         return repr_string
@@ -128,11 +130,11 @@ class PulsarSettings(DataClassJsonMixin):
     ref: str
     """The reference source. Should either be "internal" or "external", will raise an
     exception in the instrument coordinator component otherwise."""
-    hardware_averages: int = 1
-    """The number of repetitions of the Schedule."""
-    acq_mode: str = "SSBIntegrationComplex"
-    """The acquisition mode the Pulsar operates in. This setting will most likely
-    change in the future."""
+    scope_mode_sequencer: Optional[str] = None
+    """The name of the sequencer that triggers scope mode Acquisitions. Only a single
+    sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
+    on the driver as well as used for internal checks. Having multiple sequencers
+    perform trace acquisition will result in an exception being raised."""
     offset_ch0_path0: Union[float, None] = None
     """The DC offset on the path 0 of channel 0."""
     offset_ch0_path1: Union[float, None] = None
@@ -142,8 +144,8 @@ class PulsarSettings(DataClassJsonMixin):
     offset_ch1_path1: Union[float, None] = None
     """The DC offset on path 1 of channel 1."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -153,7 +155,7 @@ class PulsarSettings(DataClassJsonMixin):
         mapping
         """
         ref: str = mapping["ref"]
-        return PulsarSettings(ref=ref)
+        return cls(ref=ref)
 
 
 @dataclass
@@ -219,6 +221,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Duration of the acquisition. This is a temporary addition for not yet merged the
     InstrumentCoordinator to function properly. This will be removed in a later
     version!"""
+    integration_length_acq: Optional[int] = None
+    """Integration length for acquisitions. Must be a multiple of 4 ns."""
 
 
 @dataclass

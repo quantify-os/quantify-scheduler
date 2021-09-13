@@ -4,17 +4,21 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.types import qblox
 
 
 class CachedSchedule:
     """
-    The CachedSchedule class wraps around the types.Schedule
+    The CachedSchedule class wraps around the Schedule
     class and populates the lookup dictionaries that are
     used for compilation of the backends.
     """
@@ -390,3 +394,112 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
             acqid_acqinfo_dict[acq_id] = acq_info
 
     return acqid_acqinfo_dict
+
+
+def extract_acquisition_metadata_from_schedule(
+    schedule: ScheduleBase,
+) -> AcquisitionMetadata:
+    """
+    Extracts acquisition metadata from a schedule.
+
+    This function operates under certain assumptions with respect to the schedule.
+
+    - The acquisition_metadata should be sufficient to initialize the xarray dataset
+      (described in quantify-core !212) that executing the schedule will result in.
+    - All measurements in the schedule use the same acquisition protocol.
+    - The used acquisition index channel combinations for each measurement are unique.
+    - The used acquisition indices for each channel are the same.
+    - When :class:`~quantify_scheduler.enums.BinMode` is :code:`APPEND` The number of
+      data points per acquisition index assumed to be given by the
+      schedule's repetition property. This implies no support for feedback (conditional
+      measurements).
+
+    Parameters
+    ----------
+    schedule
+        schedule containing measurements from which acquisition metadata can be
+        extracted.
+
+    Returns
+    -------
+    :
+        The acquisition metadata provides a summary of the
+        acquisition protocol, bin-mode, return-type and acquisition indices
+        of the acquisitions in the schedule.
+
+    Raises
+    ------
+
+    AssertionError
+
+        If not all acquisition protocols in a schedule are the same.
+        If not all acquisitions use the same bin_mode.
+        If the return type of the acquisitions is different.
+
+
+    """  # FIXME update when quantify-core!212 spec is ready # pylint: disable=fixme
+    # convert to a cached schedule to have useful metadata available.
+    cached_sched = CachedSchedule(schedule)
+
+    # a dictionary containing the acquisition indices used for each channel
+
+    return _extract_acquisition_metadata_from_acquisition_protocols(
+        list(cached_sched.acqid_acqinfo_dict.values())
+    )
+
+
+def _extract_acquisition_metadata_from_acquisition_protocols(
+    acquisition_protocols: List[Dict[str, Any]],
+) -> AcquisitionMetadata:
+    """
+    Private function containing the logic of extract_acquisition_metadata_from_schedule.
+    The logic is factored out as to work around limitations of the different interfaces
+    required.
+
+    Parameters
+    ----------
+    acquisition_protocols
+        A list of acquisition protocols.
+    """
+    acq_indices: Dict[int, List[int]] = {}
+
+    for i, acq_protocol in enumerate(acquisition_protocols):
+        if i == 0:
+            # the protocol and bin mode of the first
+            protocol = acq_protocol["protocol"]
+            bin_mode = acq_protocol["bin_mode"]
+            acq_return_type = acq_protocol["acq_return_type"]
+
+        # test limitation: all acquisition protocols in a schedule must be of
+        # the same kind
+        assert acq_protocol["protocol"] == protocol
+        assert acq_protocol["bin_mode"] == bin_mode
+        assert acq_protocol["acq_return_type"] == acq_return_type
+
+        # add the individual channel
+        if acq_protocol["acq_channel"] not in acq_indices.keys():
+            acq_indices[acq_protocol["acq_channel"]] = []
+
+        acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
+
+    # combine the information in the acq metada dataclass.
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol=protocol,
+        bin_mode=bin_mode,
+        acq_indices=acq_indices,
+        acq_return_type=acq_return_type,
+    )
+    return acq_metadata
+
+
+def _extract_acquisition_metadata_from_acquisitions(
+    acquisitions: List[qblox.OpInfo],
+) -> AcquisitionMetadata:
+    """
+    Private variant of extract_acquisition_metadata_from_schedule explicitly for use
+    with the qblox assembler backend.
+    """
+    acquisition_protocols = [acq.data for acq in acquisitions]
+    return _extract_acquisition_metadata_from_acquisition_protocols(
+        acquisition_protocols
+    )

@@ -26,7 +26,7 @@ The :class:`~quantify_scheduler.types.Schedule` contains information on *when* o
 When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.Schedule.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 Creating a schedule
@@ -56,7 +56,8 @@ In the following example, we will create a function to generate a :class:`~quant
             sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
             sched.add(CZ(qC=q0, qT=q1))
             sched.add(Rxy(theta=angle, phi=0, qubit=q0) )
-            sched.add(Measure(q0, q1, acq_index=acq_index))  # denote where to store the data
+            sched.add(Measure(q0, acq_index=acq_index))  # denote where to store the data
+            sched.add(Measure(q1, acq_index=acq_index), ref_pt="start")
 
         return sched
 

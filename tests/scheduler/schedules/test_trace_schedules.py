@@ -1,8 +1,5 @@
-# -----------------------------------------------------------------------------
-# Description:    Tests for Zurich Instruments backend.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 # pylint: disable=missing-function-docstring
 
 from quantify_scheduler import types

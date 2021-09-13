@@ -47,7 +47,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx-jsonschema",
     "jupyter_sphinx",
-    "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
@@ -213,7 +212,6 @@ texinfo_documents = [
 # avoid duplicate label warning even when manual label has been used
 suppress_warnings = ["autosectionlabel.*"]
 
-blockdiag_html_image_format = "SVG"
 
 # used by scanpydoc.elegant_typehints to correctly link to external docs
 qualname_overrides = {
@@ -262,3 +260,18 @@ import marshmallow
 #     from my_expensive_to_import_module import BlaClass # Potential circular import
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
+
+
+# Enable nitpicky mode - which ensures that all references in the docs
+# resolve.
+
+nitpicky = True
+nitpick_ignore = []
+
+with open("nitpick-exceptions.txt") as nitpick_exceptions:
+    for line in nitpick_exceptions:
+        if line.strip() == "" or line.startswith("#"):
+            continue
+        dtype, target = line.split(None, 1)
+        target = target.strip()
+        nitpick_ignore.append((dtype, target))

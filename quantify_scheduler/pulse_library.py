@@ -4,10 +4,11 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from qcodes import validators
 from quantify_scheduler.types import Operation
 from quantify_scheduler.resources import BasebandClockResource
+from quantify_scheduler.helpers.waveforms import area_pulses
 
 
 class IdlePulse(Operation):
@@ -481,3 +482,115 @@ class DRAGPulse(Operation):
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
         return self._get_signature(pulse_info)
+
+
+def create_dc_compensation_pulse(
+    pulses: List[Operation],
+    sampling_rate: int,
+    port: str,
+    t0: float = 0,
+    amp: Optional[float] = None,
+    duration: Optional[float] = None,
+    data: Optional[Dict[str, Any]] = None,
+) -> SquarePulse:
+    """
+    Calculates a SquarePulse to counteract charging effects based on a list of pulses.
+
+    Parameters
+    ----------
+    pulses
+        List of pulses to compensate
+    sampling_rate
+        Resolution to calculate the enclosure of the
+        pulses to calculate the area to compensate.
+    amp
+        Desired amplitude of the DCCompensationPulse.
+        Leave to None to calculate the value for compensation,
+        in this case you must assign a value to duration.
+        The sign of the amplitude is ignored and ajusted
+        automatically to perform the compensation.
+    duration
+        Desired pulse duration in seconds.
+        Leave to None to calculate the value for compensation,
+        in this case you must assign a value to amp.
+        The sign of the value of amp given in the previous step
+        is ajusted to perform the compensation.
+    port
+        Port to perform the compensation. Any pulse that does not
+        belong to the specified port is ignored.
+    clock
+        Clock used to modulate the pulse.
+    phase
+        Phase of the pulse in degrees.
+    t0
+        Time in seconds when to start the pulses relative to the start time
+        of the Operation in the Schedule.
+    data
+        The operation's dictionary, by default None
+        Note: if the data parameter is not None all other parameters are
+        overwritten using the contents of data.
+
+    Returns
+    -------
+
+    :
+        Returns a SquarePulse object that compensates all pulses passed as
+        argument
+    """
+    # Make sure that the list contains at least one element
+    assert len(pulses) > 0
+
+    pulse_info_list: List[Dict[str, Any]] = _extract_pulses(pulses, port)
+
+    # Calculate the area given by the list of pulses
+    area: float = area_pulses(pulse_info_list, sampling_rate)
+
+    # Calculate the compensation amplitude and duration based on area
+    c_duration: float
+    c_amp: float
+    if amp is None and duration is not None:
+        assert duration > 0
+        c_duration = duration
+        c_amp = -area / c_duration
+    elif amp is not None and duration is None:
+        if area > 0:
+            c_amp = -abs(amp)
+        else:
+            c_amp = abs(amp)
+        c_duration = abs(area / c_amp)
+    else:
+        raise ValueError(
+            "The `DCCompensationPulse` allows either amp or duration to "
+            + "be specified, not both. Both amp and duration were passed."
+        )
+
+    return SquarePulse(
+        amp=c_amp,
+        duration=c_duration,
+        port=port,
+        clock=BasebandClockResource.IDENTITY,
+        phase=0,
+        t0=t0,
+        data=data,
+    )
+
+
+def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
+    # Collect all pulses for the given port
+    pulse_info_list: List[Dict[str, Any]] = list()
+
+    for pulse in pulses:
+        for pulse_info in pulse["pulse_info"]:
+            if (
+                pulse_info["port"] == port
+                and pulse_info["clock"] == BasebandClockResource.IDENTITY
+            ):
+                pulse_info_list.append(pulse_info)
+
+    if len(pulse_info_list) == 0:
+        raise ValueError(
+            "`DCCompensationPulse` needs at least one pulse with"
+            + "clock=BasebandClockResource.IDENTITY for the port {}".format(port)
+        )
+
+    return pulse_info_list
