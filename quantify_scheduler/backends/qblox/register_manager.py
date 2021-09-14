@@ -1,20 +1,18 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""
-Utility class for dynamically allocating registers.
-"""
+"""Utility class for dynamically allocating registers for Qblox sequencers."""
 from typing import Set
 from quantify_scheduler.backends.qblox import constants
 
 
 class RegisterManager:
     """
-    Utility class that keeps track of all then registers that are still available.
+    Utility class that keeps track of all the registers that are still available.
     """
 
     def __init__(self):
         """
-        Instantiates the `RegisterManager`
+        Instantiates the `RegisterManager`.
         """
         self._available_registers: Set[str] = {
             f"R{idx}" for idx in range(constants.NUMBER_OF_REGISTERS)
@@ -38,7 +36,7 @@ class RegisterManager:
             raise IndexError(
                 "Out of registers. Attempting to use more registers than "
                 "available in the Q1 sequence processor. This can be "
-                "caused e.g. by attempting to use too many acquisition "
+                "caused, e.g., by attempting to use too many acquisition "
                 "channels."
             )
         # to ensure deterministic behavior as sets are unsorted
@@ -46,13 +44,13 @@ class RegisterManager:
         self._available_registers.remove(first_element)
         return first_element
 
-    def free_register(self, register: str):
+    def free_register(self, register: str) -> None:
         """
         Frees up a register to be reused.
 
         Parameters
         ----------
-        register:
+        register
             The register to free up.
 
         Raises
@@ -65,7 +63,7 @@ class RegisterManager:
         _verify_valid_register(register)
         if register in self.available_registers:
             raise RuntimeError(
-                f'Attempting to free register "{register}", but this register is not in'
+                f"Attempting to free register '{register}', but this register is not in"
                 f"use."
             )
         self._available_registers.add(register)
@@ -83,19 +81,19 @@ class RegisterManager:
         return self._available_registers
 
 
-def _verify_valid_register(register_name: str):
+def _verify_valid_register(register_name: str) -> None:
     """
     Verifies whether the passed name is a valid register name. Raises on any of the
     conditions:
 
-        1. `register_name` does not start with "R" or
-        2. `register_name` does not have an integer next
-        3. the integer is higher than the number of registers in the sequence processor
-        4. the integer is negative valued
+    1. `register_name` does not start with "R" or
+    2. `register_name` does not have an integer next
+    3. the integer is higher than the number of registers in the sequence processor
+    4. the integer is negative valued
 
     Parameters
     ----------
-    register_name:
+    register_name
         The register to verify.
 
     Raises
@@ -106,7 +104,7 @@ def _verify_valid_register(register_name: str):
 
     def raise_error():
         raise ValueError(
-            f'Invalid register "{register_name}"! The correct format is "R" followed by'
+            f"Invalid register '{register_name}'! The correct format is 'R' followed by"
             f" an integer between 0 and {constants.NUMBER_OF_REGISTERS}."
         )
 
