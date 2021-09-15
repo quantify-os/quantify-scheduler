@@ -25,6 +25,7 @@ class TestRegisterManager:
         initial_amount_of_registers = len(pool.available_registers)
         pool.allocate_register()
 
+        # since we remove one from the pool when we allocate
         assert len(pool.available_registers) == initial_amount_of_registers - 1
 
     def test_free_register(self, make_rm):
