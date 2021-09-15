@@ -58,6 +58,8 @@ class OpInfo(DataClassJsonMixin):
     allows to reuse the same waveform multiple times despite a difference in
     amplitude."""
     bin_idx_register: Optional[str] = None
+    """The register used to keep track of the bin index, only not None for append mode
+    acquisitions."""
 
     @property
     def duration(self) -> float:
