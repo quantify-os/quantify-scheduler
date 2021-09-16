@@ -15,7 +15,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     constants,
-    reserved_registers,
+    register_manager,
     helpers,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo
@@ -35,6 +35,9 @@ class QASMProgram:
     def __init__(self, parent: compiler_abc.Sequencer):
         self.parent = parent
         """A reference to the sequencer for which we are compiling this program."""
+        self._register_manager: register_manager.RegisterManager = (
+            parent.register_manager
+        )
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
@@ -152,9 +155,8 @@ class QASMProgram:
             repetitions = wait_time // constants.IMMEDIATE_SZ_WAIT
             instr_number_using_loop = 4
             if repetitions > instr_number_using_loop:
-                loop_reg = "R2"
                 loop_label = f"wait{len(self.instructions)}"
-                with self.loop(loop_reg, loop_label, repetitions):
+                with self.loop(loop_label, repetitions):
                     self.emit(
                         q1asm_instructions.WAIT,
                         constants.IMMEDIATE_SZ_WAIT,
@@ -229,14 +231,11 @@ class QASMProgram:
         self.wait_till_start_operation(pulse)
         self.auto_play_pulse(pulse, idx0, idx1)
 
-    def _stitched_pulse(
-        self, duration: float, loop_reg: str, idx0: int, idx1: int
-    ) -> None:
+    def _stitched_pulse(self, duration: float, idx0: int, idx1: int) -> None:
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
         if repetitions > 0:
             with self.loop(
-                register=loop_reg,
                 label=f"stitch{len(self.instructions)}",
                 repetitions=repetitions,
             ):
@@ -277,7 +276,7 @@ class QASMProgram:
             Index in the waveforms_dict corresponding to the waveform for the Q channel.
         """
         self.update_runtime_settings(pulse)
-        self._stitched_pulse(pulse.duration, "R2", idx0, idx1)
+        self._stitched_pulse(pulse.duration, idx0, idx1)
 
     def play_staircase(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
@@ -294,77 +293,72 @@ class QASMProgram:
         """
         del idx0, idx1  # not used
 
-        loop_reg = "R2"
-        offs_reg = "R3"
-        offs_reg_zero = "R4"
+        with self.temp_register(2) as (offs_reg, offs_reg_zero):
+            num_steps = pulse.data["num_steps"]
+            start_amp = pulse.data["start_amp"]
+            final_amp = pulse.data["final_amp"]
+            step_duration = helpers.to_grid_time(pulse.duration / num_steps)
 
-        num_steps = pulse.data["num_steps"]
-        start_amp = pulse.data["start_amp"]
-        final_amp = pulse.data["final_amp"]
-        step_duration = helpers.to_grid_time(pulse.duration / num_steps)
-
-        amp_step = (final_amp - start_amp) / (num_steps - 1)
-        amp_step_immediate = self._expand_from_normalised_range(
-            amp_step / self.parent.parent.awg_output_volt,
-            constants.IMMEDIATE_SZ_OFFSET,
-            "offset_awg_path0",
-            pulse,
-        )
-        start_amp_immediate = self._expand_from_normalised_range(
-            start_amp / self.parent.parent.awg_output_volt,
-            constants.IMMEDIATE_SZ_OFFSET,
-            "offset_awg_path0",
-            pulse,
-        )
-        if start_amp_immediate < 0:
-            start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
-
-        self.emit(
-            q1asm_instructions.SET_AWG_GAIN,
-            constants.IMMEDIATE_SZ_GAIN // 2,
-            constants.IMMEDIATE_SZ_GAIN // 2,
-            comment="set gain to known value",
-        )
-        self.emit(
-            q1asm_instructions.MOVE,
-            start_amp_immediate,
-            offs_reg,
-            comment="keeps track of the offsets",
-        )
-        self.emit(
-            q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
-        )
-        self.emit(q1asm_instructions.NEW_LINE)
-        with self.loop(
-            loop_reg, f"ramp{len(self.instructions)}", repetitions=num_steps
-        ):
-            self.emit(q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero)
-            self.emit(
-                q1asm_instructions.UPDATE_PARAMETERS,
-                constants.GRID_TIME,
+            amp_step = (final_amp - start_amp) / (num_steps - 1)
+            amp_step_immediate = self._expand_from_normalised_range(
+                amp_step / self.parent.parent.awg_output_volt,
+                constants.IMMEDIATE_SZ_OFFSET,
+                "offset_awg_path0",
+                pulse,
             )
-            self.elapsed_time += constants.GRID_TIME
-            if amp_step_immediate >= 0:
-                self.emit(
-                    q1asm_instructions.ADD,
-                    offs_reg,
-                    amp_step_immediate,
-                    offs_reg,
-                    comment=f"next incr offs by {amp_step_immediate}",
-                )
-            else:
-                self.emit(
-                    q1asm_instructions.SUB,
-                    offs_reg,
-                    -amp_step_immediate,
-                    offs_reg,
-                    comment=f"next incr offs by {amp_step_immediate}",
-                )
-            self.auto_wait(step_duration - constants.GRID_TIME)
-        self.elapsed_time += step_duration * (num_steps - 1) if num_steps > 1 else 0
+            start_amp_immediate = self._expand_from_normalised_range(
+                start_amp / self.parent.parent.awg_output_volt,
+                constants.IMMEDIATE_SZ_OFFSET,
+                "offset_awg_path0",
+                pulse,
+            )
+            if start_amp_immediate < 0:
+                start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
 
-        self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
-        self.emit(q1asm_instructions.NEW_LINE)
+            self.emit(
+                q1asm_instructions.SET_AWG_GAIN,
+                constants.IMMEDIATE_SZ_GAIN // 2,
+                constants.IMMEDIATE_SZ_GAIN // 2,
+                comment="set gain to known value",
+            )
+            self.emit(
+                q1asm_instructions.MOVE,
+                start_amp_immediate,
+                offs_reg,
+                comment="keeps track of the offsets",
+            )
+            self.emit(
+                q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
+            )
+            self.emit(q1asm_instructions.NEW_LINE)
+            with self.loop(f"ramp{len(self.instructions)}", repetitions=num_steps):
+                self.emit(q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero)
+                self.emit(
+                    q1asm_instructions.UPDATE_PARAMETERS,
+                    constants.GRID_TIME,
+                )
+                self.elapsed_time += constants.GRID_TIME
+                if amp_step_immediate >= 0:
+                    self.emit(
+                        q1asm_instructions.ADD,
+                        offs_reg,
+                        amp_step_immediate,
+                        offs_reg,
+                        comment=f"next incr offs by {amp_step_immediate}",
+                    )
+                else:
+                    self.emit(
+                        q1asm_instructions.SUB,
+                        offs_reg,
+                        -amp_step_immediate,
+                        offs_reg,
+                        comment=f"next incr offs by {amp_step_immediate}",
+                    )
+                self.auto_wait(step_duration - constants.GRID_TIME)
+            self.elapsed_time += step_duration * (num_steps - 1) if num_steps > 1 else 0
+
+            self.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
+            self.emit(q1asm_instructions.NEW_LINE)
 
     def auto_play_pulse(self, pulse: OpInfo, idx0: int, idx1: int) -> None:
         """
@@ -393,7 +387,11 @@ class QASMProgram:
             self.elapsed_time += constants.GRID_TIME
 
     def _acquire_weighted(
-        self, acquisition: OpInfo, bin_idx: int, idx0: int, idx1: int
+        self,
+        acquisition: OpInfo,
+        bin_idx: Union[int, str],
+        idx0: Union[int, str],
+        idx1: Union[int, str],
     ) -> None:
         """
         Adds the instruction for performing acquisitions with weights playback. The
@@ -422,7 +420,7 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_square(self, acquisition: OpInfo, bin_idx: int) -> None:
+    def _acquire_square(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
         """
         Adds the instruction for performing acquisitions without weights playback.
 
@@ -536,81 +534,66 @@ class QASMProgram:
             # Add a line break for visual separation of acquisition.
             self.emit(q1asm_instructions.NEW_LINE)
 
-            bin_idx = acquisition.data["acq_index"]
-
             acq_channel = acquisition.data["acq_channel"]
-            # gettattr should be avoided, for bin allocation see #190
-            acq_bin_idx_reg = getattr(
-                reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
-            )
+            acq_bin_idx_reg = acquisition.bin_idx_register
 
             acquisition_func = protocol_to_acquire_func_mapping.get(
                 acquisition.data["protocol"], None
             )
 
-            acq_channel_reg = getattr(
-                reserved_registers, f"REGISTER_ACQ_CH{acq_channel}"
-            )
-
-            acq_idx0_reg = getattr(
-                reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX0_CH{acq_channel}"
-            )
-            acq_idx1_reg = getattr(
-                reserved_registers, f"REGISTER_ACQ_WEIGHT_IDX1_CH{acq_channel}"
-            )
-
-            # Need to store values in registers as the acquire weighted
-            # requires either all register inputs or all immediate values
-            self.emit(
-                q1asm_instructions.MOVE,
-                acq_channel,
-                acq_channel_reg,
-                comment=f"Store acq_channel in {acq_channel_reg}.",
-            )
-
-            # Explicit checking of acquisition function to ensure right
-            # explicit passing of arguments over list comprehension of args for
-            # readability.
-            if acquisition_func == self._acquire_weighted:
+            with self.temp_register(3) as (acq_channel_reg, acq_idx0_reg, acq_idx1_reg):
+                # Need to store values in registers as the acquire weighted
+                # requires either all register inputs or all immediate values
                 self.emit(
                     q1asm_instructions.MOVE,
-                    idx0,
-                    acq_idx0_reg,
-                    comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                    acq_channel,
+                    acq_channel_reg,
+                    comment=f"Store acq_channel in {acq_channel_reg}.",
                 )
+
+                # Explicit checking of acquisition function to ensure right
+                # explicit passing of arguments over list comprehension of args for
+                # readability.
+                if acquisition_func == self._acquire_weighted:
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx0,
+                        acq_idx0_reg,
+                        comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+                    )
+                    self.emit(
+                        q1asm_instructions.MOVE,
+                        idx1,
+                        acq_idx1_reg,
+                        comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                    )
+
+                    acquisition_func(
+                        acquisition=acquisition,
+                        bin_idx=acq_bin_idx_reg,
+                        idx0=acq_idx0_reg,
+                        idx1=acq_idx1_reg,
+                    )
+                elif acquisition_func == self._acquire_square:
+                    acquisition_func(
+                        acquisition=acquisition,
+                        bin_idx=acq_bin_idx_reg,
+                    )
+                else:
+                    raise NotImplementedError(
+                        "BinMode.APPEND is only compatible with acquisition protocols "
+                        "'ssb_integration_complex' and 'ssb_integration_complex'."
+                    )
+
                 self.emit(
-                    q1asm_instructions.MOVE,
-                    idx1,
-                    acq_idx1_reg,
-                    comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+                    q1asm_instructions.ADD,
+                    acq_bin_idx_reg,
+                    1,
+                    acq_bin_idx_reg,
+                    comment=f"Increment bin_idx for ch{acq_channel}",
                 )
-
-                acquisition_func(
-                    acquisition=acquisition,
-                    bin_idx=acq_bin_idx_reg,
-                    idx0=acq_idx0_reg,
-                    idx1=acq_idx1_reg,
-                )
-            elif acquisition_func == self._acquire_square:
-                acquisition_func(
-                    acquisition=acquisition,
-                    bin_idx=acq_bin_idx_reg,
-                )
-            else:
-                raise NotImplementedError(
-                    "BinMode.APPEND is only compatible with acquisition protocols "
-                    "'ssb_integration_complex' and 'ssb_integration_complex'."
-                )
-
-            self.emit(
-                q1asm_instructions.ADD,
-                acq_bin_idx_reg,
-                1,
-                acq_bin_idx_reg,
-                comment=f"Increment bin_idx for ch{acq_channel}",
-            )
-            # Add a line break for visual separation of acquisition.
-            self.emit(q1asm_instructions.NEW_LINE)
+                # Add a line break for visual separation of acquisition.
+                self.emit(q1asm_instructions.NEW_LINE)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
         """
@@ -729,7 +712,7 @@ class QASMProgram:
             )
 
     @contextmanager
-    def loop(self, register: str, label: str, repetitions: int = 1):
+    def loop(self, label: str, repetitions: int = 1):
         """
         Defines a context manager that can be used to generate a loop in the QASM
         program.
@@ -775,18 +758,42 @@ class QASMProgram:
             )
             qasm = QASMProgram(qcm.sequencers["seq0"])
 
-            with qasm.loop(register='R0', label='repeat', repetitions=10):
+            with qasm.loop(label='repeat', repetitions=10):
                 qasm.auto_wait(100)
 
             qasm.instructions
         """
+        register = self._register_manager.allocate_register()
         comment = f"iterator for loop with label {label}"
 
-        def gen_start():
-            self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
-            self.emit(q1asm_instructions.NEW_LINE, label=label)
+        self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
+        self.emit(q1asm_instructions.NEW_LINE, label=label)
 
-        try:
-            yield gen_start()
-        finally:
-            self.emit(q1asm_instructions.LOOP, register, f"@{label}")
+        yield
+
+        self.emit(q1asm_instructions.LOOP, register, f"@{label}")
+        self._register_manager.free_register(register)
+
+    @contextmanager
+    def temp_register(self, amount: int = 1) -> Union[List[str], str]:
+        """
+        Context manager for using a register temporarily. Frees up the register
+        afterwards.
+
+        Parameters
+        ----------
+        amount
+            The amount of registers to temporarily use.
+
+        Yields
+        ------
+        :
+            Either a single register or a list of registers.
+        """
+        registers: List[str] = list()
+        for _ in range(amount):
+            registers.append(self._register_manager.allocate_register())
+        yield registers if len(registers) > 1 else registers[0]
+
+        for reg in registers:
+            self._register_manager.free_register(reg)
