@@ -23,6 +23,7 @@ from quantify_core.data.handling import (
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
+from quantify_scheduler.backends.qblox import register_manager
 from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     _generate_waveform_dict,
@@ -46,7 +47,6 @@ from quantify_scheduler.backends.types.qblox import (
     QASMRuntimeSettings,
 )
 
-from quantify_scheduler.backends.qblox import reserved_registers
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
@@ -291,6 +291,8 @@ class Sequencer:
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
         self.associated_ext_lo = lo_name
+
+        self.register_manager = register_manager.RegisterManager()
 
         self.instruction_generated_pulses_enabled = seq_settings.get(
             "instruction_generated_pulses_enabled", False
@@ -668,41 +670,22 @@ class Sequencer:
             The generated QASM program.
         """
         loop_label = "start"
-        loop_register = reserved_registers.REGISTER_REPETITIONS_LOOP
 
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.set_marker(self.parent.marker_configuration["start"])
 
-        # program body
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
 
-        if len(acquisitions) > 1:
-            acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-                self.acquisitions
-            )
-            # If bin mode append is used certain registers need to be initialized
-            # in the header part of the schedule
-            if acq_metadata.bin_mode == BinMode.APPEND:
-                for acq_channel in acq_metadata.acq_indices.keys():
-                    acq_bin_idx_reg = getattr(
-                        reserved_registers, f"REGISTER_ACQ_BIN_IDX_CH{acq_channel}"
-                    )
-                    qasm.emit(
-                        q1asm_instructions.MOVE,
-                        0,
-                        acq_bin_idx_reg,
-                        comment=f"Initialize acquisition bin_idx for ch{acq_channel}",
-                    )
+        self._initialize_append_mode_registers(qasm, acquisitions)
 
+        # program body
         op_list = pulses + acquisitions
         op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
 
-        with qasm.loop(
-            label=loop_label, register=loop_register, repetitions=repetitions
-        ):
+        with qasm.loop(label=loop_label, repetitions=repetitions):
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
@@ -731,6 +714,41 @@ class Sequencer:
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
+
+    def _initialize_append_mode_registers(
+        self, qasm: QASMProgram, acquisitions: List[OpInfo]
+    ):
+        """
+        Adds the instructions to initialize the registers needed to use the append
+        bin mode to the program. This should be added in the header.
+
+        Parameters
+        ----------
+        qasm:
+            The program to add the instructions to.
+        acquisitions:
+            A list with all the acquisitions to consider.
+        """
+        channel_to_reg = dict()
+        for acq in acquisitions:
+            if acq.data["bin_mode"] != BinMode.APPEND:
+                continue
+
+            channel = acq.data["acq_channel"]
+            if channel in channel_to_reg:
+                acq_bin_idx_reg = channel_to_reg[channel]
+            else:
+                acq_bin_idx_reg = self.register_manager.allocate_register()
+                channel_to_reg[channel] = acq_bin_idx_reg
+
+                qasm.emit(
+                    q1asm_instructions.MOVE,
+                    0,
+                    acq_bin_idx_reg,
+                    comment=f"Initialize acquisition bin_idx for "
+                    f"ch{acq.data['acq_channel']}",
+                )
+            acq.bin_idx_register = acq_bin_idx_reg
 
     @staticmethod
     def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:

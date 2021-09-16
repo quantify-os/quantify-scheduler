@@ -43,3 +43,6 @@ range."""
 MAX_MIXER_DC_OFFSET = 1.0
 """Highest value the dc dac offset can have. This value is normalized w.r.t. the output
 range."""
+"""Number of sequencers supported by Pulsar QRM in the latest firmware."""
+NUMBER_OF_REGISTERS: int = 64
+"""Number of registers available in the Qblox sequencers."""
