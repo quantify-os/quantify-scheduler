@@ -106,8 +106,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.set("reference_source", settings.ref)
 
-        self.instrument.set("reference_source", settings.ref)
-
         if settings.offset_ch0_path0 is not None:
             self.instrument.set(
                 "sequencer0_offset_awg_path0", settings.offset_ch0_path0
