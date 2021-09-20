@@ -3,7 +3,7 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, Callable, Union, Type
+from typing import Any, Dict, Optional, Tuple, Callable, Union, Type, List
 from collections import namedtuple
 
 import logging
@@ -28,6 +28,12 @@ from quantify_scheduler.backends.qblox.constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+_SequencerStateType = Dict[str, Union[str, List[str]]]
+"""
+Type of the return value of get_sequencer_state. Returned value format is always a dict
+with a str state under 'status' and a list of str flags under 'flags'.
+"""
 
 
 class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
@@ -78,7 +84,15 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         if timeout_min == 0:
             timeout_min = 1
         for idx in range(self._number_of_sequencers):
-            self.instrument.get_sequencer_state(idx, timeout_min)
+            state: _SequencerStateType = self.instrument.get_sequencer_state(
+                idx, timeout_min
+            )
+            flags = state["flags"]
+            if flags:
+                logger.error(
+                    f"Sequencer {idx} of {self.instrument.name} reported"
+                    f"errors:\n{flags}"
+                )
 
     def start(self) -> None:
         """
