@@ -930,13 +930,13 @@ class Sequencer:
             weights_dict = (
                 self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
             )
-        acq_declaration_dict = (
-            self._generate_acq_declaration_dict(
-                acquisitions=self.acquisitions, repetitions=repetitions
+            acq_declaration_dict = (
+                self._generate_acq_declaration_dict(
+                    acquisitions=self.acquisitions, repetitions=repetitions
+                )
+                if len(self.acquisitions) > 0
+                else dict()
             )
-            if len(self.acquisitions) > 0
-            else None
-        )
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
