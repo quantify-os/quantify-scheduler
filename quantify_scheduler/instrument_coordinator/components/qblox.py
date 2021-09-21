@@ -547,6 +547,10 @@ class _QRMAcquisitionManager:
         formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
 
         for seq_idx in range(self.number_of_sequencers):
+            if len(self.acquisition_metadata) > 1:
+                raise NotImplementedError(f"Multiplexed readout not yet implemented!")
+            if f"seq{seq_idx}" not in self.acquisition_metadata:
+                continue
             acq_metadata = self.acquisition_metadata[f"seq{seq_idx}"]
             acquisition_function: Callable = protocol_to_function_mapping[
                 acq_metadata.acq_protocol
