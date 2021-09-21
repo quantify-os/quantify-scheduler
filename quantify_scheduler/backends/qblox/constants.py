@@ -25,3 +25,5 @@ NUMBER_OF_SEQUENCERS_QCM = 6
 """Number of sequencers supported by Pulsar QCM in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 1
 """Number of sequencers supported by Pulsar QRM in the latest firmware."""
+NUMBER_OF_REGISTERS: int = 64
+"""Number of registers available in the Qblox sequencers."""

@@ -687,7 +687,7 @@ def test_emit():
     qcm = Pulsar_QCM(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
-    qasm = QASMProgram(qcm)
+    qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
@@ -799,7 +799,7 @@ def test_pulse_stitching_qasm_prog():
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert qasm.instructions[2][2] == "20,R2"
+    assert qasm.instructions[2][2] == "20,R0"
 
 
 @pytest.mark.parametrize("start_amp, final_amp", [(-1.1, 2.1), (1.23456, -2)])
@@ -845,20 +845,33 @@ def test_to_grid_time():
 
 def test_loop():
     num_rep = 10
-    reg = "R0"
 
     qcm = Pulsar_QCM(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
-    with qasm.loop(reg, "this_loop", repetitions=num_rep):
+    with qasm.loop("this_loop", repetitions=num_rep):
         qasm.emit(q1asm_instructions.WAIT, 20)
     assert len(qasm.instructions) == 5
     assert qasm.instructions[1][1] == q1asm_instructions.MOVE
     num_rep_used, reg_used = qasm.instructions[1][2].split(",")
     assert int(num_rep_used) == num_rep
-    assert reg_used == reg
+
+
+@pytest.mark.parametrize("amount", [1, 2, 3, 40])
+def test_temp_register(amount):
+    qcm = Pulsar_QCM(
+        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
+    )
+    qasm = QASMProgram(qcm.sequencers["seq0"])
+    with qasm.temp_register(amount) as registers:
+        if isinstance(registers, str):
+            registers = [registers]
+        for reg in registers:
+            assert reg not in qasm._register_manager.available_registers
+    for reg in registers:
+        assert reg in qasm._register_manager.available_registers
 
 
 # --------- Test compilation functions ---------
@@ -1167,6 +1180,7 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     # To regenerate the baseline image for this test uncomment these lines.
     #
     # import shutil
+    #
     # shutil.copy(
     #     compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
     #     baseline_assembly,
