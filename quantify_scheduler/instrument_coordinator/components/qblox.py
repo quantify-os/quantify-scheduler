@@ -310,10 +310,10 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(self._number_of_sequencers)
         }
+        acq_metadata = program.pop("acq_metadata")
         if "acq_mapping" in program:  # Resets everything to do with acquisition.
 
             acq_mapping = program.pop("acq_mapping")
-            acq_metadata = program.pop("acq_metadata")
             self._acquisition_manager = _QRMAcquisitionManager(
                 self,
                 number_of_sequencers=self._number_of_sequencers,
