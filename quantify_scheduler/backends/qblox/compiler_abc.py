@@ -1282,6 +1282,8 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             program["acq_metadata"] = dict()
 
             for sequencer in self.sequencers.values():
+                if not sequencer.acquisitions:
+                    continue
                 acq_metadata = _extract_acquisition_metadata_from_acquisitions(
                     sequencer.acquisitions
                 )
@@ -1504,7 +1506,7 @@ class PulsarRF(PulsarBase):
                 sequencer.frequency = clk_freq - lo_freq
 
     def validate_output_mode(self, sequencer: Sequencer):
-        if sequencer.output_mode is not "complex":
+        if sequencer.output_mode != "complex":
             raise ValueError(
                 f"Attempting to use {self.__class__.__name__} in real "
                 f"mode, but this is not supported for Qblox RF modules."
