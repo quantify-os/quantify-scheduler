@@ -926,6 +926,7 @@ class Sequencer:
 
         awg_dict = self._generate_awg_dict()
         weights_dict = None
+        acq_declaration_dict = None
         if self.parent.supports_acquisition:
             weights_dict = (
                 self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
