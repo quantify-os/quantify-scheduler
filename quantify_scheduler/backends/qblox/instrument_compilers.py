@@ -150,7 +150,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 6, "end": 8}
+    marker_configuration: dict = {"start": 0b1111, "end": 0b0000}
     """
     Marker values to activate/deactivate the O1 marker,
     and the output switches for O1/O2
@@ -168,7 +168,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 1, "end": 4}
+    marker_configuration: dict = {"start": 0b1101, "end": 0b0010}
     """
     Marker values to activate/deactivate the I1 marker,
     and the output switch for O1
