@@ -30,10 +30,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class _StaticHardwareProperties:
+    """Dataclass that holds all the static differences between the different Qblox
+    devices that are relevant for configuring them correctly."""
+
     settings_type: Type[PulsarSettings]
+    """The settings dataclass to use that the hardware needs to configure to."""
     has_internal_lo: bool
+    """Specifies if an internal lo source is available."""
     number_of_sequencers: int
+    """The number of sequencers the hardware has available."""
     number_of_output_paths: int
+    """The number of output paths that can be used."""
 
 
 _PULSAR_QCM_PROPERTIES = _StaticHardwareProperties(
