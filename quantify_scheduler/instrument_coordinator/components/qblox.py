@@ -408,18 +408,18 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
-            self.instrument.set("lo0_freq", settings.lo0_freq)
+            self.instrument.set("out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
-            self.instrument.set("lo1_freq", settings.lo1_freq)
+            self.instrument.set("out1_lo_freq", settings.lo1_freq)
 
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_dac_offset_path0", settings.offset_ch0_path0)
+            self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out0_dac_offset_path1", settings.offset_ch0_path1)
+            self.instrument.set("out0_offset_path1", settings.offset_ch0_path1)
         if settings.offset_ch1_path0 is not None:
-            self.instrument.set("out1_dac_offset_path0", settings.offset_ch1_path0)
+            self.instrument.set("out1_offset_path0", settings.offset_ch1_path0)
         if settings.offset_ch1_path1 is not None:
-            self.instrument.set("out1_dac_offset_path1", settings.offset_ch1_path1)
+            self.instrument.set("out1_offset_path1", settings.offset_ch1_path1)
 
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
@@ -444,14 +444,12 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
-            self.instrument.set("lo0_freq", settings.lo0_freq)
-        if settings.lo1_freq is not None:
-            self.instrument.set("lo1_freq", settings.lo1_freq)
+            self.instrument.set("out0_in0_lo_freq", settings.lo0_freq)
 
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_dac_offset_path0", settings.offset_ch0_path0)
+            self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out0_dac_offset_path1", settings.offset_ch0_path1)
+            self.instrument.set("out0_offset_path1", settings.offset_ch0_path1)
 
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
