@@ -668,8 +668,9 @@ class _QRMAcquisitionManager:
         self, acquisitions: dict, acq_channel: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Gets the integration data but compensated for integration time. The return value
-        is thus the amplitude of the demodulated signal directly and h
+        Gets the integration data but normalized to the integration time (number of
+        samples summed). The return value is thus the amplitude of the demodulated
+        signal directly and h
 
         Parameters
         ----------
@@ -685,7 +686,7 @@ class _QRMAcquisitionManager:
         if self.integration_length_acq is None:
             raise RuntimeError(
                 "Retrieving data failed. Expected the integration length to be defined,"
-                " but `None` was set."
+                " but it is `None`."
             )
         compensated_data_i, compensated_data_q = self._get_integration_data(
             acquisitions=acquisitions, acq_channel=acq_channel
