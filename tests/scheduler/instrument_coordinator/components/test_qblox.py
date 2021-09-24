@@ -12,6 +12,8 @@ import json
 import tempfile
 from pathlib import Path
 
+import numpy as np
+
 import pytest
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
@@ -524,7 +526,8 @@ def test_get_integration_data(make_qrm, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
     data = acq_manager._get_integration_data(mock_acquisition_data, acq_channel=0)
-    assert data == ([0.0] * 10, [0.0] * 10)
+    np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
+    np.testing.assert_array_equal(data[1], np.array([0.0] * 10))
 
 
 def test_get_scope_channel_and_index(make_qrm):
