@@ -684,8 +684,8 @@ class _QRMAcquisitionManager:
         """
         if self.integration_length_acq is None:
             raise RuntimeError(
-                f"Retrieving data failed. Expected the integration length"
-                f"to be defined, but `None` was set."
+                "Retrieving data failed. Expected the integration length to be defined,"
+                " but `None` was set."
             )
         compensated_data_i, compensated_data_q = self._get_integration_data(
             acquisitions=acquisitions, acq_channel=acq_channel
