@@ -544,8 +544,8 @@ class _QRMAcquisitionManager:
                     formatted_acquisitions[
                         AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
                     ] = (
-                        np.array(i_vals[acq_idx::acq_stride]),
-                        np.array(q_vals[acq_idx::acq_stride]),
+                        i_vals[acq_idx::acq_stride],
+                        q_vals[acq_idx::acq_stride],
                     )
 
         return formatted_acquisitions
@@ -636,7 +636,7 @@ class _QRMAcquisitionManager:
 
     def _get_integration_data(
         self, acquisitions: dict, acq_channel: int = 0
-    ) -> Tuple[float, float]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
 
@@ -658,15 +658,15 @@ class _QRMAcquisitionManager:
         bin_data = self._get_bin_data(acquisitions, acq_channel)
 
         i_data, q_data = (
-            bin_data["integration"]["path0"],
-            bin_data["integration"]["path1"],
+            np.array(bin_data["integration"]["path0"]),
+            np.array(bin_data["integration"]["path1"]),
         )
 
         return i_data, q_data
 
     def _get_integration_amplitude_data(
         self, acquisitions: dict, acq_channel: int = 0
-    ) -> Tuple[float, float]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Gets the integration data but compensated for integration time. The return value
         is thus the amplitude of the demodulated signal directly and h
