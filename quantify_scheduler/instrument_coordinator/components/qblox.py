@@ -677,11 +677,12 @@ class _QRMAcquisitionManager:
         acquisitions
             The acquisitions dict as returned by the sequencer.
         acq_channel
-        The `acq_channel` from which to get the data.
+            The `acq_channel` from which to get the data.
 
         Returns
         -------
-
+        :
+            Tuple containing the I and Q data.
         """
         if self.integration_length_acq is None:
             raise RuntimeError(
