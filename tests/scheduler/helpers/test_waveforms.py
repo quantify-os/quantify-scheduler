@@ -1,20 +1,20 @@
-# -----------------------------------------------------------------------------
-# Description:    Tests schedule helper functions.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 # pylint: disable=missing-function-docstring
 from __future__ import annotations
 
 import inspect
 from typing import List
+from unittest.case import TestCase
 
 import numpy as np
 import pytest
 
-from quantify.scheduler.gate_library import X90
-from quantify.scheduler.helpers.schedule import get_pulse_uuid
-from quantify.scheduler.helpers.waveforms import (
+from quantify_scheduler.gate_library import X90
+from quantify_scheduler.helpers.schedule import get_pulse_uuid
+from quantify_scheduler.helpers.waveforms import (
+    area_pulse,
+    area_pulses,
     exec_custom_waveform_function,
     exec_waveform_function,
     get_waveform,
@@ -25,7 +25,7 @@ from quantify.scheduler.helpers.waveforms import (
     apply_mixer_skewness_corrections,
     modulate_waveform,
 )
-from quantify.scheduler.types import Schedule
+from quantify_scheduler.types import Schedule
 
 
 @pytest.mark.parametrize(
@@ -52,16 +52,16 @@ def test_resize_waveform(size: int, granularity: int, expected: int):
 @pytest.mark.parametrize(
     "wf_func,sampling_rate",
     [
-        ("quantify.scheduler.waveforms.square", 2.4e9),
-        ("quantify.scheduler.waveforms.ramp", 2.4e9),
-        ("quantify.scheduler.waveforms.soft_square", 2.4e9),
-        ("quantify.scheduler.waveforms.drag", 2.4e9),
+        ("quantify_scheduler.waveforms.square", 2.4e9),
+        ("quantify_scheduler.waveforms.ramp", 2.4e9),
+        ("quantify_scheduler.waveforms.soft_square", 2.4e9),
+        ("quantify_scheduler.waveforms.drag", 2.4e9),
     ],
 )
 def test_get_waveform(mocker, wf_func: str, sampling_rate: float):
     # Arrange
     mock = mocker.patch(
-        "quantify.scheduler.helpers.waveforms.exec_waveform_function", return_value=[]
+        "quantify_scheduler.helpers.waveforms.exec_waveform_function", return_value=[]
     )
     pulse_info_mock = {"duration": 1.6e-08, "wf_func": wf_func}
 
@@ -128,10 +128,10 @@ def test_get_waveform_by_pulseid_empty(empty_schedule: Schedule):
 @pytest.mark.parametrize(
     "wf_func",
     [
-        ("quantify.scheduler.waveforms.square"),
-        ("quantify.scheduler.waveforms.ramp"),
-        ("quantify.scheduler.waveforms.soft_square"),
-        ("quantify.scheduler.waveforms.drag"),
+        ("quantify_scheduler.waveforms.square"),
+        ("quantify_scheduler.waveforms.ramp"),
+        ("quantify_scheduler.waveforms.soft_square"),
+        ("quantify_scheduler.waveforms.drag"),
     ],
 )
 def test_exec_waveform_function(wf_func: str, mocker):
@@ -177,7 +177,7 @@ def test_exec_waveform_function_with_custom(wf_func: str, mocker):
         "phase": 90,
     }
     wavefn_stub = mocker.patch(
-        "quantify.scheduler.helpers.waveforms.exec_custom_waveform_function",
+        "quantify_scheduler.helpers.waveforms.exec_custom_waveform_function",
         return_value=[],
     )
 
@@ -202,7 +202,7 @@ def test_exec_custom_waveform_function(mocker):
     mock = mocker.Mock()
     mock.__signature__ = inspect.signature(custom_function)
     mocker.patch(
-        "quantify.utilities.general.import_func_from_string",
+        "quantify_core.utilities.general.import_func_from_string",
         return_value=mock,
     )
 
@@ -317,3 +317,41 @@ def test_modulate_waveform():
     # Assert
     assert np.allclose(waveform.real, expected_real)
     assert np.allclose(waveform.imag, expected_imag)
+
+
+def test_area_pulse() -> None:
+    pulse = {
+        "wf_func": "quantify_scheduler.waveforms.square",
+        "amp": 1,
+        "duration": 1e-08,
+        "phase": 0,
+        "t0": 0,
+        "clock": "cl0.baseband",
+        "port": "LP",
+    }
+    result = area_pulse(pulse, int(1e9))
+    TestCase().assertAlmostEqual(result, 1e-8)
+
+
+def test_area_pulses() -> None:
+    test_list = [
+        {
+            "wf_func": "quantify_scheduler.waveforms.square",
+            "amp": 1,
+            "duration": 1e-08,
+            "phase": 0,
+            "t0": 0,
+            "clock": "cl0.baseband",
+            "port": "LP",
+        },
+        {
+            "wf_func": "quantify_scheduler.waveforms.ramp",
+            "amp": 1,
+            "duration": 1e-08,
+            "t0": 0,
+            "clock": "cl0.baseband",
+            "port": "LP",
+        },
+    ]
+    result = area_pulses(test_list, int(1e9))
+    TestCase().assertAlmostEqual(result, 1.5e-8)

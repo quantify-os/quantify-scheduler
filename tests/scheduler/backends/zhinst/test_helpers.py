@@ -8,8 +8,8 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 from zhinst.qcodes.base import ZIBaseInstrument
-from quantify.scheduler.helpers import time
-from quantify.scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.helpers import time
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
 
 @pytest.mark.parametrize(
@@ -54,6 +54,21 @@ def test_set_value(mocker, node: str):
 
     # Assert
     controller._set.assert_called_with("/dev1234/qas/0/integration/mode", 1)
+
+
+def test_set_values(mocker):
+    # Arrange
+    controller = mocker.Mock()
+
+    instrument = mocker.Mock(**{"_serial": "dev1234"}, spec=ZIBaseInstrument)
+    instrument._controller = controller
+    values = [("/dev2299/qas/0/integration/mode", 1), ("/dev2299/sigouts/1/offset", 0)]
+
+    # Act
+    zi_helpers.set_values(instrument, values)
+
+    # Assert
+    controller._set.assert_called_with(values)
 
 
 def test_set_wave_vector(mocker):

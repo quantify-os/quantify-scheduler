@@ -17,18 +17,18 @@ import pytest
 from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
-import quantify.scheduler.backends.zhinst_backend as zhinst_backend
-from quantify.scheduler import enums
-from quantify.scheduler.helpers import waveforms as waveform_helpers
-from quantify.scheduler.helpers import schedule as schedule_helpers
+import quantify_scheduler.backends.zhinst_backend as zhinst_backend
+from quantify_scheduler import enums
+from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.helpers import schedule as schedule_helpers
 
-from quantify.scheduler.backends.types import zhinst
-from quantify.scheduler.backends.types import common
-from quantify.scheduler.backends.zhinst import settings
-from quantify.scheduler.gate_library import X90, Measure, Reset
-from quantify.scheduler.schedules import trace_schedules
-from quantify.scheduler.schedules import spectroscopy_schedules
-from quantify.scheduler import types
+from quantify_scheduler.backends.types import zhinst
+from quantify_scheduler.backends.types import common
+from quantify_scheduler.backends.zhinst import settings
+from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.schedules import trace_schedules
+from quantify_scheduler.schedules import spectroscopy_schedules
+from quantify_scheduler import types
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
     return json.loads(
         """
         {
-          "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+          "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
           "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -71,7 +71,7 @@ def hdawg_hardware_map() -> Dict[str, Any]:
     return json.loads(
         """
         {
-          "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+          "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
           "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -151,9 +151,9 @@ def create_uhfqa_mock(mocker):
         def create_uhfqa_awg(i: int) -> uhfqa.AWG:
             _sequence_params = {
                 "sequence_parameters": {
-                    "clock_rate": 1.8e9,  # GSa/s
+                    "clock_rate": 1.8e9,
                 }
-            }
+            }  # GSa/s
 
             def get_string(value: str):
                 if value == "directory":
@@ -223,9 +223,9 @@ def create_hdawg_mock(mocker):
             # Section: 4.14.3 Constansts and Variables (page 181)
             _sequence_params = {
                 "sequence_parameters": {
-                    "clock_rate": 2.4e9,  # GSa/s
+                    "clock_rate": 2.4e9,
                 }
-            }
+            }  # GSa/s
 
             def get_string(value: str):
                 if value == "directory":
@@ -285,7 +285,7 @@ def test_compile_backend_unsupported_devices(
     hardware_map_str = (
         """
     {
-        "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
         "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -806,6 +806,7 @@ def test_uhfqa_sequence1(
       playWave(w0);	// clock=4 n_instr=0
       wait(25);	// 	// clock=4 n_instr=25
       setTrigger(integration_trigger);	// clock=29 n_instr=1
+      wait(2000);	// 	// clock=30 n_instr=2000
     }
     setTrigger(0);	// Reset triggers n_instr=1
     """
@@ -868,6 +869,7 @@ def test_uhfqa_sequence2(
       waitDigTrigger(2, 1);	// clock=0
       playWave(w0);	// clock=0 n_instr=0
       setTrigger(integration_trigger);	// clock=0 n_instr=1
+      wait(2000);	// 	// clock=1 n_instr=2000
     }
     setTrigger(0);	// Reset triggers n_instr=1
     """
@@ -911,7 +913,7 @@ def test_uhfqa_sequence3(
         ro_pulse_frequency=7.04e9,
         ro_acquisition_delay=ro_acquisition_delay,
         ro_integration_time=500e-9,
-        buffer_time=1e-5,
+        init_duration=1e-5,
     )
     schedule = create_schedule_with_pulse_info(schedule)
 
@@ -1002,7 +1004,7 @@ def test_compile_backend_with_undefined_local_oscillator(
     schedule = make_schedule()
     hardware_map_str = """
     {
-        "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
         "local_oscillators": [{
             "name": "lo0",
             "frequency": 4.8e9
@@ -1046,7 +1048,7 @@ def test_compile_backend_with_duplicate_local_oscillator(
     schedule = make_schedule()
     hardware_map_str = """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "local_oscillators": [
         {
           "name": "lo0",

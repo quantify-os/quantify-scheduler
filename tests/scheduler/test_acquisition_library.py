@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Unit tests acquisition protocols for use with the quantify.scheduler."""
+"""Unit tests acquisition protocols for use with the quantify_scheduler."""
 
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -9,15 +9,15 @@ from unittest import TestCase
 
 import pytest
 import numpy as np
-from quantify.scheduler.acquisition_library import (
+from quantify_scheduler.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     Trace,
 )
-from quantify.scheduler.enums import BinMode
-from quantify.scheduler.gate_library import X90
-from quantify.scheduler.pulse_library import DRAGPulse
-from quantify.scheduler.types import Operation
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.gate_library import X90
+from quantify_scheduler.pulse_library import DRAGPulse
+from quantify_scheduler.types import Operation
 
 
 def test_ssb_integration_complex():
@@ -80,7 +80,8 @@ def test_valid_acquisition():
 def test_trace():
     trace = Trace(
         1234e-9,
-        port="q0.res",
+        port="q0:res",
+        clock="q0.ro",
         acq_channel=4815162342,
         acq_index=4815162342,
         bin_mode=BinMode.AVERAGE,
@@ -94,13 +95,10 @@ def test_trace():
 @pytest.mark.parametrize(
     "operation",
     [
-        Trace(
-            duration=16e-9,
-            port="q0.res",
-        ),
+        Trace(duration=16e-9, port="q0:res", clock="q0.ro"),
         SSBIntegrationComplex(
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
             duration=100e-9,
         ),
         NumericalWeightedIntegrationComplex(
@@ -108,7 +106,7 @@ def test_trace():
             weights_b=np.ones(3, dtype=complex),
             t=np.linspace(0, 3, 1),
             port="q0.res",
-            clock="q0.01",
+            clock="q0.ro",
         ),
     ],
 )
@@ -121,19 +119,20 @@ def test__repr__(operation: Operation):
     [
         Trace(
             duration=16e-9,
-            port="q0.res",
+            port="q0:res",
+            clock="q0.ro",
         ),
         SSBIntegrationComplex(
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
             duration=100e-9,
         ),
         NumericalWeightedIntegrationComplex(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
             t=np.linspace(0, 3, 1),
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
         ),
     ],
 )
@@ -146,19 +145,20 @@ def test__str__(operation: Operation):
     [
         Trace(
             duration=16e-9,
-            port="q0.res",
+            port="q0:res",
+            clock="q0.ro",
         ),
         SSBIntegrationComplex(
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
             duration=100e-9,
         ),
         NumericalWeightedIntegrationComplex(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
             t=np.linspace(0, 3, 1),
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
         ),
     ],
 )
@@ -201,19 +201,20 @@ def test_deserialize(operation: Operation):
     [
         Trace(
             duration=16e-9,
-            port="q0.res",
+            port="q0:res",
+            clock="q0.ro",
         ),
         SSBIntegrationComplex(
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
             duration=100e-9,
         ),
         NumericalWeightedIntegrationComplex(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
             t=np.linspace(0, 3, 1),
-            port="q0.res",
-            clock="q0.01",
+            port="q0:res",
+            clock="q0.ro",
         ),
     ],
 )

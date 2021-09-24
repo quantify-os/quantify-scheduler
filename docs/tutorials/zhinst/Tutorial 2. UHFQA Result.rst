@@ -6,8 +6,8 @@ Tutorial 2. UHFQA Result
 This tutorial describes how to use quantify-schedule to generate pulses and acquire result data,
 also visualized in the Quantum Analyzer Result tab of LabOne, using the UHFQA's AWG.
 
-For this tutorial lets use :func:`~quantify.scheduler.schedules.spectroscopy_schedules.heterodyne_spec_sched` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify.scheduler.acquisition_library.SSBIntegrationComplex`
+For this tutorial lets use :func:`~quantify_scheduler.schedules.spectroscopy_schedules.heterodyne_spec_sched` to create a
+pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.acquisition_library.SSBIntegrationComplex`
 acquisition with pulses of a large fixed duration.
 
 Requirements
@@ -28,8 +28,8 @@ Requirements
     from qcodes.instrument.base import Instrument
     from zhinst.qcodes import UHFQA
 
-    from quantify.scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
-    from quantify.scheduler.compilation import qcompile
+    from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
+    from quantify_scheduler.compilation import qcompile
 
     # Debug only
     # logging.getLogger().setLevel(logging.DEBUG)
@@ -47,7 +47,7 @@ Requirements
         integration_time=1e-6, 
         port="q0:res", 
         clock="q0.ro", 
-        buffer_time=1e-5, 
+        init_duration=1e-5, 
     )
     schedule.repetitions = 1
 
@@ -56,11 +56,11 @@ Requirements
     :emphasize-lines: 24
 
     def load_example_json_scheme(filename: str) -> Dict[str, Any]:
-        import quantify.scheduler.schemas.examples as examples
+        import quantify_scheduler.schemas.examples as examples
         path = Path(examples.__file__).parent.joinpath(filename)
         return json.loads(path.read_text())
     
-    # Load example configuration from quantify.scheduler.schemas.examples
+    # Load example configuration from quantify_scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
     # Set the UHFQA `ref` trigger(Reference source trigger) option to "none"
@@ -68,7 +68,7 @@ Requirements
     zhinst_hardware_map: Dict[str, Any] = json.loads(
     """
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "uhfqa0",

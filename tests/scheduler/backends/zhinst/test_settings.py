@@ -11,9 +11,10 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from zhinst.qcodes import base
-from quantify.scheduler import waveforms
-from quantify.scheduler.backends.types import zhinst as zi_types
-from quantify.scheduler.backends.zhinst import settings
+from quantify_scheduler import waveforms
+from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.backends.types import zhinst as zi_types
+from quantify_scheduler.backends.zhinst import settings
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:
@@ -24,7 +25,7 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_setting(mocker):
+def test_zi_setting_apply(mocker):
     # Arrange
     apply_fn = mocker.Mock()
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
@@ -41,7 +42,7 @@ def test_zi_setting(mocker):
     apply_fn.assert_called_with(instrument=instrument, node=node, value=value)
 
 
-def test_zi_settings(mocker):
+def test_zi_settings_apply(mocker):
     # Arrange
     instrument = make_ufhqa(mocker)
     apply_fn = mocker.Mock()
@@ -58,6 +59,33 @@ def test_zi_settings(mocker):
         call(instrument=instrument, node="/dev1234/daq/foo/bar", value=0),
     ]
     assert apply_fn.call_args_list == calls
+
+
+def test_zi_settings_apply_bulk(mocker):
+    # Arrange
+    instrument = make_ufhqa(mocker)
+    mocker.patch.object(zi_helpers, "set_vector")
+    set_values = mocker.patch.object(zi_helpers, "set_values")
+
+    zi_settings = (
+        settings.ZISettingsBuilder()
+        .with_wave_vector(0, 0, np.ones(64))
+        .with_qas_delay(0)
+        .with_qas_result_enable(0)
+        .build()
+    )
+
+    # Act
+    zi_settings.apply(instrument)
+
+    # Assert
+    set_values.assert_called_with(
+        instrument,
+        [
+            ("/dev1234/qas/0/delay", 0),
+            ("/dev1234/qas/0/result/enable", 0),
+        ],
+    )
 
 
 def test_zi_settings_as_dict(mocker):
@@ -97,14 +125,22 @@ def test_zi_settings_serialize_wave(mocker):
 
     # Act
     zi_settings = settings.ZISettings(daq_settings, awg_settings)
-    zi_settings.serialize(root, instrument)
+    zi_settings.serialize(
+        root,
+        settings.ZISerializeSettings(
+            instrument.name, instrument._serial, instrument._type
+        ),
+    )
 
     # Assert
     calls = [call(root / "uhfqa0_awg0_wave0.csv", ANY, delimiter=";")]
     assert np_savetext.call_args_list == calls
 
     args, _ = np_savetext.call_args
-    np.testing.assert_array_equal(args[1], np.reshape(wave, (24, -1)))
+    csv_bug_scale_factor = 2 ** 15 - 1  # See issue quantify-scheduler#175
+    np.testing.assert_array_equal(
+        args[1], np.reshape(wave / csv_bug_scale_factor, (24, -1))
+    )
 
     touch.assert_called()
 
@@ -204,6 +240,38 @@ def test_zi_settings_serialize_compiler_source(mocker):
         ),
     ]
     assert write_text.call_args_list == calls
+
+
+def test_zi_settings_serialize_integration_weights(mocker):
+    # Arrange
+    instrument = make_ufhqa(mocker)
+    time = np.arange(0, 10, 1)
+    weights = np.sin(time)
+    daq_settings = [
+        settings.ZISetting("qas/0/integration/weights/0/real", weights, mocker.Mock())
+    ]
+
+    root = Path(".")
+    touch = mocker.patch.object(Path, "touch")
+    write_text = mocker.patch.object(Path, "write_text")
+
+    # Act
+    zi_settings = settings.ZISettings(daq_settings, [])
+    zi_settings.serialize(root, instrument)
+
+    # Assert
+    touch.assert_called()
+
+    write_text.assert_called_with(
+        json.dumps(
+            {
+                "name": "uhfqa0",
+                "serial": "dev1234",
+                "type": "uhfqa",
+                "qas/0/integration/weights/0/real": weights.tolist(),
+            }
+        )
+    )
 
 
 def test_zi_settings_builder_build():

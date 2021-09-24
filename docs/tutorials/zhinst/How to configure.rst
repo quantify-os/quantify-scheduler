@@ -3,22 +3,22 @@
 How to configure
 ================
 
-The :mod:`~quantify.scheduler.backends.zhinst_backend` allows Zurich Instruments to be 
+The :mod:`~quantify_scheduler.backends.zhinst_backend` allows Zurich Instruments to be
 configured individually or collectively by enabling master/slave configurations via 
 Triggers and Markers.
 
-Instruments can be configured by adding them to the :ref:`hardware configuration file<Example Zurich Instruments hardware configuration file>`.
+Instruments can be configured by adding them to the :ref:`hardware configuration file<user-guide-example-zhinst-config>`.
 The configuration file contains parameters about the Instruments and properties required 
-to map :ref:`Operations <sec-operation>`, which act on qubits, onto physical
+to map :class:`~quantify_scheduler.types.Operation`\s, which act on qubits, onto physical
 properties of the instrument.
 
 
 The Zurich Instruments hardware configuration file is divided in two main sections.
 
 1. The `backend` property defines the python method which will be executed by 
-:func:`~quantify.scheduler.compilation.qcompile` in order to compile the backend.
+:func:`~quantify_scheduler.compilation.qcompile` in order to compile the backend.
 
-2. The `devices` property is an array of :class:`~quantify.scheduler.backends.types.zhinst.Device`.
+2. The `devices` property is an array of :class:`~quantify_scheduler.backends.types.zhinst.Device`.
 A Device describes the type of Zurich Instruments and the physical setup.
 
 
@@ -26,7 +26,7 @@ A Device describes the type of Zurich Instruments and the physical setup.
     :linenos:
 
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         
       ]
@@ -34,14 +34,14 @@ A Device describes the type of Zurich Instruments and the physical setup.
 
 
 The entries in the `devices` section of the configuration file are strictly mapped
-according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
-:class:`~quantify.scheduler.backends.types.zhinst.Output` domain models. 
+according to the :class:`~quantify_scheduler.backends.types.zhinst.Device` and
+:class:`~quantify_scheduler.backends.types.zhinst.Output` domain models.
 
 * In order for the backend to find the QCodes Instrument it is required that the
-  :class:`~quantify.scheduler.backends.types.zhinst.Device`'s `name` must be equal to 
+  :class:`~quantify_scheduler.backends.types.zhinst.Device`'s `name` must be equal to
   the name given to the QCodes Instrument during instantiation. 
 
-* The `type` property defines the instrument's model. The :class:`~quantify.scheduler.backends.types.zhinst.DeviceType`
+* The `type` property defines the instrument's model. The :class:`~quantify_scheduler.backends.types.zhinst.DeviceType`
   is parsed from the string as well as the number of channels.
     
     * Example: "HDAWG8"
@@ -63,7 +63,7 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
     :emphasize-lines: 5,17
 
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "hdawg0",
@@ -80,12 +80,12 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
 
     instrument = zhinst.qcodes.HDAWG(name='hdawg0', serial='dev1234', ...)
 
-.. autoclass:: quantify.scheduler.backends.types.zhinst.Device
+.. autoclass:: quantify_scheduler.backends.types.zhinst.Device
     :members:
     :noindex:
 
 * The `channel_{0..3}` properties of the hardware configuration are mapped to 
-  the :class:`~quantify.scheduler.backends.types.zhinst.Output` domain model. A single
+  the :class:`~quantify_scheduler.backends.types.zhinst.Output` domain model. A single
   `channel` represents a complex output, consisting of two physical I/O channels on
   the Instrument.
 
@@ -119,7 +119,7 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
     :linenos:
 
     {
-      "backend": "quantify.scheduler.backends.zhinst_backend.compile_backend",
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "devices": [
         {
           "name": "hdawg0",
@@ -152,6 +152,6 @@ according to the :class:`~quantify.scheduler.backends.types.zhinst.Device` and
       ]
     }
 
-.. autoclass:: quantify.scheduler.backends.types.zhinst.Output
+.. autoclass:: quantify_scheduler.backends.types.zhinst.Output
     :members:
     :noindex:

@@ -1,12 +1,9 @@
-# -----------------------------------------------------------------------------
-# Description:    Tests for Zurich Instruments backend.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 # pylint: disable=missing-function-docstring
 
-from quantify.scheduler import types
-from quantify.scheduler.schedules import trace_schedules
+from quantify_scheduler import types
+from quantify_scheduler.schedules import trace_schedules
 
 
 def test_trace_schedule():
@@ -17,6 +14,7 @@ def test_trace_schedule():
     pulse_delay = 0
     acquisition_delay = 2e-9
     clock_frequency = 7.04e9
+    repetitions = 10
 
     # Act
     schedule = trace_schedules.trace_schedule(
@@ -29,11 +27,13 @@ def test_trace_schedule():
         port="q0:res",
         clock="q0.ro",
         init_duration=init_duration,
+        repetitions=repetitions,
     )
 
     # Assert
     assert isinstance(schedule, types.Schedule)
     assert schedule.name == "Raw trace acquisition"
+    assert schedule.repetitions == repetitions
     assert schedule.resources["q0.ro"]["freq"] == clock_frequency
     assert len(schedule.timing_constraints) == 3
     # IdlePulse
@@ -59,6 +59,7 @@ def test_two_tone_trace_schedule():
     # Arrange
     init_duration = 1e-5
     integration_time = 1e-6
+    repetitions = 10
 
     # Act
     schedule = trace_schedules.two_tone_trace_schedule(
@@ -76,10 +77,12 @@ def test_two_tone_trace_schedule():
         ro_acquisition_delay=-20e-9,
         ro_integration_time=integration_time,
         init_duration=init_duration,
+        repetitions=repetitions,
     )
 
     # Assert
     assert isinstance(schedule, types.Schedule)
+    assert schedule.repetitions == repetitions
     assert schedule.name == "Two-tone Trace acquisition"
     assert schedule.resources["q0.01"]["freq"] == 6.02e9
     assert schedule.resources["q0:ro"]["freq"] == 6.02e9

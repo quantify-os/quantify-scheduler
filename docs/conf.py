@@ -47,12 +47,11 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx-jsonschema",
     "jupyter_sphinx",
-    "sphinxcontrib.blockdiag",
     "sphinx_togglebutton",
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
     "scanpydoc.elegant_typehints",
-    # "enum_tools.autoenum",
+    "sphinxcontrib.bibtex",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -79,6 +78,9 @@ intersphinx_mapping = {
     "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
     "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
 }
+
+bibtex_bibfiles = ["refs.bib"]
+bibtex_reference_style = "author_year"
 
 
 # The suffix(es) of source filenames.
@@ -140,7 +142,7 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_css_files = [
-    "quantify.css",
+    "quantify_scheduler.css",
 ]
 
 
@@ -149,6 +151,12 @@ html_css_files = [
 # Output file base name for HTML help builder.
 htmlhelp_basename = "quantifydoc"
 
+html_context = {
+    "display_gitlab": True,
+    "gitlab_user": "quantify-os",
+    "gitlab_repo": "quantify-scheduler",
+    "gitlab_version": "develop/docs/",
+}
 
 # -- Options for LaTeX output ------------------------------------------
 
@@ -173,7 +181,7 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "quantify.tex",
+        "quantify_scheduler.tex",
         "quantify Documentation",
         "Quantify Consortium ",
         "manual",
@@ -210,7 +218,6 @@ texinfo_documents = [
 # avoid duplicate label warning even when manual label has been used
 suppress_warnings = ["autosectionlabel.*"]
 
-blockdiag_html_image_format = "SVG"
 
 # used by scanpydoc.elegant_typehints to correctly link to external docs
 qualname_overrides = {
@@ -270,3 +277,18 @@ import marshmallow
 #     from my_expensive_to_import_module import BlaClass # Potential circular import
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
+
+
+# Enable nitpicky mode - which ensures that all references in the docs
+# resolve.
+
+nitpicky = True
+nitpick_ignore = []
+
+with open("nitpick-exceptions.txt") as nitpick_exceptions:
+    for line in nitpick_exceptions:
+        if line.strip() == "" or line.startswith("#"):
+            continue
+        dtype, target = line.split(None, 1)
+        target = target.strip()
+        nitpick_ignore.append((dtype, target))
