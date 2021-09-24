@@ -670,7 +670,7 @@ class _QRMAcquisitionManager:
         """
         Gets the integration data but normalized to the integration time (number of
         samples summed). The return value is thus the amplitude of the demodulated
-        signal directly and h
+        signal directly and has units volt (instead of nVs).
 
         Parameters
         ----------
