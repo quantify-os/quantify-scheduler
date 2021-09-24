@@ -14,7 +14,6 @@ import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 
-# pylint: disable=no-name-in-module
 from quantify_core.data.handling import (
     get_datadir,
     gen_tuid,
@@ -38,7 +37,6 @@ from quantify_scheduler.backends.qblox.constants import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
-# from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     BaseModuleSettings,
@@ -70,7 +68,7 @@ class InstrumentCompiler(ABC):
 
     def __init__(
         self,
-        parent: "CompilerContainer",
+        parent,  # No type due to circular import
         name: str,
         total_play_time: float,
         hw_mapping: Optional[Dict[str, Any]] = None,
@@ -81,10 +79,8 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
-        parent
-            Reference to the parent
-            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            object.
+        parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            Reference to the parent object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -137,7 +133,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
     def __init__(
         self,
-        parent: "CompilerContainer",
+        parent,  # No type due to circular import
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -148,10 +144,8 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
-        parent
-            Reference to the parent
-            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            object.
+        parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            Reference to the parent object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -931,7 +925,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def __init__(
         self,
-        parent: "CompilerContainer",
+        parent,  # No type due to circular import
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -942,10 +936,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
-        parent
-            Reference to the parent
-            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            object.
+        parent: :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            Reference to the parent object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
