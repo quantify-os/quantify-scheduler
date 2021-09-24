@@ -670,7 +670,8 @@ class _QRMAcquisitionManager:
         """
         Gets the integration data but normalized to the integration time (number of
         samples summed). The return value is thus the amplitude of the demodulated
-        signal directly and has units volt (instead of nVs).
+        signal directly and has volt units (i.e. same units as a single sample of the
+        integrated signal).
 
         Parameters
         ----------
@@ -681,8 +682,10 @@ class _QRMAcquisitionManager:
 
         Returns
         -------
-        :
-            Tuple containing the I and Q data.
+        data_i
+            Array containing I-quadrature data.
+        data_q
+            Array containing I-quadrature data.
         """
         if self.integration_length_acq is None:
             raise RuntimeError(
