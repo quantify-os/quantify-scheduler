@@ -1,2 +1,2 @@
-* text=auto
-
+# Ensure all text files are committed with unix-style line endings
+* text=auto eol=lf
