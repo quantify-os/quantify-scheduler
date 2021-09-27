@@ -151,6 +151,12 @@ html_css_files = [
 # Output file base name for HTML help builder.
 htmlhelp_basename = "quantifydoc"
 
+html_context = {
+    "display_gitlab": True,
+    "gitlab_user": "quantify-os",
+    "gitlab_repo": "quantify-scheduler",
+    "gitlab_version": "develop/docs/",
+}
 
 # -- Options for LaTeX output ------------------------------------------
 
@@ -222,7 +228,18 @@ qualname_overrides = {
 
 numfig = True
 
-autodoc_member_order = "groupwise"
+autodoc_default_options = {
+    "member-order": "groupwise",
+}
+
+# For debugging the CI just add `or True` on the line below
+if os.environ.get("GITLAB_CI", "false") == "true":
+    print(
+        "\n[INFO] Building docs with private-members...\n[INFO] See `conf.py` for details.\n"
+    )
+    # for local build and CI force documentation to build for private members
+    # this make sure the docstrings of private members are also correctly formatted, etc
+    autodoc_default_options["private-members"] = True
 
 # -- Options for auto documenting typehints ----------------------------
 

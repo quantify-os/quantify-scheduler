@@ -356,6 +356,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                 f"sequencer{seq_idx}_integration_length_acq",
                 settings.integration_length_acq,
             )
+            self._acquisition_manager.integration_length_acq = (
+                settings.integration_length_acq
+            )
         self.instrument.set(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
 
@@ -480,6 +483,7 @@ class _QRMAcquisitionManager:
         self.acquisition_metadata: AcquisitionMetadata = acquisition_metadata
 
         self.scope_mode_sequencer: Optional[str] = None
+        self.integration_length_acq: Optional[int] = None
         self.seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(number_of_sequencers)
         }
@@ -502,7 +506,7 @@ class _QRMAcquisitionManager:
 
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
-            "ssb_integration_complex": self._get_integration_data,
+            "ssb_integration_complex": self._get_integration_amplitude_data,
             "trace": self._get_scope_data,
             # NB thresholded protocol is still missing since there is nothing in
             # the acquisition library for it yet.
@@ -538,8 +542,8 @@ class _QRMAcquisitionManager:
                     formatted_acquisitions[
                         AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
                     ] = (
-                        np.array(i_vals[acq_idx::acq_stride]),
-                        np.array(q_vals[acq_idx::acq_stride]),
+                        i_vals[acq_idx::acq_stride],
+                        q_vals[acq_idx::acq_stride],
                     )
 
         return formatted_acquisitions
@@ -630,7 +634,7 @@ class _QRMAcquisitionManager:
 
     def _get_integration_data(
         self, acquisitions: dict, acq_channel: int = 0
-    ) -> Tuple[float, float]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
 
@@ -638,6 +642,8 @@ class _QRMAcquisitionManager:
         ----------
         acquisitions
             The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The `acq_channel` from which to get the data.
 
         Returns
         -------
@@ -650,11 +656,48 @@ class _QRMAcquisitionManager:
         bin_data = self._get_bin_data(acquisitions, acq_channel)
 
         i_data, q_data = (
-            bin_data["integration"]["path0"],
-            bin_data["integration"]["path1"],
+            np.array(bin_data["integration"]["path0"]),
+            np.array(bin_data["integration"]["path1"]),
         )
 
         return i_data, q_data
+
+    def _get_integration_amplitude_data(
+        self, acquisitions: dict, acq_channel: int = 0
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Gets the integration data but normalized to the integration time (number of
+        samples summed). The return value is thus the amplitude of the demodulated
+        signal directly and has volt units (i.e. same units as a single sample of the
+        integrated signal).
+
+        Parameters
+        ----------
+        acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The `acq_channel` from which to get the data.
+
+        Returns
+        -------
+        data_i
+            Array containing I-quadrature data.
+        data_q
+            Array containing I-quadrature data.
+        """
+        if self.integration_length_acq is None:
+            raise RuntimeError(
+                "Retrieving data failed. Expected the integration length to be defined,"
+                " but it is `None`."
+            )
+        compensated_data_i, compensated_data_q = self._get_integration_data(
+            acquisitions=acquisitions, acq_channel=acq_channel
+        )
+        compensated_data_i, compensated_data_q = (
+            compensated_data_i / self.integration_length_acq,
+            compensated_data_q / self.integration_length_acq,
+        )
+        return compensated_data_i, compensated_data_q
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0

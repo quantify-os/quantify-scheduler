@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
 
-from quantify_scheduler.helpers.waveforms import apply_mixer_skewness_corrections
+import quantify_scheduler.helpers.waveforms as waveform_helpers
 
 
 @dataclass
@@ -313,6 +313,6 @@ class MixerCorrections(DataClassJsonMixin):
         :
             The complex-valued waveform after correction.
         """
-        return apply_mixer_skewness_corrections(
+        return waveform_helpers.apply_mixer_skewness_corrections(
             waveform, self.amp_ratio, self.phase_error
         )
