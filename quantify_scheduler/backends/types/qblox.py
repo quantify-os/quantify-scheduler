@@ -11,8 +11,13 @@ from quantify_scheduler.backends.qblox import constants
 
 @dataclass(frozen=True)
 class MarkerConfiguration:
+    """Specifies the marker configuration set during the execution of the sequencer
+    program."""
+
     start: int
+    """The setting set in the header at the start of the program."""
     end: int
+    """Setting set in the footer at the end of the program."""
 
 
 @dataclass
