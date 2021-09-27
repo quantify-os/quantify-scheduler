@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox import compiler_abc
-from quantify_scheduler.backends.types.qblox import LOSettings
+from quantify_scheduler.backends.types.qblox import LOSettings, MarkerConfiguration
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -119,7 +119,9 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
     """Maximum number of sequencers available in the instrument."""
     awg_output_volt: float = 2.5
     """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 1, "end": 0}
+    marker_configuration: MarkerConfiguration = MarkerConfiguration(
+        start=0b0001, end=0b0000
+    )
     """Marker values to activate/deactivate the O1 marker"""
     supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
@@ -135,7 +137,9 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
     """Maximum number of sequencers available in the instrument."""
     awg_output_volt: float = 0.5
     """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 1, "end": 0}
+    marker_configuration: MarkerConfiguration = MarkerConfiguration(
+        start=0b0001, end=0b0000
+    )
     """Marker values to activate/deactivate the I1 marker"""
     supports_acquisition: bool = True
     """Specifies whether the device can perform acquisitions."""
@@ -150,7 +154,9 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 0b1111, "end": 0b0000}
+    marker_configuration: MarkerConfiguration = MarkerConfiguration(
+        start=0b1111, end=0b0000
+    )
     """
     Marker values to activate/deactivate the O1 marker,
     and the output switches for O1/O2
@@ -168,7 +174,9 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
     """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 0b1101, "end": 0b0010}
+    marker_configuration: MarkerConfiguration = MarkerConfiguration(
+        start=0b1101, end=0b0010
+    )
     """
     Marker values to activate/deactivate the I1 marker,
     and the output switch for O1

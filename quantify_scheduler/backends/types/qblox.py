@@ -7,9 +7,12 @@ from typing import Optional, Dict, Any, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 from quantify_scheduler.backends.qblox import constants
-import numpy as np
 
-import quantify_scheduler.helpers.waveforms as waveform_helpers
+
+@dataclass(frozen=True)
+class MarkerConfiguration:
+    start: int
+    end: int
 
 
 @dataclass

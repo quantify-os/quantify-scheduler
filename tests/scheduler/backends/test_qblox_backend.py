@@ -1054,8 +1054,8 @@ def test_markers():
             on_marker = int(re.findall(r"\d+", matches[0])[0])
             off_marker = int(re.findall(r"\d+", matches[1])[0])
 
-            assert on_marker == device_compiler.marker_configuration["start"]
-            assert off_marker == device_compiler.marker_configuration["end"]
+            assert on_marker == device_compiler.marker_configuration.start
+            assert off_marker == device_compiler.marker_configuration.end
 
     _confirm_correct_markers(program["qcm0"], QcmModule)
     _confirm_correct_markers(program["qrm0"], QrmModule)

@@ -43,6 +43,7 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
     QASMRuntimeSettings,
+    MarkerConfiguration,
 )
 
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -668,7 +669,7 @@ class Sequencer:
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
-        qasm.set_marker(self.parent.marker_configuration["start"])
+        qasm.set_marker(self.parent.marker_configuration.start)
 
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
@@ -704,7 +705,7 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.set_marker(self.parent.marker_configuration["end"])
+        qasm.set_marker(self.parent.marker_configuration.end)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
@@ -999,7 +1000,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def marker_configuration(self) -> Dict[str, int]:
+    def marker_configuration(self) -> MarkerConfiguration:
         """
         Specifies the values that the markers need to be set to at the start and end
         of each program.
