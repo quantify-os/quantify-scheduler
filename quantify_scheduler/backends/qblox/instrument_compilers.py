@@ -107,9 +107,6 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         return self._settings.to_dict()
 
 
-# ---------- pulsar sequencer classes ----------
-
-# pylint: disable=invalid-name
 class QcmModule(compiler_abc.QbloxBasebandModule):
     """
     QCM specific implementation of the qblox compiler.
