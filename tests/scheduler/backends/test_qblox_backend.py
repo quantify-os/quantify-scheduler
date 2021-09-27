@@ -814,7 +814,7 @@ def test_loop():
 
 @pytest.mark.parametrize("amount", [1, 2, 3, 40])
 def test_temp_register(amount):
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])

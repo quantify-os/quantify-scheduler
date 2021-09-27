@@ -208,7 +208,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
-    def construct_instrument_compilers(self) -> Dict[str, "QbloxBaseModule"]:
+    def construct_instrument_compilers(self) -> Dict[str, compiler_abc.QbloxBaseModule]:
         """
         Constructs the compilers for the modules inside the cluster.
 
@@ -218,7 +218,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             A dictionary with the name of the instrument as key and the value its
             compiler.
         """
-        instrument_compilers = dict()
+        instrument_compilers = {}
         for name, cfg in self.hw_mapping.items():
             if not isinstance(cfg, dict):
                 continue  # not an instrument definition
@@ -265,7 +265,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                         compiler.add_acquisition(port, clock, acq)
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
-        program = dict()
+        program = {}
         program["settings"] = {"reference_source": self.hw_mapping["ref"]}
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(repetitions)

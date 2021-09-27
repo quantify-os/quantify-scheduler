@@ -5,7 +5,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Union
 
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 
 from quantify_scheduler import types
 from quantify_scheduler.helpers.schedule import get_total_duration
@@ -43,7 +43,7 @@ class CompilerContainer:
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
         """
-        self.instrument_compilers = dict()
+        self.instrument_compilers = {}
         """The compilers for the individual instruments."""
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
@@ -64,7 +64,7 @@ class CompilerContainer:
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
-        compiled_schedule = dict()
+        compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
             compiled_instrument_program = compiler.compile(repetitions=repetitions)
 
