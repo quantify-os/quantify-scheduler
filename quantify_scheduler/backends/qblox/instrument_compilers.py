@@ -149,11 +149,11 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
-    """Peak output voltage of the AWG"""
+    """Peak output voltage of the AWG."""
     marker_configuration: dict = {"start": 6, "end": 8}
     """
     Marker values to activate/deactivate the O1 marker,
-    and the output switches for O1/O2
+    and the output switches for O1/O2.
     """
     supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
@@ -167,11 +167,11 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
-    """Peak output voltage of the AWG"""
+    """Peak output voltage of the AWG."""
     marker_configuration: dict = {"start": 1, "end": 4}
     """
     Marker values to activate/deactivate the I1 marker,
-    and the output switch for O1
+    and the output switch for O1.
     """
     supports_acquisition: bool = True
     """Specifies whether the device can perform acquisitions."""
@@ -225,7 +225,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             if "instrument_type" not in cfg:
                 raise KeyError(
                     f"Module {name} of cluster {self.name} is specified in "
-                    f"the config, but does not specify an instrument_type."
+                    f"the config, but does not specify an 'instrument_type'."
                 )
             instrument_type: str = cfg["instrument_type"]
             if instrument_type not in self.compiler_classes:
