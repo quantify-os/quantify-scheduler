@@ -132,10 +132,12 @@ class CompilerContainer:
             Name of the Instrument.
         instrument
             The string that specifies the path to the type of the compiler.
+            E.g., ``"my_module.MyInstrument"``.
         mapping
             Hardware mapping for this instrument.
         """
-        # TODO rename this function from core. It seems to work for classes too.
+        # pylint: disable=fixme
+        # TODO It seems to work for classes too. See quantify-core!232
         compiler: type = general.import_func_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
