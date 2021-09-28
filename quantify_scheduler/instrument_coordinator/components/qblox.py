@@ -513,7 +513,7 @@ class _QRMAcquisitionManager:
         }
         self._store_scope_acquisition()
 
-        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
+        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = {}
 
         for seq_idx in range(self.number_of_sequencers):
             acq_metadata = self.acquisition_metadata[f"seq{seq_idx}"]
@@ -530,7 +530,7 @@ class _QRMAcquisitionManager:
                     acquisitions=acquisitions, acq_channel=acq_channel
                 )
 
-                # the qblox compilation backend verifies that the
+                # the Qblox compilation backend verifies that the
                 # acquisition indices start at 0 and increment in steps of 1.
                 # this enables us to simply stride over the bin_idx as if they
                 # correspond to acq_indices.
@@ -767,24 +767,24 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
         Parameters
         ----------
-        instrument:
+        instrument
             Reference to the cluster driver object.
-        kwargs
-            Keyword arguments.
+        **kwargs
+            Keyword arguments passed to the parent class.
         """
         super().__init__(instrument, **kwargs)
-        self._cluster_modules: Dict[str, ClusterModule] = dict()
+        self._cluster_modules: Dict[str, ClusterModule] = {}
 
-    def add_module(self, *module: Instrument) -> None:
+    def add_modules(self, *modules: Instrument) -> None:
         """
-        Add a module to the cluster.
+        Add modules to the cluster.
 
         Parameters
         ----------
-        module:
-            The driver of the module to add.
+        *modules
+            The QCoDeS drivers of the modules to add.
         """
-        for mod in module:
+        for mod in modules:
             self._cluster_modules[
                 mod.name
             ] = _construct_component_from_instrument_driver(mod)
@@ -792,7 +792,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     @property
     def is_running(self) -> bool:
         """Returns true if any of the modules are currently running."""
-        return any([comp.is_running for comp in self._cluster_modules.values()])
+        return any(comp.is_running for comp in self._cluster_modules.values())
 
     def start(self) -> None:
         """Starts all the modules in the cluster."""
@@ -806,11 +806,12 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def _configure_cmm_settings(self, settings: Dict[str, Any]):
         """
-        Sets all the settings of the cmm that have been provided by the backend.
+        Sets all the settings of the CMM (Cluster Management Module) that have been
+        provided by the backend.
 
         Parameters
         ----------
-        settings:
+        settings
             A dictionary containing all the settings to set.
         """
         if "reference_source" in settings:
@@ -822,7 +823,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
         Parameters
         ----------
-        options:
+        options
             The compiled instructions to configure the cluster to.
         """
         settings = options.pop("settings")
@@ -835,16 +836,16 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                 )
             self._cluster_modules[name].prepare(comp_options)
 
-    def retrieve_acquisition(self) -> Any:
+    def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
         """
         Retrieves all the data from the instruments.
 
         Returns
         -------
         :
-            The acquired data.
+            The acquired data or ``None`` if no acquisitions have been performed.
         """
-        acquisitions: Dict[Tuple[int, int], Any] = dict()
+        acquisitions: Dict[Tuple[int, int], Any] = {}
         for comp in self._cluster_modules.values():
             comp_acq = comp.retrieve_acquisition()
             if comp_acq is not None:
@@ -853,11 +854,11 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
-        Blocks until all the components are idle.
+        Blocks until all the components are done executing their programs.
 
         Parameters
         ----------
-        timeout_sec:
+        timeout_sec
             The time in seconds until the instrument is considered to have timed out.
         """
         for comp in self._cluster_modules.values():
@@ -874,25 +875,26 @@ def _construct_component_from_instrument_driver(
     driver: Instrument,
 ) -> ClusterModule:
     """
-    Determines the correct and constructs an ic component from the qblox_instruments
-    driver.
+    Determines the corresponding ClusterModule type and constructs an IC component from
+    the :doc:`qblox_instruments <qblox_instruments:index>` driver.
 
     Parameters
     ----------
     driver
-        The instrument driver.
+        The ``qblox_instruments`` instrument driver.
 
     Returns
     -------
     :
-        The correct ic component.
+        The corresponding IC component.
     """
     is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
     if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
         raise TypeError(
-            f"Invalid driver type passed for {driver.name}. Cannot "
-            f"construct an instrument coordinator component for "
-            f"type {type(driver)}."
+            f"Invalid driver type for '{driver.name}'. Cannot construct an instrument "
+            f"coordinator component for driver of type '{type(driver)}'. "
+            f"Expected types: {type(pulsar_qcm.pulsar_qcm_qcodes)} or "
+            f"{type(pulsar_qrm.pulsar_qrm_qcodes)}."
         )
     is_rf: bool = driver._get_lo_hw_present()
     icc_class: type = {
