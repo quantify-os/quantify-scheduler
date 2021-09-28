@@ -3,19 +3,17 @@
 """Backend for Zurich Instruments."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
-from dataclasses import dataclass
 
 import logging
+from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from zhinst.toolkit.helpers import Waveform
 
-from quantify_scheduler import enums
-from quantify_scheduler import types
-from quantify_scheduler.backends.types import zhinst
-from quantify_scheduler.backends.types import common
+from quantify_scheduler import enums, types
+from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
@@ -532,24 +530,49 @@ def compile_backend(
     # Create CachedSchedule to populate schedule lookup dictionaries.
     cached_schedule = schedule_helpers.CachedSchedule(schedule)
 
+    resources = cached_schedule.schedule["resource_dict"]
+
     device_configs: Dict[str, Union[ZIDeviceConfig, float]] = dict()
 
     def add_lo_config(channel: zhinst.Output) -> None:
         name = channel.local_oscillator
         if name not in local_oscillators:
-            raise KeyError(f"Missing configuration for LocalOscillator '{name}'!")
+            raise KeyError(f'Missing configuration for LocalOscillator "{name}"')
 
         local_oscillator = local_oscillators[name]
-        lo_freq: float = local_oscillator.frequency + channel.modulation.interm_freq
+
+        lo_freq = local_oscillator.frequency
+        interm_freq = channel.modulation.interm_freq
+
+        if (lo_freq is not None) and (interm_freq is not None):
+            rf_freq = lo_freq + interm_freq
+        else:
+            channel_clock_resource = resources.get(channel.clock)
+            if channel_clock_resource is not None:
+                rf_freq = channel_clock_resource.get("freq")
+            else:
+                raise ValueError(
+                    f'Could not determine RF frequency of LocalOscillator "{name}"'
+                )
+
+        if lo_freq is None and interm_freq is not None:
+            local_oscillator.frequency = rf_freq - interm_freq
+        elif interm_freq is None and lo_freq is not None:
+            channel.modulation.interm_freq = rf_freq - lo_freq
+        elif interm_freq is None and lo_freq is None:
+            raise ValueError(
+                "Either local oscillator frequency or channel intermediate frequency "
+                f'must be set for LocalOscillator "{name}"'
+            )
+
         if (
             local_oscillator.name in device_configs
-            and device_configs[local_oscillator.name] != lo_freq
+            and device_configs[local_oscillator.name] != rf_freq
         ):
             raise ValueError(
-                f"zhinst backend: Multiple frequencies assigned "
-                f"to LocalOscillator '{name}'!"
+                f'Multiple frequencies assigned to LocalOscillator "{name}"'
             )
-        device_configs[local_oscillator.name] = lo_freq
+        device_configs[local_oscillator.name] = rf_freq
 
     # Program devices
     for device in sorted(
