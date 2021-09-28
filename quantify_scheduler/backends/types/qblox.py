@@ -11,9 +11,14 @@ from quantify_scheduler.backends.qblox import constants
 
 @dataclass(frozen=True)
 class BoundedParameter:
+    """Specifies a certain parameter with a fixed max and min in a certain unit."""
+
     min_val: float
+    """Min value allowed."""
     max_val: float
+    """Max value allowed."""
     units: str
+    """Units in which the parameter is specified."""
 
 
 @dataclass(frozen=True)
@@ -29,11 +34,19 @@ class MarkerConfiguration:
 
 @dataclass(frozen=True)
 class StaticHardwareProperties:
+    """
+    Specifies the fixed hardware properties needed in the backend.
+    """
 
     max_sequencers: int
+    """The amount of sequencers available."""
     awg_output_volt: float
+    """Maximum output voltage of the awg."""
     marker_configuration: MarkerConfiguration
+    """The marker configuration to use."""
     mixer_dc_offset_range: BoundedParameter
+    """Specifies the range over which the dc offsets can be set that are used for mixer
+    calibration."""
 
 
 @dataclass
