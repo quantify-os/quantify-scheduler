@@ -301,13 +301,13 @@ class QASMProgram:
 
             amp_step = (final_amp - start_amp) / (num_steps - 1)
             amp_step_immediate = self._expand_from_normalised_range(
-                amp_step / self.parent.parent.awg_output_volt,
+                amp_step / self.parent.static_hw_properties.awg_output_volt,
                 constants.IMMEDIATE_SZ_OFFSET,
                 "offset_awg_path0",
                 pulse,
             )
             start_amp_immediate = self._expand_from_normalised_range(
-                start_amp / self.parent.parent.awg_output_volt,
+                start_amp / self.parent.static_hw_properties.awg_output_volt,
                 constants.IMMEDIATE_SZ_OFFSET,
                 "offset_awg_path0",
                 pulse,

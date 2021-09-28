@@ -43,7 +43,7 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
     QASMRuntimeSettings,
-    MarkerConfiguration,
+    StaticHardwareProperties,
 )
 
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -258,6 +258,7 @@ class Sequencer:
         parent: QbloxBaseModule,
         name: str,
         portclock: Tuple[str, str],
+        static_hw_properties: StaticHardwareProperties,
         seq_settings: dict,
         lo_name: Optional[str] = None,
     ):
@@ -285,7 +286,9 @@ class Sequencer:
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = list()
         self.acquisitions: List[OpInfo] = list()
-        self.associated_ext_lo = lo_name
+        self.associated_ext_lo: str = lo_name
+
+        self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
         self.register_manager = register_manager.RegisterManager()
 
@@ -438,25 +441,25 @@ class Sequencer:
                 )
                 pulse.uuid = reserved_pulse_id
 
-            if np.abs(amp_i) > self.parent.awg_output_volt:
+            if np.abs(amp_i) > self.static_hw_properties.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.static_hw_properties.awg_output_volt} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
-            if np.abs(amp_q) > self.parent.awg_output_volt:
+            if np.abs(amp_q) > self.static_hw_properties.awg_output_volt:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.static_hw_properties.awg_output_volt} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
             pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.parent.awg_output_volt,
-                awg_gain_1=amp_q / self.parent.awg_output_volt,
+                awg_gain_0=amp_i / self.static_hw_properties.awg_output_volt,
+                awg_gain_1=amp_q / self.static_hw_properties.awg_output_volt,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 waveforms_complex[pulse.uuid] = raw_wf_data
@@ -669,7 +672,7 @@ class Sequencer:
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
-        qasm.set_marker(self.parent.marker_configuration.start)
+        qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
         pulses = list() if self.pulses is None else self.pulses
         acquisitions = list() if self.acquisitions is None else self.acquisitions
@@ -705,7 +708,7 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.set_marker(self.parent.marker_configuration.end)
+        qasm.set_marker(self.static_hw_properties.marker_configuration.end)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
@@ -957,34 +960,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ] = None  # set in the prepare method.
 
     @property
-    @abstractmethod
-    def _max_sequencers(self) -> int:
-        """
-        Specifies the maximum amount of sequencers available to this instrument.
-
-        Returns
-        -------
-        :
-            The maximum amount of sequencers
-        """
-
-    @property
     def portclocks(self) -> List[Tuple[str, str]]:
         """Returns all the port and clocks available to this device."""
         return list(self.portclock_map.keys())
-
-    @property
-    @abstractmethod
-    def awg_output_volt(self) -> float:
-        """
-        The output range in volts. This is to be overridden by the subclass to account
-        for the differences between a QcmModule and a QrmModule.
-
-        Returns
-        -------
-        :
-            The output range in volts.
-        """
 
     @property
     @abstractmethod
@@ -1000,15 +978,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def marker_configuration(self) -> MarkerConfiguration:
+    def static_hw_properties(self) -> StaticHardwareProperties:
         """
-        Specifies the values that the markers need to be set to at the start and end
-        of each program.
 
         Returns
         -------
-        :
-            The maximum amount of sequencers
+
         """
 
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
@@ -1022,7 +997,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             sequencer.
         """
         valid_io = (f"complex_output_{i}" for i in [0, 1])
-        valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
+        valid_seq_names = (
+            f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
+        )
 
         mapping = dict()
         for io in valid_io:
@@ -1067,7 +1044,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             lo_name = io_cfg.get("lo_name", None)
 
-            valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
+            valid_seq_names = (
+                f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
+            )
             for seq_name in valid_seq_names:
                 if seq_name not in io_cfg:
                     continue
@@ -1083,13 +1062,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     )
 
                 sequencers[seq_name] = Sequencer(
-                    self, seq_name, portclock, seq_cfg, lo_name
+                    self,
+                    seq_name,
+                    portclock,
+                    self.static_hw_properties,
+                    seq_cfg,
+                    lo_name,
                 )
 
-        if len(sequencers.keys()) > self._max_sequencers:
+        if len(sequencers.keys()) > self.static_hw_properties.max_sequencers:
             raise ValueError(
                 f"Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__} is {self._max_sequencers}!"
+                f"Maximum allowed for {self.__class__} is {self.static_hw_properties.max_sequencers}!"
             )
 
         return sequencers
@@ -1178,21 +1162,30 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             An offset was used outside of the allowed range.
         """
 
-        def extract_normalized_offset(param_name: str, cfg: Dict[str, Any]) -> float:
-            normalized_offset = cfg.get(param_name, 0.0) / self.awg_output_volt
+        def calc_from_units_volt(
+            param_name: str, cfg: Dict[str, Any]
+        ) -> Optional[float]:
+
+            calculated_offset = cfg.get(param_name, None)  # Always in volts
+            if calculated_offset is None:
+                return None
+
+            voltage_range = self.static_hw_properties.mixer_dc_offset_range
+            if voltage_range.units == "mV":
+                calculated_offset = calculated_offset * 1e-3
+
             if (
-                normalized_offset < constants.MIN_MIXER_DC_OFFSET
-                or normalized_offset > constants.MAX_MIXER_DC_OFFSET
+                calculated_offset < voltage_range.min_val
+                or calculated_offset > voltage_range.max_val
             ):
                 raise ValueError(
-                    f"Attempting to set {param_name} to {cfg.get(param_name, 0.0)} on "
-                    f"instrument {self.name}. This parameter is can only be set to "
-                    f"values between "
-                    f"{constants.MIN_MIXER_DC_OFFSET*self.awg_output_volt} and "
-                    f"{constants.MAX_MIXER_DC_OFFSET*self.awg_output_volt}. Please "
-                    f"configure this correctly in the hardware config."
+                    f"Attempting to set {param_name} of {self.name} to "
+                    f"{calculated_offset} {voltage_range.units}. {param_name} has to be"
+                    f" between {voltage_range.min_val} and {voltage_range.max_val} "
+                    f"{voltage_range.units}!"
                 )
-            return normalized_offset
+
+            return calculated_offset
 
         supported_outputs = ("complex_output_0", "complex_output_1")
         for output_idx, output_label in enumerate(supported_outputs):
@@ -1201,17 +1194,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             output_cfg = hw_mapping[output_label]
             if output_idx == 0:
-                settings.offset_ch0_path0 = extract_normalized_offset(
+                settings.offset_ch0_path0 = calc_from_units_volt(
                     "dc_mixer_offset_I", output_cfg
                 )
-                settings.offset_ch0_path1 = extract_normalized_offset(
+                settings.offset_ch0_path1 = calc_from_units_volt(
                     "dc_mixer_offset_Q", output_cfg
                 )
             else:
-                settings.offset_ch1_path0 = extract_normalized_offset(
+                settings.offset_ch1_path0 = calc_from_units_volt(
                     "dc_mixer_offset_I", output_cfg
                 )
-                settings.offset_ch1_path1 = extract_normalized_offset(
+                settings.offset_ch1_path1 = calc_from_units_volt(
                     "dc_mixer_offset_Q", output_cfg
                 )
 

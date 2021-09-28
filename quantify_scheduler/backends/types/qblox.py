@@ -10,6 +10,13 @@ from quantify_scheduler.backends.qblox import constants
 
 
 @dataclass(frozen=True)
+class BoundedParameter:
+    min_val: float
+    max_val: float
+    units: str
+
+
+@dataclass(frozen=True)
 class MarkerConfiguration:
     """Specifies the marker configuration set during the execution of the sequencer
     program."""
@@ -18,6 +25,15 @@ class MarkerConfiguration:
     """The setting set in the header at the start of the program."""
     end: int
     """Setting set in the footer at the end of the program."""
+
+
+@dataclass(frozen=True)
+class StaticHardwareProperties:
+
+    max_sequencers: int
+    awg_output_volt: float
+    marker_configuration: MarkerConfiguration
+    mixer_dc_offset_range: BoundedParameter
 
 
 @dataclass
