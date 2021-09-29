@@ -115,7 +115,10 @@ class ScheduleGettableSingleChannel:
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
         # generate a schedule using the evaluated keyword arguments dict
-        sched = self.schedule_function(**self._evaluated_sched_kwargs)
+        sched = self.schedule_function(
+            **self._evaluated_sched_kwargs,
+            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        )
 
         compiled_schedule = qcompile(
             schedule=sched,
