@@ -67,7 +67,7 @@ class QuantumDevice(Instrument):
             initial_value=1024,
             parameter_class=ManualParameter,
             docstring=(
-                "The number times execution of the schedule gets repeated when "
+                "The number of times execution of the schedule gets repeated when "
                 "performing experiments, i.e. used to set the repetitions attribute of "
                 "the Schedule objects generated."
             ),
