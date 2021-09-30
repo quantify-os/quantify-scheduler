@@ -3,19 +3,17 @@
 """Backend for Zurich Instruments."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
-from dataclasses import dataclass
 
 import logging
+from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from zhinst.toolkit.helpers import Waveform
 
-from quantify_scheduler import enums
-from quantify_scheduler import types
-from quantify_scheduler.backends.types import zhinst
-from quantify_scheduler.backends.types import common
+from quantify_scheduler import enums, types
+from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
@@ -68,7 +66,7 @@ DEVICE_CLOCK_RATES: Dict[zhinst.DeviceType, Dict[int, int]] = {
     zhinst.DeviceType.UHFQA: zi_helpers.get_clock_rates(1.8e9),
 }
 
-UHFQA_READOUT_CHANNELS = 10
+NUM_UHFQA_READOUT_CHANNELS = 10
 MAX_QAS_INTEGRATION_LENGTH = 4096
 
 
@@ -425,13 +423,15 @@ def get_execution_table(
 
     def get_instruction(timeslot_index: int, uuid: int) -> zhinst.Instruction:
         if uuid in cached_schedule.acqid_acqinfo_dict:
-            return get_measure_instruction(
+            measure_instruction = get_measure_instruction(
                 uuid, timeslot_index, output, cached_schedule, instrument_info
             )
+            return measure_instruction
         if uuid in cached_schedule.pulseid_pulseinfo_dict:
-            return get_wave_instruction(
+            wave_instruction = get_wave_instruction(
                 uuid, timeslot_index, output, cached_schedule, instrument_info
             )
+            return wave_instruction
 
         raise RuntimeError(
             f"Undefined instruction for uuid={uuid} timeslot={timeslot_index}"
@@ -532,24 +532,49 @@ def compile_backend(
     # Create CachedSchedule to populate schedule lookup dictionaries.
     cached_schedule = schedule_helpers.CachedSchedule(schedule)
 
+    resources = cached_schedule.schedule["resource_dict"]
+
     device_configs: Dict[str, Union[ZIDeviceConfig, float]] = dict()
 
     def add_lo_config(channel: zhinst.Output) -> None:
         name = channel.local_oscillator
         if name not in local_oscillators:
-            raise KeyError(f"Missing configuration for LocalOscillator '{name}'!")
+            raise KeyError(f'Missing configuration for LocalOscillator "{name}"')
 
         local_oscillator = local_oscillators[name]
-        lo_freq: float = local_oscillator.frequency + channel.modulation.interm_freq
+
+        lo_freq = local_oscillator.frequency
+        interm_freq = channel.modulation.interm_freq
+
+        if (lo_freq is not None) and (interm_freq is not None):
+            rf_freq = lo_freq + interm_freq
+        else:
+            channel_clock_resource = resources.get(channel.clock)
+            if channel_clock_resource is not None:
+                rf_freq = channel_clock_resource.get("freq")
+            else:
+                raise ValueError(
+                    f'Could not determine RF frequency of LocalOscillator "{name}"'
+                )
+
+        if lo_freq is None and interm_freq is not None:
+            local_oscillator.frequency = rf_freq - interm_freq
+        elif interm_freq is None and lo_freq is not None:
+            channel.modulation.interm_freq = rf_freq - lo_freq
+        elif interm_freq is None and lo_freq is None:
+            raise ValueError(
+                "Either local oscillator frequency or channel intermediate frequency "
+                f'must be set for LocalOscillator "{name}"'
+            )
+
         if (
             local_oscillator.name in device_configs
-            and device_configs[local_oscillator.name] != lo_freq
+            and device_configs[local_oscillator.name] != rf_freq
         ):
             raise ValueError(
-                f"zhinst backend: Multiple frequencies assigned "
-                f"to LocalOscillator '{name}'!"
+                f'Multiple frequencies assigned to LocalOscillator "{name}"'
             )
-        device_configs[local_oscillator.name] = lo_freq
+        device_configs[local_oscillator.name] = rf_freq
 
     # Program devices
     for device in sorted(
@@ -992,9 +1017,9 @@ def _compile_for_uhfqa(
     ).with_sigouts(0, (1, 1)).with_awg_time(
         0, device.clock_select
     ).with_qas_integration_weights_real(
-        range(10), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+        range(NUM_UHFQA_READOUT_CHANNELS), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
     ).with_qas_integration_weights_imag(
-        range(10), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+        range(NUM_UHFQA_READOUT_CHANNELS), np.zeros(MAX_QAS_INTEGRATION_LENGTH)
     ).with_sigout_offset(
         0, mixer_corrections.dc_offset_I
     ).with_sigout_offset(
@@ -1043,7 +1068,8 @@ def _compile_for_uhfqa(
         instructions,
     )
     logger.debug(seqc)
-    settings_builder.with_compiler_sourcestring(awg_index, seqc)
+
+    settings_builder.with_compiler_sourcestring(awg_index, seqc, waveforms_dict)
 
     # Apply waveforms to AWG
     _add_wave_nodes(device, awg_index, waveforms_dict, waveform_table, settings_builder)
@@ -1081,9 +1107,9 @@ def _compile_for_uhfqa(
             ).with_qas_monitor_length(
                 integration_length
             ).with_qas_integration_weights_real(
-                range(UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
+                range(NUM_UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
             ).with_qas_integration_weights_imag(
-                range(UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
+                range(NUM_UHFQA_READOUT_CHANNELS), np.ones(MAX_QAS_INTEGRATION_LENGTH)
             )
 
             monitor_nodes = (
@@ -1128,7 +1154,7 @@ def _compile_for_uhfqa(
                 cached_schedule.schedule.repetitions
             )
             # .with_qas_rotations(
-            #     range(UHFQA_READOUT_CHANNELS), 0
+            #     range(NUM_UHFQA_READOUT_CHANNELS), 0
             # )
 
             # Create partial function for delayed execution
