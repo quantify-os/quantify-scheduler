@@ -106,15 +106,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.set("reference_source", settings.ref)
 
-        if settings.offset_ch0_path0 is not None:
-            self.instrument.set(
-                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
-            )
-        if settings.offset_ch0_path1 is not None:
-            self.instrument.set(
-                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
-            )
-
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
@@ -258,13 +249,13 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         """
         super()._configure_global_settings(settings)
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
+            self.instrument.set("out0_offset", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out1_dac_offset", settings.offset_ch0_path1)
+            self.instrument.set("out1_offset", settings.offset_ch0_path1)
         if settings.offset_ch1_path0 is not None:
-            self.instrument.set("out2_dac_offset", settings.offset_ch1_path0)
+            self.instrument.set("out2_offset", settings.offset_ch1_path0)
         if settings.offset_ch1_path1 is not None:
-            self.instrument.set("out3_dac_offset", settings.offset_ch1_path1)
+            self.instrument.set("out3_offset", settings.offset_ch1_path1)
 
 
 # pylint: disable=too-many-ancestors
