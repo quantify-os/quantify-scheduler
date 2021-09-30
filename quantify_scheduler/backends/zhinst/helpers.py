@@ -131,7 +131,7 @@ def check_recompile(
     instrument: base.ZIBaseInstrument,
     awg_index: int,
     new_seqc: str,
-    waveforms_dict: dict
+    waveforms_dict: dict,
 ) -> bool:
     """
     Checks whether the instrument needs to be recompiled again.
@@ -157,7 +157,8 @@ def check_recompile(
     """
     current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
     skip_recompile = False
-    if(len(current_seqc) == len(new_seqc)
+    if (
+        len(current_seqc) == len(new_seqc)
         and hash(current_seqc) == hash(new_seqc)
         and current_seqc == new_seqc
     ):
@@ -173,7 +174,7 @@ def set_and_compile_awg_seqc(
     awg_index: int,
     node: str,
     value: str,
-    waveform_dict: dict,
+    waveforms_dict: dict = None,
 ):
     """
     Uploads and compiles the AWG sequencer program.
@@ -188,7 +189,7 @@ def set_and_compile_awg_seqc(
         The node path.
     value :
         The seqc program.
-    waveform_dict:
+    waveforms_dict:
         The new waveforms for comparison.
     """
 
@@ -196,11 +197,17 @@ def set_and_compile_awg_seqc(
     awg = awgs[awg_index]
 
     # Assert the current Sequencer program with the new
-    skip_recompile = check_recompile(instrument=instrument,
-        awg_index=awg_index, new_seqc=value, waveform_dict=waveform_dict)
+    skip_recompile = check_recompile(
+        instrument=instrument,
+        awg_index=awg_index,
+        new_seqc=value,
+        waveforms_dict=waveforms_dict,
+    )
 
     if skip_recompile:
-        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence and waveforms"')
+        print(
+            f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence and waveforms"'
+        )
         return
 
     # Set the new 'compiler/sourcestring' value

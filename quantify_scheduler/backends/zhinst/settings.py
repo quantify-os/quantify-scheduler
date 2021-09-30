@@ -948,7 +948,7 @@ class ZISettingsBuilder:
         )
 
     def with_compiler_sourcestring(
-        self, awg_index: int, seqc: str, waveforms_dict: dict
+        self, awg_index: int, seqc: str, waveforms_dict: dict = None
     ) -> ZISettingsBuilder:
         """
         Adds the sequencer compiler sourcestring
