@@ -132,6 +132,12 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
     QRM specific implementation of the qblox compiler.
     """
 
+    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
+    """Maximum number of sequencers available in the instrument."""
+    awg_output_volt: float = 0.5
+    """Peak output voltage of the AWG"""
+    marker_configuration: dict = {"start": 1, "end": 0}
+    """Marker values to activate/deactivate the I1 marker"""
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
@@ -217,7 +223,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             if "instrument_type" not in cfg:
                 raise KeyError(
                     f"Module {name} of cluster {self.name} is specified in "
-                    f"the config, but does not specify an instrument_type."
+                    f"the config, but does not specify an 'instrument_type'."
                 )
             instrument_type: str = cfg["instrument_type"]
             if instrument_type not in self.compiler_classes:

@@ -76,11 +76,11 @@ import quantify_scheduler.schemas.examples as es
 esp = inspect.getfile(es)
 
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
-with open(cfg_f, "r") as f:
+with open(cfg_f, "r", encoding="utf-8") as f:
     DEVICE_CFG = json.load(f)
 
 map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
-with open(map_f, "r") as f:
+with open(map_f, "r", encoding="utf-8") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
@@ -1067,9 +1067,6 @@ def test_markers():
     _confirm_correct_markers(program["qrm0"], QrmModule)
     _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
     _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
-
-
-# ------------------- types -------------------
 
 
 def test_pulsar_rf_extract_from_mapping():

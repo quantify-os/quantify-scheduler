@@ -16,8 +16,8 @@
           "clock": "q4.01",
           "interm_freq": 200e6
         }
-    }
-  },
+      }
+    },
     "cl_qcm_rf0": {
       "instrument_type": "QCM_RF",
       "ref": "internal",
@@ -28,8 +28,8 @@
           "clock": "q5.01",
           "interm_freq": 50e6
         }
+      }
     }
-  }
   },
   "qcm0": {
     "instrument_type": "Pulsar_QCM",
@@ -76,9 +76,9 @@
       "seq0": {
         "port": "q1:res",
         "clock": "q1.ro"
-        }
       }
-    },
+    }
+  },
 
   "qcm_rf0": {
     "instrument_type": "Pulsar_QCM_RF",
@@ -124,9 +124,9 @@
         "port": "q3:res",
         "clock": "q3.ro",
         "interm_freq": 100e6
-        }
       }
-    },
+    }
+  },
 
   "lo0": {"instrument_type": "LocalOscillator", "lo_freq": null, "power": 1},
   "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 1}
