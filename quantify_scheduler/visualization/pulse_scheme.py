@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def new_pulse_fig(
-    figsize: Optional[Tuple[int, int]] = None
+    figsize: Optional[Tuple[int, int]] = None, ax: Optional[Axes] = None
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Open a new figure and configure it to plot pulse schemes.
@@ -32,20 +32,25 @@ def new_pulse_fig(
     Parameters
     ----------
     figsize :
+    ax: Axis to use for plotting. If None, then create a new one
 
     Returns
     -------
-    :
+    : Tuple of figure handle and axis handle
 
     """
-    fig, ax = plt.subplots(1, 1, figsize=figsize, frameon=False)
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=figsize, frameon=False)
+    else:
+        fig = None
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_ticklabels([])
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
     ax.spines["left"].set_visible(False)
-    fig.patch.set_alpha(0)
+    if fig is not None:
+        fig.patch.set_alpha(0)
     ax.axhline(0, color="0.75")
 
     return fig, ax

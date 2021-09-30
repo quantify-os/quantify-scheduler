@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Plotting functions used in the visualization backend of the sequencer."""
 from __future__ import annotations
-from typing import Tuple, Union, List, Dict
+from typing import Tuple, Union, List, Dict, Optional
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
@@ -203,7 +203,9 @@ def _locate_qubit_in_address(qubit_map, address):
 # pylint disabled because func was implemented before pylint was adopted
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def circuit_diagram_matplotlib(
-    schedule: Schedule, figsize: Tuple[int, int] = None
+    schedule: Schedule,
+    figsize: Tuple[int, int] = None,
+    ax: Optional[Axes] = None,
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
@@ -217,6 +219,8 @@ def circuit_diagram_matplotlib(
         the schedule to render.
     figsize
         matplotlib figsize.
+    ax
+        Axis handle to use for plotting
 
     Returns
     -------
@@ -264,7 +268,7 @@ def circuit_diagram_matplotlib(
 
     if figsize is None:
         figsize = (10, len(qubit_map))
-    fig, ax = ps.new_pulse_fig(figsize=figsize)
+    fig, ax = ps.new_pulse_fig(figsize=figsize, ax=ax)
     ax.set_title(schedule.data["name"])
     ax.set_aspect("equal")
 
