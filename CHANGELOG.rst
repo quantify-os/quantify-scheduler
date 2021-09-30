@@ -32,6 +32,7 @@ Merged branches and closed issues
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
+* Visualization - Allow user defined axis for plotting circuit diagram (!206)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
