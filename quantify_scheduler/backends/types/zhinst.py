@@ -37,6 +37,9 @@ class Output(DataClassJsonMixin):
         The port resource.
     clock :
         The Clock resource.
+    clock_frequency:
+        The frequency for the clock resource
+        (AKA RF/signal frequency).
     mode :
         The output mode type.
     modulation :
@@ -64,6 +67,7 @@ class Output(DataClassJsonMixin):
     mode: enums.SignalModeType
     modulation: common.Modulation
     local_oscillator: str
+    clock_frequency: Optional[float] = None
     gain1: int = 0
     gain2: int = 0
     line_trigger_delay: float = -1

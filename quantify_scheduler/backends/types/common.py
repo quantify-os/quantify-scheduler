@@ -3,8 +3,9 @@
 """Common python dataclasses for multiple backends."""
 
 from dataclasses import dataclass
-from dataclasses_json import DataClassJsonMixin
+from typing import Optional
 
+from dataclasses_json import DataClassJsonMixin
 from quantify_scheduler import enums
 
 
@@ -78,4 +79,4 @@ class LocalOscillator(DataClassJsonMixin):
     """
 
     name: str
-    frequency: float
+    frequency: Optional[float]

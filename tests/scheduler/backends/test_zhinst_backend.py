@@ -1031,14 +1031,10 @@ def test_compile_backend_with_undefined_local_oscillator(
     zhinst_hardware_map = json.loads(hardware_map_str)
 
     # Act
-    with pytest.raises(KeyError) as execinfo:
+    with pytest.raises(
+        KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
+    ):
         zhinst_backend.compile_backend(schedule, zhinst_hardware_map)
-
-    # Assert
-    assert (
-        execinfo.value.args[0]
-        == "Missing configuration for LocalOscillator 'lo_unknown'!"
-    )
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
