@@ -186,7 +186,7 @@ class SquarePulse(Operation):
         amp: float,
         duration: float,
         port: str,
-        clock: str,
+        clock: str = BasebandClockResource.IDENTITY,
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
