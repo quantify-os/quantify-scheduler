@@ -1068,7 +1068,8 @@ def _compile_for_uhfqa(
         instructions,
     )
     logger.debug(seqc)
-    settings_builder.with_compiler_sourcestring(awg_index, seqc)
+
+    settings_builder.with_compiler_sourcestring(awg_index, seqc, waveforms_dict)
 
     # Apply waveforms to AWG
     _add_wave_nodes(device, awg_index, waveforms_dict, waveform_table, settings_builder)
