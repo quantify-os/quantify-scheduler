@@ -127,44 +127,80 @@ def set_awg_value(
     awgs[awg_index]._awg._module.set(node, value)
 
 
+def check_recompile(
+    instrument: base.ZIBaseInstrument,
+    awg_index: int,
+    new_seqc: str,
+    waveforms_dict: dict
+) -> bool:
+    """
+    Checks whether the instrument needs to be recompiled again.
+    Ideal behaviour is that if there are changes to the seqc or
+    the waveforms, then, the recompile step cannot be skipped.
+
+    Parameters
+    ----------
+    instrument :
+        The ZI instrument object.
+    awg_index :
+        The awg to configure.
+    new_seqc :
+        The new seqc to be compared against the current uploaded.
+    waveforms_dict :
+        The new waveforms to be compared against the current uploaded.
+
+    Returns
+    -------
+    :
+        A boolean on whether to skip the recompile. True if the recompile step
+        can be skipped. False otherwise.
+    """
+    current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
+    skip_recompile = False
+    if(len(current_seqc) == len(new_seqc)
+        and hash(current_seqc) == hash(new_seqc)
+        and current_seqc == new_seqc
+    ):
+        skip_recompile = True
+    # FIXME: We are always returning false from this function, a deviation from
+    # the ideal behaviour as we do not yet know how to obtain the current
+    # uploaded waveforms. Ideally we need to return the skip_recompile variable.
+    return False
+
+
 def set_and_compile_awg_seqc(
     instrument: base.ZIBaseInstrument,
     awg_index: int,
     node: str,
     value: str,
-    always_recompile: bool = False,
+    waveform_dict: dict,
 ):
     """
     Uploads and compiles the AWG sequencer program.
 
-    HACK note: the bool always_recompile is used to
-    always trigger a recompile, especially if the
-    waveform has changed but the original implementation
-    does not detect this condition!
-
     Parameters
     ----------
     instrument :
-        The instrument.
+        The ZI instrument object.
     awg_index :
         The awg to configure.
     node :
         The node path.
     value :
         The seqc program.
+    waveform_dict:
+        The new waveforms for comparison.
     """
-    current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
+
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awg = awgs[awg_index]
 
     # Assert the current Sequencer program with the new
-    if (
-        len(current_seqc) == len(value)
-        and hash(current_seqc) == hash(value)
-        and current_seqc == value
-        and (not always_recompile)
-    ):
-        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence"')
+    skip_recompile = check_recompile(instrument=instrument,
+        awg_index=awg_index, new_seqc=value, waveform_dict=waveform_dict)
+
+    if skip_recompile:
+        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence and waveforms"')
         return
 
     # Set the new 'compiler/sourcestring' value
