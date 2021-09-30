@@ -45,7 +45,6 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
         "port": qubit.ro_port,
         "clock": qubit.ro_clock,
         "init_duration": qubit.init_duration,
-        "repetitions": quantum_device.cfg_nr_averages(),
     }
 
     # Prepare the mock data the spectroscopy schedule
@@ -102,7 +101,6 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     sched_kwargs = {
         "element_select_idx": index_par,
         "qubit": qubit.name,
-        "repetitions": 256,
     }
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
@@ -170,10 +168,9 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
     sched_kwargs = {
         "qubit": qubit.name,
         "prepared_states": [0, 1],
-        "repetitions": repetitions,
     }
 
-    quantum_device.cfg_nr_averages(repetitions)
+    quantum_device.cfg_sched_repetitions(repetitions)
 
     # Prepare the mock data the ideal SSRO data
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)

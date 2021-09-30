@@ -62,7 +62,8 @@ class ScheduleGettableSingleChannel:
             The qcodes instrument representing the quantum device under test (DUT)
             containing quantum device properties and setup configuration information.
         schedule_function
-            A function which returns a :class:`~quantify_scheduler.types.Schedule`.
+            A function which returns a :class:`~quantify_scheduler.types.Schedule`. The
+            function is required to have the `repetitions` keyword argument.
         schedule_kwargs
             The schedule function keyword arguments, when a value in this dictionary is
             a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
@@ -115,7 +116,10 @@ class ScheduleGettableSingleChannel:
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
         # generate a schedule using the evaluated keyword arguments dict
-        sched = self.schedule_function(**self._evaluated_sched_kwargs)
+        sched = self.schedule_function(
+            **self._evaluated_sched_kwargs,
+            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        )
 
         compiled_schedule = qcompile(
             schedule=sched,
