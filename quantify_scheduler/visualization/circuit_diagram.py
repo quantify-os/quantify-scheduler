@@ -220,7 +220,7 @@ def circuit_diagram_matplotlib(
     figsize
         matplotlib figsize.
     ax
-        Axis handle to use for plotting
+        Axis handle to use for plotting.
 
     Returns
     -------

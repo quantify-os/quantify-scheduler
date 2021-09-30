@@ -31,12 +31,14 @@ def new_pulse_fig(
 
     Parameters
     ----------
-    figsize :
-    ax: Axis to use for plotting. If None, then create a new one
+    figsize
+    ax
+        Axis to use for plotting. If ``None``, then creates a new one.
 
     Returns
     -------
-    : Tuple of figure handle and axis handle
+    :
+        Tuple of figure handle and axis handle.
 
     """
     if ax is None:
