@@ -200,6 +200,22 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        """
+        Constructor for a Cluster compiler object.
+
+        Parameters
+        ----------
+        parent
+            Reference to the parent object.
+        name
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time
+            Total time execution of the schedule should go on for. This parameter is
+            used to ensure that the different devices.
+        hw_mapping
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
         super().__init__(
             parent=parent,
             name=name,
