@@ -262,6 +262,9 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         return instrument_compilers
 
     def prepare(self) -> None:
+        """
+        Prepares the instrument compiler for compilation by assigning the data.
+        """
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
@@ -282,6 +285,19 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                         compiler.add_acquisition(port, clock, acq)
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+        """
+        Performs the compilation.
+
+        Parameters
+        ----------
+        repetitions
+            Amount of times to repeat execution of the schedule.
+
+        Returns
+        -------
+        :
+            The part of the compiled instructions for this instrument.
+        """
         program = {}
         program["settings"] = {"reference_source": self.hw_mapping["ref"]}
         for compiler in self.instrument_compilers.values():
