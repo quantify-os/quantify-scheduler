@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Dict, TYPE_CHECKING, Any, Optional
+from typing import Dict, TYPE_CHECKING, Any, Optional, Tuple
 
+import numpy as np
 from zhinst import qcodes
 from quantify_core.data import handling
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
@@ -18,10 +19,24 @@ from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.backends.zhinst.settings import ZISerializeSettings
 
 if TYPE_CHECKING:
-    import numpy as np
     from zhinst.qcodes.base import ZIBaseInstrument
     from quantify_scheduler.backends.zhinst_backend import ZIDeviceConfig
     from quantify_scheduler.backends.zhinst.settings import ZISettings
+
+
+def convert_to_instrument_coordinator_format(acquisition_results):
+    """
+    Converts the acquisition results format of the UHFQA component to
+    the format required by InstrumentCoordinator.
+    Converts from `Dict[int, np.ndarray]` to `Dict[Tuple[int, int], Any]`.
+    """
+    reformatted_results: Dict[Tuple[int, int], Any] = dict()
+    for acq_channel in acquisition_results:
+        results_array = acquisition_results.get(acq_channel)
+        for i, complex_value in enumerate(results_array):
+            separated_value = (np.real(complex_value), np.imag(complex_value))
+            reformatted_results[(acq_channel, i)] = separated_value
+    return reformatted_results
 
 
 class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
@@ -174,7 +189,11 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         for acq_channel, resolve in acq_config.resolvers.items():
             acq_channel_results[acq_channel] = resolve(uhfqa=self.instrument)
 
-        return acq_channel_results
+        reformatted_results = convert_to_instrument_coordinator_format(
+            acq_channel_results
+        )
+
+        return reformatted_results
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         self.instrument.awg.wait_done(timeout_sec)
