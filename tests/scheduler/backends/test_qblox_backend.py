@@ -917,6 +917,17 @@ def test_container_add_from_str(pulse_only_schedule):
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
 
+def test_container_add_from_path(pulse_only_schedule):
+    container = compiler_container.CompilerContainer(pulse_only_schedule)
+    container.add_instrument_compiler(
+        "qcm0",
+        "quantify_scheduler.backends.qblox.instrument_compilers.QcmModule",
+        HARDWARE_MAPPING["qcm0"],
+    )
+    assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
+
+
 def test_from_mapping(pulse_only_schedule):
     container = compiler_container.CompilerContainer.from_mapping(
         pulse_only_schedule, HARDWARE_MAPPING
