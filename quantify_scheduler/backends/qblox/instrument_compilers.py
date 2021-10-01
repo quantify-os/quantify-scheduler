@@ -242,6 +242,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 raise KeyError(
                     f"Module {name} of cluster {self.name} is specified in "
                     f"the config, but does not specify an 'instrument_type'."
+                    f"\n\nValid values: {self.compiler_classes.keys()}"
                 )
             instrument_type: str = cfg["instrument_type"]
             if instrument_type not in self.compiler_classes:
