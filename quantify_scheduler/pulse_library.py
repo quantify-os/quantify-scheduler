@@ -55,14 +55,15 @@ class IdlePulse(Operation):
 
 class RampPulse(Operation):
     """
-    The RampPulse Operation is a real-valued pulse that ramps from zero
-    to the specified amplitude during the duration of the pulse.
+    The RampPulse Operation is a real-valued pulse that ramps from the specified offset
+    to the specified amplitude + offset during the duration of the pulse.
     """
 
     def __init__(
         self,
         amp: float,
         duration: float,
+        offset: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
         t0: float = 0,
@@ -77,9 +78,11 @@ class RampPulse(Operation):
         Parameters
         ----------
         amp
-            Final amplitude of the ramp envelope function.
+            Amplitude of the ramp envelope function.
         duration
             The pulse duration in seconds.
+        offset:
+            Starting point of the ramp pulse
         port
             Port of the pulse.
         clock
@@ -102,6 +105,7 @@ class RampPulse(Operation):
                         "wf_func": "quantify_scheduler.waveforms.ramp",
                         "amp": amp,
                         "duration": duration,
+                        "offset": offset,
                         "t0": t0,
                         "clock": clock,
                         "port": port,
