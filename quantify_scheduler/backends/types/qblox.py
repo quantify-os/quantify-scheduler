@@ -237,7 +237,7 @@ class PulsarSettings(BaseModuleSettings):
 @dataclass
 class RFModuleSettings(BaseModuleSettings):
     """
-    Global settings for the Pulsar to be set in the InstrumentCoordinator component.
+    Global settings for the module to be set in the InstrumentCoordinator component.
     This is kept separate from the settings that can be set on a per sequencer basis,
     which are specified in :class:`~.SequencerSettings`.
     """
@@ -259,7 +259,7 @@ class RFModuleSettings(BaseModuleSettings):
         ----------
         mapping
         """
-        rf_settings = dict()
+        rf_settings = {}
 
         complex_output_0 = mapping.get("complex_output_0")
         complex_output_1 = mapping.get("complex_output_1")
@@ -338,7 +338,7 @@ class SequencerSettings(DataClassJsonMixin):
 
         Parameters
         ----------
-        seq_settings:
+        seq_settings
             The sequencer configuration dict.
 
         Returns

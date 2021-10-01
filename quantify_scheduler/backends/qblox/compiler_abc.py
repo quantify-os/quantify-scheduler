@@ -253,6 +253,7 @@ class Sequencer:
     distinction between Pulsar QcmModule and Pulsar QrmModule is made by the subclasses.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         parent: QbloxBaseModule,
@@ -284,8 +285,8 @@ class Sequencer:
         self._name = name
         self.port = portclock[0]
         self.clock = portclock[1]
-        self.pulses: List[OpInfo] = list()
-        self.acquisitions: List[OpInfo] = list()
+        self.pulses: List[OpInfo] = []
+        self.acquisitions: List[OpInfo] = []
         self.associated_ext_lo: str = lo_name
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
@@ -674,8 +675,8 @@ class Sequencer:
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
-        pulses = list() if self.pulses is None else self.pulses
-        acquisitions = list() if self.acquisitions is None else self.acquisitions
+        pulses = [] if self.pulses is None else self.pulses
+        acquisitions = [] if self.acquisitions is None else self.acquisitions
 
         self._initialize_append_mode_registers(qasm, acquisitions)
 
@@ -969,11 +970,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def settings_type(self) -> PulsarSettings:
         """
         Specifies the Pulsar Settings class used by the instrument.
-
-        Returns
-        -------
-        :
-            The maximum amount of sequencers
         """
 
     @property
@@ -1038,7 +1034,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
         """
         sequencers = {}
-        for io, io_cfg in self.hw_mapping.items():
+        for io_cfg in self.hw_mapping.values():
             if not isinstance(io_cfg, dict):
                 continue
 
@@ -1070,10 +1066,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     lo_name,
                 )
 
-        if len(sequencers.keys()) > self.static_hw_properties.max_sequencers:
+        if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
-                f"Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__} is {self.static_hw_properties.max_sequencers}!"
+                "Attempting to construct too many sequencer compilers. "
+                f"Maximum allowed for {self.__class__.__name__} is "
+                f"{self.static_hw_properties.max_sequencers}!"
             )
 
         return sequencers
