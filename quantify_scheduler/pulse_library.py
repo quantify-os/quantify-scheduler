@@ -78,7 +78,7 @@ class RampPulse(Operation):
         The pulse is given as a function of time :math:`t` and the parameters offset and amplitude by
 
         .. math::
-            P(t) = offset + t * amplitude
+            P(t) = \mathrm{offset} + t * \mathrm{amp}
 
         Parameters
         ----------
