@@ -817,7 +817,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         if "reference_source" in settings:
             self.instrument.set("reference_source", settings["reference_source"])
 
-    def prepare(self, options: Any) -> None:
+    def prepare(self, options: Dict[str, dict]) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
