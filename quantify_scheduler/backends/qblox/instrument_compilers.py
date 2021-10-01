@@ -296,7 +296,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         Returns
         -------
         :
-            The part of the compiled instructions for this instrument.
+            The part of the compiled instructions relevant for this instrument.
         """
         program = {}
         program["settings"] = {"reference_source": self.hw_mapping["ref"]}
