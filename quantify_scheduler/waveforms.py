@@ -23,8 +23,8 @@ def square_imaginary(
     return square(t, 1j * amp)
 
 
-def ramp(t, amp) -> np.ndarray:
-    return np.linspace(0, amp, len(t))
+def ramp(t, amp, offset=0) -> np.ndarray:
+    return np.linspace(offset, amp + offset, len(t))
 
 
 def staircase(
