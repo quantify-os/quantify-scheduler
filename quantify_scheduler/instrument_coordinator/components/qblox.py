@@ -864,12 +864,6 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
 
-    def write_raw(self, cmd: str) -> None:
-        self.instrument.write_raw(cmd)
-
-    def ask_raw(self, cmd: str) -> str:
-        return self.instrument.ask_raw(cmd)
-
 
 def _construct_component_from_instrument_driver(
     driver: Instrument,
