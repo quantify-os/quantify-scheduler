@@ -75,6 +75,11 @@ class RampPulse(Operation):
         The RampPulse Operation is a real-valued pulse that ramps from zero
         to the specified amplitude during the duration of the pulse.
 
+        The pulse is given as a function of time :math:`t` and the parameters offset and amplitude by
+
+        .. math::
+            P(t) = offset + t * amplitude
+
         Parameters
         ----------
         amp
