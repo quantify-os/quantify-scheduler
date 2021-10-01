@@ -210,8 +210,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
-            Total time execution of the schedule should go on for. This parameter is
-            used to ensure that the different devices.
+            Total time execution of the schedule should go on for.
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
