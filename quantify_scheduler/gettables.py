@@ -136,15 +136,21 @@ class ScheduleGettableSingleChannel:
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
 
-        # Currently only supported for weighted integration.
-        # Assert that the schedule is compatible with that.
-        assert acq_metadata.acq_return_type == complex
         acquired_data = instr_coordinator.retrieve_acquisition()
         instr_coordinator.stop()
 
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233
-        if acq_metadata.bin_mode == BinMode.AVERAGE:
+        if acq_metadata.acq_protocol == "trace":
+            dataset = {}
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
+                for acq_idx in acq_indices:
+                    val = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel] = val[0] + 1j * val[1]
+
+        elif acq_metadata.bin_mode == BinMode.AVERAGE:
+
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
