@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
+import numpy as np
 
 from qcodes.utils import validators
 from qcodes.instrument import parameter
@@ -284,3 +285,106 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
             self.get_component(instrument.name).wait_done(timeout_sec)
+
+
+def _convert_acquisition_data_format(raw_results):
+    acquisition_dict = dict()
+    for (channel, i) in raw_results.keys():
+        if channel not in acquisition_dict.keys():
+            acquisition_dict[channel] = []
+        acquisition_dict[channel].append(raw_results.get((channel, i)))
+    acquisitions_list = []
+    for channel in acquisition_dict:
+        acquisitions_list.append(np.array(acquisition_dict.get(channel)))
+    return acquisitions_list
+
+
+class ZIInstrumentCoordinator(InstrumentCoordinator):
+    """
+    This class is a hack and extension to the InstrumentCoordinator, which is
+    introduced to support the quirks when using the ZI backend
+    during the acquisition of results.
+    """
+
+    __module__ = "quantify_scheduler.instrument_coordinator"
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+        self.add_parameter(
+            "timeout_reacquire",
+            unit="",
+            initial_value=True,
+            vals=validators.Bool(),
+            parameter_class=parameter.ManualParameter,
+            docstring="Turns on reacquisition in case " "of timeouts.",
+        )
+
+        self.add_parameter(
+            "max_num_reacquisitions",
+            unit="",
+            initial_value=5,
+            vals=validators.Numbers(min_value=0, max_value=50),
+            parameter_class=parameter.ManualParameter,
+            docstring="The number of retries to retrieve acquisitions in case "
+            "of timeouts.",
+        )
+
+        self._last_acquisition = None
+        self._num_reacquisitions = 0
+
+    def _compare_reacquire(self, raw_results):
+        reacquire = True
+        results_list = _convert_acquisition_data_format(raw_results)
+
+        if self._last_acquisition is not None:
+            last_acquisition_list = _convert_acquisition_data_format(
+                self._last_acquisition
+            )
+            difference_np_array = np.linalg.norm(
+                np.array(results_list[0]) - np.array(last_acquisition_list[0])
+            )
+            if difference_np_array > 0.0:
+                reacquire = False
+                self._num_reacquisitions = 0
+        return reacquire
+
+    def retrieve_acquisition(self):
+        """
+        Retrieves the latest acquisition results of the components
+        with acquisition capabilities.
+
+        Returns
+        -------
+        :
+            The acquisition data per component.
+        """
+        # FIXME: update the description of the return type of the instrument
+        # coordinator # pylint: disable=fixme
+
+        raw_acq_results = super().retrieve_acquisition()
+        if self.timeout_reacquire():
+            reacquire = self._compare_reacquire(raw_acq_results)
+            self._last_acquisition = raw_acq_results
+            self._num_reacquisitions = 0
+
+            while reacquire:
+                self._num_reacquisitions += 1
+                print(
+                    "Re-running acquisition "
+                    + f"{self._num_reacquisitions}/{self.max_num_reacquisitions()}"
+                )
+                if self._num_reacquisitions >= self.max_num_reacquisitions():
+                    raise RuntimeError(
+                        "Exceeded number of reacquisitions:"
+                        + f"{self._num_reacquisitions}/"
+                        + f"{self.max_num_reacquisitions()}"
+                    )
+                self.start()
+                self.wait_done()
+                # Acquire results
+                raw_acq_results = super().retrieve_acquisition()
+                reacquire = self._compare_reacquire(raw_acq_results)
+                self._last_acquisition = raw_acq_results
+
+        return raw_acq_results
