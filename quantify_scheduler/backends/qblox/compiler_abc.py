@@ -8,7 +8,7 @@ import json
 from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List
+from typing import Optional, Dict, Any, Set, Tuple, List, Union
 from typing_extensions import Literal
 
 import numpy as np
@@ -252,12 +252,13 @@ class Sequencer:
     distinction between Pulsar QCM and Pulsar QRM is made by the subclasses.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         parent: PulsarBase,
         name: str,
         portclock: Tuple[str, str],
-        connected_outputs: Tuple[int, ...],
+        connected_outputs: Union[Tuple[int], Tuple[int, int]],
         seq_settings: dict,
         lo_name: Optional[str] = None,
     ):
@@ -269,7 +270,7 @@ class Sequencer:
         parent
             A reference to the parent instrument this sequencer belongs to.
         name
-            Name of the sequencer. This is supposed to match "seq{index}".
+            Name of the sequencer. This is supposed to match ``"seq{index}"``.
         portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
@@ -280,8 +281,8 @@ class Sequencer:
         self._name = name
         self.port = portclock[0]
         self.clock = portclock[1]
-        self.pulses: List[OpInfo] = list()
-        self.acquisitions: List[OpInfo] = list()
+        self.pulses: List[OpInfo] = []
+        self.acquisitions: List[OpInfo] = []
         self.associated_ext_lo = lo_name
 
         self.register_manager = register_manager.RegisterManager()
@@ -301,7 +302,7 @@ class Sequencer:
         self.mixer_corrections = None
 
     @property
-    def connected_outputs(self) -> Tuple[int, ...]:
+    def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
         return self._settings.connected_outputs
 
     @property
@@ -431,7 +432,7 @@ class Sequencer:
             I or Q amplitude is being set outside of maximum range.
         """
         output_mode = helpers.output_mode_from_outputs(self._settings.connected_outputs)
-        waveforms_complex = dict()
+        waveforms_complex = {}
         for pulse in self.pulses:
             reserved_pulse_id = (
                 non_generic.check_reserved_pulse_id(pulse)
@@ -468,6 +469,7 @@ class Sequencer:
                 )
             if output_mode == "imag":
                 amp_i, amp_q = amp_q, amp_i
+
             pulse.pulse_settings = QASMRuntimeSettings(
                 awg_gain_0=amp_i / self.parent.awg_output_volt,
                 awg_gain_1=amp_q / self.parent.awg_output_volt,
@@ -483,21 +485,23 @@ class Sequencer:
         self, pulse: OpInfo, data: np.ndarray, mode: Literal["complex", "real", "imag"]
     ) -> np.ndarray:
         """
-        Takes the pulse and ensures it is played on the right path for real or imag
-        mode, does nothing in case of complex as this should be handled correctly either
-        way.
+        Takes the pulse and ensures it is played on the right path for ``"real"`` or
+        ``"imag"`` mode, returns same ``data`` for ``mode == "complex"`` as this should
+        be handled correctly already.
 
-        Effectively this means that real data is made imaginary when mode is "imag", but
-        complex and real only have some checks on the data.
+        Effectively this means that when ``data`` is an array of real numbers and the
+        ``mode == "imag"`` the data will be cast to an array of complex numbers,
+        otherwise the same ``data`` will be returned.
 
         Parameters
         ----------
         pulse
             The pulse information.
         data
-            Real or complex valued data.
+            Real-valued array (when ``mode != "complex"``) or complex-valued array
+            (when ``mode == "complex"``).
         mode
-            The output mode. Must be one of "complex", "real" or "imag".
+            The output mode. Must be one of ``"complex"``, ``"real"`` or ``"imag"``.
 
         Returns
         -------
@@ -507,8 +511,7 @@ class Sequencer:
         Raises
         ------
         ValueError
-            Mode is not complex but data has an imaginary part prior to the
-            transformation in this function.
+            Mode is not ``"complex"`` but the input ``data`` has an imaginary part.
         """
         assert mode in ("complex", "real", "imag")
 
@@ -519,10 +522,11 @@ class Sequencer:
             raise ValueError(
                 f"Attempting to play complex data on sequencer {self.name} of "
                 f"{self.parent.name} which is connected to a real output.\n\n"
-                f"Relevant pulse:\n{repr(pulse)}"
+                f"Associated pulse:\n{repr(pulse)}"
             )
         if mode == "imag":
             return 1.0j * data
+
         return data  # mode is real
 
     def _generate_weights_dict(self) -> Dict[str, Any]:
@@ -561,7 +565,7 @@ class Sequencer:
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
         """
-        waveforms_complex = dict()
+        waveforms_complex = {}
         for acq in self.acquisitions:
             waveforms_data = acq.data["waveforms"]
             if len(waveforms_data) == 0:
@@ -629,7 +633,7 @@ class Sequencer:
         acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
 
         # initialize an empty dictionary for the format required by pulsar
-        acq_declaration_dict = dict()
+        acq_declaration_dict = {}
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
 
             # Some sanity checks on the input for easier debugging.
@@ -734,8 +738,8 @@ class Sequencer:
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
         qasm.set_marker(self.parent.marker_configuration["start"])
 
-        pulses = list() if self.pulses is None else self.pulses
-        acquisitions = list() if self.acquisitions is None else self.acquisitions
+        pulses = [] if self.pulses is None else self.pulses
+        acquisitions = [] if self.acquisitions is None else self.acquisitions
 
         self._initialize_append_mode_registers(qasm, acquisitions)
 
@@ -787,7 +791,7 @@ class Sequencer:
         acquisitions:
             A list with all the acquisitions to consider.
         """
-        channel_to_reg = dict()
+        channel_to_reg = {}
         for acq in acquisitions:
             if acq.data["bin_mode"] != BinMode.APPEND:
                 continue
@@ -861,7 +865,7 @@ class Sequencer:
         :
             The combined program.
         """
-        compiled_dict = dict()
+        compiled_dict = {}
         compiled_dict["program"] = program
         compiled_dict["waveforms"] = waveforms_dict
         if weights_dict is not None:
@@ -929,14 +933,14 @@ class Sequencer:
         acq_declaration_dict = None
         if self.parent.supports_acquisition:
             weights_dict = (
-                self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
+                self._generate_weights_dict() if len(self.acquisitions) > 0 else {}
             )
             acq_declaration_dict = (
                 self._generate_acq_declaration_dict(
                     acquisitions=self.acquisitions, repetitions=repetitions
                 )
                 if len(self.acquisitions) > 0
-                else dict()
+                else {}
             )
 
         qasm_program = self.generate_qasm_program(
@@ -1069,7 +1073,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         ]
         valid_seq_names = [f"seq{i}" for i in range(self._max_sequencers)]
 
-        mapping = dict()
+        mapping = {}
         for io in valid_io:
             if io not in self.hw_mapping:
                 continue
@@ -1108,7 +1112,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
         ]
-        sequencers = dict()
+        sequencers = {}
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
@@ -1265,7 +1269,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
-        program = dict()
+        program = {}
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(repetitions=repetitions)
             if seq_program is not None:
@@ -1280,7 +1284,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         if self.supports_acquisition:
             # Add both acquisition metadata (a summary) and acq_mapping
 
-            program["acq_metadata"] = dict()
+            program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
                 if not sequencer.acquisitions:
@@ -1315,7 +1319,7 @@ class PulsarBase(ControlDeviceCompiler, ABC):
                 acquisition.data["protocol"],
             )
 
-        acq_mapping = dict()
+        acq_mapping = {}
         for sequencer in self.sequencers.values():
             mapping_items = map(extract_mapping_item, sequencer.acquisitions)
             for item in mapping_items:

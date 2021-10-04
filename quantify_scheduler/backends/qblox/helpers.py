@@ -225,13 +225,16 @@ def output_mode_from_outputs(
     """
     Takes the specified outputs to use and extracts a "sequencer mode" from it.
 
-    "real" means path0 will be used, whereas "imag" implies the use of only path1.
-    "complex" uses both paths, with the real and imaginary components referring to the
-    different paths.
+    Modes:
+
+    - ``"real"``: only path0 is used
+    - ``"imag"``: only path1 is used
+    - ``"complex"``: both paths are used, with the real and imaginary components
+    referring to the different paths.
 
     Parameters
     ----------
-    outputs:
+    outputs
         The outputs the sequencer is supposed to use. Note that the outputs start from
         0, but the labels on the front panel start counting from 1. So the mapping
         differs n-1.
@@ -239,7 +242,7 @@ def output_mode_from_outputs(
     Returns
     -------
     :
-        The mode.
+        The mode
 
     Raises
     ------
