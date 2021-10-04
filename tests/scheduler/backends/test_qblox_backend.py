@@ -227,9 +227,21 @@ def cluster_only_schedule():
             t0=4e-9,
         )
     )
+    sched.add(
+        DRAGPulse(
+            G_amp=0.2,
+            D_amp=-0.2,
+            phase=90,
+            port="q5:mw",
+            duration=20e-9,
+            clock="q5.01",
+            t0=4e-9,
+        )
+    )
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q4:mw", clock="q4.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q4.01", freq=5e9)])
+    sched.add_resources([ClockResource("q5.01", freq=5e9)])
     determine_absolute_timing(sched)
     return sched
 
@@ -913,6 +925,17 @@ def test_container_add_from_type(pulse_only_schedule):
 def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
+    assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
+
+
+def test_container_add_from_path(pulse_only_schedule):
+    container = compiler_container.CompilerContainer(pulse_only_schedule)
+    container.add_instrument_compiler(
+        "qcm0",
+        "quantify_scheduler.backends.qblox.instrument_compilers.QcmModule",
+        HARDWARE_MAPPING["qcm0"],
+    )
     assert "qcm0" in container.instrument_compilers
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 

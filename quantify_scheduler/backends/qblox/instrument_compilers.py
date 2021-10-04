@@ -198,6 +198,21 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        """
+        Constructor for a Cluster compiler object.
+
+        Parameters
+        ----------
+        parent
+            Reference to the parent object.
+        name
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time
+            Total time execution of the schedule should go on for.
+        hw_mapping
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
         super().__init__(
             parent=parent,
             name=name,
@@ -224,6 +239,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 raise KeyError(
                     f"Module {name} of cluster {self.name} is specified in "
                     f"the config, but does not specify an 'instrument_type'."
+                    f"\n\nValid values: {self.compiler_classes.keys()}"
                 )
             instrument_type: str = cfg["instrument_type"]
             if instrument_type not in self.compiler_classes:
@@ -243,6 +259,9 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         return instrument_compilers
 
     def prepare(self) -> None:
+        """
+        Prepares the instrument compiler for compilation by assigning the data.
+        """
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
@@ -263,6 +282,19 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                         compiler.add_acquisition(port, clock, acq)
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+        """
+        Performs the compilation.
+
+        Parameters
+        ----------
+        repetitions
+            Amount of times to repeat execution of the schedule.
+
+        Returns
+        -------
+        :
+            The part of the compiled instructions relevant for this instrument.
+        """
         program = {}
         program["settings"] = {"reference_source": self.hw_mapping["ref"]}
         for compiler in self.instrument_compilers.values():

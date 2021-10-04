@@ -836,7 +836,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         if "reference_source" in settings:
             self.instrument.set("reference_source", settings["reference_source"])
 
-    def prepare(self, options: Any) -> None:
+    def prepare(self, options: Dict[str, dict]) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
@@ -882,12 +882,6 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
-
-    def write_raw(self, cmd: str) -> None:
-        self.instrument.write_raw(cmd)
-
-    def ask_raw(self, cmd: str) -> str:
-        return self.instrument.ask_raw(cmd)
 
 
 def _construct_component_from_instrument_driver(
