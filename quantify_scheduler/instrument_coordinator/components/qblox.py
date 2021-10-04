@@ -182,7 +182,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     _settings_type = PulsarSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = False
-    """Specifies whether the device posesses an internal LO."""
+    """Specifies whether the device possesses an internal LO."""
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQCMComponent."""
@@ -372,7 +372,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     _settings_type = PulsarRFSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = True
-    """Specifies whether the device posesses an internal LO."""
+    """Specifies whether the device possesses an internal LO."""
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -408,7 +408,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     _settings_type = PulsarRFSettings
     """Specifies the settings class used by this component."""
     _has_internal_lo = True
-    """Specifies whether the device posesses an internal LO."""
+    """Specifies whether the device possesses an internal LO."""
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -558,7 +558,7 @@ class _QRMAcquisitionManager:
         if sequencer_index > self.number_of_sequencers:
             raise ValueError(
                 f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}. QRM has only "
+                f"{sequencer_index}. A QRM has only "
                 f"{self.number_of_sequencers} sequencers."
             )
         scope_ch_and_idx = self._get_scope_channel_and_index()

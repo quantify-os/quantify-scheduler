@@ -16,12 +16,8 @@ qblox
 compiler_abc
 ~~~~~~~~~~~~
 
-
-.. Commented out because of #176
-
-
-.. .. automodule:: quantify_scheduler.backends.qblox.compiler_abc
-..     :members:
+.. automodule:: quantify_scheduler.backends.qblox.compiler_abc
+    :members:
 
 compiler_container
 ~~~~~~~~~~~~~~~~~~
