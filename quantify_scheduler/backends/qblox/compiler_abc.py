@@ -732,6 +732,8 @@ class Sequencer:
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
+        qasm.emit(q1asm_instructions.RESET_PHASE)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.set_marker(self.parent.marker_configuration["start"])
 
         pulses = list() if self.pulses is None else self.pulses
