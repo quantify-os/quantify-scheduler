@@ -465,7 +465,6 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             )
 
 
-# ----------------- Utility -----------------
 def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
     path_idx = output_index % 2  # even or odd output
     return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"

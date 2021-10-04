@@ -1068,13 +1068,13 @@ class PulsarBase(ControlDeviceCompiler, ABC):
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
         """
-        valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
+        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
         ]
         valid_seq_names = [f"seq{i}" for i in range(self._max_sequencers)]
 
         mapping = {}
-        for io in valid_io:
+        for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
 
@@ -1109,17 +1109,17 @@ class PulsarBase(ControlDeviceCompiler, ABC):
         ValueError
             Attempting to use more sequencers than available.
         """
-        valid_io = [f"complex_output_{i}" for i in [0, 1]] + [
+        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
         ]
         sequencers = {}
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
-            if io not in valid_io:
+            if io not in valid_ios:
                 raise ValueError(
-                    f"Invalid hardware config. {io} of {self.name} not a "
-                    f"valid name of a in/output.\n\nSupported names:\n{valid_io}."
+                    f"Invalid hardware config. '{io}' of {self.name} is not a "
+                    f"valid name of an input/output.\n\nSupported names:\n{valid_ios}."
                 )
 
             lo_name = io_cfg.get("lo_name", None)
@@ -1431,7 +1431,7 @@ class PulsarRF(PulsarBase):
 
         # Will be changed when LO leakage correction is decoupled from the sequencer
         for seq in self.sequencers.values():
-            self.validate_output_mode(seq)
+            self._validate_output_mode(seq)
             if seq.mixer_corrections is not None:
                 for output in seq.connected_outputs:
                     if output == 0:
@@ -1471,7 +1471,7 @@ class PulsarRF(PulsarBase):
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        self.validate_output_mode(sequencer)
+        self._validate_output_mode(sequencer)
         for real_output in sequencer.connected_outputs:
             if real_output % 2 != 0:
                 # We will only use real output 0 and 2,
@@ -1510,9 +1510,10 @@ class PulsarRF(PulsarBase):
             if lo_freq is not None:
                 sequencer.frequency = clk_freq - lo_freq
 
-    def validate_output_mode(self, sequencer: Sequencer):
+    @classmethod
+    def _validate_output_mode(cls, sequencer: Sequencer):
         if sequencer.output_mode != "complex":
             raise ValueError(
-                f"Attempting to use {self.__class__.__name__} in real "
+                f"Attempting to use {cls.__name__} in real "
                 f"mode, but this is not supported for Qblox RF modules."
             )
