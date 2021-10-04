@@ -195,7 +195,7 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
     return str(waveform_hash)
 
 
-def output_name_to_outputs(name: str) -> Tuple[int, ...]:
+def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     """
     Finds the physical outputs associated with the outputs specified in the config.
 
@@ -220,10 +220,10 @@ def output_name_to_outputs(name: str) -> Tuple[int, ...]:
 
 
 def output_mode_from_outputs(
-    outputs: Tuple[int, ...]
+    outputs: Union[Tuple[int], Tuple[int, int]]
 ) -> Literal["complex", "real", "imag"]:
     """
-    Takes ths specified outputs to use and extracts a "sequencer mode" from it.
+    Takes the specified outputs to use and extracts a "sequencer mode" from it.
 
     "real" means path0 will be used, whereas "imag" implies the use of only path1.
     "complex" uses both paths, with the real and imaginary components referring to the
