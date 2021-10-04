@@ -286,21 +286,20 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
 
-    Examples
-    --------
+    .. admonition:: Examples
 
-    .. jupyter-execute::
+        .. jupyter-execute::
 
-        import numpy as np
-        from quantify_scheduler.backends.qblox.helpers import generate_waveform_dict
+            import numpy as np
+            from quantify_scheduler.backends.qblox.helpers import generate_waveform_dict
 
-        complex_waveforms = {12345: np.array([1, 2])}
-        generate_waveform_dict(complex_waveforms)
+            complex_waveforms = {12345: np.array([1, 2])}
+            generate_waveform_dict(complex_waveforms)
 
-        # {'12345_I': {'data': [1, 2], 'index': 0},
-        # '12345_Q': {'data': [0, 0], 'index': 1}}
+            # {'12345_I': {'data': [1, 2], 'index': 0},
+            # '12345_Q': {'data': [0, 0], 'index': 1}}
     """
-    wf_dict = dict()
+    wf_dict = {}
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
         name_i, name_q = generate_waveform_names_from_uuid(uuid)
         to_add = {
