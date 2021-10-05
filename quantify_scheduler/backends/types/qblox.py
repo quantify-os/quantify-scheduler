@@ -375,7 +375,7 @@ class SequencerSettings(DataClassJsonMixin):
             constants.MAX_MIXER_AMP_RATIO,
         )
         mixer_phase_error = extract_and_verify_range(
-            "mixer_phase_error",
+            "mixer_phase_error_deg",
             seq_settings,
             0.0,
             constants.MIN_MIXER_PHASE_ERROR,
