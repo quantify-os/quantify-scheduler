@@ -269,7 +269,7 @@ class SequencerSettings(DataClassJsonMixin):
     sync_en: bool
     """Enables party-line synchronization."""
     connected_outputs: Union[Tuple[int], Tuple[int, int]]
-    """Specifies which physical outputs this sequencer produces data for."""
+    """Specifies which physical outputs this sequencer produces waveform data for."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
     awg_offset_path_0: float = 0.0
