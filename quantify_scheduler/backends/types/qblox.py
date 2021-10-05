@@ -243,9 +243,11 @@ class RFModuleSettings(BaseModuleSettings):
     """
 
     lo0_freq: Union[float, None] = None
-    """The frequency of Output 0 (O0) LO."""
+    """The frequency of Output 0 (O0) LO. If left `None`, the parameter will not be set.
+    """
     lo1_freq: Union[float, None] = None
-    """The frequency of Output 1 (O1) LO."""
+    """The frequency of Output 1 (O1) LO. If left `None`, the parameter will not be set.
+    """
 
     @classmethod
     def extract_settings_from_mapping(
