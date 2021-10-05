@@ -40,7 +40,9 @@ with a str state under 'status' and a list of str flags under 'flags'.
 @dataclasses.dataclass(frozen=True)
 class _SequencerStateInfo:
     message: str
+    """The text to pass as the logger message."""
     logging_level: int
+    """The logger level to use."""
 
 
 _SEQUENCER_STATE_FLAG_INFO: Dict[str, _SequencerStateInfo] = {
@@ -125,6 +127,8 @@ _SEQUENCER_STATE_FLAG_INFO: Dict[str, _SequencerStateInfo] = {
         message="Clock source instability occurred.", logging_level=logging.ERROR
     ),
 }
+"""Used to link all the messages for the logger and levels to specific flags given by
+the hardware."""
 
 
 class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
