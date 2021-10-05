@@ -1135,8 +1135,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
         """
-        We configure the mixer offsets in a later step such that it can be normalized
-        depending on the type of instrument used.
+        We configure the mixer offsets after initializing the settings such we can
+        account for the differences in the hardware. e.g. the V vs mV encountered here.
 
         Parameters
         ----------
