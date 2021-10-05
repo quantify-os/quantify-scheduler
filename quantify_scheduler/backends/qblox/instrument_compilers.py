@@ -7,7 +7,12 @@ from typing import Optional, Dict, Any
 
 from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.qblox import compiler_abc
-from quantify_scheduler.backends.types.qblox import LOSettings
+from quantify_scheduler.backends.types.qblox import (
+    LOSettings,
+    MarkerConfiguration,
+    StaticHardwareProperties,
+    BoundedParameter,
+)
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
@@ -107,22 +112,18 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         return self._settings.to_dict()
 
 
-# ---------- pulsar sequencer classes ----------
-
-# pylint: disable=invalid-name
 class QcmModule(compiler_abc.QbloxBasebandModule):
     """
     QCM specific implementation of the qblox compiler.
     """
 
-    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
-    """Maximum number of sequencers available in the instrument."""
-    awg_output_volt: float = 2.5
-    """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 1, "end": 0}
-    """Marker values to activate/deactivate the O1 marker"""
     supports_acquisition: bool = False
-    """Specifies whether the device can perform acquisitions."""
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
+        max_awg_output_voltage=2.5,
+        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
+    )
 
 
 # pylint: disable=invalid-name
@@ -131,14 +132,13 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
     QRM specific implementation of the qblox compiler.
     """
 
-    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
-    """Maximum number of sequencers available in the instrument."""
-    awg_output_volt: float = 0.5
-    """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 1, "end": 0}
-    """Marker values to activate/deactivate the I1 marker"""
     supports_acquisition: bool = True
-    """Specifies whether the device can perform acquisitions."""
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
+        max_awg_output_voltage=0.5,
+        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
+    )
 
 
 class QcmRfModule(compiler_abc.QbloxRFModule):
@@ -146,17 +146,13 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     QCM-RF specific implementation of the qblox compiler.
     """
 
-    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
-    """Maximum number of sequencer available in the instrument."""
-    awg_output_volt: float = 0.25
-    """Peak output voltage of the AWG."""
-    marker_configuration: dict = {"start": 6, "end": 8}
-    """
-    Marker values to activate/deactivate the O1 marker,
-    and the output switches for O1/O2.
-    """
     supports_acquisition: bool = False
-    """Specifies whether the device can perform acquisitions."""
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
+        max_awg_output_voltage=0.25,
+        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+    )
 
 
 class QrmRfModule(compiler_abc.QbloxRFModule):
@@ -164,17 +160,14 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     QRM-RF specific implementation of the qblox compiler.
     """
 
-    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
-    """Maximum number of sequencer available in the instrument."""
-    awg_output_volt: float = 0.25
-    """Peak output voltage of the AWG."""
-    marker_configuration: dict = {"start": 1, "end": 4}
-    """
-    Marker values to activate/deactivate the I1 marker,
-    and the output switch for O1.
-    """
     supports_acquisition: bool = True
-    """Specifies whether the device can perform acquisitions."""
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
+        max_awg_output_voltage=0.25,
+        # N.B one of the output switches works inverted, hence the 1101 instead of 1111.
+        marker_configuration=MarkerConfiguration(start=0b1101, end=0b0010),
+        mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+    )
 
 
 class Cluster(compiler_abc.ControlDeviceCompiler):
