@@ -190,7 +190,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
                         logger.error(
                             f"[{self.name}|seq{idx}] Encountered flag {flag} in "
                             f"returned value by `get_sequencer_state` which is not "
-                            f"defined in {self.__class__}."
+                            f"defined in {self.__module__}."
                         )
                     else:
                         flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
