@@ -10,7 +10,7 @@
         "lo_name": "lo0",
         "seq0": {
           "mixer_amp_ratio": 0.9999,
-          "mixer_phase_error": 3.14,
+          "mixer_phase_error_deg": -4.2,
           "port": "q4:mw",
           "clock": "q4.01",
           "interm_freq": 200e6
