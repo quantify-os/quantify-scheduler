@@ -25,10 +25,10 @@ NUMBER_OF_SEQUENCERS_QCM = 2
 """Number of sequencers supported by a QCM in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 1
 """Number of sequencers supported by a QRM in the latest firmware."""
-MIN_MIXER_PHASE_ERROR = -45
+MIN_MIXER_PHASE_ERROR_DEG = -45
 """Lowest phase shift that can be configured in the instruments for mixer corrections.
 """
-MAX_MIXER_PHASE_ERROR = 45
+MAX_MIXER_PHASE_ERROR_DEG = 45
 """Lowest phase shift that can be configured in the instruments for mixer corrections.
 """
 MIN_MIXER_AMP_RATIO = 0.5

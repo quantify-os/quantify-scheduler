@@ -378,8 +378,8 @@ class SequencerSettings(DataClassJsonMixin):
             "mixer_phase_error_deg",
             seq_settings,
             0.0,
-            constants.MIN_MIXER_PHASE_ERROR,
-            constants.MAX_MIXER_PHASE_ERROR,
+            constants.MIN_MIXER_PHASE_ERROR_DEG,
+            constants.MAX_MIXER_PHASE_ERROR_DEG,
         )
 
         settings = cls(
