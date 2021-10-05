@@ -9,9 +9,11 @@
         "line_gain_db": 0,
         "lo_name": "lo0",
         "seq0": {
+          "mixer_amp_ratio": 0.9999,
+          "mixer_phase_error_deg": -4.2,
           "port": "q4:mw",
           "clock": "q4.01",
-          "interm_freq": 50e6
+          "interm_freq": 200e6
         }
       }
     },
@@ -33,6 +35,8 @@
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo0",
+      "dc_mixer_offset_I": 0.1234,
+      "dc_mixer_offset_Q": -1.337,
       "seq0": {
         "port": "q0:mw",
         "clock": "q0.01",
@@ -55,12 +59,6 @@
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_name": "lo1",
-      "mixer_corrections": {
-        "amp_ratio": 1.0,
-        "phase_error": 0,
-        "offset_I": 0.1,
-        "offset_Q": 0.0
-      },
       "seq0": {
         "port": "q0:res",
         "clock": "q0.ro",
@@ -107,12 +105,6 @@
     "complex_output_0": {
       "line_gain_db": 0,
       "lo_freq": 7.2e9,
-      "mixer_corrections": {
-        "amp_ratio": 1.0,
-        "phase_error": 0,
-        "offset_I": 0.12,
-        "offset_Q": 0.13
-      },
       "seq0": {
         "port": "q2:res",
         "clock": "q2.ro",

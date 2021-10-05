@@ -47,7 +47,7 @@ def fixture_make_cluster(mocker):
 
         qcm0 = cluster.cluster_qcm_dummy(f"{name}_qcm0")
         qcm1 = cluster.cluster_qcm_dummy(f"{name}_qcm1")
-        component.add_module(qcm0, qcm1)
+        component.add_modules(qcm0, qcm1)
 
         return component
 

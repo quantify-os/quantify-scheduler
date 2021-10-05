@@ -3,7 +3,8 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, Callable, Union, Type
+import dataclasses
+from typing import Any, Dict, Optional, Tuple, Callable, Union, Type, List
 from collections import namedtuple
 
 import logging
@@ -26,6 +27,107 @@ from quantify_scheduler.types import AcquisitionMetadata
 from quantify_scheduler.backends.qblox import constants
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
+_SequencerStateType = Dict[str, Union[str, List[str]]]
+"""
+Type of the return value of get_sequencer_state. Returned value format is always a dict
+with a str state under 'status' and a list of str flags under 'flags'.
+"""
+
+
+@dataclasses.dataclass(frozen=True)
+class _SequencerStateInfo:
+    message: str
+    """The text to pass as the logger message."""
+    logging_level: int
+    """The logger level to use."""
+
+
+_SEQUENCER_STATE_FLAG_INFO: Dict[str, _SequencerStateInfo] = {
+    "DISARMED": _SequencerStateInfo(
+        message="Sequencer was disarmed.", logging_level=logging.INFO
+    ),
+    "FORCED STOP": _SequencerStateInfo(
+        message="Sequencer was stopped while still running.",
+        logging_level=logging.WARNING,
+    ),
+    "SEQUENCE PROCESSOR Q1 ILLEGAL INSTRUCTION": _SequencerStateInfo(
+        message="Classical sequencer part executed an unknown instruction.",
+        logging_level=logging.ERROR,
+    ),
+    "SEQUENCE PROCESSOR RT EXEC ILLEGAL INSTRUCTION": _SequencerStateInfo(
+        message="Real-time sequencer part executed an unknown instruction.",
+        logging_level=logging.ERROR,
+    ),
+    "AWG WAVE PLAYBACK INDEX INVALID PATH 0": _SequencerStateInfo(
+        message="AWG path 0 tried to play an unknown waveform.",
+        logging_level=logging.ERROR,
+    ),
+    "AWG WAVE PLAYBACK INDEX INVALID PATH 1": _SequencerStateInfo(
+        message="AWG path 1 tried to play an unknown waveform.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ WEIGHT PLAYBACK INDEX INVALID PATH 0": _SequencerStateInfo(
+        message="Acquisition path 0 tried to play an unknown weight.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ WEIGHT PLAYBACK INDEX INVALID PATH 1": _SequencerStateInfo(
+        message="Acquisition path 1 tried to play an unknown weight.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ SCOPE DONE PATH 0": _SequencerStateInfo(
+        message="Scope acquisition for path 0 has finished.",
+        logging_level=logging.DEBUG,
+    ),
+    "ACQ SCOPE OUT-OF-RANGE PATH 0": _SequencerStateInfo(
+        message="Scope acquisition data for path 0 was out-of-range.",
+        logging_level=logging.WARNING,
+    ),
+    "ACQ SCOPE OVERWRITTEN PATH 0": _SequencerStateInfo(
+        message="Scope acquisition data for path 0 was overwritten.",
+        logging_level=logging.INFO,
+    ),
+    "ACQ SCOPE DONE PATH 1": _SequencerStateInfo(
+        message="Scope acquisition for path 1 has finished.",
+        logging_level=logging.DEBUG,
+    ),
+    "ACQ SCOPE OUT-OF-RANGE PATH 1": _SequencerStateInfo(
+        message="Scope acquisition data for path 1 was out-of-range.",
+        logging_level=logging.WARNING,
+    ),
+    "ACQ SCOPE OVERWRITTEN PATH 1": _SequencerStateInfo(
+        message="Scope acquisition data for path 1 was overwritten.",
+        logging_level=logging.INFO,
+    ),
+    "ACQ BINNING DONE": _SequencerStateInfo(
+        message="Acquisition binning completed.", logging_level=logging.DEBUG
+    ),
+    "ACQ BINNING FIFO ERROR": _SequencerStateInfo(
+        message="Acquisition binning encountered internal FIFO error.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ BINNING COMM ERROR": _SequencerStateInfo(
+        message="Acquisition binning encountered internal communication error.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ BINNING OUT-OF-RANGE": _SequencerStateInfo(
+        message="Acquisition binning data out-of-range.", logging_level=logging.WARNING
+    ),
+    "ACQ INDEX INVALID": _SequencerStateInfo(
+        message="Acquisition tried to process an invalid acquisition.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ BIN INDEX INVALID": _SequencerStateInfo(
+        message="Acquisition tried to process an invalid bin.",
+        logging_level=logging.ERROR,
+    ),
+    "CLOCK INSTABILITY": _SequencerStateInfo(
+        message="Clock source instability occurred.", logging_level=logging.ERROR
+    ),
+}
+"""Used to link all the messages for the logger and levels to specific flags given by
+the hardware."""
 
 
 @dataclass(frozen=True)
@@ -119,7 +221,22 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         if timeout_min == 0:
             timeout_min = 1
         for idx in range(self._hardware_properties.number_of_sequencers):
-            self.instrument.get_sequencer_state(idx, timeout_min)
+            state: _SequencerStateType = self.instrument.get_sequencer_state(
+                idx, timeout_min
+            )
+            flags = state.get("flags", None)
+            if flags:
+                for flag in flags:
+                    if flag not in _SEQUENCER_STATE_FLAG_INFO:
+                        logger.error(
+                            f"[{self.name}|seq{idx}] Encountered flag {flag} in "
+                            f"returned value by `get_sequencer_state` which is not "
+                            f"defined in {self.__module__}."
+                        )
+                    else:
+                        flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
+                        msg = f"[{self.name}|seq{idx}] {flag} - {flag_info.message}"
+                        logger.log(level=flag_info.logging_level, msg=msg)
 
     def start(self) -> None:
         """
@@ -147,15 +264,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.set("reference_source", settings.ref)
 
-        if settings.offset_ch0_path0 is not None:
-            self.instrument.set(
-                "sequencer0_offset_awg_path0", settings.offset_ch0_path0
-            )
-        if settings.offset_ch0_path1 is not None:
-            self.instrument.set(
-                "sequencer0_offset_awg_path1", settings.offset_ch0_path1
-            )
-
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
@@ -170,12 +278,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             The settings to configure it to.
         """
         self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path0", settings.awg_offset_path_0
-        )
-        self.instrument.set(
-            f"sequencer{seq_idx}_offset_awg_path1", settings.awg_offset_path_1
-        )
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
@@ -183,6 +285,14 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             self.instrument.set(
                 f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
             )
+        self.instrument.set(
+            f"sequencer{seq_idx}_mixer_corr_phase_offset_degree",
+            settings.mixer_corr_phase_offset_degree,
+        )
+        self.instrument.set(
+            f"sequencer{seq_idx}_mixer_corr_gain_ratio",
+            settings.mixer_corr_gain_ratio,
+        )
 
         for output_idx in range(self._hardware_properties.number_of_output_paths):
             connected: bool = output_idx in settings.connected_outputs
@@ -285,6 +395,26 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
             self.instrument.arm_sequencer(sequencer=seq_idx)
 
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        super()._configure_global_settings(settings)
+        # configure mixer correction offsets
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set("out0_offset", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set("out1_offset", settings.offset_ch0_path1)
+        if settings.offset_ch1_path0 is not None:
+            self.instrument.set("out2_offset", settings.offset_ch1_path0)
+        if settings.offset_ch1_path1 is not None:
+            self.instrument.set("out3_offset", settings.offset_ch1_path1)
+
 
 # pylint: disable=too-many-ancestors
 class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
@@ -382,6 +512,22 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
 
         self._arm_all_sequencers_in_program(program)
 
+    def _configure_global_settings(self, settings: PulsarSettings):
+        """
+        Configures all settings that are set globally for the whole instrument.
+
+        Parameters
+        ----------
+        settings
+            The settings to configure it to.
+        """
+        super()._configure_global_settings(settings)
+        # configure mixer correction offsets
+        if settings.offset_ch0_path0 is not None:
+            self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
+        if settings.offset_ch0_path1 is not None:
+            self.instrument.set("out1_dac_offset", settings.offset_ch0_path1)
+
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
@@ -416,18 +562,19 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
-            self.instrument.set("lo0_freq", settings.lo0_freq)
+            self.instrument.set("out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
-            self.instrument.set("lo1_freq", settings.lo1_freq)
+            self.instrument.set("out1_lo_freq", settings.lo1_freq)
 
+        # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("offset_I_ch0", settings.offset_ch0_path0)
+            self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("offset_Q_ch0", settings.offset_ch0_path1)
+            self.instrument.set("out0_offset_path1", settings.offset_ch0_path1)
         if settings.offset_ch1_path0 is not None:
-            self.instrument.set("offset_I_ch1", settings.offset_ch1_path0)
+            self.instrument.set("out1_offset_path0", settings.offset_ch1_path0)
         if settings.offset_ch1_path1 is not None:
-            self.instrument.set("offset_Q_ch1", settings.offset_ch1_path1)
+            self.instrument.set("out1_offset_path1", settings.offset_ch1_path1)
 
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
@@ -449,20 +596,13 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
-            self.instrument.set("lo0_freq", settings.lo0_freq)
-        if settings.lo1_freq is not None:
-            self.instrument.set("lo1_freq", settings.lo1_freq)
+            self.instrument.set("out0_in0_lo_freq", settings.lo0_freq)
 
+        # configure mixer ccorrection offsets
         if settings.offset_ch0_path0 is not None:
-            logger.warning(
-                "'offset_ch0_path0' was not set. This functionality is not yet"
-                "implemented in the Pulsar QRM-RF driver."
-            )
+            self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            logger.warning(
-                "'offset_ch0_path1' was not set. This functionality is not yet"
-                "implemented in the Pulsar QRM-RF driver."
-            )
+            self.instrument.set("out0_offset_path1", settings.offset_ch0_path1)
 
 
 def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):

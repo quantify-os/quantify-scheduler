@@ -25,10 +25,7 @@ from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox import register_manager
 from quantify_scheduler.backends.qblox import helpers
-from quantify_scheduler.backends.qblox.constants import (
-    GRID_TIME,
-    SAMPLING_RATE,
-)
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
 from quantify_scheduler.backends.types.qblox import (
@@ -40,7 +37,7 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
     QASMRuntimeSettings,
-    MixerCorrections,
+    StaticHardwareProperties,
 )
 
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -246,8 +243,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 # pylint: disable=too-many-instance-attributes
 class Sequencer:
     """
-    Abstract base class that specify the compilation steps on the sequencer level. The
-    distinction between Pulsar QcmModule and Pulsar QrmModule is made by the subclasses.
+    Class that performs the compilation steps on the sequencer level.
     """
 
     # pylint: disable=too-many-arguments
@@ -256,6 +252,7 @@ class Sequencer:
         parent: QbloxBaseModule,
         name: str,
         portclock: Tuple[str, str],
+        static_hw_properties: StaticHardwareProperties,
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
         seq_settings: dict,
         lo_name: Optional[str] = None,
@@ -274,6 +271,9 @@ class Sequencer:
             sequencer. The first value is the port, second is the clock.
         seq_settings
             Sequencer settings dictionary.
+        lo_name
+            The name of the local oscillator instrument connected to the same output via
+            an IQ mixer. This is used for frequency calculations.
         """
         self.parent = parent
         self._name = name
@@ -281,7 +281,9 @@ class Sequencer:
         self.clock = portclock[1]
         self.pulses: List[OpInfo] = []
         self.acquisitions: List[OpInfo] = []
-        self.associated_ext_lo = lo_name
+        self.associated_ext_lo: str = lo_name
+
+        self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
         self.register_manager = register_manager.RegisterManager()
 
@@ -289,15 +291,9 @@ class Sequencer:
             "instruction_generated_pulses_enabled", False
         )
 
-        modulation_freq = seq_settings.get("interm_freq", None)
-        nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
-        self._settings = SequencerSettings(
-            nco_en=nco_en,
-            sync_en=True,
-            modulation_freq=modulation_freq,
-            connected_outputs=connected_outputs,
+        self._settings = SequencerSettings.initialize_from_config_dict(
+            seq_settings=seq_settings
         )
-        self.mixer_corrections = None
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -455,28 +451,28 @@ class Sequencer:
             )
             if reserved_pulse_id is None:
                 raw_wf_data = helpers.generate_waveform_data(
-                    pulse.data, sampling_rate=SAMPLING_RATE
+                    pulse.data, sampling_rate=constants.SAMPLING_RATE
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
                 pulse.uuid = helpers.generate_uuid_from_wf_data(raw_wf_data)
             else:
                 raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
-                    reserved_pulse_id, pulse.data, sampling_rate=SAMPLING_RATE
+                    reserved_pulse_id, pulse.data, sampling_rate=constants.SAMPLING_RATE
                 )
                 pulse.uuid = reserved_pulse_id
 
-            if np.abs(amp_i) > self.parent.awg_output_volt:
+            if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
-            if np.abs(amp_q) > self.parent.awg_output_volt:
+            if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.parent.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
@@ -487,8 +483,8 @@ class Sequencer:
                 amp_i, amp_q = amp_q, amp_i
 
             pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.parent.awg_output_volt,
-                awg_gain_1=amp_q / self.parent.awg_output_volt,
+                awg_gain_0=amp_i / self.static_hw_properties.max_awg_output_voltage,
+                awg_gain_1=amp_q / self.static_hw_properties.max_awg_output_voltage,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 raw_wf_data = self.apply_output_mode_to_data(
@@ -595,10 +591,10 @@ class Sequencer:
                     "waveforms."
                 )
             raw_wf_data_real = helpers.generate_waveform_data(
-                waveforms_data[0], sampling_rate=SAMPLING_RATE
+                waveforms_data[0], sampling_rate=constants.SAMPLING_RATE
             )
             raw_wf_data_imag = helpers.generate_waveform_data(
-                waveforms_data[1], sampling_rate=SAMPLING_RATE
+                waveforms_data[1], sampling_rate=constants.SAMPLING_RATE
             )
             acq.uuid = "{}_{}".format(
                 helpers.generate_uuid_from_wf_data(raw_wf_data_real),
@@ -751,8 +747,8 @@ class Sequencer:
 
         qasm = QASMProgram(parent=self)
         # program header
-        qasm.emit(q1asm_instructions.WAIT_SYNC, GRID_TIME)
-        qasm.set_marker(self.parent.marker_configuration["start"])
+        qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
+        qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
         pulses = [] if self.pulses is None else self.pulses
         acquisitions = [] if self.acquisitions is None else self.acquisitions
@@ -788,8 +784,8 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.set_marker(self.parent.marker_configuration["end"])
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
+        qasm.set_marker(self.static_hw_properties.marker_configuration.end)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
         return str(qasm)
 
@@ -980,12 +976,12 @@ class Sequencer:
 
 class QbloxBaseModule(ControlDeviceCompiler, ABC):
     """
-    Pulsar specific implementation of
+    Qblox specific implementation of
     :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
 
     This class is defined as an abstract base class since the distinctions between the
-    different Pulsar devices are defined in subclasses.
-    Effectively, this base class contains the functionality shared by all Pulsar
+    different devices are defined in subclasses.
+    Effectively, this base class contains the functionality shared by all Qblox
     devices and serves to avoid repeated code between them.
     """
 
@@ -1028,58 +1024,23 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ] = None  # set in the prepare method.
 
     @property
-    @abstractmethod
-    def _max_sequencers(self) -> int:
-        """
-        Specifies the maximum amount of sequencers available to this instrument.
-
-        Returns
-        -------
-        :
-            The maximum amount of sequencers
-        """
-
-    @property
     def portclocks(self) -> List[Tuple[str, str]]:
         """Returns all the port and clocks available to this device."""
         return list(self.portclock_map.keys())
 
     @property
     @abstractmethod
-    def awg_output_volt(self) -> float:
-        """
-        The output range in volts. This is to be overridden by the subclass to account
-        for the differences between a QcmModule and a QrmModule.
-
-        Returns
-        -------
-        :
-            The output range in volts.
-        """
-
-    @property
-    @abstractmethod
     def settings_type(self) -> PulsarSettings:
         """
-        Specifies the Pulsar Settings class used by the instrument.
-
-        Returns
-        -------
-        :
-            The maximum amount of sequencers
+        Specifies the PulsarSettings class used by the instrument.
         """
 
     @property
     @abstractmethod
-    def marker_configuration(self) -> Dict[str, int]:
+    def static_hw_properties(self) -> StaticHardwareProperties:
         """
-        Specifies the values that the markers need to be set to at the start and end
-        of each program.
-
-        Returns
-        -------
-        :
-            The maximum amount of sequencers
+        The static properties of the hardware. This effectively gathers all the
+        differences between the different modules.
         """
 
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
@@ -1137,7 +1098,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             f"real_output_{i}" for i in range(4)
         ]
         sequencers = {}
-        for io, io_cfg in self.hw_mapping.items():
+        for io_cfg in self.hw_mapping.values():
             if not isinstance(io_cfg, dict):
                 continue
             if io not in valid_ios:
@@ -1148,7 +1109,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             lo_name = io_cfg.get("lo_name", None)
 
-            valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
+            valid_seq_names = (
+                f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
+            )
             for seq_name in valid_seq_names:
                 if seq_name not in io_cfg:
                     continue
@@ -1165,18 +1128,20 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 connected_outputs = helpers.output_name_to_outputs(io)
 
                 sequencers[seq_name] = Sequencer(
-                    self, seq_name, portclock, connected_outputs, seq_cfg, lo_name
+                    self,
+                    seq_name,
+                    portclock,
+                    self.static_hw_properties,
+                    connected_outputs,
+                    seq_cfg,
+                    lo_name,
                 )
 
-                if "mixer_corrections" in io_cfg:
-                    sequencers[seq_name].mixer_corrections = MixerCorrections.from_dict(
-                        io_cfg["mixer_corrections"]
-                    )
-
-        if len(sequencers.keys()) > self._max_sequencers:
+        if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
-                f"Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__} is {self._max_sequencers}!"
+                "Attempting to construct too many sequencer compilers. "
+                f"Maximum allowed for {self.__class__.__name__} is "
+                f"{self.static_hw_properties.max_sequencers}!"
             )
 
         return sequencers
@@ -1234,15 +1199,95 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
+        self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
 
+    def _configure_mixer_offsets(
+        self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
+    ) -> BaseModuleSettings:
+        """
+        We configure the mixer offsets after initializing the settings such we can
+        account for the differences in the hardware. e.g. the V vs mV encountered here.
+
+        Parameters
+        ----------
+        settings
+            The settings dataclass to which to add the dc offsets.
+        hw_mapping
+            The hardware configuration.
+
+        Returns
+        -------
+        :
+            The settings dataclass after adding the normalized offsets
+
+        Raises
+        ------
+        ValueError
+            An offset was used outside of the allowed range.
+        """
+
+        def calc_from_units_volt(
+            param_name: str, cfg: Dict[str, Any]
+        ) -> Optional[float]:
+
+            calculated_offset = cfg.get(param_name, None)  # Always in volts
+            if calculated_offset is None:
+                return None
+
+            voltage_range = self.static_hw_properties.mixer_dc_offset_range
+            if voltage_range.units == "mV":
+                calculated_offset = calculated_offset * 1e-3
+            elif voltage_range.units != "V":
+                raise RuntimeError(
+                    f"Parameter {param_name} of {self.name} specifies "
+                    f"the units {voltage_range.units}, but this is not "
+                    f"supported by the Qblox backend."
+                )
+
+            if (
+                calculated_offset < voltage_range.min_val
+                or calculated_offset > voltage_range.max_val
+            ):
+                raise ValueError(
+                    f"Attempting to set {param_name} of {self.name} to "
+                    f"{calculated_offset} {voltage_range.units}. {param_name} has to be"
+                    f" between {voltage_range.min_val} and {voltage_range.max_val} "
+                    f"{voltage_range.units}!"
+                )
+
+            return calculated_offset
+
+        supported_outputs = ("complex_output_0", "complex_output_1")
+        for output_idx, output_label in enumerate(supported_outputs):
+            if output_label not in hw_mapping:
+                continue
+
+            output_cfg = hw_mapping[output_label]
+            if output_idx == 0:
+                settings.offset_ch0_path0 = calc_from_units_volt(
+                    "dc_mixer_offset_I", output_cfg
+                )
+                settings.offset_ch0_path1 = calc_from_units_volt(
+                    "dc_mixer_offset_Q", output_cfg
+                )
+            else:
+                settings.offset_ch1_path0 = calc_from_units_volt(
+                    "dc_mixer_offset_I", output_cfg
+                )
+                settings.offset_ch1_path1 = calc_from_units_volt(
+                    "dc_mixer_offset_Q", output_cfg
+                )
+
+        return settings
+
     @abstractmethod
     def update_settings(self):
         """
-        Updates the Pulsar settings to set all parameters that are determined by the
+        Updates the settings to set all parameters that are determined by the
         compiler.
         """
 
@@ -1380,7 +1425,11 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         lo_compiler.frequency = clk_freq - if_freq
 
     if lo_freq is not None:
-        sequencer.frequency = clk_freq - lo_freq
+        if_freq = clk_freq - lo_freq
+        sequencer.frequency = if_freq
+
+    if if_freq != 0 and if_freq is not None:
+        sequencer.settings.nco_en = True
 
 
 class QbloxBasebandModule(QbloxBaseModule):
@@ -1391,36 +1440,14 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by Pulsar baseband-type devices."""
+        """The settings type used by baseband-type devices."""
         return PulsarSettings if self.is_pulsar else BasebandModuleSettings
 
     def update_settings(self):
         """
-        Updates the Pulsar settings to set all parameters that are determined by the
-        compiler. Currently, this only changes the offsets based on the mixer
-        calibration parameters.
+        Updates the settings to set all parameters that are determined by the
+        compiler.
         """
-
-        # Will be changed when LO leakage correction is decoupled from the sequencer
-        for seq in self.sequencers.values():
-            if seq.mixer_corrections is not None:
-                for output_index in seq.connected_outputs:
-                    if output_index == 0:
-                        self._settings.offset_ch0_path0 = (
-                            seq.mixer_corrections.offset_I / self.awg_output_volt
-                        )
-                    elif output_index == 1:
-                        self._settings.offset_ch0_path1 = (
-                            seq.mixer_corrections.offset_Q / self.awg_output_volt
-                        )
-                    elif output_index == 2:
-                        self._settings.offset_ch1_path0 = (
-                            seq.mixer_corrections.offset_I / self.awg_output_volt
-                        )
-                    else:
-                        self._settings.offset_ch1_path1 = (
-                            seq.mixer_corrections.offset_Q / self.awg_output_volt
-                        )
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
@@ -1454,14 +1481,13 @@ class QbloxRFModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by Pulsar RF-type devices"""
+        """The settings type used by RF-type devices"""
         return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def update_settings(self):
         """
-        Updates the Pulsar settings to set all parameters that are determined by the
-        compiler. Currently, this only changes the offsets based on the mixer
-        calibration parameters.
+        Updates the settings to set all parameters that are determined by the
+        compiler.
         """
 
         # Will be changed when LO leakage correction is decoupled from the sequencer
