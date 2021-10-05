@@ -28,7 +28,8 @@ class MarkerConfiguration:
     program."""
 
     start: int
-    """The setting set in the header at the start of the program."""
+    """The setting set in the header at the start of the program. Should set all the
+    marker outputs high and turn on the output switches."""
     end: int
     """Setting set in the footer at the end of the program."""
 
