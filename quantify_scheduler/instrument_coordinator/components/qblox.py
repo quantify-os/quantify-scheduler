@@ -248,6 +248,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
             The settings to configure it to.
         """
         super()._configure_global_settings(settings)
+        # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self.instrument.set("out0_offset", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
@@ -369,6 +370,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             The settings to configure it to.
         """
         super()._configure_global_settings(settings)
+        # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
@@ -415,6 +417,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         if settings.lo1_freq is not None:
             self.instrument.set("out1_lo_freq", settings.lo1_freq)
 
+        # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
@@ -449,6 +452,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         if settings.lo0_freq is not None:
             self.instrument.set("out0_in0_lo_freq", settings.lo0_freq)
 
+        # configure mixer ccorrection offsets
         if settings.offset_ch0_path0 is not None:
             self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
