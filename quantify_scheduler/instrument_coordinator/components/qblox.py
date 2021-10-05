@@ -29,6 +29,7 @@ from quantify_scheduler.backends.qblox.constants import (
 )
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 _SequencerStateType = Dict[str, Union[str, List[str]]]
 """
