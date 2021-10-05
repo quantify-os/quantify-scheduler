@@ -3,6 +3,7 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
+import dataclasses
 from typing import Any, Dict, Optional, Tuple, Callable, Union, Type, List
 from collections import namedtuple
 
@@ -34,6 +35,96 @@ _SequencerStateType = Dict[str, Union[str, List[str]]]
 Type of the return value of get_sequencer_state. Returned value format is always a dict
 with a str state under 'status' and a list of str flags under 'flags'.
 """
+
+
+@dataclasses.dataclass(frozen=True)
+class _SequencerStateInfo:
+    message: str
+    logging_level: int
+
+
+_SEQUENCER_STATE_FLAG_INFO: Dict[str, _SequencerStateInfo] = {
+    "DISARMED": _SequencerStateInfo(
+        message="Sequencer was disarmed.", logging_level=logging.INFO
+    ),
+    "FORCED STOP": _SequencerStateInfo(
+        message="Sequencer was stopped while still running.",
+        logging_level=logging.WARNING,
+    ),
+    "SEQUENCE PROCESSOR Q1 ILLEGAL INSTRUCTION": _SequencerStateInfo(
+        message="Classical sequencer part executed an unknown instruction.",
+        logging_level=logging.ERROR,
+    ),
+    "SEQUENCE PROCESSOR RT EXEC ILLEGAL INSTRUCTION": _SequencerStateInfo(
+        message="Real-time sequencer part executed an unknown instruction.",
+        logging_level=logging.ERROR,
+    ),
+    "AWG WAVE PLAYBACK INDEX INVALID PATH 0": _SequencerStateInfo(
+        message="AWG path 0 tried to play an unknown waveform.",
+        logging_level=logging.ERROR,
+    ),
+    "AWG WAVE PLAYBACK INDEX INVALID PATH 1": _SequencerStateInfo(
+        message="AWG path 1 tried to play an unknown waveform.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ WEIGHT PLAYBACK INDEX INVALID PATH 0": _SequencerStateInfo(
+        message="Acquisition path 0 tried to play an unknown weight.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ WEIGHT PLAYBACK INDEX INVALID PATH 1": _SequencerStateInfo(
+        message="Acquisition path 1 tried to play an unknown weight.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ SCOPE DONE PATH 0": _SequencerStateInfo(
+        message="Scope acquisition for path 0 has finished.",
+        logging_level=logging.DEBUG,
+    ),
+    "ACQ SCOPE OUT-OF-RANGE PATH 0": _SequencerStateInfo(
+        message="Scope acquisition data for path 0 was out-of-range.",
+        logging_level=logging.WARNING,
+    ),
+    "ACQ SCOPE OVERWRITTEN PATH 0": _SequencerStateInfo(
+        message="Scope acquisition data for path 0 was overwritten.",
+        logging_level=logging.INFO,
+    ),
+    "ACQ SCOPE DONE PATH 1": _SequencerStateInfo(
+        message="Scope acquisition for path 1 has finished.",
+        logging_level=logging.DEBUG,
+    ),
+    "ACQ SCOPE OUT-OF-RANGE PATH 1": _SequencerStateInfo(
+        message="Scope acquisition data for path 1 was out-of-range.",
+        logging_level=logging.WARNING,
+    ),
+    "ACQ SCOPE OVERWRITTEN PATH 1": _SequencerStateInfo(
+        message="Scope acquisition data for path 1 was overwritten.",
+        logging_level=logging.INFO,
+    ),
+    "ACQ BINNING DONE": _SequencerStateInfo(
+        message="Acquisition binning completed.", logging_level=logging.DEBUG
+    ),
+    "ACQ BINNING FIFO ERROR": _SequencerStateInfo(
+        message="Acquisition binning encountered internal FIFO error.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ BINNING COMM ERROR": _SequencerStateInfo(
+        message="Acquisition binning encountered internal communication error.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ BINNING OUT-OF-RANGE": _SequencerStateInfo(
+        message="Acquisition binning data out-of-range.", logging_level=logging.WARNING
+    ),
+    "ACQ INDEX INVALID": _SequencerStateInfo(
+        message="Acquisition tried to process an invalid acquisition.",
+        logging_level=logging.ERROR,
+    ),
+    "ACQ BIN INDEX INVALID": _SequencerStateInfo(
+        message="Acquisition tried to process an invalid bin.",
+        logging_level=logging.ERROR,
+    ),
+    "CLOCK INSTABILITY": _SequencerStateInfo(
+        message="Clock source instability occurred.", logging_level=logging.ERROR
+    ),
+}
 
 
 class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
@@ -89,10 +180,17 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             )
             flags = state["flags"]
             if flags:
-                logger.error(
-                    f"Sequencer {idx} of {self.instrument.name} reported"
-                    f"errors:\n{flags}"
-                )
+                for flag in flags:
+                    if flag not in _SEQUENCER_STATE_FLAG_INFO:
+                        logger.error(
+                            f"[{self.name}] Encountered flag {flag} in returned value "
+                            f"by `get_sequencer_state` which is not defined in "
+                            f"{self.__class__}."
+                        )
+                    else:
+                        flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
+                        msg = f"[{self.name}] {flag} - {flag_info.message}"
+                        logger.log(level=flag_info.logging_level, msg=msg)
 
     def start(self) -> None:
         """
