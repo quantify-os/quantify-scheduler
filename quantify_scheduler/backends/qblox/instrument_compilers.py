@@ -120,7 +120,7 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
-        awg_output_volt=2.5,
+        max_awg_output_voltage=2.5,
         marker_configuration=MarkerConfiguration(start=0b0001, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
     )
@@ -132,16 +132,10 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
     QRM specific implementation of the qblox compiler.
     """
 
-    _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
-    """Maximum number of sequencers available in the instrument."""
-    awg_output_volt: float = 0.5
-    """Peak output voltage of the AWG"""
-    marker_configuration: dict = {"start": 1, "end": 0}
-    """Marker values to activate/deactivate the I1 marker"""
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
-        awg_output_volt=0.5,
+        max_awg_output_voltage=0.5,
         marker_configuration=MarkerConfiguration(start=0b0001, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
     )
@@ -155,7 +149,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
-        awg_output_volt=0.25,
+        max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
     )
@@ -169,7 +163,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
-        awg_output_volt=0.25,
+        max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(start=0b1101, end=0b0010),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
     )
