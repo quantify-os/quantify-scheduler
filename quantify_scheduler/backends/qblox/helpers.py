@@ -197,7 +197,14 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
 
 def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     """
-    Finds the physical outputs associated with the outputs specified in the config.
+    Finds the output path index associated with the output names specified in the
+    config.
+
+    For the baseband modules, these indices correspond directly to a physical output (
+    e.g. index 0 corresponds to output 1 etc.).
+
+    For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
+    respectively, and 1 and 3 to path1 of those outputs.
 
     Parameters
     ----------
