@@ -249,8 +249,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 # pylint: disable=too-many-instance-attributes
 class Sequencer:
     """
-    Abstract base class that specify the compilation steps on the sequencer level. The
-    distinction between Pulsar QcmModule and Pulsar QrmModule is made by the subclasses.
+    Class that performs the compilation steps on the sequencer level.
     """
 
     # pylint: disable=too-many-arguments
@@ -900,12 +899,12 @@ class Sequencer:
 
 class QbloxBaseModule(ControlDeviceCompiler, ABC):
     """
-    Pulsar specific implementation of
+    Qblox specific implementation of
     :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
 
     This class is defined as an abstract base class since the distinctions between the
-    different Pulsar devices are defined in subclasses.
-    Effectively, this base class contains the functionality shared by all Pulsar
+    different devices are defined in subclasses.
+    Effectively, this base class contains the functionality shared by all Qblox
     devices and serves to avoid repeated code between them.
     """
 
@@ -969,7 +968,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     @abstractmethod
     def settings_type(self) -> PulsarSettings:
         """
-        Specifies the Pulsar Settings class used by the instrument.
+        Specifies the PulsarSettings class used by the instrument.
         """
 
     @property
@@ -1210,7 +1209,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     @abstractmethod
     def update_settings(self):
         """
-        Updates the Pulsar settings to set all parameters that are determined by the
+        Updates the settings to set all parameters that are determined by the
         compiler.
         """
 
@@ -1361,12 +1360,12 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by Pulsar baseband-type devices."""
+        """The settings type used by baseband-type devices."""
         return PulsarSettings if self.is_pulsar else BasebandModuleSettings
 
     def update_settings(self):
         """
-        Updates the Pulsar settings to set all parameters that are determined by the
+        Updates the settings to set all parameters that are determined by the
         compiler.
         """
 
@@ -1402,12 +1401,12 @@ class QbloxRFModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by Pulsar RF-type devices"""
+        """The settings type used by RF-type devices"""
         return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def update_settings(self):
         """
-        Updates the Pulsar settings to set all parameters that are determined by the
+        Updates the settings to set all parameters that are determined by the
         compiler.
         """
 
