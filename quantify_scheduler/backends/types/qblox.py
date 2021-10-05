@@ -191,7 +191,7 @@ class BasebandModuleSettings(BaseModuleSettings):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs
+        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
     ) -> BasebandModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -200,6 +200,10 @@ class BasebandModuleSettings(BaseModuleSettings):
         Parameters
         ----------
         mapping
+            The mapping dict to extract the settings from
+        **kwargs
+            Additional keyword arguments passed to the constructor. Can be used to
+            override parts of the mapping dict.
         """
         del mapping  # not used
         return cls(**kwargs)
@@ -219,7 +223,7 @@ class PulsarSettings(BaseModuleSettings):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs
+        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
     ) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -228,6 +232,10 @@ class PulsarSettings(BaseModuleSettings):
         Parameters
         ----------
         mapping
+            The mapping dict to extract the settings from
+        **kwargs
+            Additional keyword arguments passed to the constructor. Can be used to
+            override parts of the mapping dict.
         """
         ref: str = mapping["ref"]
         assert ref in ("internal", "external")
@@ -251,7 +259,7 @@ class RFModuleSettings(BaseModuleSettings):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs
+        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
     ) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -260,6 +268,10 @@ class RFModuleSettings(BaseModuleSettings):
         Parameters
         ----------
         mapping
+            The mapping dict to extract the settings from
+        **kwargs
+            Additional keyword arguments passed to the constructor. Can be used to
+            override parts of the mapping dict.
         """
         rf_settings = {}
 
@@ -283,7 +295,7 @@ class PulsarRFSettings(RFModuleSettings, PulsarSettings):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs
+        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
     ) -> PulsarRFSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -292,6 +304,10 @@ class PulsarRFSettings(RFModuleSettings, PulsarSettings):
         Parameters
         ----------
         mapping
+            The mapping dict to extract the settings from
+        **kwargs
+            Additional keyword arguments passed to the constructor. Can be used to
+            override parts of the mapping dict.
         """
         rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
         pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
