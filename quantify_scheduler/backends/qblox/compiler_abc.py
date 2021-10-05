@@ -1167,6 +1167,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if voltage_range.units == "mV":
                 calculated_offset = calculated_offset * 1e-3
+            elif voltage_range.units != "V":
+                raise RuntimeError(
+                    f"Parameter {param_name} of {self.name} specifies "
+                    f"the units {voltage_range.units}, but this is not "
+                    f"supported by the Qblox backend."
+                )
 
             if (
                 calculated_offset < voltage_range.min_val
