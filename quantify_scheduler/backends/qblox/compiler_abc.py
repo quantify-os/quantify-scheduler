@@ -975,10 +975,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     @abstractmethod
     def static_hw_properties(self) -> StaticHardwareProperties:
         """
-
-        Returns
-        -------
-
+        The static properties of the hardware. This effectively gathers all the
+        differences between the different modules.
         """
 
     def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
