@@ -365,7 +365,7 @@ class SequencerSettings(DataClassJsonMixin):
             return val
 
         modulation_freq: Union[float, None] = seq_settings.get("interm_freq", None)
-        nco_en: bool = not (modulation_freq == 0 or modulation_freq is None)
+        nco_en: bool = modulation_freq != 0 and modulation_freq is not None
 
         mixer_amp_ratio = extract_and_verify_range(
             "mixer_amp_ratio",
