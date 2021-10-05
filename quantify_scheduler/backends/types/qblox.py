@@ -323,8 +323,8 @@ class SequencerSettings(DataClassJsonMixin):
     """The phase shift to apply between the I and Q channels, to correct for quadrature
     errors."""
     mixer_corr_gain_ratio: float = 1.0
-    """The gain ratio to apply in order to correct for imbalances in the two mixer
-    paths."""
+    """The gain ratio to apply in order to correct for imbalances between the I and Q
+    paths of the mixer."""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
 
