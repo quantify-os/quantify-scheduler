@@ -301,10 +301,26 @@ class Sequencer:
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
+        """
+        The indices of the output paths that this sequencer is producing awg
+        data for.
+
+        For the baseband modules, these indices correspond directly to a physical output (
+        e.g. index 0 corresponds to output 1 etc.).
+
+        For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
+        respectively, and 1 and 3 to path1 of those outputs.
+        """
         return self._settings.connected_outputs
 
     @property
     def output_mode(self) -> Literal["complex", "real", "imag"]:
+        """
+        Specifies whether the sequencer is using only path0 (real), path1 (imag) or
+        both (complex).
+
+        If real or imag, the sequencer is restricted to only using real valued data.
+        """
         return helpers.output_mode_from_outputs(self._settings.connected_outputs)
 
     @property
