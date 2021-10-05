@@ -69,16 +69,18 @@ class RampPulse(Operation):
         t0: float = 0,
         data: Optional[dict] = None,
     ):
-        """
+        r"""
         Create a new instance of RampPulse.
 
         The RampPulse Operation is a real-valued pulse that ramps from zero
         to the specified amplitude during the duration of the pulse.
 
-        The pulse is given as a function of time :math:`t` and the parameters offset and amplitude by
+        The pulse is given as a function of time :math:`t` and the parameters offset and
+        amplitude by
 
         .. math::
-            P(t) = \mathrm{offset} + t * \mathrm{amp}
+
+            P(t) = \mathrm{offset} + t \times \mathrm{amp}.
 
         Parameters
         ----------
@@ -86,7 +88,7 @@ class RampPulse(Operation):
             Amplitude of the ramp envelope function.
         duration
             The pulse duration in seconds.
-        offset:
+        offset
             Starting point of the ramp pulse
         port
             Port of the pulse.
