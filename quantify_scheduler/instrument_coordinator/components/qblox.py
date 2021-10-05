@@ -188,13 +188,13 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
                 for flag in flags:
                     if flag not in _SEQUENCER_STATE_FLAG_INFO:
                         logger.error(
-                            f"[{self.name}] Encountered flag {flag} in returned value "
-                            f"by `get_sequencer_state` which is not defined in "
-                            f"{self.__class__}."
+                            f"[{self.name}|seq{idx}] Encountered flag {flag} in "
+                            f"returned value by `get_sequencer_state` which is not "
+                            f"defined in {self.__class__}."
                         )
                     else:
                         flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
-                        msg = f"[{self.name}] {flag} - {flag_info.message}"
+                        msg = f"[{self.name}|seq{idx}] {flag} - {flag_info.message}"
                         logger.log(level=flag_info.logging_level, msg=msg)
 
     def start(self) -> None:
