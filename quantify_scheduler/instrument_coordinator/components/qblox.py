@@ -183,7 +183,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             state: _SequencerStateType = self.instrument.get_sequencer_state(
                 idx, timeout_min
             )
-            flags = state["flags"]
+            flags = state.get("flags", None)
             if flags:
                 for flag in flags:
                     if flag not in _SEQUENCER_STATE_FLAG_INFO:
