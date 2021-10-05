@@ -14,7 +14,6 @@ import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 
-# pylint: disable=no-name-in-module
 from quantify_core.data.handling import (
     get_datadir,
     gen_tuid,
@@ -38,7 +37,6 @@ from quantify_scheduler.backends.qblox.constants import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
-# from quantify_scheduler.backends.qblox import compiler_container
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     BaseModuleSettings,
@@ -70,7 +68,7 @@ class InstrumentCompiler(ABC):
 
     def __init__(
         self,
-        parent: "CompilerContainer",
+        parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
         hw_mapping: Optional[Dict[str, Any]] = None,
@@ -81,10 +79,8 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
-        parent
-            Reference to the parent
-            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            object.
+        parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            Reference to the parent object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -137,7 +133,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
     def __init__(
         self,
-        parent: "CompilerContainer",
+        parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -148,10 +144,8 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
-        parent
-            Reference to the parent
-            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            object.
+        parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            Reference to the parent object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -430,7 +424,7 @@ class Sequencer:
         ValueError
             I or Q amplitude is being set outside of maximum range.
         """
-        waveforms_complex = dict()
+        waveforms_complex = {}
         for pulse in self.pulses:
             reserved_pulse_id = (
                 non_generic.check_reserved_pulse_id(pulse)
@@ -509,7 +503,7 @@ class Sequencer:
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
         """
-        waveforms_complex = dict()
+        waveforms_complex = {}
         for acq in self.acquisitions:
             waveforms_data = acq.data["waveforms"]
             if len(waveforms_data) == 0:
@@ -577,7 +571,7 @@ class Sequencer:
         acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
 
         # initialize an empty dictionary for the format required by pulsar
-        acq_declaration_dict = dict()
+        acq_declaration_dict = {}
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
 
             # Some sanity checks on the input for easier debugging.
@@ -735,7 +729,7 @@ class Sequencer:
         acquisitions:
             A list with all the acquisitions to consider.
         """
-        channel_to_reg = dict()
+        channel_to_reg = {}
         for acq in acquisitions:
             if acq.data["bin_mode"] != BinMode.APPEND:
                 continue
@@ -809,7 +803,7 @@ class Sequencer:
         :
             The combined program.
         """
-        compiled_dict = dict()
+        compiled_dict = {}
         compiled_dict["program"] = program
         compiled_dict["waveforms"] = waveforms_dict
         if weights_dict is not None:
@@ -876,7 +870,7 @@ class Sequencer:
         weights_dict = None
         if self.parent.supports_acquisition:
             weights_dict = (
-                self._generate_weights_dict() if len(self.acquisitions) > 0 else dict()
+                self._generate_weights_dict() if len(self.acquisitions) > 0 else {}
             )
         acq_declaration_dict = (
             self._generate_acq_declaration_dict(
@@ -931,7 +925,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def __init__(
         self,
-        parent: "CompilerContainer",
+        parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
@@ -942,10 +936,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
-        parent
-            Reference to the parent
-            :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            object.
+        parent: :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+            Reference to the parent object.
         name
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
@@ -1037,7 +1029,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         valid_io = (f"complex_output_{i}" for i in [0, 1])
         valid_seq_names = (f"seq{i}" for i in range(self._max_sequencers))
 
-        mapping = dict()
+        mapping = {}
         for io in valid_io:
             if io not in self.hw_mapping:
                 continue
@@ -1073,7 +1065,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ValueError
             Attempting to use more sequencers than available.
         """
-        sequencers = dict()
+        sequencers = {}
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
@@ -1227,7 +1219,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
-        program = dict()
+        program = {}
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(repetitions=repetitions)
             if seq_program is not None:
@@ -1242,7 +1234,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if self.supports_acquisition:
             # Add both acquisition metadata (a summary) and acq_mapping
 
-            program["acq_metadata"] = dict()
+            program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
                 acq_metadata = _extract_acquisition_metadata_from_acquisitions(
@@ -1275,7 +1267,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 acquisition.data["protocol"],
             )
 
-        acq_mapping = dict()
+        acq_mapping = {}
         for sequencer in self.sequencers.values():
             mapping_items = map(extract_mapping_item, sequencer.acquisitions)
             for item in mapping_items:
@@ -1320,7 +1312,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by Pulsar baseband-type devices"""
+        """The settings type used by Pulsar baseband-type devices."""
         return PulsarSettings if self.is_pulsar else BasebandModuleSettings
 
     def update_settings(self):
@@ -1374,7 +1366,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
 
 class QbloxRFModule(QbloxBaseModule):
-    r"""
+    """
     Abstract class with all the shared functionality between the QRM-RF and QCM-RF
     modules.
     """

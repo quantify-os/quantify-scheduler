@@ -76,11 +76,11 @@ import quantify_scheduler.schemas.examples as es
 esp = inspect.getfile(es)
 
 cfg_f = os.path.abspath(os.path.join(esp, "..", "transmon_test_config.json"))
-with open(cfg_f, "r") as f:
+with open(cfg_f, "r", encoding="utf-8") as f:
     DEVICE_CFG = json.load(f)
 
 map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
-with open(map_f, "r") as f:
+with open(map_f, "r", encoding="utf-8") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
@@ -227,9 +227,21 @@ def cluster_only_schedule():
             t0=4e-9,
         )
     )
+    sched.add(
+        DRAGPulse(
+            G_amp=0.2,
+            D_amp=-0.2,
+            phase=90,
+            port="q5:mw",
+            duration=20e-9,
+            clock="q5.01",
+            t0=4e-9,
+        )
+    )
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q4:mw", clock="q4.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q4.01", freq=5e9)])
+    sched.add_resources([ClockResource("q5.01", freq=5e9)])
     determine_absolute_timing(sched)
     return sched
 
@@ -814,7 +826,7 @@ def test_loop():
 
 @pytest.mark.parametrize("amount", [1, 2, 3, 40])
 def test_temp_register(amount):
-    qcm = Pulsar_QCM(
+    qcm = QcmModule(
         None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
     )
     qasm = QASMProgram(qcm.sequencers["seq0"])
@@ -913,6 +925,17 @@ def test_container_add_from_type(pulse_only_schedule):
 def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
+    assert "qcm0" in container.instrument_compilers
+    assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
+
+
+def test_container_add_from_path(pulse_only_schedule):
+    container = compiler_container.CompilerContainer(pulse_only_schedule)
+    container.add_instrument_compiler(
+        "qcm0",
+        "quantify_scheduler.backends.qblox.instrument_compilers.QcmModule",
+        HARDWARE_MAPPING["qcm0"],
+    )
     assert "qcm0" in container.instrument_compilers
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
@@ -1061,9 +1084,6 @@ def test_markers():
     _confirm_correct_markers(program["qrm0"], QrmModule)
     _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
     _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
-
-
-# ------------------- types -------------------
 
 
 def test_pulsar_rf_extract_from_mapping():

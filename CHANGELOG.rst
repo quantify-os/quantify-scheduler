@@ -13,7 +13,9 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 * Mixer corrections in Qblox backend are broken because of the switch to real-time modulation. The support of mixer corrections in the Qblox firmware is under development.
 * The `schedules.timedomain_schedules.allxy_sched` function no longer accepts the string "All" as an argument to the `element_select_idx` keyword.
-* * The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
+* The `QuantumDevice.cfg_nr_averages` parameter was renamed to `QuantumDevice.cfg_sched_repetitions`
+* The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
+* The `RampPulse` has an extra (optional) parameter `offset` (!211)
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +32,8 @@ Merged branches and closed issues
 * Qblox Backend - Support for append bin mode (#184, !180).
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
-
+* Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
+* Visualization - Allow user defined axis for plotting circuit diagram (!206)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------

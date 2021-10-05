@@ -63,12 +63,13 @@ class QuantumDevice(Instrument):
         )
 
         self.add_parameter(
-            "cfg_nr_averages",
+            "cfg_sched_repetitions",
             initial_value=1024,
             parameter_class=ManualParameter,
             docstring=(
-                "The number of averages when performing experiments. Used to"
-                " set the repetitions attribute of a Schedule."
+                "The number of times execution of the schedule gets repeated when "
+                "performing experiments, i.e. used to set the repetitions attribute of "
+                "the Schedule objects generated."
             ),
             vals=validators.Ints(min_value=1),
         )

@@ -149,11 +149,11 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QCM
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
-    """Peak output voltage of the AWG"""
+    """Peak output voltage of the AWG."""
     marker_configuration: dict = {"start": 6, "end": 8}
     """
     Marker values to activate/deactivate the O1 marker,
-    and the output switches for O1/O2
+    and the output switches for O1/O2.
     """
     supports_acquisition: bool = False
     """Specifies whether the device can perform acquisitions."""
@@ -167,11 +167,11 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     _max_sequencers: int = NUMBER_OF_SEQUENCERS_QRM
     """Maximum number of sequencer available in the instrument."""
     awg_output_volt: float = 0.25
-    """Peak output voltage of the AWG"""
+    """Peak output voltage of the AWG."""
     marker_configuration: dict = {"start": 1, "end": 4}
     """
     Marker values to activate/deactivate the I1 marker,
-    and the output switch for O1
+    and the output switch for O1.
     """
     supports_acquisition: bool = True
     """Specifies whether the device can perform acquisitions."""
@@ -200,6 +200,21 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         total_play_time: float,
         hw_mapping: Dict[str, Any],
     ):
+        """
+        Constructor for a Cluster compiler object.
+
+        Parameters
+        ----------
+        parent
+            Reference to the parent object.
+        name
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time
+            Total time execution of the schedule should go on for.
+        hw_mapping
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
+        """
         super().__init__(
             parent=parent,
             name=name,
@@ -208,7 +223,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
-    def construct_instrument_compilers(self) -> Dict[str, "QbloxBaseModule"]:
+    def construct_instrument_compilers(self) -> Dict[str, compiler_abc.QbloxBaseModule]:
         """
         Constructs the compilers for the modules inside the cluster.
 
@@ -218,14 +233,15 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             A dictionary with the name of the instrument as key and the value its
             compiler.
         """
-        instrument_compilers = dict()
+        instrument_compilers = {}
         for name, cfg in self.hw_mapping.items():
             if not isinstance(cfg, dict):
                 continue  # not an instrument definition
             if "instrument_type" not in cfg:
                 raise KeyError(
                     f"Module {name} of cluster {self.name} is specified in "
-                    f"the config, but does not specify an instrument_type."
+                    f"the config, but does not specify an 'instrument_type'."
+                    f"\n\nValid values: {self.compiler_classes.keys()}"
                 )
             instrument_type: str = cfg["instrument_type"]
             if instrument_type not in self.compiler_classes:
@@ -245,6 +261,9 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         return instrument_compilers
 
     def prepare(self) -> None:
+        """
+        Prepares the instrument compiler for compilation by assigning the data.
+        """
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
@@ -265,7 +284,20 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                         compiler.add_acquisition(port, clock, acq)
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
-        program = dict()
+        """
+        Performs the compilation.
+
+        Parameters
+        ----------
+        repetitions
+            Amount of times to repeat execution of the schedule.
+
+        Returns
+        -------
+        :
+            The part of the compiled instructions relevant for this instrument.
+        """
+        program = {}
         program["settings"] = {"reference_source": self.hw_mapping["ref"]}
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(repetitions)

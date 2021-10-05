@@ -473,6 +473,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                 f"sequencer{seq_idx}_integration_length_acq",
                 settings.integration_length_acq,
             )
+            self._acquisition_manager.integration_length_acq = (
+                settings.integration_length_acq
+            )
         self.instrument.set(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
 
@@ -597,6 +600,7 @@ class _QRMAcquisitionManager:
         self.acquisition_metadata: AcquisitionMetadata = acquisition_metadata
 
         self.scope_mode_sequencer: Optional[str] = None
+        self.integration_length_acq: Optional[int] = None
         self.seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(number_of_sequencers)
         }
@@ -619,14 +623,14 @@ class _QRMAcquisitionManager:
 
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
-            "ssb_integration_complex": self._get_integration_data,
+            "ssb_integration_complex": self._get_integration_amplitude_data,
             "trace": self._get_scope_data,
             # NB thresholded protocol is still missing since there is nothing in
             # the acquisition library for it yet.
         }
         self._store_scope_acquisition()
 
-        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
+        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = {}
 
         for seq_idx in range(self.number_of_sequencers):
             acq_metadata = self.acquisition_metadata[f"seq{seq_idx}"]
@@ -643,7 +647,7 @@ class _QRMAcquisitionManager:
                     acquisitions=acquisitions, acq_channel=acq_channel
                 )
 
-                # the qblox compilation backend verifies that the
+                # the Qblox compilation backend verifies that the
                 # acquisition indices start at 0 and increment in steps of 1.
                 # this enables us to simply stride over the bin_idx as if they
                 # correspond to acq_indices.
@@ -655,8 +659,8 @@ class _QRMAcquisitionManager:
                     formatted_acquisitions[
                         AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
                     ] = (
-                        np.array(i_vals[acq_idx::acq_stride]),
-                        np.array(q_vals[acq_idx::acq_stride]),
+                        i_vals[acq_idx::acq_stride],
+                        q_vals[acq_idx::acq_stride],
                     )
 
         return formatted_acquisitions
@@ -747,7 +751,7 @@ class _QRMAcquisitionManager:
 
     def _get_integration_data(
         self, acquisitions: dict, acq_channel: int = 0
-    ) -> Tuple[float, float]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
 
@@ -755,6 +759,8 @@ class _QRMAcquisitionManager:
         ----------
         acquisitions
             The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The `acq_channel` from which to get the data.
 
         Returns
         -------
@@ -767,11 +773,48 @@ class _QRMAcquisitionManager:
         bin_data = self._get_bin_data(acquisitions, acq_channel)
 
         i_data, q_data = (
-            bin_data["integration"]["path0"],
-            bin_data["integration"]["path1"],
+            np.array(bin_data["integration"]["path0"]),
+            np.array(bin_data["integration"]["path1"]),
         )
 
         return i_data, q_data
+
+    def _get_integration_amplitude_data(
+        self, acquisitions: dict, acq_channel: int = 0
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Gets the integration data but normalized to the integration time (number of
+        samples summed). The return value is thus the amplitude of the demodulated
+        signal directly and has volt units (i.e. same units as a single sample of the
+        integrated signal).
+
+        Parameters
+        ----------
+        acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The `acq_channel` from which to get the data.
+
+        Returns
+        -------
+        data_i
+            Array containing I-quadrature data.
+        data_q
+            Array containing I-quadrature data.
+        """
+        if self.integration_length_acq is None:
+            raise RuntimeError(
+                "Retrieving data failed. Expected the integration length to be defined,"
+                " but it is `None`."
+            )
+        compensated_data_i, compensated_data_q = self._get_integration_data(
+            acquisitions=acquisitions, acq_channel=acq_channel
+        )
+        compensated_data_i, compensated_data_q = (
+            compensated_data_i / self.integration_length_acq,
+            compensated_data_q / self.integration_length_acq,
+        )
+        return compensated_data_i, compensated_data_q
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
@@ -841,24 +884,24 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
         Parameters
         ----------
-        instrument:
+        instrument
             Reference to the cluster driver object.
-        kwargs
-            Keyword arguments.
+        **kwargs
+            Keyword arguments passed to the parent class.
         """
         super().__init__(instrument, **kwargs)
-        self._cluster_modules: Dict[str, ClusterModule] = dict()
+        self._cluster_modules: Dict[str, ClusterModule] = {}
 
-    def add_module(self, *module: Instrument) -> None:
+    def add_modules(self, *modules: Instrument) -> None:
         """
-        Add a module to the cluster.
+        Add modules to the cluster.
 
         Parameters
         ----------
-        module:
-            The driver of the module to add.
+        *modules
+            The QCoDeS drivers of the modules to add.
         """
-        for mod in module:
+        for mod in modules:
             self._cluster_modules[
                 mod.name
             ] = _construct_component_from_instrument_driver(mod)
@@ -866,7 +909,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     @property
     def is_running(self) -> bool:
         """Returns true if any of the modules are currently running."""
-        return any([comp.is_running for comp in self._cluster_modules.values()])
+        return any(comp.is_running for comp in self._cluster_modules.values())
 
     def start(self) -> None:
         """Starts all the modules in the cluster."""
@@ -880,23 +923,24 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def _configure_cmm_settings(self, settings: Dict[str, Any]):
         """
-        Sets all the settings of the cmm that have been provided by the backend.
+        Sets all the settings of the CMM (Cluster Management Module) that have been
+        provided by the backend.
 
         Parameters
         ----------
-        settings:
+        settings
             A dictionary containing all the settings to set.
         """
         if "reference_source" in settings:
             self.instrument.set("reference_source", settings["reference_source"])
 
-    def prepare(self, options: Any) -> None:
+    def prepare(self, options: Dict[str, dict]) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
         Parameters
         ----------
-        options:
+        options
             The compiled instructions to configure the cluster to.
         """
         settings = options.pop("settings")
@@ -909,16 +953,16 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                 )
             self._cluster_modules[name].prepare(comp_options)
 
-    def retrieve_acquisition(self) -> Any:
+    def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
         """
         Retrieves all the data from the instruments.
 
         Returns
         -------
         :
-            The acquired data.
+            The acquired data or ``None`` if no acquisitions have been performed.
         """
-        acquisitions: Dict[Tuple[int, int], Any] = dict()
+        acquisitions: Dict[Tuple[int, int], Any] = {}
         for comp in self._cluster_modules.values():
             comp_acq = comp.retrieve_acquisition()
             if comp_acq is not None:
@@ -927,46 +971,41 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
-        Blocks until all the components are idle.
+        Blocks until all the components are done executing their programs.
 
         Parameters
         ----------
-        timeout_sec:
+        timeout_sec
             The time in seconds until the instrument is considered to have timed out.
         """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
-
-    def write_raw(self, cmd: str) -> None:
-        self.instrument.write_raw(cmd)
-
-    def ask_raw(self, cmd: str) -> str:
-        return self.instrument.ask_raw(cmd)
 
 
 def _construct_component_from_instrument_driver(
     driver: Instrument,
 ) -> ClusterModule:
     """
-    Determines the correct and constructs an ic component from the qblox_instruments
-    driver.
+    Determines the corresponding ClusterModule type and constructs an IC component from
+    the :doc:`qblox_instruments <qblox_instruments:index>` driver.
 
     Parameters
     ----------
     driver
-        The instrument driver.
+        The ``qblox_instruments`` instrument driver.
 
     Returns
     -------
     :
-        The correct ic component.
+        The corresponding IC component.
     """
     is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
     if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
         raise TypeError(
-            f"Invalid driver type passed for {driver.name}. Cannot "
-            f"construct an instrument coordinator component for "
-            f"type {type(driver)}."
+            f"Invalid driver type for '{driver.name}'. Cannot construct an instrument "
+            f"coordinator component for driver of type '{type(driver)}'. "
+            f"Expected types: {type(pulsar_qcm.pulsar_qcm_qcodes)} or "
+            f"{type(pulsar_qrm.pulsar_qrm_qcodes)}."
         )
     is_rf: bool = driver._get_lo_hw_present()
     icc_class: type = {

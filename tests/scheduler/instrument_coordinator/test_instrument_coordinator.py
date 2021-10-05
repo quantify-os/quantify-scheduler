@@ -15,7 +15,10 @@ from unittest.mock import call
 import pytest
 from qcodes import Instrument
 from quantify_scheduler import Schedule, CompiledSchedule
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.instrument_coordinator import (
+    InstrumentCoordinator,
+    ZIInstrumentCoordinator,
+)
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 
 
@@ -81,6 +84,19 @@ def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
     request.addfinalizer(cleanup_tmp)
 
     return instrument_coordinator
+
+
+@pytest.fixture(scope="function", name="zi_instrument_coordinator")
+def fixture_zi_instrument_coordinator(request) -> ZIInstrumentCoordinator:
+    zi_instrument_coordinator = ZIInstrumentCoordinator("ic_zi_0000")
+
+    def cleanup_tmp():
+        # This should prevent the garbage collector from colleting the qcodes instrument
+        zi_instrument_coordinator.close()
+
+    request.addfinalizer(cleanup_tmp)
+
+    return zi_instrument_coordinator
 
 
 def test_constructor(close_all_instruments, instrument_coordinator):
@@ -278,6 +294,49 @@ def test_retrieve_acquisition(
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
     assert {(0, 0): [1, 2, 3, 4]} == data
+
+
+def test_reacquire_acquisition_successful(
+    close_all_instruments, zi_instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    zi_instrument_coordinator.add_component(component1)
+    zi_instrument_coordinator.add_component(component2)
+
+    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    component2.retrieve_acquisition.return_value = None
+
+    # Set the last cache of the ZIInstrumentCoordinator to something different
+    zi_instrument_coordinator._last_acquisition = {(0, 0): [5, 6, 7, 8]}
+
+    # Act
+    data = zi_instrument_coordinator.retrieve_acquisition()
+
+    # Assert
+    component1.retrieve_acquisition.assert_called()
+    component2.retrieve_acquisition.assert_called()
+    assert zi_instrument_coordinator._last_acquisition is not None
+    assert {(0, 0): [1, 2, 3, 4]} == data
+
+
+def test_reacquire_acquisition_failed(
+    close_all_instruments, zi_instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    zi_instrument_coordinator.add_component(component1)
+    zi_instrument_coordinator.add_component(component2)
+
+    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    component2.retrieve_acquisition.return_value = None
+
+    # Assert
+    with pytest.raises(RuntimeError):
+        # Act
+        zi_instrument_coordinator.retrieve_acquisition()
 
 
 def test_wait_done(close_all_instruments, instrument_coordinator, dummy_components):

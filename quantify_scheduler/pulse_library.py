@@ -55,8 +55,8 @@ class IdlePulse(Operation):
 
 class RampPulse(Operation):
     """
-    The RampPulse Operation is a real-valued pulse that ramps from zero
-    to the specified amplitude during the duration of the pulse.
+    The RampPulse Operation is a real-valued pulse that ramps from the specified offset
+    to the specified amplitude + offset during the duration of the pulse.
     """
 
     def __init__(
@@ -64,6 +64,7 @@ class RampPulse(Operation):
         amp: float,
         duration: float,
         port: str,
+        offset: float = 0,
         clock: str = BasebandClockResource.IDENTITY,
         t0: float = 0,
         data: Optional[dict] = None,
@@ -74,12 +75,19 @@ class RampPulse(Operation):
         The RampPulse Operation is a real-valued pulse that ramps from zero
         to the specified amplitude during the duration of the pulse.
 
+        The pulse is given as a function of time :math:`t` and the parameters offset and amplitude by
+
+        .. math::
+            P(t) = \mathrm{offset} + t * \mathrm{amp}
+
         Parameters
         ----------
         amp
-            Final amplitude of the ramp envelope function.
+            Amplitude of the ramp envelope function.
         duration
             The pulse duration in seconds.
+        offset:
+            Starting point of the ramp pulse
         port
             Port of the pulse.
         clock
@@ -102,6 +110,7 @@ class RampPulse(Operation):
                         "wf_func": "quantify_scheduler.waveforms.ramp",
                         "amp": amp,
                         "duration": duration,
+                        "offset": offset,
                         "t0": t0,
                         "clock": clock,
                         "port": port,
@@ -186,7 +195,7 @@ class SquarePulse(Operation):
         amp: float,
         duration: float,
         port: str,
-        clock: str,
+        clock: str = BasebandClockResource.IDENTITY,
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,

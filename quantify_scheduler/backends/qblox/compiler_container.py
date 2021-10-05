@@ -5,7 +5,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Union
 
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 
 from quantify_scheduler import types
 from quantify_scheduler.helpers.schedule import get_total_duration
@@ -43,7 +43,7 @@ class CompilerContainer:
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
         """
-        self.instrument_compilers = dict()
+        self.instrument_compilers = {}
         """The compilers for the individual instruments."""
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
@@ -64,7 +64,7 @@ class CompilerContainer:
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
-        compiled_schedule = dict()
+        compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
             compiled_instrument_program = compiler.compile(repetitions=repetitions)
 
@@ -132,10 +132,12 @@ class CompilerContainer:
             Name of the Instrument.
         instrument
             The string that specifies the path to the type of the compiler.
+            E.g., ``"my_module.MyInstrument"``.
         mapping
             Hardware mapping for this instrument.
         """
-        # TODO rename this function from core. It seems to work for classes too.
+        # pylint: disable=fixme
+        # TODO It seems to work for classes too. See quantify-core!232
         compiler: type = general.import_func_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
