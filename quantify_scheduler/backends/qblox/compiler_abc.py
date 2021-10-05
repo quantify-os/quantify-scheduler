@@ -1345,8 +1345,12 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     if if_freq is not None:
         lo_compiler.frequency = clk_freq - if_freq
 
+    if_freq = clk_freq - lo_freq
     if lo_freq is not None:
-        sequencer.frequency = clk_freq - lo_freq
+        sequencer.frequency = if_freq
+
+    if if_freq != 0:
+        sequencer.settings.nco_en = True
 
 
 class QbloxBasebandModule(QbloxBaseModule):
