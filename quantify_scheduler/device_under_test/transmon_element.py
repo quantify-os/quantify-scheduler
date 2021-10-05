@@ -89,7 +89,7 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "mw_ef_amp180",
-            docstring = r"Amplitude of the pulse necessary to drive the $|1>\leftrightarrow|2>$ (considering a pulse duration of `mw_pulse_duration`).",
+            docstring = "Amplitude of the pulse necessary to drive the |1>-|2> transition (considering a pulse duration of `mw_pulse_duration`).",
             unit="V",
             parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=-10, max_value=10),
@@ -129,7 +129,7 @@ class TransmonElement(Instrument):
 
         self.add_parameter(
             "mw_12_clock",
-            docstring = r"Name of the clock corresponding to the $|1>\leftrightarrow|2>$ transition frequency.",
+            docstring = r"Name of the clock corresponding to the |1>-|2> transition frequency.",
             initial_cache_value=f"{self.name}.12",
             parameter_class=Parameter,
             set_cmd=False,
@@ -152,7 +152,7 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "freq_12",
-            label="Frequency of the $|1>\leftrightarrow|2>$ transition",
+            label="Frequency of the |1>-|2> transition",
             unit="Hz",
             parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=0, max_value=1e12),
