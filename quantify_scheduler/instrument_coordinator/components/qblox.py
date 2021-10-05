@@ -547,7 +547,7 @@ class _QRMAcquisitionManager:
         }
         self._store_scope_acquisition()
 
-        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = dict()
+        formatted_acquisitions: Dict[AcquisitionIndexing, Any] = {}
 
         for seq_idx in range(self.number_of_sequencers):
             if f"seq{seq_idx}" not in self.acquisition_metadata:
@@ -566,7 +566,7 @@ class _QRMAcquisitionManager:
                     acquisitions=acquisitions, acq_channel=acq_channel
                 )
 
-                # the qblox compilation backend verifies that the
+                # the Qblox compilation backend verifies that the
                 # acquisition indices start at 0 and increment in steps of 1.
                 # this enables us to simply stride over the bin_idx as if they
                 # correspond to acq_indices.
@@ -592,7 +592,7 @@ class _QRMAcquisitionManager:
         if sequencer_index > self.number_of_sequencers:
             raise ValueError(
                 f"Attempting to retrieve scope mode data from sequencer "
-                f"{sequencer_index}. QRM has only "
+                f"{sequencer_index}. A QRM has only "
                 f"{self.number_of_sequencers} sequencers."
             )
         scope_ch_and_idx = self._get_scope_channel_and_index()
@@ -784,3 +784,153 @@ class _QRMAcquisitionManager:
                 f'which has index {channel_data["index"]}.'
             )
         return channel_data["acquisition"]["bins"]
+
+
+ClusterModule = Union[
+    PulsarQCMComponent, PulsarQRMComponent, PulsarQRMRFComponent, PulsarQCMRFComponent
+]
+"""Type that combines all the possible modules for a cluster."""
+
+
+class ClusterComponent(base.InstrumentCoordinatorComponentBase):
+    """
+    Class that represents an instrument coordinator component for a Qblox cluster.
+    """
+
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
+        """
+        Create a new instance of the ClusterComponent.
+
+        Parameters
+        ----------
+        instrument
+            Reference to the cluster driver object.
+        **kwargs
+            Keyword arguments passed to the parent class.
+        """
+        super().__init__(instrument, **kwargs)
+        self._cluster_modules: Dict[str, ClusterModule] = {}
+
+    def add_modules(self, *modules: Instrument) -> None:
+        """
+        Add modules to the cluster.
+
+        Parameters
+        ----------
+        *modules
+            The QCoDeS drivers of the modules to add.
+        """
+        for mod in modules:
+            self._cluster_modules[
+                mod.name
+            ] = _construct_component_from_instrument_driver(mod)
+
+    @property
+    def is_running(self) -> bool:
+        """Returns true if any of the modules are currently running."""
+        return any(comp.is_running for comp in self._cluster_modules.values())
+
+    def start(self) -> None:
+        """Starts all the modules in the cluster."""
+        for comp in self._cluster_modules.values():
+            comp.start()
+
+    def stop(self) -> None:
+        """Stops all the modules in the cluster."""
+        for comp in self._cluster_modules.values():
+            comp.stop()
+
+    def _configure_cmm_settings(self, settings: Dict[str, Any]):
+        """
+        Sets all the settings of the CMM (Cluster Management Module) that have been
+        provided by the backend.
+
+        Parameters
+        ----------
+        settings
+            A dictionary containing all the settings to set.
+        """
+        if "reference_source" in settings:
+            self.instrument.set("reference_source", settings["reference_source"])
+
+    def prepare(self, options: Dict[str, dict]) -> None:
+        """
+        Prepares the cluster component for execution of a schedule.
+
+        Parameters
+        ----------
+        options
+            The compiled instructions to configure the cluster to.
+        """
+        settings = options.pop("settings")
+        self._configure_cmm_settings(settings=settings)
+        for name, comp_options in options.items():
+            if name not in self._cluster_modules:
+                raise KeyError(
+                    f"Attempting to prepare module {name} of cluster {self.name}, while"
+                    f" module has not been added to the cluster component."
+                )
+            self._cluster_modules[name].prepare(comp_options)
+
+    def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
+        """
+        Retrieves all the data from the instruments.
+
+        Returns
+        -------
+        :
+            The acquired data or ``None`` if no acquisitions have been performed.
+        """
+        acquisitions: Dict[Tuple[int, int], Any] = {}
+        for comp in self._cluster_modules.values():
+            comp_acq = comp.retrieve_acquisition()
+            if comp_acq is not None:
+                acquisitions.update(comp_acq)
+        return acquisitions if len(acquisitions) > 0 else None
+
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        """
+        Blocks until all the components are done executing their programs.
+
+        Parameters
+        ----------
+        timeout_sec
+            The time in seconds until the instrument is considered to have timed out.
+        """
+        for comp in self._cluster_modules.values():
+            comp.wait_done(timeout_sec=timeout_sec)
+
+
+def _construct_component_from_instrument_driver(
+    driver: Instrument,
+) -> ClusterModule:
+    """
+    Determines the corresponding ClusterModule type and constructs an IC component from
+    the :doc:`qblox_instruments <qblox_instruments:index>` driver.
+
+    Parameters
+    ----------
+    driver
+        The ``qblox_instruments`` instrument driver.
+
+    Returns
+    -------
+    :
+        The corresponding IC component.
+    """
+    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
+    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
+        raise TypeError(
+            f"Invalid driver type for '{driver.name}'. Cannot construct an instrument "
+            f"coordinator component for driver of type '{type(driver)}'. "
+            f"Expected types: {type(pulsar_qcm.pulsar_qcm_qcodes)} or "
+            f"{type(pulsar_qrm.pulsar_qrm_qcodes)}."
+        )
+    is_rf: bool = driver._get_lo_hw_present()
+    icc_class: type = {
+        (True, False): PulsarQCMComponent,
+        (True, True): PulsarQCMRFComponent,
+        (False, False): PulsarQRMComponent,
+        (False, True): PulsarQRMRFComponent,
+    }[(is_qcm, is_rf)]
+    return icc_class(driver)

@@ -3,19 +3,20 @@
 """Python dataclasses for compilation to Qblox hardware."""
 
 from __future__ import annotations
+
 from typing import Optional, Dict, Any, Tuple, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
 
-from quantify_scheduler.helpers.waveforms import apply_mixer_skewness_corrections
+import quantify_scheduler.helpers.waveforms as waveform_helpers
 
 
 @dataclass
 class QASMRuntimeSettings:
     """
     Settings that can be changed dynamically by the sequencer during execution of the
-    schedule. This is in contrast to the relatively static `SequencerSettings`.
+    schedule. This is in contrast to the relatively static :class:`~.SequencerSettings`.
     """
 
     awg_gain_0: float
@@ -68,7 +69,7 @@ class OpInfo(DataClassJsonMixin):
 
         Returns
         -------
-        float
+        :
             The duration of the pulse/acquisition.
         """
         return self.data["duration"]
@@ -80,7 +81,7 @@ class OpInfo(DataClassJsonMixin):
 
         Returns
         -------
-        bool
+        :
             Is this an acquisition?
         """
         return "acq_index" in self.data
@@ -123,19 +124,12 @@ class LOSettings(DataClassJsonMixin):
 
 
 @dataclass
-class PulsarSettings(DataClassJsonMixin):
-    """
-    Global settings for the pulsar to be set in the InstrumentCoordinator component.
-    This is kept separate from the settings that can be set on a per sequencer basis,
-    which are specified in `SequencerSettings`.
-    """
+class BaseModuleSettings(DataClassJsonMixin):
+    """Shared settings between all the Qblox modules."""
 
-    ref: str
-    """The reference source. Should either be "internal" or "external", will raise an
-    exception in the instrument coordinator component otherwise."""
     scope_mode_sequencer: Optional[str] = None
     """The name of the sequencer that triggers scope mode Acquisitions. Only a single
-    sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
+    sequencer can perform trace acquisition. This setting gets set as a QCoDeS parameter
     on the driver as well as used for internal checks. Having multiple sequencers
     perform trace acquisition will result in an exception being raised."""
     offset_ch0_path0: Union[float, None] = None
@@ -147,26 +141,65 @@ class PulsarSettings(DataClassJsonMixin):
     offset_ch1_path1: Union[float, None] = None
     """The DC offset on path 1 of channel 1."""
 
+
+@dataclass
+class BasebandModuleSettings(BaseModuleSettings):
+    """
+    Settings for a baseband module.
+
+    Class exists to ensure that the cluster baseband modules don't need special
+    treatment in the rest of the code.
+    """
+
+    @classmethod
+    def extract_settings_from_mapping(
+        cls, mapping: Dict[str, Any]
+    ) -> BasebandModuleSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a :class:`~.BasebandModuleSettings` object from it.
+
+        Parameters
+        ----------
+        mapping
+        """
+        del mapping  # not used
+        return cls()
+
+
+@dataclass
+class PulsarSettings(BaseModuleSettings):
+    """
+    Global settings for the Pulsar to be set in the InstrumentCoordinator component.
+    This is kept separate from the settings that can be set on a per sequencer basis,
+    which are specified in :class:`~.SequencerSettings`.
+    """
+
+    ref: str = "internal"
+    """The reference source. Should either be ``"internal"`` or ``"external"``, will
+    raise an exception in the instrument coordinator component otherwise."""
+
     @classmethod
     def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
-        a `PulsarSettings` object from it.
+        a :class:`~.PulsarSettings` object from it.
 
         Parameters
         ----------
         mapping
         """
         ref: str = mapping["ref"]
+        assert ref in ("internal", "external")
         return cls(ref=ref)
 
 
 @dataclass
-class PulsarRFSettings(PulsarSettings):
+class RFModuleSettings(BaseModuleSettings):
     """
-    Global settings for the pulsar to be set in the control stack component. This is
-    kept separate from the settings that can be set on a per sequencer basis, which are
-    specified in `SequencerSettings`.
+    Global settings for the Pulsar to be set in the InstrumentCoordinator component.
+    This is kept separate from the settings that can be set on a per sequencer basis,
+    which are specified in :class:`~.SequencerSettings`.
     """
 
     lo0_freq: Union[float, None] = None
@@ -174,17 +207,16 @@ class PulsarRFSettings(PulsarSettings):
     lo1_freq: Union[float, None] = None
     """The frequency of Output 1 (O1) LO."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
-        a `PulsarSettings` object from it.
+        an :class:`~.RFModuleSettings` object from it.
 
         Parameters
         ----------
         mapping
         """
-        ref: str = mapping["ref"]
         kwargs = {}
 
         complex_output_0 = mapping.get("complex_output_0")
@@ -194,14 +226,39 @@ class PulsarRFSettings(PulsarSettings):
         if complex_output_1:
             kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
 
-        return PulsarRFSettings(ref=ref, **kwargs)
+        return cls(**kwargs)
+
+
+@dataclass
+class PulsarRFSettings(RFModuleSettings, PulsarSettings):
+    """
+    Settings specific for a Pulsar RF. Effectively, combines the Pulsar specific
+    settings with the RF specific settings.
+    """
+
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarRFSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a :class:`~.PulsarRFSettings` object from it.
+
+        Parameters
+        ----------
+        mapping
+        """
+        rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
+        pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
+        combined_settings = {**rf_settings.to_dict(), **pulsar_settings.to_dict()}
+        return cls(**combined_settings)
 
 
 @dataclass
 class SequencerSettings(DataClassJsonMixin):
     """
-    Sequencer level settings. In the drivers these settings are typically recognized by
-    parameter names of the form "sequencer_{index}_{setting}". These settings are set
+    Sequencer level settings.
+
+    In the drivers these settings are typically recognized by parameter names of the
+    form ``"sequencer_{index}_{setting}"``. These settings are set
     once at the start and will remain unchanged after. Meaning that these correspond to
     the "slow" QCoDeS parameters and not settings that are changed dynamically by the
     sequencer.
@@ -233,7 +290,7 @@ class MixerCorrections(DataClassJsonMixin):
     """
     Data structure that holds all the mixer correction parameters to compensate for
     skewness/lo feed-through. This class is used to correct the waveforms to compensate
-    for skewness and to set the `SequencerSettings`.
+    for skewness and to set the :class:`~.SequencerSettings`.
     """
 
     amp_ratio: float = 1.0
@@ -250,12 +307,12 @@ class MixerCorrections(DataClassJsonMixin):
         """
         Applies the pre-distortion needed to compensate for amplitude and phase errors
         in the IQ mixer. In practice this is simply a wrapper around the
-        `apply_mixer_skewness_corrections` function, that uses the attributes specified
-        here.
+        :func:`~quantify_scheduler.helpers.waveforms.apply_mixer_skewness_corrections`
+        function, that uses the attributes specified here.
 
         Parameters
         ----------
-        waveform:
+        waveform
             The (complex-valued) waveform before correction.
 
         Returns
@@ -263,6 +320,6 @@ class MixerCorrections(DataClassJsonMixin):
         :
             The complex-valued waveform after correction.
         """
-        return apply_mixer_skewness_corrections(
+        return waveform_helpers.apply_mixer_skewness_corrections(
             waveform, self.amp_ratio, self.phase_error
         )

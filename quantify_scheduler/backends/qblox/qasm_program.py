@@ -196,7 +196,7 @@ class QASMProgram:
             operation.timing, grid_time_ns=constants.GRID_TIME
         ):
             raise ValueError(
-                f"Start time of operation is invalid. Qblox QCM and QRM "
+                f"Start time of operation is invalid. Qblox QcmModule and QRM "
                 f"enforce a grid time of {constants.GRID_TIME} ns. Please "
                 f"make sure all operations start at an interval of "
                 f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
@@ -750,7 +750,7 @@ class QASMProgram:
 
             sched = Schedule("example")
             container = compiler_container.CompilerContainer(sched)
-            qcm = instrument_compilers.Pulsar_QCM(
+            qcm = instrument_compilers.QcmModule(
                 container,
                 "qcm0",
                 total_play_time=10,
