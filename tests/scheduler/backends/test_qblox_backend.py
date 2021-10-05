@@ -795,7 +795,7 @@ def test_staircase_qasm_prog(start_amp, final_amp):
         init_amp = init_amp - constants.REGISTER_SIZE
 
     final_amp_imm = amp_step_used * (steps_taken - 1) + init_amp
-    awg_output_volt = qcm.static_hw_properties.awg_output_volt
+    awg_output_volt = qcm.static_hw_properties.max_awg_output_voltage
 
     final_amp_volt = 2 * final_amp_imm / constants.IMMEDIATE_SZ_OFFSET * awg_output_volt
     assert final_amp_volt == pytest.approx(final_amp, 1e-3)

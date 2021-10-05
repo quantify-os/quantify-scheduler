@@ -41,7 +41,7 @@ class StaticHardwareProperties:
 
     max_sequencers: int
     """The amount of sequencers available."""
-    awg_output_volt: float
+    max_awg_output_voltage: float
     """Maximum output voltage of the awg."""
     marker_configuration: MarkerConfiguration
     """The marker configuration to use."""

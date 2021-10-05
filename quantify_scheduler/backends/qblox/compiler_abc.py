@@ -442,25 +442,25 @@ class Sequencer:
                 )
                 pulse.uuid = reserved_pulse_id
 
-            if np.abs(amp_i) > self.static_hw_properties.awg_output_volt:
+            if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.static_hw_properties.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
                 )
-            if np.abs(amp_q) > self.static_hw_properties.awg_output_volt:
+            if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.static_hw_properties.awg_output_volt} V for "
+                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
             pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.static_hw_properties.awg_output_volt,
-                awg_gain_1=amp_q / self.static_hw_properties.awg_output_volt,
+                awg_gain_0=amp_i / self.static_hw_properties.max_awg_output_voltage,
+                awg_gain_1=amp_q / self.static_hw_properties.max_awg_output_voltage,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
                 waveforms_complex[pulse.uuid] = raw_wf_data
