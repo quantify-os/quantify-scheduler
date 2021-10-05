@@ -466,6 +466,8 @@ class Sequencer:
                     f"{repr(pulse)}"
                 )
             if output_mode == "imag":
+                # swapping variables since we want the real signal to play on the Q
+                # channel.
                 amp_i, amp_q = amp_q, amp_i
 
             pulse.pulse_settings = QASMRuntimeSettings(
