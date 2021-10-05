@@ -292,7 +292,7 @@ class Sequencer:
         )
 
         self._settings = SequencerSettings.initialize_from_config_dict(
-            seq_settings=seq_settings
+            seq_settings=seq_settings, connected_outputs=connected_outputs
         )
 
     @property
@@ -1056,7 +1056,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
         ]
-        valid_seq_names = [f"seq{i}" for i in range(self._max_sequencers)]
+        valid_seq_names = [
+            f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
+        ]
 
         mapping = {}
         for io in valid_ios:
@@ -1098,7 +1100,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             f"real_output_{i}" for i in range(4)
         ]
         sequencers = {}
-        for io_cfg in self.hw_mapping.values():
+        for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
             if io not in valid_ios:
@@ -1489,20 +1491,6 @@ class QbloxRFModule(QbloxBaseModule):
         Updates the settings to set all parameters that are determined by the
         compiler.
         """
-
-        # Will be changed when LO leakage correction is decoupled from the sequencer
-        for seq in self.sequencers.values():
-            self._validate_output_mode(seq)
-            if seq.mixer_corrections is not None:
-                for output in seq.connected_outputs:
-                    if output == 0:
-                        self._settings.offset_ch0_path0 = seq.mixer_corrections.offset_I
-                    elif output == 1:
-                        self._settings.offset_ch0_path1 = seq.mixer_corrections.offset_Q
-                    elif output == 2:
-                        self._settings.offset_ch1_path0 = seq.mixer_corrections.offset_I
-                    else:
-                        self._settings.offset_ch1_path1 = seq.mixer_corrections.offset_Q
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""

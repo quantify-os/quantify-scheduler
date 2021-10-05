@@ -351,7 +351,9 @@ class SequencerSettings(DataClassJsonMixin):
 
     @classmethod
     def initialize_from_config_dict(
-        cls, seq_settings: Dict[str, Any]
+        cls,
+        seq_settings: Dict[str, Any],
+        connected_outputs: Union[Tuple[int], Tuple[int, int]],
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
@@ -406,6 +408,7 @@ class SequencerSettings(DataClassJsonMixin):
         settings = cls(
             nco_en=nco_en,
             sync_en=True,
+            connected_outputs=connected_outputs,
             modulation_freq=modulation_freq,
             mixer_corr_gain_ratio=mixer_amp_ratio,
             mixer_corr_phase_offset_degree=mixer_phase_error,
