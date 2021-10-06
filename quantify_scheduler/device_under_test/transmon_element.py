@@ -189,7 +189,10 @@ class TransmonElement(Instrument):
         pulse_types = validators.Enum("square")
         self.add_parameter(
             "ro_pulse_type",
-            docstring="Envelope function that defines the shape of the readout pulse prior to modulation.",
+            docstring=(
+                "Envelope function that defines the shape of "
+                + "the readout pulse prior to modulation."
+            ),
             initial_value="square",
             parameter_class=ManualParameter,
             vals=pulse_types,
@@ -254,7 +257,12 @@ class TransmonElement(Instrument):
         acquisition_validator = validators.Enum("SSBIntegrationComplex", "Trace")
         self.add_parameter(
             "acquisition",
-            docstring="Acquisition mode. Can take either the 'Trace' value, which yields a time trace of the data, or 'SSBIntegrationComplex', which yields integrated single-sideband demodulated data.",
+            docstring=(
+                "Acquisition mode. Can take either the 'Trace' value, which "
+                + "yields a time trace of the data, or 'SSBIntegrationComplex'"
+                + ", which yields integrated single-sideband demodulated "
+                + "data."
+            ),
             initial_value="SSBIntegrationComplex",
             parameter_class=ManualParameter,
             vals=acquisition_validator,
@@ -271,7 +279,10 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "device_cfg_backend",
-            docstring="Quantify-scheduler backend module responsible for the device compilation.",
+            docstring=(
+                "Quantify-scheduler backend module responsible for the device"
+                + " compilation."
+            ),
             initial_value=(
                 "quantify_scheduler.compilation.add_pulse_information_transmon"
             ),
