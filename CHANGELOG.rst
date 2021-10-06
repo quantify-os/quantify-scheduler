@@ -34,6 +34,7 @@ Merged branches and closed issues
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
+* Added method `sample_schedule` to sample a `Schedule` (!212)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
