@@ -84,7 +84,9 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "mw_pulse_duration",
-            docstring=r"Duration of the pulses applied on the transmon's microwave port.",
+            docstring=(
+                "Duration of the pulses applied on the transmon's microwave " + "port."
+            ),
             initial_value=20e-9,
             unit="s",
             parameter_class=ManualParameter,
@@ -92,7 +94,10 @@ class TransmonElement(Instrument):
         )
         self.add_parameter(
             "mw_ef_amp180",
-            docstring="Amplitude of the pulse necessary to drive the |1>-|2> transition (considering a pulse duration of `mw_pulse_duration`).",
+            docstring=(
+                "Amplitude of the pulse necessary to drive the |1>-|2> "
+                + "transition (considering a pulse duration of `mw_pulse_duration`)."
+            ),
             unit="V",
             parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=-10, max_value=10),
@@ -132,7 +137,10 @@ class TransmonElement(Instrument):
 
         self.add_parameter(
             "mw_12_clock",
-            docstring=r"Name of the clock corresponding to the |1>-|2> transition frequency.",
+            docstring=(
+                "Name of the clock corresponding to the |1>-|2> transition "
+                + "frequency."
+            ),
             initial_cache_value=f"{self.name}.12",
             parameter_class=Parameter,
             set_cmd=False,
