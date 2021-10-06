@@ -8,7 +8,7 @@ import json
 from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List
+from typing import Optional, Dict, Any, Set, Tuple, List, Callable
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -303,6 +303,10 @@ class Sequencer:
             modulation_freq=modulation_freq,
         )
         self.mixer_corrections = None
+
+        self.qasm_hook_func: Optional[Callable] = seq_settings.get(
+            "qasm_hook_func", None
+        )
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -715,6 +719,9 @@ class Sequencer:
         qasm.set_marker(self.parent.marker_configuration["end"])
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
+
+        if self.qasm_hook_func:
+            self.qasm_hook_func(qasm)
         return str(qasm)
 
     def _initialize_append_mode_registers(
