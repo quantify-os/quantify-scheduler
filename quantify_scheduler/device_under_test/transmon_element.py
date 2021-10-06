@@ -116,7 +116,7 @@ class TransmonElement(Instrument):
 
         self.add_parameter(
             "ro_port",
-            docstring=r"Name of the transmon's readout ressonator port.",
+            docstring=r"Name of the transmon's readout resonator port.",
             initial_cache_value=f"{self.name}:res",
             parameter_class=Parameter,
             set_cmd=False,
@@ -163,7 +163,7 @@ class TransmonElement(Instrument):
 
         self.add_parameter(
             "ro_freq",
-            docstring="Characteristic frequency of the readout resonator",
+            docstring="Frequency of the pulse sent to the readout resonator.",
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
@@ -189,7 +189,7 @@ class TransmonElement(Instrument):
         pulse_types = validators.Enum("square")
         self.add_parameter(
             "ro_pulse_type",
-            docstring="Shape of the readout pulse.",
+            docstring="Envelope function that defines the shape of the readout pulse prior to modulation.",
             initial_value="square",
             parameter_class=ManualParameter,
             vals=pulse_types,
@@ -254,7 +254,7 @@ class TransmonElement(Instrument):
         acquisition_validator = validators.Enum("SSBIntegrationComplex", "Trace")
         self.add_parameter(
             "acquisition",
-            docstring="Acquisition mode. Can take either the 'Trace' value, which yields a time trace of the data, or 'SSBIntegrationComplex', which yield integrated single-sideband demodulated data.",
+            docstring="Acquisition mode. Can take either the 'Trace' value, which yields a time trace of the data, or 'SSBIntegrationComplex', which yields integrated single-sideband demodulated data.",
             initial_value="SSBIntegrationComplex",
             parameter_class=ManualParameter,
             vals=acquisition_validator,
