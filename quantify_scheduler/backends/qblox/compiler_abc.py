@@ -514,7 +514,10 @@ class Sequencer:
             waveforms_data = acq.data["waveforms"]
             if len(waveforms_data) == 0:
                 continue  # e.g. scope acquisition
-            if acq.data["protocol"] == "ssb_integration_complex":
+            if (
+                acq.data["protocol"] == "ssb_integration_complex"
+                or acq.data["protocol"] == "looped_periodic_acquisition"
+            ):
                 continue
             if len(waveforms_data) != 2:
                 raise ValueError(

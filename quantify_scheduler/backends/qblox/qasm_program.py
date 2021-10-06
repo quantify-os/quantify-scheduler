@@ -420,18 +420,8 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _acquire_square(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
-        """
-        Adds the instruction for performing acquisitions without weights playback.
-
-        Parameters
-        ----------
-        acquisition
-            The acquisition info for the acquisition to perform.
-        bin_idx
-            The bin_idx to store the result in.
-        """
-        duration_ns = int(acquisition.duration * 1e9)
+    def _verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
+        duration_ns = int(duration * 1e9)
         if self.parent.settings.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
                 raise ValueError(
@@ -450,6 +440,20 @@ class QASMProgram:
                 f"have the same duration."
             )
 
+    def _acquire_square(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
+        """
+        Adds the instruction for performing acquisitions without weights playback.
+
+        Parameters
+        ----------
+        acquisition
+            The acquisition info for the acquisition to perform.
+        bin_idx
+            The bin_idx to store the result in.
+        """
+
+        self._verify_square_acquisition_duration(acquisition, acquisition.duration)
+
         measurement_idx = acquisition.data["acq_channel"]
         self.emit(
             q1asm_instructions.ACQUIRE,
@@ -458,6 +462,35 @@ class QASMProgram:
             constants.GRID_TIME,
         )
         self.elapsed_time += constants.GRID_TIME
+
+    def _acquire_looped(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
+        measurement_idx = acquisition.data["acq_channel"]
+
+        duration = acquisition.data["integration_time"]
+        self._verify_square_acquisition_duration(acquisition, duration)
+
+        duration_ns = helpers.to_grid_time(duration)
+
+        number_of_times = acquisition.data["num_times"]
+        buffer_time = acquisition.data["buffer_time"]
+        with self.loop(
+            label=f"looped_acq{len(self.instructions)}", repetitions=number_of_times
+        ):
+            self.emit(
+                q1asm_instructions.ACQUIRE,
+                measurement_idx,
+                bin_idx,
+                duration_ns,
+            )
+            buffer_time_ns = helpers.to_grid_time(buffer_time)
+            if buffer_time > 0:
+                self.emit(q1asm_instructions.WAIT, buffer_time_ns)
+            if buffer_time < 0:
+                raise ValueError(
+                    f"Buffer time cannot be smaller than 0.\n\nException "
+                    f"occurred because of {repr(acquisition)}."
+                )
+        self.elapsed_time += number_of_times * (duration_ns + buffer_time_ns)
 
     def auto_acquire(self, acquisition: OpInfo, idx0: int, idx1: int) -> None:
         """
@@ -493,6 +526,7 @@ class QASMProgram:
             "trace": self._acquire_square,
             "weighted_integrated_complex": self._acquire_weighted,
             "ssb_integration_complex": self._acquire_square,
+            "looped_periodic_acquisition": self._acquire_looped,
         }
 
         ################################################################################
@@ -531,7 +565,6 @@ class QASMProgram:
                     f"operation {repr(acquisition)}."
                 )
 
-            # Add a line break for visual separation of acquisition.
             self.emit(q1asm_instructions.NEW_LINE)
 
             acq_channel = acquisition.data["acq_channel"]
@@ -574,7 +607,10 @@ class QASMProgram:
                         idx0=acq_idx0_reg,
                         idx1=acq_idx1_reg,
                     )
-                elif acquisition_func == self._acquire_square:
+                elif (
+                    acquisition_func == self._acquire_square
+                    or acquisition_func == self._acquire_looped
+                ):
                     acquisition_func(
                         acquisition=acquisition,
                         bin_idx=acq_bin_idx_reg,
@@ -592,7 +628,6 @@ class QASMProgram:
                     acq_bin_idx_reg,
                     comment=f"Increment bin_idx for ch{acq_channel}",
                 )
-                # Add a line break for visual separation of acquisition.
                 self.emit(q1asm_instructions.NEW_LINE)
 
     def wait_till_start_then_acquire(self, acquisition: OpInfo, idx0: int, idx1: int):
