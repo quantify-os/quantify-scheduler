@@ -85,7 +85,7 @@ class TransmonElement(Instrument):
         self.add_parameter(
             "mw_pulse_duration",
             docstring=(
-                "Duration of the pulses applied on the transmon's microwave " + "port."
+                "Duration of the pulses applied on the transmon's microwave port."
             ),
             initial_value=20e-9,
             unit="s",
@@ -96,7 +96,7 @@ class TransmonElement(Instrument):
             "mw_ef_amp180",
             docstring=(
                 "Amplitude of the pulse necessary to drive the |1>-|2> "
-                + "transition (considering a pulse duration of `mw_pulse_duration`)."
+                "transition (considering a pulse duration of `mw_pulse_duration`)."
             ),
             unit="V",
             parameter_class=ManualParameter,
@@ -139,7 +139,7 @@ class TransmonElement(Instrument):
             "mw_12_clock",
             docstring=(
                 "Name of the clock corresponding to the |1>-|2> transition "
-                + "frequency."
+                "frequency."
             ),
             initial_cache_value=f"{self.name}.12",
             parameter_class=Parameter,
@@ -199,7 +199,7 @@ class TransmonElement(Instrument):
             "ro_pulse_type",
             docstring=(
                 "Envelope function that defines the shape of "
-                + "the readout pulse prior to modulation."
+                "the readout pulse prior to modulation."
             ),
             initial_value="square",
             parameter_class=ManualParameter,
@@ -267,9 +267,9 @@ class TransmonElement(Instrument):
             "acquisition",
             docstring=(
                 "Acquisition mode. Can take either the 'Trace' value, which "
-                + "yields a time trace of the data, or 'SSBIntegrationComplex'"
-                + ", which yields integrated single-sideband demodulated "
-                + "data."
+                "yields a time trace of the data, or 'SSBIntegrationComplex', "
+                "which yields integrated single-sideband demodulated "
+                "data."
             ),
             initial_value="SSBIntegrationComplex",
             parameter_class=ManualParameter,
@@ -289,7 +289,7 @@ class TransmonElement(Instrument):
             "device_cfg_backend",
             docstring=(
                 "Quantify-scheduler backend module responsible for the device"
-                + " compilation."
+                " compilation."
             ),
             initial_value=(
                 "quantify_scheduler.compilation.add_pulse_information_transmon"
