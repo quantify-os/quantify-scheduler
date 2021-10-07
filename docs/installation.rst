@@ -25,7 +25,7 @@ You can clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://gitlab.com/quantify-os/quantify-scheduler
+    $ git clone git@gitlab.com:quantify-os/quantify-scheduler.git
 
 Once you have a copy of the source, you can install it with:
 
@@ -33,6 +33,11 @@ Once you have a copy of the source, you can install it with:
 
     $ pip install --upgrade .
 
+In order to develop the code locally, the package can be installed with the `-e` flag:
+
+.. code-block:: console
+
+    $ pip install --upgrade -e .
 
 Setting up for local development
 --------------------------------
