@@ -607,10 +607,7 @@ class QASMProgram:
                         idx0=acq_idx0_reg,
                         idx1=acq_idx1_reg,
                     )
-                elif (
-                    acquisition_func == self._acquire_square
-                    or acquisition_func == self._acquire_looped
-                ):
+                elif acquisition_func in (self._acquire_square, self._acquire_looped):
                     acquisition_func(
                         acquisition=acquisition,
                         bin_idx=acq_bin_idx_reg,
