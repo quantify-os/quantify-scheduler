@@ -236,8 +236,7 @@ def output_mode_from_outputs(
 
     - ``"real"``: only path0 is used
     - ``"imag"``: only path1 is used
-    - ``"complex"``: both paths are used, with the real and imaginary components
-    referring to the different paths.
+    - ``"complex"``: both path0 and path1 paths are used.
 
     Parameters
     ----------
