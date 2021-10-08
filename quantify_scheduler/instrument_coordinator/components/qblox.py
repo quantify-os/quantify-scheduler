@@ -304,6 +304,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             )
 
     def _arm_all_sequencers_in_program(self, program: Dict[str, Any]):
+        """Arms all the sequencers that are part of the program."""
         for seq_name in program:
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
