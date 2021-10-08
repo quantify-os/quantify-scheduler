@@ -1047,7 +1047,7 @@ def _construct_component_from_instrument_driver(
 ) -> ClusterModule:
     """
     Determines the corresponding ClusterModule type and constructs an IC component from
-    the :doc:`qblox_instruments <qblox_instruments:index>` driver.
+    the :doc:`qblox_instruments <qblox-instruments:index>` driver.
 
     Parameters
     ----------
