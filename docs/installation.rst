@@ -7,32 +7,41 @@ Installation
 Stable release
 --------------
 
-To install quantify-scheduler follow the :doc:`installation guide of quantify-core <quantify-core:installation>`.
+To install Quantify-Scheduler follow the :doc:`installation guide of quantify-core <quantify-core:installation>`.
 
 Update to latest version
 ------------------------
 
-To update to the latest version::
+To update to the latest version
+
+.. code-block:: console
 
     $ pip install --upgrade quantify-scheduler
 
 From sources
 ------------
 
-The sources for quantify can be downloaded from the `GitLab repo <https://gitlab.com/quantify-os/quantify-scheduler>`_.
+The sources for ``quantify-scheduler`` can be downloaded from the `GitLab repo <https://gitlab.com/quantify-os/quantify-scheduler>`_.
 
 You can clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://gitlab.com/quantify-os/quantify-scheduler
+    $ git clone git@gitlab.com:quantify-os/quantify-scheduler.git
+    $ # or if you prefer to use https:
+    $ # git clone https://gitlab.com/quantify-os/quantify-scheduler.git/
 
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ pip install --upgrade .
+    $ python -m pip install --upgrade .
 
+In order to develop the code locally, the package can be installed in the "editable mode" with the ``-e`` flag:
+
+.. code-block:: console
+
+    $ python -m pip install --upgrade -e .
 
 Setting up for local development
 --------------------------------

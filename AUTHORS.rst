@@ -21,3 +21,4 @@ Contributors
 ------------
 
 * Pieter Eendebak <pieter.eendebak@tno.nl>
+* Gijs Vermariën <gijs@orangeqs.com>
