@@ -749,7 +749,7 @@ class Sequencer:
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.RESET_PHASE)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, GRID_TIME)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
         pulses = [] if self.pulses is None else self.pulses
