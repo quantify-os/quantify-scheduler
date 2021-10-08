@@ -235,7 +235,7 @@ def pulse_only_schedule():
     sched.add(Reset("q0"))
     sched.add(
         DRAGPulse(
-            G_amp=0.7,
+            G_amp=0.5,
             D_amp=-0.2,
             phase=90,
             port="q0:mw",
@@ -707,6 +707,39 @@ def test_compile_with_pulse_stitching(
 
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+
+
+def _func_for_hook_test(qasm: QASMProgram):
+    qasm.instructions.insert(
+        0, QASMProgram.get_instruction_as_list(q1asm_instructions.NOP)
+    )
+
+
+def test_qasm_hook(dummy_pulsars, pulse_only_schedule):
+    hw_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qrm0": {
+            "instrument_type": "Pulsar_QRM",
+            "ref": "external",
+            "complex_output_0": {
+                "seq0": {
+                    "qasm_hook_func": _func_for_hook_test,
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                }
+            },
+        },
+    }
+    sched = pulse_only_schedule
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    sched.repetitions = 11
+    full_program = qcompile(sched, DEVICE_CFG, hw_config)
+    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    with open(qrm0_seq0_json) as f:
+        program = json.load(f)["program"]
+    program_lines = program.splitlines()
+    assert program_lines[1].strip() == q1asm_instructions.NOP
 
 
 def test_qcm_acquisition_error():
