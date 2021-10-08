@@ -464,7 +464,8 @@ class Sequencer:
             if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
+                    f"Maximum voltage range is +-"
+                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
@@ -472,7 +473,8 @@ class Sequencer:
             if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
+                    f"Maximum voltage range is +-"
+                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
