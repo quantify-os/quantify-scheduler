@@ -535,7 +535,7 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
 
 def test_qrm_acquisition_manager__init__(make_qrm):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
+    qblox._QRMAcquisitionManager(
         qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
     )
 
