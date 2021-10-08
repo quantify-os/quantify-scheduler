@@ -16,6 +16,7 @@ Breaking changes
 * The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
 * The `RampPulse` has an extra (optional) parameter `offset` (!211)
 * Qblox Backend - The NCO phase is now reset at the start of a program (!213).
+* Qblox Backend - Compilation now requires qblox_instruments version > 0.5.0 (!214).
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
