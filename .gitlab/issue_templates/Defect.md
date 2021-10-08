@@ -1,4 +1,4 @@
-* Quantify version:
+* Quantify-Scheduler version:
 * Python version:
 * Operating System:
 
