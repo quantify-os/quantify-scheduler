@@ -394,7 +394,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
                 f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"]
             )
 
-            self.instrument.arm_sequencer(sequencer=seq_idx)
+        self._arm_all_sequencers_in_program(program)
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -860,7 +860,7 @@ class _QRMAcquisitionManager:
         data_i
             Array containing I-quadrature data.
         data_q
-            Array containing I-quadrature data.
+            Array containing Q-quadrature data.
         """
         if self.integration_length_acq is None:
             raise RuntimeError(
