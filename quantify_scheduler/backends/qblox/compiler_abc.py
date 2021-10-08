@@ -301,8 +301,8 @@ class Sequencer:
         The indices of the output paths that this sequencer is producing awg
         data for.
 
-        For the baseband modules, these indices correspond directly to a physical output (
-        e.g. index 0 corresponds to output 1 etc.).
+        For the baseband modules, these indices correspond directly to a physical output
+        (e.g. index 0 corresponds to output 1 etc.).
 
         For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
         respectively, and 1 and 3 to path1 of those outputs.
@@ -1540,10 +1540,10 @@ class QbloxRFModule(QbloxBaseModule):
 
             if lo_freq is None and if_freq is None:
                 raise ValueError(
-                    f"Frequency settings underconstraint for sequencer {sequencer.name} "
-                    f"with port {sequencer.port} and clock {sequencer.clock}. It is "
-                    f'required to either supply an "lo_freq" or an "interm_freq". Neither '
-                    f"was given."
+                    f"Frequency settings underconstraint for sequencer {sequencer.name}"
+                    f" with port {sequencer.port} and clock {sequencer.clock}. It is "
+                    f'required to either supply an "lo_freq" or an "interm_freq". '
+                    f"Neither was given."
                 )
 
             if if_freq is not None:
