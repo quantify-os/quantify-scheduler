@@ -958,9 +958,9 @@ def test_verify_qblox_instruments_version():
         verify_qblox_instruments_version(nonsense_version)
     assert (
         wrong_version.value.args[0]
-        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} "
-        f"not supported by backend. Please install version 0.5.0 to continue to use "
-        f"this backend."
+        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} not "
+        f"supported by backend. Please install a supported version (currently "
+        f"supported: ('0.5.0', '0.5.1')) to continue to use this backend."
     )
 
     with pytest.raises(DriverVersionError) as none_error:
