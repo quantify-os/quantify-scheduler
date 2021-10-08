@@ -307,6 +307,8 @@ class Sequencer:
         self.qasm_hook_func: Optional[Callable] = seq_settings.get(
             "qasm_hook_func", None
         )
+        """Allows the user to inject custom Q1ASM code into the compilation, just prior
+         to returning the final string."""
 
     @property
     def portclock(self) -> Tuple[str, str]:
