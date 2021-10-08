@@ -15,6 +15,8 @@ Breaking changes
 * The `QuantumDevice.cfg_nr_averages` parameter was renamed to `QuantumDevice.cfg_sched_repetitions`
 * The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
 * The `RampPulse` has an extra (optional) parameter `offset` (!211)
+* Qblox Backend - The NCO phase is now reset at the start of a program (!213).
+* Qblox Backend - Compilation now requires qblox_instruments version > 0.5.0 (!214).
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +32,8 @@ Merged branches and closed issues
 * Qblox Backend - Added support for real time mixer corrections rather than pre-distorting the uploaded waveforms (!192).
 * Qblox Backend - Waveforms are now compared using the normalized data array rather than the parameterized description (!182).
 * Qblox Backend - Support for append bin mode (#184, !180).
+* Qblox Backend - Support for using real value pulses on arbitrary outputs added (!142).
+* Qblox Backend - Compilation now supports 6 sequencers for both the QCM as well as the QRM (!142).
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).

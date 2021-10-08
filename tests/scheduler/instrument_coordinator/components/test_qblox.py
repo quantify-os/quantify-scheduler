@@ -535,19 +535,25 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
 
 def test_qrm_acquisition_manager__init__(make_qrm):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
+    qblox._QRMAcquisitionManager(
+        qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
+    )
 
 
 def test_get_threshold_data(make_qrm, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
+    )
     data = acq_manager._get_threshold_data(mock_acquisition_data, 0, 0)
     assert data == 0.12
 
 
 def test_get_integration_data(make_qrm, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(qrm, qrm._number_of_sequencers, {}, None)
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
+    )
     data = acq_manager._get_integration_data(mock_acquisition_data, acq_channel=0)
     np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
     np.testing.assert_array_equal(data[1], np.array([0.0] * 10))
@@ -559,7 +565,7 @@ def test_get_scope_channel_and_index(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping, None
+        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
     result = acq_manager._get_scope_channel_and_index()
     assert result == (0, 0)
@@ -572,7 +578,7 @@ def test_get_scope_channel_and_index_exception(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping, None
+        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
     with pytest.raises(RuntimeError) as execinfo:
         acq_manager._get_scope_channel_and_index()
@@ -592,7 +598,7 @@ def test_get_protocol(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping, None
+        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
     assert acq_manager._get_protocol(0, 0) == answer
 
@@ -607,6 +613,6 @@ def test_get_sequencer_index(make_qrm):
     }
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._number_of_sequencers, acq_mapping, None
+        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
     assert acq_manager._get_sequencer_index(0, 0) == answer

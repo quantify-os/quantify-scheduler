@@ -9,6 +9,7 @@ from os import path, makedirs
 from abc import ABC, abstractmethod, ABCMeta
 from collections import defaultdict, deque
 from typing import Optional, Dict, Any, Set, Tuple, List, Union, Callable
+from typing_extensions import Literal
 
 import numpy as np
 from pathvalidate import sanitize_filename
@@ -23,14 +24,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import non_generic
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox import register_manager
-from quantify_scheduler.backends.qblox.helpers import (
-    generate_waveform_data,
-    _generate_waveform_dict,
-    generate_waveform_names_from_uuid,
-    verify_qblox_instruments_version,
-    to_grid_time,
-    generate_uuid_from_wf_data,
-)
+from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
@@ -259,6 +253,7 @@ class Sequencer:
         name: str,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
+        connected_outputs: Union[Tuple[int], Tuple[int, int]],
         seq_settings: dict,
         lo_name: Optional[str] = None,
     ):
@@ -270,7 +265,7 @@ class Sequencer:
         parent
             A reference to the parent instrument this sequencer belongs to.
         name
-            Name of the sequencer. This is supposed to match "seq{index}".
+            Name of the sequencer. This is supposed to match ``"seq{index}"``.
         portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
@@ -297,7 +292,7 @@ class Sequencer:
         )
 
         self._settings = SequencerSettings.initialize_from_config_dict(
-            seq_settings=seq_settings
+            seq_settings=seq_settings, connected_outputs=connected_outputs
         )
 
         self.qasm_hook_func: Optional[Callable] = seq_settings.get(
@@ -305,6 +300,30 @@ class Sequencer:
         )
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
+
+    @property
+    def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
+        """
+        The indices of the output paths that this sequencer is producing awg
+        data for.
+
+        For the baseband modules, these indices correspond directly to a physical output
+        (e.g. index 0 corresponds to output 1 etc.).
+
+        For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
+        respectively, and 1 and 3 to path1 of those outputs.
+        """
+        return self._settings.connected_outputs
+
+    @property
+    def output_mode(self) -> Literal["complex", "real", "imag"]:
+        """
+        Specifies whether the sequencer is using only path0 (real), path1 (imag) or
+        both (complex).
+
+        If real or imag, the sequencer is restricted to only using real valued data.
+        """
+        return helpers.output_mode_from_outputs(self._settings.connected_outputs)
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -428,6 +447,7 @@ class Sequencer:
         ValueError
             I or Q amplitude is being set outside of maximum range.
         """
+        output_mode = helpers.output_mode_from_outputs(self._settings.connected_outputs)
         waveforms_complex = {}
         for pulse in self.pulses:
             reserved_pulse_id = (
@@ -436,11 +456,11 @@ class Sequencer:
                 else None
             )
             if reserved_pulse_id is None:
-                raw_wf_data = generate_waveform_data(
+                raw_wf_data = helpers.generate_waveform_data(
                     pulse.data, sampling_rate=constants.SAMPLING_RATE
                 )
                 raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
-                pulse.uuid = generate_uuid_from_wf_data(raw_wf_data)
+                pulse.uuid = helpers.generate_uuid_from_wf_data(raw_wf_data)
             else:
                 raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
                     reserved_pulse_id, pulse.data, sampling_rate=constants.SAMPLING_RATE
@@ -450,7 +470,8 @@ class Sequencer:
             if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
+                    f"Maximum voltage range is +-"
+                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_i} V is set as amplitude for the I channel for "
                     f"{repr(pulse)}"
@@ -458,18 +479,75 @@ class Sequencer:
             if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
                 raise ValueError(
                     f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-{self.static_hw_properties.max_awg_output_voltage} V for "
+                    f"Maximum voltage range is +-"
+                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
                     f"{self.parent.__class__.__name__}.\n"
                     f"{amp_q} V is set as amplitude for the Q channel for "
                     f"{repr(pulse)}"
                 )
+            if output_mode == "imag":
+                # swapping variables since we want the real signal to play on the Q
+                # channel.
+                amp_i, amp_q = amp_q, amp_i
+
             pulse.pulse_settings = QASMRuntimeSettings(
                 awg_gain_0=amp_i / self.static_hw_properties.max_awg_output_voltage,
                 awg_gain_1=amp_q / self.static_hw_properties.max_awg_output_voltage,
             )
             if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
+                raw_wf_data = self.apply_output_mode_to_data(
+                    pulse, raw_wf_data, output_mode
+                )
                 waveforms_complex[pulse.uuid] = raw_wf_data
-        return _generate_waveform_dict(waveforms_complex)
+        return helpers.generate_waveform_dict(waveforms_complex)
+
+    def apply_output_mode_to_data(
+        self, pulse: OpInfo, data: np.ndarray, mode: Literal["complex", "real", "imag"]
+    ) -> np.ndarray:
+        """
+        Takes the pulse and ensures it is played on the right path for ``"real"`` or
+        ``"imag"`` mode, returns same ``data`` for ``mode == "complex"`` as this should
+        be handled correctly already.
+
+        Effectively this means that when ``data`` is an array of real numbers and the
+        ``mode == "imag"`` the data will be cast to an array of complex numbers,
+        otherwise the same ``data`` will be returned.
+
+        Parameters
+        ----------
+        pulse
+            The pulse information.
+        data
+            Real-valued array (when ``mode != "complex"``) or complex-valued array
+            (when ``mode == "complex"``).
+        mode
+            The output mode. Must be one of ``"complex"``, ``"real"`` or ``"imag"``.
+
+        Returns
+        -------
+        :
+            The (potentially made imag) data.
+
+        Raises
+        ------
+        ValueError
+            Mode is not ``"complex"`` but the input ``data`` has an imaginary part.
+        """
+        assert mode in ("complex", "real", "imag")
+
+        if mode == "complex":
+            return data
+
+        if not np.all((data.imag == 0)):
+            raise ValueError(
+                f"Attempting to play complex data on sequencer {self.name} of "
+                f"{self.parent.name} which is connected to a real output.\n\n"
+                f"Associated pulse:\n{repr(pulse)}"
+            )
+        if mode == "imag":
+            return 1.0j * data
+
+        return data  # mode is real
 
     def _generate_weights_dict(self) -> Dict[str, Any]:
         """
@@ -523,15 +601,15 @@ class Sequencer:
                     f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
                     "waveforms."
                 )
-            raw_wf_data_real = generate_waveform_data(
+            raw_wf_data_real = helpers.generate_waveform_data(
                 waveforms_data[0], sampling_rate=constants.SAMPLING_RATE
             )
-            raw_wf_data_imag = generate_waveform_data(
+            raw_wf_data_imag = helpers.generate_waveform_data(
                 waveforms_data[1], sampling_rate=constants.SAMPLING_RATE
             )
             acq.uuid = "{}_{}".format(
-                generate_uuid_from_wf_data(raw_wf_data_real),
-                generate_uuid_from_wf_data(raw_wf_data_imag),
+                helpers.generate_uuid_from_wf_data(raw_wf_data_real),
+                helpers.generate_uuid_from_wf_data(raw_wf_data_imag),
             )
             if acq.uuid not in waveforms_complex:
                 self._settings.duration = len(raw_wf_data_real)
@@ -545,7 +623,7 @@ class Sequencer:
                         f"{repr(acq)}."
                     )
                 waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
-        return _generate_waveform_dict(waveforms_complex)
+        return helpers.generate_waveform_dict(waveforms_complex)
 
     def _generate_acq_declaration_dict(
         self,
@@ -681,6 +759,8 @@ class Sequencer:
         qasm = QASMProgram(parent=self)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
+        qasm.emit(q1asm_instructions.RESET_PHASE)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
         pulses = [] if self.pulses is None else self.pulses
@@ -705,7 +785,7 @@ class Sequencer:
                     idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
                     qasm.wait_till_start_then_play(operation, idx0, idx1)
 
-            end_time = to_grid_time(total_sequence_time)
+            end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
             if wait_time < 0:
                 raise RuntimeError(
@@ -780,7 +860,7 @@ class Sequencer:
         :
             Index of the Q waveform.
         """
-        name_real, name_imag = generate_waveform_names_from_uuid(uuid)
+        name_real, name_imag = helpers.generate_waveform_names_from_uuid(uuid)
         idx_real = None if name_real not in wf_dict else wf_dict[name_real]["index"]
         idx_imag = None if name_imag not in wf_dict else wf_dict[name_imag]["index"]
         return idx_real, idx_imag
@@ -878,17 +958,18 @@ class Sequencer:
 
         awg_dict = self._generate_awg_dict()
         weights_dict = None
+        acq_declaration_dict = None
         if self.parent.supports_acquisition:
             weights_dict = (
                 self._generate_weights_dict() if len(self.acquisitions) > 0 else {}
             )
-        acq_declaration_dict = (
-            self._generate_acq_declaration_dict(
-                acquisitions=self.acquisitions, repetitions=repetitions
+            acq_declaration_dict = (
+                self._generate_acq_declaration_dict(
+                    acquisitions=self.acquisitions, repetitions=repetitions
+                )
+                if len(self.acquisitions) > 0
+                else {}
             )
-            if len(self.acquisitions) > 0
-            else None
-        )
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
@@ -920,19 +1001,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     devices and serves to avoid repeated code between them.
     """
 
-    output_to_sequencer_idx = {"complex_output_0": 0, "complex_output_1": 1}
-    """
-    Dictionary that maps output names to specific sequencer indices. This
-    implementation is temporary and will change when multiplexing is supported by
-    the hardware.
-    """
-    sequencer_to_output_idx = {"seq0": 0, "seq1": 1}
-    """
-    Dictionary that maps sequencer names to specific (complex) output indices. This
-    implementation is temporary and will change when multiplexing is supported by
-    the hardware.
-    """
-
     def __init__(
         self,
         parent,  # No type hint due to circular import, added to docstring
@@ -960,7 +1028,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             of the inner dictionaries of the overall hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping)
-        verify_qblox_instruments_version()
+        helpers.verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
@@ -1001,13 +1069,15 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             A dictionary with as key a portclock tuple and as value the name of a
             sequencer.
         """
-        valid_io = (f"complex_output_{i}" for i in [0, 1])
-        valid_seq_names = (
+        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
+            f"real_output_{i}" for i in range(4)
+        ]
+        valid_seq_names = [
             f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
-        )
+        ]
 
         mapping = {}
-        for io in valid_io:
+        for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
 
@@ -1042,10 +1112,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ValueError
             Attempting to use more sequencers than available.
         """
+        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
+            f"real_output_{i}" for i in range(4)
+        ]
         sequencers = {}
-        for io_cfg in self.hw_mapping.values():
+        for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
+            if io not in valid_ios:
+                raise ValueError(
+                    f"Invalid hardware config. '{io}' of {self.name} is not a "
+                    f"valid name of an input/output.\n\nSupported names:\n{valid_ios}."
+                )
 
             lo_name = io_cfg.get("lo_name", None)
 
@@ -1065,12 +1143,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         f"{seq_name}. Is it defined multiple times in "
                         f"the hardware configuration?"
                     )
+                connected_outputs = helpers.output_name_to_outputs(io)
 
                 sequencers[seq_name] = Sequencer(
                     self,
                     seq_name,
                     portclock,
                     self.static_hw_properties,
+                    connected_outputs,
                     seq_cfg,
                     lo_name,
                 )
@@ -1297,6 +1377,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
+                if not sequencer.acquisitions:
+                    continue
                 acq_metadata = _extract_acquisition_metadata_from_acquisitions(
                     sequencer.acquisitions
                 )
@@ -1457,33 +1539,49 @@ class QbloxRFModule(QbloxBaseModule):
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        output_index = self.sequencer_to_output_idx[sequencer.name]
-
-        if_freq = sequencer.frequency
-        lo_freq = (
-            self._settings.lo0_freq if (output_index == 0) else self._settings.lo1_freq
-        )
-
-        if lo_freq is None and if_freq is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} "
-                f"with port {sequencer.port} and clock {sequencer.clock}. It is "
-                f'required to either supply an "lo_freq" or an "interm_freq". Neither '
-                f"was given."
+        self._validate_output_mode(sequencer)
+        for real_output in sequencer.connected_outputs:
+            if real_output % 2 != 0:
+                # We will only use real output 0 and 2,
+                # since 1 and 3 are part of the same
+                # complex outputs.
+                continue
+            complex_output = 0 if real_output == 0 else 1
+            if_freq = sequencer.frequency
+            lo_freq = (
+                self._settings.lo0_freq
+                if (complex_output == 0)
+                else self._settings.lo1_freq
             )
 
-        if if_freq is not None:
-            new_lo_freq = clk_freq - if_freq
-            if lo_freq is not None and new_lo_freq != lo_freq:
+            if lo_freq is None and if_freq is None:
                 raise ValueError(
-                    f"Attempting to set 'lo{output_index}_freq' to frequency "
-                    f"{new_lo_freq}, while it has previously already been set to "
-                    f"{lo_freq}!"
+                    f"Frequency settings underconstraint for sequencer {sequencer.name}"
+                    f" with port {sequencer.port} and clock {sequencer.clock}. It is "
+                    f'required to either supply an "lo_freq" or an "interm_freq". '
+                    f"Neither was given."
                 )
-            if output_index == 0:
-                self._settings.lo0_freq = new_lo_freq
-            elif output_index == 1:
-                self._settings.lo1_freq = new_lo_freq
 
-        if lo_freq is not None:
-            sequencer.frequency = clk_freq - lo_freq
+            if if_freq is not None:
+                new_lo_freq = clk_freq - if_freq
+                if lo_freq is not None and new_lo_freq != lo_freq:
+                    raise ValueError(
+                        f"Attempting to set 'lo{complex_output}_freq' to frequency "
+                        f"{new_lo_freq}, while it has previously already been set to "
+                        f"{lo_freq}!"
+                    )
+                if complex_output == 0:
+                    self._settings.lo0_freq = new_lo_freq
+                elif complex_output == 1:
+                    self._settings.lo1_freq = new_lo_freq
+
+            if lo_freq is not None:
+                sequencer.frequency = clk_freq - lo_freq
+
+    @classmethod
+    def _validate_output_mode(cls, sequencer: Sequencer):
+        if sequencer.output_mode != "complex":
+            raise ValueError(
+                f"Attempting to use {cls.__name__} in real "
+                f"mode, but this is not supported for Qblox RF modules."
+            )

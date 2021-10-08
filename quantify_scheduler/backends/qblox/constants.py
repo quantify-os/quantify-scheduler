@@ -21,9 +21,9 @@ SAMPLING_RATE = 1_000_000_000  # 1GS/s
 """Sampling rate of the Qblox control/readout instruments."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
-NUMBER_OF_SEQUENCERS_QCM = 2
+NUMBER_OF_SEQUENCERS_QCM = 6
 """Number of sequencers supported by a QCM in the latest firmware."""
-NUMBER_OF_SEQUENCERS_QRM = 1
+NUMBER_OF_SEQUENCERS_QRM = 6
 """Number of sequencers supported by a QRM in the latest firmware."""
 MIN_MIXER_PHASE_ERROR_DEG = -45
 """Lowest phase shift that can be configured in the instruments for mixer corrections.
