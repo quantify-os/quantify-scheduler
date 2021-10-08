@@ -14,8 +14,8 @@ import re
 import inspect
 import json
 import tempfile
-import pytest
 import shutil
+import pytest
 import numpy as np
 
 from qcodes.instrument.base import Instrument
