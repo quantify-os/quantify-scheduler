@@ -33,6 +33,7 @@ Merged branches and closed issues
 * Qblox Backend - Waveforms are now compared using the normalized data array rather than the parameterized description (!182).
 * Qblox Backend - Support for append bin mode (#184, !180).
 * Qblox Backend - Support for using real value pulses on arbitrary outputs added (!142).
+* Qblox Backend - Compilation now supports 6 sequencers for both the QCM as well as the QRM (!142).
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
