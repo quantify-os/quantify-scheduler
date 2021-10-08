@@ -14,6 +14,7 @@ import re
 import inspect
 import json
 import tempfile
+import shutil
 import pytest
 import numpy as np
 
@@ -91,6 +92,8 @@ try:
     PULSAR_ASSEMBLER = True
 except ImportError:
     PULSAR_ASSEMBLER = False
+
+REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
 # --------- Test fixtures ---------
 
@@ -685,7 +688,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     with open(qcm0_seq0_json) as file:
         wf_and_prog = json.load(file)
     program_from_json = wf_and_prog["program"]
-    move_line = program_from_json.split("\n")[3]
+    move_line = program_from_json.split("\n")[5]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
     iterations = int(args.split(",")[0])
@@ -1256,14 +1259,11 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
         f"{ssro_sched.name}_qrm0_seq0_instr.json",
     )
 
-    # To regenerate the baseline image for this test uncomment these lines.
-    #
-    # import shutil
-    #
-    # shutil.copy(
-    #     compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
-    #     baseline_assembly,
-    # )
+    if REGENERATE_REF_FILES:
+        shutil.copy(
+            compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+            baseline_assembly,
+        )
 
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
@@ -1303,14 +1303,11 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
         f"{sched.name}_qrm0_seq0_instr.json",
     )
 
-    # To regenerate the baseline assembly for this test uncomment these lines.
-
-    # import shutil
-    #
-    # shutil.copy(
-    #     compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
-    #     baseline_assembly,
-    # )
+    if REGENERATE_REF_FILES:
+        shutil.copy(
+            compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
+            baseline_assembly,
+        )
 
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
