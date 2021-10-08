@@ -285,7 +285,7 @@ set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 nitpicky = True
 nitpick_ignore = []
 
-with open("nitpick-exceptions.txt") as nitpick_exceptions:
+with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
     for line in nitpick_exceptions:
         if line.strip() == "" or line.startswith("#"):
             continue

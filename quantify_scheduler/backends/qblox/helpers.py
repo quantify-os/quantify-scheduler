@@ -17,7 +17,7 @@ try:
 except ImportError:
     driver_version = None
 
-SUPPORTED_DRIVER_VERSIONS = ("0.4.0",)
+SUPPORTED_DRIVER_VERSIONS = ("0.5.0", "0.5.1")
 
 
 class DriverVersionError(Exception):
@@ -195,9 +195,16 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
     return str(waveform_hash)
 
 
-def output_name_to_outputs(name: str) -> Tuple[int, ...]:
+def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     """
-    Finds the physical outputs associated with the outputs specified in the config.
+    Finds the output path index associated with the output names specified in the
+    config.
+
+    For the baseband modules, these indices correspond directly to a physical output (
+    e.g. index 0 corresponds to output 1 etc.).
+
+    For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
+    respectively, and 1 and 3 to path1 of those outputs.
 
     Parameters
     ----------
@@ -220,18 +227,21 @@ def output_name_to_outputs(name: str) -> Tuple[int, ...]:
 
 
 def output_mode_from_outputs(
-    outputs: Tuple[int, ...]
+    outputs: Union[Tuple[int], Tuple[int, int]]
 ) -> Literal["complex", "real", "imag"]:
     """
-    Takes ths specified outputs to use and extracts a "sequencer mode" from it.
+    Takes the specified outputs to use and extracts a "sequencer mode" from it.
 
-    "real" means path0 will be used, whereas "imag" implies the use of only path1.
-    "complex" uses both paths, with the real and imaginary components referring to the
-    different paths.
+    Modes:
+
+    - ``"real"``: only path0 is used
+    - ``"imag"``: only path1 is used
+    - ``"complex"``: both paths are used, with the real and imaginary components
+    referring to the different paths.
 
     Parameters
     ----------
-    outputs:
+    outputs
         The outputs the sequencer is supposed to use. Note that the outputs start from
         0, but the labels on the front panel start counting from 1. So the mapping
         differs n-1.
@@ -239,7 +249,7 @@ def output_mode_from_outputs(
     Returns
     -------
     :
-        The mode.
+        The mode
 
     Raises
     ------
@@ -286,21 +296,20 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
 
-    Examples
-    --------
+    .. admonition:: Examples
 
-    .. jupyter-execute::
+        .. jupyter-execute::
 
-        import numpy as np
-        from quantify_scheduler.backends.qblox.helpers import generate_waveform_dict
+            import numpy as np
+            from quantify_scheduler.backends.qblox.helpers import generate_waveform_dict
 
-        complex_waveforms = {12345: np.array([1, 2])}
-        generate_waveform_dict(complex_waveforms)
+            complex_waveforms = {12345: np.array([1, 2])}
+            generate_waveform_dict(complex_waveforms)
 
-        # {'12345_I': {'data': [1, 2], 'index': 0},
-        # '12345_Q': {'data': [0, 0], 'index': 1}}
+            # {'12345_I': {'data': [1, 2], 'index': 0},
+            # '12345_Q': {'data': [0, 0], 'index': 1}}
     """
-    wf_dict = dict()
+    wf_dict = {}
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
         name_i, name_q = generate_waveform_names_from_uuid(uuid)
         to_add = {
