@@ -363,6 +363,11 @@ def test_set_and_compile_awg_seqc_successfully(mocker):
 
 
 def test_set_and_compile_awg_seqc_skip_compilation(mocker):
+    """
+    FIXME: We remove this test as we are always triggering a recompilation.
+    Once we have found a solution to compare the waveforms, please re-enable
+    and add more tests.
+
     # Arrange
     awg_module = mocker.Mock()
     awg_module.get_int.side_effect = [0, 1, 1]
@@ -385,6 +390,7 @@ def test_set_and_compile_awg_seqc_skip_compilation(mocker):
 
     # Assert
     set_awg_value.assert_not_called()
+    """
 
 
 def test_set_and_compile_awg_seqc_upload_failed(mocker):

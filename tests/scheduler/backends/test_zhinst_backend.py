@@ -151,9 +151,9 @@ def create_uhfqa_mock(mocker):
         def create_uhfqa_awg(i: int) -> uhfqa.AWG:
             _sequence_params = {
                 "sequence_parameters": {
-                    "clock_rate": 1.8e9,  # GSa/s
+                    "clock_rate": 1.8e9,
                 }
-            }
+            }  # GSa/s
 
             def get_string(value: str):
                 if value == "directory":
@@ -223,9 +223,9 @@ def create_hdawg_mock(mocker):
             # Section: 4.14.3 Constansts and Variables (page 181)
             _sequence_params = {
                 "sequence_parameters": {
-                    "clock_rate": 2.4e9,  # GSa/s
+                    "clock_rate": 2.4e9,
                 }
-            }
+            }  # GSa/s
 
             def get_string(value: str):
                 if value == "directory":
@@ -806,6 +806,7 @@ def test_uhfqa_sequence1(
       playWave(w0);	// clock=4 n_instr=0
       wait(25);	// 	// clock=4 n_instr=25
       setTrigger(integration_trigger);	// clock=29 n_instr=1
+      wait(2000);	// 	// clock=30 n_instr=2000
     }
     setTrigger(0);	// Reset triggers n_instr=1
     """
@@ -868,6 +869,7 @@ def test_uhfqa_sequence2(
       waitDigTrigger(2, 1);	// clock=0
       playWave(w0);	// clock=0 n_instr=0
       setTrigger(integration_trigger);	// clock=0 n_instr=1
+      wait(2000);	// 	// clock=1 n_instr=2000
     }
     setTrigger(0);	// Reset triggers n_instr=1
     """
@@ -1029,14 +1031,10 @@ def test_compile_backend_with_undefined_local_oscillator(
     zhinst_hardware_map = json.loads(hardware_map_str)
 
     # Act
-    with pytest.raises(KeyError) as execinfo:
+    with pytest.raises(
+        KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
+    ):
         zhinst_backend.compile_backend(schedule, zhinst_hardware_map)
-
-    # Assert
-    assert (
-        execinfo.value.args[0]
-        == "Missing configuration for LocalOscillator 'lo_unknown'!"
-    )
 
 
 def test_compile_backend_with_duplicate_local_oscillator(

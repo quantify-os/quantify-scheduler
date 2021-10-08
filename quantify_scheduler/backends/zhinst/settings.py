@@ -173,6 +173,13 @@ class ZISettings:
                 waveform_data = np.reshape(
                     setting.value, (len(setting.value) // columns, -1)
                 )
+                ############################################################
+                # FIXME WARNING: For saving waveform in csv format, the data
+                # MUST be in floating point type, and NOT int16 (as is required)
+                # when using the Zhinst-toolkit.helpers.Waveform class.
+                # Hotfix applied to rescale.
+                ############################################################
+                waveform_data = waveform_data / (2 ** 15 - 1)
                 np.savetxt(file_path, waveform_data, delimiter=";")
 
                 setting.value = str(file_path)
@@ -941,7 +948,7 @@ class ZISettingsBuilder:
         )
 
     def with_compiler_sourcestring(
-        self, awg_index: int, seqc: str
+        self, awg_index: int, seqc: str, waveforms_dict: dict = None
     ) -> ZISettingsBuilder:
         """
         Adds the sequencer compiler sourcestring
@@ -951,6 +958,7 @@ class ZISettingsBuilder:
         ----------
         awg_index :
         seqc :
+        waveforms_dict :
 
         Returns
         -------
@@ -961,7 +969,11 @@ class ZISettingsBuilder:
             ZISetting(
                 "compiler/sourcestring",
                 seqc,
-                partial(zi_helpers.set_and_compile_awg_seqc, awg_index=awg_index),
+                partial(
+                    zi_helpers.set_and_compile_awg_seqc,
+                    awg_index=awg_index,
+                    waveforms_dict=waveforms_dict,
+                ),
             ),
         )
 

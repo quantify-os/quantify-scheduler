@@ -14,9 +14,12 @@ from quantify_scheduler.pulse_library import (
     RampPulse,
     SoftSquarePulse,
     SquarePulse,
+    create_dc_compensation_pulse,
     NumericalPulse,
     decompose_long_square_pulse,
 )
+
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
 
 def test_operation_duration_single_pulse():
@@ -250,3 +253,61 @@ def test__repr__modify_not_equal(operation: Operation):
 
     # Assert
     assert obj != operation
+
+
+def test_dccompensation_pulse_amp() -> None:
+    pulse0 = SquarePulse(
+        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
+    )
+    pulse1 = RampPulse(
+        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
+    )
+
+    pulse2 = create_dc_compensation_pulse(
+        duration=1e-8,
+        pulses=[pulse0, pulse1],
+        sampling_rate=int(1e9),
+        port="LP",
+    )
+    TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.5)
+
+
+def test_dccompensation_pulse_modulated() -> None:
+    clock = ClockResource("clock", 1.0)
+    pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock)
+    with pytest.raises(ValueError):
+        create_dc_compensation_pulse(
+            amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
+        )
+
+
+def test_dccompensation_pulse_duration() -> None:
+    pulse0 = SquarePulse(
+        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
+    )
+    pulse1 = RampPulse(
+        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
+    )
+
+    pulse2 = create_dc_compensation_pulse(
+        amp=1,
+        pulses=[pulse0, pulse1],
+        sampling_rate=int(1e9),
+        port="LP",
+    )
+    TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["duration"], 1.5e-8)
+    TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.0)
+
+
+def test_dccompensation_pulse_both_params() -> None:
+    with pytest.raises(ValueError):
+        pulse0 = SquarePulse(
+            amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
+        )
+        create_dc_compensation_pulse(
+            amp=1,
+            duration=1e-8,
+            pulses=[pulse0],
+            sampling_rate=int(1e9),
+            port="LP",
+        )

@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+# pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
 from typing import Any, Dict, List, Optional, Union
 
@@ -15,9 +16,10 @@ class Trace(Operation):
         self,
         duration: float,
         port: str,
+        clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -35,6 +37,8 @@ class Trace(Operation):
         ----------
         port :
             The acquisition port.
+        clock :
+            The clock used to demodulate the acquisition.
         duration :
             The acquisition duration in seconds.
         acq_channel :
@@ -73,10 +77,12 @@ class Trace(Operation):
                         "duration": duration,
                         "t0": t0,
                         "port": port,
+                        "clock": clock,
                         "acq_channel": acq_channel,
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "trace",
+                        "acq_return_type": np.ndarray,
                     }
                 ],
             }
@@ -185,9 +191,15 @@ class WeightedIntegratedComplex(Operation):
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "protocol": "weighted_integrated_complex",
+                        "acq_return_type": complex,
                     }
                 ],
             }
+        # certain fields are required in the acquisition data
+        if not "acq_return_type" in data["acquisition_info"][0]:
+            data["acquisition_info"][0]["acq_return_type"] = complex
+            data["acquisition_info"][0]["protocol"] = "weighted_integrated_complex"
+
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
@@ -195,7 +207,7 @@ class WeightedIntegratedComplex(Operation):
         return self._get_signature(acq_info)
 
 
-class SSBIntegrationComplex(WeightedIntegratedComplex):
+class SSBIntegrationComplex(Operation):
     def __init__(
         self,
         port: str,
@@ -203,7 +215,7 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
@@ -267,20 +279,39 @@ class SSBIntegrationComplex(WeightedIntegratedComplex):
             "amp": (0 + 1j),
         }
 
-        super().__init__(
-            waveform_i,
-            waveform_q,
-            port,
-            clock,
-            duration,
-            acq_channel,
-            acq_index,
-            bin_mode,
-            phase,
-            t0,
-            data,
-        )
-        self.data["name"] = "SSBIntegrationComplex"
+        if phase != 0:
+            # Because of how clock interfaces were changed.
+            raise NotImplementedError("Non-zero phase not yet implemented")
+
+        if data is None:
+            data = {
+                "name": "SSBIntegrationComplex",
+                "acquisition_info": [
+                    {
+                        "waveforms": [waveform_i, waveform_q],
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                        "duration": duration,
+                        "phase": phase,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "acq_return_type": complex,
+                        "protocol": "ssb_integration_complex",
+                    }
+                ],
+            }
+        # certain fields are required in the acquisition data
+        if not "acq_return_type" in data["acquisition_info"][0]:
+            data["acquisition_info"][0]["acq_return_type"] = complex
+            data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
+
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
 
 
 class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):

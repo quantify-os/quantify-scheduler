@@ -6,29 +6,34 @@ from __future__ import annotations
 import inspect
 import json
 import ast
+from abc import ABC
 from collections import UserDict
+from dataclasses import dataclass
 from copy import deepcopy
+from pydoc import locate
 from enum import Enum
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, List, Type, TYPE_CHECKING
 from uuid import uuid4
 
-import jsonschema
 import numpy as np
 from typing_extensions import Literal
 from quantify_core.utilities import general
 from quantify_scheduler import json_utils
+from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler import resources
 from quantify_scheduler import enums
+
 
 if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
 
 
-class Operation(UserDict):  # pylint: disable=too-many-ancestors
+class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
     """
     A JSON compatible data structure that contains information on
-    how to represent the operation on the Gate, Pulse and/or Logical level.
-    It also contains information on the
+    how to represent the operation on the quantum-circuit and/or the quantum-device
+    layer.
+    It also contains information on where the operation should be applied: the
     :class:`~quantify_scheduler.resources.Resource` s used.
 
     An operation always has the following attributes:
@@ -37,10 +42,21 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
     - hash (str): an auto generated unique identifier.
     - name (str): a readable identifier, does not have to be unique.
 
+
+
     An Operation can contain information  on several levels of abstraction.
-    This information is used when different representations. Note that when
+    This information is used when different representations are required. Note that when
     initializing an operation  not all of this information needs to be available
     as operations are typically modified during the compilation steps.
+
+    .. tip::
+
+        :mod:`quantify_scheduler` comes with a :mod:`~quantify_scheduler.gate_library`
+        and a :mod:`~quantify_scheduler.pulse_library` , both containing
+        common operations.
+
+
+    **JSON schema of a valid Operation**
 
     .. jsonschema:: schemas/operation.json
 
@@ -50,6 +66,8 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         Two different Operations containing the same information generate the
         same hash and are considered identical.
     """
+
+    schema_filename = "operation.json"
 
     def __init__(self, name: str, data: dict = None) -> None:
         super().__init__()
@@ -248,6 +266,10 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             ):
                 acq_info["bin_mode"] = acq_info["bin_mode"].value
 
+            # types lead to problems when serialized without casting to string first
+            if "<class " in str(acq_info["acq_return_type"]):
+                acq_info["acq_return_type"] = str(acq_info["acq_return_type"])
+
             for waveform in acq_info["waveforms"]:
                 if "t_samples" in waveform:
                     waveform["t_samples"] = np.array2string(
@@ -273,6 +295,15 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
             if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
                 acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
 
+            # FIXME # pylint: disable=fixme
+            # this workaround is required because we cannot easily specify types and
+            # serialize easy. We should change the implementation to dataclasses #159
+            if "<class " in str(acq_info["acq_return_type"]):
+                # first remove the class prefix
+                return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
+                # and then use locate to retrieve the type class
+                acq_info["acq_return_type"] = locate(return_type_str)
+
             for waveform in acq_info["waveforms"]:
                 if "t_samples" in waveform and isinstance(waveform["t_samples"], str):
                     waveform["t_samples"] = np.array(
@@ -284,12 +315,18 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
                     )
 
     @classmethod
-    def is_valid(cls, operation) -> bool:
-        """Checks if the operation is valid according to its schema."""
-        scheme = general.load_json_schema(__file__, "operation.json")
-        jsonschema.validate(operation.data, scheme)
-        _ = operation.hash  # test that the hash property evaluates
-        return True  # if not exception was raised during validation
+    def is_valid(cls, object_to_be_validated) -> bool:
+        """
+        Checks if the contents of the object_to_be_validated are valid
+        according to the schema.
+        Additionally checks if the hash property of the object evaluates correctly.
+        """
+        valid_operation = super().is_valid(object_to_be_validated)
+        if valid_operation:
+            _ = object_to_be_validated.hash  # test that the hash property evaluates
+            return True
+
+        return False
 
     @property
     def valid_gate(self) -> bool:
@@ -322,19 +359,178 @@ class Operation(UserDict):  # pylint: disable=too-many-ancestors
         return False
 
 
-class Schedule(UserDict):  # pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors
+class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     """
-    A collection of :class:`~Operation` objects and timing constraints
-    that define relations between the operations.
+    The :class:`~quantify_scheduler.types.ScheduleBase` is a data structure that is at
+    the core of the Quantify-scheduler and describes when what operations are applied
+    where.
 
-    The Schedule data structure is based on a dictionary.
+    The :class:`~quantify_scheduler.types.ScheduleBase` is a collection of
+    :class:`~Operation` objects and timing constraints that define relations between
+    the operations.
+
+    The schedule data structure is based on a dictionary.
     This dictionary contains:
 
-    - operation_dict - a hash table containing the unique :class:`~Operation` s added to the schedule.
+    - operation_dict - a hash table containing the unique :class:`~Operation` s added
+        to the schedule.
     - timing_constraints - a list of all timing constraints added between operations.
 
+    The :class:`~quantify_scheduler.types.Schedule` provides an API to create schedules.
+    The :class:`~quantify_scheduler.types.CompiledSchedule` represents a schedule after
+    it has been compiled for execution on a backend.
+
+
+    The :class:`~quantify_scheduler.types.Schedule` contains information on the
+    :attr:`~quantify_scheduler.types.ScheduleBase.operations` and
+    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
+    The :attr:`~quantify_scheduler.types.ScheduleBase.operations` is a dictionary of all
+    unique operations used in the schedule and contain the information on *what*
+    operation to apply *where*.
+    The :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints` is a list of
+    dictionaries describing timing constraints between operations, i.e. when to apply
+    an operation.
+
+
+    **JSON schema of a valid Schedule**
+
     .. jsonschema:: schemas/schedule.json
+
+    """
+
+    @property
+    def name(self) -> str:
+        """Returns the name of the schedule."""
+        return self.data["name"]
+
+    @property
+    def repetitions(self) -> int:
+        """
+        Returns the amount of times this Schedule will be repeated.
+
+        Returns
+        -------
+        :
+            The repetitions count.
+        """
+        return self.data["repetitions"]
+
+    @repetitions.setter
+    def repetitions(self, value: int):
+        assert value > 0
+        self.data["repetitions"] = int(value)
+
+    @property
+    def operations(self) -> Dict[str, Operation]:
+        """
+        A dictionary of all unique operations used in the schedule.
+        This specifies information on *what* operation to apply *where*.
+
+        The keys correspond to the :attr:`~Operation.hash` and values are instances
+        of :class:`~Operation`.
+        """
+        return self.data["operation_dict"]
+
+    @property
+    def timing_constraints(self) -> List[Dict[str, Any]]:
+        """
+        A list of dictionaries describing timing constraints between operations.
+
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference operation and the added operation.
+        The time can be specified with respect to a reference point (:code:`"ref_pt"')
+        on the reference operation (:code:`"ref_op"`) and a reference point on the next
+        added operation (:code:`"ref_pt_new"').
+        A reference point can be either the "start", "center", or "end" of an
+        operation. The reference operation (:code:`"ref_op"`) is specified using its
+        label property.
+
+        Each item in the list represents a timing constraint and is a dictionary with
+        the following keys:
+
+        .. code-block::
+
+            ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_repr']
+
+        The label is used as a unique identifier that can be used as a reference for
+        other operations, the operation_repr refers to the string representation of a
+        operation in :attr:`~.ScheduleBase.operations`.
+
+        .. note::
+
+            timing constraints are not intended to be modified directly.
+            Instead use the :meth:`~quantify_scheduler.types.Schedule.add`
+
+        """
+        return self.data["timing_constraints"]
+
+    @property
+    def resources(self) -> Dict[str, Resource]:
+        """
+        A dictionary containing resources. Keys are names (str),
+        values are instances of :class:`~quantify_scheduler.resources.Resource`.
+        """
+        return self.data["resource_dict"]
+
+    def __repr__(self) -> str:
+        return '{} "{}" containing ({}) {}  (unique) operations.'.format(
+            self.__class__.__name__,
+            self.data["name"],
+            len(self.data["operation_dict"]),
+            len(self.data["timing_constraints"]),
+        )
+
+    def to_json(self) -> str:
+        """
+        Converts the Schedule data structure to a JSON string.
+
+        Returns
+        -------
+        :
+            The json string result.
+        """
+        return json.dumps(self.data, cls=json_utils.ScheduleJSONEncoder)
+
+    @classmethod
+    def from_json(cls, data: str) -> Schedule:
+        """
+        Converts the JSON data to a Schedule.
+
+        Parameters
+        ----------
+        data :
+            The JSON data.
+
+        Returns
+        -------
+        :
+            The Schedule object.
+        """
+        schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
+        name = schedule_data["name"]
+
+        return Schedule(name, data=schedule_data)
+
+
+class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
+    """
+    A modifiable schedule.
+
+    Operations :class:`~quantify_scheduler.types.Operation` can be added using the
+    :meth:`~quantify_scheduler.types.Schedule.add` method, allowing precise
+    specification *when* to perform an operation using timing constraints.
+
+    When adding an operation, it is not required to specify how to represent this
+    :class:`~quantify_scheduler.types.Operation` on all layers.
+    Instead, this information can be added later during
+    :ref:`compilation <sec-compilation>`.
+    This allows the user to effortlessly mix the gate- and pulse-level descriptions as
+    required for many (calibration) experiments.
+
     """  # pylint: disable=line-too-long
+
+    schema_filename = "schedule.json"
 
     def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
         """
@@ -376,95 +572,6 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         if data is not None:
             self.data.update(data)
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the schedule."""
-        return self.data["name"]
-
-    @property
-    def repetitions(self) -> int:
-        """
-        Returns the amount of times this Schedule will be repeated.
-
-        Returns
-        -------
-        :
-            The repetitions count.
-        """
-        return self.data["repetitions"]
-
-    @repetitions.setter
-    def repetitions(self, value: int):
-        assert value > 0
-        self.data["repetitions"] = int(value)
-
-    @property
-    def operations(self) -> Dict[str, Operation]:
-        """
-        A dictionary of all unique operations used in the schedule.
-        This specifies information on *what* operation to apply *where*.
-
-        The keys correspond to the :attr:`~Operation.hash` and values are instances
-        of :class:`~Operation`.
-        """
-        return self.data["operation_dict"]
-
-    @property
-    def timing_constraints(self) -> List[Dict[str, Any]]:
-        """
-        A list of dictionaries describing timing constraints between operations.
-
-        Each item in the list is a dictionary with the following keys:
-
-        .. code-block::
-
-            ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_repr']
-
-        The label is used as a unique identifier that can be used as a reference for
-        other operations, the operation_repr refers to the string representation of a
-        operation in :attr:`~Schedule.operations`.
-        """
-        return self.data["timing_constraints"]
-
-    @property
-    def resources(self) -> Dict[str, Resource]:
-        """
-        A dictionary containing resources. Keys are names (str),
-        values are instances of :class:`~quantify_scheduler.resources.Resource`.
-        """
-        return self.data["resource_dict"]
-
-    def to_json(self) -> str:
-        """
-        Converts the Schedule data structure to a JSON string.
-
-        Returns
-        -------
-        :
-            The json string result.
-        """
-        return json.dumps(self.data, cls=json_utils.ScheduleJSONEncoder)
-
-    @classmethod
-    def from_json(cls, data: str) -> Schedule:
-        """
-        Converts the JSON data to a Schedule.
-
-        Parameters
-        ----------
-        data :
-            The JSON data.
-
-        Returns
-        -------
-        :
-            The Schedule object.
-        """
-        schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
-        name = schedule_data["name"]
-
-        return Schedule(name, data=schedule_data)
-
     def add_resources(self, resources_list: list) -> None:
         """Add wrapper for adding multiple resources"""
         for resource in resources_list:
@@ -479,22 +586,6 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
             raise ValueError("Key {} is already present".format(resource.name))
 
         self.data["resource_dict"][resource.name] = resource
-
-    def __repr__(self) -> str:
-        return 'Schedule "{}" containing ({}) {}  (unique) operations.'.format(
-            self.data["name"],
-            len(self.data["operation_dict"]),
-            len(self.data["timing_constraints"]),
-        )
-
-    @classmethod
-    def is_valid(cls, schedule) -> bool:
-        """
-        Checks the schedule validity according to its schema.
-        """
-        scheme = general.load_json_schema(__file__, "schedule.json")
-        jsonschema.validate(schedule.data, scheme)
-        return True  # if not exception was raised during validation
 
     # pylint: disable=too-many-arguments
     def add(
@@ -515,6 +606,7 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         the operations.
         The reference operation (:code:`"ref_op"`) is specified using its label
         property.
+        See also :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
 
         Parameters
         ----------
@@ -591,3 +683,87 @@ class Schedule(UserDict):  # pylint: disable=too-many-ancestors
         self.data["timing_constraints"].append(timing_constr)
 
         return label
+
+
+# pylint: disable=too-many-ancestors
+class CompiledSchedule(ScheduleBase):
+    """
+    A schedule that contains compiled instructions ready for execution using
+    the :class:`~.instrument_coordinator.InstrumentCoordinator`.
+
+    The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
+    that it is considered immutable (no new operations or resources can be added), and
+    that it contains :attr:`~.compiled_instructions`.
+
+    .. tip::
+
+        A :class:`~.CompiledSchedule` can be obtained by compiling a
+        :class:`~.Schedule` using :func:`~quantify_scheduler.compilation.qcompile`.
+
+    """
+
+    schema_filename = "schedule.json"
+
+    def __init__(self, schedule: Schedule) -> None:
+
+        # validate the input data to ensure it is valid schedule data
+        super().__init__()
+
+        # ensure keys exist
+        self.data["compiled_instructions"] = {}
+
+        # deepcopy is used to prevent side effects when the
+        # original (mutable) schedule is modified
+        self.data.update(deepcopy(schedule.data))
+
+    @property
+    def compiled_instructions(self) -> Dict[str, Resource]:
+        """
+        A dictionary containing compiled instructions.
+
+        The contents of this dictionary depend on the backend it was compiled for.
+        However, we assume that the general format consists of a dictionary in which
+        the keys are instrument names corresponding to components added to a
+        :class:`~.instrument_coordinator.InstrumentCoordinator`, and the
+        values are the instructions for that component.
+
+        These values typically contain a combination of sequence files, waveform
+        defintions, and parameters to configure on the instrument.
+        """
+        return self.data["compiled_instructions"]
+
+    @classmethod
+    def is_valid(cls, object_to_be_validated) -> bool:
+        """
+        Checks if the contents of the object_to_be_validated are valid
+        according to the schema. Additionally checks if the object_to_be_validated is
+        an instance of :class:`~.CompiledSchedule`
+        """
+        valid_schedule = super().is_valid(object_to_be_validated)
+        if valid_schedule:
+            return isinstance(object_to_be_validated, CompiledSchedule)
+
+        return False
+
+
+@dataclass
+class AcquisitionMetadata:
+    """
+    Class to provide a description of the shape and type of data that a schedule will
+    return when executed.
+
+    .. note::
+
+        The acquisition protocol, bin-mode and return types are assumed to be the same
+        for all acquisitions in a schedule.
+    """
+
+    acq_protocol: str
+    """The acquisition protocol that is used for all acquisitions in the schedule."""
+    bin_mode: enums.BinMode
+    """How the data is stored in the bins indexed by acq_channel and acq_index."""
+    acq_return_type: Type
+    """The datatype returned by the individual acquisitions."""
+    acq_indices: Dict[int, List[int]]
+    """A dictionary containing the acquisition channel as key and a list of acquisition
+    indices that are used for every channel."""

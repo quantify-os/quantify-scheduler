@@ -37,6 +37,9 @@ class Output(DataClassJsonMixin):
         The port resource.
     clock :
         The Clock resource.
+    clock_frequency:
+        The frequency for the clock resource
+        (AKA RF/signal frequency).
     mode :
         The output mode type.
     modulation :
@@ -64,6 +67,7 @@ class Output(DataClassJsonMixin):
     mode: enums.SignalModeType
     modulation: common.Modulation
     local_oscillator: str
+    clock_frequency: Optional[float] = None
     gain1: int = 0
     gain2: int = 0
     line_trigger_delay: float = -1
@@ -120,6 +124,10 @@ class Device(DataClassJsonMixin):
     n_channels :
         The number of physical channels of this ZI Instrument.
         This field is automatically populated.
+    last_seq_wait_clocks :
+        The number of clocks tics to wait between the last sequence
+        for the QAS to process and not time out. (default = 2000)
+        [Only relevant for UHFQA]
     """
 
     name: str
@@ -132,6 +140,7 @@ class Device(DataClassJsonMixin):
     channel_3: Optional[Output] = None
     clock_select: Optional[int] = 0
     channelgrouping: int = 0
+    last_seq_wait_clocks: int = 2000
     mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     device_type: DeviceType = DeviceType.NONE
     clock_rate: Optional[int] = field(init=False)

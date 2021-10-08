@@ -1,16 +1,14 @@
-# pylint: disable=missing-module-docstring
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=too-many-locals
-
-# -----------------------------------------------------------------------------
-# Description:    Tests schedule helper functions.
-# Repository:     https://gitlab.com/quantify-os/quantify-scheduler
-# Copyright (C) Qblox BV & Orange Quantum Systems Holding BV (2020-2021)
-# -----------------------------------------------------------------------------
+# pylint: disable=invalid-name
 from __future__ import annotations
 
+import numpy as np
 from quantify_scheduler.gate_library import X90, Measure, Reset
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     get_acq_info_by_uuid,
     get_acq_uuid,
@@ -21,6 +19,7 @@ from quantify_scheduler.helpers.schedule import (
     get_pulse_uuid,
     get_schedule_time_offset,
     get_total_duration,
+    extract_acquisition_metadata_from_schedule,
 )
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.schedules import spectroscopy_schedules
@@ -76,10 +75,10 @@ def test_get_info_by_uuid_are_unique(
 def test_get_acq_info_by_uuid(
     create_schedule_with_pulse_info,
     schedule_with_measurement: Schedule,
-    load_example_config,
+    load_example_transmon_config,
 ):
     # Arrange
-    device_config = load_example_config()
+    device_config = load_example_transmon_config()
     device_config["qubits"]["q0"]["params"]["acquisition"] = "SSBIntegrationComplex"
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
@@ -258,10 +257,10 @@ def test_get_port_timeline_with_duplicate_op(
 def test_get_port_timeline_with_acquisition(
     create_schedule_with_pulse_info,
     schedule_with_measurement: Schedule,
-    load_example_config,
+    load_example_transmon_config,
 ):
     # Arrange
-    device_config = load_example_config()
+    device_config = load_example_transmon_config()
     device_config["qubits"]["q0"]["params"]["acquisition"] = "SSBIntegrationComplex"
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
@@ -440,3 +439,17 @@ def test_get_schedule_time_offset(
     assert offset0 == 0.0
     assert offset1 == 0.0
     assert offset2 == init_duration
+
+
+def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedule):
+    comp_t1_sched = compiled_two_qubit_t1_schedule
+    acq_metadata = extract_acquisition_metadata_from_schedule(comp_t1_sched)
+
+    assert acq_metadata.acq_protocol == "ssb_integration_complex"
+    assert acq_metadata.bin_mode == BinMode.AVERAGE
+    assert acq_metadata.acq_return_type == complex
+
+    # keys correspond to acquisition channels
+    assert set(acq_metadata.acq_indices.keys()) == {0, 1}
+    assert acq_metadata.acq_indices[0] == acq_metadata.acq_indices[1]
+    assert acq_metadata.acq_indices[0] == list(np.arange(20))

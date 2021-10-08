@@ -15,7 +15,7 @@ Tutorial 1. Basic experiments
     :jupyter-download:script:`Tutorial 1. Basic experiment`
 
 .. tip::
-    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short) :ref:`User guide` before proceeding.
+    Following this Tutorial requires familiarity with the **core concepts** of Quantify-scheduler, we **highly recommended** to consult the (short)  :ref:`User guide <sec-user-guide>` before proceeding.
 
 
 The benefit of allowing the user to mix the high-level gate description of a circuit with the lower-level pulse description can be understood through an example.
@@ -52,7 +52,8 @@ If everything is done properly, one should observe the following oscillation:
 Bell circuit
 ~~~~~~~~~~~~
 
-We create this experiment using :ref:`gates acting on qubits<Gate-level description>` .
+
+We create this experiment using a :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
 
 
 We start by initializing an empty :class:`~quantify_scheduler.types.Schedule`
@@ -94,13 +95,15 @@ Because this experiment is most conveniently described on the gate level, we use
     import numpy as np
 
     # we use a regular for loop as we have to unroll the changing theta variable here
-    for theta in np.linspace(0, 360, 21):
+    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
         sched.add(Reset(q0, q1))
         sched.add(X90(q0))
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         sched.add(CZ(q0, q1))
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1, acq_index=(0, 1)), label='M {:.2f} deg'.format(theta))
+
+        sched.add(Measure(q0, acq_index=acq_idx), label='M q0 {:.2f} deg'.format(theta))
+        sched.add(Measure(q1, acq_index=acq_idx), label='M q1 {:.2f} deg'.format(theta), ref_pt="start")
 
 
 Visualizing the circuit
@@ -115,7 +118,7 @@ And we can use this to create a default visualization:
     from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
     f, ax = circuit_diagram_matplotlib(sched)
     # all gates are plotted, but it doesn't all fit in a matplotlib figure
-    ax.set_xlim(-.5, 9.5)
+    ax.set_xlim(-.5, 9.5);
 
 
 Datastructure internals
@@ -148,7 +151,7 @@ The timing constraints are stored as a list of pulses.
     sched.data['timing_constraints'][:6]
 
 
-Similar to the schedule, :class:`~quantify_scheduler.Operation` objects are also based on dicts.
+Similar to the schedule, :class:`~quantify_scheduler.types.Operation` objects are also based on dicts.
 
 .. jupyter-execute::
 
@@ -186,7 +189,6 @@ Here we will use a configuration file for a transmon based system that is part o
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-
 .. jupyter-execute::
 
     from quantify_scheduler.visualization.pulse_scheme import pulse_diagram_plotly
@@ -200,18 +202,21 @@ Compilation of pulses onto physical hardware
 .. jupyter-execute::
 
     sched = Schedule('Bell experiment')
-    for theta in np.linspace(0, 360, 21):
+    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
         sched.add(Reset(q0, q1))
         sched.add(X90(q0))
         sched.add(X90(q1), ref_pt='start') # this ensures pulses are aligned
         # sched.add(CZ(q0, q1)) # FIXME Commented out because of not implemented error
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1, acq_index=(0, 1)), label='M {:.2f} deg'.format(theta))
+
+        sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx} {theta:.2f} deg")
+        sched.add(Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx} {theta:.2f} deg", ref_pt="start")
+
 
     add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
     determine_absolute_timing(schedule=sched)
 
-The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware mapping file <sec-hardware-config>`.
+The compilation from the pulse-level description for execution on physical hardware is done using a backend and based on the :ref:`hardware configuration file <sec-hardware-config>`.
 
 Here we will use the :class:`~quantify_scheduler.backends.qblox_backend.hardware_compile` made for the Qblox pulsar series hardware.
 
@@ -292,16 +297,23 @@ between X gates on a pair of qubits.
     from quantify_scheduler.resources import ClockResource
 
     sched = Schedule("Chevron Experiment")
+    acq_idx = 0
+
     for duration in np.linspace(20e-9, 60e-9, 6): # NB multiples of 4 ns need to be used due to limitations of the pulsars
         for amp in np.linspace(0.1, 1.0, 10):
             begin = sched.add(Reset('q0', 'q1'))
-            sched.add(X('q0'), ref_op=begin, ref_pt='start')
+            sched.add(X('q0'), ref_op=begin, ref_pt='end')
             # NB we specify a clock for tutorial purposes,
             # Chevron experiments do not necessarily use modulated square pulses
             square = sched.add(SquarePulse(amp, duration, 'q0:mw', clock="q0.01"))
             sched.add(X90('q0'), ref_op=square)
             sched.add(X90('q1'), ref_op=square)
-            sched.add(Measure('q0', 'q1', acq_index=(0,1)))
+            sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
+            sched.add(Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx}", ref_pt="start")
+
+            acq_idx +=1
+
+
     sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
 
@@ -313,7 +325,7 @@ and reference operators as Gates.
     When adding a Pulse to a schedule, the clock is not automatically added to the resources of the schedule. It may
     be necessary to add this clock manually, as in the final line of the above example
 
-We can also quickly compile using the :func:`!qcompile` function and associate mapping files:
+We can also quickly compile using the :func:`!qcompile` function and associate configuration files:
 
 .. jupyter-execute::
 

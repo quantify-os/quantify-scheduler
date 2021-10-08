@@ -3,7 +3,7 @@
 """Python dataclasses for compilation to Qblox hardware."""
 
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 import numpy as np
@@ -39,8 +39,8 @@ class OpInfo(DataClassJsonMixin):
     needed to play it.
     """
 
-    uuid: str
-    """A unique identifier for this pulse/acquisition."""
+    name: str
+    """Name of the operation that this pulse/acquisition is part of."""
     data: dict
     """The pulse/acquisition info taken from the `data` property of the
     pulse/acquisition in the schedule."""
@@ -49,12 +49,17 @@ class OpInfo(DataClassJsonMixin):
     Note that this is a combination of the start time "t_abs" of the schedule
     operation, and the t0 of the pulse/acquisition which specifies a time relative
     to "t_abs"."""
+    uuid: Optional[str] = None
+    """A unique identifier for this pulse/acquisition."""
     pulse_settings: Optional[QASMRuntimeSettings] = None
     """Settings that are to be set by the sequencer before playing this
     pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
     parameter to change the pulse amplitude, instead of changing the waveform. This
     allows to reuse the same waveform multiple times despite a difference in
     amplitude."""
+    bin_idx_register: Optional[str] = None
+    """The register used to keep track of the bin index, only not None for append mode
+    acquisitions."""
 
     @property
     def duration(self) -> float:
@@ -82,7 +87,7 @@ class OpInfo(DataClassJsonMixin):
 
     def __repr__(self):
         repr_string = 'Acquisition "' if self.is_acquisition else 'Pulse "'
-        repr_string += str(self.uuid)
+        repr_string += f"{str(self.name)} - {str(self.uuid)}"
         repr_string += f'" (t={self.timing} to {self.timing+self.duration})'
         repr_string += f" data={self.data}"
         return repr_string
@@ -128,14 +133,22 @@ class PulsarSettings(DataClassJsonMixin):
     ref: str
     """The reference source. Should either be "internal" or "external", will raise an
     exception in the instrument coordinator component otherwise."""
-    hardware_averages: int = 1
-    """The number of repetitions of the Schedule."""
-    acq_mode: str = "SSBIntegrationComplex"
-    """The acquisition mode the Pulsar operates in. This setting will most likely
-    change in the future."""
+    scope_mode_sequencer: Optional[str] = None
+    """The name of the sequencer that triggers scope mode Acquisitions. Only a single
+    sequencer can perform trace acquisition. This setting gets set as a qcodes parameter
+    on the driver as well as used for internal checks. Having multiple sequencers
+    perform trace acquisition will result in an exception being raised."""
+    offset_ch0_path0: Union[float, None] = None
+    """The DC offset on the path 0 of channel 0."""
+    offset_ch0_path1: Union[float, None] = None
+    """The DC offset on the path 1 of channel 0."""
+    offset_ch1_path0: Union[float, None] = None
+    """The DC offset on path 0 of channel 1."""
+    offset_ch1_path1: Union[float, None] = None
+    """The DC offset on path 1 of channel 1."""
 
-    @staticmethod
-    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarSettings:
+    @classmethod
+    def extract_settings_from_mapping(cls, mapping: Dict[str, Any]) -> PulsarSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
         a `PulsarSettings` object from it.
@@ -145,7 +158,43 @@ class PulsarSettings(DataClassJsonMixin):
         mapping
         """
         ref: str = mapping["ref"]
-        return PulsarSettings(ref=ref)
+        return cls(ref=ref)
+
+
+@dataclass
+class PulsarRFSettings(PulsarSettings):
+    """
+    Global settings for the pulsar to be set in the control stack component. This is
+    kept separate from the settings that can be set on a per sequencer basis, which are
+    specified in `SequencerSettings`.
+    """
+
+    lo0_freq: Union[float, None] = None
+    """The frequency of Output 0 (O0) LO."""
+    lo1_freq: Union[float, None] = None
+    """The frequency of Output 1 (O1) LO."""
+
+    @staticmethod
+    def extract_settings_from_mapping(mapping: Dict[str, Any]) -> PulsarRFSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        a `PulsarSettings` object from it.
+
+        Parameters
+        ----------
+        mapping
+        """
+        ref: str = mapping["ref"]
+        kwargs = {}
+
+        complex_output_0 = mapping.get("complex_output_0")
+        complex_output_1 = mapping.get("complex_output_1")
+        if complex_output_0:
+            kwargs["lo0_freq"] = complex_output_0.get("lo_freq")
+        if complex_output_1:
+            kwargs["lo1_freq"] = complex_output_1.get("lo_freq")
+
+        return PulsarRFSettings(ref=ref, **kwargs)
 
 
 @dataclass
@@ -173,6 +222,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Duration of the acquisition. This is a temporary addition for not yet merged the
     InstrumentCoordinator to function properly. This will be removed in a later
     version!"""
+    integration_length_acq: Optional[int] = None
+    """Integration length for acquisitions. Must be a multiple of 4 ns."""
 
 
 @dataclass
