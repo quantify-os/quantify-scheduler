@@ -5,7 +5,7 @@
 try:
     from qblox_instruments.build import __version__ as driver_version
 except ImportError:
-    driver_version = None
+    driver_version = None  # Prior to v0.3.2 __version__ was not there
 
 SUPPORTED_DRIVER_VERSIONS = ("0.5.0", "0.5.1", "0.5.2")
 
