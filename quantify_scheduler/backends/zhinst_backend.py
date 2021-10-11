@@ -540,6 +540,7 @@ def compile_backend(
     for device in sorted(
         devices, key=lambda x: x.device_type == zhinst.DeviceType.UHFQA
     ):
+
         builder = zi_settings.ZISettingsBuilder()
         acq_config: Optional[ZIAcquisitionConfig] = None
 
@@ -548,6 +549,8 @@ def compile_backend(
         elif device.device_type == zhinst.DeviceType.UHFQA:
             acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
 
+        # add the local oscillator config by iterating over all output channels.
+        # note that not all output channels have an LO associated to them.
         for channel in device.channels:
             _add_lo_config(
                 channel=channel,
@@ -573,12 +576,16 @@ def _add_lo_config(
     Adds configuration for a local oscillator required for a specific output channel to
     the device configs.
     """
+    # N.B. when using baseband pulses no LO will be associated to the channel.
+    # this case is caught in the case where the channel.clock is not specified.
     name = channel.local_oscillator
+
     if name not in local_oscillators:
         raise KeyError(f'Missing configuration for LocalOscillator "{name}"')
 
     local_oscillator = local_oscillators[name]
 
+    # the frequencies from the config file
     lo_freq = local_oscillator.frequency
     interm_freq = channel.modulation.interm_freq
 
@@ -589,9 +596,10 @@ def _add_lo_config(
         if channel_clock_resource is not None:
             rf_freq = channel_clock_resource.get("freq")
         else:
-            raise ValueError(
-                f'Could not determine RF frequency of LocalOscillator "{name}"'
-            )
+            # no clock is specified for this channel.
+            # this can happen for e.g., baseband pulses or when the channel is not used
+            # in the schedule.
+            return
 
     if lo_freq is None and interm_freq is not None:
         local_oscillator.frequency = rf_freq - interm_freq
@@ -730,7 +738,8 @@ def _compile_for_hdawg(
 
     for awg_index, output in enabled_outputs.items():
         if output.port not in cached_schedule.port_timeline_dict:
-            logger.warning(
+            # this typically occurs when a channel is not used in a schedule.
+            logger.info(
                 f"[{device.name}-awg{awg_index}] Skipping! "
                 + f"Missing pulses for port={output.port}."
             )
