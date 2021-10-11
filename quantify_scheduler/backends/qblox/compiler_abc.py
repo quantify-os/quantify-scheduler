@@ -26,6 +26,7 @@ from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox import register_manager
 from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import driver_version_check
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
 from quantify_scheduler.backends.types.qblox import (
@@ -1016,7 +1017,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             of the inner dictionaries of the overall hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping)
-        helpers.verify_qblox_instruments_version()
+        driver_version_check.verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()

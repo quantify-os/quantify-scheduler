@@ -33,7 +33,7 @@ from quantify_scheduler.pulse_library import (
     SquarePulse,
     StaircasePulse,
 )
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
+from quantify_scheduler.acquisition_library import Trace
 from quantify_scheduler.resources import ClockResource, BasebandClockResource
 from quantify_scheduler.compilation import (
     qcompile,
@@ -45,8 +45,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
-    verify_qblox_instruments_version,
-    DriverVersionError,
     to_grid_time,
     generate_uuid_from_wf_data,
 )
@@ -1033,30 +1031,6 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
-
-
-def test_verify_qblox_instruments_version():
-    verify_qblox_instruments_version(build.__version__)
-
-    nonsense_version = "nonsense.driver.version"
-    with pytest.raises(DriverVersionError) as wrong_version:
-        verify_qblox_instruments_version(nonsense_version)
-    assert (
-        wrong_version.value.args[0]
-        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} not "
-        f"supported by backend. Please install a supported version (currently "
-        f"supported: ('0.5.0', '0.5.1')) to continue to use this backend."
-    )
-
-    with pytest.raises(DriverVersionError) as none_error:
-        verify_qblox_instruments_version(None)
-
-    assert (
-        none_error.value.args[0]
-        == "Qblox DriverVersionError: qblox-instruments version check could not be "
-        "performed. Either the package is not installed correctly or a version < "
-        "0.3.2 was found."
-    )
 
 
 def test_generate_uuid_from_wf_data():
