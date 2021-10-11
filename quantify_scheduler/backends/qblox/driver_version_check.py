@@ -10,6 +10,9 @@ except ImportError:
     driver_version = None  # Prior to v0.3.2 __version__ was not there
 
 SUPPORTED_DRIVER_VERSIONS: Tuple[str, ...] = ("0.5.0", "0.5.1", "0.5.2")
+"""Tuple containing all the version supported by this version of the backend."""
+raise_on_version_mismatch: bool = True
+"""Can be set to false to override version check."""
 
 
 class DriverVersionError(Exception):
@@ -27,10 +30,12 @@ def verify_qblox_instruments_version(version=driver_version):
     DriverVersionError
         When an incorrect or no installation of qblox-instruments was found.
     """
+    if not raise_on_version_mismatch:
+        return
     if version is None:
         raise DriverVersionError(
-            "Qblox DriverVersionError: qblox-instruments version check could not be "
-            "performed. Either the package is not installed "
+            "Qblox DriverVersionError: qblox-instruments version check could not be"
+            " performed. Either the package is not installed "
             "correctly or a version < 0.3.2 was found."
         )
     if version not in SUPPORTED_DRIVER_VERSIONS:
