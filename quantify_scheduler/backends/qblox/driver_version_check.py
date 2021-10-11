@@ -2,12 +2,14 @@
 # Licensed according to the LICENCE file on the master branch
 """Helper functions to perform the version check for qblox_instruments."""
 
+from typing import Tuple
+
 try:
     from qblox_instruments.build import __version__ as driver_version
 except ImportError:
     driver_version = None  # Prior to v0.3.2 __version__ was not there
 
-SUPPORTED_DRIVER_VERSIONS = ("0.5.0", "0.5.1", "0.5.2")
+SUPPORTED_DRIVER_VERSIONS: Tuple[str, ...] = ("0.5.0", "0.5.1", "0.5.2")
 
 
 class DriverVersionError(Exception):
