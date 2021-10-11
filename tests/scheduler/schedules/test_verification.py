@@ -10,6 +10,8 @@ from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,
     awg_staircase_sched,
 )
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
+from quantify_scheduler.compilation import qcompile
 
 
 @pytest.fixture(scope="module", autouse=False)
@@ -57,7 +59,14 @@ def test_acquisition_staircase_amps(gen_acquisition_staircase_sched):
     assert_array_equal(np.array(amps), sched_kwargs["readout_pulse_amps"])
 
 
-def test_awg_staircase_sched():
+def test_acq_staircase_comp_transmon(gen_acquisition_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    _ = qcompile(gen_acquisition_staircase_sched[0], device_cfg=device_cfg)
+
+
+@pytest.fixture(scope="module", autouse=False)
+def gen_awg_staircase_sched():
 
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 1, 11),
@@ -74,6 +83,11 @@ def test_awg_staircase_sched():
     }
     sched = awg_staircase_sched(**sched_kwargs)
 
+    return sched, sched_kwargs
+
+
+def test_awg_staircase_sched(gen_awg_staircase_sched):
+    sched, sched_kwargs = gen_awg_staircase_sched
     assert sched.repetitions == sched_kwargs["repetitions"]
 
     assert len(sched.timing_constraints) == 3 * len(sched_kwargs["pulse_amps"])
@@ -87,3 +101,9 @@ def test_awg_staircase_sched():
             amps.append(amp)
 
     assert_array_equal(np.array(amps), sched_kwargs["pulse_amps"])
+
+
+def test_awg_staircase_comp_transmon(gen_awg_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg)
