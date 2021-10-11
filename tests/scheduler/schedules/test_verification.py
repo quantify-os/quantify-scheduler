@@ -65,6 +65,24 @@ def test_acq_staircase_comp_transmon(gen_acquisition_staircase_sched):
     _ = qcompile(gen_acquisition_staircase_sched[0], device_cfg=device_cfg)
 
 
+def test_acq_staircase_comp_qblox(gen_acquisition_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("qblox_test_mapping.json")
+    _ = qcompile(
+        gen_acquisition_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg
+    )
+
+
+def test_acq_staircase_comp_ZI(gen_acquisition_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+    _ = qcompile(
+        gen_acquisition_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg
+    )
+
+
 @pytest.fixture(scope="module", autouse=False)
 def gen_awg_staircase_sched():
 
@@ -107,3 +125,17 @@ def test_awg_staircase_comp_transmon(gen_awg_staircase_sched):
 
     device_cfg = load_json_example_scheme("transmon_test_config.json")
     _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg)
+
+
+def test_awg_staircase_comp_qblox(gen_awg_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("qblox_test_mapping.json")
+    _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
+
+
+def test_awg_staircase_comp_ZI(gen_awg_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+    _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
