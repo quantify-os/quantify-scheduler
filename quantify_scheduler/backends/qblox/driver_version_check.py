@@ -3,7 +3,10 @@
 """Helper functions to perform the version check for qblox_instruments."""
 
 from typing import Tuple
-import warnings
+import logging
+
+logger = logging.getLogger(__name__)
+print(__name__)
 
 try:
     from qblox_instruments.build import __version__ as driver_version
@@ -37,7 +40,10 @@ def verify_qblox_instruments_version(version: str = driver_version):
         When an incorrect or no installation of qblox-instruments was found.
     """
     if not raise_on_version_mismatch:
-        warnings.warn("Qblox driver version check skipped.")
+        logger.warning(
+            f"Qblox driver version check skipped with "
+            f"{__name__}.raise_on_version_mismatch={raise_on_version_mismatch}."
+        )
 
     if version is None:
         raise DriverVersionError(
@@ -54,7 +60,7 @@ def verify_qblox_instruments_version(version: str = driver_version):
         )
 
     if version != SUPPORTED_DRIVER_VERSIONS[-1]:
-        warnings.warn(
+        logger.info(
             "A newer version of Qblox driver (qblox-instruments) which is supported by "
             "the backend is available."
         )
