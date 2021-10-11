@@ -7,7 +7,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
 import copy
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 import os
 import re
@@ -740,6 +740,90 @@ def test_qasm_hook(dummy_pulsars, pulse_only_schedule):
         program = json.load(f)["program"]
     program_lines = program.splitlines()
     assert program_lines[1].strip() == q1asm_instructions.NOP
+
+
+def test_looped_acquisition(dummy_pulsars):
+    class LoopedPeriodicAcquisition(SSBIntegrationComplex):
+        def __init__(
+            self,
+            port: str,
+            clock: str,
+            integration_time: float,
+            num_times: int,
+            acq_channel: int = 0,
+            acq_index: int = 0,
+            buffer_time: float = 0,
+            bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
+            phase: float = 0,
+            t0: float = 0,
+        ):
+            # Will break timing calculations in the scheduler if the "duration"
+            # is not the duration of the whole acquisition added to the schedule.
+            duration = num_times * (buffer_time + integration_time)
+            super().__init__(
+                port=port,
+                clock=clock,
+                duration=duration,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
+                bin_mode=bin_mode,
+                phase=phase,
+                t0=t0,
+            )
+            acq_info = self.data["acquisition_info"][0]
+            acq_info["protocol"] = "looped_periodic_acquisition"
+            acq_info["num_times"] = num_times
+            acq_info["buffer_time"] = buffer_time
+            acq_info["integration_time"] = integration_time
+
+        def __str__(self) -> str:
+            acq_info = copy.deepcopy(self.data["acquisition_info"][0])
+            acq_info.pop(
+                "duration"
+            )  # since it is not in the signature of the superclass
+            return self._get_signature(acq_info)
+
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("sched-looped-acq")
+
+    sched.add(
+        LoopedPeriodicAcquisition(
+            port="q0:res",
+            clock="q0.ro",
+            bin_mode=BinMode.APPEND,
+            integration_time=10e-6,
+            buffer_time=400e-9,
+            num_times=10000,
+        )
+    )
+
+    sched = determine_absolute_timing(sched)
+    compiled_sched = qb.hardware_compile(sched, HARDWARE_MAPPING)
+
+    with open(compiled_sched["qrm0"]["seq0"]["seq_fn"]) as file:
+        qrm0_seq_instructions = json.load(file)
+
+    baseline_assembly = os.path.join(
+        quantify_scheduler.__path__[0],
+        "..",
+        "tests",
+        "baseline_qblox_assembly",
+        f"{sched.name}_qrm0_seq0_instr.json",
+    )
+
+    if REGENERATE_REF_FILES:
+        shutil.copy(
+            compiled_sched["qrm0"]["seq0"]["seq_fn"],
+            baseline_assembly,
+        )
+    with open(baseline_assembly) as file:
+        baseline_qrm0_seq_instructions = json.load(file)
+    program = _strip_comments(qrm0_seq_instructions["program"])
+    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+
+    assert list(program) == list(exp_program)
 
 
 def test_qcm_acquisition_error():
