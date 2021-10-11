@@ -19,6 +19,7 @@ from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.resources import Resource
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -533,48 +534,7 @@ def compile_backend(
     cached_schedule = schedule_helpers.CachedSchedule(schedule)
 
     resources = cached_schedule.schedule["resource_dict"]
-
     device_configs: Dict[str, Union[ZIDeviceConfig, float]] = dict()
-
-    def add_lo_config(channel: zhinst.Output) -> None:
-        name = channel.local_oscillator
-        if name not in local_oscillators:
-            raise KeyError(f'Missing configuration for LocalOscillator "{name}"')
-
-        local_oscillator = local_oscillators[name]
-
-        lo_freq = local_oscillator.frequency
-        interm_freq = channel.modulation.interm_freq
-
-        if (lo_freq is not None) and (interm_freq is not None):
-            rf_freq = lo_freq + interm_freq
-        else:
-            channel_clock_resource = resources.get(channel.clock)
-            if channel_clock_resource is not None:
-                rf_freq = channel_clock_resource.get("freq")
-            else:
-                raise ValueError(
-                    f'Could not determine RF frequency of LocalOscillator "{name}"'
-                )
-
-        if lo_freq is None and interm_freq is not None:
-            local_oscillator.frequency = rf_freq - interm_freq
-        elif interm_freq is None and lo_freq is not None:
-            channel.modulation.interm_freq = rf_freq - lo_freq
-        elif interm_freq is None and lo_freq is None:
-            raise ValueError(
-                "Either local oscillator frequency or channel intermediate frequency "
-                f'must be set for LocalOscillator "{name}"'
-            )
-
-        if (
-            local_oscillator.name in device_configs
-            and device_configs[local_oscillator.name] != rf_freq
-        ):
-            raise ValueError(
-                f'Multiple frequencies assigned to LocalOscillator "{name}"'
-            )
-        device_configs[local_oscillator.name] = rf_freq
 
     # Program devices
     for device in sorted(
@@ -589,13 +549,66 @@ def compile_backend(
             acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
 
         for channel in device.channels:
-            add_lo_config(channel)
+            _add_lo_config(
+                channel=channel,
+                local_oscillators=local_oscillators,
+                device_configs=device_configs,
+                resources=resources,
+            )
 
         device_configs[device.name] = ZIDeviceConfig(
             device.name, schedule, builder, acq_config
         )
 
     return device_configs
+
+
+def _add_lo_config(
+    channel: zhinst.Output,
+    local_oscillators: List,
+    resources: Dict[str, Resource],
+    device_configs: Dict[str, Union[ZIDeviceConfig, float]],
+) -> None:
+    """
+    Adds configuration for a local oscillator required for a specific output channel to
+    the device configs.
+    """
+    name = channel.local_oscillator
+    if name not in local_oscillators:
+        raise KeyError(f'Missing configuration for LocalOscillator "{name}"')
+
+    local_oscillator = local_oscillators[name]
+
+    lo_freq = local_oscillator.frequency
+    interm_freq = channel.modulation.interm_freq
+
+    if (lo_freq is not None) and (interm_freq is not None):
+        rf_freq = lo_freq + interm_freq
+    else:
+        channel_clock_resource = resources.get(channel.clock)
+        if channel_clock_resource is not None:
+            rf_freq = channel_clock_resource.get("freq")
+        else:
+            raise ValueError(
+                f'Could not determine RF frequency of LocalOscillator "{name}"'
+            )
+
+    if lo_freq is None and interm_freq is not None:
+        local_oscillator.frequency = rf_freq - interm_freq
+    elif interm_freq is None and lo_freq is not None:
+        channel.modulation.interm_freq = rf_freq - lo_freq
+    elif interm_freq is None and lo_freq is None:
+        raise ValueError(
+            "Either local oscillator frequency or channel intermediate frequency "
+            f'must be set for LocalOscillator "{name}"'
+        )
+
+    if (
+        local_oscillator.name in device_configs
+        and device_configs[local_oscillator.name] != rf_freq
+    ):
+        raise ValueError(f'Multiple frequencies assigned to LocalOscillator "{name}"')
+    device_configs[local_oscillator.name] = rf_freq
 
 
 def _add_wave_nodes(
