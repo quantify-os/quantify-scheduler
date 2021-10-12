@@ -19,7 +19,6 @@ import pytest
 import numpy as np
 
 from qcodes.instrument.base import Instrument
-from qblox_instruments import build
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
