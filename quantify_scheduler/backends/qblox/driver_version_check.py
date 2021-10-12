@@ -3,6 +3,10 @@
 """Helper functions to perform the version check for qblox_instruments."""
 
 from typing import Tuple
+import logging
+
+logger = logging.getLogger(__name__)
+print(__name__)
 
 try:
     from qblox_instruments.build import __version__ as driver_version
@@ -21,9 +25,14 @@ class DriverVersionError(Exception):
     """
 
 
-def verify_qblox_instruments_version(version=driver_version):
+def verify_qblox_instruments_version(version: str = driver_version):
     """
     Verifies whether the installed version is supported by the qblox_backend.
+
+    Parameters
+    ----------
+    version
+        The Qblox driver versions (``qblox-instruments`` python package).
 
     Raises
     ------
@@ -31,23 +40,27 @@ def verify_qblox_instruments_version(version=driver_version):
         When an incorrect or no installation of qblox-instruments was found.
     """
     if not raise_on_version_mismatch:
-        return
+        logger.warning(
+            f"Qblox driver version check skipped with "
+            f"{__name__}.raise_on_version_mismatch={raise_on_version_mismatch}."
+        )
+
     if version is None:
         raise DriverVersionError(
-            "Qblox DriverVersionError: qblox-instruments version check could not be"
-            " performed. Either the package is not installed "
-            "correctly or a version < 0.3.2 was found."
+            "Version check for Qblox driver (qblox-instruments) could not be "
+            "performed. Either the package is not installed correctly or a version "
+            "<0.3.2 was found."
         )
+
     if version not in SUPPORTED_DRIVER_VERSIONS:
-        message = (
-            f"Qblox DriverVersionError: Installed driver version {version}"
-            f" not supported by backend."
+        raise DriverVersionError(
+            f"The installed Qblox driver (qblox-instruments) version {version} is not "
+            "supported by backend. Please install one of the supported versions "
+            f"({'; '.join(SUPPORTED_DRIVER_VERSIONS)}) in order to use this backend."
         )
-        message += (
-            f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
-            if len(SUPPORTED_DRIVER_VERSIONS) == 1
-            else f" Please install a supported version (currently supported: "
-            f"{SUPPORTED_DRIVER_VERSIONS})"
+
+    if version != SUPPORTED_DRIVER_VERSIONS[-1]:
+        logger.info(
+            "A newer version of Qblox driver (qblox-instruments) which is supported by "
+            "the backend is available."
         )
-        message += " to continue to use this backend."
-        raise DriverVersionError(message)

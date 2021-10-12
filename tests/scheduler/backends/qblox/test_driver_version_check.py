@@ -9,13 +9,13 @@
 """Tests for the driver version check."""
 
 import pytest
-
-from qblox_instruments import build
-
 from quantify_scheduler.backends.qblox.driver_version_check import (
     verify_qblox_instruments_version,
+    SUPPORTED_DRIVER_VERSIONS,
 )
 from quantify_scheduler.backends.qblox.driver_version_check import DriverVersionError
+
+from qblox_instruments import build
 
 
 def test_verify_qblox_instruments_version():
@@ -26,9 +26,9 @@ def test_verify_qblox_instruments_version():
         verify_qblox_instruments_version(nonsense_version)
     assert (
         wrong_version.value.args[0]
-        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} not "
-        f"supported by backend. Please install a supported version (currently "
-        f"supported: ('0.5.0', '0.5.1', '0.5.2')) to continue to use this backend."
+        == f"The installed Qblox driver (qblox-instruments) version {nonsense_version} "
+        "is not supported by backend. Please install one of the supported versions "
+        f"({'; '.join(SUPPORTED_DRIVER_VERSIONS)}) in order to use this backend."
     )
 
     with pytest.raises(DriverVersionError) as none_error:
@@ -36,7 +36,7 @@ def test_verify_qblox_instruments_version():
 
     assert (
         none_error.value.args[0]
-        == "Qblox DriverVersionError: qblox-instruments version check could not be "
-        "performed. Either the package is not installed correctly or a version < "
-        "0.3.2 was found."
+        == "Version check for Qblox driver (qblox-instruments) could not be "
+        "performed. Either the package is not installed correctly or a version "
+        "<0.3.2 was found."
     )
