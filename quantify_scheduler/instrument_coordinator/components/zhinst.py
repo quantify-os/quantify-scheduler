@@ -132,7 +132,8 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             self.get_awg(awg_index).stop()
 
     def prepare(self, options: ZIDeviceConfig) -> None:
-        print(f"hdawg_config: {options=}")
+        if self.device_config == options:
+            print(f"hdawg: device config is identical!")
         super().prepare(options)
 
     def retrieve_acquisition(self) -> Any:
@@ -172,6 +173,8 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
         """
+        if self.device_config == options:
+            print(f"uhfqa: device config is identical!")
 
         super().prepare(options)
         self._data_path = Path(handling.get_datadir())
@@ -182,7 +185,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
-        print(f"uhfqa_config: {options=}")
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.device_config is None:
