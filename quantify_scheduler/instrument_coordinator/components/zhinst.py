@@ -131,7 +131,7 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def prepare(self, options: ZIDeviceConfig) -> None:
         if self.device_config is not None:
             if self.device_config.schedule.operations == options.schedule.operations:
-                print(f"hdawg: device config is identical! Compilation skipped")
+                print("HDAWG: device config is identical! Compilation skipped")
                 return
         super().prepare(options)
 
@@ -174,7 +174,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         """
         if self.device_config is not None:
             if self.device_config.schedule.operations == options.schedule.operations:
-                print(f"uhfqa: device config is identical! Compilation skipped")
+                print("UHFQA: device config is identical! Compilation skipped")
                 return
 
         super().prepare(options)
