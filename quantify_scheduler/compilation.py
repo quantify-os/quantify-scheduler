@@ -410,7 +410,6 @@ def qcompile(
         (mod, cls) = bck_name.rsplit(".", 1)
         # compile using the appropriate hardware backend
         hardware_compile = getattr(importlib.import_module(mod), cls)
-        print(f"{hardware_compile=}")
         # pylint: disable=fixme
         # FIXME: still contains a hardcoded argument in the kwargs
         compiled_instructions = hardware_compile(

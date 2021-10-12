@@ -67,6 +67,9 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
 
         self.zi_settings = self.device_config.settings_builder.build()
 
+        print(f"{self.device_config=}")
+        print(f"{self.zi_settings=}")
+
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
         self.zi_settings.serialize(
