@@ -40,6 +40,30 @@
           "dc_offset_I": -0.5420,
           "dc_offset_Q": -0.3280
         }
+      },
+      "channel_1": {
+        "port": "q1:mw",
+        "clock": "q1.01",
+        "mode": "complex",
+        "modulation": {
+          "type": "premod",
+          "interm_freq": 0
+        },
+        "local_oscillator": "ic_mw_qubit",
+        "clock_frequency": 6e9,
+        "line_trigger_delay": 191e-9,
+        "markers": [
+          "AWG_MARKER1",
+          "AWG_MARKER2"
+        ],
+        "gain1": 1,
+        "gain2": 1,
+        "mixer_corrections": {
+          "amp_ratio": 0.950,
+          "phase_error": 90,
+          "dc_offset_I": -0.5420,
+          "dc_offset_Q": -0.3280
+        }
       }
     },
     {
