@@ -44,6 +44,7 @@ def verify_qblox_instruments_version(version: str = driver_version):
             f"Qblox driver version check skipped with "
             f"{__name__}.raise_on_version_mismatch={raise_on_version_mismatch}."
         )
+        return
 
     if version is None:
         raise DriverVersionError(
