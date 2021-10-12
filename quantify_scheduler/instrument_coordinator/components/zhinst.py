@@ -67,9 +67,6 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
 
         self.zi_settings = self.device_config.settings_builder.build()
 
-        print(f"{self.device_config=}")
-        print(f"{self.zi_settings=}")
-
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
         self.zi_settings.serialize(
@@ -132,6 +129,7 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             self.get_awg(awg_index).stop()
 
     def prepare(self, options: ZIDeviceConfig) -> None:
+        print(f"uhfqa: {self.device_config}")
         if self.device_config == options:
             print(f"hdawg: device config is identical!")
         super().prepare(options)
@@ -173,6 +171,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
         """
+        print(f"uhfqa: {self.device_config}")
         if self.device_config == options:
             print(f"uhfqa: device config is identical!")
 
