@@ -410,6 +410,7 @@ def qcompile(
         (mod, cls) = bck_name.rsplit(".", 1)
         # compile using the appropriate hardware backend
         hardware_compile = getattr(importlib.import_module(mod), cls)
+        print(f"{hardware_compile=}")
         # pylint: disable=fixme
         # FIXME: still contains a hardcoded argument in the kwargs
         compiled_instructions = hardware_compile(
@@ -445,7 +446,6 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     device_bck_name = device_cfg["backend"]
     (mod, cls) = device_bck_name.rsplit(".", 1)
     device_compilation_bck = getattr(importlib.import_module(mod), cls)
-    print(f"{device_compilation_bck=}")
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
