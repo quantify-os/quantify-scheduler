@@ -445,6 +445,7 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     device_bck_name = device_cfg["backend"]
     (mod, cls) = device_bck_name.rsplit(".", 1)
     device_compilation_bck = getattr(importlib.import_module(mod), cls)
+    print(f"{device_compilation_bck=}")
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
