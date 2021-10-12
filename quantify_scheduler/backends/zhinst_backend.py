@@ -545,8 +545,10 @@ def compile_backend(
         acq_config: Optional[ZIAcquisitionConfig] = None
 
         if device.device_type == zhinst.DeviceType.HDAWG:
+            print(f"hdawg_compile: {builder}")
             _compile_for_hdawg(device, cached_schedule, builder)
         elif device.device_type == zhinst.DeviceType.UHFQA:
+            print(f"uhfqa_compile: {builder}")
             acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
 
         # add the local oscillator config by iterating over all output channels.
