@@ -121,6 +121,7 @@ class ScheduleGettableSingleChannel:
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
 
+        print(f"Doing qcompile")
         compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.quantum_device.generate_device_config(),
@@ -128,6 +129,7 @@ class ScheduleGettableSingleChannel:
         )
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
+        print(f"Preparing components")
         instr_coordinator.prepare(compiled_schedule)
         instr_coordinator.start()
 
