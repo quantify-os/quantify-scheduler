@@ -129,9 +129,9 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             self.get_awg(awg_index).stop()
 
     def prepare(self, options: ZIDeviceConfig) -> None:
-        print(f"uhfqa: {self.device_config}")
-        if self.device_config.schedule.operations == options.schedule.operations:
-            print(f"hdawg: device config is identical!")
+        if self.device_config is not None:
+            if self.device_config.schedule.operations == options.schedule.operations:
+                print(f"hdawg: device config is identical!")
         super().prepare(options)
 
     def retrieve_acquisition(self) -> Any:
@@ -171,9 +171,9 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
         """
-        # print(f"uhfqa: {self.device_config}")
-        if self.device_config.schedule.operations == options.schedule.operations:
-            print(f"uhfqa: device config is identical!")
+        if self.device_config is not None:
+            if self.device_config.schedule.operations == options.schedule.operations:
+                print(f"uhfqa: device config is identical!")
 
         super().prepare(options)
         self._data_path = Path(handling.get_datadir())
