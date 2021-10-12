@@ -131,7 +131,8 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def prepare(self, options: ZIDeviceConfig) -> None:
         if self.device_config is not None:
             if self.device_config.schedule.operations == options.schedule.operations:
-                print(f"hdawg: device config is identical!")
+                print(f"hdawg: device config is identical! Compilation skipped")
+                return
         super().prepare(options)
 
     def retrieve_acquisition(self) -> Any:
@@ -173,7 +174,8 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         """
         if self.device_config is not None:
             if self.device_config.schedule.operations == options.schedule.operations:
-                print(f"uhfqa: device config is identical!")
+                print(f"uhfqa: device config is identical! Compilation skipped")
+                return
 
         super().prepare(options)
         self._data_path = Path(handling.get_datadir())
