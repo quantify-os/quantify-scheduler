@@ -478,7 +478,16 @@ def get_execution_table(
 
 @dataclass(frozen=True)
 class ZIAcquisitionConfig:
-    """Zurich Instruments acquisition configuration."""
+    """Zurich Instruments acquisition configuration.
+
+    Parameters
+    ----------
+    n_acquisitions :
+        the number of distinct acquisitions in this experiment.
+    resolvers:
+        resolvers used to retrieve the results from the right UHFQA nodes.
+        See also :mod:`~quantify_scheduler.backends.zhinst.resolvers`
+    """
 
     n_acquisitions: int
     resolvers: Dict[int, Callable]
@@ -486,7 +495,24 @@ class ZIAcquisitionConfig:
 
 @dataclass(frozen=True)
 class ZIDeviceConfig:
-    """Zurich Instruments device configuration."""
+    """
+    Zurich Instruments device configuration.
+
+    Parameters
+    ----------
+    name :
+        the name of the schedule the config is for.
+    schedule:
+        the schedule from which the config is generated.
+    settings_builder:
+        the builder to configure the ZI settings. This typically includes AWG and
+        AWG settings.
+    acq_config:
+        the acquisition config contains the number of acquisitions and a dictionary of
+        resolvers used to retrieve the results from the right UHFQA nodes.
+        Note that this part of the config is not needed during prepare, but only during
+        the retrieve acquisitions step.
+    """
 
     name: str
     schedule: types.Schedule
@@ -545,9 +571,9 @@ def compile_backend(
         acq_config: Optional[ZIAcquisitionConfig] = None
 
         if device.device_type == zhinst.DeviceType.HDAWG:
-            _compile_for_hdawg(device, cached_schedule, builder)
+            builder = _compile_for_hdawg(device, cached_schedule, builder)
         elif device.device_type == zhinst.DeviceType.UHFQA:
-            acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
+            builder, acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
 
         # add the local oscillator config by iterating over all output channels.
         # note that not all output channels have an LO associated to them.
@@ -663,7 +689,7 @@ def _compile_for_hdawg(
     device: zhinst.Device,
     cached_schedule: schedule_helpers.CachedSchedule,
     settings_builder: zi_settings.ZISettingsBuilder,
-) -> None:
+) -> zi_settings.ZISettingsBuilder:
     """
     Programs the HDAWG ZI Instrument.
 
@@ -791,6 +817,8 @@ def _compile_for_hdawg(
             waveform_table,
             settings_builder,
         )
+
+    return settings_builder
 
 
 # pylint: disable=too-many-arguments
@@ -1002,7 +1030,7 @@ def _compile_for_uhfqa(
     device: zhinst.Device,
     cached_schedule: schedule_helpers.CachedSchedule,
     settings_builder: zi_settings.ZISettingsBuilder,
-) -> ZIAcquisitionConfig:
+) -> Tuple[zi_settings.ZISettingsBuilder, ZIAcquisitionConfig]:
     """
     Initialize programming the UHFQA ZI Instrument.
 
@@ -1195,7 +1223,9 @@ def _compile_for_uhfqa(
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
 
-    return ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map)
+    return settings_builder, ZIAcquisitionConfig(
+        n_acquisitions, acq_channel_resolvers_map
+    )
 
 
 # pylint: disable=too-many-arguments

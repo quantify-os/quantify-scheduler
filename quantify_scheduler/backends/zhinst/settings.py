@@ -305,9 +305,11 @@ class ZISettingsBuilder:
     """
     The Zurich Instruments Settings builder class.
 
-    This class provides an API for settings that
-    are configured in the zhinst backend. The ZISettings
-    class is the resulting set that holds settings.
+    This class provides an API for settings that are configured in the zhinst backend.
+    The ZISettings class is the resulting set that holds settings.
+
+    This class exist because configuring these settings requires some in how the
+    settings are configured using the zurich instruments API.
     """
 
     _daq_settings: List[ZISetting]

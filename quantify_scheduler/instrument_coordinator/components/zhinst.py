@@ -196,6 +196,9 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         self._data_path = Path(handling.get_datadir())
         # Copy the UHFQA waveforms to the waves directory
         # This is required before compilation.
+
+        # N.B. note this copies waves that were written during compilation, but are not
+        # contained in the zi_device_config that is passed as an argument here.
         waves_path: Path = zi_helpers.get_waves_directory(self.instrument.awg)
         wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
         for file in wave_files:
