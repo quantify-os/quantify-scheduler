@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+import logging
 from typing import Dict, TYPE_CHECKING, Any, Optional, Tuple
 
 import numpy as np
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
     from zhinst.qcodes.base import ZIBaseInstrument
     from quantify_scheduler.backends.zhinst_backend import ZIDeviceConfig
     from quantify_scheduler.backends.zhinst.settings import ZISettings
+
+
+logger = logging.getLogger(__name__)
 
 
 def convert_to_instrument_coordinator_format(acquisition_results):
@@ -131,7 +135,7 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def prepare(self, options: ZIDeviceConfig) -> None:
         if self.device_config is not None:
             if self.device_config.schedule.operations == options.schedule.operations:
-                print("HDAWG: device config is identical! Compilation skipped")
+                logger.info("HDAWG: device config is identical! Compilation skipped")
                 return
         super().prepare(options)
 
@@ -174,7 +178,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         """
         if self.device_config is not None:
             if self.device_config.schedule.operations == options.schedule.operations:
-                print("UHFQA: device config is identical! Compilation skipped")
+                logger.info("UHFQA: device config is identical! Compilation skipped")
                 return
 
         self._data_path = Path(handling.get_datadir())
@@ -185,7 +189,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
         super().prepare(options)
-
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.device_config is None:
