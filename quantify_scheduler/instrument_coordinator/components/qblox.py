@@ -50,7 +50,7 @@ _SEQUENCER_STATE_FLAG_INFO: Dict[str, _SequencerStateInfo] = {
     ),
     "FORCED STOP": _SequencerStateInfo(
         message="Sequencer was stopped while still running.",
-        logging_level=logging.WARNING,
+        logging_level=logging.INFO,
     ),
     "SEQUENCE PROCESSOR Q1 ILLEGAL INSTRUCTION": _SequencerStateInfo(
         message="Classical sequencer part executed an unknown instruction.",
