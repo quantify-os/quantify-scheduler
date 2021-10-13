@@ -39,7 +39,7 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
           "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
           "local_oscillators": [{
             "name": "lo0",
-            "frequency": 4.8e9
+            "frequency": null
           }],
           "devices": [
             {
@@ -52,7 +52,7 @@ def uhfqa_hardware_map() -> Dict[str, Any]:
                 "mode": "real",
                 "modulation": {
                   "type": "premod",
-                  "interm_freq": -50e6
+                  "interm_freq": 150e6
                 },
                 "local_oscillator": "lo0",
                 "triggers": [
@@ -493,7 +493,10 @@ def test_compile_hardware_uhfqa_successfully(
         assert collection[key] == expected_value
 
     assert "lo0" in device_configs
-    assert device_configs["lo0"] == (4.8e9 + -50e6)
+    ro_freq = 7.04e9
+    intermodulation_frequency = 150e6
+
+    assert device_configs["lo0"] == ro_freq - intermodulation_frequency
 
 
 def test_hdawg4_sequence(
