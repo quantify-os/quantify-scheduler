@@ -602,21 +602,26 @@ def _add_lo_config(
             return
 
     if lo_freq is None and interm_freq is not None:
-        local_oscillator.frequency = rf_freq - interm_freq
+        lo_freq = rf_freq - interm_freq
+        local_oscillator.frequency = lo_freq
+
     elif interm_freq is None and lo_freq is not None:
-        channel.modulation.interm_freq = rf_freq - lo_freq
+        interm_freq = rf_freq - lo_freq
+        channel.modulation.interm_freq = interm_freq
+
     elif interm_freq is None and lo_freq is None:
         raise ValueError(
             "Either local oscillator frequency or channel intermediate frequency "
             f'must be set for LocalOscillator "{name}"'
         )
 
-    if (
-        local_oscillator.name in device_configs
-        and device_configs[local_oscillator.name] != rf_freq
-    ):
-        raise ValueError(f'Multiple frequencies assigned to LocalOscillator "{name}"')
-    device_configs[local_oscillator.name] = rf_freq
+    if local_oscillator.name in device_configs:
+        # the device_config currently only contains the frequency
+        if device_configs[local_oscillator.name] != lo_freq:
+            raise ValueError(
+                f'Multiple frequencies assigned to LocalOscillator "{name}"'
+            )
+    device_configs[local_oscillator.name] = lo_freq
 
 
 def _add_wave_nodes(
