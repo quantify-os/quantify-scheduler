@@ -49,7 +49,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def __init__(self, instrument: ZIBaseInstrument, **kwargs) -> None:
         """Create a new instance of ZIInstrumentCoordinatorComponent."""
         super().__init__(instrument, **kwargs)
-        self.device_config: Optional[ZIDeviceConfig] = None
+        self.zi_device_config: Optional[ZIDeviceConfig] = None
         self.zi_settings: Optional[ZISettings] = None
         self._data_path: Path = Path(".")
 
@@ -57,7 +57,8 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def is_running(self) -> bool:
         raise NotImplementedError()
 
-    def prepare(self, options: ZIDeviceConfig) -> None:
+    # pylint: disable=arguments-renamed
+    def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
         """
         Prepare the InstrumentCoordinator component with configuration
         required to arm the instrument.
@@ -66,10 +67,11 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
         ----------
         options :
             The ZI instrument configuration.
+            TODO: add what should be contained in this configuration.
         """
-        self.device_config = options
+        self.zi_device_config = zi_device_config
 
-        self.zi_settings = self.device_config.settings_builder.build()
+        self.zi_settings = self.zi_device_config.settings_builder.build()
 
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
@@ -132,12 +134,19 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         for awg_index in self.zi_settings.awg_indexes:
             self.get_awg(awg_index).stop()
 
-    def prepare(self, options: ZIDeviceConfig) -> None:
-        if self.device_config is not None:
-            if self.device_config.schedule.operations == options.schedule.operations:
+    def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
+
+        # skip prepartaion if the new zi_device_config is the same as that from the
+        # previous time prepare was called. This saves significant time overhead
+        if self.zi_device_config is not None:
+            # FIXME: only checking if the ops are identical, not checking settings
+            if (
+                self.zi_device_config.schedule.operations
+                == zi_device_config.schedule.operations
+            ):
                 logger.info("HDAWG: device config is identical! Compilation skipped")
                 return
-        super().prepare(options)
+        super().prepare(zi_device_config)
 
     def retrieve_acquisition(self) -> Any:
         return None
@@ -169,15 +178,18 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def stop(self) -> None:
         self.instrument.awg.stop()
 
-    def prepare(self, options: ZIDeviceConfig) -> None:
+    def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
         """
         Prepares the component with configurations
         required to arm the instrument.
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
         """
-        if self.device_config is not None:
-            if self.device_config.schedule.operations == options.schedule.operations:
+        if self.zi_device_config is not None:
+            if (
+                self.zi_device_config.schedule.operations
+                == zi_device_config.schedule.operations
+            ):
                 logger.info("UHFQA: device config is identical! Compilation skipped")
                 return
 
@@ -188,13 +200,13 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
-        super().prepare(options)
+        super().prepare(zi_device_config)
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
-        if self.device_config is None:
+        if self.zi_device_config is None:
             raise RuntimeError("Undefined device config, first prepare UHFQA!")
 
-        acq_config = self.device_config.acq_config
+        acq_config = self.zi_device_config.acq_config
 
         acq_channel_results: Dict[int, np.ndarray] = dict()
         for acq_channel, resolve in acq_config.resolvers.items():
