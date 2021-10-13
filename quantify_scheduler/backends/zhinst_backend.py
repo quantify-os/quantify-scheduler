@@ -364,20 +364,31 @@ def get_measure_instruction(
 
     weights_list: List[np.ndarray] = [np.empty((0,)), np.empty((0,))]
     corrected_start_in_clocks: int = 0
-    for i, pulse_info in enumerate(acq_info["waveforms"]):
-        waveform = waveform_helpers.exec_waveform_partial(
-            schedule_helpers.get_pulse_uuid(pulse_info),
-            cached_schedule.pulseid_waveformfn_dict,
-            instrument_info.clock_rate,
-        )
-        (corrected_start_in_clocks, _, waveform) = apply_waveform_corrections(
-            output=output,
-            waveform=waveform,
-            start_and_duration_in_seconds=(t0, duration_in_seconds),
-            instrument_info=instrument_info,
-            is_pulse=False,
-        )
-        weights_list[i] = waveform
+
+    # an acquisition weight has two waveforms, the real and imaginary part
+    wf_i = waveform_helpers.exec_waveform_partial(
+        schedule_helpers.get_pulse_uuid(acq_info["waveforms"][0]),
+        cached_schedule.pulseid_waveformfn_dict,
+        instrument_info.clock_rate,
+    )
+    wf_q = waveform_helpers.exec_waveform_partial(
+        schedule_helpers.get_pulse_uuid(acq_info["waveforms"][1]),
+        cached_schedule.pulseid_waveformfn_dict,
+        instrument_info.clock_rate,
+    )
+
+    # the imaginary part is already included in wf_q
+    waveform = wf_i + wf_q
+
+    (corrected_start_in_clocks, _, waveform_corr) = apply_waveform_corrections(
+        output=output,
+        waveform=waveform,
+        start_and_duration_in_seconds=(t0, duration_in_seconds),
+        instrument_info=instrument_info,
+        is_pulse=False,
+    )
+    weights_list[0] = waveform_corr.real
+    weights_list[1] = waveform_corr.imag
 
     if len(acq_info["waveforms"]) == 0:
         (corrected_start_in_clocks, _) = waveform_helpers.shift_waveform(
