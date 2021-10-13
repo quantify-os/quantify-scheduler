@@ -74,7 +74,7 @@ def hdawg_hardware_map() -> Dict[str, Any]:
           "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
           "local_oscillators": [{
             "name": "lo0",
-            "frequency": 4.8e9
+            "frequency": null
           }],
           "devices": [
             {
@@ -420,7 +420,10 @@ def test_compile_hardware_hdawg4_successfully(
     assert settings_builder.with_compiler_sourcestring.call_args_list == expected_call
 
     assert "lo0" in device_configs
-    assert device_configs["lo0"] == (4.8e9 + -50e6)
+
+    freq_qubit = 6.02e9  # from the example transmon config, this is the RF frequency
+    intermodulation_frequency = -50e6
+    assert device_configs["lo0"] == freq_qubit - intermodulation_frequency
 
 
 def test_compile_hardware_uhfqa_successfully(
