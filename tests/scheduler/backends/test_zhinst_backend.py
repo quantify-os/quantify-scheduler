@@ -616,7 +616,7 @@ def test_validate_schedule(
     "is_pulse,modulation_type,expected_modulated",
     [
         (True, enums.ModulationModeType.PREMODULATE, True),
-        (False, enums.ModulationModeType.PREMODULATE, False),
+        (False, enums.ModulationModeType.PREMODULATE, True),
         (False, enums.ModulationModeType.NONE, False),
     ],
 )

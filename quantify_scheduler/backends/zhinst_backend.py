@@ -173,6 +173,7 @@ def apply_waveform_corrections(
     start_and_duration_in_seconds :
     instrument_info :
     is_pulse :
+        True if it is a pulse to be up converted, False if it is an integration weight.
 
     Returns
     -------
@@ -196,6 +197,19 @@ def apply_waveform_corrections(
                 output.mixer_corrections.amp_ratio,
                 output.mixer_corrections.phase_error,
             )
+
+    else:  # in the case where the waveform is an integration weight
+        # Modulate the waveform
+        if output.modulation.type == enums.ModulationModeType.PREMODULATE:
+            t: np.ndarray = np.arange(
+                0, 0 + duration_in_seconds, 1 / instrument_info.clock_rate
+            )
+            # N.B. the minus sign with respect to the pulse being applied
+            waveform = waveform_helpers.modulate_waveform(
+                t, waveform, -1 * output.modulation.interm_freq
+            )
+        # mixer corrections for the integration are not supported yet.
+        # they would belong here.
 
     start_in_clocks, waveform = waveform_helpers.shift_waveform(
         waveform,
@@ -283,11 +297,11 @@ def get_wave_instruction(
         n_samples_shifted,
         waveform,
     ) = apply_waveform_corrections(
-        output,
-        waveform,
-        (t0, duration_in_seconds),
-        instrument_info,
-        True,
+        output=output,
+        waveform=waveform,
+        start_and_duration_in_seconds=(t0, duration_in_seconds),
+        instrument_info=instrument_info,
+        is_pulse=True,
     )
 
     duration_in_clocks: float = duration_in_seconds / instrument_info.low_res_clock
@@ -357,11 +371,11 @@ def get_measure_instruction(
             instrument_info.clock_rate,
         )
         (corrected_start_in_clocks, _, waveform) = apply_waveform_corrections(
-            output,
-            waveform,
-            (t0, duration_in_seconds),
-            instrument_info,
-            False,
+            output=output,
+            waveform=waveform,
+            start_and_duration_in_seconds=(t0, duration_in_seconds),
+            instrument_info=instrument_info,
+            is_pulse=False,
         )
         weights_list[i] = waveform
 
@@ -1176,7 +1190,6 @@ def _compile_for_uhfqa(
             )
         else:
             measure_instruction: zhinst.Measure = measure_instructions_dict[acq_uuid]
-
             # Combine a reset and setting acq weights
             # by slicing the length of the waveform I and Q values.
             # This overwrites 0..length with new values.
