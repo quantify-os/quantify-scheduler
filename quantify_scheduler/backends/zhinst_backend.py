@@ -1208,14 +1208,16 @@ def _compile_for_uhfqa(
             # because of the waveform granularity. This is irrelevant
             # due to the waveform being appended with zeros. Therefore
             # avoiding an extra slice of waveform[0:integration_length]
-            waveform_i = measure_instruction.weights_i
-            waveform_q = measure_instruction.weights_q
 
             weights_i = [0] * MAX_QAS_INTEGRATION_LENGTH
             weights_q = [0] * MAX_QAS_INTEGRATION_LENGTH
 
-            weights_i[0 : len(waveform_i)] = np.real(waveform_i)
-            weights_q[0 : len(waveform_q)] = np.imag(waveform_q)
+            weights_i[
+                0 : len(measure_instruction.weights_i)
+            ] = measure_instruction.weights_i
+            weights_q[
+                0 : len(measure_instruction.weights_q)
+            ] = measure_instruction.weights_q
 
             settings_builder.with_qas_result_mode(
                 zhinst.QasResultMode.CYCLIC
