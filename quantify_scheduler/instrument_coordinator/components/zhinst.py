@@ -193,6 +193,16 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 logger.info("UHFQA: device config is identical! Compilation skipped")
                 return
 
+        try:
+            super().prepare(zi_device_config)
+        except FileNotFoundError as e:
+            # whenever a new UHF device is used for the first time,
+            # certain waveform files will not exist. The lines below copy files so
+            # that it is possible to read from that location.
+            # this line of code should only be logging a warning the very first time
+            # a new setup is used, and then resolve auto.
+            logger.warning(e)
+
         self._data_path = Path(handling.get_datadir())
         # Copy the UHFQA waveforms to the waves directory
         # This is required before compilation.
@@ -203,7 +213,13 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
+
+        # prepare twice to resolve issue with waveform memory not being updated
+        # correctly. In practice, we see that integration weights update correctly, but
+        # the waveforms in pulses do not. This problem is not fully understood, but this
+        # resolves the issue at a minor overhead.
         super().prepare(zi_device_config)
+
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.zi_device_config is None:
