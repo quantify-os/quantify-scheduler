@@ -225,7 +225,7 @@ def set_and_compile_awg_seqc(
 
     if status == 2:
         status_str = awg_module.get_string("compiler/statusstring")
-        raise Warning(f"Compiled with warning: \n{status_str}")
+        logger.warning(f"Compiled with warning: \n{status_str}")
 
     if status == 0:
         print(f"{awg.name}: Compilation successful")
