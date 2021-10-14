@@ -57,6 +57,13 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def is_running(self) -> bool:
         raise NotImplementedError()
 
+    def _compare_identical(self, zi_device_config, zi_settings) -> bool:
+        identical_config_settings_comparison = False
+        if self.zi_device_config is not None:
+            if self.zi_settings == zi_settings:
+                identical_config_settings_comparison = True
+        return identical_config_settings_comparison
+
     # pylint: disable=arguments-renamed
     def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
         """
@@ -69,9 +76,18 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
             The ZI instrument configuration.
             TODO: add what should be contained in this configuration.
         """
+        zi_settings = zi_device_config.settings_builder.build()
+
+        if self._compare_identical(zi_device_config, zi_settings):
+            logger.info(
+                f"{self.name}: device config and settings "
+                + "are identical! Compilation skipped."
+            )
+            return
+
         self.zi_device_config = zi_device_config
 
-        self.zi_settings = self.zi_device_config.settings_builder.build()
+        self.zi_settings = zi_settings
 
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
@@ -138,14 +154,6 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
 
         # skip prepartaion if the new zi_device_config is the same as that from the
         # previous time prepare was called. This saves significant time overhead
-        if self.zi_device_config is not None:
-            # FIXME: only checking if the ops are identical, not checking settings
-            if (
-                self.zi_device_config.schedule.operations
-                == zi_device_config.schedule.operations
-            ):
-                logger.info("HDAWG: device config is identical! Compilation skipped")
-                return
         super().prepare(zi_device_config)
 
     def retrieve_acquisition(self) -> Any:
@@ -185,13 +193,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
         """
-        if self.zi_device_config is not None:
-            if (
-                self.zi_device_config.schedule.operations
-                == zi_device_config.schedule.operations
-            ):
-                logger.info("UHFQA: device config is identical! Compilation skipped")
-                return
 
         try:
             super().prepare(zi_device_config)
@@ -219,7 +220,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         # the waveforms in pulses do not. This problem is not fully understood, but this
         # resolves the issue at a minor overhead.
         super().prepare(zi_device_config)
-
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.zi_device_config is None:

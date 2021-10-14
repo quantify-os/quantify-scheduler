@@ -4,6 +4,7 @@
 from __future__ import annotations
 from functools import partial
 
+import deepdiff
 import itertools
 import json
 import dataclasses
@@ -79,6 +80,13 @@ class ZISettings:
         self._daq_settings: List[ZISetting] = daq_settings
         self._awg_settings: List[Tuple[int, ZISetting]] = awg_settings
         self._awg_indexes = [awg_index for (awg_index, _) in self._awg_settings]
+
+    def __eq__(self, other):
+        self_dict = self.as_dict()
+        other_dict = other.as_dict()
+        differences = deepdiff.DeepDiff(self_dict, other_dict)
+        result_bool = not bool(differences)
+        return result_bool
 
     @property
     def awg_indexes(self) -> List[int]:
@@ -956,7 +964,7 @@ class ZISettingsBuilder:
         )
 
     def with_compiler_sourcestring(
-        self, awg_index: int, seqc: str, waveforms_dict: dict = None
+        self, awg_index: int, seqc: str
     ) -> ZISettingsBuilder:
         """
         Adds the sequencer compiler sourcestring
@@ -980,7 +988,6 @@ class ZISettingsBuilder:
                 partial(
                     zi_helpers.set_and_compile_awg_seqc,
                     awg_index=awg_index,
-                    waveforms_dict=waveforms_dict,
                 ),
             ),
         )
