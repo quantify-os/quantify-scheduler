@@ -82,6 +82,8 @@ class ZISettings:
 
     def __eq__(self, other):
         self_dict = self.as_dict()
+        if not isinstance(other, ZISettings):
+            return False
         other_dict = other.as_dict()
         settings_equal = make_hash(self_dict) == make_hash(other_dict)
         return settings_equal

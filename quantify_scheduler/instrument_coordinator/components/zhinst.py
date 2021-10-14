@@ -58,7 +58,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
         raise NotImplementedError()
 
     # pylint: disable=arguments-renamed
-    def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
+    def prepare(self, zi_device_config: ZIDeviceConfig) -> bool:
         """
         Prepare the InstrumentCoordinator component with configuration
         required to arm the instrument.
@@ -68,6 +68,10 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
         options :
             The ZI instrument configuration.
             TODO: add what should be contained in this configuration.
+
+        Returns
+        -------
+            a boolean indicating if the ZI component was configured in this call.
         """
         self.zi_device_config = zi_device_config
 
@@ -79,7 +83,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
                 f"{self.name}: device config and settings "
                 + "are identical! Compilation skipped."
             )
-            return
+            return False
 
         logger.info(f"Configuring {self.name}.")
         # if the settings are not identical, update the attributes of the
@@ -97,6 +101,8 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
 
         # Upload settings, seqc and waveforms
         self.zi_settings.apply(self.instrument)
+
+        return True
 
     def retrieve_acquisition(self) -> Any:
         return None
@@ -183,7 +189,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def stop(self) -> None:
         self.instrument.awg.stop()
 
-    def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
+    def prepare(self, zi_device_config: ZIDeviceConfig) -> bool:
         """
         Prepares the component with configurations
         required to arm the instrument.
@@ -192,7 +198,10 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         """
 
         try:
-            super().prepare(zi_device_config)
+            # if settings where identical, no configuration is needed.
+            configure = super().prepare(zi_device_config)
+            if configure == False:
+                return False
         except FileNotFoundError as e:
             # whenever a new UHF device is used for the first time,
             # certain waveform files will not exist. The lines below copy files so
@@ -216,7 +225,11 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         # correctly. In practice, we see that integration weights update correctly, but
         # the waveforms in pulses do not. This problem is not fully understood, but this
         # resolves the issue at a minor overhead.
-        super().prepare(zi_device_config)
+
+        if configure:
+            # Upload settings, seqc and waveforms
+            self.zi_settings.apply(self.instrument)
+        return True
 
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.zi_device_config is None:
