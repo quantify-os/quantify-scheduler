@@ -399,15 +399,15 @@ def get_measure_instruction(
         )
 
     return zhinst.Measure(
-        uuid,
-        abs_time,
-        timeslot_index,
-        t0,
-        corrected_start_in_clocks,
-        duration_in_seconds,
-        duration_in_clocks,
-        weights_list[0],
-        weights_list[1],
+        uuid=uuid,
+        abs_time=abs_time,
+        timeslot_index=timeslot_index,
+        start_in_seconds=t0,
+        start_in_clocks=corrected_start_in_clocks,
+        duration_in_seconds=duration_in_seconds,
+        duration_in_clocks=duration_in_clocks,
+        weights_i=weights_list[0],
+        weights_q=weights_list[1],
     )
 
 
@@ -1209,8 +1209,8 @@ def _compile_for_uhfqa(
             # due to the waveform being appended with zeros. Therefore
             # avoiding an extra slice of waveform[0:integration_length]
 
-            weights_i = [0] * MAX_QAS_INTEGRATION_LENGTH
-            weights_q = [0] * MAX_QAS_INTEGRATION_LENGTH
+            weights_i = np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+            weights_q = np.zeros(MAX_QAS_INTEGRATION_LENGTH)
 
             weights_i[
                 0 : len(measure_instruction.weights_i)
@@ -1227,24 +1227,34 @@ def _compile_for_uhfqa(
                 n_acquisitions
             ).with_qas_result_enable(
                 True
-            ).with_qas_integration_weights_real(
-                readout_channel_index, weights_i
-            ).with_qas_integration_weights_imag(
-                readout_channel_index, weights_q
             ).with_qas_result_averages(
                 cached_schedule.schedule.repetitions
             )
-            # .with_qas_rotations(
-            #     range(NUM_UHFQA_READOUT_CHANNELS), 0
-            # )
+
+            # set the integration weights, note that we need to set 4 weights in order
+            # to use a complex valued weight function in the right way.
+            # Z = (w0*sI + w1*sQ) + 1j ( w1*sI - w0 * sQ)
+            settings_builder.with_qas_integration_weights_real(
+                readout_channel_index, list(weights_i)
+            ).with_qas_integration_weights_imag(
+                readout_channel_index, list(weights_q)
+            ).with_qas_integration_weights_real(
+                readout_channel_index + 1, list(weights_q)
+            ).with_qas_integration_weights_imag(
+                readout_channel_index + 1, list(-1 * weights_i)
+            )
 
             # Create partial function for delayed execution
             acq_channel_resolvers_map[acq_channel] = partial(
                 resolvers.result_acquisition_resolver,
-                result_node=f"qas/0/result/data/{readout_channel_index}/wave",
+                result_nodes=[
+                    f"qas/0/result/data/{readout_channel_index}/wave",
+                    f"qas/0/result/data/{readout_channel_index+1}/wave",
+                ],
             )
 
-            readout_channel_index += 1
+            # note that two readout channels where used
+            readout_channel_index += 2
 
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
