@@ -438,7 +438,7 @@ def test_compile_hardware_uhfqa_successfully(
 
     expected_settings = {
         "awgs/0/single": 1,
-        "qas/0/rotations/*": (1 + 0j),
+        "qas/0/rotations/*": (1 + 1j),
         "sigouts/0/on": 1,
         "sigouts/1/on": 1,
         "awgs/0/time": 0,

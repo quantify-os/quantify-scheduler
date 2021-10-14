@@ -1100,7 +1100,8 @@ def _compile_for_uhfqa(
     settings_builder.with_defaults(
         [
             ("awgs/0/single", 1),
-            ("qas/0/rotations/*", (1 + 0j)),
+            ("qas/0/rotations/*", (1 + 1j)),
+            ("qas/0/integration/sources/*", 0),
         ]
     ).with_sigouts(0, (1, 1)).with_awg_time(
         0, device.clock_select
