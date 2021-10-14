@@ -220,7 +220,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         # resolves the issue at a minor overhead.
         super().prepare(zi_device_config)
 
-
     def retrieve_acquisition(self) -> Dict[int, np.ndarray]:
         if self.zi_device_config is None:
             raise RuntimeError("Undefined device config, first prepare UHFQA!")
