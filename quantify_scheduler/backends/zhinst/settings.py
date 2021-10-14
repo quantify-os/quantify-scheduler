@@ -4,7 +4,6 @@
 from __future__ import annotations
 from functools import partial
 
-import deepdiff
 import itertools
 import json
 import dataclasses
@@ -13,7 +12,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union, cast
 
 import numpy as np
 from zhinst.qcodes import base
-
+from quantify_core.utilities.general import make_hash
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
@@ -84,9 +83,8 @@ class ZISettings:
     def __eq__(self, other):
         self_dict = self.as_dict()
         other_dict = other.as_dict()
-        differences = deepdiff.DeepDiff(self_dict, other_dict)
-        result_bool = not bool(differences)
-        return result_bool
+        settings_equal = make_hash(self_dict) == make_hash(other_dict)
+        return settings_equal
 
     @property
     def awg_indexes(self) -> List[int]:

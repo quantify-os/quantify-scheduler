@@ -57,13 +57,6 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def is_running(self) -> bool:
         raise NotImplementedError()
 
-    def _compare_identical(self, zi_device_config, zi_settings) -> bool:
-        identical_config_settings_comparison = False
-        if self.zi_device_config is not None:
-            if self.zi_settings == zi_settings:
-                identical_config_settings_comparison = True
-        return identical_config_settings_comparison
-
     # pylint: disable=arguments-renamed
     def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
         """
@@ -76,18 +69,22 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
             The ZI instrument configuration.
             TODO: add what should be contained in this configuration.
         """
-        zi_settings = zi_device_config.settings_builder.build()
+        self.zi_device_config = zi_device_config
 
-        if self._compare_identical(zi_device_config, zi_settings):
+        new_zi_settings = zi_device_config.settings_builder.build()
+        old_zi_settings = self.zi_settings
+
+        if new_zi_settings == old_zi_settings:
             logger.info(
                 f"{self.name}: device config and settings "
                 + "are identical! Compilation skipped."
             )
             return
 
-        self.zi_device_config = zi_device_config
-
-        self.zi_settings = zi_settings
+        logger.info(f"Configuring {self.name}.")
+        # if the settings are not identical, update the attributes of the
+        # ic component and apply the settings to the hardware.
+        self.zi_settings = new_zi_settings
 
         # Writes settings to filestorage
         self._data_path = Path(handling.get_datadir())
