@@ -127,9 +127,9 @@ def _parse_devices(data: Dict[str, Any]) -> List[zhinst.Device]:
     return device_list
 
 
-def _validate_schedule(schedule: types.Schedule) -> None:
+def _validate_schedule(schedule: types.CompiledSchedule) -> None:
     """
-    Validates the Schedule required values for creating the backend.
+    Validates the CompiledSchedule required values for creating the backend.
 
     Parameters
     ----------
@@ -536,7 +536,7 @@ class ZIDeviceConfig:
     name :
         the name of the schedule the config is for.
     schedule:
-        the schedule from which the config is generated.
+        the CompiledSchedule from which the config is generated.
     settings_builder:
         the builder to configure the ZI settings. This typically includes AWG and
         AWG settings.
@@ -548,18 +548,18 @@ class ZIDeviceConfig:
     """
 
     name: str
-    schedule: types.Schedule
+    schedule: types.CompiledSchedule
     settings_builder: zi_settings.ZISettingsBuilder
     acq_config: Optional[ZIAcquisitionConfig]
 
 
 def compile_backend(
-    schedule: types.Schedule, hardware_map: Dict[str, Any]
+    schedule: types.CompiledSchedule, hardware_map: Dict[str, Any]
 ) -> Dict[str, Union[ZIDeviceConfig, float]]:
 
     """
     Compiles backend for Zurich Instruments hardware according
-    to the Schedule and hardware configuration.
+    to the CompiledSchedule and hardware configuration.
 
     This method generates sequencer programs, waveforms and
     configurations required for the instruments defined in
@@ -1158,7 +1158,7 @@ def _compile_for_uhfqa(
     )
     logger.debug(seqc)
 
-    settings_builder.with_compiler_sourcestring(awg_index, seqc, waveforms_dict)
+    settings_builder.with_compiler_sourcestring(awg_index, seqc)
 
     # Apply waveforms to AWG
     _add_wave_nodes(device, awg_index, waveforms_dict, waveform_table, settings_builder)
