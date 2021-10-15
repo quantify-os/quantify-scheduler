@@ -17,6 +17,7 @@ import numpy as np
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
+from quantify_scheduler.instrument_coordinator.utility import lazy_set
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.backends.types.qblox import (
     PulsarSettings,
@@ -262,7 +263,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         settings
             The settings to configure it to.
         """
-        self.instrument.set("reference_source", settings.ref)
+        lazy_set(self.instrument, "reference_source", settings.ref)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -277,7 +278,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         settings
             The settings to configure it to.
         """
-        self.instrument.set(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+        lazy_set(self.instrument, f"sequencer{seq_idx}_sync_en", settings.sync_en)
 
         nco_en: bool = settings.nco_en
         self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
@@ -285,11 +286,13 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             self.instrument.set(
                 f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
             )
-        self.instrument.set(
+        lazy_set(
+            self.instrument,
             f"sequencer{seq_idx}_mixer_corr_phase_offset_degree",
             settings.mixer_corr_phase_offset_degree,
         )
-        self.instrument.set(
+        lazy_set(
+            self.instrument,
             f"sequencer{seq_idx}_mixer_corr_gain_ratio",
             settings.mixer_corr_gain_ratio,
         )
@@ -374,7 +377,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
             )
             self._configure_global_settings(pulsar_settings)
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self.instrument.set(f"sequencer{seq_idx}_sync_en", False)
+            lazy_set(self.instrument, f"sequencer{seq_idx}_sync_en", False)
 
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
@@ -390,8 +393,10 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
                     seq_idx=seq_idx, settings=seq_settings
                 )
 
-            self.instrument.set(
-                f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"]
+            lazy_set(
+                self.instrument,
+                f"sequencer{seq_idx}_waveforms_and_program",
+                seq_cfg["seq_fn"],
             )
 
         self._arm_all_sequencers_in_program(program)
@@ -408,13 +413,13 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_offset", settings.offset_ch0_path0)
+            lazy_set(self.instrument, "out0_offset", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out1_offset", settings.offset_ch0_path1)
+            lazy_set(self.instrument, "out1_offset", settings.offset_ch0_path1)
         if settings.offset_ch1_path0 is not None:
-            self.instrument.set("out2_offset", settings.offset_ch1_path0)
+            lazy_set(self.instrument, "out2_offset", settings.offset_ch1_path0)
         if settings.offset_ch1_path1 is not None:
-            self.instrument.set("out3_offset", settings.offset_ch1_path1)
+            lazy_set(self.instrument, "out3_offset", settings.offset_ch1_path1)
 
 
 # pylint: disable=too-many-ancestors
@@ -507,8 +512,10 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
                     seq_idx=seq_idx, settings=seq_settings
                 )
 
-            self.instrument.set(
-                f"sequencer{seq_idx}_waveforms_and_program", seq_cfg["seq_fn"]
+            lazy_set(
+                self.instrument,
+                f"sequencer{seq_idx}_waveforms_and_program",
+                seq_cfg["seq_fn"],
             )
 
         self._arm_all_sequencers_in_program(program)
@@ -525,23 +532,24 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
+            lazy_set(self.instrument, "out0_dac_offset", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out1_dac_offset", settings.offset_ch0_path1)
+            lazy_set(self.instrument, "out1_dac_offset", settings.offset_ch0_path1)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
         if settings.integration_length_acq is not None:
-            self.instrument.set(
+            lazy_set(
+                self.instrument,
                 f"sequencer{seq_idx}_integration_length_acq",
                 settings.integration_length_acq,
             )
             self._acquisition_manager.integration_length_acq = (
                 settings.integration_length_acq
             )
-        self.instrument.set(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
+        lazy_set(self.instrument, f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
 
 class PulsarQCMRFComponent(PulsarQCMComponent):
@@ -563,19 +571,19 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         self.instrument.set("reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
-            self.instrument.set("out0_lo_freq", settings.lo0_freq)
+            lazy_set(self.instrument, "out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
-            self.instrument.set("out1_lo_freq", settings.lo1_freq)
+            lazy_set(self.instrument, "out1_lo_freq", settings.lo1_freq)
 
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
+            lazy_set(self.instrument, "out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out0_offset_path1", settings.offset_ch0_path1)
+            lazy_set(self.instrument, "out0_offset_path1", settings.offset_ch0_path1)
         if settings.offset_ch1_path0 is not None:
-            self.instrument.set("out1_offset_path0", settings.offset_ch1_path0)
+            lazy_set(self.instrument, "out1_offset_path0", settings.offset_ch1_path0)
         if settings.offset_ch1_path1 is not None:
-            self.instrument.set("out1_offset_path1", settings.offset_ch1_path1)
+            lazy_set(self.instrument, "out1_offset_path1", settings.offset_ch1_path1)
 
 
 class PulsarQRMRFComponent(PulsarQRMComponent):
@@ -594,16 +602,16 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         settings
             The settings to configure it to.
         """
-        self.instrument.set("reference_source", settings.ref)
+        lazy_set(self.instrument, "reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
-            self.instrument.set("out0_in0_lo_freq", settings.lo0_freq)
+            lazy_set(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
         # configure mixer ccorrection offsets
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_offset_path0", settings.offset_ch0_path0)
+            lazy_set(self.instrument, "out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out0_offset_path1", settings.offset_ch0_path1)
+            lazy_set(self.instrument, "out0_offset_path1", settings.offset_ch0_path1)
 
 
 def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
@@ -992,7 +1000,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             A dictionary containing all the settings to set.
         """
         if "reference_source" in settings:
-            self.instrument.set("reference_source", settings["reference_source"])
+            lazy_set(self.instrument, "reference_source", settings["reference_source"])
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
