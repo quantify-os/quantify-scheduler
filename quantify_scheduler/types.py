@@ -186,7 +186,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         :
         """
         if cls._class_signature is None:
-            logging.info(f"Operation: caching signature for class {cls}")
+            logging.info(f"Caching signature for class {cls.__name__}")
             cls._class_signature = inspect.signature(cls)
         signature = cls._class_signature
 
