@@ -653,7 +653,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                 == 0
             )
             if not label_is_unique:
-                raise ValueError(f'label "{label}" must be unique')
+                raise ValueError(f'Label "{label}" must be unique.')
 
         # assert that the reference operation exists
         if ref_op is not None:
