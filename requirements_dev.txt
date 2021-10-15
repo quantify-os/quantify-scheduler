@@ -35,7 +35,3 @@ lockfile # see issue quantify-scheduler#129
 pytest-mpl
 sphinx-toolbox  # required by enum_tools when building the docs, 2.4.1 requires sphinx==3.3.1
 enum_tools # requires sphinx-toolbox when building docs
-# See https://gitlab.com/quantify-os/quantify-core/-/merge_requests/242
-# A requirement for quantify-core but won't work on RTD because it uses the released
-# versions of quantify-core
-lmfit<=1.0.2
