@@ -639,21 +639,21 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         if label is None:
             label = str(uuid4())
-
-        # assert that the label of the operation does not exists in the
-        # timing constraints.
-        label_is_unique = (
-            len(
-                [
-                    item
-                    for item in self.data["timing_constraints"]
-                    if item["label"] == label
-                ]
+        else:
+            # assert that the label of the operation does not exists in the
+            # timing constraints.
+            label_is_unique = (
+                len(
+                    [
+                        item
+                        for item in self.data["timing_constraints"]
+                        if item["label"] == label
+                    ]
+                )
+                == 0
             )
-            == 0
-        )
-        if not label_is_unique:
-            raise ValueError(f'label "{label}" must be unique')
+            if not label_is_unique:
+                raise ValueError(f'Label "{label}" must be unique.')
 
         # assert that the reference operation exists
         if ref_op is not None:
