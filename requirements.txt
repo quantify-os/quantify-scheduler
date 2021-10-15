@@ -16,3 +16,8 @@ qblox-instruments==0.5.1
 # tmp fixes
 
 setuptools<58.0.2 # https://github.com/vlasovskikh/funcparserlib/issues/69
+
+# See https://gitlab.com/quantify-os/quantify-core/-/merge_requests/242
+# A requirement for quantify-core but won't work on RTD because it uses the released
+# versions of quantify-core
+lmfit<=1.0.2
