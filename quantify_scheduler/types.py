@@ -68,6 +68,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
     """
 
     schema_filename = "operation.json"
+    _class_signature = None
 
     def __init__(self, name: str, data: dict = None) -> None:
         super().__init__()
@@ -183,7 +184,10 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         -------
         :
         """
-        signature = inspect.signature(cls)
+        if cls._class_signature is None:
+            cls._class_signature = inspect.signature(cls)
+            print(f"signature for {cls}")
+        signature = cls._class_signature
 
         def to_kwarg(key) -> str:
             """
