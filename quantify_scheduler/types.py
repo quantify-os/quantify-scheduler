@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import logging
 import ast
 from abc import ABC
 from collections import UserDict
@@ -185,8 +186,8 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         :
         """
         if cls._class_signature is None:
+            logging.info(f"Operation: caching signature for class {cls}")
             cls._class_signature = inspect.signature(cls)
-            print(f"signature for {cls}")
         signature = cls._class_signature
 
         def to_kwarg(key) -> str:
