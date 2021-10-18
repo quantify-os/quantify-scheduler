@@ -11,10 +11,16 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from zhinst.qcodes import base
+from quantify_core.data.handling import set_datadir
 from quantify_scheduler import waveforms
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import settings
+from quantify_scheduler.schedules.verification import (
+    awg_staircase_sched,
+)
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
+from quantify_scheduler.compilation import qcompile
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:
@@ -23,6 +29,53 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     instrument._serial = "dev1234"
     instrument._type = "uhfqa"
     return instrument
+
+
+def test_zi_settings_equality(tmp_test_data_dir):
+    # Arrange
+    set_datadir(tmp_test_data_dir)
+    sched_kwargs = {
+        "pulse_amps": np.linspace(0, 0.5, 11),
+        "pulse_duration": 1e-6,
+        "readout_frequency": 5e9,
+        "acquisition_delay": 0,
+        "integration_time": 2e-6,
+        "mw_port": "q0:mw",
+        "ro_port": "q0:res",
+        "mw_clock": "q0.01",
+        "ro_clock": "q0.ro",
+        "init_duration": 10e-6,
+        "repetitions": 10,
+    }
+    sched = awg_staircase_sched(**sched_kwargs)
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+
+    hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6
+    comp_sched_a = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+
+    hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = -100e6
+    comp_sched_b = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched_c = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+
+    # Act
+    sett_a = comp_sched_a.compiled_instructions["ic_uhfqa0"].settings_builder.build()
+    sett_b = comp_sched_b.compiled_instructions["ic_uhfqa0"].settings_builder.build()
+    sett_c = comp_sched_c.compiled_instructions["ic_uhfqa0"].settings_builder.build()
+
+    # Assert
+    # pylint: disable=comparison-with-itself
+    assert sett_a == sett_a
+    assert sett_a != sett_b
+    assert sett_a != sett_c
+
+    assert sett_b != sett_a
+    assert sett_b == sett_b
+    assert sett_b == sett_c
+
+    assert sett_c != sett_a
+    assert sett_c == sett_b
+    assert sett_c == sett_c
 
 
 def test_zi_setting_apply(mocker):

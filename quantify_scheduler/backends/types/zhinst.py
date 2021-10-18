@@ -305,7 +305,11 @@ class Instruction:
 
 @dataclass(frozen=True)
 class Measure(Instruction):
-    """Sequence measurement instruction record type."""
+    """
+    Sequence measurement instruction record type.
+
+    Note that a measurement like this always uses two weights in the UHFQA.
+    """
 
     weights_i: np.ndarray
     weights_q: np.ndarray

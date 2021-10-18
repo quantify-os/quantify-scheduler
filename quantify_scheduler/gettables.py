@@ -140,6 +140,7 @@ class ScheduleGettableSingleChannel:
         # Assert that the schedule is compatible with that.
         assert acq_metadata.acq_return_type == complex
         acquired_data = instr_coordinator.retrieve_acquisition()
+        instr_coordinator.stop()
 
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233

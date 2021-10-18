@@ -127,9 +127,9 @@ def _parse_devices(data: Dict[str, Any]) -> List[zhinst.Device]:
     return device_list
 
 
-def _validate_schedule(schedule: types.Schedule) -> None:
+def _validate_schedule(schedule: types.CompiledSchedule) -> None:
     """
-    Validates the Schedule required values for creating the backend.
+    Validates the CompiledSchedule required values for creating the backend.
 
     Parameters
     ----------
@@ -173,6 +173,7 @@ def apply_waveform_corrections(
     start_and_duration_in_seconds :
     instrument_info :
     is_pulse :
+        True if it is a pulse to be up converted, False if it is an integration weight.
 
     Returns
     -------
@@ -196,6 +197,19 @@ def apply_waveform_corrections(
                 output.mixer_corrections.amp_ratio,
                 output.mixer_corrections.phase_error,
             )
+
+    else:  # in the case where the waveform is an integration weight
+        # Modulate the waveform
+        if output.modulation.type == enums.ModulationModeType.PREMODULATE:
+            t: np.ndarray = np.arange(
+                0, 0 + duration_in_seconds, 1 / instrument_info.clock_rate
+            )
+            # N.B. the minus sign with respect to the pulse being applied
+            waveform = waveform_helpers.modulate_waveform(
+                t, waveform, -1 * output.modulation.interm_freq
+            )
+        # mixer corrections for the integration are not supported yet.
+        # they would belong here.
 
     start_in_clocks, waveform = waveform_helpers.shift_waveform(
         waveform,
@@ -283,11 +297,11 @@ def get_wave_instruction(
         n_samples_shifted,
         waveform,
     ) = apply_waveform_corrections(
-        output,
-        waveform,
-        (t0, duration_in_seconds),
-        instrument_info,
-        True,
+        output=output,
+        waveform=waveform,
+        start_and_duration_in_seconds=(t0, duration_in_seconds),
+        instrument_info=instrument_info,
+        is_pulse=True,
     )
 
     duration_in_clocks: float = duration_in_seconds / instrument_info.low_res_clock
@@ -350,20 +364,39 @@ def get_measure_instruction(
 
     weights_list: List[np.ndarray] = [np.empty((0,)), np.empty((0,))]
     corrected_start_in_clocks: int = 0
-    for i, pulse_info in enumerate(acq_info["waveforms"]):
-        waveform = waveform_helpers.exec_waveform_partial(
-            schedule_helpers.get_pulse_uuid(pulse_info),
+
+    if len(acq_info["waveforms"]) == 0:
+        pass
+    elif len(acq_info["waveforms"]) == 2:
+        # an acquisition weight has two waveforms, the real and imaginary part
+        wf_i = waveform_helpers.exec_waveform_partial(
+            schedule_helpers.get_pulse_uuid(acq_info["waveforms"][0]),
             cached_schedule.pulseid_waveformfn_dict,
             instrument_info.clock_rate,
         )
-        (corrected_start_in_clocks, _, waveform) = apply_waveform_corrections(
-            output,
-            waveform,
-            (t0, duration_in_seconds),
-            instrument_info,
-            False,
+        wf_q = waveform_helpers.exec_waveform_partial(
+            schedule_helpers.get_pulse_uuid(acq_info["waveforms"][1]),
+            cached_schedule.pulseid_waveformfn_dict,
+            instrument_info.clock_rate,
         )
-        weights_list[i] = waveform
+
+        # the imaginary part is already included in wf_q
+        waveform = wf_i + wf_q
+
+        (corrected_start_in_clocks, _, waveform_corr) = apply_waveform_corrections(
+            output=output,
+            waveform=waveform,
+            start_and_duration_in_seconds=(t0, duration_in_seconds),
+            instrument_info=instrument_info,
+            is_pulse=False,
+        )
+        weights_list[0] = waveform_corr.real
+        weights_list[1] = waveform_corr.imag
+    else:
+        raise ValueError(
+            "A measurement either has no integration weights or 2 "
+            "integration weights (real and imaginary)"
+        )
 
     if len(acq_info["waveforms"]) == 0:
         (corrected_start_in_clocks, _) = waveform_helpers.shift_waveform(
@@ -374,15 +407,15 @@ def get_measure_instruction(
         )
 
     return zhinst.Measure(
-        uuid,
-        abs_time,
-        timeslot_index,
-        t0,
-        corrected_start_in_clocks,
-        duration_in_seconds,
-        duration_in_clocks,
-        weights_list[0],
-        weights_list[1],
+        uuid=uuid,
+        abs_time=abs_time,
+        timeslot_index=timeslot_index,
+        start_in_seconds=t0,
+        start_in_clocks=corrected_start_in_clocks,
+        duration_in_seconds=duration_in_seconds,
+        duration_in_clocks=duration_in_clocks,
+        weights_i=weights_list[0],
+        weights_q=weights_list[1],
     )
 
 
@@ -478,7 +511,16 @@ def get_execution_table(
 
 @dataclass(frozen=True)
 class ZIAcquisitionConfig:
-    """Zurich Instruments acquisition configuration."""
+    """Zurich Instruments acquisition configuration.
+
+    Parameters
+    ----------
+    n_acquisitions :
+        the number of distinct acquisitions in this experiment.
+    resolvers:
+        resolvers used to retrieve the results from the right UHFQA nodes.
+        See also :mod:`~quantify_scheduler.backends.zhinst.resolvers`
+    """
 
     n_acquisitions: int
     resolvers: Dict[int, Callable]
@@ -486,21 +528,38 @@ class ZIAcquisitionConfig:
 
 @dataclass(frozen=True)
 class ZIDeviceConfig:
-    """Zurich Instruments device configuration."""
+    """
+    Zurich Instruments device configuration.
+
+    Parameters
+    ----------
+    name :
+        the name of the schedule the config is for.
+    schedule:
+        the CompiledSchedule from which the config is generated.
+    settings_builder:
+        the builder to configure the ZI settings. This typically includes AWG and
+        AWG settings.
+    acq_config:
+        the acquisition config contains the number of acquisitions and a dictionary of
+        resolvers used to retrieve the results from the right UHFQA nodes.
+        Note that this part of the config is not needed during prepare, but only during
+        the retrieve acquisitions step.
+    """
 
     name: str
-    schedule: types.Schedule
+    schedule: types.CompiledSchedule
     settings_builder: zi_settings.ZISettingsBuilder
     acq_config: Optional[ZIAcquisitionConfig]
 
 
 def compile_backend(
-    schedule: types.Schedule, hardware_map: Dict[str, Any]
+    schedule: types.CompiledSchedule, hardware_map: Dict[str, Any]
 ) -> Dict[str, Union[ZIDeviceConfig, float]]:
 
     """
     Compiles backend for Zurich Instruments hardware according
-    to the Schedule and hardware configuration.
+    to the CompiledSchedule and hardware configuration.
 
     This method generates sequencer programs, waveforms and
     configurations required for the instruments defined in
@@ -545,9 +604,9 @@ def compile_backend(
         acq_config: Optional[ZIAcquisitionConfig] = None
 
         if device.device_type == zhinst.DeviceType.HDAWG:
-            _compile_for_hdawg(device, cached_schedule, builder)
+            builder = _compile_for_hdawg(device, cached_schedule, builder)
         elif device.device_type == zhinst.DeviceType.UHFQA:
-            acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
+            builder, acq_config = _compile_for_uhfqa(device, cached_schedule, builder)
 
         # add the local oscillator config by iterating over all output channels.
         # note that not all output channels have an LO associated to them.
@@ -602,21 +661,26 @@ def _add_lo_config(
             return
 
     if lo_freq is None and interm_freq is not None:
-        local_oscillator.frequency = rf_freq - interm_freq
+        lo_freq = rf_freq - interm_freq
+        local_oscillator.frequency = lo_freq
+
     elif interm_freq is None and lo_freq is not None:
-        channel.modulation.interm_freq = rf_freq - lo_freq
+        interm_freq = rf_freq - lo_freq
+        channel.modulation.interm_freq = interm_freq
+
     elif interm_freq is None and lo_freq is None:
         raise ValueError(
             "Either local oscillator frequency or channel intermediate frequency "
             f'must be set for LocalOscillator "{name}"'
         )
 
-    if (
-        local_oscillator.name in device_configs
-        and device_configs[local_oscillator.name] != rf_freq
-    ):
-        raise ValueError(f'Multiple frequencies assigned to LocalOscillator "{name}"')
-    device_configs[local_oscillator.name] = rf_freq
+    if local_oscillator.name in device_configs:
+        # the device_config currently only contains the frequency
+        if device_configs[local_oscillator.name] != lo_freq:
+            raise ValueError(
+                f'Multiple frequencies assigned to LocalOscillator "{name}"'
+            )
+    device_configs[local_oscillator.name] = lo_freq
 
 
 def _add_wave_nodes(
@@ -658,7 +722,7 @@ def _compile_for_hdawg(
     device: zhinst.Device,
     cached_schedule: schedule_helpers.CachedSchedule,
     settings_builder: zi_settings.ZISettingsBuilder,
-) -> None:
+) -> zi_settings.ZISettingsBuilder:
     """
     Programs the HDAWG ZI Instrument.
 
@@ -786,6 +850,8 @@ def _compile_for_hdawg(
             waveform_table,
             settings_builder,
         )
+
+    return settings_builder
 
 
 # pylint: disable=too-many-arguments
@@ -997,7 +1063,7 @@ def _compile_for_uhfqa(
     device: zhinst.Device,
     cached_schedule: schedule_helpers.CachedSchedule,
     settings_builder: zi_settings.ZISettingsBuilder,
-) -> ZIAcquisitionConfig:
+) -> Tuple[zi_settings.ZISettingsBuilder, ZIAcquisitionConfig]:
     """
     Initialize programming the UHFQA ZI Instrument.
 
@@ -1034,7 +1100,8 @@ def _compile_for_uhfqa(
     settings_builder.with_defaults(
         [
             ("awgs/0/single", 1),
-            ("qas/0/rotations/*", (1 + 0j)),
+            ("qas/0/rotations/*", (1 + 1j)),
+            ("qas/0/integration/sources/*", 0),
         ]
     ).with_sigouts(0, (1, 1)).with_awg_time(
         0, device.clock_select
@@ -1091,7 +1158,7 @@ def _compile_for_uhfqa(
     )
     logger.debug(seqc)
 
-    settings_builder.with_compiler_sourcestring(awg_index, seqc, waveforms_dict)
+    settings_builder.with_compiler_sourcestring(awg_index, seqc)
 
     # Apply waveforms to AWG
     _add_wave_nodes(device, awg_index, waveforms_dict, waveform_table, settings_builder)
@@ -1143,7 +1210,6 @@ def _compile_for_uhfqa(
             )
         else:
             measure_instruction: zhinst.Measure = measure_instructions_dict[acq_uuid]
-
             # Combine a reset and setting acq weights
             # by slicing the length of the waveform I and Q values.
             # This overwrites 0..length with new values.
@@ -1151,14 +1217,16 @@ def _compile_for_uhfqa(
             # because of the waveform granularity. This is irrelevant
             # due to the waveform being appended with zeros. Therefore
             # avoiding an extra slice of waveform[0:integration_length]
-            waveform_i = measure_instruction.weights_i
-            waveform_q = measure_instruction.weights_q
 
-            weights_i = [0] * MAX_QAS_INTEGRATION_LENGTH
-            weights_q = [0] * MAX_QAS_INTEGRATION_LENGTH
+            weights_i = np.zeros(MAX_QAS_INTEGRATION_LENGTH)
+            weights_q = np.zeros(MAX_QAS_INTEGRATION_LENGTH)
 
-            weights_i[0 : len(waveform_i)] = np.real(waveform_i)
-            weights_q[0 : len(waveform_q)] = np.imag(waveform_q)
+            weights_i[
+                0 : len(measure_instruction.weights_i)
+            ] = measure_instruction.weights_i
+            weights_q[
+                0 : len(measure_instruction.weights_q)
+            ] = measure_instruction.weights_q
 
             settings_builder.with_qas_result_mode(
                 zhinst.QasResultMode.CYCLIC
@@ -1168,29 +1236,41 @@ def _compile_for_uhfqa(
                 n_acquisitions
             ).with_qas_result_enable(
                 True
-            ).with_qas_integration_weights_real(
-                readout_channel_index, weights_i
-            ).with_qas_integration_weights_imag(
-                readout_channel_index, weights_q
             ).with_qas_result_averages(
                 cached_schedule.schedule.repetitions
             )
-            # .with_qas_rotations(
-            #     range(NUM_UHFQA_READOUT_CHANNELS), 0
-            # )
+
+            # set the integration weights, note that we need to set 4 weights in order
+            # to use a complex valued weight function in the right way.
+            # Z = (w0*sI + w1*sQ) + 1j ( w1*sI - w0 * sQ)
+            settings_builder.with_qas_integration_weights_real(
+                readout_channel_index, list(weights_i)
+            ).with_qas_integration_weights_imag(
+                readout_channel_index, list(weights_q)
+            ).with_qas_integration_weights_real(
+                readout_channel_index + 1, list(weights_q)
+            ).with_qas_integration_weights_imag(
+                readout_channel_index + 1, list(-1 * weights_i)
+            )
 
             # Create partial function for delayed execution
             acq_channel_resolvers_map[acq_channel] = partial(
                 resolvers.result_acquisition_resolver,
-                result_node=f"qas/0/result/data/{readout_channel_index}/wave",
+                result_nodes=[
+                    f"qas/0/result/data/{readout_channel_index}/wave",
+                    f"qas/0/result/data/{readout_channel_index+1}/wave",
+                ],
             )
 
-            readout_channel_index += 1
+            # note that two readout channels where used
+            readout_channel_index += 2
 
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
 
-    return ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map)
+    return settings_builder, ZIAcquisitionConfig(
+        n_acquisitions, acq_channel_resolvers_map
+    )
 
 
 # pylint: disable=too-many-arguments

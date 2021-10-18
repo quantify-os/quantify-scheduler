@@ -35,6 +35,10 @@ Merged branches and closed issues
 * Qblox Backend - Support for using real value pulses on arbitrary outputs added (!142).
 * Qblox Backend - Compilation now supports 6 sequencers for both the QCM as well as the QRM (!142).
 * Zhinst backend - No exception is raised when an LO that is in the config is not part of a schedule. (#203, !223)
+* Zhinst backend - instrument coordinator components for ZI will only be configured when the settings used to configure it have changed (#196, !227)
+* Zhinst backend - solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
+* Zhinst backend - Warnings raised during compilation of seqc programs will no longer raise an exception but will use logging.warning (!227)
+* Zhinst backend - resolved a bug where the instrument coordinator cannot write waveforms to the UHFQA if it has never been used before (!227)
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
