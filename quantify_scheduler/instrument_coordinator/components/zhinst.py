@@ -57,7 +57,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def is_running(self) -> bool:
         raise NotImplementedError()
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-differ
     def prepare(self, zi_device_config: ZIDeviceConfig) -> bool:
         """
         Prepare the InstrumentCoordinator component with configuration
