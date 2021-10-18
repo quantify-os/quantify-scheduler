@@ -490,7 +490,7 @@ and the resulting dataset can be analyzed using
 
 .. jupyter-execute::
 
-    from quantify_core.analysis.t1_analysis import T1Analysis
+    from quantify_core.analysis.single_qubit_timedomain import T1Analysis
     # analysis = T1Analysis(label=label).run()
 
 

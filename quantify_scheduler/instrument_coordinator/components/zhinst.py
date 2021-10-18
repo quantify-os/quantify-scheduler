@@ -65,13 +65,14 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
 
         Parameters
         ----------
-        options :
-            The ZI instrument configuration.
-            TODO: add what should be contained in this configuration.
+        zi_device_config :
+            The ZI instrument configuration. See the link for details of the
+            configuration format.
 
         Returns
         -------
-            a boolean indicating if the ZI component was configured in this call.
+        :
+            A boolean indicating if the ZI component was configured in this call.
         """
         self.zi_device_config = zi_device_config
 
@@ -153,11 +154,24 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         for awg_index in self.zi_settings.awg_indexes:
             self.get_awg(awg_index).stop()
 
-    def prepare(self, zi_device_config: ZIDeviceConfig) -> None:
+    def prepare(self, zi_device_config: ZIDeviceConfig) -> bool:
+        """
+        Skip preparation if the new zi_device_config is the same as that from the
+        previous time prepare was called. This saves significant time overhead.
 
-        # skip prepartaion if the new zi_device_config is the same as that from the
-        # previous time prepare was called. This saves significant time overhead
-        super().prepare(zi_device_config)
+        Parameters
+        ----------
+        zi_device_config :
+            The ZI instrument configuration. See the link for details of the
+            configuration format.
+
+        Returns
+        -------
+        :
+            A boolean indicating if the ZI component was configured in this call.
+        """
+        configure = super().prepare(zi_device_config)
+        return configure
 
     def retrieve_acquisition(self) -> Any:
         return None
@@ -195,12 +209,23 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         required to arm the instrument.
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
+
+        Parameters
+        ----------
+        zi_device_config :
+            The ZI instrument configuration. See the link for details of the
+            configuration format.
+
+        Returns
+        -------
+        :
+            A boolean indicating if the ZI component was configured in this call.
         """
 
         try:
             # if settings where identical, no configuration is needed.
             configure = super().prepare(zi_device_config)
-            if configure == False:
+            if configure is False:
                 return False
         except FileNotFoundError as e:
             # whenever a new UHF device is used for the first time,
