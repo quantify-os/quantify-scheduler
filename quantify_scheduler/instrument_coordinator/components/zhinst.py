@@ -212,13 +212,18 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             configure = super().prepare(zi_device_config)
             if configure is False:
                 return False
-        except FileNotFoundError as e:
+
+        # pylint: disable=broad-except
+        # the exception being raised is "Upload failed", but the ZI backend raises it
+        # as a general exception.
+        except Exception as e:
             # whenever a new UHF device is used for the first time,
             # certain waveform files will not exist. The lines below copy files so
             # that it is possible to read from that location.
             # this line of code should only be logging a warning the very first time
             # a new setup is used, and then resolve auto.
             logger.warning(e)
+            configure = True
 
         self._data_path = Path(handling.get_datadir())
         # Copy the UHFQA waveforms to the waves directory
