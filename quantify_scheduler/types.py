@@ -3,6 +3,7 @@
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
+import logging
 import inspect
 import json
 import ast
@@ -68,6 +69,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
     """
 
     schema_filename = "operation.json"
+    _class_signature = None
 
     def __init__(self, name: str, data: dict = None) -> None:
         super().__init__()
@@ -101,7 +103,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
     def __str__(self) -> str:
         """
-        Returns a concise string represenation which can be evaluated into a new
+        Returns a concise string representation which can be evaluated into a new
         instance using `eval(str(operation))` only when the data dictionary has
         not been modified.
 
@@ -113,7 +115,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         """
         Returns the string representation  of this instance.
 
-        This represenation can always be evalued to create a new instance.
+        This representation can always be evaluated to create a new instance.
 
         .. code-block::
 
@@ -183,7 +185,10 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         -------
         :
         """
-        signature = inspect.signature(cls)
+        if cls._class_signature is None:
+            logging.info(f"Caching signature for class {cls.__name__}")
+            cls._class_signature = inspect.signature(cls)
+        signature = cls._class_signature
 
         def to_kwarg(key) -> str:
             """
@@ -472,11 +477,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self.data["resource_dict"]
 
     def __repr__(self) -> str:
-        return '{} "{}" containing ({}) {}  (unique) operations.'.format(
-            self.__class__.__name__,
-            self.data["name"],
-            len(self.data["operation_dict"]),
-            len(self.data["timing_constraints"]),
+        return (
+            f'{self.__class__.__name__} "{self.data["name"]}" containing '
+            f'({len(self.data["operation_dict"])}) '
+            f'{len(self.data["timing_constraints"])}  (unique) operations.'
         )
 
     def to_json(self) -> str:
@@ -581,7 +585,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         """
         assert resources.Resource.is_valid(resource)
         if resource.name in self.data["resource_dict"]:
-            raise ValueError("Key {} is already present".format(resource.name))
+            raise ValueError(f"Key {resource.name} is already present")
 
         self.data["resource_dict"][resource.name] = resource
 
@@ -635,21 +639,21 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         if label is None:
             label = str(uuid4())
-
-        # assert that the label of the operation does not exists in the
-        # timing constraints.
-        label_is_unique = (
-            len(
-                [
-                    item
-                    for item in self.data["timing_constraints"]
-                    if item["label"] == label
-                ]
+        else:
+            # assert that the label of the operation does not exists in the
+            # timing constraints.
+            label_is_unique = (
+                len(
+                    [
+                        item
+                        for item in self.data["timing_constraints"]
+                        if item["label"] == label
+                    ]
+                )
+                == 0
             )
-            == 0
-        )
-        if not label_is_unique:
-            raise ValueError('label "{}" must be unique'.format(label))
+            if not label_is_unique:
+                raise ValueError(f'Label "{label}" must be unique.')
 
         # assert that the reference operation exists
         if ref_op is not None:
@@ -664,9 +668,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                 == 1
             )
             if not ref_exists:
-                raise ValueError(
-                    'Reference "{}" does not exist in schedule.'.format(ref_op)
-                )
+                raise ValueError(f'Reference "{ref_op}" does not exist in schedule.')
 
         operation_id = str(operation)
         self.data["operation_dict"][operation_id] = operation
@@ -726,7 +728,7 @@ class CompiledSchedule(ScheduleBase):
         values are the instructions for that component.
 
         These values typically contain a combination of sequence files, waveform
-        defintions, and parameters to configure on the instrument.
+        definitions, and parameters to configure on the instrument.
         """
         return self.data["compiled_instructions"]
 
