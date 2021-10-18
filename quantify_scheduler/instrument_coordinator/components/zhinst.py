@@ -63,6 +63,9 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
         Prepare the InstrumentCoordinator component with configuration
         required to arm the instrument.
 
+        The preparation is skipped when the new zi_device_config is the same as that
+        from the previous time prepare was called. This saves significant time overhead.
+
         Parameters
         ----------
         zi_device_config :
@@ -154,25 +157,6 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         for awg_index in self.zi_settings.awg_indexes:
             self.get_awg(awg_index).stop()
 
-    def prepare(self, zi_device_config: ZIDeviceConfig) -> bool:
-        """
-        Skip preparation if the new zi_device_config is the same as that from the
-        previous time prepare was called. This saves significant time overhead.
-
-        Parameters
-        ----------
-        zi_device_config :
-            The ZI instrument configuration. See the link for details of the
-            configuration format.
-
-        Returns
-        -------
-        :
-            A boolean indicating if the ZI component was configured in this call.
-        """
-        configure = super().prepare(zi_device_config)
-        return configure
-
     def retrieve_acquisition(self) -> Any:
         return None
 
@@ -207,6 +191,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         """
         Prepares the component with configurations
         required to arm the instrument.
+
         After this step is complete, the waveform file is uploaded
         to the LabOne WebServer.
 
