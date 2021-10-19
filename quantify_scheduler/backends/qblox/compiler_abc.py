@@ -1264,8 +1264,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 raise ValueError(
                     f"Attempting to set {param_name} of {self.name} to "
                     f"{offset_in_config} V. {param_name} has to be between "
-                    f"{voltage_range.min_val* conversion_factor} and "
-                    f"{voltage_range.max_val* conversion_factor} V!"
+                    f"{voltage_range.min_val/ conversion_factor} and "
+                    f"{voltage_range.max_val/ conversion_factor} V!"
                 )
 
             return calculated_offset
