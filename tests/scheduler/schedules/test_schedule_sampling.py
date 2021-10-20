@@ -9,6 +9,7 @@ from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.pulse_library import SquarePulse
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.visualization.pulse_diagram import sample_schedule
+from quantify_scheduler.resources import BasebandClockResource
 
 
 def test_sample_schedule() -> None:
@@ -42,11 +43,47 @@ def test_sample_schedule() -> None:
     )
 
     np.testing.assert_array_almost_equal(
-        waveforms["SDP"], np.array([0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3])
+        waveforms["SDP"], np.array([0.2, 0.2, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3])
     )
     np.testing.assert_array_almost_equal(
         waveforms["T"], np.array([-0.2, -0.2, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     )
+
+
+def test_sample_modulated_waveform() -> None:
+    schedule = Schedule("test")
+    clock0 = BasebandClockResource(
+        name="clock0",
+        data={
+            "name": "clock0",
+            "type": "BasebandClockResource",
+            "freq": 0.15e9,
+            "phase": 0,
+        },
+    )
+    schedule.add_resource(clock0)
+
+    square_pulse_op = SquarePulse(amp=0.2, duration=3e-9, port="SDP", clock="clock0")
+    schedule.add(square_pulse_op)
+    square_pulse_op = SquarePulse(amp=0.2, duration=3e-9, port="T")
+    schedule.add(square_pulse_op, ref_pt="start")
+    determine_absolute_timing(schedule=schedule)
+
+    timestamps, waveforms = sample_schedule(
+        schedule,
+        sampling_rate=1e9,
+        modulation="clock",
+    )
+
+    assert waveforms["SDP"].dtype.kind == "c"
+    np.testing.assert_array_almost_equal(
+        waveforms["SDP"],
+        np.array([0.2 + 0.0j, 0.117557 - 0.161803j, -0.061803 - 0.190211j]),
+    )
+    np.testing.assert_array_almost_equal(waveforms["T"], np.array([0.2, 0.2, 0.2]))
+
+
+test_sample_modulated_waveform()
 
 
 def test_sample_custom_port_list() -> None:
@@ -64,5 +101,5 @@ def test_sample_custom_port_list() -> None:
 def test_sample_empty_schedule() -> None:
     schedule = Schedule("test")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError):
         timestamps, waveforms = sample_schedule(schedule, sampling_rate=1e9)

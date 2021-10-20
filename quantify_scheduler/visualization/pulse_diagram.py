@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, Callable
 
 import numpy as np
+import matplotlib
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -16,6 +17,7 @@ from typing_extensions import Literal
 
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.waveforms import modulate_wave
+from quantify_scheduler.pulse_library import Operation, WindowOperation
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +245,8 @@ def sample_schedule(
     modulation_if: float = 0.0,
     sampling_rate: int = 1_000_000_000,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
-    """Sample a schedule on discete points in time
+    """
+    Sample a schedule on discete points in time
 
     Parameters
     ------------
@@ -282,7 +285,7 @@ def sample_schedule(
 
         for pulse_info in operation["pulse_info"]:
             if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
-                continue
+                logging.info(f"operation {operation} is not a valid pulse for plotting")
 
             # times at which to evaluate waveform
             t0 = t_constr["abs_time"] + pulse_info["t0"]
@@ -295,6 +298,14 @@ def sample_schedule(
                 ]
 
     logger.info(f"sample_schedule: time_window {time_window}, port_map {port_map}")
+
+    if time_window is None:
+        raise RuntimeError(
+            f"Attempting to sample schedule {schedule.name}, "
+            + 'but the schedule does not contain any "pulse_info". '
+            + "Please verify that the schedule has been populated and "
+            + "device compilation has been performed."
+        )
 
     timestamps = np.arange(time_window[0], time_window[1], 1 / sampling_rate)
     waveforms = {key: np.zeros_like(timestamps) for key in port_map}
@@ -318,9 +329,11 @@ def sample_schedule(
             t0 = t_constr["abs_time"] + pulse_info["t0"]
             t1 = t0 + pulse_info["duration"]
 
-            time_indices = np.where(np.logical_and(timestamps >= t0, timestamps <= t1))
-
+            time_indices = np.where(np.logical_and(timestamps >= t0, timestamps < t1))
             t = timestamps[time_indices]
+            logging.debug(f"t0 {t0} t1 {t1} indices {time_indices} t {t}")
+            if len(t) == 0:
+                continue
 
             par_map = inspect.signature(wf_func).parameters
             wf_kwargs = {}
@@ -337,11 +350,112 @@ def sample_schedule(
                 waveform = modulate_wave(
                     t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
                 )
+                waveform = np.real_if_close(waveform)
 
             if modulation == "if":
                 # apply modulation to the waveforms
                 waveform = modulate_wave(t, waveform, modulation_if)
 
-            waveforms[port][time_indices] = (waveform.real,)
+            if np.iscomplexobj(waveform):
+                waveforms[port] = waveforms[port].astype(complex)
+            waveforms[port][time_indices] += waveform
 
     return timestamps, waveforms
+
+
+def pulse_diagram_matplotlib(
+    schedule: Schedule,
+    sampling_rate: float = 1e6,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    **kwargs,
+) -> None:
+    """
+    Plot Schedule using matplotlib
+
+    Parameters
+    ----------
+    schedule:
+        Schedule to plot
+    sampling_rate:
+        The schedule is sampled with this sampling rate
+    ax:
+        Axis onto which to plot
+    kwargs:
+        Passed to sample_schedule
+    """
+    times, pulses = sample_schedule(
+        schedule, sampling_rate=sampling_rate, modulation="clock", **kwargs
+    )
+    if ax is None:
+        ax = matplotlib.pyplot.gca()
+    for gate, data in pulses.items():
+        ax.plot(times, data.real, label=gate)
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Voltage")
+    ax.legend()
+
+
+def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operation]]:
+    """
+    Return a list of all WindowOperations with start and end time
+
+    Parameters
+    ----------
+    schedule:
+        Schedule to use
+    Returns
+    -------
+    :
+        List of all window operations in the schedule
+    """
+    window_operations = []
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+        _ = pls_idx  # explicitly not using pls_idx
+        operation = schedule.operations[t_constr["operation_repr"]]
+        if isinstance(operation, WindowOperation):
+            for pulse_info in operation["pulse_info"]:
+
+                t0 = t_constr["abs_time"] + pulse_info["t0"]
+                t1 = t0 + pulse_info["duration"]
+
+            window_operations.append((t0, t1, operation))
+    return window_operations
+
+
+def plot_window_operations(
+    schedule: Schedule,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    time_scale_factor: float = 1,
+) -> None:
+    """
+    Plot the window operations in a schedule
+
+    Parameters
+    ----------
+    schedule:
+        Schedule from which to plot window operations
+    ax:
+        Axis handle to use for plotting
+    time_scale_factor:
+        Used to scale the independent data before using as data for the
+        x-axis of the plot
+    """
+    if ax is None:
+        ax = matplotlib.pyplot.gca()
+
+    window_operations = get_window_operations(schedule)
+
+    cmap = matplotlib.cm.get_cmap("jet")
+
+    for idx, (t0, t1, operation) in enumerate(window_operations):
+        window_name = operation.window_name
+        logging.debug(f"plot_window_operations: window {window_name}: {t0}, {t1}")
+        colormap = cmap(idx / (1 + len(window_operations)))
+        label = window_name
+        ax.axvspan(
+            time_scale_factor * t0,
+            time_scale_factor * (t1),
+            alpha=0.2,
+            color=colormap,
+            label=label,
+        )
