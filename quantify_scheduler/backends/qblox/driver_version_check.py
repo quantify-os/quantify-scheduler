@@ -6,7 +6,6 @@ from typing import Tuple
 import logging
 
 logger = logging.getLogger(__name__)
-print(__name__)
 
 try:
     from qblox_instruments.build import __version__ as driver_version
