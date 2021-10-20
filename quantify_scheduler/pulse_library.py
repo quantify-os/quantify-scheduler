@@ -605,3 +605,46 @@ def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
         )
 
     return pulse_info_list
+
+
+class WindowOperation(Operation):
+    """
+    The WindowOperation is an operation for visualization purposes
+
+    The `WindowOperation` has a starting time and duration.
+    """
+
+    def __init__(
+        self,
+        window_name: str,
+        duration: float,
+        t0: float = 0.0,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Create a new instance of WindowOperation.
+
+        """
+        if data is None:
+            data = {
+                "name": "WindowOperation",
+                "pulse_info": [
+                    {
+                        "wf_func": None,
+                        "window_name": window_name,
+                        "duration": duration,
+                        "t0": t0,
+                        "port": None,
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    @property
+    def window_name(self) -> str:
+        """Return the window name of this operation"""
+        return self.data["pulse_info"][0]["window_name"]
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
