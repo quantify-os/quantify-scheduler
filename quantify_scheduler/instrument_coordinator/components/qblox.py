@@ -525,9 +525,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self.instrument.set("out0_dac_offset", settings.offset_ch0_path0)
+            self.instrument.set("out0_offset", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
-            self.instrument.set("out1_dac_offset", settings.offset_ch0_path1)
+            self.instrument.set("out1_offset", settings.offset_ch0_path1)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
