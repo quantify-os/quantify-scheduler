@@ -153,6 +153,7 @@ Visualization
 A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 
 Alternatively, one can plot the waveforms in schedules using
+
 .. jupyter-execute::
 
     from quantify_scheduler.pulse_library import SquarePulse, RampPulse
