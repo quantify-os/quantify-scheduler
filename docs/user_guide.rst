@@ -150,14 +150,15 @@ Valid qubits are strings that appear in the :ref:`device configuration file<sec-
 
 Visualization
 ^^^^^^^^^^^^^
-A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`~quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 
-Alternatively, one can plot the waveforms in schedules using
+Alternatively, one can plot the waveforms in schedules using :func:`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_matplotlib`:
 
 .. jupyter-execute::
 
     from quantify_scheduler.pulse_library import SquarePulse, RampPulse
     from quantify_scheduler.compilation import determine_absolute_timing
+    from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
 
     schedule = Schedule("waveforms")
     schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
@@ -165,8 +166,7 @@ Alternatively, one can plot the waveforms in schedules using
     schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
     determine_absolute_timing(schedule)
 
-    plot_schedule(schedule, sampling_rate=20e6)
-    plt.legend()
+    _ = pulse_diagram_matplotlib(schedule, sampling_rate=20e6)
 
 
 Summary
