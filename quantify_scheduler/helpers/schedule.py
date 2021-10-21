@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 class CachedSchedule:
     """
-    The CachedSchedule class wraps around the Schedule
+    The CachedSchedule class wraps around the CompiledSchedule
     class and populates the lookup dictionaries that are
     used for compilation of the backends.
     """
@@ -26,7 +26,7 @@ class CachedSchedule:
     _start_offset_in_seconds: Optional[float] = None
     _total_duration_in_seconds: Optional[float] = None
 
-    def __init__(self, schedule: types.Schedule):
+    def __init__(self, schedule: types.CompiledSchedule):
         self._schedule = schedule
 
         self._pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
@@ -37,7 +37,7 @@ class CachedSchedule:
         self._acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
     @property
-    def schedule(self) -> types.Schedule:
+    def schedule(self) -> types.CompiledSchedule:
         """
         Returns schedule.
         """
@@ -133,7 +133,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
     return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
 
 
-def get_total_duration(schedule: types.Schedule) -> float:
+def get_total_duration(schedule: types.CompiledSchedule) -> float:
     """
     Returns the total schedule duration in seconds.
 
@@ -170,7 +170,7 @@ def get_total_duration(schedule: types.Schedule) -> float:
 
 
 def get_operation_start(
-    schedule: types.Schedule,
+    schedule: types.CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -214,7 +214,7 @@ def get_operation_start(
 
 
 def get_operation_end(
-    schedule: types.Schedule,
+    schedule: types.CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -241,7 +241,7 @@ def get_operation_end(
 
 
 def get_port_timeline(
-    schedule: types.Schedule,
+    schedule: types.CompiledSchedule,
 ) -> Dict[str, Dict[int, List[int]]]:
     """
     Returns a new dictionary containing the timeline of
@@ -307,11 +307,12 @@ def get_port_timeline(
 
 
 def get_schedule_time_offset(
-    schedule: types.Schedule, port_timeline_dict: Dict[str, Dict[int, List[int]]]
+    schedule: types.CompiledSchedule,
+    port_timeline_dict: Dict[str, Dict[int, List[int]]],
 ) -> float:
     """
     Returns the start time in seconds of the first pulse
-    in the Schedule. The "None" port containing the Reset
+    in the CompiledSchedule. The "None" port containing the Reset
     Operation will be ignored.
 
     Parameters
@@ -338,7 +339,9 @@ def get_schedule_time_offset(
     )
 
 
-def get_pulse_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
+def get_pulse_info_by_uuid(
+    schedule: types.CompiledSchedule,
+) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of pulses with its
     hash as unique identifiers.
@@ -371,7 +374,7 @@ def get_pulse_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]
     return pulseid_pulseinfo_dict
 
 
-def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
+def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of unique identifiers
     of acquisition information.

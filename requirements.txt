@@ -7,11 +7,13 @@ matplotlib
 plotly
 jsonschema
 dataclasses-json
-zhinst-qcodes<0.2
+# zhinst versions pinned, see #187
+zhinst-qcodes==0.1.4
+zhinst-toolkit==0.1.5
 pathvalidate
 typing_extensions
 quantify_core>=0.5.0
-qblox-instruments==0.5.1
+qblox-instruments==0.5.2
 
 # tmp fixes
 

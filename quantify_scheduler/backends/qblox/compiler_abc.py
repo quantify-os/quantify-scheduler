@@ -1241,13 +1241,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             param_name: str, cfg: Dict[str, Any]
         ) -> Optional[float]:
 
-            calculated_offset = cfg.get(param_name, None)  # Always in volts
-            if calculated_offset is None:
+            offset_in_config = cfg.get(param_name, None)  # Always in volts
+            if offset_in_config is None:
                 return None
 
+            conversion_factor = 1
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if voltage_range.units == "mV":
-                calculated_offset = calculated_offset * 1e-3
+                conversion_factor = 1e3
             elif voltage_range.units != "V":
                 raise RuntimeError(
                     f"Parameter {param_name} of {self.name} specifies "
@@ -1255,15 +1256,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     f"supported by the Qblox backend."
                 )
 
+            calculated_offset = offset_in_config * conversion_factor
             if (
                 calculated_offset < voltage_range.min_val
                 or calculated_offset > voltage_range.max_val
             ):
                 raise ValueError(
                     f"Attempting to set {param_name} of {self.name} to "
-                    f"{calculated_offset} {voltage_range.units}. {param_name} has to be"
-                    f" between {voltage_range.min_val} and {voltage_range.max_val} "
-                    f"{voltage_range.units}!"
+                    f"{offset_in_config} V. {param_name} has to be between "
+                    f"{voltage_range.min_val/ conversion_factor} and "
+                    f"{voltage_range.max_val/ conversion_factor} V!"
                 )
 
             return calculated_offset

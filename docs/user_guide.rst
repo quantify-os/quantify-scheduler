@@ -152,6 +152,22 @@ Visualization
 ^^^^^^^^^^^^^
 A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 
+Alternatively, one can plot the waveforms in schedules using
+.. jupyter-execute::
+
+    from quantify_scheduler.pulse_library import SquarePulse, RampPulse
+    from quantify_scheduler.compilation import determine_absolute_timing
+
+    schedule = Schedule("waveforms")
+    schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
+    schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+    schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
+    determine_absolute_timing(schedule)
+
+    plot_schedule(schedule, sampling_rate=20e6)
+    plt.legend()
+
+
 Summary
 ^^^^^^^
 
@@ -490,7 +506,7 @@ and the resulting dataset can be analyzed using
 
 .. jupyter-execute::
 
-    from quantify_core.analysis.t1_analysis import T1Analysis
+    # from quantify_core.analysis.t1_analysis import T1Analysis
     # analysis = T1Analysis(label=label).run()
 
 

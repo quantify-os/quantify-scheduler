@@ -81,9 +81,11 @@ def soft_square(t, amp):
     amp
 
     """
-    square_ = square(t, amp)
-    window = signal.windows.hann(int(len(t) / 2))
-    return signal.convolve(square_, window, mode="same") / sum(window)
+    data = square(t, amp)
+    if len(t) > 1:
+        window = signal.windows.hann(int(len(t) / 2))
+        data = signal.convolve(data, window, mode="same") / sum(window)
+    return data
 
 
 def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:
