@@ -80,7 +80,7 @@ class ScheduleGettableSingleChannel:
             Determines the maximum number of points to acquire when acquiring in batched
             mode. Can be used to split up a program in parts if required due to hardware
             constraints.
-        initialize_on_get:
+        always_initialize:
             If True, then reinitialize the schedule on each invocation of `get`. If False,
             then only initialize the first invocation of `get`.
         """  # pylint: disable=line-too-long
