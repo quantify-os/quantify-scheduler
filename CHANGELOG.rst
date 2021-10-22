@@ -36,7 +36,7 @@ Merged branches and closed issues
 * Zhinst backend - resolved a bug where the instrument coordinator cannot write waveforms to the UHFQA if it has never been used before (!227)
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
-* QuantumDevice - Added docstrings to the TransmonElement parameters (!216)
+* QuantumDevice - Added docstrings to the TransmonElement parameters (!216, !218)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
 * Other - Added method `sample_schedule` to sample a `Schedule` (!212)
