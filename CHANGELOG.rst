@@ -43,6 +43,7 @@ Merged branches and closed issues
 * Other - The `RampPulse` has an extra (optional) parameter `offset` (!211)
 * Other - Updated existing schedules to make use of the acquisition index (#180, !180).
 * Other - Added a function to extract acquisition metadata from a schedule (#179, !180).
+* Other - The soft square waveform can now be evaluated with only one datapoint without raising an exception (!235)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
