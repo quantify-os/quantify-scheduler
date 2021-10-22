@@ -39,6 +39,7 @@ Merged branches and closed issues
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
+* QuantumDevice - Added docstrings to the TransmonElement parameters (!216)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
 * Added method `sample_schedule` to sample a `Schedule` (!212)
