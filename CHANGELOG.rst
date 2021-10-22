@@ -30,6 +30,7 @@ Merged branches and closed issues
 * Qblox Backend - Support for using real value pulses on arbitrary outputs added (!142).
 * Qblox Backend - Compilation now supports 6 sequencers for both the QCM as well as the QRM (!142).
 * Qblox Backend - Support for a cluster, along with its QCM, QRM, QCM-RF and QRM-RF modules (!164)
+* Qblox Backend - Registers are now dynamically allocated during compilation (!195)
 * Zhinst backend - No exception is raised when an LO that is in the config is not part of a schedule. (#203, !223)
 * Zhinst backend - Instrument coordinator components for ZI will only be configured when the settings used to configure it have changed (#196, !227)
 * Zhinst backend - Solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
