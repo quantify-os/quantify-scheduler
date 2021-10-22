@@ -2,12 +2,8 @@
 Changelog
 =========
 
-Unreleased
-----------
-
-
-
-
+0.5.0 Expanded feature sets hardware compilation backends (2021-10-25)
+----------------------------------------------------------------------
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
