@@ -51,6 +51,7 @@ class ScheduleGettableSingleChannel:
         real_imag: bool = True,
         batched: bool = False,
         max_batch_size: int = 1024,
+        always_initialize=True,
     ):
         """
         Create a new instance of ScheduleGettableSingleChannel which is used to do I and Q
@@ -79,7 +80,14 @@ class ScheduleGettableSingleChannel:
             Determines the maximum number of points to acquire when acquiring in batched
             mode. Can be used to split up a program in parts if required due to hardware
             constraints.
+        initialize_on_get:
+            If True, then reinitialize the schedule on each invocation of `get`. If False,
+            then only initialize the first invocation of `get`.
         """  # pylint: disable=line-too-long
+
+        self.always_initialize = always_initialize
+        self.is_initialized = False
+        self._compiled_schedule = None
 
         self.real_imag = real_imag
         if self.real_imag:
@@ -102,16 +110,14 @@ class ScheduleGettableSingleChannel:
         # the quantum device object containing setup configuration information
         self.quantum_device = quantum_device
 
-    def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        """
-        Start the experimental sequence and retrieve acquisition data.
+    def __call__(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        """ Acquire and return data """
+        return self.get()
 
-        Returns
-        -------
-        :
-            The acquired I/Q voltage signal as a complex number,
-            split into a tuple of floats: either real/imaginary parts or
-            magnitude/phase, depending on whether :code:`real_imag` is :code:`True`.
+    def initialize(self):
+        """Initialize the gettable
+
+        This generates the schedule and uploads to the hardware.
         """
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
@@ -129,7 +135,6 @@ class ScheduleGettableSingleChannel:
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(compiled_schedule)
-        instr_coordinator.start()
 
         # retrieve the acquisition results
         # pylint: disable=fixme
@@ -139,9 +144,42 @@ class ScheduleGettableSingleChannel:
         # Currently only supported for weighted integration.
         # Assert that the schedule is compatible with that.
         assert acq_metadata.acq_return_type == complex
+
+        self._acq_metadata = acq_metadata
+        self._compiled_schedule = compiled_schedule
+        self.is_initialized = True
+
+    def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        """
+        Start the experimental sequence and retrieve acquisition data.
+
+        Returns
+        -------
+        :
+            The acquired I/Q voltage signal as a complex number,
+            split into a tuple of floats: either real/imaginary parts or
+            magnitude/phase, depending on whether :code:`real_imag` is :code:`True`.
+        """
+        if self.always_initialize:
+            self.initialize()
+        else:
+            if not self.is_initialized:
+                self.initialize()
+
+        instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
+
+        instr_coordinator.start()
         acquired_data = instr_coordinator.retrieve_acquisition()
         instr_coordinator.stop()
 
+        result = self.process_acquired_data(acquired_data)
+        return result
+
+    def process_acquired_data(
+        self, acquired_data
+    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        compiled_schedule = self._compiled_schedule
+        acq_metadata = self._acq_metadata
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233
         if acq_metadata.bin_mode == BinMode.AVERAGE:
