@@ -14,7 +14,6 @@ Breaking changes
 * The `schedules.timedomain_schedules.allxy_sched` function no longer accepts the string "All" as an argument to the `element_select_idx` keyword.
 * The `QuantumDevice.cfg_nr_averages` parameter was renamed to `QuantumDevice.cfg_sched_repetitions`
 * The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
-* The `RampPulse` has an extra (optional) parameter `offset` (!211)
 * Qblox Backend - The NCO phase is now reset at the start of a program (!213).
 * Qblox Backend - Compilation now requires qblox_instruments version > 0.5.0 (!214).
 
@@ -39,6 +38,7 @@ Merged branches and closed issues
 * Zhinst backend - solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
 * Zhinst backend - Warnings raised during compilation of seqc programs will no longer raise an exception but will use logging.warning (!227)
 * Zhinst backend - resolved a bug where the instrument coordinator cannot write waveforms to the UHFQA if it has never been used before (!227)
+* The `RampPulse` has an extra (optional) parameter `offset` (!211)
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
