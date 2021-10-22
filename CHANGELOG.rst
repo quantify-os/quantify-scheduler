@@ -34,15 +34,15 @@ Merged branches and closed issues
 * Zhinst backend - solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
 * Zhinst backend - Warnings raised during compilation of seqc programs will no longer raise an exception but will use logging.warning (!227)
 * Zhinst backend - resolved a bug where the instrument coordinator cannot write waveforms to the UHFQA if it has never been used before (!227)
-* The `RampPulse` has an extra (optional) parameter `offset` (!211)
-* Updated existing schedules to make use of the acquisition index (#180, !180).
-* Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
 * QuantumDevice - Added docstrings to the TransmonElement parameters (!216)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
-* Added method `sample_schedule` to sample a `Schedule` (!212)
+* Other - Added method `sample_schedule` to sample a `Schedule` (!212)
+* Other - The `RampPulse` has an extra (optional) parameter `offset` (!211)
+* Other - Updated existing schedules to make use of the acquisition index (#180, !180).
+* Other - Added a function to extract acquisition metadata from a schedule (#179, !180).
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------
