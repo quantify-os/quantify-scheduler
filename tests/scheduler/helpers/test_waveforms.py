@@ -27,6 +27,7 @@ from quantify_scheduler.helpers.waveforms import (
     shift_waveform,
 )
 from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.pulse_library import SquarePulse, RampPulse
 
 
 @pytest.mark.parametrize(
@@ -359,3 +360,19 @@ def test_area_pulses() -> None:
     ]
     result = area_pulses(test_list, int(1e9))
     TestCase().assertAlmostEqual(result, 1.5e-8)
+
+
+def test_area_pulses_half_sampling() -> None:
+    operation = SquarePulse(amp=1, duration=10.5e-9, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    assert area == 10.5e-9
+
+
+def test_area_pulses_ramp_pulse_regression() -> None:
+    operation = RampPulse(amp=0, offset=1, duration=10.5e-9, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    assert area == 10.5e-9
+
+    operation = RampPulse(amp=1, offset=0, duration=10e-9, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    assert area == 5e-9

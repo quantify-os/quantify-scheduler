@@ -510,4 +510,4 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
     assert sampling_rate > 0
     waveform: np.ndarray = get_waveform(pulse, sampling_rate)
     # Nice to have: Give the user the option to choose integration algorithm
-    return waveform.sum() / sampling_rate
+    return waveform.mean() * pulse["duration"]
