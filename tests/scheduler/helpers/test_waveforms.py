@@ -328,6 +328,7 @@ def test_area_pulse() -> None:
     pulse = {
         "wf_func": "quantify_scheduler.waveforms.square",
         "amp": 1,
+        "offset": 0,
         "duration": 1e-08,
         "phase": 0,
         "t0": 0,
@@ -343,6 +344,7 @@ def test_area_pulses() -> None:
         {
             "wf_func": "quantify_scheduler.waveforms.square",
             "amp": 1,
+            "offset": 0,
             "duration": 1e-08,
             "phase": 0,
             "t0": 0,
@@ -352,12 +354,14 @@ def test_area_pulses() -> None:
         {
             "wf_func": "quantify_scheduler.waveforms.ramp",
             "amp": 1,
+            "offset": 0,
             "duration": 1e-08,
             "t0": 0,
             "clock": "cl0.baseband",
             "port": "LP",
         },
     ]
+
     result = area_pulses(test_list, int(1e9))
     TestCase().assertAlmostEqual(result, 1.5e-8)
 
