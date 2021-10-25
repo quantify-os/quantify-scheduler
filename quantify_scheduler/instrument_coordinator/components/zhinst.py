@@ -206,6 +206,12 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         :
             A boolean indicating if the ZI component was configured in this call.
         """
+        # always start by resetting the counters and stopping the AWG
+        self.instrument.qas[0].result.enable(0)
+        self.instrument.awg.stop()
+
+        self.instrument.qas[0].result.reset(1)
+        self.instrument.qas[0].result.enable(1)
 
         try:
             # if settings where identical, no configuration is needed.

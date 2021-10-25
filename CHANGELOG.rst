@@ -39,6 +39,8 @@ Merged branches and closed issues
 * Zhinst backend - solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
 * Zhinst backend - Warnings raised during compilation of seqc programs will no longer raise an exception but will use logging.warning (!227)
 * Zhinst backend - resolved a bug where the instrument coordinator cannot write waveforms to the UHFQA if it has never been used before (!227)
+* Zhinst backend - resolved a bug where multiple identical measurements in a schedule would result in multiple integration weights being uploaded to the UFHQA (#207, !234)
+* Zhinst backend - resolved a bug where the UHFQA would not be triggered properly when executing a schedule with multiple samples (batched mode) (#205, !234)
 * Updated existing schedules to make use of the acquisition index (#180, !180).
 * Added a function to extract acquisition metadata from a schedule (#179, !180).
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).

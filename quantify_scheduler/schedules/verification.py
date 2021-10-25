@@ -25,6 +25,7 @@ def acquisition_staircase_sched(
     port: str,
     clock: str,
     init_duration: float = 1e-6,
+    acq_channel: int = 0,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -55,6 +56,8 @@ def acquisition_staircase_sched(
         schedule to be run in batched mode in the hardware backend.
     init_duration :
         The relaxation time or dead time.
+    acq_channel
+        The acquisition channel to use for the acquisitions.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -95,7 +98,7 @@ def acquisition_staircase_sched(
                 port=port,
                 clock=clock,
                 acq_index=acq_index,
-                acq_channel=0,
+                acq_channel=acq_channel,
             ),
             ref_op=pulse,
             ref_pt="start",
@@ -117,6 +120,7 @@ def awg_staircase_sched(
     mw_clock: str,
     ro_clock: str,
     init_duration: float = 1e-6,
+    acq_channel: int = 0,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -151,6 +155,8 @@ def awg_staircase_sched(
         schedule to be run in batched mode in the hardware backend.
     init_duration :
         The relaxation time or dead time.
+    acq_channel
+        The acquisition channel to use for the acquisitions.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -194,7 +200,7 @@ def awg_staircase_sched(
                 port=ro_port,
                 clock=ro_clock,
                 acq_index=acq_index,
-                acq_channel=0,
+                acq_channel=acq_channel,
             ),
             ref_op=pulse,
             ref_pt="start",

@@ -12,6 +12,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, 
 import numpy as np
 from zhinst.toolkit.helpers import Waveform
 
+from quantify_core.utilities.general import make_hash
+
 from quantify_scheduler import enums, types
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
@@ -951,6 +953,7 @@ def _assemble_hdawg_sequence(
 
     seqc_gen.emit_begin_repeat("__repetitions__")
 
+    # here the UFHQA gets triggered. This needs to happen at every measurement.
     if is_marker_source:
         seqc_il_generator.add_set_trigger(seqc_gen, output.markers, device.device_type)
 
@@ -1082,9 +1085,9 @@ def _compile_for_uhfqa(
     """
 
     instrument_info = zhinst.InstrumentInfo(
-        device.clock_rate,
-        8,
-        WAVEFORM_GRANULARITY[device.device_type],
+        clock_rate=device.clock_rate,
+        resolution=8,
+        granularity=WAVEFORM_GRANULARITY[device.device_type],
     )
     channels = device.channels
     channels = list(filter(lambda c: c.mode == enums.SignalModeType.REAL, channels))
@@ -1138,7 +1141,7 @@ def _compile_for_uhfqa(
 
     # Create a dictionary of uuid(s) and numerical waveforms.
     waveforms_dict: Dict[int, np.ndarray] = dict(
-        (k, v.waveform) for k, v in wave_instructions_dict.items()
+        (uuid, wf_instr.waveform) for uuid, wf_instr in wave_instructions_dict.items()
     )
 
     # Create a dictionary of uuid(s) and zhinst.Measure instructions
@@ -1149,12 +1152,12 @@ def _compile_for_uhfqa(
 
     # Generate and apply sequencer program
     seqc = _assemble_uhfqa_sequence(
-        cached_schedule,
-        device,
-        instrument_info,
-        device.channel_0,
-        waveform_table,
-        instructions,
+        cached_schedule=cached_schedule,
+        device=device,
+        instrument_info=instrument_info,
+        output=device.channel_0,
+        waveform_table=waveform_table,
+        instructions=instructions,
     )
     logger.debug(seqc)
 
@@ -1165,9 +1168,20 @@ def _compile_for_uhfqa(
 
     # Get a list of all acquisition protocol channels
     acq_channel_resolvers_map: Dict[int, Callable[..., Any]] = dict()
-    readout_channel_index: int = 0
+
+    # the unique acquisitions are acquisitions
+    unique_acquisition_hashes = []
 
     for acq_uuid, acq_info in cached_schedule.acqid_acqinfo_dict.items():
+
+        # the acquisition index is not required for configuring the integration weights.
+        # we use a hash to identify which acquisitions are identical in this context.
+        acq_hash = make_hash(acq_info.copy().pop("acq_index"))
+        if acq_hash in unique_acquisition_hashes:
+            continue
+
+        unique_acquisition_hashes.append(acq_hash)
+
         acq_protocol: str = acq_info["protocol"]
         acq_duration: float = acq_info["duration"]
         acq_channel: int = acq_info["acq_channel"]
@@ -1244,26 +1258,23 @@ def _compile_for_uhfqa(
             # to use a complex valued weight function in the right way.
             # Z = (w0*sI + w1*sQ) + 1j ( w1*sI - w0 * sQ)
             settings_builder.with_qas_integration_weights_real(
-                readout_channel_index, list(weights_i)
+                2 * acq_channel, list(weights_i)
             ).with_qas_integration_weights_imag(
-                readout_channel_index, list(weights_q)
+                2 * acq_channel, list(weights_q)
             ).with_qas_integration_weights_real(
-                readout_channel_index + 1, list(weights_q)
+                2 * acq_channel + 1, list(weights_q)
             ).with_qas_integration_weights_imag(
-                readout_channel_index + 1, list(-1 * weights_i)
+                2 * acq_channel + 1, list(-1 * weights_i)
             )
 
             # Create partial function for delayed execution
             acq_channel_resolvers_map[acq_channel] = partial(
                 resolvers.result_acquisition_resolver,
                 result_nodes=[
-                    f"qas/0/result/data/{readout_channel_index}/wave",
-                    f"qas/0/result/data/{readout_channel_index+1}/wave",
+                    f"qas/0/result/data/{2*acq_channel}/wave",
+                    f"qas/0/result/data/{2*acq_channel+1}/wave",
                 ],
             )
-
-            # note that two readout channels where used
-            readout_channel_index += 2
 
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
@@ -1318,13 +1329,9 @@ def _assemble_uhfqa_sequence(
     ) - seqc_info.timeline_end_in_clocks
 
     seqc_il_generator.add_seqc_info(seqc_gen, seqc_info)
-    acquisition_triggers = [
-        "AWG_INTEGRATION_ARM",
-        "AWG_INTEGRATION_TRIGGER",
-        "AWG_MONITOR_TRIGGER",
-    ]
+
     has_triggers: bool = len(output.triggers) > 0
-    is_trigger_source = (
+    is_awaiting_trigger = (
         device.ref == enums.ReferenceSourceType.EXTERNAL and has_triggers
     )
     is_marker_source = device.ref == enums.ReferenceSourceType.INTERNAL and has_triggers
@@ -1332,44 +1339,22 @@ def _assemble_uhfqa_sequence(
     current_clock: int = 0
 
     # Declare sequence variables
+
     seqc_gen.declare_var("__repetitions__", cached_schedule.schedule.repetitions)
-    seqc_gen.declare_var("integration_trigger", acquisition_triggers)
-    seqc_gen.declare_var("reset_integration_trigger", ["AWG_INTEGRATION_ARM"])
 
     seqc_il_generator.add_csv_waveform_variables(
         seqc_gen, device.name, 0, waveform_table
     )
 
-    # wave_instructions_dict: Dict[int, zhinst.Wave] = dict(
-    #     (i.uuid, i) for i in instructions if isinstance(i, zhinst.Wave)
-    # )
-    # for pulse_id, waveform_index in waveform_table.items():
-    #     instruction = wave_instructions_dict[pulse_id]
-    #     waveform_index = waveform_table[instruction.uuid]
-    #     name: str = f"w{waveform_index}"
-
-    #     # Create and add variables to the Sequence program
-    #     # aswell as assign the variables with operations
-    #     seqc_gen.declare_wave(name)
-    #     seqc_gen.assign_placeholder(name, len(instruction.waveform))
-    #     seqc_gen.emit_assign_wave_index(name, name, index=waveform_index)
-
     seqc_gen.emit_begin_repeat("__repetitions__")
 
-    seqc_il_generator.add_set_trigger(
-        seqc_gen,
-        "reset_integration_trigger",
-        device.type,
-        comment="Arm QAResult",
-    )
-
-    if is_trigger_source:
+    if is_awaiting_trigger:
         seqc_gen.emit_wait_dig_trigger(
             output.triggers[0],
             comment=f"\t// clock={current_clock}",
         )
 
-    if is_trigger_source and seqc_info.line_trigger_delay_in_seconds != -1:
+    if is_awaiting_trigger and seqc_info.line_trigger_delay_in_seconds != -1:
         seqc_il_generator.add_wait(
             seqc_gen,
             seqc_info.line_trigger_delay_in_clocks,
@@ -1405,12 +1390,11 @@ def _assemble_uhfqa_sequence(
         )
 
         if isinstance(previous_instr, zhinst.Measure):
-            current_clock += seqc_il_generator.add_set_trigger(
-                seqc_gen,
-                "integration_trigger",
-                device.device_type,
-                comment=f"clock={current_clock}",
-            )
+            seqc_gen.emit_start_qa_monitor()
+            # currently the generic (measure all channels) QAResult is used.
+            # by generating a bitmask from the Measure instruction this can be improved.
+            seqc_gen.emit_start_qa_result()
+            seqc_gen.emit_blankline()  # add in a white line for visual separation
         else:
             current_clock += seqc_il_generator.add_play_wave(
                 seqc_gen,
@@ -1444,16 +1428,15 @@ def _assemble_uhfqa_sequence(
 
         if isinstance(previous_instr, zhinst.Measure):
             # Reset the integration
-            current_clock += seqc_il_generator.add_set_trigger(
-                seqc_gen,
-                "integration_trigger",
-                device.device_type,
-                comment=f"clock={current_clock}",
-            )
-            """
-            Adds a waiting time after playing the last sequence to wait
-            for the QAS to process and not time out.
-            """
+            seqc_gen.emit_start_qa_monitor()
+            # currently the generic (measure all channels) QAResult is used.
+            # by generating a bitmask from the Measure instruction this can be improved.
+            seqc_gen.emit_start_qa_result()
+            seqc_gen.emit_blankline()  # add in a white line for visual separation
+
+            # Adds a waiting time after playing the last sequence to wait
+            # for the QAS to process and not time out.
+
             if device.last_seq_wait_clocks < 2000:
                 logger.warning(
                     f"The last_seq_wait_clocks={device.last_seq_wait_clocks}\n"

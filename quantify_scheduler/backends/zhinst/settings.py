@@ -16,6 +16,10 @@ from quantify_core.utilities.general import make_hash
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
+# same as backends.zhinst_backend.NUM_UHFQA_READOUT_CHANNELS
+# copied here to avoid a circular import
+NUM_UHFQA_READOUT_CHANNELS = 10
+
 
 @dataclasses.dataclass(frozen=True)
 class ZISerializeSettings:
@@ -182,7 +186,7 @@ class ZISettings:
                     setting.value, (len(setting.value) // columns, -1)
                 )
                 ############################################################
-                # FIXME WARNING: For saving waveform in csv format, the data
+                # WARNING: For saving waveform in csv format, the data
                 # MUST be in floating point type, and NOT int16 (as is required)
                 # when using the Zhinst-toolkit.helpers.Waveform class.
                 # Hotfix applied to rescale.
@@ -705,12 +709,23 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
+        Raises
+        ------
+        ValueError
+            If a channel used is larger than 9.
         """
         assert len(real) <= 4096
 
         node = "qas/0/integration/weights/"
         channels_list = [channels] if isinstance(channels, int) else channels
         for channel_index in channels_list:
+            if channel_index >= NUM_UHFQA_READOUT_CHANNELS:
+                raise ValueError(
+                    f"channel_index = {channel_index}: the UHFQA supports up to "
+                    f"{NUM_UHFQA_READOUT_CHANNELS} integration weigths."
+                )
+
             self._set_daq(
                 ZISetting(
                     f"{node}{channel_index}/real",
@@ -736,12 +751,23 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
+        Raises
+        ------
+        ValueError
+            If a channel used is larger than 9.
         """
         assert len(imag) <= 4096
 
         node = "qas/0/integration/weights/"
         channels_list = [channels] if isinstance(channels, int) else channels
         for channel_index in channels_list:
+            if channel_index >= NUM_UHFQA_READOUT_CHANNELS:
+                raise ValueError(
+                    f"channel_index = {channel_index}: the UHFQA supports up to "
+                    f"{NUM_UHFQA_READOUT_CHANNELS} integration weigths."
+                )
+
             self._set_daq(
                 ZISetting(
                     f"{node}{channel_index}/imag",
