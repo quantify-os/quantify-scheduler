@@ -54,6 +54,9 @@ def make_uhfqa(mocker):
         uhfqa.name = name
         uhfqa._serial = serial
         uhfqa.awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
+        # the quantum analyzer setup "qas"
+        uhfqa.qas = [None] * 1
+        uhfqa.qas[0] = mocker.create_autospec(None, instance=True)
 
         component = zhinst.UHFQAInstrumentCoordinatorComponent(uhfqa)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=uhfqa)

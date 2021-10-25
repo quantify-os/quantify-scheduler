@@ -314,15 +314,27 @@ class Measure(Instruction):
     weights_i: np.ndarray
     weights_q: np.ndarray
 
+    def __str__(self):
+        return (
+            "Measure(\n"
+            f"\tuuid={self.uuid},\n"
+            f"\tabs_time_ns={self.abs_time * 1e9},\n"
+            f"\ttimeslot_index={self.timeslot_index},\n"
+            f"\tstart_in_ns={self.start_in_seconds*1e9}\n"
+            f"\tstart_in_clocks={self.start_in_clocks},\n"
+            f"\tduration_in_seconds={self.duration_in_seconds},\n"
+            f"\tduration_in_clocks={self.duration_in_clocks}\n"
+            f"\tweights_i={self.weights_i}\n"
+            f"\tweights_q={self.weights_q}\n"
+            ")"
+        )
+
     def __repr__(self):
-        return "%-20i | %-12f | %-12f | %-12f | %-8i | %-8i | %-6i " % (
-            self.uuid,
-            self.abs_time * 1e9,
-            self.start_in_seconds * 1e9,
-            self.duration_in_seconds * 1e9,
-            self.start_in_clocks,
-            self.duration_in_clocks,
-            len(self.weights_i),
+        return (
+            f"Measure(uuid: {self.uuid} |abs_time: {self.abs_time * 1e9} "
+            f"|t0: {self.start_in_seconds * 1e9} |dt: {self.duration_in_seconds * 1e9} "
+            f"|c0: {self.start_in_clocks} |dc: {self.duration_in_clocks} "
+            f"|len: {len(self.weights_i)} )"
         )
 
 
@@ -335,15 +347,16 @@ class Wave(Instruction):
     n_samples_scaled: int
 
     def __repr__(self):
-        return "%-20i | %-12f | %-12f | %-12f | %-8i | %-8i | %-6i | %-6i " % (
-            self.uuid,
-            self.abs_time * 1e9,
-            self.start_in_seconds * 1e9,
-            self.duration_in_seconds * 1e9,
-            self.start_in_clocks,
-            self.duration_in_clocks,
-            self.n_samples,
-            self.n_samples_scaled - self.n_samples,
+        return (
+            f"Wave(uuid :{self.uuid}"
+            f"|abs_time :{self.abs_time * 1e9}"
+            f"|t0 :{self.start_in_seconds * 1e9}"
+            f"|dt :{self.duration_in_seconds * 1e9}"
+            f"|c0 :{self.start_in_clocks}"
+            f"|dc :{self.duration_in_clocks}"
+            f"|n_samples :{self.n_samples}"
+            f"|d_scaled :{self.n_samples_scaled - self.n_samples}"
+            f"|len_wf :{len(self.waveform)})"
         )
 
     @staticmethod

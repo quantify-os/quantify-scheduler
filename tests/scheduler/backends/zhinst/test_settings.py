@@ -295,6 +295,15 @@ def test_zi_settings_serialize_compiler_source(mocker):
     assert write_text.call_args_list == calls
 
 
+def test_zi_settings_weights_raises():
+    settings.ZISettingsBuilder().with_qas_integration_weights_real(9, np.ones(20))
+    with pytest.raises(ValueError):
+        settings.ZISettingsBuilder().with_qas_integration_weights_real(10, np.ones(20))
+    settings.ZISettingsBuilder().with_qas_integration_weights_imag(9, np.ones(20))
+    with pytest.raises(ValueError):
+        settings.ZISettingsBuilder().with_qas_integration_weights_imag(10, np.ones(20))
+
+
 def test_zi_settings_serialize_integration_weights(mocker):
     # Arrange
     instrument = make_ufhqa(mocker)
