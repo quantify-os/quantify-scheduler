@@ -4,17 +4,21 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.types import qblox
 
 
 class CachedSchedule:
     """
-    The CachedSchedule class wraps around the types.Schedule
+    The CachedSchedule class wraps around the CompiledSchedule
     class and populates the lookup dictionaries that are
     used for compilation of the backends.
     """
@@ -22,7 +26,7 @@ class CachedSchedule:
     _start_offset_in_seconds: Optional[float] = None
     _total_duration_in_seconds: Optional[float] = None
 
-    def __init__(self, schedule: types.Schedule):
+    def __init__(self, schedule: types.CompiledSchedule):
         self._schedule = schedule
 
         self._pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
@@ -33,7 +37,7 @@ class CachedSchedule:
         self._acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
     @property
-    def schedule(self) -> types.Schedule:
+    def schedule(self) -> types.CompiledSchedule:
         """
         Returns schedule.
         """
@@ -129,7 +133,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
     return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
 
 
-def get_total_duration(schedule: types.Schedule) -> float:
+def get_total_duration(schedule: types.CompiledSchedule) -> float:
     """
     Returns the total schedule duration in seconds.
 
@@ -166,7 +170,7 @@ def get_total_duration(schedule: types.Schedule) -> float:
 
 
 def get_operation_start(
-    schedule: types.Schedule,
+    schedule: types.CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -210,7 +214,7 @@ def get_operation_start(
 
 
 def get_operation_end(
-    schedule: types.Schedule,
+    schedule: types.CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -237,7 +241,7 @@ def get_operation_end(
 
 
 def get_port_timeline(
-    schedule: types.Schedule,
+    schedule: types.CompiledSchedule,
 ) -> Dict[str, Dict[int, List[int]]]:
     """
     Returns a new dictionary containing the timeline of
@@ -303,11 +307,12 @@ def get_port_timeline(
 
 
 def get_schedule_time_offset(
-    schedule: types.Schedule, port_timeline_dict: Dict[str, Dict[int, List[int]]]
+    schedule: types.CompiledSchedule,
+    port_timeline_dict: Dict[str, Dict[int, List[int]]],
 ) -> float:
     """
     Returns the start time in seconds of the first pulse
-    in the Schedule. The "None" port containing the Reset
+    in the CompiledSchedule. The "None" port containing the Reset
     Operation will be ignored.
 
     Parameters
@@ -334,7 +339,9 @@ def get_schedule_time_offset(
     )
 
 
-def get_pulse_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
+def get_pulse_info_by_uuid(
+    schedule: types.CompiledSchedule,
+) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of pulses with its
     hash as unique identifiers.
@@ -367,7 +374,7 @@ def get_pulse_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]
     return pulseid_pulseinfo_dict
 
 
-def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
+def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of unique identifiers
     of acquisition information.
@@ -390,3 +397,112 @@ def get_acq_info_by_uuid(schedule: types.Schedule) -> Dict[int, Dict[str, Any]]:
             acqid_acqinfo_dict[acq_id] = acq_info
 
     return acqid_acqinfo_dict
+
+
+def extract_acquisition_metadata_from_schedule(
+    schedule: ScheduleBase,
+) -> AcquisitionMetadata:
+    """
+    Extracts acquisition metadata from a schedule.
+
+    This function operates under certain assumptions with respect to the schedule.
+
+    - The acquisition_metadata should be sufficient to initialize the xarray dataset
+      (described in quantify-core !212) that executing the schedule will result in.
+    - All measurements in the schedule use the same acquisition protocol.
+    - The used acquisition index channel combinations for each measurement are unique.
+    - The used acquisition indices for each channel are the same.
+    - When :class:`~quantify_scheduler.enums.BinMode` is :code:`APPEND` The number of
+      data points per acquisition index assumed to be given by the
+      schedule's repetition property. This implies no support for feedback (conditional
+      measurements).
+
+    Parameters
+    ----------
+    schedule
+        schedule containing measurements from which acquisition metadata can be
+        extracted.
+
+    Returns
+    -------
+    :
+        The acquisition metadata provides a summary of the
+        acquisition protocol, bin-mode, return-type and acquisition indices
+        of the acquisitions in the schedule.
+
+    Raises
+    ------
+
+    AssertionError
+
+        If not all acquisition protocols in a schedule are the same.
+        If not all acquisitions use the same bin_mode.
+        If the return type of the acquisitions is different.
+
+
+    """  # FIXME update when quantify-core!212 spec is ready # pylint: disable=fixme
+    # convert to a cached schedule to have useful metadata available.
+    cached_sched = CachedSchedule(schedule)
+
+    # a dictionary containing the acquisition indices used for each channel
+
+    return _extract_acquisition_metadata_from_acquisition_protocols(
+        list(cached_sched.acqid_acqinfo_dict.values())
+    )
+
+
+def _extract_acquisition_metadata_from_acquisition_protocols(
+    acquisition_protocols: List[Dict[str, Any]],
+) -> AcquisitionMetadata:
+    """
+    Private function containing the logic of extract_acquisition_metadata_from_schedule.
+    The logic is factored out as to work around limitations of the different interfaces
+    required.
+
+    Parameters
+    ----------
+    acquisition_protocols
+        A list of acquisition protocols.
+    """
+    acq_indices: Dict[int, List[int]] = {}
+
+    for i, acq_protocol in enumerate(acquisition_protocols):
+        if i == 0:
+            # the protocol and bin mode of the first
+            protocol = acq_protocol["protocol"]
+            bin_mode = acq_protocol["bin_mode"]
+            acq_return_type = acq_protocol["acq_return_type"]
+
+        # test limitation: all acquisition protocols in a schedule must be of
+        # the same kind
+        assert acq_protocol["protocol"] == protocol
+        assert acq_protocol["bin_mode"] == bin_mode
+        assert acq_protocol["acq_return_type"] == acq_return_type
+
+        # add the individual channel
+        if acq_protocol["acq_channel"] not in acq_indices.keys():
+            acq_indices[acq_protocol["acq_channel"]] = []
+
+        acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
+
+    # combine the information in the acq metada dataclass.
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol=protocol,
+        bin_mode=bin_mode,
+        acq_indices=acq_indices,
+        acq_return_type=acq_return_type,
+    )
+    return acq_metadata
+
+
+def _extract_acquisition_metadata_from_acquisitions(
+    acquisitions: List[qblox.OpInfo],
+) -> AcquisitionMetadata:
+    """
+    Private variant of extract_acquisition_metadata_from_schedule explicitly for use
+    with the qblox assembler backend.
+    """
+    acquisition_protocols = [acq.data for acq in acquisitions]
+    return _extract_acquisition_metadata_from_acquisition_protocols(
+        acquisition_protocols
+    )

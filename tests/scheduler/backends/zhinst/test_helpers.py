@@ -363,6 +363,11 @@ def test_set_and_compile_awg_seqc_successfully(mocker):
 
 
 def test_set_and_compile_awg_seqc_skip_compilation(mocker):
+    """
+    FIXME: We remove this test as we are always triggering a recompilation.
+    Once we have found a solution to compare the waveforms, please re-enable
+    and add more tests.
+
     # Arrange
     awg_module = mocker.Mock()
     awg_module.get_int.side_effect = [0, 1, 1]
@@ -385,6 +390,7 @@ def test_set_and_compile_awg_seqc_skip_compilation(mocker):
 
     # Assert
     set_awg_value.assert_not_called()
+    """
 
 
 def test_set_and_compile_awg_seqc_upload_failed(mocker):
@@ -410,31 +416,6 @@ def test_set_and_compile_awg_seqc_upload_failed(mocker):
 
     # Assert
     assert str(execinfo.value) == "Upload failed: \nSome error occured"
-
-
-def test_set_and_compile_awg_seqc_compiled_with_warning(mocker):
-    # Arrange
-    awg_module = mocker.Mock()
-    awg_module.get_int.side_effect = [2]
-    awg_module.get_string.side_effect = ["Some warning occured"]
-    awg = mocker.Mock()
-    awg._awg._module = awg_module
-    instrument = mocker.create_autospec(ZIBaseInstrument, instance=True)
-    instrument.awg = awg
-
-    mocker.patch.object(zi_helpers, "get_value", return_value="")
-    mocker.patch.object(time, "sleep")
-
-    awg_index = 0
-    node: str = "compiler/sourcestring"
-    value: str = "abc"
-
-    # Act
-    with pytest.raises(Warning) as execinfo:
-        zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
-
-    # Assert
-    assert str(execinfo.value) == "Compiled with warning: \nSome warning occured"
 
 
 def test_set_and_compile_awg_seqc_upload_timeout(mocker):

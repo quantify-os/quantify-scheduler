@@ -139,26 +139,19 @@ def set_and_compile_awg_seqc(
     Parameters
     ----------
     instrument :
-        The instrument.
+        The ZI instrument object.
     awg_index :
         The awg to configure.
     node :
         The node path.
     value :
         The seqc program.
+    waveforms_dict:
+        The new waveforms for comparison.
     """
-    current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
+
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awg = awgs[awg_index]
-
-    # Assert the current Sequencer program with the new
-    if (
-        len(current_seqc) == len(value)
-        and hash(current_seqc) == hash(value)
-        and current_seqc == value
-    ):
-        print(f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence"')
-        return
 
     # Set the new 'compiler/sourcestring' value
     set_awg_value(instrument, awg_index, node, value)
@@ -175,7 +168,7 @@ def set_and_compile_awg_seqc(
 
     if status == 2:
         status_str = awg_module.get_string("compiler/statusstring")
-        raise Warning(f"Compiled with warning: \n{status_str}")
+        logger.warning(f"Compiled with warning: \n{status_str}")
 
     if status == 0:
         print(f"{awg.name}: Compilation successful")

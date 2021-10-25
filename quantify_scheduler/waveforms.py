@@ -23,8 +23,8 @@ def square_imaginary(
     return square(t, 1j * amp)
 
 
-def ramp(t, amp) -> np.ndarray:
-    return np.linspace(0, amp, len(t))
+def ramp(t, amp, offset=0) -> np.ndarray:
+    return np.linspace(offset, amp + offset, len(t))
 
 
 def staircase(
@@ -81,9 +81,11 @@ def soft_square(t, amp):
     amp
 
     """
-    square_ = square(t, amp)
-    window = signal.windows.hann(int(len(t) / 2))
-    return signal.convolve(square_, window, mode="same") / sum(window)
+    data = square(t, amp)
+    if len(t) > 1:
+        window = signal.windows.hann(int(len(t) / 2))
+        data = signal.convolve(data, window, mode="same") / sum(window)
+    return data
 
 
 def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:
@@ -130,7 +132,8 @@ def drag(
 ) -> np.ndarray:
     r"""
     Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a
-    Derivative :math:`D` as the Q-component.
+    Derivative :math:`D` as the Q-component (:cite:t:`motzoi_simple_2009` and
+    :cite:t:`gambetta_analytic_2011`).
 
     All inputs are in s and Hz.
     phases are in degree.
@@ -175,23 +178,7 @@ def drag(
     :
         complex waveform
 
-
-    References
-    ----------
-
-    1. |citation-1|_
-
-        .. |citation-1| replace:: *Gambetta, J. M., Motzoi, F., Merkel, S. T. & Wilhelm, F. K. Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator. Phys. Rev. A 83, 012308 (2011).*
-
-        .. _citation-1: https://link.aps.org/doi/10.1103/PhysRevA.83.012308
-
-
-    2. |citation-2|_
-
-        .. |citation-2| replace:: *F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm Phys. Rev. Lett. 103, 110501 (2009).*
-
-        .. _citation-2: https://link.aps.org/doi/10.1103/PhysRevLett.103.110501
-    """  # pylint: disable=line-too-long
+    """
     mu = t[0] + duration / 2
 
     sigma = duration / (2 * nr_sigma)

@@ -2,23 +2,71 @@
 # Licensed according to the LICENCE file on the master branch
 """Functions for drawing pulse diagrams"""
 from __future__ import annotations
+
 import inspect
 import logging
-from typing import List, Dict, Optional
-from typing_extensions import Literal
+from typing import Dict, List, Optional, Tuple, Callable
 
 import numpy as np
-
-from plotly.subplots import make_subplots
+import matplotlib
+import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
-
+from plotly.subplots import make_subplots
 from quantify_core.utilities.general import import_func_from_string
+from typing_extensions import Literal
 
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.waveforms import modulate_wave
+from quantify_scheduler.pulse_library import Operation, WindowOperation
 
 logger = logging.getLogger(__name__)
+
+
+def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> None:
+    """
+    Dynamically add up to 8 ports to the port_map dictionary.
+    """
+    offset_idx: int = 0
+
+    for t_constr in schedule.timing_constraints:
+        operation = schedule.operations[t_constr["operation_repr"]]
+        for pulse_info in operation["pulse_info"]:
+            if offset_idx == ports_length:
+                return
+
+            port = pulse_info["port"]
+            if port is None:
+                continue
+
+            if port not in portmap:
+                portmap[port] = offset_idx
+                offset_idx += 1
+
+
+def validate_pulse_info(pulse_info, port_map, t_constr, operation):
+    """Validates if the pulse information is valid for visualization."""
+    if pulse_info["port"] not in port_map:
+        # Do not draw pulses for this port
+        return False
+
+    if pulse_info["port"] is None:
+        logger.warning(
+            "Unable to sample pulse for pulse_info due to missing 'port' for "
+            f"operation name={operation['name']} "
+            f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
+        )
+        return False
+
+    if pulse_info["wf_func"] is None:
+        logger.warning(
+            "Unable to sample pulse for pulse_info due to missing 'wf_func' for "
+            f"operation name={operation['name']} "
+            f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
+        )
+        return False
+    return True
+
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
@@ -29,8 +77,8 @@ def pulse_diagram_plotly(
     fig_ch_height: float = 300,
     fig_width: float = 1000,
     modulation: Literal["off", "if", "clock"] = "off",
-    modulation_if: float = 0,
-    sampling_rate: int = 1e9,
+    modulation_if: float = 0.0,
+    sampling_rate: int = 1_000_000_000,
 ) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
@@ -59,35 +107,15 @@ def pulse_diagram_plotly(
         the plot
     """
 
-    port_map: Dict[str, int] = dict()
+    port_map: Dict[str, int] = {}
     ports_length: int = 8
     auto_map: bool = port_list is None
-
-    def _populate_port_mapping(portmap: Dict[str, int]) -> None:
-        """
-        Dynamically add up to 8 ports to the port_map dictionary.
-        """
-        offset_idx: int = 0
-
-        for t_constr in schedule.timing_constraints:
-            operation = schedule.operations[t_constr["operation_repr"]]
-            for pulse_info in operation["pulse_info"]:
-                if offset_idx == ports_length:
-                    return
-
-                port = pulse_info["port"]
-                if port is None:
-                    continue
-
-                if port not in portmap:
-                    portmap[port] = offset_idx
-                    offset_idx += 1
 
     if auto_map is False:
         ports_length = len(port_list)
         port_map = dict(zip(port_list, range(len(port_list))))
     else:
-        _populate_port_mapping(port_map)
+        _populate_port_mapping(schedule, port_map, ports_length)
         ports_length = len(port_map)
 
     nrows = ports_length
@@ -106,31 +134,14 @@ def pulse_diagram_plotly(
         operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if pulse_info["port"] not in port_map:
-                # Do not draw pulses for this port
-                continue
-
-            if pulse_info["port"] is None:
-                logger.warning(
-                    f"Unable to draw pulse for pulse_info due to missing 'port' for "
-                    f"operation name={operation['name']} "
-                    f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
-                )
-                continue
-
-            if pulse_info["wf_func"] is None:
-                logger.warning(
-                    f"Unable to draw pulse for pulse_info due to missing 'wf_func' for "
-                    f"operation name={operation['name']} "
-                    f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
-                )
+            if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
                 continue
 
             # port to map the waveform too
             port: str = pulse_info["port"]
 
             # function to generate waveform
-            wf_func: str = import_func_from_string(pulse_info["wf_func"])
+            wf_func: Callable = import_func_from_string(pulse_info["wf_func"])
 
             # iterate through the colors in the color map
             col_idx = (col_idx + 1) % len(colors)
@@ -227,3 +238,247 @@ def pulse_diagram_plotly(
     )
 
     return fig
+
+
+# pylint: disable=too-many-branches
+def sample_schedule(
+    schedule: Schedule,
+    port_list: Optional[List[str]] = None,
+    modulation: Literal["off", "if", "clock"] = "off",
+    modulation_if: float = 0.0,
+    sampling_rate: int = 1_000_000_000,
+) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+    """
+    Sample a schedule at discrete points in time.
+
+    Parameters
+    ----------
+    schedule :
+        The schedule to render.
+    port_list :
+        A list of ports to show. if set to `None` will use the first
+        8 ports it encounters in the sequence.
+    modulation :
+        Determines if modulation is included in the visualization.
+    modulation_if :
+        Modulation frequency used when modulation is set to "if".
+    sampling_rate :
+        The time resolution used in the sampling.
+
+    Returns
+    -------
+    timestamps
+        Sample times.
+    waveforms
+        Dictionary with the data samples for each port.
+    """
+
+    port_map: Dict[str, int] = {}
+    ports_length: int = 8
+    auto_map: bool = port_list is None
+
+    if auto_map is False:
+        ports_length = len(port_list)
+        port_map = dict(zip(port_list, range(len(port_list))))
+    else:
+        _populate_port_mapping(schedule, port_map, ports_length)
+        ports_length = len(port_map)
+
+    time_window: list = None
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+        operation = schedule.operations[t_constr["operation_repr"]]
+
+        for pulse_info in operation["pulse_info"]:
+            if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
+                logging.info(f"Operation {operation} is not valid for plotting.")
+
+            # times at which to evaluate waveform
+            t0 = t_constr["abs_time"] + pulse_info["t0"]
+            if time_window is None:
+                time_window = [t0, t0 + pulse_info["duration"]]
+            else:
+                time_window = [
+                    min(t0, time_window[0]),
+                    max(t0 + pulse_info["duration"], time_window[1]),
+                ]
+
+    logger.debug(f"time_window {time_window}, port_map {port_map}")
+
+    if time_window is None:
+        raise RuntimeError(
+            f"Attempting to sample schedule {schedule.name}, "
+            "but the schedule does not contain any `pulse_info`. "
+            "Please verify that the schedule has been populated and "
+            "device compilation has been performed."
+        )
+
+    timestamps = np.arange(time_window[0], time_window[1], 1 / sampling_rate)
+    waveforms = {key: np.zeros_like(timestamps) for key in port_map}
+
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+        operation = schedule.operations[t_constr["operation_repr"]]
+        logger.debug(f"{pls_idx}: {operation}")
+
+        for pulse_info in operation["pulse_info"]:
+
+            if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
+                continue
+
+            # port to map the waveform too
+            port: str = pulse_info["port"]
+
+            # function to generate waveform
+            wf_func: Callable = import_func_from_string(pulse_info["wf_func"])
+
+            # times at which to evaluate waveform
+            t0 = t_constr["abs_time"] + pulse_info["t0"]
+            t1 = t0 + pulse_info["duration"]
+
+            time_indices = np.where(np.logical_and(timestamps >= t0, timestamps < t1))
+            t = timestamps[time_indices]
+            logging.debug(f"t0 {t0} t1 {t1} indices {time_indices} t {t}")
+            if len(t) == 0:
+                continue
+
+            par_map = inspect.signature(wf_func).parameters
+            wf_kwargs = {}
+            for kwargs in par_map.keys():
+                if kwargs in pulse_info.keys():
+                    wf_kwargs[kwargs] = pulse_info[kwargs]
+
+            # Calculate the numerical waveform using the wf_func
+            waveform = wf_func(t=t, **wf_kwargs)
+
+            # optionally adds some modulation
+            if modulation == "clock":
+                # apply modulation to the waveforms
+                waveform = modulate_wave(
+                    t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
+                )
+                waveform = np.real_if_close(waveform)
+
+            if modulation == "if":
+                # apply modulation to the waveforms
+                waveform = modulate_wave(t, waveform, modulation_if)
+
+            if np.iscomplexobj(waveform):
+                waveforms[port] = waveforms[port].astype(complex)
+            waveforms[port][time_indices] += waveform
+
+    return timestamps, waveforms
+
+
+def pulse_diagram_matplotlib(
+    schedule: Schedule,
+    sampling_rate: float = 1e6,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    **kwargs,
+) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    """
+    Plots a schedule using matplotlib.
+
+    Parameters
+    ----------
+    schedule:
+        The schedule to plot.
+    sampling_rate:
+        The schedule is sampled with this sampling rate.
+    ax:
+        Axis onto which to plot.
+    **kwargs:
+        Passed to sample_schedule.
+
+    Returns
+    -------
+    fig
+        The matplotlib figure.
+    ax
+        The matplotlib ax.
+    """
+    times, pulses = sample_schedule(
+        schedule, sampling_rate=sampling_rate, modulation="clock", **kwargs
+    )
+    if ax is None:
+        _, ax = plt.subplots()
+    for gate, data in pulses.items():
+        ax.plot(times, data.real, label=gate)
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Voltage")
+    ax.legend()
+
+    return ax.get_figure(), ax
+
+
+def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operation]]:
+    """
+    Return a list of all WindowOperations with start and end time.
+
+    Parameters
+    ----------
+    schedule:
+        Schedule to use.
+    Returns
+    -------
+    :
+        List of all window operations in the schedule.
+    """
+    window_operations = []
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+        _ = pls_idx  # explicitly not using pls_idx
+        operation = schedule.operations[t_constr["operation_repr"]]
+        if isinstance(operation, WindowOperation):
+            for pulse_info in operation["pulse_info"]:
+
+                t0 = t_constr["abs_time"] + pulse_info["t0"]
+                t1 = t0 + pulse_info["duration"]
+
+            window_operations.append((t0, t1, operation))
+    return window_operations
+
+
+def plot_window_operations(
+    schedule: Schedule,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    time_scale_factor: float = 1,
+) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    """
+    Plot the window operations in a schedule.
+
+    Parameters
+    ----------
+    schedule:
+        Schedule from which to plot window operations.
+    ax:
+        Axis handle to use for plotting.
+    time_scale_factor:
+        Used to scale the independent data before using as data for the
+        x-axis of the plot.
+
+    Returns
+    -------
+    fig
+        The matplotlib figure.
+    ax
+        The matplotlib ax.
+    """
+    if ax is None:
+        _, ax = plt.subplots()
+
+    window_operations = get_window_operations(schedule)
+
+    cmap = matplotlib.cm.get_cmap("jet")
+
+    for idx, (t0, t1, operation) in enumerate(window_operations):
+        window_name = operation.window_name
+        logging.debug(f"plot_window_operations: window {window_name}: {t0}, {t1}")
+        colormap = cmap(idx / (1 + len(window_operations)))
+        label = window_name
+        ax.axvspan(
+            time_scale_factor * t0,
+            time_scale_factor * (t1),
+            alpha=0.2,
+            color=colormap,
+            label=label,
+        )
+
+    return ax.get_figure(), ax

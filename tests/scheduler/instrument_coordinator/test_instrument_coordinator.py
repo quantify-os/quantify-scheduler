@@ -14,7 +14,11 @@ from unittest.mock import call
 
 import pytest
 from qcodes import Instrument
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler.instrument_coordinator import (
+    InstrumentCoordinator,
+    ZIInstrumentCoordinator,
+)
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 
 
@@ -39,21 +43,13 @@ class MyICC(base_component.InstrumentCoordinatorComponentBase):
         pass
 
 
-@pytest.fixture(autouse=True, name="close_all_instruments")
-def fixture_close_all_instruments():
-    """Makes sure that after startup and teardown all instruments are closed"""
-    Instrument.close_all()
-    yield
-    Instrument.close_all()
-
-
-# cretes a few dummy compoents avialable to be used in each test
+# creates a few dummy components avialable to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
 def fixture_dummy_components(
     mocker, request
 ) -> base_component.InstrumentCoordinatorComponentBase:
 
-    # Crete a QCoDeS intrument for realistic emulation
+    # Create a QCoDeS intrument for realistic emulation
     instruments = [Instrument(f"dev{i}") for i in range(3)]
     components = []
 
@@ -88,6 +84,19 @@ def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
     request.addfinalizer(cleanup_tmp)
 
     return instrument_coordinator
+
+
+@pytest.fixture(scope="function", name="zi_instrument_coordinator")
+def fixture_zi_instrument_coordinator(request) -> ZIInstrumentCoordinator:
+    zi_instrument_coordinator = ZIInstrumentCoordinator("ic_zi_0000")
+
+    def cleanup_tmp():
+        # This should prevent the garbage collector from colleting the qcodes instrument
+        zi_instrument_coordinator.close()
+
+    request.addfinalizer(cleanup_tmp)
+
+    return zi_instrument_coordinator
 
 
 def test_constructor(close_all_instruments, instrument_coordinator):
@@ -222,8 +231,12 @@ def test_prepare(
     )
 
     # Act
+    test_sched = Schedule(name="test_schedule")
     args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
-    instrument_coordinator.prepare(args)
+    test_sched["compiled_instructions"] = args
+    compiled_sched = CompiledSchedule(test_sched)
+
+    instrument_coordinator.prepare(compiled_sched)
 
     # Assert
     assert get_component_spy.call_args_list == [call("ic_dev0"), call("ic_dev1")]
@@ -271,7 +284,7 @@ def test_retrieve_acquisition(
     instrument_coordinator.add_component(component1)
     instrument_coordinator.add_component(component2)
 
-    component1.retrieve_acquisition.return_value = {0: [1, 2, 3, 4]}
+    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
     component2.retrieve_acquisition.return_value = None
 
     # Act
@@ -280,7 +293,50 @@ def test_retrieve_acquisition(
     # Assert
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
-    assert {"ic_dev0": {0: [1, 2, 3, 4]}} == data
+    assert {(0, 0): [1, 2, 3, 4]} == data
+
+
+def test_reacquire_acquisition_successful(
+    close_all_instruments, zi_instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    zi_instrument_coordinator.add_component(component1)
+    zi_instrument_coordinator.add_component(component2)
+
+    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    component2.retrieve_acquisition.return_value = None
+
+    # Set the last cache of the ZIInstrumentCoordinator to something different
+    zi_instrument_coordinator._last_acquisition = {(0, 0): [5, 6, 7, 8]}
+
+    # Act
+    data = zi_instrument_coordinator.retrieve_acquisition()
+
+    # Assert
+    component1.retrieve_acquisition.assert_called()
+    component2.retrieve_acquisition.assert_called()
+    assert zi_instrument_coordinator._last_acquisition is not None
+    assert {(0, 0): [1, 2, 3, 4]} == data
+
+
+def test_reacquire_acquisition_failed(
+    close_all_instruments, zi_instrument_coordinator, dummy_components
+):
+    # Arrange
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    zi_instrument_coordinator.add_component(component1)
+    zi_instrument_coordinator.add_component(component2)
+
+    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    component2.retrieve_acquisition.return_value = None
+
+    # Assert
+    with pytest.raises(RuntimeError):
+        # Act
+        zi_instrument_coordinator.retrieve_acquisition()
 
 
 def test_wait_done(close_all_instruments, instrument_coordinator, dummy_components):
@@ -298,3 +354,23 @@ def test_wait_done(close_all_instruments, instrument_coordinator, dummy_componen
     # Assert
     component1.wait_done.assert_called_with(timeout)
     component2.wait_done.assert_called_with(timeout)
+
+
+def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_components):
+    component1 = dummy_components.pop(0)
+    component2 = dummy_components.pop(0)
+    instrument_coordinator.add_component(component1)
+    instrument_coordinator.add_component(component2)
+
+    # assert that first there is no schedule prepared yet
+    with pytest.raises(ValueError):
+        instrument_coordinator.last_schedule()
+
+    test_sched = Schedule(name="test_schedule")
+    compiled_sched = CompiledSchedule(test_sched)
+
+    # assert that the uploaded schedule is retrieved
+    instrument_coordinator.prepare(compiled_sched)
+    last_sched = instrument_coordinator.last_schedule()
+
+    assert last_sched == compiled_sched

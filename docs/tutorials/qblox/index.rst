@@ -43,9 +43,9 @@ Supported Instruments
 
 - ✅ QCM
 - ✅ QRM
-- ⬜️ QCM-RF
-- ⬜️ QRM-RF
-- ⬜️ Cluster
+- ✅ QCM-RF
+- ✅ QRM-RF
+- ✅ Cluster
 - ⬜️ SPI
 
 

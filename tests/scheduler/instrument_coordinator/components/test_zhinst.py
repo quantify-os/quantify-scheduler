@@ -6,6 +6,7 @@
 # pylint: disable=redefined-outer-name
 from __future__ import annotations
 
+from typing import Any, Dict, Tuple
 from pathlib import Path
 from unittest.mock import call
 
@@ -53,6 +54,9 @@ def make_uhfqa(mocker):
         uhfqa.name = name
         uhfqa._serial = serial
         uhfqa.awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
+        # the quantum analyzer setup "qas"
+        uhfqa.qas = [None] * 1
+        uhfqa.qas[0] = mocker.create_autospec(None, instance=True)
 
         component = zhinst.UHFQAInstrumentCoordinatorComponent(uhfqa)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=uhfqa)
@@ -273,10 +277,16 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     # Act
     acq_result = uhfqa.retrieve_acquisition()
 
+    expected_acq_result: Dict[Tuple[int, int], Any] = dict()
+    for i, value in enumerate(expected_data):
+        expected_acq_result[(0, i)] = (value, 0.0)
+
     # Assert
     assert not acq_result is None
-    assert 0 in acq_result
-    assert (acq_result[0] == expected_data).all()
+    assert (0, 2) in acq_result
+
+    for key in acq_result:
+        assert acq_result[key] == expected_acq_result[key]
 
 
 def test_uhfqa_wait_done(mocker, make_uhfqa):

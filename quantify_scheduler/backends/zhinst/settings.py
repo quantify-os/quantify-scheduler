@@ -12,9 +12,13 @@ from typing import Any, Callable, Dict, List, Tuple, Union, cast
 
 import numpy as np
 from zhinst.qcodes import base
-
+from quantify_core.utilities.general import make_hash
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+
+# same as backends.zhinst_backend.NUM_UHFQA_READOUT_CHANNELS
+# copied here to avoid a circular import
+NUM_UHFQA_READOUT_CHANNELS = 10
 
 
 @dataclasses.dataclass(frozen=True)
@@ -79,6 +83,14 @@ class ZISettings:
         self._daq_settings: List[ZISetting] = daq_settings
         self._awg_settings: List[Tuple[int, ZISetting]] = awg_settings
         self._awg_indexes = [awg_index for (awg_index, _) in self._awg_settings]
+
+    def __eq__(self, other):
+        self_dict = self.as_dict()
+        if not isinstance(other, ZISettings):
+            return False
+        other_dict = other.as_dict()
+        settings_equal = make_hash(self_dict) == make_hash(other_dict)
+        return settings_equal
 
     @property
     def awg_indexes(self) -> List[int]:
@@ -173,6 +185,13 @@ class ZISettings:
                 waveform_data = np.reshape(
                     setting.value, (len(setting.value) // columns, -1)
                 )
+                ############################################################
+                # WARNING: For saving waveform in csv format, the data
+                # MUST be in floating point type, and NOT int16 (as is required)
+                # when using the Zhinst-toolkit.helpers.Waveform class.
+                # Hotfix applied to rescale.
+                ############################################################
+                waveform_data = waveform_data / (2 ** 15 - 1)
                 np.savetxt(file_path, waveform_data, delimiter=";")
 
                 setting.value = str(file_path)
@@ -298,9 +317,17 @@ class ZISettingsBuilder:
     """
     The Zurich Instruments Settings builder class.
 
-    This class provides an API for settings that
-    are configured in the zhinst backend. The ZISettings
-    class is the resulting set that holds settings.
+    This class provides an API for settings that are configured in the zhinst backend.
+    The ZISettings class is the resulting set that holds settings.
+
+    This class exist because configuring these settings requires logic in how the
+    settings are configured using the zurich instruments API.
+
+    .. tip::
+
+        Build the settings using :meth:`~.build` and then view them as a dictionary
+        using :meth:`ZISettings.as_dict` to see what settings will be configured.
+
     """
 
     _daq_settings: List[ZISetting]
@@ -682,12 +709,23 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
+        Raises
+        ------
+        ValueError
+            If a channel used is larger than 9.
         """
         assert len(real) <= 4096
 
         node = "qas/0/integration/weights/"
         channels_list = [channels] if isinstance(channels, int) else channels
         for channel_index in channels_list:
+            if channel_index >= NUM_UHFQA_READOUT_CHANNELS:
+                raise ValueError(
+                    f"channel_index = {channel_index}: the UHFQA supports up to "
+                    f"{NUM_UHFQA_READOUT_CHANNELS} integration weigths."
+                )
+
             self._set_daq(
                 ZISetting(
                     f"{node}{channel_index}/real",
@@ -713,12 +751,23 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
+        Raises
+        ------
+        ValueError
+            If a channel used is larger than 9.
         """
         assert len(imag) <= 4096
 
         node = "qas/0/integration/weights/"
         channels_list = [channels] if isinstance(channels, int) else channels
         for channel_index in channels_list:
+            if channel_index >= NUM_UHFQA_READOUT_CHANNELS:
+                raise ValueError(
+                    f"channel_index = {channel_index}: the UHFQA supports up to "
+                    f"{NUM_UHFQA_READOUT_CHANNELS} integration weigths."
+                )
+
             self._set_daq(
                 ZISetting(
                     f"{node}{channel_index}/imag",
@@ -951,6 +1000,7 @@ class ZISettingsBuilder:
         ----------
         awg_index :
         seqc :
+        waveforms_dict :
 
         Returns
         -------
@@ -961,7 +1011,10 @@ class ZISettingsBuilder:
             ZISetting(
                 "compiler/sourcestring",
                 seqc,
-                partial(zi_helpers.set_and_compile_awg_seqc, awg_index=awg_index),
+                partial(
+                    zi_helpers.set_and_compile_awg_seqc,
+                    awg_index=awg_index,
+                ),
             ),
         )
 

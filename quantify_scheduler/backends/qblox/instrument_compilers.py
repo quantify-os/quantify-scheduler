@@ -6,15 +6,20 @@ from __future__ import annotations
 from typing import Optional, Dict, Any
 
 from quantify_scheduler.backends.qblox import compiler_container
-from quantify_scheduler.backends.qblox.compiler_abc import (
-    InstrumentCompiler,
-    PulsarSequencerBase,
-    PulsarBase,
+from quantify_scheduler.backends.qblox import compiler_abc
+from quantify_scheduler.backends.types.qblox import (
+    LOSettings,
+    MarkerConfiguration,
+    StaticHardwareProperties,
+    BoundedParameter,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo, LOSettings
+from quantify_scheduler.backends.qblox.constants import (
+    NUMBER_OF_SEQUENCERS_QCM,
+    NUMBER_OF_SEQUENCERS_QRM,
+)
 
 
-class LocalOscillator(InstrumentCompiler):
+class LocalOscillator(compiler_abc.InstrumentCompiler):
     """
     Implementation of an `InstrumentCompiler` that compiles for a generic LO. The main
     difference between this class and the other compiler classes is that it doesn't take
@@ -107,91 +112,201 @@ class LocalOscillator(InstrumentCompiler):
         return self._settings.to_dict()
 
 
-# ---------- pulsar sequencer classes ----------
-
-
-class QCMSequencer(PulsarSequencerBase):
+class QcmModule(compiler_abc.QbloxBasebandModule):
     """
-    Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
-    specific to a Pulsar QCM sequencer.
+    QCM specific implementation of the qblox compiler.
     """
 
-    awg_output_volt = 2.5
-    """Voltage range of the awg output paths."""
-
-
-class QRMSequencer(PulsarSequencerBase):
-    """
-    Subclass of Pulsar_sequencer_base that is meant to implement all the parts that are
-    specific to a Pulsar QRM sequencer.
-    """
-
-    awg_output_volt = 0.5
-    """Voltage range of the awg output paths."""
+    supports_acquisition: bool = False
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
+        max_awg_output_voltage=2.5,
+        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
+    )
 
 
 # pylint: disable=invalid-name
-class Pulsar_QCM(PulsarBase):
+class QrmModule(compiler_abc.QbloxBasebandModule):
     """
-    Pulsar QCM specific implementation of the pulsar compiler.
+    QRM specific implementation of the qblox compiler.
     """
 
-    sequencer_type = QCMSequencer
-    max_sequencers: int = 6
+    supports_acquisition: bool = True
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
+        max_awg_output_voltage=0.5,
+        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
+    )
 
-    def _distribute_data(self):
-        """
-        Distributes the pulses and acquisitions assigned to this pulsar over the
-        different sequencers based on their portclocks. Overrides the function of the
-        same name in the superclass to raise an exception in case it attempts to
-        distribute acquisitions, since this is not supported by the pulsar QCM.
 
-        Raises
-        ------
-        RuntimeError
-            Pulsar_QCM._acquisitions is not empty.
-        """
-        if len(self._acquisitions) > 0:
-            raise RuntimeError(
-                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
-                f"which is not supported by hardware."
-            )
-        super()._distribute_data()
+class QcmRfModule(compiler_abc.QbloxRFModule):
+    """
+    QCM-RF specific implementation of the qblox compiler.
+    """
 
-    def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
+    supports_acquisition: bool = False
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
+        max_awg_output_voltage=0.25,
+        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+    )
+
+
+class QrmRfModule(compiler_abc.QbloxRFModule):
+    """
+    QRM-RF specific implementation of the qblox compiler.
+    """
+
+    supports_acquisition: bool = True
+    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
+        max_awg_output_voltage=0.25,
+        # N.B one of the output switches works inverted, hence the 1101 instead of 1111.
+        marker_configuration=MarkerConfiguration(start=0b1101, end=0b0010),
+        mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+    )
+
+
+class Cluster(compiler_abc.ControlDeviceCompiler):
+    """
+    Compiler class for a Qblox cluster.
+    """
+
+    compiler_classes: Dict[str, type] = {
+        "QCM": QcmModule,
+        "QRM": QrmModule,
+        "QCM_RF": QcmRfModule,
+        "QRM_RF": QrmRfModule,
+    }
+    """References to the individual module compiler classes that can be used by the
+    cluster."""
+    supports_acquisition: bool = True
+    """Specifies that the Cluster supports performing acquisitions."""
+
+    def __init__(
+        self,
+        parent: compiler_container.CompilerContainer,
+        name: str,
+        total_play_time: float,
+        hw_mapping: Dict[str, Any],
+    ):
         """
-        Raises an exception when called since the pulsar QCM does not support
-        acquisitions.
+        Constructor for a Cluster compiler object.
 
         Parameters
         ----------
-        port
-            The port the pulse needs to be sent to.
-        clock
-            The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info
-            Data structure containing all the information regarding this specific
-            acquisition operation.
-
-        Raises
-        ------
-        RuntimeError
-            Always.
+        parent
+            Reference to the parent object.
+        name
+            Name of the `QCoDeS` instrument this compiler object corresponds to.
+        total_play_time
+            Total time execution of the schedule should go on for.
+        hw_mapping
+            The hardware configuration dictionary for this specific device. This is one
+            of the inner dictionaries of the overall hardware config.
         """
-        raise RuntimeError(
-            f"Pulsar QCM {self.name} does not support acquisitions. "
-            f"Attempting to add acquisition {repr(acq_info)} "
-            f"on port {port} with clock {clock}."
+        super().__init__(
+            parent=parent,
+            name=name,
+            total_play_time=total_play_time,
+            hw_mapping=hw_mapping,
         )
+        self.instrument_compilers: dict = self.construct_instrument_compilers()
+
+    def construct_instrument_compilers(self) -> Dict[str, compiler_abc.QbloxBaseModule]:
+        """
+        Constructs the compilers for the modules inside the cluster.
+
+        Returns
+        -------
+        :
+            A dictionary with the name of the instrument as key and the value its
+            compiler.
+        """
+        instrument_compilers = {}
+        for name, cfg in self.hw_mapping.items():
+            if not isinstance(cfg, dict):
+                continue  # not an instrument definition
+            if "instrument_type" not in cfg:
+                raise KeyError(
+                    f"Module {name} of cluster {self.name} is specified in "
+                    f"the config, but does not specify an 'instrument_type'."
+                    f"\n\nValid values: {self.compiler_classes.keys()}"
+                )
+            instrument_type: str = cfg["instrument_type"]
+            if instrument_type not in self.compiler_classes:
+                raise KeyError(
+                    f"Specified unknown instrument_type {instrument_type} as"
+                    f" a module for cluster {self.name}. Please select one "
+                    f"of: {self.compiler_classes.keys()}."
+                )
+            compiler_type: type = self.compiler_classes[instrument_type]
+            instance = compiler_type(
+                self, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
+            )
+            assert hasattr(instance, "is_pulsar")
+            instance.is_pulsar = False
+
+            instrument_compilers[name] = instance
+        return instrument_compilers
+
+    def prepare(self) -> None:
+        """
+        Prepares the instrument compiler for compilation by assigning the data.
+        """
+        self.distribute_data()
+        for compiler in self.instrument_compilers.values():
+            compiler.prepare()
+
+    def distribute_data(self) -> None:
+        """
+        Distributes the pulses and acquisitions assigned to the cluster over the
+        individual module compilers.
+        """
+        for compiler in self.instrument_compilers.values():
+            for portclock in compiler.portclocks:
+                port, clock = portclock
+                if portclock in self._pulses:
+                    for pulse in self._pulses[portclock]:
+                        compiler.add_pulse(port, clock, pulse)
+                if portclock in self._acquisitions:
+                    for acq in self._acquisitions[portclock]:
+                        compiler.add_acquisition(port, clock, acq)
+
+    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+        """
+        Performs the compilation.
+
+        Parameters
+        ----------
+        repetitions
+            Amount of times to repeat execution of the schedule.
+
+        Returns
+        -------
+        :
+            The part of the compiled instructions relevant for this instrument.
+        """
+        program = {}
+        program["settings"] = {"reference_source": self.hw_mapping["ref"]}
+        for compiler in self.instrument_compilers.values():
+            instrument_program = compiler.compile(repetitions)
+            if instrument_program is not None and len(instrument_program) > 0:
+                program[compiler.name] = instrument_program
+        if len(program) == 0:
+            program = None
+        return program
 
 
-# pylint: disable=invalid-name
-class Pulsar_QRM(PulsarBase):
-    """
-    Pulsar QRM specific implementation of the pulsar compiler.
-    """
-
-    sequencer_type = QRMSequencer
-    """The type of the sequencer."""
-    max_sequencers: int = 1
-    """Maximum number of sequencer available in the instrument."""
+COMPILER_MAPPING: Dict[str, type] = {
+    "Pulsar_QCM": QcmModule,
+    "Pulsar_QRM": QrmModule,
+    "Pulsar_QCM_RF": QcmRfModule,
+    "Pulsar_QRM_RF": QrmRfModule,
+    "Cluster": Cluster,
+    "LocalOscillator": LocalOscillator,
+}
+"""Maps the names in the hardware config to their appropriate compiler classes."""

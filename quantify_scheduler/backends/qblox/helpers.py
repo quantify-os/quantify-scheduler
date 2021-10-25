@@ -6,52 +6,10 @@ from typing import Any, Dict, Union, List, Iterable, Tuple
 from collections import UserDict
 
 import numpy as np
+from typing_extensions import Literal
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
-
-
-try:
-    from qblox_instruments.build import __version__ as driver_version
-except ImportError:
-    driver_version = None
-
-SUPPORTED_DRIVER_VERSIONS = ("0.3.2",)
-
-
-class DriverVersionError(Exception):
-    """
-    Raise when the installed driver version is not supported
-    """
-
-
-def verify_qblox_instruments_version():
-    """
-    Verifies whether the installed version is supported by the qblox_backend.
-
-    Raises
-    ------
-    DriverVersionError
-        When an incorrect or no installation of qblox-instruments was found.
-    """
-    if driver_version is None:
-        raise DriverVersionError(
-            "Qblox DriverVersionError: qblox-instruments version check could not be "
-            "performed. Either the package is not installed "
-            "correctly or a version < 0.3.2 was found."
-        )
-    if driver_version not in SUPPORTED_DRIVER_VERSIONS:
-        message = (
-            f"Qblox DriverVersionError: Installed driver version {driver_version}"
-            f" not supported by backend."
-        )
-        message += (
-            f" Please install version {SUPPORTED_DRIVER_VERSIONS[0]}"
-            if len(SUPPORTED_DRIVER_VERSIONS) == 1
-            else f" Please install a supported version (currently supported: "
-            f"{SUPPORTED_DRIVER_VERSIONS})"
-        )
-        message += " to continue to use this backend."
-        raise DriverVersionError(message)
 
 
 # pylint: disable=invalid-name
@@ -172,9 +130,109 @@ def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
     return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
 
-def _generate_waveform_dict(
-    waveforms_complex: Dict[str, np.ndarray]
-) -> Dict[str, dict]:
+def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
+    """
+    Creates a unique identifier from the waveform data, using a hash. Identical arrays
+    yield identical strings within the same process.
+
+    Parameters
+    ----------
+    wf_data:
+        The data to generate the unique id for.
+    decimals:
+        The number of decimal places to consider.
+
+    Returns
+    -------
+    :
+        A unique identifier.
+    """
+    waveform_hash = hash(wf_data.round(decimals=decimals).tobytes())
+    return str(waveform_hash)
+
+
+def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
+    """
+    Finds the output path index associated with the output names specified in the
+    config.
+
+    For the baseband modules, these indices correspond directly to a physical output (
+    e.g. index 0 corresponds to output 1 etc.).
+
+    For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
+    respectively, and 1 and 3 to path1 of those outputs.
+
+    Parameters
+    ----------
+    name
+        name of the output channel. e.g. 'complex_output_0'.
+
+    Returns
+    -------
+    :
+        A tuple containing the indices of the physical (real) outputs.
+    """
+    return {
+        "complex_output_0": (0, 1),
+        "complex_output_1": (2, 3),
+        "real_output_0": (0,),
+        "real_output_1": (1,),
+        "real_output_2": (2,),
+        "real_output_3": (3,),
+    }[name]
+
+
+def output_mode_from_outputs(
+    outputs: Union[Tuple[int], Tuple[int, int]]
+) -> Literal["complex", "real", "imag"]:
+    """
+    Takes the specified outputs to use and extracts a "sequencer mode" from it.
+
+    Modes:
+
+    - ``"real"``: only path0 is used
+    - ``"imag"``: only path1 is used
+    - ``"complex"``: both path0 and path1 paths are used.
+
+    Parameters
+    ----------
+    outputs
+        The outputs the sequencer is supposed to use. Note that the outputs start from
+        0, but the labels on the front panel start counting from 1. So the mapping
+        differs n-1.
+
+    Returns
+    -------
+    :
+        The mode
+
+    Raises
+    ------
+    RuntimeError
+        The amount of outputs is more than 2, which is impossible for one sequencer.
+    """
+    if len(outputs) > 2:
+        raise RuntimeError(
+            f"Too many outputs specified for this channel. Given: {outputs}."
+        )
+
+    if len(outputs) == 2:
+        assert (
+            outputs[0] - outputs[1]
+        ) ** 2 == 1, "Attempting to use two outputs that are not next to each other."
+        if 1 in outputs:
+            assert 2 not in outputs, (
+                "Attempting to use output 1 and output 2 (2 and 3 on front panel) "
+                "together, but they belong to different pairs."
+            )
+        return "complex"
+
+    output = outputs[0]
+    mode = "real" if output % 2 == 0 else "imag"
+    return mode
+
+
+def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str, dict]:
     """
     Takes a dictionary with complex waveforms and generates a new dictionary with
     real valued waveforms with a unique index, as required by the hardware.
@@ -193,21 +251,20 @@ def _generate_waveform_dict(
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
 
-    Examples
-    --------
+    .. admonition:: Examples
 
-    .. jupyter-execute::
+        .. jupyter-execute::
 
-        import numpy as np
-        from quantify_scheduler.backends.qblox.helpers import _generate_waveform_dict
+            import numpy as np
+            from quantify_scheduler.backends.qblox.helpers import generate_waveform_dict
 
-        complex_waveforms = {12345: np.array([1, 2])}
-        _generate_waveform_dict(complex_waveforms)
+            complex_waveforms = {12345: np.array([1, 2])}
+            generate_waveform_dict(complex_waveforms)
 
-        # {'12345_I': {'data': [1, 2], 'index': 0},
-        # '12345_Q': {'data': [0, 0], 'index': 1}}
+            # {'12345_I': {'data': [1, 2], 'index': 0},
+            # '12345_Q': {'data': [0, 0], 'index': 1}}
     """
-    wf_dict = dict()
+    wf_dict = {}
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
         name_i, name_q = generate_waveform_names_from_uuid(uuid)
         to_add = {
@@ -216,3 +273,53 @@ def _generate_waveform_dict(
         }
         wf_dict.update(to_add)
     return wf_dict
+
+
+def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
+    """
+    Takes a float value representing a time in seconds as used by the schedule, and
+    returns the integer valued time in nanoseconds that the sequencer uses.
+
+    Parameters
+    ----------
+    time
+        The time to convert.
+    grid_time_ns
+        The grid time to use in ns.
+
+    Returns
+    -------
+    :
+        The integer valued nanosecond time.
+    """
+    time_ns = int(round(time * 1e9))
+    if time_ns % grid_time_ns != 0:
+        raise ValueError(
+            f"Attempting to use a time interval of {time_ns} ns. "
+            f"Please ensure that the durations of operations and wait times between"
+            f" operations are multiples of {grid_time_ns} ns."
+        )
+    return time_ns
+
+
+def is_multiple_of_grid_time(
+    time: float, grid_time_ns: int = constants.GRID_TIME
+) -> bool:
+    """
+    Takes a time in seconds and converts it to the ns grid time that the Qblox hardware
+    expects.
+
+    Parameters
+    ----------
+    time:
+        A time in seconds.
+    grid_time_ns
+        A grid time in ns.
+
+    Returns
+    -------
+    :
+        If it the time is a multiple of the grid time.
+    """
+    time_ns = int(round(time * 1e9))
+    return time_ns % grid_time_ns == 0

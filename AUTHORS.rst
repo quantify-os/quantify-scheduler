@@ -20,4 +20,6 @@ Developers
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Christian Dickel <christiandickel8@gmail.com>
+* Pieter Eendebak <pieter.eendebak@tno.nl>
+* Gijs Vermariën <gijs@orangeqs.com>

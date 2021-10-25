@@ -26,7 +26,7 @@ The :class:`~quantify_scheduler.types.Schedule` contains information on *when* o
 When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.Schedule.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 Creating a schedule
@@ -56,7 +56,8 @@ In the following example, we will create a function to generate a :class:`~quant
             sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
             sched.add(CZ(qC=q0, qT=q1))
             sched.add(Rxy(theta=angle, phi=0, qubit=q0) )
-            sched.add(Measure(q0, q1, acq_index=acq_index))  # denote where to store the data
+            sched.add(Measure(q0, acq_index=acq_index))  # denote where to store the data
+            sched.add(Measure(q1, acq_index=acq_index), ref_pt="start")
 
         return sched
 
@@ -149,7 +150,24 @@ Valid qubits are strings that appear in the :ref:`device configuration file<sec-
 
 Visualization
 ^^^^^^^^^^^^^
-A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`~quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+
+Alternatively, one can plot the waveforms in schedules using :func:`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_matplotlib`:
+
+.. jupyter-execute::
+
+    from quantify_scheduler.pulse_library import SquarePulse, RampPulse
+    from quantify_scheduler.compilation import determine_absolute_timing
+    from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
+
+    schedule = Schedule("waveforms")
+    schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
+    schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+    schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
+    determine_absolute_timing(schedule)
+
+    _ = pulse_diagram_matplotlib(schedule, sampling_rate=20e6)
+
 
 Summary
 ^^^^^^^
@@ -489,7 +507,7 @@ and the resulting dataset can be analyzed using
 
 .. jupyter-execute::
 
-    from quantify_core.analysis.t1_analysis import T1Analysis
+    # from quantify_core.analysis.t1_analysis import T1Analysis
     # analysis = T1Analysis(label=label).run()
 
 

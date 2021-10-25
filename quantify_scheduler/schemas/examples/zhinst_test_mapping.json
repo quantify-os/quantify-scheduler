@@ -1,14 +1,18 @@
 {
   "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
+  "mode": "calibration",
   "local_oscillators": [
     {
-      "name": "lo0",
-      "frequency": 4.8e9
+      "name": "ic_mw_qubit",
+      "frequency": null
+    }, {
+      "name": "ic_mw_readout",
+      "frequency": null
     }
   ],
   "devices": [
     {
-      "name": "hdawg0",
+      "name": "ic_hdawg0",
       "type": "HDAWG4",
       "clock_select": 0,
       "ref": "int",
@@ -19,10 +23,11 @@
         "mode": "complex",
         "modulation": {
           "type": "premod",
-          "interm_freq": -50e6
+          "interm_freq": 0
         },
-        "local_oscillator": "lo0",
-        "line_trigger_delay": 5e-9,
+        "local_oscillator": "ic_mw_qubit",
+        "clock_frequency": 6e9,
+        "line_trigger_delay": 191e-9,
         "markers": [
           "AWG_MARKER1",
           "AWG_MARKER2"
@@ -30,10 +35,10 @@
         "gain1": 1,
         "gain2": 1,
         "mixer_corrections": {
-          "amp_ratio": 1.0,
-          "phase_error": 0.0,
-          "dc_offset_I": 0.0,
-          "dc_offset_Q": 0.0
+          "amp_ratio": 0.950,
+          "phase_error": 90,
+          "dc_offset_I": -0.5420,
+          "dc_offset_Q": -0.3280
         }
       },
       "channel_1": {
@@ -42,19 +47,28 @@
         "mode": "complex",
         "modulation": {
           "type": "premod",
-          "interm_freq": -50e6
+          "interm_freq": 0
         },
-        "local_oscillator": "lo0",
-        "line_trigger_delay": 5e-9,
-        "triggers": [
-          1
-        ]
+        "local_oscillator": "ic_mw_qubit",
+        "clock_frequency": 6e9,
+        "line_trigger_delay": 191e-9,
+        "markers": [
+          "AWG_MARKER1",
+          "AWG_MARKER2"
+        ],
+        "gain1": 1,
+        "gain2": 1,
+        "mixer_corrections": {
+          "amp_ratio": 0.950,
+          "phase_error": 90,
+          "dc_offset_I": -0.5420,
+          "dc_offset_Q": -0.3280
+        }
       }
     },
     {
-      "name": "uhfqa0",
+      "name": "ic_uhfqa0",
       "type": "UHFQA",
-      "clock_select": 0,
       "ref": "ext",
       "channel_0": {
         "port": "q0:res",
@@ -62,10 +76,10 @@
         "mode": "real",
         "modulation": {
           "type": "premod",
-          "interm_freq": -50e6
+          "interm_freq": 0
         },
-        "local_oscillator": "lo0",
-        "line_trigger_delay": 5e-9,
+        "local_oscillator": "ic_mw_readout",
+        "clock_frequency": 6e9,
         "triggers": [
           2
         ]
