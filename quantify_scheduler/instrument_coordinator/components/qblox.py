@@ -281,10 +281,12 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         lazy_set(self.instrument, f"sequencer{seq_idx}_sync_en", settings.sync_en)
 
         nco_en: bool = settings.nco_en
-        self.instrument.set(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        lazy_set(self.instrument, f"sequencer{seq_idx}_mod_en_awg", nco_en)
         if nco_en:
-            self.instrument.set(
-                f"sequencer{seq_idx}_nco_freq", settings.modulation_freq
+            lazy_set(
+                self.instrument,
+                f"sequencer{seq_idx}_nco_freq",
+                settings.modulation_freq,
             )
         lazy_set(
             self.instrument,
@@ -299,7 +301,8 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
 
         for output_idx in range(self._hardware_properties.number_of_output_paths):
             connected: bool = output_idx in settings.connected_outputs
-            self.instrument.set(
+            lazy_set(
+                self.instrument,
                 _get_channel_map_parameter_name(
                     sequencer_index=seq_idx, output_index=output_idx
                 ),
@@ -495,8 +498,8 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
             self._configure_global_settings(pulsar_settings)
 
         for path in [0, 1]:
-            self.instrument.set(f"scope_acq_trigger_mode_path{path}", "sequencer")
-            self.instrument.set(f"scope_acq_avg_mode_en_path{path}", True)
+            lazy_set(self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer")
+            lazy_set(self.instrument, f"scope_acq_avg_mode_en_path{path}", True)
 
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
@@ -568,7 +571,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         settings
             The settings to configure it to.
         """
-        self.instrument.set("reference_source", settings.ref)
+        lazy_set(self.instrument, "reference_source", settings.ref)
 
         if settings.lo0_freq is not None:
             lazy_set(self.instrument, "out0_lo_freq", settings.lo0_freq)
