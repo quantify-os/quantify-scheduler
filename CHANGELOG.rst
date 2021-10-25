@@ -2,21 +2,16 @@
 Changelog
 =========
 
-Unreleased
-----------
-
-
-
-
+0.5.0 Expanded feature sets hardware compilation backends (2021-10-25)
+----------------------------------------------------------------------
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * The `schedules.timedomain_schedules.allxy_sched` function no longer accepts the string "All" as an argument to the `element_select_idx` keyword.
 * The `QuantumDevice.cfg_nr_averages` parameter was renamed to `QuantumDevice.cfg_sched_repetitions`
 * The call signature of `gettables.ScheduleVectorAcqGettable` has been renamed to `gettables.ScheduleGettableSingleChannel`, and the call signature has been updated according to #36 to no longer accept several keyword arguments.
-* The `RampPulse` has an extra (optional) parameter `offset` (!211)
 * Qblox Backend - The NCO phase is now reset at the start of a program (!213).
-* Qblox Backend - Compilation now requires qblox_instruments version > 0.5.0 (!214).
+* Qblox Backend - Compilation now requires qblox_instruments version 0.5.0, 0.5.1 or 0.5.2 (!214, !221).
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,19 +29,27 @@ Merged branches and closed issues
 * Qblox Backend - Support for append bin mode (#184, !180).
 * Qblox Backend - Support for using real value pulses on arbitrary outputs added (!142).
 * Qblox Backend - Compilation now supports 6 sequencers for both the QCM as well as the QRM (!142).
+* Qblox Backend - Support for a cluster, along with its QCM, QRM, QCM-RF and QRM-RF modules (!164)
+* Qblox Backend - Registers are now dynamically allocated during compilation (!195)
 * Zhinst backend - No exception is raised when an LO that is in the config is not part of a schedule. (#203, !223)
-* Zhinst backend - instrument coordinator components for ZI will only be configured when the settings used to configure it have changed (#196, !227)
-* Zhinst backend - solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
+* Zhinst backend - Instrument coordinator components for ZI will only be configured when the settings used to configure it have changed (#196, !227)
+* Zhinst backend - Solved a bug that caused single-sideband demodulation to not be configured correctly when using the UHFQA (!227)
 * Zhinst backend - Warnings raised during compilation of seqc programs will no longer raise an exception but will use logging.warning (!227)
 * Zhinst backend - resolved a bug where the instrument coordinator cannot write waveforms to the UHFQA if it has never been used before (!227)
-* Updated existing schedules to make use of the acquisition index (#180, !180).
-* Added a function to extract acquisition metadata from a schedule (#179, !180).
+* Zhinst backend - resolved a bug where multiple identical measurements in a schedule would result in multiple integration weights being uploaded to the UFHQA (#207, !234)
+* Zhinst backend - resolved a bug where the UHFQA would not be triggered properly when executing a schedule with multiple samples (batched mode) (#205, !234)
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
+* QuantumDevice - Added docstrings to the TransmonElement parameters (!216, !218)
 * Qblox ICCs - QCoDeS parameters are now only set if they differ from the value in the cache (!230)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
-* Added method `sample_schedule` to sample a `Schedule` (!212)
+* Other - Added method `sample_schedule` to sample a `Schedule` (!212)
+* Other - The `RampPulse` has an extra (optional) parameter `offset` (!211)
+* Other - Updated existing schedules to make use of the acquisition index (#180, !180).
+* Other - Added a function to extract acquisition metadata from a schedule (#179, !180).
+* Other - The soft square waveform can now be evaluated with only one datapoint without raising an exception (!235)
+* Other - Added a function that generates a square pulse that compensates DC components of a sequence of pulses (!173)
 
 0.4.0 InstrumentCoordinator and improvements to backends (2021-08-06)
 ---------------------------------------------------------------------

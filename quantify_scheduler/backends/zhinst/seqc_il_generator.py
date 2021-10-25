@@ -393,6 +393,14 @@ class SeqcILGenerator(object):
         else:
             self._assign_local(name, f'"{value}";')
 
+    def emit_blankline(self) -> None:
+        """
+        Emits a blank line to the program.
+
+        This is typically used to create a visual separation for readability.
+        """
+        self._emit("")
+
     def emit_comment(self, text: str) -> None:
         """
         Emit a comment to the program.
@@ -498,7 +506,7 @@ class SeqcILGenerator(object):
         self._emit("startQAMonitor();")
 
     def emit_start_qa_result(
-        self, bitmask: Optional[str] = "", trigger: Optional[str] = ""
+        self, bitmask: Optional[str] = None, trigger: Optional[str] = None
     ) -> None:
         """
         Starts the Quantum Analysis Result unit by setting
@@ -523,8 +531,11 @@ class SeqcILGenerator(object):
             unit. If no trigger is specified it will clear
             the triggers, by default ""
         """
-        params = ", ".join([bitmask, trigger])
-        self._emit(f"startQAResult({params});")
+        if bitmask is None and trigger is None:
+            self._emit("startQAResult();")
+        else:
+            params = ", ".join([bitmask, trigger])
+            self._emit(f"startQAResult({params});")
 
     def emit_begin_while(self, predicate: str = "true") -> None:
         """
