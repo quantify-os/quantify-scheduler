@@ -145,7 +145,7 @@ class ScheduleGettableSingleChannel:
         instrument_coordinator = (
             self.quantum_device.instr_instrument_coordinator.get_instr()
         )
-        return instrument_coordinator.last_schedule
+        return instrument_coordinator.last_schedule()
 
     def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
         """
@@ -187,7 +187,6 @@ class ScheduleGettableSingleChannel:
         # Assert that the schedule is compatible with that.
         assert acq_metadata.acq_return_type == complex
 
-        acq_metadata = self._acq_metadata
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233
         if acq_metadata.bin_mode == BinMode.AVERAGE:
