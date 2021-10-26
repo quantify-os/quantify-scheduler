@@ -88,7 +88,6 @@ class ScheduleGettableSingleChannel:
 
         self.always_initialize = always_initialize
         self.is_initialized = False
-        self._compiled_schedule = None
 
         self.real_imag = real_imag
         if self.real_imag:
