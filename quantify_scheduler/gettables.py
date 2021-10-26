@@ -27,6 +27,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+from quantify_scheduler.types import Schedule
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
@@ -136,18 +137,15 @@ class ScheduleGettableSingleChannel:
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(compiled_schedule)
 
-        # retrieve the acquisition results
-        # pylint: disable=fixme
-        # FIXME: acq_metadata should be an attribute of the schedule, see also #192
-        acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
-
-        # Currently only supported for weighted integration.
-        # Assert that the schedule is compatible with that.
-        assert acq_metadata.acq_return_type == complex
-
-        self._acq_metadata = acq_metadata
-        self._compiled_schedule = compiled_schedule
         self.is_initialized = True
+
+    @property
+    def schedule(self) -> Schedule:
+        """ Return the schedule used in this class """
+        instrument_coordinator = (
+            self.quantum_device.instr_instrument_coordinator.get_instr()
+        )
+        return instrument_coordinator.last_schedule
 
     def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
         """
@@ -178,7 +176,17 @@ class ScheduleGettableSingleChannel:
     def process_acquired_data(
         self, acquired_data
     ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        compiled_schedule = self._compiled_schedule
+        compiled_schedule = self.schedule
+
+        # retrieve the acquisition results
+        # pylint: disable=fixme
+        # FIXME: acq_metadata should be an attribute of the schedule, see also #192
+        acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
+
+        # Currently only supported for weighted integration.
+        # Assert that the schedule is compatible with that.
+        assert acq_metadata.acq_return_type == complex
+
         acq_metadata = self._acq_metadata
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233
