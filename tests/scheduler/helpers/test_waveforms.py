@@ -142,6 +142,7 @@ def test_exec_waveform_function(wf_func: str, mocker: MockerFixture) -> None:
     t: np.ndarray = np.arange(0, 0 + pulse_duration, 1 / 1e9)
     pulse_info_stub = {
         "amp": 0.5,
+        "offset": 0,
         "duration": pulse_duration,
         "G_amp": 0.7,
         "D_amp": -0.2,
