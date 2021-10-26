@@ -111,7 +111,7 @@ class ScheduleGettableSingleChannel:
         self.quantum_device = quantum_device
 
     def __call__(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        """ Acquire and return data """
+        """Acquire and return data"""
         return self.get()
 
     def initialize(self):
