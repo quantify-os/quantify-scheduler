@@ -140,7 +140,7 @@ class ScheduleGettableSingleChannel:
 
     @property
     def schedule(self) -> Schedule:
-        """ Return the schedule used in this class """
+        """Return the schedule used in this class"""
         instrument_coordinator = (
             self.quantum_device.instr_instrument_coordinator.get_instr()
         )
