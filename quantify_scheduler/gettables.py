@@ -13,7 +13,7 @@ quantify-scheduler.
     Expect breaking changes.
 """
 from __future__ import annotations
-from typing import Any, Callable, Dict, Tuple, List, Optional, Union
+from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 from qcodes import Parameter
@@ -23,10 +23,10 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler import types
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+from quantify_scheduler.types import Schedule
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
@@ -51,6 +51,7 @@ class ScheduleGettableSingleChannel:
         real_imag: bool = True,
         batched: bool = False,
         max_batch_size: int = 1024,
+        always_initialize=True,
     ):
         """
         Create a new instance of ScheduleGettableSingleChannel which is used to do I and Q
@@ -79,7 +80,14 @@ class ScheduleGettableSingleChannel:
             Determines the maximum number of points to acquire when acquiring in batched
             mode. Can be used to split up a program in parts if required due to hardware
             constraints.
+        always_initialize:
+            If True, then reinitialize the schedule on each invocation of `get`. If False,
+            then only initialize the first invocation of `get`.
         """  # pylint: disable=line-too-long
+
+        self.always_initialize = always_initialize
+        self.is_initialized = False
+        self._compiled_schedule = None
 
         self.real_imag = real_imag
         if self.real_imag:
@@ -102,6 +110,39 @@ class ScheduleGettableSingleChannel:
         # the quantum device object containing setup configuration information
         self.quantum_device = quantum_device
 
+    def __call__(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        """Acquire and return data"""
+        return self.get()
+
+    def initialize(self):
+        """
+        This generates the schedule and uploads the compiled instructions to the
+        hardware using the instrument coordinator.
+        """
+        self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
+
+        # generate a schedule using the evaluated keyword arguments dict
+        sched = self.schedule_function(
+            **self._evaluated_sched_kwargs,
+            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        )
+
+        self._compiled_schedule = qcompile(
+            schedule=sched,
+            device_cfg=self.quantum_device.generate_device_config(),
+            hardware_mapping=self.quantum_device.generate_hardware_config(),
+        )
+
+        instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
+        instr_coordinator.prepare(self._compiled_schedule)
+
+        self.is_initialized = True
+
+    @property
+    def compiled_schedule(self) -> Schedule:
+        """Return the schedule used in this class"""
+        return self._compiled_schedule
+
     def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
         """
         Start the experimental sequence and retrieve acquisition data.
@@ -113,31 +154,35 @@ class ScheduleGettableSingleChannel:
             split into a tuple of floats: either real/imaginary parts or
             magnitude/phase, depending on whether :code:`real_imag` is :code:`True`.
         """
-        self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
-
-        # generate a schedule using the evaluated keyword arguments dict
-        sched = self.schedule_function(
-            **self._evaluated_sched_kwargs,
-            repetitions=self.quantum_device.cfg_sched_repetitions(),
-        )
-
-        compiled_schedule = qcompile(
-            schedule=sched,
-            device_cfg=self.quantum_device.generate_device_config(),
-            hardware_mapping=self.quantum_device.generate_hardware_config(),
-        )
+        if self.always_initialize:
+            self.initialize()
+        else:
+            if not self.is_initialized:
+                self.initialize()
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
-        instr_coordinator.prepare(compiled_schedule)
+
         instr_coordinator.start()
+        acquired_data = instr_coordinator.retrieve_acquisition()
+        instr_coordinator.stop()
+
+        result = self.process_acquired_data(acquired_data)
+        return result
+
+    def process_acquired_data(
+        self, acquired_data
+    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        """
+        Reshapes the data as returned from the instrument coordinator into the form
+        accepted by the measurement control.
+        """
 
         # retrieve the acquisition results
         # pylint: disable=fixme
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
-        acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
-
-        acquired_data = instr_coordinator.retrieve_acquisition()
-        instr_coordinator.stop()
+        acq_metadata = extract_acquisition_metadata_from_schedule(
+            self.compiled_schedule
+        )
 
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233
@@ -169,7 +214,7 @@ class ScheduleGettableSingleChannel:
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(
-                    len(acq_indices) * compiled_schedule.repetitions, dtype=complex
+                    len(acq_indices) * self.compiled_schedule.repetitions, dtype=complex
                 )
                 acq_stride = len(acq_indices)
                 for acq_idx in acq_indices:
