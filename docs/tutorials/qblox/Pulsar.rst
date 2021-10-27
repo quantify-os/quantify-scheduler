@@ -3,6 +3,23 @@
 Pulsar QCM/QRM
 ==============
 
+.. jupyter-execute::
+    :hide-code:
+
+    # in the hidden cells we include some code that checks for correctness of the examples
+    from tempfile import TemporaryDirectory
+
+    from quantify_scheduler import pulse_library
+    from quantify_scheduler.compilation import determine_absolute_timing
+    from quantify_scheduler.backends.qblox_backend import hardware_compile
+    from quantify_scheduler.types import Schedule
+    from quantify_scheduler.resources import ClockResource
+
+    from quantify_core.data.handling import set_datadir
+
+    temp_dir = TemporaryDirectory()
+    set_datadir(temp_dir.name)
+
 Each device in the setup can be individually configured using the entry in the config. For instance:
 
 .. jupyter-execute::
@@ -35,6 +52,18 @@ Each device in the setup can be individually configured using the entry in the c
         "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 20},
         "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 20}
     }
+
+.. jupyter-execute::
+    :hide-code:
+
+    test_sched = Schedule("test_sched")
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01")
+    )
+    test_sched.add_resource(ClockResource(name="q0.01", freq=7e9))
+    test_sched = determine_absolute_timing(test_sched)
+
+    hardware_compile(test_sched, mapping_config)
 
 Here we specify a setup containing only a `Pulsar QCM <https://www.qblox.com/pulsar>`_, with both outputs connected to a local oscillator sources.
 
@@ -78,7 +107,7 @@ The backend assumes that upconversion happens according to the relation
 
 This means that in order to generate a certain :math:`f_{RF}`, we need to specify either an IF or an LO frequency. In the
 dictionary, we therefore either set the :code:`lo_freq` or the :code:`interm_freq` and leave the other to be calculated by
-the backend by specifying it as :code:`None`.
+the backend by specifying it as :code:`None`. Specifying both will raise an error if it violates :math:`f_{RF} = f_{IF} + f_{LO}`.
 
 Mixer corrections
 ^^^^^^^^^^^^^^^^^
@@ -134,6 +163,11 @@ mixer correction parameters as well as the frequencies.
         },
     }
 
+.. jupyter-execute::
+    :hide-code:
+
+    hardware_compile(test_sched, mapping_config)
+
 Frequency multiplexing
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -167,6 +201,20 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
             }
         },
     }
+
+.. jupyter-execute::
+    :hide-code:
+
+    test_sched = Schedule("test_sched")
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01")
+    )
+    test_sched.add_resource(ClockResource(name="q0.01", freq=200e6))
+    test_sched.add_resource(ClockResource(name="some_other_clock", freq=100e6))
+
+    test_sched = determine_absolute_timing(test_sched)
+
+    hardware_compile(test_sched, mapping_config)
 
 In the given example, we added a second sequencer to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
 
@@ -227,6 +275,9 @@ Experimental features
 The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using more a complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 
 In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the sequencer configuration.
+
+.. jupyter-execute::
+    :linenos:
 
     mapping_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
