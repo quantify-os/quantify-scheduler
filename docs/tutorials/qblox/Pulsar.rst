@@ -152,7 +152,7 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
                 "seq0": {
                     "port": "q0:mw",
                     "clock": "q0.01",
-                }
+                },
                 "seq1": {
                     "port": "q0:mw",
                     "clock": "some_other_clock",
@@ -204,7 +204,7 @@ The resulting config looks like
                     "port": "q1:mw",
                     "clock": "q1.01",
                 }
-            }
+            },
             "real_output_2": {
                 "line_gain_db": 0,
                 "seq2": {
