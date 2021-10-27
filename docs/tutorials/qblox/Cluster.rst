@@ -80,4 +80,4 @@ We start by looking at an example config for a single cluster:
 In the example, we notice that the cluster is specified using an instrument with :code:`"instrument_type": "Cluster"`. In the backend, the cluster instrument functions as a collection of
 modules. The modules themselves can be configured identically to pulsars, with the exception of the :code:`ref`, which has now become a cluster wide setting.
 
-Valid :code:`"instrument_type"`s for the modules are: :code:`QCM`, :code:`QRM`, :code:`QCM_RF` and :code:`QRM_RF`.
+Valid values for :code:`"instrument_type"` for the modules are: :code:`QCM`, :code:`QRM`, :code:`QCM_RF` and :code:`QRM_RF`.
