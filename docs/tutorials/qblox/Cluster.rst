@@ -57,6 +57,7 @@ We start by looking at an example config for a single cluster:
             "instrument_type": "Cluster",
             "ref": "internal",
         },
+        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 20},
     }
 
 .. jupyter-execute::
