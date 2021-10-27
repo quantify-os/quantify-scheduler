@@ -13,7 +13,7 @@ quantify-scheduler.
     Expect breaking changes.
 """
 from __future__ import annotations
-from typing import Any, Callable, Dict, Tuple, List, Optional, Union
+from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 from qcodes import Parameter
@@ -23,7 +23,6 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler import types
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
@@ -116,9 +115,9 @@ class ScheduleGettableSingleChannel:
         return self.get()
 
     def initialize(self):
-        """Initialize the gettable
-
-        This generates the schedule and uploads to the hardware.
+        """
+        This generates the schedule and uploads the compiled instructions to the
+        hardware using the instrument coordinator.
         """
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
@@ -173,12 +172,17 @@ class ScheduleGettableSingleChannel:
     def process_acquired_data(
         self, acquired_data
     ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        compiled_schedule = self.compiled_schedule
+        """
+        Reshapes the data as returned from the instrument coordinator into the form
+        accepted by the measurement control.
+        """
 
         # retrieve the acquisition results
         # pylint: disable=fixme
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
-        acq_metadata = extract_acquisition_metadata_from_schedule(compiled_schedule)
+        acq_metadata = extract_acquisition_metadata_from_schedule(
+            self.compiled_schedule
+        )
 
         # Currently only supported for weighted integration.
         # Assert that the schedule is compatible with that.
@@ -205,7 +209,7 @@ class ScheduleGettableSingleChannel:
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(
-                    len(acq_indices) * compiled_schedule.repetitions, dtype=complex
+                    len(acq_indices) * self.compiled_schedule.repetitions, dtype=complex
                 )
                 acq_stride = len(acq_indices)
                 for acq_idx in acq_indices:
