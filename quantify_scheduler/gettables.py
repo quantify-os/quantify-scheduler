@@ -176,21 +176,29 @@ class ScheduleGettableSingleChannel:
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.
         """
+        # pylint: disable=fixme
+        # FIXME: this reshaping should happen inside the instrument coordinator
+        # blocked by quantify-core#187, and quantify-core#233
 
         # retrieve the acquisition results
-        # pylint: disable=fixme
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         acq_metadata = extract_acquisition_metadata_from_schedule(
             self.compiled_schedule
         )
 
-        # Currently only supported for weighted integration.
-        # Assert that the schedule is compatible with that.
-        assert acq_metadata.acq_return_type == complex
+        if (
+            acq_metadata.bin_mode == BinMode.AVERAGE
+            and acq_metadata.acq_protocol == "trace"
+        ):
+            dataset = {}
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
+                for acq_idx in acq_indices:
+                    val = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel] = val[0] + 1j * val[1]
 
-        # FIXME: this reshaping should happen inside the instrument coordinator
-        # blocked by quantify-core#187, and quantify-core#233
-        if acq_metadata.bin_mode == BinMode.AVERAGE:
+        elif acq_metadata.bin_mode == BinMode.AVERAGE:
+
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
@@ -218,7 +226,8 @@ class ScheduleGettableSingleChannel:
 
         else:
             raise NotImplementedError(
-                f"Bin mode ({acq_metadata.bin_mode}) not supported."
+                f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+                f" mode {acq_metadata.bin_mode} is not supported."
             )
 
         # Reshaping of the data before returning
