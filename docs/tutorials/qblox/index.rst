@@ -59,3 +59,4 @@ How to use
 
     How to use
     Pulsar
+    Cluster
