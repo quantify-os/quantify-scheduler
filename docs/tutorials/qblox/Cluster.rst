@@ -3,6 +3,23 @@
 Cluster
 =======
 
+.. jupyter-execute::
+    :hide-code:
+
+    # in the hidden cells we include some code that checks for correctness of the examples
+    from tempfile import TemporaryDirectory
+
+    from quantify_scheduler import pulse_library
+    from quantify_scheduler.compilation import determine_absolute_timing
+    from quantify_scheduler.backends.qblox_backend import hardware_compile
+    from quantify_scheduler.types import Schedule
+    from quantify_scheduler.resources import ClockResource
+
+    from quantify_core.data.handling import set_datadir
+
+    temp_dir = TemporaryDirectory()
+    set_datadir(temp_dir.name)
+
 In the previous sections we explained how to configure the backend for use with the standalone `Pulsars <https://www.qblox.com/pulsar>`_, now we will explain how to adapt this config
 to use one or multiple `Clusters <https://www.qblox.com/cluster>`_ instead.
 Since the cluster modules behave similarly, we recommend first familiarizing yourself with the configuration for the :ref:`pulsars <_sec-qblox-pulsar>`.
@@ -41,3 +58,21 @@ We start by looking at an example config for a single cluster:
             "ref": "internal",
         },
     }
+
+.. jupyter-execute::
+    :hide-code:
+
+    test_sched = Schedule("test_sched")
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q4:mw", clock="q4.01")
+    )
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q5:mw", clock="q5.01")
+    )
+    test_sched.add_resource(ClockResource(name="q4.01", freq=7e9))
+    test_sched.add_resource(ClockResource(name="q5.01", freq=8e9))
+    test_sched = determine_absolute_timing(test_sched)
+
+    hardware_compile(test_sched, mapping_config)
+
+
