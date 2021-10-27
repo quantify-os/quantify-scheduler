@@ -242,7 +242,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     )
 
     sample_times = np.arange(0, device_element.ro_acq_integration_time(), 1 / 1e9)
-    exp_trace = np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(45))
+    exp_trace = np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(35))
 
     exp_data = {
         AcquisitionIndexing(acq_channel=0, acq_index=0): (
