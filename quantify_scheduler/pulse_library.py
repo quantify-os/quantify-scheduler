@@ -507,6 +507,10 @@ def create_dc_compensation_pulse(
     """
     Calculates a SquarePulse to counteract charging effects based on a list of pulses.
 
+    The compensation is calculated by summing the area of all pulses on the specified port.
+    This gives a first order approximation for the pulse required to compensate the charging.
+    All modulated pulses ignored in the calculation.
+
     Parameters
     ----------
     pulses
@@ -545,8 +549,7 @@ def create_dc_compensation_pulse(
     -------
 
     :
-        Returns a SquarePulse object that compensates all pulses passed as
-        argument
+        Returns a SquarePulse object that compensates all pulses passed as argument.
     """
     # Make sure that the list contains at least one element
     assert len(pulses) > 0
@@ -597,12 +600,6 @@ def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
                 and pulse_info["clock"] == BasebandClockResource.IDENTITY
             ):
                 pulse_info_list.append(pulse_info)
-
-    if len(pulse_info_list) == 0:
-        raise ValueError(
-            "`DCCompensationPulse` needs at least one pulse with"
-            + "clock=BasebandClockResource.IDENTITY for the port {}".format(port)
-        )
 
     return pulse_info_list
 
