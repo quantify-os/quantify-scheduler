@@ -88,6 +88,7 @@ class ScheduleGettableSingleChannel:
 
         self.always_initialize = always_initialize
         self.is_initialized = False
+        self._compiled_schedule = None
 
         self.real_imag = real_imag
         if self.real_imag:
@@ -127,24 +128,21 @@ class ScheduleGettableSingleChannel:
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
 
-        compiled_schedule = qcompile(
+        self._compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.quantum_device.generate_device_config(),
             hardware_mapping=self.quantum_device.generate_hardware_config(),
         )
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
-        instr_coordinator.prepare(compiled_schedule)
+        instr_coordinator.prepare(self._compiled_schedule)
 
         self.is_initialized = True
 
     @property
-    def schedule(self) -> Schedule:
+    def compiled_schedule(self) -> Schedule:
         """Return the schedule used in this class"""
-        instrument_coordinator = (
-            self.quantum_device.instr_instrument_coordinator.get_instr()
-        )
-        return instrument_coordinator.last_schedule()
+        return self._compiled_schedule
 
     def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
         """
@@ -175,7 +173,7 @@ class ScheduleGettableSingleChannel:
     def process_acquired_data(
         self, acquired_data
     ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        compiled_schedule = self.schedule
+        compiled_schedule = self.compiled_schedule
 
         # retrieve the acquisition results
         # pylint: disable=fixme
