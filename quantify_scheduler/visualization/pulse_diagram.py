@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Optional, Tuple, Callable, TYPE_CHECKING
 
 import numpy as np
 import matplotlib
@@ -16,9 +16,11 @@ from plotly.subplots import make_subplots
 from quantify_core.utilities.general import import_func_from_string
 from typing_extensions import Literal
 
-from quantify_scheduler.types import Schedule
 from quantify_scheduler.waveforms import modulate_wave
-from quantify_scheduler.pulse_library import Operation, WindowOperation
+
+if TYPE_CHECKING:
+    from quantify_scheduler.pulse_library import Operation, WindowOperation
+    from quantify_scheduler.types import Schedule
 
 logger = logging.getLogger(__name__)
 

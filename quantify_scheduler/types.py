@@ -13,8 +13,10 @@ from dataclasses import dataclass
 from copy import deepcopy
 from pydoc import locate
 from enum import Enum
-from typing import Any, Dict, List, Type, TYPE_CHECKING
+from typing import Any, Dict, List, Type, TYPE_CHECKING, Union, Tuple, Optional
 from uuid import uuid4
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 
 import numpy as np
 from typing_extensions import Literal
@@ -23,6 +25,9 @@ from quantify_scheduler import json_utils
 from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler import resources
 from quantify_scheduler import enums
+
+from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
+from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 
 
 if TYPE_CHECKING:
@@ -513,6 +518,49 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         name = schedule_data["name"]
 
         return Schedule(name, data=schedule_data)
+
+    def plot_circuit_diagram_mpl(
+        self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None
+    ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
+        """
+        Creates a circuit diagram visualization of the schedule using matplotlib.
+
+        The circuit diagram visualization visualizes the schedule at the quantum circuit
+        layer.
+        This visualization provides no timing information, only showing the order of
+        operations.
+        Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations for
+        which no information is specified at the gate level are visualized using an
+        icon (e.g., a stylized wavy pulse) depending on the information specified at
+        the quantum device layer.
+
+        Parameters
+        ----------
+        schedule
+            the schedule to render.
+        figsize
+            matplotlib figsize.
+        ax
+            Axis handle to use for plotting.
+
+        Returns
+        -------
+        fig
+            matplotlib figure object.
+        ax
+            matplotlib axis object.
+        """
+        return circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
+
+    def plot_pulse_diagram_mpl(self):
+        """
+        Creates a visualization of all the pulses in a schedule using matplotlib.
+
+        The pulse diagram visualizes the schedule at the quantum device layer.
+        This visualization provides detailed timing information and depends on the
+        absolute timing having already been determined for the schedule.
+        """
+        raise NotImplementedError()
 
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors

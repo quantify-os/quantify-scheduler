@@ -606,7 +606,7 @@ def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
 
 class WindowOperation(Operation):
     """
-    The WindowOperation is an operation for visualization purposes
+    The WindowOperation is an operation for visualization purposes.
 
     The `WindowOperation` has a starting time and duration.
     """
