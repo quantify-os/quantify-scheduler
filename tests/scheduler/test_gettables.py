@@ -73,6 +73,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
         schedule_kwargs=schedule_kwargs,
         real_imag=False,
     )
+    assert spec_gettable.is_initialized is False
 
     freqs = np.linspace(5e9, 6e9, 11)
     meas_ctrl.settables(ro_freq)
@@ -80,6 +81,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
     meas_ctrl.gettables(spec_gettable)
     label = f"Heterodyne spectroscopy {qubit.name}"
     dset = meas_ctrl.run(label)
+    assert spec_gettable.is_initialized is True
 
     exp_data = np.ones(len(freqs)) * data
     # Assert that the data is coming out correctly.
