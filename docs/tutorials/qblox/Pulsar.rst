@@ -23,6 +23,7 @@ Pulsar QCM/QRM
 Each device in the setup can be individually configured using the entry in the config. For instance:
 
 .. jupyter-execute::
+    :hide-output:
     :linenos:
 
     mapping_config = {
@@ -139,6 +140,7 @@ In order to use the backend without an LO, we simply remove the :code:`"lo_name"
 mixer correction parameters as well as the frequencies.
 
 .. jupyter-execute::
+    :hide-output:
     :linenos:
 
     mapping_config = {
@@ -174,6 +176,7 @@ Frequency multiplexing
 It is possible to do frequency multiplexing of the signals by adding multiple sequencers to the same output.
 
 .. jupyter-execute::
+    :hide-output:
     :linenos:
 
     mapping_config = {
@@ -203,6 +206,7 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
     }
 
 .. jupyter-execute::
+    :hide-output:
     :hide-code:
 
     test_sched = Schedule("test_sched")
@@ -229,9 +233,10 @@ For the baseband modules, it is also possible to use the backend to generate sig
 
 In order to do this, instead of :code:`"complex_output_X"`, we use :code:`"real_output_X"`. In case of a QCM, we have four of those outputs. The QRM has two available.
 
-The resulting config looks like
+The resulting config looks like:
 
 .. jupyter-execute::
+    :hide-output:
     :linenos:
 
     mapping_config = {
@@ -263,11 +268,44 @@ The resulting config looks like
         },
     }
 
+.. jupyter-execute::
+    :hide-code:
+
+    test_sched = Schedule("test_sched")
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01")
+    )
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q1:mw", clock="q1.01")
+    )
+    test_sched.add_resource(ClockResource(name="q0.01", freq=200e6))
+    test_sched.add_resource(ClockResource(name="q1.01", freq=100e6))
+
+    test_sched = determine_absolute_timing(test_sched)
+
+    hardware_compile(test_sched, mapping_config)
+
 When using real outputs, the backend automatically maps the the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses not.
 
 .. warning::
 
     When using real mode, we highly recommend using it in combination with the instrument coordinator as the outputs need to be configured correctly in order for this to function.
+
+.. jupyter-execute::
+    :hide-code:
+    :hide-output:
+    :raises: ValueError
+
+    test_sched.add(
+        pulse_library.DRAGPulse(
+            G_amp=1, D_amp=1, duration=1e-6, port="q1:mw", clock="q1.01", phase=0
+        )
+    )
+
+    test_sched = determine_absolute_timing(test_sched)
+
+    hardware_compile(test_sched, mapping_config)
+
 
 Experimental features
 ^^^^^^^^^^^^^^^^^^^^^
@@ -277,6 +315,7 @@ The Qblox backend contains some intelligence that allows it to generate certain 
 In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the sequencer configuration.
 
 .. jupyter-execute::
+    :hide-output:
     :linenos:
 
     mapping_config = {
@@ -294,6 +333,20 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
             },
         },
     }
+
+.. jupyter-execute::
+    :hide-code:
+
+    test_sched = Schedule("test_sched")
+    test_sched.add(
+        pulse_library.SquarePulse(amp=1, duration=1e-3, port="q0:mw", clock="q0.01")
+    )
+
+    test_sched.add_resource(ClockResource(name="q0.01", freq=200e6))
+
+    test_sched = determine_absolute_timing(test_sched)
+
+    hardware_compile(test_sched, mapping_config)
 
 Currently this has the following effects:
 
