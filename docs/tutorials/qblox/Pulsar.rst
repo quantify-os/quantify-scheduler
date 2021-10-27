@@ -5,6 +5,7 @@ Pulsar QCM/QRM
 
 .. jupyter-execute::
     :hide-code:
+    :hide-output:
 
     # in the hidden cells we include some code that checks for correctness of the examples
     from tempfile import TemporaryDirectory
@@ -56,6 +57,7 @@ Each device in the setup can be individually configured using the entry in the c
 
 .. jupyter-execute::
     :hide-code:
+    :hide-output:
 
     test_sched = Schedule("test_sched")
     test_sched.add(
@@ -274,6 +276,7 @@ The resulting config looks like:
 
 .. jupyter-execute::
     :hide-code:
+    :hide-output:
 
     test_sched = Schedule("test_sched")
     test_sched.add(
@@ -340,6 +343,7 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
 
 .. jupyter-execute::
     :hide-code:
+    :hide-output:
 
     test_sched = Schedule("test_sched")
     test_sched.add(
