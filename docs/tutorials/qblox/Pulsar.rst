@@ -224,4 +224,27 @@ When using real outputs, the backend automatically maps the the signals to the c
 Experimental features
 ^^^^^^^^^^^^^^^^^^^^^
 
+The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using more a complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 
+In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the sequencer configuration.
+
+    mapping_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "instruction_generated_pulses_enabled": True
+                }
+            },
+        },
+    }
+
+Currently this has the following effects:
+
+- Long square pulses get broken up into separate pulses with durations <= 1 us, which allows the modules to play square pulses longer than the waveform memory normally allows.
+- Staircase pulses are generated using offset instructions instead of using waveform memory
