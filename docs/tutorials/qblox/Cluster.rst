@@ -3,7 +3,8 @@
 Cluster
 =======
 
-In the previous sections we explained how to configure the backend for use with the standalone `Pulsars <https://www.qblox.com/pulsar>`_.
+In the previous sections we explained how to configure the backend for use with the standalone `Pulsars <https://www.qblox.com/pulsar>`_, now we will explain how to adapt this config
+to use one or multiple `Clusters <https://www.qblox.com/cluster>`_ instead.
 Since the cluster modules behave similarly, we recommend first familiarizing yourself with the configuration for the :ref:`pulsars <_sec-qblox-pulsar>`.
 
 We start by looking at an example config for a single cluster:
