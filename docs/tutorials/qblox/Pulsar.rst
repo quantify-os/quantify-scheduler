@@ -168,9 +168,9 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
         },
     }
 
-In the given example, we added a second sequencer to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`.
+In the given example, we added a second sequencer to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
 
-.. warning::
+.. note::
 
     We note that it is a requirement of the backend that each combination of a port and a clock is unique, i.e. it is possible to use the same port or clock multiple times in the hardware config but the combination of a port with a certain clock can only occur once.
 
@@ -200,13 +200,26 @@ The resulting config looks like
             },
             "real_output_1": {
                 "line_gain_db": 0,
-                "seq2": {
+                "seq1": {
                     "port": "q1:mw",
                     "clock": "q1.01",
                 }
             }
+            "real_output_2": {
+                "line_gain_db": 0,
+                "seq2": {
+                    "port": "q2:mw",
+                    "clock": "q2.01",
+                }
+            }
         },
     }
+
+When using real outputs, the backend automatically maps the the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses not.
+
+.. warning::
+
+    When using real mode, we highly recommend using it in combination with the instrument coordinator as the outputs need to be configured correctly in order for this to function.
 
 Experimental features
 ^^^^^^^^^^^^^^^^^^^^^
