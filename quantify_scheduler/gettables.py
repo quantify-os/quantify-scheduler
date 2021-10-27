@@ -176,17 +176,20 @@ class ScheduleGettableSingleChannel:
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.
         """
+        # pylint: disable=fixme
+        # FIXME: this reshaping should happen inside the instrument coordinator
+        # blocked by quantify-core#187, and quantify-core#233
 
         # retrieve the acquisition results
-        # pylint: disable=fixme
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         acq_metadata = extract_acquisition_metadata_from_schedule(
             self.compiled_schedule
         )
 
-        # FIXME: this reshaping should happen inside the instrument coordinator
-        # blocked by quantify-core#187, and quantify-core#233
-        if acq_metadata.acq_protocol == "trace":
+        if (
+            acq_metadata.bin_mode == BinMode.AVERAGE
+            and acq_metadata.acq_protocol == "trace"
+        ):
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
@@ -223,7 +226,8 @@ class ScheduleGettableSingleChannel:
 
         else:
             raise NotImplementedError(
-                f"Bin mode ({acq_metadata.bin_mode}) not supported."
+                f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+                f" mode {acq_metadata.bin_mode} is not supported."
             )
 
         # Reshaping of the data before returning
