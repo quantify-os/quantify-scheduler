@@ -165,7 +165,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     for op in schedule.operations.values():
         if op.valid_pulse:
             for p in op["pulse_info"]:
-                if hasattr(p, "clock"):
+                if "clock" in p:
                     if p["clock"] not in schedule.resources:
                         raise ValueError(
                             "Operation '{}' contains an unknown clock '{}'; ensure "
