@@ -74,6 +74,9 @@ and :code:`"ref": "internal"` sets the reference source to internal (as opposed 
 :code:`complex_output_0` (corresponding to O\ :sup:`1/2`) and :code:`complex_output_1` (corresponding to O\ :sup:`3/4`),
 we set all the parameters that are configurable per output.
 
+The examples given below will be for a single Pulsar QCM, but the other devices can be configured similarly. In order to use a Pulsar QRM, QCM-RF or QRM-RF, change the :code:`"instrument_type"` entry to :code:`"Pulsar_QRM"`, :code:`"Pulsar_QCM_RF"` or :code:`"Pulsar_QRM_RF"`
+respectively. Multiple devices can be added to the config, similar to how we added the local oscillators in the example given above.
+
 Output settings
 ^^^^^^^^^^^^^^^
 
@@ -166,6 +169,7 @@ mixer correction parameters as well as the frequencies.
     }
 
 .. jupyter-execute::
+    :hide-output:
     :hide-code:
 
     hardware_compile(test_sched, mapping_config)
