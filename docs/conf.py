@@ -228,8 +228,8 @@ add_module_names = False
 # that have a mismatch between the python modules real location vs how they are imported
 # and documented. These overrides are necessary to fix "reference target not found" when
 # these classes are used as type annotations.
-# NB Use this only for external packages. Do not do this quantify and cause problems to
-# internal and external developers
+# NB Use this only for external packages. Do not do this in quantify and cause problems
+# to internal and external developers.
 qualname_overrides = {
     # "<true path to module>" : "<API path>"
     "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
@@ -250,9 +250,7 @@ autodoc_default_options = {
 
 # For debugging the CI just add `or True` on the line below
 if os.environ.get("GITLAB_CI", "false") == "true":
-    print(
-        "\n[INFO] Building docs with private-members...\n[INFO] See `conf.py` for details.\n"
-    )
+    print("\n[INFO] Building docs with private-members... See `conf.py` for details.\n")
     # for local build and CI force documentation to build for private members
     # this make sure the docstrings of private members are also correctly formatted, etc
     autodoc_default_options["private-members"] = True
