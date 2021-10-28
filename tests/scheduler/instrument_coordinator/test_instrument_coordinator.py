@@ -364,13 +364,13 @@ def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_comp
 
     # assert that first there is no schedule prepared yet
     with pytest.raises(ValueError):
-        instrument_coordinator.last_schedule()
+        instrument_coordinator.last_schedule
 
     test_sched = Schedule(name="test_schedule")
     compiled_sched = CompiledSchedule(test_sched)
 
     # assert that the uploaded schedule is retrieved
     instrument_coordinator.prepare(compiled_sched)
-    last_sched = instrument_coordinator.last_schedule()
+    last_sched = instrument_coordinator.last_schedule
 
     assert last_sched == compiled_sched

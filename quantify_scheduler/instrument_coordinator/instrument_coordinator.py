@@ -83,9 +83,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             docstring="The timeout used for waiting for the experiment to complete "
             "when retrieving acquisitions.",
         )
-
         self._last_schedule = None
 
+    @property
     def last_schedule(self) -> CompiledSchedule:
         """
         Returns the last schedule used to prepare the instrument coordinator.
