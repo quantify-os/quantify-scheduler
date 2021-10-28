@@ -249,7 +249,7 @@ def sample_schedule(
     port_list: Optional[List[str]] = None,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
-    sampling_rate: int = 1_000_000_000,
+    sampling_rate: float = 1e9,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """
     Sample a schedule at discrete points in time.
