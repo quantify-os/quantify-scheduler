@@ -171,6 +171,9 @@ _PULSAR_QRM_RF_PROPERTIES = _StaticHardwareProperties(
     number_of_output_paths=2,
 )
 
+force_set_parameters: bool = False
+"""If enabled, parameters are set directly instead of using a lazy set."""
+
 
 class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     """Qblox Pulsar InstrumentCoordinator component base class."""
@@ -191,6 +194,23 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
             f"seq{idx}": idx
             for idx in range(self._hardware_properties.number_of_sequencers)
         }
+
+    def _set_parameter(self, parameter_name: str, val: Any) -> None:
+        """
+        Sets the parameter directly or using the lazy set, depending on the value of
+        `force_set_parameters`.
+
+        Parameters
+        ----------
+        parameter_name
+            The name of the parameter to set.
+        val
+            The new value of the parameter.
+        """
+        if force_set_parameters:
+            self.instrument.set(parameter_name, val)
+        else:
+            lazy_set(self.instrument, parameter_name, val)
 
     @property
     def is_running(self) -> bool:
