@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Tuple, Union, List, Dict, Optional
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
+from copy import deepcopy
 
 from quantify_core.utilities.general import import_func_from_string
 
@@ -229,6 +230,9 @@ def circuit_diagram_matplotlib(
     ax
         matplotlib axis object.
     """
+    # to prevent the original input schedule from being modified.
+    schedule = deepcopy(schedule)
+
     schedule = determine_absolute_timing(schedule, "ideal")
 
     qubit_map: Dict[str, int] = dict()
