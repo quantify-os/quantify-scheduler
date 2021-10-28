@@ -10,7 +10,6 @@ import numpy as np
 from quantify_core.utilities import general
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox
@@ -400,8 +399,8 @@ def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str
 
 
 def extract_acquisition_metadata_from_schedule(
-    schedule: ScheduleBase,
-) -> AcquisitionMetadata:
+    schedule: types.ScheduleBase,
+) -> types.AcquisitionMetadata:
     """
     Extracts acquisition metadata from a schedule.
 
@@ -453,7 +452,7 @@ def extract_acquisition_metadata_from_schedule(
 
 def _extract_acquisition_metadata_from_acquisition_protocols(
     acquisition_protocols: List[Dict[str, Any]],
-) -> AcquisitionMetadata:
+) -> types.AcquisitionMetadata:
     """
     Private function containing the logic of extract_acquisition_metadata_from_schedule.
     The logic is factored out as to work around limitations of the different interfaces
@@ -486,7 +485,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
         acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
     # combine the information in the acq metada dataclass.
-    acq_metadata = AcquisitionMetadata(
+    acq_metadata = types.AcquisitionMetadata(
         acq_protocol=protocol,
         bin_mode=bin_mode,
         acq_indices=acq_indices,
@@ -497,7 +496,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
 
 def _extract_acquisition_metadata_from_acquisitions(
     acquisitions: List[qblox.OpInfo],
-) -> AcquisitionMetadata:
+) -> types.AcquisitionMetadata:
     """
     Private variant of extract_acquisition_metadata_from_schedule explicitly for use
     with the qblox assembler backend.

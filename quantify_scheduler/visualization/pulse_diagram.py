@@ -21,8 +21,7 @@ import quantify_scheduler.pulse_library as pl
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
-    from quantify_scheduler.pulse_library import Operation, WindowOperation
-    from quantify_scheduler.types import Schedule
+    from quantify_scheduler import types
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ def validate_pulse_info(pulse_info, port_map, t_constr, operation):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def pulse_diagram_plotly(
-    schedule: Schedule,
+    schedule: types.Schedule,
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,
@@ -246,7 +245,7 @@ def pulse_diagram_plotly(
 
 # pylint: disable=too-many-branches
 def sample_schedule(
-    schedule: Schedule,
+    schedule: types.Schedule,
     port_list: Optional[List[str]] = None,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
@@ -373,7 +372,7 @@ def sample_schedule(
 
 
 def pulse_diagram_matplotlib(
-    schedule: Schedule,
+    schedule: types.Schedule,
     port_list: Optional[List[str]] = None,
     sampling_rate: float = 1e9,
     modulation: Literal["off", "if", "clock"] = "off",
@@ -426,9 +425,11 @@ def pulse_diagram_matplotlib(
     return ax.get_figure(), ax
 
 
-def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operation]]:
-    """
-    Return a list of all WindowOperations with start and end time.
+def get_window_operations(
+    schedule: types.Schedule,
+) -> List[Tuple[float, float, types.Operation]]:
+    r"""
+    Return a list of all :class:`.WindowOperation`\s with start and end time.
 
     Parameters
     ----------
@@ -453,7 +454,7 @@ def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operat
 
 
 def plot_window_operations(
-    schedule: Schedule,
+    schedule: types.Schedule,
     ax: Optional[matplotlib.axes.Axes] = None,
     time_scale_factor: float = 1,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
