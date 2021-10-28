@@ -23,14 +23,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     The :class:`~.InstrumentCoordinator` has two main functionalities exposed to the
     user, the ability to configure its
-    :mod:`~quantify_scheduler.instrument_coordinator.components`
-    representing physical instruments,  and the ability to execute experiments.
+    :mod:`~.instrument_coordinator.components`
+    representing physical instruments, and the ability to execute experiments.
 
 
     .. admonition:: Executing a schedule using the instrument coordinator
         :class: dropdown
 
-        To execute a :class:`~quantify_scheduler.types.Schedule` , one needs to first
+        To execute a :class:`~.Schedule` , one needs to first
         compile a schedule and then configure all the instrument coordinator components
         using :meth:`~.InstrumentCoordinator.prepare`.
         After starting the experiment, the results can be retrieved using
@@ -63,10 +63,6 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     """  # pylint: disable=line-too-long
 
-    # see https://stackoverflow.com/questions/22096187/ \
-    # how-to-make-sphinx-respect-importing-classes-into-package-with-init-py
-    __module__ = "quantify_scheduler.instrument_coordinator"
-
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.add_parameter(
@@ -98,7 +94,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         """
         if self._last_schedule is None:
             raise ValueError(
-                "No CompiledSchedule was handled by the instrument "
+                f"No {CompiledSchedule.__name__} was handled by the instrument "
                 "coordinator. Try calling the .prepare() method with a Schedule."
             )
         return self._last_schedule
@@ -106,12 +102,12 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     @property
     def is_running(self) -> bool:
         """
-        Returns if any of the InstrumentCoordinator components is running.
+        Returns if any of the :class:`.InstrumentCoordinator` components is running.
 
         Returns
         -------
         :
-            The InstrumentCoordinator's running state.
+            The :class:`.InstrumentCoordinator`'s running state.
         """
         return any(
             self.find_instrument(c_name).is_running is True
@@ -135,7 +131,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         Raises
         ------
         KeyError
-            If key `name` is not present in `self.components`.
+            If key ``name`` is not present in ``self.components``.
         """
         if name in self.components():
             return self.find_instrument(name)
@@ -207,10 +203,12 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             If the compiled schedule contains instructions for a component
             absent in the instrument coordinator.
         TypeError
-            If the schedule provided is not a valid ``CompiledSchedule``.
+            If the schedule provided is not a valid :class:`.CompiledSchedule`.
         """
         if not CompiledSchedule.is_valid(compiled_schedule):
-            raise TypeError(f"{compiled_schedule} is not a valid CompiledSchedule")
+            raise TypeError(
+                f"{compiled_schedule} is not a valid {CompiledSchedule.__name__}"
+            )
 
         # Adds a reference to the last prepared schedule this can be accessed through
         # the self.last_schedule property.
@@ -301,12 +299,10 @@ def _convert_acquisition_data_format(raw_results):
 
 class ZIInstrumentCoordinator(InstrumentCoordinator):
     """
-    This class is a hack and extension to the InstrumentCoordinator, which is
+    This class is a hack and extension to the :class:`.InstrumentCoordinator`, which is
     introduced to support the quirks when using the ZI backend
     during the acquisition of results.
     """
-
-    __module__ = "quantify_scheduler.instrument_coordinator"
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
