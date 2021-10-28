@@ -14,7 +14,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from quantify_core.utilities.general import import_func_from_string
+from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
+
 
 from quantify_scheduler.waveforms import modulate_wave
 
@@ -415,8 +417,10 @@ def pulse_diagram_matplotlib(
         _, ax = plt.subplots()
     for gate, data in pulses.items():
         ax.plot(times, data.real, label=gate)
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Voltage")
+    set_xlabel(ax, "Time", unit="s")
+    # N.B. we currently use unity gain in the hardware backends so strictly
+    # speaking this is not the amplitude on the device, but the amplitude on the output.
+    set_ylabel(ax, "Amplitude", unit="V")
     ax.legend()
 
     return ax.get_figure(), ax

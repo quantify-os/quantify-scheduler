@@ -580,6 +580,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             Modulation frequency used when modulation is set to "if".
         sampling_rate :
             The time resolution used to sample the schedule in Hz.
+        ax:
+            Axis onto which to plot.
         """
         return pulse_diagram_matplotlib(
             schedule=self,
