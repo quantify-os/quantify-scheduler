@@ -23,10 +23,11 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
     parameter_name:
         Name of the parameter to set.
     val:
-        Value to set it to.
+        Value to set it to. If the value is `None` this always gets set, due to it being
+        the same as the initial value of the cache.
     """
     parameter = instrument.parameters[parameter_name]
-    if parameter.cache() != val:
+    if parameter.cache() != val or val is None:
         parameter.set(val)
     else:
         logger.info(
