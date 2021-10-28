@@ -531,6 +531,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         icon (e.g., a stylized wavy pulse) depending on the information specified at
         the quantum device layer.
 
+        Alias of :func:`.circuit_diagram.circuit_diagram_matplotlib`.
+
         Parameters
         ----------
         schedule
@@ -571,6 +573,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         requires the absolute timing to have been determined.
         This information is typically added when the quantum-device level compilation is
         performed.
+
+        Alias of :func:`.pulse_diagram.pulse_diagram_matplotlib`.
 
         port_list :
             A list of ports to show. if set to `None` will use the first
