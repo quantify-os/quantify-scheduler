@@ -17,7 +17,7 @@ from quantify_core.utilities.general import import_func_from_string
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
 
-
+import quantify_scheduler.pulse_library as pl
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
@@ -442,9 +442,7 @@ def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operat
     window_operations = []
     for _, t_constr in enumerate(schedule.timing_constraints):
         operation = schedule.operations[t_constr["operation_repr"]]
-        # an explicit type check would be better but avoided because of circular import
-        # if isinstance(operation, WindowOperation):
-        if operation.data["name"] == "WindowOperation":
+        if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
 
                 t0 = t_constr["abs_time"] + pulse_info["t0"]

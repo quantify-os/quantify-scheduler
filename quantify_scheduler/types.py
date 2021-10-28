@@ -26,9 +26,6 @@ from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler import resources
 from quantify_scheduler import enums
 
-from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
-from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-
 
 if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
@@ -550,7 +547,11 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ax
             matplotlib axis object.
         """
-        return circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
+        # NB imported here to avoid circular import
+        # pylint: disable=wrong-import-position
+        import quantify_scheduler.visualization.circuit_diagram as cd
+
+        return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
 
     # pylint: disable=too-many-arguments
     def plot_pulse_diagram_mpl(
@@ -583,7 +584,11 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ax:
             Axis onto which to plot.
         """
-        return pulse_diagram_matplotlib(
+        # NB imported here to avoid circular import
+        # pylint: disable=wrong-import-position
+        import quantify_scheduler.visualization.pulse_diagram as pd
+
+        return pd.pulse_diagram_matplotlib(
             schedule=self,
             sampling_rate=sampling_rate,
             ax=ax,
