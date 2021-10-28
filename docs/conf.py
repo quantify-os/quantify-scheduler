@@ -241,6 +241,11 @@ numfig = True
 
 autodoc_default_options = {
     "member-order": "groupwise",
+    # Ignore any __all__ that might be added accidentally by inexperienced developers
+    # This is done to avoid nasty complications with sphinx and its extensions and
+    # plenty of "reference target not found" warnings.
+    # See also qualname_overrides above, which has to be used for external packages.
+    "ignore-module-all": True,
 }
 
 # For debugging the CI just add `or True` on the line below
