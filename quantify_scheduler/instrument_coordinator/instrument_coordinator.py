@@ -3,7 +3,7 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 import numpy as np
 
 from qcodes.utils import validators
@@ -71,7 +71,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         super().__init__(name)
         self.add_parameter(
             "components",
-            initial_value=list(),
+            initial_value=[],
             parameter_class=parameter.ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all components that"
@@ -254,14 +254,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per component.
         """
-        # FIXME: update the description of the return type of the instrument
-        # coordinator # pylint: disable=fixme
+        # pylint: disable=fixme
+        # FIXME: update the description of the return type of the instrument coordinator
 
         self.wait_done(timeout_sec=self.timeout())
 
         # Temporary. Will probably be replaced by an xarray object
         # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-        acquisitions: Dict[Tuple[int, int], Any] = dict()
+        acquisitions: Dict[Tuple[int, int], Any] = {}
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
             acqs = instrument.retrieve_acquisition()
@@ -288,7 +288,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
 
 def _convert_acquisition_data_format(raw_results):
-    acquisition_dict = dict()
+    acquisition_dict = {}
     for (channel, i) in raw_results.keys():
         if channel not in acquisition_dict.keys():
             acquisition_dict[channel] = []
@@ -359,8 +359,8 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
         :
             The acquisition data per component.
         """
-        # FIXME: update the description of the return type of the instrument
-        # coordinator # pylint: disable=fixme
+        # pylint: disable=fixme
+        # FIXME: update the description of the return type of the instrument coordinator
 
         raw_acq_results = super().retrieve_acquisition()
         if self.timeout_reacquire():
