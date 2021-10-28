@@ -413,7 +413,7 @@ Experiment flow
 ~~~~~~~~~~~~~~~
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of :mod:`quantify_core`.
-Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`.MeasurementControl` and are responsible for the experiment flow.
+Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
 This flow is schematically show in :numref:`experiments_control_flow`.
 
 
@@ -429,7 +429,7 @@ Let us consider the example of an experiment used to measure the coherence time 
 In this experiment a :math:`\pi` pulse is used to excite the qubit, which is left to idle for a time :math:`\tau` before it is measured.
 This experiment is then repeated for different :math:`\tau` and averaged.
 
-In terms of settables and gettables to use with the :class:`.MeasurementControl`, the settable in this experiment is the delay time :math:`\tau`, and the gettable is the execution of the schedule.
+In terms of settables and gettables to use with the :class:`quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time :math:`\tau`, and the gettable is the execution of the schedule.
 
 We represent the settable as a :class:`qcodes.instrument.parameter.ManualParameter`:
 
@@ -463,7 +463,7 @@ Rather than specifying the values of the delay times, we pass the parameter :cod
     }
 
 The :code:`ScheduleGettable` is set up to evaluate the value of these parameter on every call of :code:`ScheduleGettable.get`.
-This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the :class:`.MeasurementControl`.
+This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the :class:`quantify_core.measurement.control.MeasurementControl`.
 
 Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :code:`QuantumDevice` for every iteration.
 This ensures that if a calibration parameter is changed on the :code:`QuantumDevice`, the compilation will be affected as expected.

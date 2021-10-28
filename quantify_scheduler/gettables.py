@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 r"""
-Module containing :class:`.Gettable`\s for use with
+Module containing :class:`~quantify_core.measurement.types.Gettable`\s for use with
 quantify-scheduler.
 
 .. warning::
@@ -9,7 +9,7 @@ quantify-scheduler.
     The gettable module is expected to change significantly as the
     acquisition protocols (#36 and #80) get fully supported by the scheduler.
     Currently different Gettables are required for different acquisition modes.
-    The intent is to have one generic `ScheduleGettable`.
+    The intent is to have one generic ``ScheduleGettable``.
     Expect breaking changes.
 """
 from __future__ import annotations
@@ -36,10 +36,9 @@ class ScheduleGettableSingleChannel:
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
     set to return either static (demodulated) I and Q values or magnitude and phase.
 
-    The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
-    the `Schedule` using the `schedule_function`, this is then compiled and finally
-    executed by the
-    :class:`~.InstrumentCoordinator`.
+    The gettable evaluates the parameters passed as ``schedule_kwargs``, then generates
+    the :class:`~.Schedule` using the ``schedule_function``, this is then compiled and
+    finally executed by the :class:`~.InstrumentCoordinator`.
     """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments
@@ -64,7 +63,7 @@ class ScheduleGettableSingleChannel:
             The qcodes instrument representing the quantum device under test (DUT)
             containing quantum device properties and setup configuration information.
         schedule_function
-            A function which returns a :class:`~quantify_scheduler.types.Schedule`. The
+            A function which returns a :class:`~.Schedule`. The
             function is required to have the `repetitions` keyword argument.
         schedule_kwargs
             The schedule function keyword arguments, when a value in this dictionary is
