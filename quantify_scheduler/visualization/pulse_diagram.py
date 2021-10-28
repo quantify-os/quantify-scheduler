@@ -425,10 +425,11 @@ def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operat
         List of all window operations in the schedule.
     """
     window_operations = []
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        _ = pls_idx  # explicitly not using pls_idx
+    for _, t_constr in enumerate(schedule.timing_constraints):
         operation = schedule.operations[t_constr["operation_repr"]]
-        if isinstance(operation, WindowOperation):
+        # an explicit type check would be better but avoided because of circular import
+        # if isinstance(operation, WindowOperation):
+        if operation.data["name"] == "WindowOperation":
             for pulse_info in operation["pulse_info"]:
 
                 t0 = t_constr["abs_time"] + pulse_info["t0"]
