@@ -3,6 +3,7 @@ quantify_scheduler
 ==================
 
 .. automodule:: quantify_scheduler
+    :members:
 
 backends
 ========
@@ -183,8 +184,13 @@ instrument_coordinator
 
 .. automodule:: quantify_scheduler.instrument_coordinator
     :members:
-    :show-inheritance:
 
+instrument_coordinator
+----------------------
+
+.. automodule:: quantify_scheduler.instrument_coordinator.instrument_coordinator
+    :members:
+    :show-inheritance:
 
 components
 ----------
@@ -192,7 +198,6 @@ components
 .. automodule:: quantify_scheduler.instrument_coordinator.components
     :members:
     :show-inheritance:
-
 
 base
 ~~~~

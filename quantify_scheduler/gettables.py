@@ -38,7 +38,7 @@ class ScheduleGettableSingleChannel:
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the `Schedule` using the `schedule_function`, this is then compiled and finally
     executed by the
-    :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
+    :class:`~.InstrumentCoordinator`.
     """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments

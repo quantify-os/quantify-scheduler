@@ -93,7 +93,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
         Parameters
         ----------
-        other :
+        other
 
         Returns
         -------
@@ -196,7 +196,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
             Parameters
             ----------
-            key :
+            key
 
             Returns
             -------
@@ -220,7 +220,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
         Parameters
         ----------
-        gate_operation :
+        gate_operation
             an operation containing gate_info.
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
@@ -231,7 +231,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
         Parameters
         ----------
-        pulse_operation :
+        pulse_operation
             an operation containing pulse_info.
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
@@ -243,7 +243,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
         Parameters
         ----------
-        acquisition_operation :
+        acquisition_operation
             an operation containing acquisition_info.
         """
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
@@ -365,33 +365,33 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 # pylint: disable=too-many-ancestors
 class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     """
-    The :class:`~quantify_scheduler.types.ScheduleBase` is a data structure that is at
+    The :class:`~.ScheduleBase` is a data structure that is at
     the core of the Quantify-scheduler and describes when what operations are applied
     where.
 
-    The :class:`~quantify_scheduler.types.ScheduleBase` is a collection of
-    :class:`~Operation` objects and timing constraints that define relations between
+    The :class:`~.ScheduleBase` is a collection of
+    :class:`~.Operation` objects and timing constraints that define relations between
     the operations.
 
     The schedule data structure is based on a dictionary.
     This dictionary contains:
 
-    - operation_dict - a hash table containing the unique :class:`~Operation` s added
+    - operation_dict - a hash table containing the unique :class:`~.Operation` s added
         to the schedule.
     - timing_constraints - a list of all timing constraints added between operations.
 
-    The :class:`~quantify_scheduler.types.Schedule` provides an API to create schedules.
-    The :class:`~quantify_scheduler.types.CompiledSchedule` represents a schedule after
+    The :class:`~.Schedule` provides an API to create schedules.
+    The :class:`~.CompiledSchedule` represents a schedule after
     it has been compiled for execution on a backend.
 
 
-    The :class:`~quantify_scheduler.types.Schedule` contains information on the
-    :attr:`~quantify_scheduler.types.ScheduleBase.operations` and
-    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
-    The :attr:`~quantify_scheduler.types.ScheduleBase.operations` is a dictionary of all
+    The :class:`~.Schedule` contains information on the
+    :attr:`~.ScheduleBase.operations` and
+    :attr:`~.ScheduleBase.timing_constraints`.
+    The :attr:`~.ScheduleBase.operations` is a dictionary of all
     unique operations used in the schedule and contain the information on *what*
     operation to apply *where*.
-    The :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints` is a list of
+    The :attr:`~.ScheduleBase.timing_constraints` is a list of
     dictionaries describing timing constraints between operations, i.e. when to apply
     an operation.
 
@@ -430,8 +430,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         A dictionary of all unique operations used in the schedule.
         This specifies information on *what* operation to apply *where*.
 
-        The keys correspond to the :attr:`~Operation.hash` and values are instances
-        of :class:`~Operation`.
+        The keys correspond to the :attr:`~.Operation.hash` and values are instances
+        of :class:`~.Operation`.
         """
         return self.data["operation_dict"]
 
@@ -463,7 +463,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         .. note::
 
             timing constraints are not intended to be modified directly.
-            Instead use the :meth:`~quantify_scheduler.types.Schedule.add`
+            Instead use the :meth:`~.Schedule.add`
 
         """
         return self.data["timing_constraints"]
@@ -501,7 +501,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         Parameters
         ----------
-        data :
+        data
             The JSON data.
 
         Returns
@@ -519,12 +519,12 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
     A modifiable schedule.
 
-    Operations :class:`~quantify_scheduler.types.Operation` can be added using the
-    :meth:`~quantify_scheduler.types.Schedule.add` method, allowing precise
+    Operations :class:`~.Operation` can be added using the
+    :meth:`~.Schedule.add` method, allowing precise
     specification *when* to perform an operation using timing constraints.
 
     When adding an operation, it is not required to specify how to represent this
-    :class:`~quantify_scheduler.types.Operation` on all layers.
+    :class:`~.Operation` on all layers.
     Instead, this information can be added later during
     :ref:`compilation <sec-compilation>`.
     This allows the user to effortlessly mix the gate- and pulse-level descriptions as
@@ -540,16 +540,12 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         Parameters
         ----------
-        name :
+        name
             The name of the schedule
-        repetitions :
+        repetitions
             The amount of times the schedule will be repeated, by default 1
-        data :
+        data
             A dictionary containing a pre-existing schedule., by default None
-
-        Raises
-        ------
-        NotImplementedError
         """
 
         # validate the input data to ensure it is valid schedule data
@@ -608,26 +604,26 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         the operations.
         The reference operation (:code:`"ref_op"`) is specified using its label
         property.
-        See also :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
+        See also :attr:`~.ScheduleBase.timing_constraints`.
 
         Parameters
         ----------
-        operation :
+        operation
             The operation to add to the schedule
-        rel_time :
+        rel_time
             relative time between the reference operation and the added operation.
             the time is the time between the "ref_pt" in the reference operation and
             "ref_pt_new" of the operation that is added.
-        ref_op :
+        ref_op
             label of the reference operation. If set to :code:`None`, will default
             to the last added operation.
-        ref_pt :
+        ref_pt
             reference point in reference operation must be one of
             ('start', 'center', 'end').
-        ref_pt_new :
+        ref_pt_new
             reference point in added operation must be one of
             ('start', 'center', 'end').
-        label :
+        label
             a unique string that can be used as an identifier when adding operations.
             if set to None, a random hash will be generated instead.
         Returns
@@ -689,7 +685,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
     A schedule that contains compiled instructions ready for execution using
-    the :class:`~.instrument_coordinator.InstrumentCoordinator`.
+    the :class:`~.InstrumentCoordinator`.
 
     The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
     that it is considered immutable (no new operations or resources can be added), and
@@ -700,7 +696,7 @@ class CompiledSchedule(ScheduleBase):
         A :class:`~.CompiledSchedule` can be obtained by compiling a
         :class:`~.Schedule` using :func:`~quantify_scheduler.compilation.qcompile`.
 
-    """
+    """  # pylint: disable=line-too-long
 
     schema_filename = "schedule.json"
 
@@ -724,12 +720,12 @@ class CompiledSchedule(ScheduleBase):
         The contents of this dictionary depend on the backend it was compiled for.
         However, we assume that the general format consists of a dictionary in which
         the keys are instrument names corresponding to components added to a
-        :class:`~.instrument_coordinator.InstrumentCoordinator`, and the
+        :class:`~.InstrumentCoordinator`, and the
         values are the instructions for that component.
 
         These values typically contain a combination of sequence files, waveform
         definitions, and parameters to configure on the instrument.
-        """
+        """  # pylint: disable=line-too-long
         return self.data["compiled_instructions"]
 
     @classmethod
