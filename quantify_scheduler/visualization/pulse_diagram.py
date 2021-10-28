@@ -372,9 +372,11 @@ def sample_schedule(
 
 def pulse_diagram_matplotlib(
     schedule: Schedule,
+    port_list: Optional[List[str]] = None,
     sampling_rate: float = 1e9,
+    modulation: Literal["off", "if", "clock"] = "off",
+    modulation_if: float = 0.0,
     ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
     Plots a schedule using matplotlib.
@@ -383,12 +385,17 @@ def pulse_diagram_matplotlib(
     ----------
     schedule:
         The schedule to plot.
-    sampling_rate:
-        The schedule is sampled with this sampling rate.
+    port_list :
+        A list of ports to show. if set to `None` will use the first
+        8 ports it encounters in the sequence.
+    modulation :
+        Determines if modulation is included in the visualization.
+    modulation_if :
+        Modulation frequency used when modulation is set to "if".
+    sampling_rate :
+        The time resolution used to sample the schedule in Hz.
     ax:
         Axis onto which to plot.
-    **kwargs:
-        Passed to sample_schedule.
 
     Returns
     -------
@@ -398,7 +405,11 @@ def pulse_diagram_matplotlib(
         The matplotlib ax.
     """
     times, pulses = sample_schedule(
-        schedule, sampling_rate=sampling_rate, modulation="clock", **kwargs
+        schedule,
+        sampling_rate=sampling_rate,
+        port_list=port_list,
+        modulation=modulation,
+        modulation_if=modulation_if,
     )
     if ax is None:
         _, ax = plt.subplots()
