@@ -18,7 +18,7 @@ def heterodyne_spec_sched(
     integration_time: float,
     port: str,
     clock: str,
-    init_duration: float = 200e-6,
+    init_duration: float = 10e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -94,7 +94,7 @@ def two_tone_spec_sched(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    init_duration: float = 200e-6,
+    init_duration: float = 10e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """

@@ -13,6 +13,7 @@ from quantify_core.utilities.general import (
 from quantify_scheduler.backends.qblox import helpers, compiler_container
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.types import Schedule
+from quantify_scheduler.pulse_library import WindowOperation
 
 
 def generate_port_clock_to_device_map(
@@ -89,6 +90,10 @@ def _assign_pulse_and_acq_info_to_devices(
     for op_timing_constraint in schedule.timing_constraints:
         op_hash = op_timing_constraint["operation_repr"]
         op_data = schedule.operations[op_hash]
+
+        if isinstance(op_data, WindowOperation):
+            continue
+
         if not op_data.valid_pulse and not op_data.valid_acquisition:
             raise RuntimeError(
                 f"Operation {op_hash} is not a valid pulse or acquisition. Please check"

@@ -17,6 +17,7 @@ from quantify_scheduler.pulse_library import (
     IdlePulse,
     SoftSquarePulse,
     SquarePulse,
+    WindowOperation,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.types import Schedule, CompiledSchedule
@@ -164,13 +165,14 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     for op in schedule.operations.values():
         if op.valid_pulse:
             for p in op["pulse_info"]:
-                if p["clock"] not in schedule.resources:
-                    raise ValueError(
-                        "Operation '{}' contains an unknown clock '{}'; ensure "
-                        "this resource has been added to the schedule.".format(
-                            str(op), p["clock"]
+                if "clock" in p:
+                    if p["clock"] not in schedule.resources:
+                        raise ValueError(
+                            "Operation '{}' contains an unknown clock '{}'; ensure "
+                            "this resource has been added to the schedule.".format(
+                                str(op), p["clock"]
+                            )
                         )
-                    )
             continue
 
         if op.valid_acquisition:
