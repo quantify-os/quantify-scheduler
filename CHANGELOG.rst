@@ -7,6 +7,11 @@ Unreleased
 
 * Visualization - resolved a bug where a schedule was modified when drawing a circuit diagram (#197, !250)
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* InstrumentCoordinator - `last_schedule` is now a property (!252).
+
+
 0.5.0 Expanded feature sets hardware compilation backends (2021-10-25)
 ----------------------------------------------------------------------
 
