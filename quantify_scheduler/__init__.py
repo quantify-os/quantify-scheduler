@@ -1,6 +1,3 @@
-# Commented out, likely not necessary anymore since quantify core and scheduler do not
-# share the same namespace anymore. See also https://pymotw.com/3/pkgutil/
-# __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 """
 .. list-table::
     :header-rows: 1
