@@ -507,9 +507,10 @@ def create_dc_compensation_pulse(
     """
     Calculates a SquarePulse to counteract charging effects based on a list of pulses.
 
-    The compensation is calculated by summing the area of all pulses on the specified port.
-    This gives a first order approximation for the pulse required to compensate the charging.
-    All modulated pulses ignored in the calculation.
+    The compensation is calculated by summing the area of all pulses on the specified
+    port.
+    This gives a first order approximation for the pulse required to compensate the
+    charging. All modulated pulses ignored in the calculation.
 
     Parameters
     ----------
@@ -522,14 +523,14 @@ def create_dc_compensation_pulse(
         Desired amplitude of the DCCompensationPulse.
         Leave to None to calculate the value for compensation,
         in this case you must assign a value to duration.
-        The sign of the amplitude is ignored and ajusted
+        The sign of the amplitude is ignored and adjusted
         automatically to perform the compensation.
     duration
         Desired pulse duration in seconds.
         Leave to None to calculate the value for compensation,
         in this case you must assign a value to amp.
         The sign of the value of amp given in the previous step
-        is ajusted to perform the compensation.
+        is adjusted to perform the compensation.
     port
         Port to perform the compensation. Any pulse that does not
         belong to the specified port is ignored.
@@ -591,7 +592,7 @@ def create_dc_compensation_pulse(
 
 def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
     # Collect all pulses for the given port
-    pulse_info_list: List[Dict[str, Any]] = list()
+    pulse_info_list: List[Dict[str, Any]] = []
 
     for pulse in pulses:
         for pulse_info in pulse["pulse_info"]:
