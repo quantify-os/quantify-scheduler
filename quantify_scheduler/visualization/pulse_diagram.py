@@ -80,7 +80,7 @@ def pulse_diagram_plotly(
     fig_width: float = 1000,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
-    sampling_rate: int = 1_000_000_000,
+    sampling_rate: int = 1e9,
 ) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
@@ -101,7 +101,7 @@ def pulse_diagram_plotly(
     modulation_if :
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
-        The time resolution used in the visualization.
+        The time resolution used to sample the schedule in Hz.
 
     Returns
     -------
@@ -265,7 +265,7 @@ def sample_schedule(
     modulation_if :
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
-        The time resolution used in the sampling.
+        The time resolution used to sample the schedule in Hz.
 
     Returns
     -------
@@ -372,7 +372,7 @@ def sample_schedule(
 
 def pulse_diagram_matplotlib(
     schedule: Schedule,
-    sampling_rate: float = 1e6,
+    sampling_rate: float = 1e9,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:

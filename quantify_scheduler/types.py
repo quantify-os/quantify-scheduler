@@ -552,15 +552,43 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         return circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
 
-    def plot_pulse_diagram_mpl(self):
+    # pylint: disable=too-many-arguments
+    def plot_pulse_diagram_mpl(
+        self,
+        port_list: Optional[List[str]] = None,
+        sampling_rate: float = 1e9,
+        modulation: Literal["off", "if", "clock"] = "off",
+        modulation_if: float = 0.0,
+        ax: Optional[Axes] = None,
+    ) -> Tuple[Figure, Axes]:
         """
         Creates a visualization of all the pulses in a schedule using matplotlib.
 
         The pulse diagram visualizes the schedule at the quantum device layer.
-        This visualization provides detailed timing information and depends on the
-        absolute timing having already been determined for the schedule.
+        For this visualization to work, all operations need to have the information
+        present (e.g., pulse info) to represent these on the quantum-circuit level and
+        requires the absolute timing to have been determined.
+        This information is typically added when the quantum-device level compilation is
+        performed.
+
+        port_list :
+            A list of ports to show. if set to `None` will use the first
+            8 ports it encounters in the sequence.
+        modulation :
+            Determines if modulation is included in the visualization.
+        modulation_if :
+            Modulation frequency used when modulation is set to "if".
+        sampling_rate :
+            The time resolution used to sample the schedule in Hz.
         """
-        raise NotImplementedError()
+        return pulse_diagram_matplotlib(
+            schedule=self,
+            sampling_rate=sampling_rate,
+            ax=ax,
+            port_list=port_list,
+            modulation=modulation,
+            modulation_if=modulation_if,
+        )
 
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
