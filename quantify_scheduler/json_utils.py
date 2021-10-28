@@ -24,12 +24,10 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
         """Checks if the object is valid according to its schema."""
-        # schema_filename = "schedule.json"
 
         scheme = load_json_schema(__file__, cls.schema_filename)
         jsonschema.validate(object_to_be_validated.data, scheme)
-        # _ = object_to_be_validated.hash  # test that the hash property evaluates
-        return True  # if not exception was raised during validation
+        return True  # if no exception was raised during validation
 
 
 class ScheduleJSONDecoder(json.JSONDecoder):
@@ -93,7 +91,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Parameters
         ----------
-        obj :
+        obj
             The dictionary to deserialize.
 
         Returns
@@ -121,7 +119,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Parameters
         ----------
-        obj : str
+        obj
             The value of dictionary pair to deserialize.
 
         Returns
@@ -156,7 +154,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Parameters
         ----------
-        obj :
+        obj
             A pair of JSON objects.
 
         Returns

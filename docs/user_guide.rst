@@ -21,19 +21,19 @@ It extends the circuit model from quantum information processing by adding a pul
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
 
-In quantify-scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a :class:`~quantify_scheduler.types.Schedule` .
-The :class:`~quantify_scheduler.types.Schedule` contains information on *when* operations should be performed.
-When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
+In quantify-scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a :class:`.Schedule` .
+The :class:`.Schedule` contains information on *when* operations should be performed.
+When adding operations to a schedule, one does not need to specify how to represent this :class:`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 Creating a schedule
 -------------------
 
-The most convenient way to interact with a :class:`~quantify_scheduler.types.Schedule` is through the :mod:`quantify_scheduler` API.
-In the following example, we will create a function to generate a :class:`~quantify_scheduler.types.Schedule` for a a `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ and visualize one instance of such a circuit.
+The most convenient way to interact with a :class:`.Schedule` is through the :mod:`quantify_scheduler` API.
+In the following example, we will create a function to generate a :class:`.Schedule` for a a `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ and visualize one instance of such a circuit.
 
 
 .. jupyter-execute::
@@ -91,8 +91,8 @@ Concepts and terminology
 
 Quantify-scheduler can be understood by understanding the following concepts.
 
-- :class:`~quantify_scheduler.types.Schedule`\s describe when an operation needs to be applied.
-- :class:`~quantify_scheduler.types.Operation`\s describe what needs to be done.
+- :class:`.Schedule`\s describe when an operation needs to be applied.
+- :class:`.Operation`\s describe what needs to be done.
 - :class:`~quantify_scheduler.resources.Resource`\s describe where an operation should be applied.
 - :ref:`Compilation <sec-compilation>`: between different abstraction layers and onto a hardware backend.
 
@@ -108,11 +108,11 @@ The following table shows an overview of the different concepts and how these ar
       - Quantum-circuit layer
       - Quantum-device layer
     * - When
-      - :class:`~quantify_scheduler.types.Schedule`
+      - :class:`.Schedule`
       - --
       - --
     * - What
-      - :class:`~quantify_scheduler.types.Operation`
+      - :class:`.Operation`
       - :ref:`Gates and Measurements <sec-user-guide-gates-measurement>`
       - :ref:`Pulses and acquisition protocols <sec-user-guide-pulses-acq-protocols>`
     * - Where
@@ -150,7 +150,7 @@ Valid qubits are strings that appear in the :ref:`device configuration file<sec-
 
 Visualization
 ^^^^^^^^^^^^^
-A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`~quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A :class:`.Schedule` containing operations can be visualized using as a circuit diagram using :func:`~quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
 
 Alternatively, one can plot the waveforms in schedules using :func:`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_matplotlib`:
 
@@ -259,17 +259,17 @@ This is schematically shown in :numref:`compilation_overview`.
     :width: 900px
 
     A schematic overview of the different abstraction layers and the compilation process.
-    Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a :class:`~quantify_scheduler.types.Schedule` .
-    The information specified in the :ref:`device configuration<sec-device-config>` is used during compilation to add information on how to represent :class:`~quantify_scheduler.types.Operation` s specified at the quantum-circuit level as control pulses.
+    Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a :class:`.Schedule` .
+    The information specified in the :ref:`device configuration<sec-device-config>` is used during compilation to add information on how to represent :class:`.Operation` s specified at the quantum-circuit level as control pulses.
     The information in the :ref:`hardware configuration <sec-hardware-config>` is then used to compile the control pulses into instructions suitable for hardware execution.
 
 
-In the first compilation step, pulse information is added to all operations that are not valid pulses (see :attr:`~quantify_scheduler.types.Operation.valid_pulse`) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
+In the first compilation step, pulse information is added to all operations that are not valid pulses (see :attr:`.Operation.valid_pulse`) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
 
 A second compilation step takes the schedule at the pulse level and translates this for use on a hardware back end.
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`hardware configuration file<sec-hardware-config>`.
 
-Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
+Both compilation steps can be triggered by passing a :class:`.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
 
 .. note::
 
@@ -397,7 +397,7 @@ As such, the state of the instruments in the software is intended to track the s
 Hardware abstraction layer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
-This hardware abstraction layer is implemented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual :class:`InstrumentCoordinatorComponent <quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase>`\s are added that provide the uniform interface to the individual instruments.
+This hardware abstraction layer is implemented as the :class:`~.InstrumentCoordinator` to which individual :class:`InstrumentCoordinatorComponent <.InstrumentCoordinatorComponentBase>`\s are added that provide the uniform interface to the individual instruments.
 
 
 The quantum device and the device elements
