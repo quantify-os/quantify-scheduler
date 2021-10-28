@@ -262,7 +262,7 @@ def get_port_timeline(
     schedule
         The schedule.
     """
-    port_timeline_dict: Dict[str, Dict[int, List[int]]] = dict()
+    port_timeline_dict: Dict[str, Dict[int, List[int]]] = {}
 
     # Sort timing constraints based on abs_time and keep the original index.
     timing_constrains_map = dict(
@@ -295,10 +295,10 @@ def get_port_timeline(
         ):
             port = str(info["port"])
             if port not in port_timeline_dict:
-                port_timeline_dict[port] = dict()
+                port_timeline_dict[port] = {}
 
             if timeslot_index not in port_timeline_dict[port]:
-                port_timeline_dict[port][timeslot_index] = list()
+                port_timeline_dict[port][timeslot_index] = []
 
             port_timeline_dict[port][timeslot_index].append(uuid)
 
@@ -350,7 +350,7 @@ def get_pulse_info_by_uuid(
     schedule
         The schedule.
     """
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = dict()
+    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
@@ -383,7 +383,7 @@ def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str
     schedule
         The schedule.
     """
-    acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = dict()
+    acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
 

@@ -550,7 +550,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             matplotlib axis object.
         """
         # NB imported here to avoid circular import
-        # pylint: disable=wrong-import-position
+        # pylint: disable=import-outside-toplevel
         import quantify_scheduler.visualization.circuit_diagram as cd
 
         return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
@@ -589,7 +589,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             Axis onto which to plot.
         """
         # NB imported here to avoid circular import
-        # pylint: disable=wrong-import-position
+        # pylint: disable=import-outside-toplevel
         import quantify_scheduler.visualization.pulse_diagram as pd
 
         return pd.pulse_diagram_matplotlib(

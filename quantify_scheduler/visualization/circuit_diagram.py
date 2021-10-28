@@ -37,7 +37,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             fillcolor=constants.COLOR_LAZURE,
             width=0.8,
             height=0.5,
-            **kw
+            **kw,
         )
 
 
@@ -98,7 +98,7 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             y_offs=0,
             width=0.8,
             height=0.5,
-            **kw
+            **kw,
         )
 
 
@@ -124,7 +124,7 @@ def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             width=0.8,
             height=0.5,
             framewidth=constants.ACQ_METER_LINEWIDTH,
-            **kw
+            **kw,
         )
 
 
@@ -187,7 +187,7 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             fillcolor="white",
             width=0.4,
             height=0.5,
-            **kw
+            **kw,
         )
 
 
@@ -196,11 +196,11 @@ def _locate_qubit_in_address(qubit_map, address):
     Returns the name of a qubit in  a pulse address.
     """
     if address is None:
-        raise ValueError("Could not resolve address '{}'".format(address))
+        raise ValueError(f"Could not resolve address '{address}'")
     for sub_addr in address.split(":"):
         if sub_addr in qubit_map:
             return sub_addr
-    raise ValueError("Could not resolve address '{}'".format(address))
+    raise ValueError(f"Could not resolve address '{address}'")
 
 
 # pylint disabled because func was implemented before pylint was adopted
@@ -238,7 +238,7 @@ def circuit_diagram_matplotlib(
 
     schedule = determine_absolute_timing(schedule, "ideal")
 
-    qubit_map: Dict[str, int] = dict()
+    qubit_map: Dict[str, int] = {}
     qubits: List[str] = set()
     for _, operation in schedule.operations.items():
         if operation.valid_gate:
