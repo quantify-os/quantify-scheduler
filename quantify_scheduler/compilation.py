@@ -2,16 +2,17 @@
 # Licensed according to the LICENCE file on the master branch
 """Compiler for the quantify_scheduler."""
 from __future__ import annotations
+
 import importlib
 import logging
 from copy import deepcopy
-from typing_extensions import Literal
 
 import jsonschema
 from quantify_core.utilities.general import load_json_schema
+from typing_extensions import Literal
 
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -20,7 +21,7 @@ from quantify_scheduler.pulse_library import (
     WindowOperation,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.types import Schedule, CompiledSchedule
+from quantify_scheduler.types import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 

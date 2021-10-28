@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Dict, List, Optional, Tuple, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots

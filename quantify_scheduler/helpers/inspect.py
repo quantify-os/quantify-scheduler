@@ -1,9 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Python inspect helper functions."""
-from types import ModuleType
 import inspect
 import sys
+from types import ModuleType
 from typing import Any, Dict, Type
 
 

@@ -3,13 +3,15 @@
 """Module containing quantify JSON utilities."""
 from __future__ import annotations
 
-import json
 import ast
+import json
 import re
 from types import ModuleType
 from typing import Any, Dict, List, Type
+
 import jsonschema
 from quantify_core.utilities.general import load_json_schema
+
 from quantify_scheduler.helpers import inspect as inspect_helpers
 
 
@@ -181,8 +183,8 @@ class ScheduleJSONEncoder(json.JSONEncoder):
         # Use local import to void Error('Operation' from partially initialized module
         # 'quantify_scheduler.types')
         from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
-            types,
             resources,
+            types,
         )
 
         if isinstance(o, (types.Operation, resources.Resource)):

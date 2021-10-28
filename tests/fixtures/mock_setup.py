@@ -1,15 +1,13 @@
+import os
 import pathlib
 
-import os
 import pytest
-from quantify_core.utilities._tests_helpers import rmdir_recursive
+from quantify_core.data.handling import get_datadir, set_datadir
 from quantify_core.measurement.control import MeasurementControl
-from quantify_core.data.handling import (
-    get_datadir,
-    set_datadir,
-)
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+from quantify_core.utilities._tests_helpers import rmdir_recursive
+
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 

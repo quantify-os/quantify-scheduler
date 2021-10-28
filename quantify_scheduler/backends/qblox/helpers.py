@@ -2,8 +2,8 @@
 # Licensed according to the LICENCE file on the master branch
 """Helper functions for Qblox backend."""
 
-from typing import Any, Dict, Union, List, Iterable, Tuple
 from collections import UserDict
+from typing import Any, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 from typing_extensions import Literal

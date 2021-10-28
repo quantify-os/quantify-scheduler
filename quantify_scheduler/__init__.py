@@ -21,8 +21,8 @@
 __version__ = "0.5.0"
 
 
-from .types import Schedule, Operation, CompiledSchedule
 from .resources import Resource
+from .types import CompiledSchedule, Operation, Schedule
 
 # Commented out because it messes up Sphinx and sphinx extensions
 # __all__ = ["Schedule", "CompiledSchedule", "Operation", "Resource"]

@@ -3,9 +3,10 @@
 # pylint: disable=missing-function-docstring
 
 from copy import deepcopy
-from quantify_scheduler.enums import BinMode
+
 import numpy as np
 import pytest
+
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
@@ -13,6 +14,7 @@ from quantify_scheduler.compilation import (
     qcompile,
     validate_config,
 )
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
 from quantify_scheduler.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource

@@ -13,20 +13,21 @@ quantify-scheduler.
     Expect breaking changes.
 """
 from __future__ import annotations
+
 from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 from qcodes import Parameter
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-
 from quantify_scheduler import types
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
 from quantify_scheduler.types import Schedule
+
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
