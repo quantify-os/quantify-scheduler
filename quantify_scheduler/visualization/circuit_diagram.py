@@ -2,17 +2,19 @@
 # Licensed according to the LICENCE file on the master branch
 """Plotting functions used in the visualization backend of the sequencer."""
 from __future__ import annotations
-from typing import Tuple, Union, List, Dict, Optional
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
+from typing import Tuple, Union, List, Dict, Optional, TYPE_CHECKING
 from copy import deepcopy
 
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 from quantify_core.utilities.general import import_func_from_string
 
 from quantify_scheduler.visualization import constants
 import quantify_scheduler.visualization.pulse_scheme as ps
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.compilation import determine_absolute_timing
+
+
+if TYPE_CHECKING:
+    from quantify_scheduler.types import Schedule
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -35,7 +37,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             fillcolor=constants.COLOR_LAZURE,
             width=0.8,
             height=0.5,
-            **kw
+            **kw,
         )
 
 
@@ -96,7 +98,7 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             y_offs=0,
             width=0.8,
             height=0.5,
-            **kw
+            **kw,
         )
 
 
@@ -122,7 +124,7 @@ def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             width=0.8,
             height=0.5,
             framewidth=constants.ACQ_METER_LINEWIDTH,
-            **kw
+            **kw,
         )
 
 
@@ -185,7 +187,7 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
             fillcolor="white",
             width=0.4,
             height=0.5,
-            **kw
+            **kw,
         )
 
 
@@ -194,11 +196,11 @@ def _locate_qubit_in_address(qubit_map, address):
     Returns the name of a qubit in  a pulse address.
     """
     if address is None:
-        raise ValueError("Could not resolve address '{}'".format(address))
+        raise ValueError(f"Could not resolve address '{address}'")
     for sub_addr in address.split(":"):
         if sub_addr in qubit_map:
             return sub_addr
-    raise ValueError("Could not resolve address '{}'".format(address))
+    raise ValueError(f"Could not resolve address '{address}'")
 
 
 # pylint disabled because func was implemented before pylint was adopted
@@ -210,9 +212,6 @@ def circuit_diagram_matplotlib(
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
-
-    For this visualization backend to work, the schedule must contain a value for
-    `abs_time` for each element in the timing_constraints.
 
     Parameters
     ----------
@@ -233,9 +232,13 @@ def circuit_diagram_matplotlib(
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
+    # pylint: disable=import-outside-toplevel
+    # importing inside function scope to prevent circular import
+    from quantify_scheduler.compilation import determine_absolute_timing
+
     schedule = determine_absolute_timing(schedule, "ideal")
 
-    qubit_map: Dict[str, int] = dict()
+    qubit_map: Dict[str, int] = {}
     qubits: List[str] = set()
     for _, operation in schedule.operations.items():
         if operation.valid_gate:
@@ -247,7 +250,7 @@ def circuit_diagram_matplotlib(
     # Validate pulses
     # If the pulse's port address was not found then the pulse
     # will be plotted on the 'other' timeline.
-    # Note: needs to be done be done before creating figure and axhline
+    # Note: needs to be done before creating figure and axhline
     # in order to avoid unnecessary redraws.
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
