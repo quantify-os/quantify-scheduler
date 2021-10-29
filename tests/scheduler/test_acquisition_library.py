@@ -7,8 +7,9 @@
 # pylint: disable=eval-used
 from unittest import TestCase
 
-import pytest
 import numpy as np
+import pytest
+
 from quantify_scheduler.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,

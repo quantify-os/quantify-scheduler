@@ -2,8 +2,8 @@
 # Licensed according to the LICENCE file on the master branch
 """Helper functions to perform the version check for qblox_instruments."""
 
-from typing import Tuple
 import logging
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 

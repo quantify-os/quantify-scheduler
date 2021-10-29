@@ -10,9 +10,8 @@ from functools import partial
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 import numpy as np
-from zhinst.toolkit.helpers import Waveform
-
 from quantify_core.utilities.general import make_hash
+from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums, types
 from quantify_scheduler.backends.types import common, zhinst

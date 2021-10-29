@@ -9,14 +9,13 @@
 """Tests for the driver version check."""
 
 import pytest
-
 from qblox_instruments import build
 
 from quantify_scheduler.backends.qblox.driver_version_check import (
-    verify_qblox_instruments_version,
     SUPPORTED_DRIVER_VERSIONS,
+    DriverVersionError,
+    verify_qblox_instruments_version,
 )
-from quantify_scheduler.backends.qblox.driver_version_check import DriverVersionError
 
 
 def test_verify_qblox_instruments_version():

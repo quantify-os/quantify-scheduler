@@ -47,8 +47,8 @@ Requirements
         frequency=7.04e9,
         acquisition_delay=2e-9,
         integration_time=1e-6,
-        port="q0:res", 
-        clock="q0.ro", 
+        port="q0:res",
+        clock="q0.ro",
         init_duration=1e-5,
     )
     schedule.repetitions = 1
@@ -61,7 +61,7 @@ Requirements
         import quantify_scheduler.schemas.examples as examples
         path = Path(examples.__file__).parent.joinpath(filename)
         return json.loads(path.read_text())
-    
+
     # Load example configuration from quantify_scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
@@ -74,7 +74,7 @@ Requirements
       "devices": [
         {
           "name": "uhfqa0",
-          "type": "UHFQA", 
+          "type": "UHFQA",
           "ref": "none",
           "channel_0": {
             "port": "q0:res",
@@ -105,7 +105,7 @@ Requirements
 
 .. code-block:: python
     :linenos:
-    
+
     # Configure the Instruments
     for instrument_name, settings_builder in zi_backend.settings.items():
         instrument = Instrument.find_instrument(instrument_name)

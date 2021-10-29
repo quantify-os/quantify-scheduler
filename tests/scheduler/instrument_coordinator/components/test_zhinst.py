@@ -6,13 +6,14 @@
 # pylint: disable=redefined-outer-name
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
 from pathlib import Path
+from typing import Any, Dict, Tuple
 from unittest.mock import call
 
 import numpy as np
 import pytest
 from zhinst import qcodes
+
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (

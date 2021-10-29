@@ -8,6 +8,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend register manager."""
 import pytest
+
 from quantify_scheduler.backends.qblox import register_manager
 
 

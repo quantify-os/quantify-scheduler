@@ -9,8 +9,9 @@ import numpy as np
 import pytest
 from quantify_core.data.handling import set_datadir
 
-from quantify_scheduler import Operation, Schedule, CompiledSchedule
+from quantify_scheduler import CompiledSchedule, Operation, Schedule
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gate_library import (
     CNOT,
     CZ,
@@ -23,10 +24,9 @@ from quantify_scheduler.gate_library import (
     Y,
 )
 from quantify_scheduler.pulse_library import SquarePulse
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture(scope="module", autouse=False)

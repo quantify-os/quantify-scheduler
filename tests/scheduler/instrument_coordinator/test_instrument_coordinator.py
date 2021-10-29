@@ -6,15 +6,16 @@
 # pylint: disable=unused-argument
 # pylint: disable=too-many-arguments
 from __future__ import annotations
-from typing import List
-import gc
 
+import gc
 from dataclasses import dataclass
+from typing import List
 from unittest.mock import call
 
 import pytest
 from qcodes import Instrument
-from quantify_scheduler import Schedule, CompiledSchedule
+
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.instrument_coordinator import (
     InstrumentCoordinator,
     ZIInstrumentCoordinator,

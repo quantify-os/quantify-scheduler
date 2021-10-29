@@ -4,12 +4,13 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
+
 from quantify_scheduler.waveforms import (
-    square,
     drag,
-    staircase,
     modulate_wave,
     rotate_wave,
+    square,
+    staircase,
 )
 
 

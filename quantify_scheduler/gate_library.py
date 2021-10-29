@@ -4,8 +4,10 @@
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Optional, Tuple, Union
 
-from quantify_scheduler.enums import BinMode
 import numpy as np
+
+from quantify_scheduler.enums import BinMode
+
 from .types import Operation
 
 

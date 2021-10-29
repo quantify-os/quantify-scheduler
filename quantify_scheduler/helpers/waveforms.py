@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import inspect
+from abc import ABC
 from functools import partial
 from typing import Any, Dict, List, Tuple
-from abc import ABC
 
 try:
     from typing import Protocol as _Protocol
@@ -18,9 +18,9 @@ import numpy as np
 import quantify_core.utilities.general as general
 
 import quantify_scheduler.waveforms as waveforms
+from quantify_scheduler import math, types
 from quantify_scheduler.helpers import schedule as schedule_helpers
-from quantify_scheduler import math
-from quantify_scheduler import types
+
 
 # pylint: disable=too-few-public-methods
 class GetWaveformPartial(Protocol):  # typing.Protocol

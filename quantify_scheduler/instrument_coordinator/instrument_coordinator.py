@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Tuple
+
 import numpy as np
-
-from qcodes.utils import validators
-from qcodes.instrument import parameter
 from qcodes.instrument import base as qcodes_base
+from qcodes.instrument import parameter
+from qcodes.utils import validators
+
 from quantify_scheduler.instrument_coordinator.components import base
-
-
 from quantify_scheduler.types import CompiledSchedule
 
 

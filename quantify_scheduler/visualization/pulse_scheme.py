@@ -6,19 +6,20 @@ using matplotlib.
 """
 # pylint: disable=too-many-arguments
 from __future__ import annotations
-from typing import Tuple, Union, List, Optional
-import warnings
-import logging
-import numpy as np
 
-import matplotlib.pyplot as plt
+import logging
+import warnings
+from typing import List, Optional, Tuple, Union
+
 import matplotlib.patches
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.axes import Axes
 
 # For type hints, import modules to avoid circular dependencies
 from matplotlib.figure import Figure
-from matplotlib.axes import Axes
 
-from quantify_scheduler.visualization import pulse_diagram, constants
+from quantify_scheduler.visualization import constants, pulse_diagram
 
 logger = logging.getLogger(__name__)
 

@@ -7,22 +7,24 @@
 
 from __future__ import annotations
 
+import logging
 import shutil
 from pathlib import Path
-import logging
-from typing import Dict, TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
-from zhinst import qcodes
 from quantify_core.data import handling
+from zhinst import qcodes
+
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
-from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.backends.zhinst.settings import ZISerializeSettings
+from quantify_scheduler.instrument_coordinator.components import base
 
 if TYPE_CHECKING:
     from zhinst.qcodes.base import ZIBaseInstrument
-    from quantify_scheduler.backends.zhinst_backend import ZIDeviceConfig
+
     from quantify_scheduler.backends.zhinst.settings import ZISettings
+    from quantify_scheduler.backends.zhinst_backend import ZIDeviceConfig
 
 
 logger = logging.getLogger(__name__)
