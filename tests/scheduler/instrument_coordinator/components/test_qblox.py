@@ -15,7 +15,8 @@ from pathlib import Path
 import numpy as np
 
 import pytest
-from mock import patch
+from unittest.mock import patch
+
 from cluster import cluster
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
