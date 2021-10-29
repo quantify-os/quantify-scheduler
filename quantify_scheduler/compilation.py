@@ -406,7 +406,6 @@ def qcompile(
     schedule = deepcopy(schedule)
 
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     if hardware_mapping is not None:
         bck_name = hardware_mapping["backend"]
