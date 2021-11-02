@@ -3,15 +3,14 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
 # pylint: disable=no-name-in-module
-from quantify_core.utilities.general import (
-    make_hash,
-    without,
-)
-from quantify_scheduler.backends.qblox import helpers, compiler_container
+from quantify_core.utilities.general import make_hash, without
+
+from quantify_scheduler.backends.qblox import compiler_container, helpers
 from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.pulse_library import WindowOperation
 from quantify_scheduler.types import Schedule
 
 
@@ -89,6 +88,10 @@ def _assign_pulse_and_acq_info_to_devices(
     for op_timing_constraint in schedule.timing_constraints:
         op_hash = op_timing_constraint["operation_repr"]
         op_data = schedule.operations[op_hash]
+
+        if isinstance(op_data, WindowOperation):
+            continue
+
         if not op_data.valid_pulse and not op_data.valid_acquisition:
             raise RuntimeError(
                 f"Operation {op_hash} is not a valid pulse or acquisition. Please check"

@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from quantify_core.utilities import general
+
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox
@@ -263,7 +263,7 @@ def get_port_timeline(
     schedule
         The schedule.
     """
-    port_timeline_dict: Dict[str, Dict[int, List[int]]] = dict()
+    port_timeline_dict: Dict[str, Dict[int, List[int]]] = {}
 
     # Sort timing constraints based on abs_time and keep the original index.
     timing_constrains_map = dict(
@@ -296,10 +296,10 @@ def get_port_timeline(
         ):
             port = str(info["port"])
             if port not in port_timeline_dict:
-                port_timeline_dict[port] = dict()
+                port_timeline_dict[port] = {}
 
             if timeslot_index not in port_timeline_dict[port]:
-                port_timeline_dict[port][timeslot_index] = list()
+                port_timeline_dict[port][timeslot_index] = []
 
             port_timeline_dict[port][timeslot_index].append(uuid)
 
@@ -351,7 +351,7 @@ def get_pulse_info_by_uuid(
     schedule
         The schedule.
     """
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = dict()
+    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
@@ -384,7 +384,7 @@ def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str
     schedule
         The schedule.
     """
-    acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = dict()
+    acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
 
@@ -400,8 +400,8 @@ def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str
 
 
 def extract_acquisition_metadata_from_schedule(
-    schedule: ScheduleBase,
-) -> AcquisitionMetadata:
+    schedule: types.ScheduleBase,
+) -> types.AcquisitionMetadata:
     """
     Extracts acquisition metadata from a schedule.
 
@@ -453,7 +453,7 @@ def extract_acquisition_metadata_from_schedule(
 
 def _extract_acquisition_metadata_from_acquisition_protocols(
     acquisition_protocols: List[Dict[str, Any]],
-) -> AcquisitionMetadata:
+) -> types.AcquisitionMetadata:
     """
     Private function containing the logic of extract_acquisition_metadata_from_schedule.
     The logic is factored out as to work around limitations of the different interfaces
@@ -486,7 +486,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
         acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
     # combine the information in the acq metada dataclass.
-    acq_metadata = AcquisitionMetadata(
+    acq_metadata = types.AcquisitionMetadata(
         acq_protocol=protocol,
         bin_mode=bin_mode,
         acq_indices=acq_indices,
@@ -497,7 +497,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
 
 def _extract_acquisition_metadata_from_acquisitions(
     acquisitions: List[qblox.OpInfo],
-) -> AcquisitionMetadata:
+) -> types.AcquisitionMetadata:
     """
     Private variant of extract_acquisition_metadata_from_schedule explicitly for use
     with the qblox assembler backend.

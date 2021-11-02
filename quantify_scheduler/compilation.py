@@ -2,24 +2,26 @@
 # Licensed according to the LICENCE file on the master branch
 """Compiler for the quantify_scheduler."""
 from __future__ import annotations
+
 import importlib
 import logging
 from copy import deepcopy
-from typing_extensions import Literal
 
 import jsonschema
 from quantify_core.utilities.general import load_json_schema
+from typing_extensions import Literal
 
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.pulse_library import (
     DRAGPulse,
     IdlePulse,
     SoftSquarePulse,
     SquarePulse,
+    WindowOperation,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.types import Schedule, CompiledSchedule
+from quantify_scheduler.types import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +33,10 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`. It does this by:
+    :attr:`~.ScheduleBase.timing_constraints`. It does this by:
 
         1. iterating over all and elements in the
-            :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
+            :attr:`~.ScheduleBase.timing_constraints`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -164,13 +166,14 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     for op in schedule.operations.values():
         if op.valid_pulse:
             for p in op["pulse_info"]:
-                if p["clock"] not in schedule.resources:
-                    raise ValueError(
-                        "Operation '{}' contains an unknown clock '{}'; ensure "
-                        "this resource has been added to the schedule.".format(
-                            str(op), p["clock"]
+                if "clock" in p:
+                    if p["clock"] not in schedule.resources:
+                        raise ValueError(
+                            "Operation '{}' contains an unknown clock '{}'; ensure "
+                            "this resource has been added to the schedule.".format(
+                                str(op), p["clock"]
+                            )
                         )
-                    )
             continue
 
         if op.valid_acquisition:
@@ -369,8 +372,9 @@ def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
 ) -> CompiledSchedule:
     """
-    Compile and assemble a :class:`~.Schedule` into a :class:`~.CompiledSchedule`
-    ready for execution using the :class:`~.InstrumentCoordinator`.
+    Compile and assemble a :class:`~.types.Schedule` into a
+    :class:`~.types.CompiledSchedule` ready for execution using the
+    :class:`~.InstrumentCoordinator`.
 
     Parameters
     ----------

@@ -6,20 +6,23 @@
 # pylint: disable=invalid-name
 
 from collections import namedtuple
-from typing import Dict, Tuple, Any
+from typing import Any, Dict, Tuple
+
 import numpy as np
 from qcodes.instrument.parameter import ManualParameter
+
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.schedules.timedomain_schedules import (
-    allxy_sched,
-    readout_calibration_sched,
-)
-from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettableSingleChannel
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
+from quantify_scheduler.schedules.timedomain_schedules import (
+    allxy_sched,
+    readout_calibration_sched,
+)
+from quantify_scheduler.schedules.trace_schedules import trace_schedule
 from quantify_scheduler.types import AcquisitionMetadata
 
 # this is taken from the qblox backend and is used to make the tuple indexing of
@@ -212,6 +215,63 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
     np.testing.assert_array_equal(dset.x1, np.repeat(np.arange(repetitions), 2))
 
     np.testing.assert_array_equal(dset.y0 + 1j * dset.y1, data)
+
+
+def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
+    # q0 is a  device element from the test setup has all the right params
+    device_element = quantum_device.get_component("q0")
+
+    sample_par = ManualParameter("sample", label="Sample time", unit="s")
+    sample_par.batched = True
+
+    schedule_kwargs = {
+        "pulse_amp": device_element.ro_pulse_amp,
+        "pulse_duration": device_element.ro_pulse_duration,
+        "pulse_delay": device_element.ro_pulse_delay,
+        "frequency": device_element.ro_freq,
+        "acquisition_delay": device_element.ro_acq_delay,
+        "integration_time": device_element.ro_acq_integration_time,
+        "port": device_element.ro_port,
+        "clock": device_element.ro_clock,
+        "init_duration": device_element.init_duration,
+    }
+
+    sched_gettable = ScheduleGettableSingleChannel(
+        quantum_device=quantum_device,
+        schedule_function=trace_schedule,
+        schedule_kwargs=schedule_kwargs,
+        batched=True,
+    )
+
+    sample_times = np.arange(0, device_element.ro_acq_integration_time(), 1 / 1e9)
+    exp_trace = np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(35))
+
+    exp_data = {
+        AcquisitionIndexing(acq_channel=0, acq_index=0): (
+            exp_trace.real,
+            exp_trace.imag,
+        )
+    }
+
+    mocker.patch.object(
+        mock_setup["instrument_coordinator"],
+        "retrieve_acquisition",
+        return_value=exp_data,
+    )
+
+    # Executing the experiment
+    meas_ctrl.settables(sample_par)
+    meas_ctrl.setpoints(sample_times)
+    meas_ctrl.gettables(sched_gettable)
+    label = f"Readout trace schedule of {device_element.name}"
+    dset = meas_ctrl.run(label)
+
+    # Assert that the data is coming out correctly.
+    np.testing.assert_array_equal(dset.x0, sample_times)
+    np.testing.assert_array_equal(dset.y0, exp_trace.real)
+    np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the

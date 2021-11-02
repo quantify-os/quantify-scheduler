@@ -3,19 +3,18 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from quantify_scheduler.backends.qblox import compiler_container
-from quantify_scheduler.backends.qblox import compiler_abc
-from quantify_scheduler.backends.types.qblox import (
-    LOSettings,
-    MarkerConfiguration,
-    StaticHardwareProperties,
-    BoundedParameter,
-)
+from quantify_scheduler.backends.qblox import compiler_abc, compiler_container
 from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
+)
+from quantify_scheduler.backends.types.qblox import (
+    BoundedParameter,
+    LOSettings,
+    MarkerConfiguration,
+    StaticHardwareProperties,
 )
 
 

@@ -2,16 +2,15 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import json
 import inspect
+import json
 from pathlib import Path
 
-from quantify_scheduler import Schedule
-from quantify_scheduler.gate_library import Reset, Measure, Rxy
-from quantify_scheduler.compilation import qcompile
-import quantify_scheduler.visualization.pulse_diagram as plsd
 import quantify_scheduler.schemas.examples as es
-
+import quantify_scheduler.visualization.pulse_diagram as plsd
+from quantify_scheduler import Schedule
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.gate_library import Measure, Reset, Rxy
 
 esp = inspect.getfile(es)
 cfg_f = Path(esp).parent / "transmon_test_config.json"

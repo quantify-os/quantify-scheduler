@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 r"""
-Module containing :class:`~quantify_core.measurement.Gettable`\s for use with
+Module containing :class:`~quantify_core.measurement.types.Gettable`\s for use with
 quantify-scheduler.
 
 .. warning::
@@ -9,24 +9,25 @@ quantify-scheduler.
     The gettable module is expected to change significantly as the
     acquisition protocols (#36 and #80) get fully supported by the scheduler.
     Currently different Gettables are required for different acquisition modes.
-    The intent is to have one generic `ScheduleGettable`.
+    The intent is to have one generic ``ScheduleGettable``.
     Expect breaking changes.
 """
 from __future__ import annotations
+
 from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 from qcodes import Parameter
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-
 from quantify_scheduler import types
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
 from quantify_scheduler.types import Schedule
+
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
@@ -35,10 +36,9 @@ class ScheduleGettableSingleChannel:
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
     set to return either static (demodulated) I and Q values or magnitude and phase.
 
-    The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
-    the `Schedule` using the `schedule_function`, this is then compiled and finally
-    executed by the
-    :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator`.
+    The gettable evaluates the parameters passed as ``schedule_kwargs``, then generates
+    the :class:`~.Schedule` using the ``schedule_function``, this is then compiled and
+    finally executed by the :class:`~.InstrumentCoordinator`.
     """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments
@@ -63,7 +63,7 @@ class ScheduleGettableSingleChannel:
             The qcodes instrument representing the quantum device under test (DUT)
             containing quantum device properties and setup configuration information.
         schedule_function
-            A function which returns a :class:`~quantify_scheduler.types.Schedule`. The
+            A function which returns a :class:`~.Schedule`. The
             function is required to have the `repetitions` keyword argument.
         schedule_kwargs
             The schedule function keyword arguments, when a value in this dictionary is
@@ -176,21 +176,29 @@ class ScheduleGettableSingleChannel:
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.
         """
+        # pylint: disable=fixme
+        # FIXME: this reshaping should happen inside the instrument coordinator
+        # blocked by quantify-core#187, and quantify-core#233
 
         # retrieve the acquisition results
-        # pylint: disable=fixme
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         acq_metadata = extract_acquisition_metadata_from_schedule(
             self.compiled_schedule
         )
 
-        # Currently only supported for weighted integration.
-        # Assert that the schedule is compatible with that.
-        assert acq_metadata.acq_return_type == complex
+        if (
+            acq_metadata.bin_mode == BinMode.AVERAGE
+            and acq_metadata.acq_protocol == "trace"
+        ):
+            dataset = {}
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
+                for acq_idx in acq_indices:
+                    val = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel] = val[0] + 1j * val[1]
 
-        # FIXME: this reshaping should happen inside the instrument coordinator
-        # blocked by quantify-core#187, and quantify-core#233
-        if acq_metadata.bin_mode == BinMode.AVERAGE:
+        elif acq_metadata.bin_mode == BinMode.AVERAGE:
+
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
@@ -218,7 +226,8 @@ class ScheduleGettableSingleChannel:
 
         else:
             raise NotImplementedError(
-                f"Bin mode ({acq_metadata.bin_mode}) not supported."
+                f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+                f" mode {acq_metadata.bin_mode} is not supported."
             )
 
         # Reshaping of the data before returning

@@ -13,29 +13,21 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
-
+from quantify_core.data.handling import set_datadir
 from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
-
-from quantify_core.data.handling import set_datadir
-
-from quantify_scheduler.schedules.verification import acquisition_staircase_sched
-
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler import enums, types
 from quantify_scheduler.backends import zhinst_backend
-from quantify_scheduler import enums
-from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.helpers import schedule as schedule_helpers
-
-from quantify_scheduler.backends.types import zhinst
-from quantify_scheduler.backends.types import common
+from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gate_library import X90, Measure, Reset
-from quantify_scheduler.schedules import trace_schedules
-from quantify_scheduler.schedules import spectroscopy_schedules
-from quantify_scheduler import types
+from quantify_scheduler.helpers import schedule as schedule_helpers
+from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
+from quantify_scheduler.schedules.verification import acquisition_staircase_sched
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture

@@ -1,15 +1,13 @@
+import os
 import pathlib
 
-import os
 import pytest
-from quantify_core.utilities._tests_helpers import rmdir_recursive
+from quantify_core.data.handling import get_datadir, set_datadir
 from quantify_core.measurement.control import MeasurementControl
-from quantify_core.data.handling import (
-    get_datadir,
-    set_datadir,
-)
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+from quantify_core.utilities._tests_helpers import rmdir_recursive
+
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
@@ -33,7 +31,7 @@ def tmp_test_data_dir(request, tmp_path_factory):
         request.addfinalizer(cleanup_tmp)
     else:
         set_datadir(os.path.join(pathlib.Path.home(), "quantify_schedule_test"))
-        print("Data directory set to: {}".format(get_datadir()))
+        print(f"Data directory set to: {get_datadir()}")
         temp_data_dir = get_datadir()
 
     return temp_data_dir
@@ -52,8 +50,8 @@ def mock_setup(request, tmp_test_data_dir):
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
 
-    q0 = TransmonElement("q0")
-    q1 = TransmonElement("q1")
+    q0 = TransmonElement("q0")  # pylint: disable=invalid-name
+    q1 = TransmonElement("q1")  # pylint: disable=invalid-name
 
     q0.ro_pulse_amp(0.08)
     q0.ro_freq(8.1e9)

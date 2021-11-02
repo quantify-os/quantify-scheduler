@@ -1,9 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 from quantify_scheduler import types
-from quantify_scheduler.pulse_library import SquarePulse, IdlePulse
 from quantify_scheduler.acquisition_library import Trace
+from quantify_scheduler.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
+
 
 # pylint: disable=too-many-arguments
 def trace_schedule(

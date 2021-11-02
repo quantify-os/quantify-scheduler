@@ -21,9 +21,15 @@ pytest-mpl
 pytest-mock
 pytest-xdist # run parallel tests
 pygments==2.6.1
+
 black
+mypy
+types-docutils
 pylint
 pre-commit
+pre-commit-hooks # common hooks for git repos
+isort # sort python imports
+
 scanpydoc==0.6 # pinned because 0.7 is made for sphinx-autodoc-typehints==1.12.0 but sphinx-toolbox requires sphinx-autodoc-typehints==1.11.1
 docutils<0.17 # pinned due to issue #175 (quantify-core)
 rich[jupyter]
@@ -35,3 +41,7 @@ lockfile # see issue quantify-scheduler#129
 pytest-mpl
 sphinx-toolbox  # required by enum_tools when building the docs, 2.4.1 requires sphinx==3.3.1
 enum_tools # requires sphinx-toolbox when building docs
+
+# Prospector
+prospector
+prospector[with_mypy]

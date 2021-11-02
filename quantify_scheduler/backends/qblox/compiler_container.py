@@ -3,14 +3,14 @@
 """Contains the compiler container class."""
 
 from __future__ import annotations
-from typing import Dict, Any, Union
+
+from typing import Any, Dict, Union
 
 from quantify_core.utilities import general
 
 from quantify_scheduler import types
-from quantify_scheduler.helpers.schedule import get_total_duration
-
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
+from quantify_scheduler.helpers.schedule import get_total_duration
 
 
 class CompilerContainer:

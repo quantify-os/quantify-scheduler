@@ -2,6 +2,22 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* Visualization - resolved a bug where a schedule was modified when drawing a circuit diagram (#197, !250)
+* Visualization - made matplotlib schedule visualization methods accessible as methods `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` of the `Schedule` class (!253)
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+* InstrumentCoordinator - `last_schedule` is now a property (!252).
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Docs - Enhance documentation of public API for reeimported modules [imports aliases] (!254)
+
 0.5.0 Expanded feature sets hardware compilation backends (2021-10-25)
 ----------------------------------------------------------------------
 
@@ -41,6 +57,7 @@ Merged branches and closed issues
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
 * QuantumDevice - Added docstrings to the TransmonElement parameters (!216, !218)
+* Qblox ICCs - QCoDeS parameters are now only set if they differ from the value in the cache (!230)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
 * Other - Added method `sample_schedule` to sample a `Schedule` (!212)
