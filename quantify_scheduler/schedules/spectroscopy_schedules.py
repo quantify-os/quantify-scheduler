@@ -22,6 +22,7 @@ def heterodyne_spec_sched(
     clock: str,
     init_duration: float = 10e-6,
     repetitions: int = 1,
+    port_out : Optional[str] = None,
 ) -> Schedule:
     """
     Generate a schedule for performing heterodyne spectroscopy.
@@ -47,17 +48,22 @@ def heterodyne_spec_sched(
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
+    port_out:
+        Output port used. If None, then use `port` as name
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
 
     sched.add(IdlePulse(duration=init_duration), label="buffer")
 
+    if port_out is None:
+        port_out = port
+        
     pulse = sched.add(
         SquarePulse(
             duration=pulse_duration,
             amp=pulse_amp,
-            port=port,
+            port=port_out,
             clock=clock,
         ),
         label="spec_pulse",
