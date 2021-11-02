@@ -5,6 +5,8 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
+# pylint: disable=too-few-public-methods
+# pylint: disable=no-self-use
 from __future__ import annotations
 
 import pytest
