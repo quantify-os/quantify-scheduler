@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Tuple
+
 import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
