@@ -7,11 +7,15 @@ from typing import Any, Dict, Optional
 
 from quantify_scheduler.backends.qblox import compiler_abc, compiler_container
 from quantify_scheduler.backends.qblox.constants import (
-    NUMBER_OF_SEQUENCERS_QCM, NUMBER_OF_SEQUENCERS_QRM)
-from quantify_scheduler.backends.types.qblox import (BoundedParameter,
-                                                     LOSettings,
-                                                     MarkerConfiguration,
-                                                     StaticHardwareProperties)
+    NUMBER_OF_SEQUENCERS_QCM,
+    NUMBER_OF_SEQUENCERS_QRM,
+)
+from quantify_scheduler.backends.types.qblox import (
+    BoundedParameter,
+    LOSettings,
+    MarkerConfiguration,
+    StaticHardwareProperties,
+)
 
 
 class LocalOscillator(compiler_abc.InstrumentCompiler):

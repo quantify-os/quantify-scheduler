@@ -33,10 +33,10 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`. It does this by:
+    :attr:`~.ScheduleBase.timing_constraints`. It does this by:
 
         1. iterating over all and elements in the
-            :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
+            :attr:`~.ScheduleBase.timing_constraints`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -372,8 +372,9 @@ def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
 ) -> CompiledSchedule:
     """
-    Compile and assemble a :class:`~.Schedule` into a :class:`~.CompiledSchedule`
-    ready for execution using the :class:`~.InstrumentCoordinator`.
+    Compile and assemble a :class:`~.types.Schedule` into a
+    :class:`~.types.CompiledSchedule` ready for execution using the
+    :class:`~.InstrumentCoordinator`.
 
     Parameters
     ----------

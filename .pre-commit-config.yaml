@@ -1,12 +1,21 @@
 repos:
   - repo: local  # set up all as local to manage packages with pip in Docker
     hooks:
+      # NB to ignore git hook when for a specific commit/push:
+      # git commit ... --no-verify
+      # git push ... --no-verify
+
+      # NB if `requirements_dev.txt` are installed in a virtual env, then
+      # the git commit/push must be executed in the same env (applies to IDEs as well!)
+
       # ################################################################################
       # Static analysis before committing
       # ################################################################################
 
       # To install these hooks run:
       # pre-commit install --hook-type pre-commit
+      # To execute them manually run:
+      # pre-commit run --all-files --hook-stage commit
 
       # pip install pre-commit-hooks  # provides the utilities below
 
@@ -87,6 +96,8 @@ repos:
 
       # To install this hook run:
       # pre-commit install --hook-type pre-push
+      # To execute it manually run:
+      # pre-commit run --hook-stage push
 
       - id: pytest
         name: Run tests

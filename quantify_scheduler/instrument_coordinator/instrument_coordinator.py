@@ -3,8 +3,7 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
-
+from typing import Any, Dict, Tuple
 import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
@@ -22,14 +21,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     The :class:`~.InstrumentCoordinator` has two main functionalities exposed to the
     user, the ability to configure its
-    :mod:`~quantify_scheduler.instrument_coordinator.components`
-    representing physical instruments,  and the ability to execute experiments.
+    :mod:`~.instrument_coordinator.components`
+    representing physical instruments, and the ability to execute experiments.
 
 
     .. admonition:: Executing a schedule using the instrument coordinator
         :class: dropdown
 
-        To execute a :class:`~quantify_scheduler.types.Schedule` , one needs to first
+        To execute a :class:`~.Schedule` , one needs to first
         compile a schedule and then configure all the instrument coordinator components
         using :meth:`~.InstrumentCoordinator.prepare`.
         After starting the experiment, the results can be retrieved using
@@ -62,15 +61,11 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     """  # pylint: disable=line-too-long
 
-    # see https://stackoverflow.com/questions/22096187/ \
-    # how-to-make-sphinx-respect-importing-classes-into-package-with-init-py
-    __module__ = "quantify_scheduler.instrument_coordinator"
-
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.add_parameter(
             "components",
-            initial_value=list(),
+            initial_value=[],
             parameter_class=parameter.ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all components that"
@@ -86,9 +81,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             docstring="The timeout used for waiting for the experiment to complete "
             "when retrieving acquisitions.",
         )
-
         self._last_schedule = None
 
+    @property
     def last_schedule(self) -> CompiledSchedule:
         """
         Returns the last schedule used to prepare the instrument coordinator.
@@ -97,7 +92,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         """
         if self._last_schedule is None:
             raise ValueError(
-                "No CompiledSchedule was handled by the instrument "
+                f"No {CompiledSchedule.__name__} was handled by the instrument "
                 "coordinator. Try calling the .prepare() method with a Schedule."
             )
         return self._last_schedule
@@ -105,12 +100,12 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     @property
     def is_running(self) -> bool:
         """
-        Returns if any of the InstrumentCoordinator components is running.
+        Returns if any of the :class:`.InstrumentCoordinator` components is running.
 
         Returns
         -------
         :
-            The InstrumentCoordinator's running state.
+            The :class:`.InstrumentCoordinator`'s running state.
         """
         return any(
             self.find_instrument(c_name).is_running is True
@@ -134,7 +129,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         Raises
         ------
         KeyError
-            If key `name` is not present in `self.components`.
+            If key ``name`` is not present in ``self.components``.
         """
         if name in self.components():
             return self.find_instrument(name)
@@ -206,10 +201,12 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             If the compiled schedule contains instructions for a component
             absent in the instrument coordinator.
         TypeError
-            If the schedule provided is not a valid ``CompiledSchedule``.
+            If the schedule provided is not a valid :class:`.CompiledSchedule`.
         """
         if not CompiledSchedule.is_valid(compiled_schedule):
-            raise TypeError(f"{compiled_schedule} is not a valid CompiledSchedule")
+            raise TypeError(
+                f"{compiled_schedule} is not a valid {CompiledSchedule.__name__}"
+            )
 
         # Adds a reference to the last prepared schedule this can be accessed through
         # the self.last_schedule property.
@@ -253,14 +250,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data per component.
         """
-        # FIXME: update the description of the return type of the instrument
-        # coordinator # pylint: disable=fixme
+        # pylint: disable=fixme
+        # FIXME: update the description of the return type of the instrument coordinator
 
         self.wait_done(timeout_sec=self.timeout())
 
         # Temporary. Will probably be replaced by an xarray object
         # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-        acquisitions: Dict[Tuple[int, int], Any] = dict()
+        acquisitions: Dict[Tuple[int, int], Any] = {}
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
             acqs = instrument.retrieve_acquisition()
@@ -287,7 +284,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
 
 def _convert_acquisition_data_format(raw_results):
-    acquisition_dict = dict()
+    acquisition_dict = {}
     for (channel, i) in raw_results.keys():
         if channel not in acquisition_dict.keys():
             acquisition_dict[channel] = []
@@ -300,12 +297,10 @@ def _convert_acquisition_data_format(raw_results):
 
 class ZIInstrumentCoordinator(InstrumentCoordinator):
     """
-    This class is a hack and extension to the InstrumentCoordinator, which is
+    This class is a hack and extension to the :class:`.InstrumentCoordinator`, which is
     introduced to support the quirks when using the ZI backend
     during the acquisition of results.
     """
-
-    __module__ = "quantify_scheduler.instrument_coordinator"
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
@@ -358,8 +353,8 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
         :
             The acquisition data per component.
         """
-        # FIXME: update the description of the return type of the instrument
-        # coordinator # pylint: disable=fixme
+        # pylint: disable=fixme
+        # FIXME: update the description of the return type of the instrument coordinator
 
         raw_acq_results = super().retrieve_acquisition()
         if self.timeout_reacquire():

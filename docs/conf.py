@@ -50,6 +50,7 @@ extensions = [
     "sphinx_togglebutton",
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
+    # however the smart_resolver seems to fail for external packages like `zhinst`
     "scanpydoc.elegant_typehints",
     "sphinxcontrib.bibtex",
 ]
@@ -218,9 +219,19 @@ texinfo_documents = [
 # avoid duplicate label warning even when manual label has been used
 suppress_warnings = ["autosectionlabel.*"]
 
+# avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
+# display in docs (very ugly when overflowing the html page width)
+# NB the side bar and the link of these objects already includes the full path
+add_module_names = False
 
-# used by scanpydoc.elegant_typehints to correctly link to external docs
+# Used by scanpydoc.elegant_typehints to correctly link to references to python objects
+# that have a mismatch between the python modules real location vs how they are imported
+# and documented. These overrides are necessary to fix "reference target not found" when
+# these classes are used as type annotations.
+# NB Use this only for external packages. Do not do this in quantify and cause problems
+# to internal and external developers.
 qualname_overrides = {
+    # "<true path to module>" : "<API path>"
     "matplotlib.axes._axes.Axes": "matplotlib.axes.Axes",
     "zhinst.qcodes.uhfqa.UHFQA": "zhinst.qcodes.UHFQA",
     "zhinst.qcodes.hdawg.HDAWG": "zhinst.qcodes.HDAWG",
@@ -230,13 +241,16 @@ numfig = True
 
 autodoc_default_options = {
     "member-order": "groupwise",
+    # Ignore any __all__ that might be added accidentally by inexperienced developers
+    # This is done to avoid nasty complications with sphinx and its extensions and
+    # plenty of "reference target not found" warnings.
+    # See also qualname_overrides above, which has to be used for external packages.
+    "ignore-module-all": True,
 }
 
 # For debugging the CI just add `or True` on the line below
 if os.environ.get("GITLAB_CI", "false") == "true":
-    print(
-        "\n[INFO] Building docs with private-members...\n[INFO] See `conf.py` for details.\n"
-    )
+    print("\n[INFO] Building docs with private-members... See `conf.py` for details.\n")
     # for local build and CI force documentation to build for private members
     # this make sure the docstrings of private members are also correctly formatted, etc
     autodoc_default_options["private-members"] = True
@@ -279,11 +293,11 @@ import qcodes
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 
 
-# Enable nitpicky mode - which ensures that all references in the docs
-# resolve.
+# Enable nitpicky mode - warns about all references where the target cannot be found
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
 
-nitpicky = True
-nitpick_ignore = []
+nitpicky = True  # equivalent to `-n` option in the docs Makefile
+nitpick_ignore = []  # Tuple[str, str], ignore certain warnings
 
 with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
     for line in nitpick_exceptions:

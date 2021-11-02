@@ -6,6 +6,17 @@ Unreleased
 ----------
 
 * Visualization - resolved a bug where a schedule was modified when drawing a circuit diagram (#197, !250)
+* Visualization - made matplotlib schedule visualization methods accessible as methods `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` of the `Schedule` class (!253)
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+* InstrumentCoordinator - `last_schedule` is now a property (!252).
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Docs - Enhance documentation of public API for reeimported modules [imports aliases] (!254)
 
 0.5.0 Expanded feature sets hardware compilation backends (2021-10-25)
 ----------------------------------------------------------------------

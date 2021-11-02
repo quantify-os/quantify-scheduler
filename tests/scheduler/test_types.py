@@ -7,9 +7,11 @@ import json
 
 import numpy as np
 import pytest
+from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import CompiledSchedule, Operation, Schedule
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gate_library import (
     CNOT,
     CZ,
@@ -24,6 +26,7 @@ from quantify_scheduler.gate_library import (
 from quantify_scheduler.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture(scope="module", autouse=False)
@@ -256,3 +259,24 @@ def test_compiled_t1_sched_valid(t1_schedule):
 
     assert Schedule.is_valid(test_schedule)
     assert CompiledSchedule.is_valid(test_schedule)
+
+
+def test_t1_sched_circuit_diagram(t1_schedule):
+    """
+    Tests that the test schedule can be visualized
+    """
+    # will only test that a figure is created and runs without errors
+    _ = t1_schedule.plot_circuit_diagram_mpl()
+
+
+def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
+    """
+    Tests that the test schedule can be visualized
+    """
+
+    set_datadir(tmp_test_data_dir)
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
+
+    # will only test that a figure is created and runs without errors
+    _ = comp_sched.plot_pulse_diagram_mpl()
