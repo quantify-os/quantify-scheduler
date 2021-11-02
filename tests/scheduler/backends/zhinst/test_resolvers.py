@@ -7,7 +7,9 @@ import numpy as np
 
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst.resolvers import (
-    monitor_acquisition_resolver, result_acquisition_resolver)
+    monitor_acquisition_resolver,
+    result_acquisition_resolver,
+)
 
 
 def test_monitor_acquisition_resolver(mocker):
