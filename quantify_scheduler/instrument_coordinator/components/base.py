@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Any, Dict
-from qcodes.instrument import parameter
-from qcodes.instrument import base
+
+from qcodes.instrument import base, parameter
 from qcodes.utils import validators
 
 

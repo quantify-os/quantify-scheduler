@@ -6,6 +6,7 @@ from unittest import TestCase
 
 import numpy as np
 import pytest
+
 from quantify_scheduler import Operation
 from quantify_scheduler.gate_library import (
     CNOT,

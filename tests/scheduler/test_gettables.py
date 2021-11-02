@@ -6,21 +6,23 @@
 # pylint: disable=invalid-name
 
 from collections import namedtuple
-from typing import Dict, Tuple, Any
+from typing import Any, Dict, Tuple
+
 import numpy as np
 from qcodes.instrument.parameter import ManualParameter
+
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.schedules.timedomain_schedules import (
-    allxy_sched,
-    readout_calibration_sched,
-)
-from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
-from quantify_scheduler.schedules.trace_schedules import trace_schedule
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettableSingleChannel
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
+from quantify_scheduler.schedules.timedomain_schedules import (
+    allxy_sched,
+    readout_calibration_sched,
+)
+from quantify_scheduler.schedules.trace_schedules import trace_schedule
 from quantify_scheduler.types import AcquisitionMetadata
 
 # this is taken from the qblox backend and is used to make the tuple indexing of

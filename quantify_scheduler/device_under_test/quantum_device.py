@@ -4,12 +4,10 @@
 Module containing the QuantumDevice object.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from qcodes.instrument.base import Instrument
-from qcodes.instrument.parameter import (
-    ManualParameter,
-    InstrumentRefParameter,
-)
+from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
 

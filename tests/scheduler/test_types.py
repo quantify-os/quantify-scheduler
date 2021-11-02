@@ -7,7 +7,8 @@ import json
 
 import numpy as np
 import pytest
-from quantify_scheduler import Operation, Schedule, CompiledSchedule
+
+from quantify_scheduler import CompiledSchedule, Operation, Schedule
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.gate_library import (
     CNOT,

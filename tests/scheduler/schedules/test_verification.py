@@ -3,17 +3,17 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_array_equal
 from quantify_core.data.handling import set_datadir
 
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,
     awg_staircase_sched,
 )
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
-from quantify_scheduler.compilation import qcompile
 
 
 @pytest.fixture(scope="module", autouse=False)

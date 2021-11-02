@@ -4,6 +4,7 @@
 from textwrap import dedent
 
 import pytest
+
 from quantify_scheduler.backends.types.zhinst import DeviceType
 from quantify_scheduler.backends.zhinst.seqc_il_generator import (
     SEQC_INSTR_CLOCKS,

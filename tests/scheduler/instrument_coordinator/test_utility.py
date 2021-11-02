@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import pytest
-
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import ManualParameter
 

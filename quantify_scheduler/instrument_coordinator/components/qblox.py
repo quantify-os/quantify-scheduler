@@ -3,29 +3,28 @@
 """Module containing Qblox InstrumentCoordinator Components."""
 from __future__ import annotations
 
-import dataclasses
-from typing import Any, Dict, Optional, Tuple, Callable, Union, Type, List
-from collections import namedtuple
-
-import logging
-
 import copy
+import dataclasses
+import logging
 from abc import abstractmethod
+from collections import namedtuple
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
 from qcodes.instrument.base import Instrument
-from quantify_scheduler.instrument_coordinator.utility import lazy_set
-from quantify_scheduler.instrument_coordinator.components import base
+
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
-    PulsarSettings,
     PulsarRFSettings,
+    PulsarSettings,
     SequencerSettings,
 )
+from quantify_scheduler.instrument_coordinator.components import base
+from quantify_scheduler.instrument_coordinator.utility import lazy_set
 from quantify_scheduler.types import AcquisitionMetadata
-from quantify_scheduler.backends.qblox import constants
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

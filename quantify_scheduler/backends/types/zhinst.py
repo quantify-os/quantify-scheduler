@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import numpy as np
 from dataclasses_json import DataClassJsonMixin
+
 from quantify_scheduler import enums
 from quantify_scheduler.backends.types import common
 

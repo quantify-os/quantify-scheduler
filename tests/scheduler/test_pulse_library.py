@@ -5,6 +5,7 @@
 from unittest import TestCase
 
 import pytest
+
 from quantify_scheduler import Operation
 from quantify_scheduler.gate_library import X90
 from quantify_scheduler.pulse_library import (
@@ -16,7 +17,6 @@ from quantify_scheduler.pulse_library import (
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
 )
-
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
 

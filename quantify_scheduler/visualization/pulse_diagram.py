@@ -5,20 +5,20 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Callable, Dict, List, Optional, Tuple
 
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from quantify_core.utilities.general import import_func_from_string
 from typing_extensions import Literal
 
+from quantify_scheduler.pulse_library import Operation, WindowOperation
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.waveforms import modulate_wave
-from quantify_scheduler.pulse_library import Operation, WindowOperation
 
 logger = logging.getLogger(__name__)
 

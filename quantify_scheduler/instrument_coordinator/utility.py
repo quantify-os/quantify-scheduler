@@ -2,9 +2,8 @@
 # Licensed according to the LICENCE file on the master branch
 """Utility functions for the instrument coordinator and components."""
 
-from typing import Any
-
 import logging
+from typing import Any
 
 from qcodes.instrument.base import InstrumentBase
 

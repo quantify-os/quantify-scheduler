@@ -3,27 +3,25 @@
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
-import logging
+import ast
 import inspect
 import json
-import ast
+import logging
 from abc import ABC
 from collections import UserDict
-from dataclasses import dataclass
 from copy import deepcopy
-from pydoc import locate
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Type, TYPE_CHECKING
+from pydoc import locate
+from typing import TYPE_CHECKING, Any, Dict, List, Type
 from uuid import uuid4
 
 import numpy as np
-from typing_extensions import Literal
 from quantify_core.utilities import general
-from quantify_scheduler import json_utils
-from quantify_scheduler.json_utils import JSONSchemaValMixin
-from quantify_scheduler import resources
-from quantify_scheduler import enums
+from typing_extensions import Literal
 
+from quantify_scheduler import enums, json_utils, resources
+from quantify_scheduler.json_utils import JSONSchemaValMixin
 
 if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource

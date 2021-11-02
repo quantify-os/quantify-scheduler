@@ -2,17 +2,18 @@
 # Licensed according to the LICENCE file on the master branch
 """Settings builder for Zurich Instruments."""
 from __future__ import annotations
-from functools import partial
 
+import dataclasses
 import itertools
 import json
-import dataclasses
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union, cast
 
 import numpy as np
-from zhinst.qcodes import base
 from quantify_core.utilities.general import make_hash
+from zhinst.qcodes import base
+
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 

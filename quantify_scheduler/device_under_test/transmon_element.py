@@ -1,11 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-from typing import Dict, Any
+from typing import Any, Dict
+
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import (
+    InstrumentRefParameter,
     ManualParameter,
     Parameter,
-    InstrumentRefParameter,
 )
 from qcodes.utils import validators
 

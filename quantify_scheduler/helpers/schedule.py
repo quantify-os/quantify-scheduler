@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from quantify_core.utilities import general
+
 from quantify_scheduler import types
 from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
+from quantify_scheduler.types import AcquisitionMetadata, ScheduleBase
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox

@@ -13,14 +13,15 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 import pytest
+
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
+    qcompile,
 )
-from quantify_scheduler.gate_library import X, X90, Measure, Reset
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.gate_library import X90, Measure, Reset, X
 from quantify_scheduler.schemas.examples import utils
+from quantify_scheduler.types import Schedule
 
 # load here to avoid loading every time a fixture is used
 DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")

@@ -2,17 +2,18 @@
 # Licensed according to the LICENCE file on the master branch
 """Plotting functions used in the visualization backend of the sequencer."""
 from __future__ import annotations
-from typing import Tuple, Union, List, Dict, Optional
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
-from copy import deepcopy
 
+from copy import deepcopy
+from typing import Dict, List, Optional, Tuple, Union
+
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from quantify_core.utilities.general import import_func_from_string
 
-from quantify_scheduler.visualization import constants
 import quantify_scheduler.visualization.pulse_scheme as ps
-from quantify_scheduler.types import Schedule
 from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.types import Schedule
+from quantify_scheduler.visualization import constants
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):

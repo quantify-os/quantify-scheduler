@@ -7,9 +7,9 @@ import pytest
 
 from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.types import Schedule
 from quantify_scheduler.visualization.pulse_diagram import sample_schedule
-from quantify_scheduler.resources import BasebandClockResource
 
 
 def test_sample_schedule() -> None:

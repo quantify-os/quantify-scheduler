@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Utility class for dynamically allocating registers for Qblox sequencers."""
 from typing import Set
+
 from quantify_scheduler.backends.qblox import constants
 
 
