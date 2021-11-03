@@ -5,6 +5,8 @@ Module containing schedules for common spectroscopy experiments.
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from quantify_scheduler.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
@@ -41,7 +43,7 @@ def heterodyne_spec_sched(
     integration_time
         integration time of the data acquisition in seconds.
     port
-        location on the device where the pulse should be applied.
+        Location on the device where the acquisition is performed.
     clock
         reference clock used to track the spectroscopy frequency.
     init_duration :
@@ -58,7 +60,7 @@ def heterodyne_spec_sched(
 
     if port_out is None:
         port_out = port
-        
+
     pulse = sched.add(
         SquarePulse(
             duration=pulse_duration,
