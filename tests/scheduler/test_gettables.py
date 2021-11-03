@@ -17,13 +17,13 @@ from quantify_scheduler.gettables import ScheduleGettableSingleChannel
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
-from quantify_scheduler.types import AcquisitionMetadata
 
 # this is taken from the qblox backend and is used to make the tuple indexing of
 # acquisitions more explicit. See also #179 of quantify-scheduler

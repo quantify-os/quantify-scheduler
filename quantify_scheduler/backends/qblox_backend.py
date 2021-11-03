@@ -8,10 +8,10 @@ from typing import Any, Dict, Tuple
 # pylint: disable=no-name-in-module
 from quantify_core.utilities.general import make_hash, without
 
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.pulse_library import WindowOperation
-from quantify_scheduler.types import Schedule
+from quantify_scheduler.operations.pulse_library import WindowOperation
 
 
 def generate_port_clock_to_device_map(

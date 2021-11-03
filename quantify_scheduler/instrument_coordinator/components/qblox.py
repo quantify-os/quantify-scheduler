@@ -24,7 +24,7 @@ from quantify_scheduler.backends.types.qblox import (
 )
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import lazy_set
-from quantify_scheduler.types import AcquisitionMetadata
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

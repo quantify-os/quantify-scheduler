@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional
 
 from qcodes import validators
 
+from quantify_scheduler import Operation
 from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
-from quantify_scheduler.types import Operation
 
 
 class IdlePulse(Operation):

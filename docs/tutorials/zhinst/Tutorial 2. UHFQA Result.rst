@@ -7,7 +7,7 @@ This tutorial describes how to use quantify-schedule to generate pulses and acqu
 also visualized in the Quantum Analyzer Result tab of LabOne, using the UHFQA's AWG.
 
 For this tutorial lets use :func:`~quantify_scheduler.schedules.spectroscopy_schedules.heterodyne_spec_sched` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.acquisition_library.SSBIntegrationComplex`
+pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.operations.acquisition_library.SSBIntegrationComplex`
 acquisition with pulses of a large fixed duration.
 
 Requirements

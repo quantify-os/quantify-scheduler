@@ -7,7 +7,7 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from quantify_scheduler import Schedule
+from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
@@ -15,10 +15,9 @@ from quantify_scheduler.compilation import (
     validate_config,
 )
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
-from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
-from quantify_scheduler.types import Operation
 
 
 def test_determine_absolute_timing_ideal_clock():

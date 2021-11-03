@@ -12,6 +12,16 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 
 * InstrumentCoordinator - `last_schedule` is now a property (!252).
+* Structure - We have refactored the Operation and Schedule classes out of the types module and moved the different operation libraries (acquisition_library, gate_library, and pulse_library) (#217, !256).
+    * `quantify_scheduler.types.Operation` -> `quantify_scheduler.operations.operation.Operation`, the import `quantify_scheduler.Operation` still works.
+    * `quantify_scheduler.types.Schedule` -> `quantify_scheduler.schedules.schedule.Schedule`, the import `quantify_scheduler.Schedule` still works.
+    * `quantify_scheduler.types.CompiledSchedule` -> `quantify_scheduler.schedules.schedule.CompiledSchedule`
+    * `quantify_scheduler.types.ScheduleBase` -> `quantify_scheduler.schedules.schedule.ScheduleBase`
+    * `quantify_scheduler.types.AcquisitionMetadata` -> `quantify_scheduler.schedules.schedule.AcquisitionMetadata`
+    * `quantify_scheduler.acquisition_library` -> `quantify_scheduler.operations.acquisition_library`
+    * `quantify_scheduler.gate_library` -> `quantify_scheduler.operations.gate_library`
+    * `quantify_scheduler.pulse_library` -> `quantify_scheduler.operations.pulse_library`
+
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

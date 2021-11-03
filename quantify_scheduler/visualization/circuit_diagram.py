@@ -14,7 +14,7 @@ import quantify_scheduler.visualization.pulse_scheme as ps
 from quantify_scheduler.visualization import constants
 
 if TYPE_CHECKING:
-    from quantify_scheduler.types import Schedule
+    from quantify_scheduler import Schedule
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):

@@ -15,10 +15,9 @@ else:
     Protocol = _Protocol
 
 import numpy as np
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 
-import quantify_scheduler.waveforms as waveforms
-from quantify_scheduler import math, types
+from quantify_scheduler import Schedule, math, waveforms
 from quantify_scheduler.helpers import schedule as schedule_helpers
 
 
@@ -182,7 +181,7 @@ def get_waveform(
 
 
 def get_waveform_by_pulseid(
-    schedule: types.Schedule,
+    schedule: Schedule,
 ) -> Dict[int, GetWaveformPartial]:
     """
     Returns a lookup dictionary of pulse_id and

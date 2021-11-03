@@ -19,14 +19,13 @@ from typing import Any, Callable, Dict, Tuple, Union
 import numpy as np
 from qcodes import Parameter
 
-from quantify_scheduler import types
+from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.types import Schedule
 
 
 # pylint: disable=too-many-instance-attributes
@@ -36,9 +35,10 @@ class ScheduleGettableSingleChannel:
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
     set to return either static (demodulated) I and Q values or magnitude and phase.
 
-    The gettable evaluates the parameters passed as ``schedule_kwargs``, then generates
-    the :class:`~.Schedule` using the ``schedule_function``, this is then compiled and
-    finally executed by the :class:`~.InstrumentCoordinator`.
+    The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
+    the :class:`quantify_scheduler.schedules.schedule.Schedule` using the
+    `schedule_function`, this is then compiled and finally executed by the
+    :class:`~.InstrumentCoordinator`.
     """  # pylint: disable=line-too-long
 
     # pylint: disable=too-many-arguments
@@ -46,7 +46,7 @@ class ScheduleGettableSingleChannel:
     def __init__(
         self,
         quantum_device: QuantumDevice,
-        schedule_function: Callable[..., types.Schedule],
+        schedule_function: Callable[..., Schedule],
         schedule_kwargs: Dict[str, Any],
         real_imag: bool = True,
         batched: bool = False,
@@ -63,7 +63,8 @@ class ScheduleGettableSingleChannel:
             The qcodes instrument representing the quantum device under test (DUT)
             containing quantum device properties and setup configuration information.
         schedule_function
-            A function which returns a :class:`~.Schedule`. The
+            A function which returns a
+            :class:`quantify_scheduler.schedules.schedule.Schedule`. The
             function is required to have the `repetitions` keyword argument.
         schedule_kwargs
             The schedule function keyword arguments, when a value in this dictionary is
@@ -81,9 +82,9 @@ class ScheduleGettableSingleChannel:
             mode. Can be used to split up a program in parts if required due to hardware
             constraints.
         always_initialize:
-            If True, then reinitialize the schedule on each invocation of `get`. If False,
-            then only initialize the first invocation of `get`.
-        """  # pylint: disable=line-too-long
+            If True, then reinitialize the schedule on each invocation of `get`. If
+            False, then only initialize the first invocation of `get`.
+        """
 
         self.always_initialize = always_initialize
         self.is_initialized = False

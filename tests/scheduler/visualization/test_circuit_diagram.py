@@ -1,9 +1,9 @@
 import pytest
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.gate_library import CNOT, Measure, Reset, Rxy
-from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import CNOT, Measure, Reset, Rxy
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 
