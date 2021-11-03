@@ -6,9 +6,9 @@ from quantify_scheduler.helpers import inspect
 
 def test_get_classes():
     # Arrange
-    from quantify_scheduler.operations import (
+    from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
         gate_library,
-    )  # pylint: disable=import-outside-toplevel
+    )
 
     # Act
     classes = inspect.get_classes(gate_library)
