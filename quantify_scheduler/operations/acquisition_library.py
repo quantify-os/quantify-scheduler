@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
+from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.types import Operation
 
 
 class Trace(Operation):

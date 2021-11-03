@@ -5,10 +5,10 @@ Module containing schedules for common spectroscopy experiments.
 """
 from __future__ import annotations
 
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.pulse_library import IdlePulse, SquarePulse
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.types import Schedule
 
 
 # pylint: disable=too-many-arguments

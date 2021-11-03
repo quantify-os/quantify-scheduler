@@ -8,7 +8,7 @@ from typing import Any, Dict, Union
 
 from quantify_core.utilities import general
 
-from quantify_scheduler import types
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
 from quantify_scheduler.helpers.schedule import get_total_duration
 
@@ -24,7 +24,7 @@ class CompilerContainer:
     It is recommended to construct this object using the `from_mapping` factory method.
     """
 
-    def __init__(self, schedule: types.Schedule):
+    def __init__(self, schedule: Schedule):
         """
         Constructor for the instrument container.
 
@@ -160,7 +160,7 @@ class CompilerContainer:
         self.instrument_compilers[name] = compiler
 
     @classmethod
-    def from_mapping(cls, schedule: types.Schedule, mapping: dict) -> CompilerContainer:
+    def from_mapping(cls, schedule: Schedule, mapping: dict) -> CompilerContainer:
         """
         Factory method for the CompilerContainer. This is the preferred way to use the
         CompilerContainer class.

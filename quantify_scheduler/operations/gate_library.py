@@ -8,7 +8,7 @@ import numpy as np
 
 from quantify_scheduler.enums import BinMode
 
-from .types import Operation
+from .operation import Operation
 
 
 # pylint: disable=too-many-ancestors
@@ -375,7 +375,7 @@ class Reset(Operation):
 
         .. jupyter-execute::
 
-            from quantify_scheduler.gate_library import Reset
+            from quantify_scheduler.operations.gate_library import Reset
 
             reset_1 = Reset("q0")
             reset_2 = Reset("q1", "q2")

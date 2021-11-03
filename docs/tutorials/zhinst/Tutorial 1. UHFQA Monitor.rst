@@ -7,7 +7,7 @@ This tutorial describes how to use :mod:`quantify_scheduler` to generate pulses 
 also visualized in the Quantum Analyzer Input tab of LabOne, using the UHFQA's AWG.
 
 For this tutorial lets use :func:`~quantify_scheduler.schedules.trace_schedules.trace_schedule` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.acquisition_library.Trace`
+pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.operations.acquisition_library.Trace`
 acquisition with pulses of a large fixed duration.
 
 Requirements
