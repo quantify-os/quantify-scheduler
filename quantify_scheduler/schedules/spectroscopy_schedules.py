@@ -49,7 +49,7 @@ def heterodyne_spec_sched(
     repetitions
         The amount of times the Schedule will be repeated.
     port_out:
-        Output port used. If None, then use `port` as name
+        Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
