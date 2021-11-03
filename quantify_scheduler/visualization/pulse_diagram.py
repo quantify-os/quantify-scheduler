@@ -17,11 +17,11 @@ from quantify_core.utilities.general import import_func_from_string
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
 
-import quantify_scheduler.pulse_library as pl
+import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
-    from quantify_scheduler import types
+    from quantify_scheduler import Operation, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def validate_pulse_info(pulse_info, port_map, t_constr, operation):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def pulse_diagram_plotly(
-    schedule: types.Schedule,
+    schedule: Schedule,
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,
@@ -245,7 +245,7 @@ def pulse_diagram_plotly(
 
 # pylint: disable=too-many-branches
 def sample_schedule(
-    schedule: types.Schedule,
+    schedule: Schedule,
     port_list: Optional[List[str]] = None,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
@@ -372,7 +372,7 @@ def sample_schedule(
 
 
 def pulse_diagram_matplotlib(
-    schedule: types.Schedule,
+    schedule: Schedule,
     port_list: Optional[List[str]] = None,
     sampling_rate: float = 1e9,
     modulation: Literal["off", "if", "clock"] = "off",
@@ -426,8 +426,8 @@ def pulse_diagram_matplotlib(
 
 
 def get_window_operations(
-    schedule: types.Schedule,
-) -> List[Tuple[float, float, types.Operation]]:
+    schedule: Schedule,
+) -> List[Tuple[float, float, Operation]]:
     r"""
     Return a list of all :class:`.WindowOperation`\s with start and end time.
 
@@ -454,7 +454,7 @@ def get_window_operations(
 
 
 def plot_window_operations(
-    schedule: types.Schedule,
+    schedule: Schedule,
     ax: Optional[matplotlib.axes.Axes] = None,
     time_scale_factor: float = 1,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:

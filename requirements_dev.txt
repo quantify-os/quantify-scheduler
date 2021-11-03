@@ -33,6 +33,8 @@ isort # sort python imports
 scanpydoc==0.6 # pinned because 0.7 is made for sphinx-autodoc-typehints==1.12.0 but sphinx-toolbox requires sphinx-autodoc-typehints==1.11.1
 docutils<0.17 # pinned due to issue #175 (quantify-core)
 rich[jupyter]
+jupytext
+
 
 # scheduler-only
 

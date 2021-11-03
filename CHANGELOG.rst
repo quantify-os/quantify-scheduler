@@ -12,6 +12,16 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 
 * InstrumentCoordinator - `last_schedule` is now a property (!252).
+* Structure - We have refactored the Operation and Schedule classes out of the types module and moved the different operation libraries (acquisition_library, gate_library, and pulse_library) (#217, !256).
+    * `quantify_scheduler.types.Operation` -> `quantify_scheduler.operations.operation.Operation`, the import `quantify_scheduler.Operation` still works.
+    * `quantify_scheduler.types.Schedule` -> `quantify_scheduler.schedules.schedule.Schedule`, the import `quantify_scheduler.Schedule` still works.
+    * `quantify_scheduler.types.CompiledSchedule` -> `quantify_scheduler.schedules.schedule.CompiledSchedule`
+    * `quantify_scheduler.types.ScheduleBase` -> `quantify_scheduler.schedules.schedule.ScheduleBase`
+    * `quantify_scheduler.types.AcquisitionMetadata` -> `quantify_scheduler.schedules.schedule.AcquisitionMetadata`
+    * `quantify_scheduler.acquisition_library` -> `quantify_scheduler.operations.acquisition_library`
+    * `quantify_scheduler.gate_library` -> `quantify_scheduler.operations.gate_library`
+    * `quantify_scheduler.pulse_library` -> `quantify_scheduler.operations.pulse_library`
+
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,6 +67,7 @@ Merged branches and closed issues
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
 * QuantumDevice - Added docstrings to the TransmonElement parameters (!216, !218)
+* Qblox ICCs - QCoDeS parameters are now only set if they differ from the value in the cache (!230)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
 * Other - Added method `sample_schedule` to sample a `Schedule` (!212)

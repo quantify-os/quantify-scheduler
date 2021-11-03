@@ -10,7 +10,7 @@ import quantify_scheduler.schemas.examples as es
 import quantify_scheduler.visualization.pulse_diagram as plsd
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.gate_library import Measure, Reset, Rxy
+from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy
 
 esp = inspect.getfile(es)
 cfg_f = Path(esp).parent / "transmon_test_config.json"

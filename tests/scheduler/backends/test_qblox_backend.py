@@ -24,7 +24,7 @@ from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
-from quantify_scheduler.acquisition_library import Trace
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -57,8 +57,9 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.gate_library import Measure, Reset, X
-from quantify_scheduler.pulse_library import (
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
@@ -69,7 +70,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-from quantify_scheduler.types import Schedule
 
 esp = inspect.getfile(es)
 

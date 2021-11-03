@@ -61,6 +61,12 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# We save the %script for Jupyter Notebooks used for jupyter sphinx conversion
+*.rst.ipynb
+# .rst files for tutorials are auto generated in the build process and therefore ignored
+docs/tutorials/*.rst
+
+
 # pyenv
 .python-version
 

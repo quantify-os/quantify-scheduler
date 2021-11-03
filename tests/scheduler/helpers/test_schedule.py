@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.gate_library import X90, Measure, Reset
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
@@ -22,8 +22,8 @@ from quantify_scheduler.helpers.schedule import (
     get_schedule_time_offset,
     get_total_duration,
 )
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
-from quantify_scheduler.types import Schedule
 
 
 def test_get_info_by_uuid_empty(empty_schedule: Schedule):
