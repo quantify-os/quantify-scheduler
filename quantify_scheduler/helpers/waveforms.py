@@ -472,6 +472,8 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
     """
     Calculates the area of a set of pulses.
 
+    For details of the calculation see `area_pulse`.
+
     Parameters
     ----------
     pulses
@@ -494,6 +496,9 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
     """
     Calculates the area of a set of pulses.
 
+    The area is exact for pulse durations that are integer multiples of the 1/`sampling_rate`.
+    For non-integer multiples, the area of the pulse is calculated, not the area of the sampled pulse
+
     Parameters
     ----------
     pulse
@@ -508,6 +513,11 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
         The area defined by the pulse
     """
     assert sampling_rate > 0
-    waveform: np.ndarray = get_waveform(pulse, sampling_rate)
+
     # Nice to have: Give the user the option to choose integration algorithm
-    return waveform.mean() * pulse["duration"]
+
+    if pulse["wf_func"] == "quantify_scheduler.waveforms.square":
+        return pulse["amp"] * pulse["duration"]
+    else:
+        waveform: np.ndarray = get_waveform(pulse, sampling_rate)
+        return waveform.mean() * pulse["duration"]
