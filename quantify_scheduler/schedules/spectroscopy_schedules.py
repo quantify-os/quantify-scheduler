@@ -22,7 +22,7 @@ def heterodyne_spec_sched(
     clock: str,
     init_duration: float = 10e-6,
     repetitions: int = 1,
-    port_out : Optional[str] = None,
+    port_out: Optional[str] = None,
 ) -> Schedule:
     """
     Generate a schedule for performing heterodyne spectroscopy.
