@@ -128,7 +128,7 @@ We configure this by adding the lines
     "dc_mixer_offset_I": -0.054,
     "dc_mixer_offset_Q": -0.034,
 
-to :code:`complex_output_0` (or :code:`complex_output_1`) in order to add a dc offset to the outputs to correct for feed-through of the local oscillator signal. And we add
+to :code:`complex_output_0` (or :code:`complex_output_1`) in order to add a DC offset to the outputs to correct for feed-through of the local oscillator signal. And we add
 
 .. code-block:: python
     :linenos:
@@ -292,7 +292,7 @@ The resulting config looks like:
 
     hardware_compile(test_sched, mapping_config)
 
-When using real outputs, the backend automatically maps the the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses not.
+When using real outputs, the backend automatically maps the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses not.
 
 .. warning::
 
@@ -317,7 +317,7 @@ When using real outputs, the backend automatically maps the the signals to the c
 Experimental features
 ^^^^^^^^^^^^^^^^^^^^^
 
-The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using more a complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
+The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using a more complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 
 In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the sequencer configuration.
 
