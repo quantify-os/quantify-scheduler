@@ -5,10 +5,12 @@ Module containing schedules for common spectroscopy experiments.
 """
 from __future__ import annotations
 
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.pulse_library import IdlePulse, SquarePulse
+from typing import Optional
+
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.types import Schedule
 
 
 # pylint: disable=too-many-arguments
@@ -22,6 +24,7 @@ def heterodyne_spec_sched(
     clock: str,
     init_duration: float = 10e-6,
     repetitions: int = 1,
+    port_out: Optional[str] = None,
 ) -> Schedule:
     """
     Generate a schedule for performing heterodyne spectroscopy.
@@ -40,24 +43,29 @@ def heterodyne_spec_sched(
     integration_time
         integration time of the data acquisition in seconds.
     port
-        location on the device where the pulse should be applied.
+        Location on the device where the acquisition is performed.
     clock
         reference clock used to track the spectroscopy frequency.
     init_duration :
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
+    port_out:
+        Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
 
     sched.add(IdlePulse(duration=init_duration), label="buffer")
 
+    if port_out is None:
+        port_out = port
+
     pulse = sched.add(
         SquarePulse(
             duration=pulse_duration,
             amp=pulse_amp,
-            port=port,
+            port=port_out,
             clock=clock,
         ),
         label="spec_pulse",

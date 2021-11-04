@@ -17,14 +17,14 @@ from quantify_core.data.handling import set_datadir
 from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
-from quantify_scheduler import enums, types
+from quantify_scheduler import Schedule, enums
 from quantify_scheduler.backends import zhinst_backend
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.gate_library import X90, Measure, Reset
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
@@ -263,9 +263,9 @@ def create_hdawg_mock(mocker):
 
 @pytest.fixture
 def make_schedule(create_schedule_with_pulse_info):
-    def _make_schedule() -> types.Schedule:
+    def _make_schedule() -> Schedule:
         q0 = "q0"
-        schedule = types.Schedule("test")
+        schedule = Schedule("test")
         schedule.add(Reset(q0))
         schedule.add(X90(q0))
         schedule.add(Measure(q0))
@@ -343,7 +343,7 @@ def test_compile_hardware_hdawg4_successfully(
 ) -> None:
     # Arrange
     (q0, q1) = ("q0", "q1")
-    schedule = types.Schedule("test")
+    schedule = Schedule("test")
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
@@ -558,7 +558,7 @@ def test__program_hdawg4_channelgrouping(
 ):
     # Arrange
     (q0, q1) = ("q0", "q1")
-    schedule = types.Schedule("test")
+    schedule = Schedule("test")
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
@@ -587,9 +587,9 @@ def test__program_hdawg4_channelgrouping(
 
 
 def test_validate_schedule(
-    empty_schedule: types.Schedule,
-    basic_schedule: types.Schedule,
-    schedule_with_pulse_info: types.Schedule,
+    empty_schedule: Schedule,
+    basic_schedule: Schedule,
+    schedule_with_pulse_info: Schedule,
 ):
     with pytest.raises(ValueError) as execinfo:
         zhinst_backend._validate_schedule(empty_schedule)
@@ -679,7 +679,7 @@ def test__flatten_dict():
 def test_get_wave_instruction(mocker, create_schedule_with_pulse_info):
     # Arrange
     q0 = "q0"
-    schedule = types.Schedule("test")
+    schedule = Schedule("test")
     schedule.add(X90(q0))
     schedule = create_schedule_with_pulse_info(schedule)
     schedule = schedule_helpers.CachedSchedule(schedule)
@@ -714,7 +714,7 @@ def test_get_wave_instruction_mode_is_calibrating(
 ):
     # Arrange
     q0 = "q0"
-    schedule = types.Schedule("test")
+    schedule = Schedule("test")
     schedule.add(X90(q0))
     schedule = create_schedule_with_pulse_info(schedule)
     schedule = schedule_helpers.CachedSchedule(schedule)
@@ -755,7 +755,7 @@ def test_get_wave_instruction_mode_is_calibrating(
 def test_get_measure_instruction(mocker, create_schedule_with_pulse_info):
     # Arrange
     q0 = "q0"
-    schedule = types.Schedule("test")
+    schedule = Schedule("test")
     schedule.add(Measure(q0))
     schedule = create_schedule_with_pulse_info(schedule)
     schedule = schedule_helpers.CachedSchedule(schedule)

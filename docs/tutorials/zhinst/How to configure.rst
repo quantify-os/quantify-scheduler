@@ -9,8 +9,8 @@ Triggers and Markers.
 
 Instruments can be configured by adding them to the :ref:`hardware configuration file<user-guide-example-zhinst-config>`.
 The configuration file contains parameters about the Instruments and properties required
-to map :class:`~quantify_scheduler.types.Operation`\s, which act on qubits, onto physical
-properties of the instrument.
+to map :class:`quantify_scheduler.operations.operation.Operation`\s, which act on
+qubits, onto physical properties of the instrument.
 
 
 The Zurich Instruments hardware configuration file is divided in two main sections.
