@@ -1279,8 +1279,9 @@ def _compile_for_uhfqa(
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
 
-    return settings_builder, ZIAcquisitionConfig(
-        n_acquisitions, acq_channel_resolvers_map
+    return (
+        settings_builder,
+        ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map),
     )
 
 
