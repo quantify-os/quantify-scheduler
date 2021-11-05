@@ -5,45 +5,42 @@
 from __future__ import annotations
 
 import json
-from os import path, makedirs
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
+from os import makedirs, path
 from typing import Optional, Dict, Any, Set, Tuple, List, Union, Callable
-from typing_extensions import Literal
 
 import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
+from quantify_core.data.handling import gen_tuid, get_datadir
+from typing_extensions import Literal
 
-from quantify_core.data.handling import (
-    get_datadir,
-    gen_tuid,
+from quantify_scheduler.backends.qblox import (
+    constants,
+    driver_version_check,
+    helpers,
+    non_generic,
+    q1asm_instructions,
+    register_manager,
 )
-
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox import non_generic
-from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox import register_manager
-from quantify_scheduler.backends.qblox import helpers
-from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-
 from quantify_scheduler.backends.types.qblox import (
-    OpInfo,
-    BaseModuleSettings,
-    PulsarSettings,
     BasebandModuleSettings,
+    BaseModuleSettings,
+    OpInfo,
     PulsarRFSettings,
+    PulsarSettings,
+    QASMRuntimeSettings,
     RFModuleSettings,
     SequencerSettings,
-    QASMRuntimeSettings,
     StaticHardwareProperties,
 )
-
-from quantify_scheduler.helpers.waveforms import normalize_waveform_data
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
+from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 
 class InstrumentCompiler(ABC):
@@ -1028,7 +1025,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             of the inner dictionaries of the overall hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping)
-        helpers.verify_qblox_instruments_version()
+        driver_version_check.verify_qblox_instruments_version()
 
         self.portclock_map = self._generate_portclock_to_seq_map()
         self.sequencers = self._construct_sequencers()
@@ -1252,13 +1249,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             param_name: str, cfg: Dict[str, Any]
         ) -> Optional[float]:
 
-            calculated_offset = cfg.get(param_name, None)  # Always in volts
-            if calculated_offset is None:
+            offset_in_config = cfg.get(param_name, None)  # Always in volts
+            if offset_in_config is None:
                 return None
 
+            conversion_factor = 1
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if voltage_range.units == "mV":
-                calculated_offset = calculated_offset * 1e-3
+                conversion_factor = 1e3
             elif voltage_range.units != "V":
                 raise RuntimeError(
                     f"Parameter {param_name} of {self.name} specifies "
@@ -1266,15 +1264,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     f"supported by the Qblox backend."
                 )
 
+            calculated_offset = offset_in_config * conversion_factor
             if (
                 calculated_offset < voltage_range.min_val
                 or calculated_offset > voltage_range.max_val
             ):
                 raise ValueError(
                     f"Attempting to set {param_name} of {self.name} to "
-                    f"{calculated_offset} {voltage_range.units}. {param_name} has to be"
-                    f" between {voltage_range.min_val} and {voltage_range.max_val} "
-                    f"{voltage_range.units}!"
+                    f"{offset_in_config} V. {param_name} has to be between "
+                    f"{voltage_range.min_val/ conversion_factor} and "
+                    f"{voltage_range.max_val/ conversion_factor} V!"
                 )
 
             return calculated_offset

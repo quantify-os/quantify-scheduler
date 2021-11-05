@@ -6,13 +6,15 @@
 # pylint: disable=redefined-outer-name
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
 from pathlib import Path
+from typing import Any, Dict, Tuple
 from unittest.mock import call
 
 import numpy as np
 import pytest
 from zhinst import qcodes
+
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (
@@ -20,7 +22,6 @@ from quantify_scheduler.backends.zhinst_backend import (
     ZIDeviceConfig,
 )
 from quantify_scheduler.instrument_coordinator.components import zhinst
-from quantify_scheduler.types import Schedule
 
 
 @pytest.fixture
@@ -54,6 +55,9 @@ def make_uhfqa(mocker):
         uhfqa.name = name
         uhfqa._serial = serial
         uhfqa.awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
+        # the quantum analyzer setup "qas"
+        uhfqa.qas = [None] * 1
+        uhfqa.qas[0] = mocker.create_autospec(None, instance=True)
 
         component = zhinst.UHFQAInstrumentCoordinatorComponent(uhfqa)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=uhfqa)

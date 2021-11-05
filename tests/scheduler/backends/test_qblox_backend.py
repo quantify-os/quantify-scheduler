@@ -7,72 +7,69 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
 import copy
-from typing import Dict, Any, Union
-
-import os
-import re
 import inspect
 import json
-import tempfile
+import os
+import re
 import shutil
-import pytest
-import numpy as np
+import tempfile
+from typing import Any, Dict
 
+import numpy as np
+import pytest
 from qcodes.instrument.base import Instrument
-from qblox_instruments import build
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.gate_library import Reset, Measure, X
-from quantify_scheduler.pulse_library import (
+import quantify_scheduler.schemas.examples as es
+from quantify_scheduler import Schedule
+from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.qblox import (
+    compiler_container,
+    constants,
+    q1asm_instructions,
+)
+from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.helpers import (
+    find_all_port_clock_combinations,
+    find_inner_dicts_containing_key,
+    generate_uuid_from_wf_data,
+    generate_waveform_data,
+    to_grid_time,
+)
+from quantify_scheduler.backends.qblox.instrument_compilers import (
+    QcmModule,
+    QcmRfModule,
+    QrmModule,
+    QrmRfModule,
+)
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    QASMRuntimeSettings,
+)
+from quantify_scheduler.compilation import (
+    determine_absolute_timing,
+    device_compile,
+    qcompile,
+)
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
     StaircasePulse,
 )
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
-from quantify_scheduler.resources import ClockResource, BasebandClockResource
-from quantify_scheduler.compilation import (
-    qcompile,
-    determine_absolute_timing,
-    device_compile,
-)
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox.helpers import (
-    generate_waveform_data,
-    find_inner_dicts_containing_key,
-    find_all_port_clock_combinations,
-    verify_qblox_instruments_version,
-    DriverVersionError,
-    to_grid_time,
-    generate_uuid_from_wf_data,
-)
-
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
-    readout_calibration_sched,
     allxy_sched,
+    readout_calibration_sched,
 )
-from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import (
-    QASMRuntimeSettings,
-    BasebandModuleSettings,
-)
-from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QcmModule,
-    QrmModule,
-    QcmRfModule,
-    QrmRfModule,
-)
-from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
-from quantify_scheduler.backends.qblox import constants
-
-import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
 
@@ -1150,30 +1147,6 @@ def test_from_mapping(pulse_only_schedule):
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
-
-
-def test_verify_qblox_instruments_version():
-    verify_qblox_instruments_version(build.__version__)
-
-    nonsense_version = "nonsense.driver.version"
-    with pytest.raises(DriverVersionError) as wrong_version:
-        verify_qblox_instruments_version(nonsense_version)
-    assert (
-        wrong_version.value.args[0]
-        == f"Qblox DriverVersionError: Installed driver version {nonsense_version} not "
-        f"supported by backend. Please install a supported version (currently "
-        f"supported: ('0.5.0', '0.5.1')) to continue to use this backend."
-    )
-
-    with pytest.raises(DriverVersionError) as none_error:
-        verify_qblox_instruments_version(None)
-
-    assert (
-        none_error.value.args[0]
-        == "Qblox DriverVersionError: qblox-instruments version check could not be "
-        "performed. Either the package is not installed correctly or a version < "
-        "0.3.2 was found."
-    )
 
 
 def test_generate_uuid_from_wf_data():

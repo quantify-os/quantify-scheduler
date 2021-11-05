@@ -2,19 +2,17 @@
 # Licensed according to the LICENCE file on the master branch
 """Module for handling special pulses that get special treatment in the backend."""
 
-from typing import Union, Tuple, Callable
+from typing import Callable, Tuple, Union
 
 import numpy as np
 
-from quantify_scheduler.resources import BasebandClockResource
-
+from quantify_scheduler.backends.qblox.constants import PULSE_STITCHING_DURATION
+from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.helpers.waveforms import (
     exec_waveform_function,
     normalize_waveform_data,
 )
-
-from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.backends.qblox.constants import PULSE_STITCHING_DURATION
+from quantify_scheduler.resources import BasebandClockResource
 
 
 def check_reserved_pulse_id(pulse: OpInfo) -> Union[str, None]:
@@ -77,9 +75,7 @@ def _check_square_pulse_stitching(pulse: OpInfo) -> bool:
         The pulse to check.
     """
     reserved_wf_func = "quantify_scheduler.waveforms.square"
-    if pulse.data["clock"] == BasebandClockResource.IDENTITY:
-        return pulse.data["wf_func"] == reserved_wf_func
-    return False
+    return pulse.data["wf_func"] == reserved_wf_func
 
 
 def _check_staircase(pulse: OpInfo) -> bool:

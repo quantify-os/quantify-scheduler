@@ -5,10 +5,12 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+
 from qcodes import validators
-from quantify_scheduler.types import Operation
-from quantify_scheduler.resources import BasebandClockResource
+
+from quantify_scheduler import Operation
 from quantify_scheduler.helpers.waveforms import area_pulses
+from quantify_scheduler.resources import BasebandClockResource
 
 
 class IdlePulse(Operation):
@@ -507,6 +509,11 @@ def create_dc_compensation_pulse(
     """
     Calculates a SquarePulse to counteract charging effects based on a list of pulses.
 
+    The compensation is calculated by summing the area of all pulses on the specified
+    port.
+    This gives a first order approximation for the pulse required to compensate the
+    charging. All modulated pulses ignored in the calculation.
+
     Parameters
     ----------
     pulses
@@ -518,14 +525,14 @@ def create_dc_compensation_pulse(
         Desired amplitude of the DCCompensationPulse.
         Leave to None to calculate the value for compensation,
         in this case you must assign a value to duration.
-        The sign of the amplitude is ignored and ajusted
+        The sign of the amplitude is ignored and adjusted
         automatically to perform the compensation.
     duration
         Desired pulse duration in seconds.
         Leave to None to calculate the value for compensation,
         in this case you must assign a value to amp.
         The sign of the value of amp given in the previous step
-        is ajusted to perform the compensation.
+        is adjusted to perform the compensation.
     port
         Port to perform the compensation. Any pulse that does not
         belong to the specified port is ignored.
@@ -545,8 +552,7 @@ def create_dc_compensation_pulse(
     -------
 
     :
-        Returns a SquarePulse object that compensates all pulses passed as
-        argument
+        Returns a SquarePulse object that compensates all pulses passed as argument.
     """
     # Make sure that the list contains at least one element
     assert len(pulses) > 0
@@ -588,7 +594,7 @@ def create_dc_compensation_pulse(
 
 def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
     # Collect all pulses for the given port
-    pulse_info_list: List[Dict[str, Any]] = list()
+    pulse_info_list: List[Dict[str, Any]] = []
 
     for pulse in pulses:
         for pulse_info in pulse["pulse_info"]:
@@ -598,10 +604,47 @@ def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
             ):
                 pulse_info_list.append(pulse_info)
 
-    if len(pulse_info_list) == 0:
-        raise ValueError(
-            "`DCCompensationPulse` needs at least one pulse with"
-            + "clock=BasebandClockResource.IDENTITY for the port {}".format(port)
-        )
-
     return pulse_info_list
+
+
+class WindowOperation(Operation):
+    """
+    The WindowOperation is an operation for visualization purposes.
+
+    The `WindowOperation` has a starting time and duration.
+    """
+
+    def __init__(
+        self,
+        window_name: str,
+        duration: float,
+        t0: float = 0.0,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Create a new instance of WindowOperation.
+
+        """
+        if data is None:
+            data = {
+                "name": "WindowOperation",
+                "pulse_info": [
+                    {
+                        "wf_func": None,
+                        "window_name": window_name,
+                        "duration": duration,
+                        "t0": t0,
+                        "port": None,
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    @property
+    def window_name(self) -> str:
+        """Return the window name of this operation"""
+        return self.data["pulse_info"][0]["window_name"]
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)

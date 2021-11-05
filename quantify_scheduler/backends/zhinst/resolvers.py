@@ -16,6 +16,9 @@ def monitor_acquisition_resolver(
     """
     Returns complex value of UHFQA Monitor nodes.
 
+    This acquisition resolver corresponds to measuring a time trace of the input on the
+    I channel (input 1) and Q channel (input 2).
+
     Parameters
     ----------
     uhfqa
@@ -27,13 +30,28 @@ def monitor_acquisition_resolver(
     return np.vectorize(complex)(results_i, results_q)
 
 
-def result_acquisition_resolver(uhfqa: qcodes.UHFQA, result_node: str) -> np.ndarray:
+def result_acquisition_resolver(
+    uhfqa: qcodes.UHFQA, result_nodes: Tuple[str, str]
+) -> np.ndarray:
     """
-    Returns complex value of UHFQA Result node.
+    Returns complex value of UHFQA Result nodes.
+
+    Note that it needs two nodes to return a complex valued result.
+    For optimal weights one can ignore the imaginary part.
 
     Parameters
     ----------
     uhfqa
-    result_node
+    result_nodes
     """
-    return zi_helpers.get_value(uhfqa, result_node)
+    vals_node0 = zi_helpers.get_value(uhfqa, result_nodes[0])
+    vals_node1 = zi_helpers.get_value(uhfqa, result_nodes[1])
+
+    # the ZI API keeps the contributions of both weight functions separate
+    # here we combine them so they correspond to the I and Q components.
+    vals_i = vals_node0.real + vals_node0.imag
+    vals_q = vals_node1.real + vals_node1.imag
+
+    results = vals_i + 1j * vals_q
+
+    return results

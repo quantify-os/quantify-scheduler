@@ -44,20 +44,22 @@ def test_monitor_acquisition_resolver(mocker):
 
 def test_result_acquisition_resolver(mocker):
     # Arrange
-    real_data = [1, 2, 3]
-    imag_data = [4, 5, 6]
+    real_data = np.array([1, 2, 3])
+    imag_data = np.array([4, 5, 6])
     get_mock = mocker.patch.object(
         zi_helpers,
         "get_value",
         return_value=np.vectorize(complex)(real_data, imag_data),
     )
     instrument = mocker.Mock()
-    result_node = "qas/0/result/data/0/wave"
+    result_nodes = ["qas/0/result/data/0/wave", "qas/0/result/data/1/wave"]
 
     # Act
-    complex_result = result_acquisition_resolver(instrument, result_node)
+    complex_result = result_acquisition_resolver(instrument, result_nodes)
 
     # Assert
-    get_mock.assert_called_with(instrument, result_node)
-    assert complex_result.real.tolist() == real_data
-    assert complex_result.imag.tolist() == imag_data
+    get_mock.assert_called_with(
+        instrument, result_nodes[1]
+    )  # can only check the last call
+    np.testing.assert_array_equal(complex_result.real, real_data + imag_data)
+    np.testing.assert_array_equal(complex_result.imag, real_data + imag_data)

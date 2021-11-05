@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 # pylint: disable=missing-function-docstring
 
-from quantify_scheduler import types
+from quantify_scheduler import Schedule
 from quantify_scheduler.schedules import trace_schedules
 
 
@@ -31,7 +31,7 @@ def test_trace_schedule():
     )
 
     # Assert
-    assert isinstance(schedule, types.Schedule)
+    assert isinstance(schedule, Schedule)
     assert schedule.name == "Raw trace acquisition"
     assert schedule.repetitions == repetitions
     assert schedule.resources["q0.ro"]["freq"] == clock_frequency
@@ -81,7 +81,7 @@ def test_two_tone_trace_schedule():
     )
 
     # Assert
-    assert isinstance(schedule, types.Schedule)
+    assert isinstance(schedule, Schedule)
     assert schedule.repetitions == repetitions
     assert schedule.name == "Two-tone Trace acquisition"
     assert schedule.resources["q0.01"]["freq"] == 6.02e9

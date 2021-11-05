@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import inspect
+from abc import ABC
 from functools import partial
 from typing import Any, Dict, List, Tuple
-from abc import ABC
 
 try:
     from typing import Protocol as _Protocol
@@ -15,12 +15,11 @@ else:
     Protocol = _Protocol
 
 import numpy as np
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 
-import quantify_scheduler.waveforms as waveforms
+from quantify_scheduler import Schedule, math, waveforms
 from quantify_scheduler.helpers import schedule as schedule_helpers
-from quantify_scheduler import math
-from quantify_scheduler import types
+
 
 # pylint: disable=too-few-public-methods
 class GetWaveformPartial(Protocol):  # typing.Protocol
@@ -182,7 +181,7 @@ def get_waveform(
 
 
 def get_waveform_by_pulseid(
-    schedule: types.Schedule,
+    schedule: Schedule,
 ) -> Dict[int, GetWaveformPartial]:
     """
     Returns a lookup dictionary of pulse_id and

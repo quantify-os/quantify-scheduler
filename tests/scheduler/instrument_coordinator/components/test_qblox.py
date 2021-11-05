@@ -11,14 +11,15 @@ import inspect
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
-
 import pytest
 from cluster import cluster
 from pulsar_qcm import pulsar_qcm
 from pulsar_qrm import pulsar_qrm
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
+
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator.components import qblox
@@ -66,6 +67,7 @@ def fixture_make_qcm(mocker):
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
+        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc._set_reference_source")
 
         qcm = pulsar_qcm.pulsar_qcm_dummy(name)
         qcm._serial = serial
@@ -95,6 +97,7 @@ def fixture_make_qrm(mocker):
         mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
         mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
         mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
+        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc._set_reference_source")
 
         qrm = pulsar_qrm.pulsar_qrm_dummy(name)
         qrm._serial = serial
@@ -276,6 +279,72 @@ def test_prepare(close_all_instruments, schedule_with_measurement, make_qcm, mak
     # Assert
     qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+
+
+PATH_TO_FORCE_SET: str = (
+    "quantify_scheduler.instrument_coordinator.components.qblox.force_set_parameters"
+)
+
+
+@patch(PATH_TO_FORCE_SET, True)
+def test_prepare_force_set(
+    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
+):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+
+    qcm.instrument.reference_source("internal")
+    qcm.instrument._set_reference_source.reset_mock()
+
+    qrm.instrument.reference_source("external")
+    qrm.instrument._set_reference_source.reset_mock()
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qcm.prepare(prog["qcm0"])
+        qrm.prepare(prog["qrm0"])
+
+    # Assert
+    qcm.instrument._set_reference_source.assert_called()
+    qrm.instrument._set_reference_source.assert_called()
+
+
+def test_prepare_lazy(
+    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
+):
+    # Arrange
+    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+
+    qcm.instrument.reference_source("internal")
+    qcm.instrument._set_reference_source.reset_mock()
+
+    qrm.instrument.reference_source("external")
+    qrm.instrument._set_reference_source.reset_mock()
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qcm.prepare(prog["qcm0"])
+        qrm.prepare(prog["qrm0"])
+
+    # Assert
+    qcm.instrument._set_reference_source.assert_not_called()
+    qrm.instrument._set_reference_source.assert_not_called()
 
 
 def test_prepare_rf(

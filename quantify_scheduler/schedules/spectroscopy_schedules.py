@@ -4,10 +4,12 @@
 Module containing schedules for common spectroscopy experiments.
 """
 from __future__ import annotations
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.pulse_library import SquarePulse, IdlePulse
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
+
 
 # pylint: disable=too-many-arguments
 def heterodyne_spec_sched(
@@ -18,7 +20,7 @@ def heterodyne_spec_sched(
     integration_time: float,
     port: str,
     clock: str,
-    init_duration: float = 200e-6,
+    init_duration: float = 10e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -94,7 +96,7 @@ def two_tone_spec_sched(
     ro_pulse_frequency: float,
     ro_acquisition_delay: float,
     ro_integration_time: float,
-    init_duration: float = 200e-6,
+    init_duration: float = 10e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """

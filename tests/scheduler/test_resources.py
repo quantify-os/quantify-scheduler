@@ -1,4 +1,4 @@
-from quantify_scheduler.resources import ClockResource, BasebandClockResource
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
 
 def test_ClockResource():

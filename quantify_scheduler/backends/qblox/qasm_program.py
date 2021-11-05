@@ -3,22 +3,22 @@
 # pylint: disable=comparison-with-callable
 """QASM program class for Qblox backend."""
 from __future__ import annotations
+
 from contextlib import contextmanager
-from typing import TYPE_CHECKING
-from typing import List, Union, Optional
+from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import (
-    q1asm_instructions,
     constants,
-    register_manager,
     helpers,
+    q1asm_instructions,
+    register_manager,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.enums import BinMode
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_abc
@@ -769,7 +769,7 @@ class QASMProgram:
         .. jupyter-execute::
 
             import inspect, json
-            from quantify_scheduler.types import Schedule
+            from quantify_scheduler import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
             from quantify_scheduler.schemas.examples import utils
             from quantify_scheduler.backends.qblox import (
