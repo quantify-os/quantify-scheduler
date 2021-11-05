@@ -25,7 +25,7 @@ def square_imaginary(
 
 
 def ramp(t, amp, offset=0) -> np.ndarray:
-    return np.linspace(offset, amp + offset, len(t))
+    return np.linspace(offset, amp + offset, len(t), endpoint=False)
 
 
 def staircase(
