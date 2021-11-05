@@ -10,10 +10,10 @@ Pulsar QCM/QRM
     # in the hidden cells we include some code that checks for correctness of the examples
     from tempfile import TemporaryDirectory
 
-    from quantify_scheduler import pulse_library
+    from quantify_scheduler.operations import pulse_library
     from quantify_scheduler.compilation import determine_absolute_timing
     from quantify_scheduler.backends.qblox_backend import hardware_compile
-    from quantify_scheduler.types import Schedule
+    from quantify_scheduler import Schedule
     from quantify_scheduler.resources import ClockResource
 
     from quantify_core.data.handling import set_datadir
