@@ -8,7 +8,7 @@ import json
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from os import makedirs, path
-from typing import Optional, Dict, Any, Set, Tuple, List, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 from pathvalidate import sanitize_filename

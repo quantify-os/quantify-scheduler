@@ -13,7 +13,7 @@ import os
 import re
 import shutil
 import tempfile
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy as np
 import pytest
@@ -57,7 +57,10 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    Trace,
+)
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
@@ -772,6 +775,8 @@ def test_looped_acquisition(dummy_pulsars):
             acq_info["num_times"] = num_times
             acq_info["buffer_time"] = buffer_time
             acq_info["integration_time"] = integration_time
+
+            LoopedPeriodicAcquisition._class_signature = None
 
         def __str__(self) -> str:
             acq_info = copy.deepcopy(self.data["acquisition_info"][0])
