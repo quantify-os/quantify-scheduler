@@ -9,8 +9,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 import numpy as np
 from quantify_core.utilities import general
 
-from quantify_scheduler import types
+from quantify_scheduler import Operation
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionMetadata,
+    CompiledSchedule,
+    ScheduleBase,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox
@@ -26,7 +31,7 @@ class CachedSchedule:
     _start_offset_in_seconds: Optional[float] = None
     _total_duration_in_seconds: Optional[float] = None
 
-    def __init__(self, schedule: types.CompiledSchedule):
+    def __init__(self, schedule: CompiledSchedule):
         self._schedule = schedule
 
         self._pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
@@ -37,7 +42,7 @@ class CachedSchedule:
         self._acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
     @property
-    def schedule(self) -> types.CompiledSchedule:
+    def schedule(self) -> CompiledSchedule:
         """
         Returns schedule.
         """
@@ -133,7 +138,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
     return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
 
 
-def get_total_duration(schedule: types.CompiledSchedule) -> float:
+def get_total_duration(schedule: CompiledSchedule) -> float:
     """
     Returns the total schedule duration in seconds.
 
@@ -170,7 +175,7 @@ def get_total_duration(schedule: types.CompiledSchedule) -> float:
 
 
 def get_operation_start(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -214,7 +219,7 @@ def get_operation_start(
 
 
 def get_operation_end(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -234,14 +239,14 @@ def get_operation_end(
         return 0.0
 
     t_constr = schedule.timing_constraints[timeslot_index]
-    operation: types.Operation = schedule.operations[t_constr["operation_repr"]]
+    operation: Operation = schedule.operations[t_constr["operation_repr"]]
     t0: float = t_constr["abs_time"]
 
     return t0 + operation.duration
 
 
 def get_port_timeline(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
 ) -> Dict[str, Dict[int, List[int]]]:
     """
     Returns a new dictionary containing the timeline of
@@ -307,7 +312,7 @@ def get_port_timeline(
 
 
 def get_schedule_time_offset(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
     port_timeline_dict: Dict[str, Dict[int, List[int]]],
 ) -> float:
     """
@@ -340,7 +345,7 @@ def get_schedule_time_offset(
 
 
 def get_pulse_info_by_uuid(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
 ) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of pulses with its
@@ -374,7 +379,7 @@ def get_pulse_info_by_uuid(
     return pulseid_pulseinfo_dict
 
 
-def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str, Any]]:
+def get_acq_info_by_uuid(schedule: CompiledSchedule) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of unique identifiers
     of acquisition information.
@@ -400,8 +405,8 @@ def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str
 
 
 def extract_acquisition_metadata_from_schedule(
-    schedule: types.ScheduleBase,
-) -> types.AcquisitionMetadata:
+    schedule: ScheduleBase,
+) -> AcquisitionMetadata:
     """
     Extracts acquisition metadata from a schedule.
 
@@ -453,7 +458,7 @@ def extract_acquisition_metadata_from_schedule(
 
 def _extract_acquisition_metadata_from_acquisition_protocols(
     acquisition_protocols: List[Dict[str, Any]],
-) -> types.AcquisitionMetadata:
+) -> AcquisitionMetadata:
     """
     Private function containing the logic of extract_acquisition_metadata_from_schedule.
     The logic is factored out as to work around limitations of the different interfaces
@@ -486,7 +491,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
         acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
     # combine the information in the acq metada dataclass.
-    acq_metadata = types.AcquisitionMetadata(
+    acq_metadata = AcquisitionMetadata(
         acq_protocol=protocol,
         bin_mode=bin_mode,
         acq_indices=acq_indices,
@@ -497,7 +502,7 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
 
 def _extract_acquisition_metadata_from_acquisitions(
     acquisitions: List[qblox.OpInfo],
-) -> types.AcquisitionMetadata:
+) -> AcquisitionMetadata:
     """
     Private variant of extract_acquisition_metadata_from_schedule explicitly for use
     with the qblox assembler backend.

@@ -7,8 +7,8 @@ from unittest import TestCase
 import pytest
 
 from quantify_scheduler import Operation
-from quantify_scheduler.gate_library import X90
-from quantify_scheduler.pulse_library import (
+from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
@@ -249,7 +249,7 @@ def test_dccompensation_pulse_amp() -> None:
     pulse2 = create_dc_compensation_pulse(
         duration=1e-8,
         pulses=[pulse0, pulse1],
-        sampling_rate=int(1e9),
+        sampling_rate=int(1e16),
         port="LP",
     )
     TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.5)

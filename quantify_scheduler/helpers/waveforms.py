@@ -15,10 +15,9 @@ else:
     Protocol = _Protocol
 
 import numpy as np
-import quantify_core.utilities.general as general
+from quantify_core.utilities import general
 
-import quantify_scheduler.waveforms as waveforms
-from quantify_scheduler import math, types
+from quantify_scheduler import Schedule, math, waveforms
 from quantify_scheduler.helpers import schedule as schedule_helpers
 
 
@@ -182,7 +181,7 @@ def get_waveform(
 
 
 def get_waveform_by_pulseid(
-    schedule: types.Schedule,
+    schedule: Schedule,
 ) -> Dict[int, GetWaveformPartial]:
     """
     Returns a lookup dictionary of pulse_id and
@@ -281,7 +280,12 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
         if fn_name == "square":
             waveform = waveforms.square(t=t, amp=pulse_info["amp"])
         elif fn_name == "ramp":
-            waveform = waveforms.ramp(t=t, amp=pulse_info["amp"])
+            if "offset" in pulse_info.keys():
+                waveform = waveforms.ramp(
+                    t=t, amp=pulse_info["amp"], offset=pulse_info["offset"]
+                )
+            else:
+                waveform = waveforms.ramp(t=t, amp=pulse_info["amp"])
         elif fn_name == "soft_square":
             waveform = waveforms.soft_square(t=t, amp=pulse_info["amp"])
         elif fn_name == "drag":

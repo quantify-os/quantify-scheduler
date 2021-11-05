@@ -737,7 +737,7 @@ class QASMProgram:
         .. jupyter-execute::
 
             import inspect, json
-            from quantify_scheduler.types import Schedule
+            from quantify_scheduler import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
             from quantify_scheduler.schemas.examples import utils
             from quantify_scheduler.backends.qblox import (

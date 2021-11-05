@@ -13,7 +13,7 @@ import numpy as np
 from quantify_core.utilities.general import make_hash
 from zhinst.toolkit.helpers import Waveform
 
-from quantify_scheduler import enums, types
+from quantify_scheduler import enums
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
@@ -21,6 +21,7 @@ from quantify_scheduler.backends.zhinst import settings as zi_settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.resources import Resource
+from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -128,7 +129,7 @@ def _parse_devices(data: Dict[str, Any]) -> List[zhinst.Device]:
     return device_list
 
 
-def _validate_schedule(schedule: types.CompiledSchedule) -> None:
+def _validate_schedule(schedule: CompiledSchedule) -> None:
     """
     Validates the CompiledSchedule required values for creating the backend.
 
@@ -549,13 +550,13 @@ class ZIDeviceConfig:
     """
 
     name: str
-    schedule: types.CompiledSchedule
+    schedule: CompiledSchedule
     settings_builder: zi_settings.ZISettingsBuilder
     acq_config: Optional[ZIAcquisitionConfig]
 
 
 def compile_backend(
-    schedule: types.CompiledSchedule, hardware_map: Dict[str, Any]
+    schedule: CompiledSchedule, hardware_map: Dict[str, Any]
 ) -> Dict[str, Union[ZIDeviceConfig, float]]:
 
     """
@@ -1278,8 +1279,9 @@ def _compile_for_uhfqa(
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
 
-    return settings_builder, ZIAcquisitionConfig(
-        n_acquisitions, acq_channel_resolvers_map
+    return (
+        settings_builder,
+        ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map),
     )
 
 

@@ -11,17 +11,19 @@ import jsonschema
 from quantify_core.utilities.general import load_json_schema
 from typing_extensions import Literal
 
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.pulse_library import (
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    Trace,
+)
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     SoftSquarePulse,
     SquarePulse,
-    WindowOperation,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.types import CompiledSchedule, Schedule
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -150,10 +152,10 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     The following gate type operations are supported by this compilation step.
 
-    - :class:`~quantify_scheduler.gate_library.Rxy`
-    - :class:`~quantify_scheduler.gate_library.Reset`
-    - :class:`~quantify_scheduler.gate_library.Measure`
-    - :class:`~quantify_scheduler.gate_library.CZ`
+    - :class:`~quantify_scheduler.operations.gate_library.Rxy`
+    - :class:`~quantify_scheduler.operations.gate_library.Reset`
+    - :class:`~quantify_scheduler.operations.gate_library.Measure`
+    - :class:`~quantify_scheduler.operations.gate_library.CZ`
 
 
     .. rubric:: Configuration specification
@@ -372,8 +374,8 @@ def qcompile(
     schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
 ) -> CompiledSchedule:
     """
-    Compile and assemble a :class:`~.types.Schedule` into a
-    :class:`~.types.CompiledSchedule` ready for execution using the
+    Compile and assemble a :class:`~.Schedule` into a
+    :class:`~.CompiledSchedule` ready for execution using the
     :class:`~.InstrumentCoordinator`.
 
     Parameters
@@ -406,7 +408,6 @@ def qcompile(
     schedule = deepcopy(schedule)
 
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     if hardware_mapping is not None:
         bck_name = hardware_mapping["backend"]
