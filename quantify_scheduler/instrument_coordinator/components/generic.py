@@ -1,32 +1,34 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-"""Module containing a LocalOscillator ControlStack Component."""
+"""Module containing a Generic InstrumentCoordinator Component."""
 from __future__ import annotations
 
 import logging
 from typing import Any, Generic, TypeVar
 
 from qcodes.instrument.base import Instrument
+
+import quantify_scheduler.instrument_coordinator.utility as util
 from quantify_scheduler.helpers import time
-from quantify_scheduler.controlstack.components import base
+from quantify_scheduler.instrument_coordinator.components import base
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")  # pylint: disable=invalid-name
 
 
-class LocalOscillatorControlStackComponent(  # pylint: disable=too-many-ancestors
-    Generic[T], base.ControlStackComponentBase
+class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancestors
+    Generic[T], base.InstrumentCoordinatorComponentBase
 ):
     """
-    A LocalOscillator class which can be used for interaction with the ControlStack.
+    A Generic class which can be used for interaction with the InstrumentCoordinator.
 
-    The LocalOscillatorControlStackComponent should be able to accept any type of
-    qcodes signal generator instrument.
+    The GenericInstrumentCoordinatorComponent should be able to accept any type of
+    qcodes instrument.
     """
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of LocalOscillatorControlStackComponent class."""
+        """Create a new instance of GenericInstrumentCoordinatorComponent class."""
         super().__init__(instrument, **kwargs)
 
     @property
