@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from qcodes.instrument.base import Instrument
 
@@ -14,11 +14,9 @@ from quantify_scheduler.instrument_coordinator.components import base
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")  # pylint: disable=invalid-name
-
 
 class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancestors
-    Generic[T], base.InstrumentCoordinatorComponentBase
+    base.InstrumentCoordinatorComponentBase
 ):
     """
     A Generic class which can be used for interaction with the InstrumentCoordinator.
@@ -32,12 +30,13 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         super().__init__(instrument, **kwargs)
 
     @property
-    def instrument(self) -> T is Instrument:
-        return super().instrument
-
-    @property
     def is_running(self) -> bool:
-        return False
+        """
+        The is_running state refers to a state whether an instrument is capable of
+        running in a program. Not to be confused with the on/off state of the
+        instrument.
+        """
+        return True
 
     def start(self) -> None:
         pass
@@ -46,17 +45,20 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         pass
 
     def prepare(
-        self, options: Dict[str, Any], force_set_parameters: bool = False
+        self, param_config: Dict[str, Any], force_set_parameters: bool = False
     ) -> None:
+        """
+        param_config has keys which should correspond to parameter names of the
+        instrument and the corresponding values to be set.
+        For example, param_config = {"frequency": 6e9, "power": 13, "status": True,}
+        """
         if force_set_parameters:
-            for key in options:
-                value_to_set = options.get(key)
-                self.instrument.set(param_name=key, value=value_to_set)
+            for key, value in param_config.items():
+                self.instrument.set(param_name=key, value=value)
         else:
-            for key in options:
-                value_to_set = options.get(key)
+            for key, value in param_config.items():
                 util.lazy_set(
-                    instrument=self.instrument, parameter_name=key, val=value_to_set
+                    instrument=self.instrument, parameter_name=key, val=value
                 )
 
     def retrieve_acquisition(self) -> Any:
