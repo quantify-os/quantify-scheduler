@@ -40,22 +40,17 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         return False
 
     def start(self) -> None:
-        self.instrument.on()
-        print(f"{self.name} ON")
-        time.sleep(2)
-        print(f"{self.name} ON after delay")
+        pass
 
     def stop(self) -> None:
-        self.instrument.off()
-        print(f"{self.name} OFF")
+        pass
 
     def prepare(self, options: Any) -> None:
-        self.instrument.reset()
-        print(f"{self.name} frequency={options}")
-        self.instrument.frequency(options)
+        pass
 
     def retrieve_acquisition(self) -> Any:
         pass
 
-    def wait_done(self, _: int = 10) -> None:
+    def wait_done(self, timeout_sec: int = 10) -> None:
+        _ = timeout_sec # Unused argument
         pass
