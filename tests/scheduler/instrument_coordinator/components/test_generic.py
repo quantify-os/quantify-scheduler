@@ -6,11 +6,9 @@
 from __future__ import annotations
 
 import json
-from textwrap import dedent
-from typing import Any, Dict, List
-from unittest.mock import ANY, call
+from typing import Any, Dict
+from unittest.mock import call
 
-import numpy as np
 import pytest
 from qcodes import Instrument, validators
 from qcodes.instrument.parameter import ManualParameter
@@ -80,15 +78,14 @@ def typical_zi_hardware_map() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def make_generic_qcodes_instruments(request, mocker):
-    class GenericQcodesInstrument(Instrument):
-        def __init__(self, name: str, address: str):
+def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
+    class GenericQcodesInstrument(Instrument):  # pylint: disable=too-few-public-methods
+        def __init__(self, name: str):
             """
             Create an instance of the Generic instrument.
 
             Args:
                 name: QCoDeS'name
-                address: used to connect to the instrument e.g., "COM3" or "dummy"
             """
             super().__init__(name)
             self._add_qcodes_parameters_dummy()
@@ -123,35 +120,44 @@ def make_generic_qcodes_instruments(request, mocker):
                 parameter_class=ManualParameter,
             )
 
-    lo_mw_q0 = GenericQcodesInstrument(name="lo_mw_q0", address="dev123")
-    lo_ro_q0 = GenericQcodesInstrument(name="lo_ro_q0", address="dev124")
-    lo_spec_q0 = GenericQcodesInstrument(name="lo_spec_q0", address="dev125")
+    lo_mw_q0 = GenericQcodesInstrument(name="lo_mw_q0")
+    lo_ro_q0 = GenericQcodesInstrument(name="lo_ro_q0")
+    lo_spec_q0 = GenericQcodesInstrument(name="lo_spec_q0")
+
+    ic_generic_components = GenericInstrumentCoordinatorComponent(
+        hardware_config=typical_zi_hardware_map
+    )
 
     def cleanup_instruments():
         lo_mw_q0.close()
         lo_ro_q0.close()
         lo_spec_q0.close()
+        ic_generic_components.close()
 
     request.addfinalizer(cleanup_instruments)
 
-    return {"lo_mw_q0": lo_mw_q0, "lo_ro_q0": lo_ro_q0, "lo_spec_q0": lo_spec_q0}
+    return {
+        "lo_mw_q0": lo_mw_q0,
+        "lo_ro_q0": lo_ro_q0,
+        "lo_spec_q0": lo_spec_q0,
+        "ic_generic_components": ic_generic_components,
+    }
 
 
-def test_initialize(make_generic_qcodes_instruments, typical_zi_hardware_map):
-    ic_component = GenericInstrumentCoordinatorComponent(
-        hardware_config=typical_zi_hardware_map
-    )
+def test_initialize(make_generic_qcodes_instruments):
+    test_instruments = make_generic_qcodes_instruments
+    ic_generic_components = test_instruments["ic_generic_components"]
+    assert ic_generic_components.name == "ic_generic_instruments"
 
 
-def test_generic_icc_prepare_lazy_set_expected(
-    mocker, make_generic_qcodes_instruments, typical_zi_hardware_map
+@pytest.mark.parametrize("force_set_parameters", [False, True])
+def test_generic_icc_prepare_expected(
+    make_generic_qcodes_instruments, force_set_parameters
 ):
     # Arrange
     test_instruments = make_generic_qcodes_instruments
 
-    ic_generic_components = GenericInstrumentCoordinatorComponent(
-        hardware_config=typical_zi_hardware_map
-    )
+    ic_generic_components = test_instruments["ic_generic_components"]
 
     # Test dictionary with the settings parameter for generic devices
     generic_device_params_dict = {
@@ -165,52 +171,13 @@ def test_generic_icc_prepare_lazy_set_expected(
     }
 
     # Assert initial condition
-    test_instruments["lo_mw_q0"].frequency() == 7e9
-
-    # Act
-    ic_generic_components.prepare(params_config=generic_device_params_dict)
-
-    expected_device_params_dict = generic_device_params_dict
-    expected_device_params_dict.update(
-        {"lo_spec_q0.frequency": None, "lo_spec_q0.power": None}
-    )
-
-    # Assert internal dictionary is the same as expected dictionary
-    assert ic_generic_components.current_params == expected_device_params_dict
-    # Assert the frequency set has been changed to expected frequency
-    assert (
-        test_instruments["lo_mw_q0"].frequency()
-        == expected_device_params_dict["lo_mw_q0.frequency"]
-    )
-
-
-def test_generic_icc_prepare_no_lazy_set_expected(
-    mocker, make_generic_qcodes_instruments, typical_zi_hardware_map
-):
-    # Arrange
-    test_instruments = make_generic_qcodes_instruments
-
-    ic_generic_components = GenericInstrumentCoordinatorComponent(
-        hardware_config=typical_zi_hardware_map
-    )
-
-    # Test dictionary with the settings parameter for generic devices
-    generic_device_params_dict = {
-        "lo_mw_q0.frequency": 6e9,
-        "lo_mw_q0.power": 13,
-        "lo_mw_q0.status": True,
-        "lo_ro_q0.frequency": 8.3e9,
-        "lo_ro_q0.power": 16,
-        "lo_ro_q0.status": True,
-        "lo_spec_q0.status": False,
-    }
-
-    # Assert initial condition
-    test_instruments["lo_mw_q0"].frequency() == 7e9
+    assert ic_generic_components.current_params["lo_mw_q0.frequency"] == 7e9
+    assert ic_generic_components.current_params["lo_spec_q0.frequency"] == None
 
     # Act
     ic_generic_components.prepare(
-        params_config=generic_device_params_dict, force_set_parameters=True
+        params_config=generic_device_params_dict,
+        force_set_parameters=force_set_parameters,
     )
 
     expected_device_params_dict = generic_device_params_dict
@@ -227,15 +194,11 @@ def test_generic_icc_prepare_no_lazy_set_expected(
     )
 
 
-def test_generic_icc_prepare_fail_no_device(
-    mocker, make_generic_qcodes_instruments, typical_zi_hardware_map
-):
+def test_generic_icc_prepare_fail_no_device(make_generic_qcodes_instruments):
     # Arrange
     test_instruments = make_generic_qcodes_instruments
 
-    ic_generic_components = GenericInstrumentCoordinatorComponent(
-        hardware_config=typical_zi_hardware_map
-    )
+    ic_generic_components = test_instruments["ic_generic_components"]
 
     # Test dictionary with the settings parameter for generic devices
     generic_device_params_dict = {

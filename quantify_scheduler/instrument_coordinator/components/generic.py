@@ -26,9 +26,10 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     # NB `_instances` also used by `Instrument` class
     _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
+    default_name = "generic_instruments"
 
     def __new__(
-        cls, hardware_config: Dict[str, Any], name: str = "generic_instruments"
+        cls, hardware_config: Dict[str, Any], name: str = default_name
     ) -> base.InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
@@ -41,8 +42,11 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         return instance
 
     def __init__(
-        self, hardware_config: Dict[str, Any], name: str = "generic_instruments"
+        self, hardware_config: Dict[str, Any], name: str = default_name
     ) -> None:
+
+        instrument = InstrumentBase(name=name)
+        super().__init__(instrument)
 
         """Create a new instance of GenericInstrumentCoordinatorComponent class."""
         generic_devices_in_hw_config = hardware_config.get("generic_devices")
@@ -51,9 +55,6 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         for device, params_dict in generic_devices_in_hw_config.items():
             for param, value in params_dict.items():
                 self.current_params_config[f"{device}.{param}"] = value
-
-    def close(self):
-        pass
 
     @property
     def current_params(self) -> Dict[str, Any]:
