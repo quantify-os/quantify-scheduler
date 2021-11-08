@@ -131,7 +131,7 @@ def make_generic_qcodes_instrument(mocker):
 
 
 def test_initialize(make_generic_qcodes_instrument):
-    component = make_generic_qcodes_instrument("lo_mw_q0", "dev1234")
+    component = make_generic_qcodes_instrument("lo_mw_q0_init", "dev1234")
     ic_component = GenericInstrumentCoordinatorComponent(component)
 
 
@@ -146,6 +146,9 @@ def test_generic_icc_prepare(
     ic_lo_mw_q0 = GenericInstrumentCoordinatorComponent(lo_mw_q0)
 
     generic_device_params_dict = typical_zi_hardware_map["generic_devices"]
+
+    # Assert initial condition
+    lo_mw_q0.frequency() == 1e7
 
     # Act
     ic_lo_mw_q0.prepare(params_config=generic_device_params_dict)
