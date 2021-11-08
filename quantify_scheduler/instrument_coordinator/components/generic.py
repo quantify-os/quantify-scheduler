@@ -45,8 +45,19 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     def stop(self) -> None:
         pass
 
-    def prepare(self, options: Any) -> None:
-        pass
+    def prepare(self, options: Dict[str, Any], force_set_parameters: bool = False
+    ) -> None:
+        if force_set_parameters:
+            for key in options:
+                value_to_set = options.get(key)
+                self.instrument.set(param_name=key,
+                    value=value_to_set)
+        else:
+            for key in options:
+                value_to_set = options.get(key)
+                util.lazy_set(instrument=self.instrument,
+                    parameter_name=key,
+                    val=value_to_set)
 
     def retrieve_acquisition(self) -> Any:
         pass
