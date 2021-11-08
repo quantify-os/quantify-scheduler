@@ -12,6 +12,8 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
+from qcodes import Instrument, validators
+from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
@@ -26,8 +28,8 @@ def typical_zi_hardware_map() -> Dict[str, Any]:
             "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
             "mode": "calibration",
             "generic_devices": {
-                     "lo_mw_q0": {"frequency": 7.5e9, "power": 16, "status": false},
-                     "lo_ro_q0": {"frequency": null, "power": 13, "status": false},
+                     "lo_mw_q0": {"frequency": 6e9, "power": 13, "status": true},
+                     "lo_ro_q0": {"frequency": 8.3e9, "power": 16, "status": true},
                      "lo_spec_q0": {"frequency": null, "power": null, "status": false}
                    },
             "devices": [
@@ -75,3 +77,80 @@ def typical_zi_hardware_map() -> Dict[str, Any]:
         }
         """
     )
+
+
+@pytest.fixture
+def make_generic_qcodes_instrument(mocker):
+    class GenericQcodesInstrument(Instrument):
+        def __init__(self, name: str, address: str):
+            """
+            Create an instance of the Generic instrument.
+
+            Args:
+                name: QCoDeS'name
+                address: used to connect to the instrument e.g., "COM3" or "dummy"
+            """
+            super().__init__(name)
+            self._add_qcodes_parameters_dummy()
+
+        def _add_qcodes_parameters_dummy(self):
+            """
+            Used for faking communications
+            """
+            self.add_parameter(
+                name="status",
+                initial_value=False,
+                vals=validators.Bool(),
+                docstring="turns the output on/off",
+                parameter_class=ManualParameter,
+            )
+            self.add_parameter(
+                name="frequency",
+                label="Frequency",
+                unit="Hz",
+                initial_value=10e6,
+                docstring="The RF Frequency in Hz",
+                vals=validators.Numbers(min_value=250e3, max_value=20e9),
+                parameter_class=ManualParameter,
+            )
+            self.add_parameter(
+                name="power",
+                label="Power",
+                unit="dBm",
+                initial_value=-60.0,
+                vals=validators.Numbers(min_value=-60.0, max_value=20.0),
+                docstring="Signal power in dBm",
+                parameter_class=ManualParameter,
+            )
+
+    def _make_generic_instrument(name, address):
+        generic_instrument = GenericQcodesInstrument(name=name, address=address)
+        return generic_instrument
+
+    yield _make_generic_instrument
+
+
+def test_initialize(make_generic_qcodes_instrument):
+    component = make_generic_qcodes_instrument("lo_mw_q0", "dev1234")
+    ic_component = GenericInstrumentCoordinatorComponent(component)
+
+
+def test_generic_icc_prepare(
+    mocker, make_generic_qcodes_instrument, typical_zi_hardware_map
+):
+    # Arrange
+    lo_mw_q0 = make_generic_qcodes_instrument("lo_mw_q0", "dev123")
+    lo_ro_q0 = make_generic_qcodes_instrument("lo_ro_q0", "dev124")
+    lo_spec_q0 = make_generic_qcodes_instrument("lo_spec_q0", "dev125")
+
+    ic_lo_mw_q0 = GenericInstrumentCoordinatorComponent(lo_mw_q0)
+
+    generic_device_params_dict = typical_zi_hardware_map["generic_devices"]
+
+    # Act
+    ic_lo_mw_q0.prepare(params_config=generic_device_params_dict)
+
+    # Assert
+    lo_mw_q0.frequency() == typical_zi_hardware_map["generic_devices"]["lo_mw_q0"][
+        "frequency"
+    ]

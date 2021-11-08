@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Dict
 
 from qcodes.instrument.base import Instrument
 
 import quantify_scheduler.instrument_coordinator.utility as util
-from quantify_scheduler.helpers import time
 from quantify_scheduler.instrument_coordinator.components import base
 
 logger = logging.getLogger(__name__)
@@ -45,18 +44,22 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         pass
 
     def prepare(
-        self, param_config: Dict[str, Any], force_set_parameters: bool = False
+        self, params_config: Dict[str, Any], force_set_parameters: bool = False
     ) -> None:
         """
-        param_config has keys which should correspond to parameter names of the
+        params_config has keys which should correspond to parameter names of the
         instrument and the corresponding values to be set.
-        For example, param_config = {"frequency": 6e9, "power": 13, "status": True,}
+        For example, params_config = {"lo_mw_q0.frequency": 6e9, "lo_mw_q0.power": 13, "lo_mw_q0.status": True,
+                              "lo_ro_q0.frequency": 8.3e9, "lo_ro_q0.power": 16, "lo_ro_q0.status": True,
+                              "lo_spec_q0.status": False,}
         """
         if force_set_parameters:
-            for key, value in param_config.items():
+            params_for_instrument = params_config[self.instrument.name]
+            for key, value in params_for_instrument.items():
                 self.instrument.set(param_name=key, value=value)
         else:
-            for key, value in param_config.items():
+            params_for_instrument = params_config[self.instrument.name]
+            for key, value in params_for_instrument.items():
                 util.lazy_set(instrument=self.instrument, parameter_name=key, val=value)
 
     def retrieve_acquisition(self) -> Any:
