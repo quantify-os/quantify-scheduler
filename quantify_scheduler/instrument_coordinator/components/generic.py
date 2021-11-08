@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from qcodes.instrument.base import Instrument, InstrumentBase
+from qcodes.instrument.base import InstrumentBase
 
 import quantify_scheduler.instrument_coordinator.utility as util
 from quantify_scheduler.instrument_coordinator.components import base
@@ -25,11 +25,11 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     """
 
     # NB `_instances` also used by `Instrument` class
-    _no_gc_instances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
+    _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
-        cls, name: str = "generic_instruments", hardware_config: Dict[str, Any] = {}
-    ) -> InstrumentCoordinatorComponentBase:
+        cls, hardware_config: Dict[str, Any], name: str = "generic_instruments"
+    ) -> base.InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
         NB This is done intentionally to prevent the instances from being garbage
@@ -41,7 +41,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         return instance
 
     def __init__(
-        self, name: str = "generic_instruments", hardware_config: Dict[str, Any] = {}
+        self, hardware_config: Dict[str, Any], name: str = "generic_instruments"
     ) -> None:
 
         """Create a new instance of GenericInstrumentCoordinatorComponent class."""
@@ -57,6 +57,9 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     @property
     def current_params(self) -> Dict[str, Any]:
+        """
+        Returns a dict tracking the current parameters set for the generic devices.
+        """
         return self.current_params_config
 
     @property
@@ -140,4 +143,3 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         _ = timeout_sec  # Unused argument
-        pass
