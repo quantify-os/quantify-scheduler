@@ -14,7 +14,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     """The InstrumentCoordinator component abstract interface."""
 
     # NB `_instances` also used by `Instrument` class
-    _no_gc_intances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
+    _no_gc_instances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
         cls, instrument: base.InstrumentBase
@@ -25,13 +25,13 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         collected.
         """
         instance = super().__new__(cls)
-        cls._no_gc_intances[instrument.name] = instance
+        cls._no_gc_instances[instrument.name] = instance
         return instance
 
     def close(self):
         """Makes sure the instances reference is released so that garbage collector can
         claim the object"""
-        _ = self._no_gc_intances.pop(self.instrument_ref())
+        _ = self._no_gc_instances.pop(self.instrument_ref())
         super().close()
 
     def __init__(
