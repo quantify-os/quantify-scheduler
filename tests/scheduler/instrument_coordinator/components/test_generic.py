@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 from typing import Any, Dict
-from unittest.mock import call
 
 import pytest
 from qcodes import Instrument, validators
@@ -172,7 +171,7 @@ def test_generic_icc_prepare_expected(
 
     # Assert initial condition
     assert ic_generic_components.current_params["lo_mw_q0.frequency"] == 7e9
-    assert ic_generic_components.current_params["lo_spec_q0.frequency"] == None
+    assert ic_generic_components.current_params["lo_spec_q0.frequency"] is None
 
     # Act
     ic_generic_components.prepare(
