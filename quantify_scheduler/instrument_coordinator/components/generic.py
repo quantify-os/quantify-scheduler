@@ -69,6 +69,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     def stop(self) -> None:
         pass
 
+    # pylint: disable=arguments-differ
     def prepare(self, params_config: Dict[str, Any]) -> None:
         """
         params_config has keys which should correspond to parameter names of the
