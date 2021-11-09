@@ -78,7 +78,7 @@ def typical_zi_hardware_map() -> Dict[str, Any]:
 
 @pytest.fixture
 def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
-    class GenericQcodesInstrument(Instrument):  # pylint: disable=too-few-public-methods
+    class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
         def __init__(self, name: str):
             """
             Create an instance of the Generic instrument.
@@ -119,9 +119,9 @@ def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
                 parameter_class=ManualParameter,
             )
 
-    lo_mw_q0 = GenericQcodesInstrument(name="lo_mw_q0")
-    lo_ro_q0 = GenericQcodesInstrument(name="lo_ro_q0")
-    lo_spec_q0 = GenericQcodesInstrument(name="lo_spec_q0")
+    lo_mw_q0 = MockLocalOscillator(name="lo_mw_q0")
+    lo_ro_q0 = MockLocalOscillator(name="lo_ro_q0")
+    lo_spec_q0 = MockLocalOscillator(name="lo_spec_q0")
 
     ic_generic_components = GenericInstrumentCoordinatorComponent(
         hardware_config=typical_zi_hardware_map
