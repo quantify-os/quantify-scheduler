@@ -5,9 +5,6 @@
 # pylint: disable=too-many-locals
 from __future__ import annotations
 
-import json
-from typing import Any, Dict
-
 import pytest
 from qcodes import Instrument, validators
 from qcodes.instrument.parameter import ManualParameter
