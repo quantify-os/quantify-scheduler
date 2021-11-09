@@ -5,6 +5,8 @@ Changelog
 Unreleased
 ----------
 
+* InstrumentCoordinator - Added a GenericInstrumentCoordinatorComponent. (!267)
+* InstrumentCoordinator - InstrumentCoordinatorComponentBase now has a `force_set_parameter` as a ManualParameter to enable the user to switch the lazy_set behaviour when setting parameters of the instruments connected to the InstrumentCoordinatorComponent.
 * Visualization - resolved a bug where a schedule was modified when drawing a circuit diagram (#197, !250)
 * Visualization - made matplotlib schedule visualization methods accessible as methods `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` of the `Schedule` class (!253)
 * Bugfix - Ramp pulse sampling utilizing `np.linspace` behaviour changed. (!258)

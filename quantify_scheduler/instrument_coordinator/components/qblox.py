@@ -170,9 +170,6 @@ _PULSAR_QRM_RF_PROPERTIES = _StaticHardwareProperties(
     number_of_output_paths=2,
 )
 
-force_set_parameters: bool = False
-"""If enabled, parameters are set directly instead of using a lazy set."""
-
 
 class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     """Qblox Pulsar InstrumentCoordinator component base class."""
@@ -206,7 +203,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         val
             The new value of the parameter.
         """
-        if force_set_parameters:
+        if self.force_set_parameters():
             self.instrument.set(parameter_name, val)
         else:
             lazy_set(self.instrument, parameter_name, val)
@@ -1015,7 +1012,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             A dictionary containing all the settings to set.
         """
         if "reference_source" in settings:
-            if force_set_parameters:
+            if self.force_set_parameters():
                 self.instrument.set("reference_source", settings["reference_source"])
             else:
                 lazy_set(
