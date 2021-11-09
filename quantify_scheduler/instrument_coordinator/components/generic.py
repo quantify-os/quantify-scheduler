@@ -106,7 +106,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
                 raise KeyError(error_msg + hint_msg)
             instrument_name, parameter_name = key.split(".")
             instrument = self.find_instrument(instrument_name)
-            if self.force_set_parameters:
+            if self.force_set_parameters():
                 instrument.set(param_name=parameter_name, value=value)
             else:
                 util.lazy_set(
