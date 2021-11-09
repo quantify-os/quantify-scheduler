@@ -26,10 +26,10 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     # NB `_instances` also used by `Instrument` class
     _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
-    default_name = "generic_instruments"
+    default_name = "generic_instrument_coordinator_component"
 
     def __new__(
-        cls, hardware_config: Dict[str, Any], name: str = default_name
+        cls, name: str = default_name
     ) -> base.InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
@@ -41,27 +41,10 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def __init__(
-        self, hardware_config: Dict[str, Any], name: str = default_name
-    ) -> None:
+    def __init__(self, name: str = default_name) -> None:
 
         instrument = InstrumentBase(name=name)
         super().__init__(instrument)
-
-        """Create a new instance of GenericInstrumentCoordinatorComponent class."""
-        generic_devices_in_hw_config = hardware_config.get("generic_devices")
-        self.current_params_config = dict()
-
-        for device, params_dict in generic_devices_in_hw_config.items():
-            for param, value in params_dict.items():
-                self.current_params_config[f"{device}.{param}"] = value
-
-    @property
-    def current_params(self) -> Dict[str, Any]:
-        """
-        Returns a dict tracking the current parameters set for the generic devices.
-        """
-        return self.current_params_config
 
     @property
     def instrument(self):
@@ -75,7 +58,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     def is_running(self) -> bool:
         """
         The is_running state refers to a state whether an instrument is capable of
-        running in a program. Not to be confused with the on/off state of the
+        running in a program. Not to be confused with the on/off state of an
         instrument.
         """
         return True
@@ -86,42 +69,30 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     def stop(self) -> None:
         pass
 
-    def prepare(
-        self, params_config: Dict[str, Any] = None, force_set_parameters: bool = False
-    ) -> None:
+    def prepare(self, params_config: Dict[str, Any]) -> None:
         """
         params_config has keys which should correspond to parameter names of the
         instrument and the corresponding values to be set.
-        For example, params_config = {"lo_mw_q0.frequency": 6e9,
-                                      "lo_mw_q0.power": 13, "lo_mw_q0.status": True,
-                                      "lo_ro_q0.frequency": 8.3e9, "lo_ro_q0.power": 16,
-                                      "lo_ro_q0.status": True,
-                                      "lo_spec_q0.status": False,}
+        For example,
+
+        .. code-block:: python
+
+        params_config = {"force_set_parameters": False
+                         "lo_mw_q0.frequency": 6e9,
+                         "lo_mw_q0.power": 13, "lo_mw_q0.status": True,
+                         "lo_ro_q0.frequency": 8.3e9, "lo_ro_q0.power": 16,
+                         "lo_ro_q0.status": True,
+                         "lo_spec_q0.status": False,
+                        }
+
         """
-        self.check_update_params_config(params_config)
+        force_set_parameters = False
+        if "force_set_parameters" in params_config:
+            force_set_parameters = params_config["force_set_parameters"]
+
         self.set_params_to_devices(
             params_config=params_config, force_set_parameters=force_set_parameters
         )
-
-    def check_update_params_config(self, params_config) -> None:
-        """
-        Checks if the new params_config dict has keys which are different from that
-        initially specified by the hardware_config. If a key does not exist, it throws
-        a KeyError. If the key exists, then it updates the current_params_config value
-        corresponding to the key.
-        """
-        if params_config is not None:
-            for key, value in params_config.items():
-                instrument_name, parameter_name = key.split(".")
-                if key in self.current_params_config:
-                    self.current_params_config[key] = value
-                else:
-                    error_message = f"{key} not found in current_params_config."
-                    hint_message = (
-                        f"{instrument_name}:{parameter_name} possibly not "
-                        + "in initial hardware_config during class initialization."
-                    )
-                    raise KeyError(error_message + " " + hint_message)
 
     def set_params_to_devices(self, params_config, force_set_parameters) -> None:
         """
@@ -130,6 +101,8 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         change the lazy_set behaviour.
         """
         for key, value in params_config.items():
+            if key == "force_set_parameters":
+                continue
             instrument_name, parameter_name = key.split(".")
             instrument = self.find_instrument(instrument_name)
             if force_set_parameters:

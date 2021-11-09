@@ -18,66 +18,7 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 
 
 @pytest.fixture
-def typical_zi_hardware_map() -> Dict[str, Any]:
-    return json.loads(
-        """
-        {
-            "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-            "mode": "calibration",
-            "generic_devices": {
-                     "lo_mw_q0": {"frequency": 7e9, "power": 13, "status": true},
-                     "lo_ro_q0": {"frequency": 8.4e9, "power": 10, "status": true},
-                     "lo_spec_q0": {"frequency": null, "power": null, "status": false}
-                   },
-            "devices": [
-                {
-                    "name": "hdawg0",
-                    "type": "HDAWG4",
-                    "clock_select": 0,
-                    "ref": "int",
-                    "channelgrouping": 0,
-                    "channel_0": {
-                        "port": "q0:mw",
-                        "clock": "q0.01",
-                        "mode": "complex",
-                        "modulation": {"type": "premod", "interm_freq": 0},
-                        "local_oscillator": "lo_mw_q0",
-                        "clock_frequency": 6e9,
-                        "line_trigger_delay": 191e-9,
-                        "markers": ["AWG_MARKER1", "AWG_MARKER2"],
-                        "gain1": 1,
-                        "gain2": 1,
-                        "latency": 12e-9,
-                        "mixer_corrections": {
-                            "amp_ratio": 0.950,
-                            "phase_error": 90,
-                            "dc_offset_I": -0.5420,
-                            "dc_offset_Q": -0.3280
-                        }
-                    }
-                },
-                {
-                    "name": "uhfqa0",
-                    "type": "UHFQA",
-                    "ref": "ext",
-                    "channel_0": {
-                        "port": "q0:res",
-                        "clock": "q0.ro",
-                        "mode": "real",
-                        "modulation": {"type": "premod", "interm_freq": 100e6},
-                        "local_oscillator": "lo_ro_q0",
-                        "clock_frequency": 6e9,
-                        "triggers": [2]
-                    }
-                }
-            ]
-        }
-        """
-    )
-
-
-@pytest.fixture
-def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
+def make_generic_qcodes_instruments(request):
     class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
         def __init__(self, name: str):
             """
@@ -104,7 +45,7 @@ def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
                 name="frequency",
                 label="Frequency",
                 unit="Hz",
-                initial_value=10e6,
+                initial_value=7e9,
                 docstring="The RF Frequency in Hz",
                 vals=validators.Numbers(min_value=250e3, max_value=20e9),
                 parameter_class=ManualParameter,
@@ -113,7 +54,7 @@ def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
                 name="power",
                 label="Power",
                 unit="dBm",
-                initial_value=-60.0,
+                initial_value=15.0,
                 vals=validators.Numbers(min_value=-60.0, max_value=20.0),
                 docstring="Signal power in dBm",
                 parameter_class=ManualParameter,
@@ -123,15 +64,13 @@ def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
     lo_ro_q0 = MockLocalOscillator(name="lo_ro_q0")
     lo_spec_q0 = MockLocalOscillator(name="lo_spec_q0")
 
-    ic_generic_components = GenericInstrumentCoordinatorComponent(
-        hardware_config=typical_zi_hardware_map
-    )
+    generic_icc = GenericInstrumentCoordinatorComponent()
 
     def cleanup_instruments():
         lo_mw_q0.close()
         lo_ro_q0.close()
         lo_spec_q0.close()
-        ic_generic_components.close()
+        generic_icc.close()
 
     request.addfinalizer(cleanup_instruments)
 
@@ -139,14 +78,14 @@ def make_generic_qcodes_instruments(request, typical_zi_hardware_map):
         "lo_mw_q0": lo_mw_q0,
         "lo_ro_q0": lo_ro_q0,
         "lo_spec_q0": lo_spec_q0,
-        "ic_generic_components": ic_generic_components,
+        "generic_icc": generic_icc,
     }
 
 
 def test_initialize(make_generic_qcodes_instruments):
     test_instruments = make_generic_qcodes_instruments
-    ic_generic_components = test_instruments["ic_generic_components"]
-    assert ic_generic_components.name == "ic_generic_instruments"
+    generic_icc = test_instruments["generic_icc"]
+    assert generic_icc.name == "ic_generic_instrument_coordinator_component"
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
@@ -156,7 +95,7 @@ def test_generic_icc_prepare_expected(
     # Arrange
     test_instruments = make_generic_qcodes_instruments
 
-    ic_generic_components = test_instruments["ic_generic_components"]
+    generic_icc = test_instruments["generic_icc"]
 
     # Test dictionary with the settings parameter for generic devices
     generic_device_params_dict = {
@@ -168,24 +107,18 @@ def test_generic_icc_prepare_expected(
         "lo_ro_q0.status": True,
         "lo_spec_q0.status": False,
     }
+    if force_set_parameters:
+        generic_device_params_dict["force_set_parameters"] = force_set_parameters
 
     # Assert initial condition
-    assert ic_generic_components.current_params["lo_mw_q0.frequency"] == 7e9
-    assert ic_generic_components.current_params["lo_spec_q0.frequency"] is None
+    assert test_instruments["lo_mw_q0"].frequency() == 7e9
+    assert test_instruments["lo_ro_q0"].power() == 15.0
 
     # Act
-    ic_generic_components.prepare(
-        params_config=generic_device_params_dict,
-        force_set_parameters=force_set_parameters,
-    )
+    generic_icc.prepare(params_config=generic_device_params_dict)
 
     expected_device_params_dict = generic_device_params_dict
-    expected_device_params_dict.update(
-        {"lo_spec_q0.frequency": None, "lo_spec_q0.power": None}
-    )
 
-    # Assert internal dictionary is the same as expected dictionary
-    assert ic_generic_components.current_params == expected_device_params_dict
     # Assert the frequency set has been changed to expected frequency
     assert (
         test_instruments["lo_mw_q0"].frequency()
@@ -197,7 +130,7 @@ def test_generic_icc_prepare_fail_no_device(make_generic_qcodes_instruments):
     # Arrange
     test_instruments = make_generic_qcodes_instruments
 
-    ic_generic_components = test_instruments["ic_generic_components"]
+    generic_icc = test_instruments["generic_icc"]
 
     # Test dictionary with the settings parameter for generic devices
     generic_device_params_dict = {
@@ -212,4 +145,4 @@ def test_generic_icc_prepare_fail_no_device(make_generic_qcodes_instruments):
 
     # Act
     with pytest.raises(KeyError):
-        ic_generic_components.prepare(params_config=generic_device_params_dict)
+        generic_icc.prepare(params_config=generic_device_params_dict)
