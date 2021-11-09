@@ -99,8 +99,10 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         for key, value in params_config.items():
             if "." not in key:
                 error_msg = f"Key [{key}] is not valid in the params_config."
-                hint_msg = ("Ensure that it is in the format "
-                    +"'instrument_name.parameter_name'")
+                hint_msg = (
+                    "Ensure that it is in the format "
+                    + "'instrument_name.parameter_name'"
+                )
                 raise KeyError(error_msg + hint_msg)
             instrument_name, parameter_name = key.split(".")
             instrument = self.find_instrument(instrument_name)

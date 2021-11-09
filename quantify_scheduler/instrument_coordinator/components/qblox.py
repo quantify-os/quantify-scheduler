@@ -203,7 +203,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         val
             The new value of the parameter.
         """
-        if self.force_set_parameters:
+        if self.force_set_parameters():
             self.instrument.set(parameter_name, val)
         else:
             lazy_set(self.instrument, parameter_name, val)
@@ -1012,7 +1012,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             A dictionary containing all the settings to set.
         """
         if "reference_source" in settings:
-            if self.force_set_parameters:
+            if self.force_set_parameters():
                 self.instrument.set("reference_source", settings["reference_source"])
             else:
                 lazy_set(

@@ -328,9 +328,6 @@ def test_prepare_lazy(
     qrm.instrument._set_reference_source.reset_mock()
 
     # Act
-    qcm.force_set_parameters(False)
-    qrm.force_set_parameters(False)
-
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
