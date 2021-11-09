@@ -73,12 +73,13 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     def prepare(self, params_config: Dict[str, Any]) -> None:
         """
         params_config has keys which should correspond to parameter names of the
-        instrument and the corresponding values to be set.
+        instrument and the corresponding values to be set. Always ensure that the
+        key to the params_config is in the format 'instrument_name.parameter_name'
         For example,
 
         .. code-block:: python
 
-        params_config = {"force_set_parameters": False
+        params_config = {
                          "lo_mw_q0.frequency": 6e9,
                          "lo_mw_q0.power": 13, "lo_mw_q0.status": True,
                          "lo_ro_q0.frequency": 8.3e9, "lo_ro_q0.power": 16,
@@ -87,26 +88,23 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
                         }
 
         """
-        force_set_parameters = False
-        if "force_set_parameters" in params_config:
-            force_set_parameters = params_config["force_set_parameters"]
+        self._set_params_to_devices(params_config=params_config)
 
-        self.set_params_to_devices(
-            params_config=params_config, force_set_parameters=force_set_parameters
-        )
-
-    def set_params_to_devices(self, params_config, force_set_parameters) -> None:
+    def _set_params_to_devices(self, params_config) -> None:
         """
         This function sets the parameters in the params_config dict to the generic
         devices set in the hardware_config. The bool force_set_parameters is used to
         change the lazy_set behaviour.
         """
         for key, value in params_config.items():
-            if key == "force_set_parameters":
-                continue
+            if "." not in key:
+                error_msg = f"Key [{key}] is not valid in the params_config."
+                hint_msg = ("Ensure that it is in the format "
+                    +"'instrument_name.parameter_name'")
+                raise KeyError(error_msg + hint_msg)
             instrument_name, parameter_name = key.split(".")
             instrument = self.find_instrument(instrument_name)
-            if force_set_parameters:
+            if self.force_set_parameters:
                 instrument.set(param_name=parameter_name, value=value)
             else:
                 util.lazy_set(

@@ -50,6 +50,15 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
             vals=validators.MultiType(validators.Strings(), validators.Enum(None)),
         )
 
+        self.add_parameter(
+            "force_set_parameters",
+            initial_value=False,
+            parameter_class=parameter.ManualParameter,
+            docstring=("A switch to force the setting of a parameter, "
+                + "bypassing the lazy_set utility."),
+            vals=validators.Bool(),
+        )
+
     @property
     def instrument(self) -> base.InstrumentBase:
         """Returns the instrument referenced by `instrument_ref`."""

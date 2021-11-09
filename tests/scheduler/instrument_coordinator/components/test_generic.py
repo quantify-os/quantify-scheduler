@@ -104,8 +104,7 @@ def test_generic_icc_prepare_expected(
         "lo_ro_q0.status": True,
         "lo_spec_q0.status": False,
     }
-    if force_set_parameters:
-        generic_device_params_dict["force_set_parameters"] = force_set_parameters
+    generic_icc.force_set_parameters(force_set_parameters)
 
     # Assert initial condition
     assert test_instruments["lo_mw_q0"].frequency() == 7e9
