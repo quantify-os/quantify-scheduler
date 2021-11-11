@@ -21,7 +21,10 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     A Generic class which can be used for interaction with the InstrumentCoordinator.
 
     The GenericInstrumentCoordinatorComponent should be able to accept any type of
-    qcodes instrument.
+    qcodes instrument. The component is meant to serve as an interface for simple
+    access to instruments such as the local oscillator, or current source which needs to
+    only set parameters. For now this component is not being used in any of the hardware
+    backends' compilation step. This will be fixed in the next official release.
     """
 
     # NB `_instances` also used by `Instrument` class
@@ -79,13 +82,13 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
         .. code-block:: python
 
-        params_config = {
-                         "lo_mw_q0.frequency": 6e9,
-                         "lo_mw_q0.power": 13, "lo_mw_q0.status": True,
-                         "lo_ro_q0.frequency": 8.3e9, "lo_ro_q0.power": 16,
-                         "lo_ro_q0.status": True,
-                         "lo_spec_q0.status": False,
-                        }
+            params_config = {
+                             "lo_mw_q0.frequency": 6e9,
+                             "lo_mw_q0.power": 13, "lo_mw_q0.status": True,
+                             "lo_ro_q0.frequency": 8.3e9, "lo_ro_q0.power": 16,
+                             "lo_ro_q0.status": True,
+                             "lo_spec_q0.status": False,
+                            }
 
         """
         self._set_params_to_devices(params_config=params_config)

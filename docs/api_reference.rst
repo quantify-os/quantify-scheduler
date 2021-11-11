@@ -206,6 +206,13 @@ base
     :members:
     :show-inheritance:
 
+generic
+~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.components.generic
+    :members:
+    :show-inheritance:
+
 qblox
 ~~~~~
 
