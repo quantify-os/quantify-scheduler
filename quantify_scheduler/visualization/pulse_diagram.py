@@ -5,20 +5,23 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from quantify_core.utilities.general import import_func_from_string
+from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
 
-from quantify_scheduler.types import Schedule
+import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.waveforms import modulate_wave
-from quantify_scheduler.pulse_library import Operation, WindowOperation
+
+if TYPE_CHECKING:
+    from quantify_scheduler import Operation, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +81,7 @@ def pulse_diagram_plotly(
     fig_width: float = 1000,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
-    sampling_rate: int = 1_000_000_000,
+    sampling_rate: int = 1e9,
 ) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
@@ -99,7 +102,7 @@ def pulse_diagram_plotly(
     modulation_if :
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
-        The time resolution used in the visualization.
+        The time resolution used to sample the schedule in Hz.
 
     Returns
     -------
@@ -246,7 +249,7 @@ def sample_schedule(
     port_list: Optional[List[str]] = None,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
-    sampling_rate: int = 1_000_000_000,
+    sampling_rate: float = 1e9,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """
     Sample a schedule at discrete points in time.
@@ -263,7 +266,7 @@ def sample_schedule(
     modulation_if :
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
-        The time resolution used in the sampling.
+        The time resolution used to sample the schedule in Hz.
 
     Returns
     -------
@@ -370,9 +373,11 @@ def sample_schedule(
 
 def pulse_diagram_matplotlib(
     schedule: Schedule,
-    sampling_rate: float = 1e6,
+    port_list: Optional[List[str]] = None,
+    sampling_rate: float = 1e9,
+    modulation: Literal["off", "if", "clock"] = "off",
+    modulation_if: float = 0.0,
     ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
     Plots a schedule using matplotlib.
@@ -381,12 +386,17 @@ def pulse_diagram_matplotlib(
     ----------
     schedule:
         The schedule to plot.
-    sampling_rate:
-        The schedule is sampled with this sampling rate.
+    port_list :
+        A list of ports to show. if set to `None` will use the first
+        8 ports it encounters in the sequence.
+    modulation :
+        Determines if modulation is included in the visualization.
+    modulation_if :
+        Modulation frequency used when modulation is set to "if".
+    sampling_rate :
+        The time resolution used to sample the schedule in Hz.
     ax:
         Axis onto which to plot.
-    **kwargs:
-        Passed to sample_schedule.
 
     Returns
     -------
@@ -396,22 +406,30 @@ def pulse_diagram_matplotlib(
         The matplotlib ax.
     """
     times, pulses = sample_schedule(
-        schedule, sampling_rate=sampling_rate, modulation="clock", **kwargs
+        schedule,
+        sampling_rate=sampling_rate,
+        port_list=port_list,
+        modulation=modulation,
+        modulation_if=modulation_if,
     )
     if ax is None:
         _, ax = plt.subplots()
     for gate, data in pulses.items():
         ax.plot(times, data.real, label=gate)
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Voltage")
+    set_xlabel(ax, "Time", unit="s")
+    # N.B. we currently use unity gain in the hardware backends so strictly
+    # speaking this is not the amplitude on the device, but the amplitude on the output.
+    set_ylabel(ax, "Amplitude", unit="V")
     ax.legend()
 
     return ax.get_figure(), ax
 
 
-def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operation]]:
-    """
-    Return a list of all WindowOperations with start and end time.
+def get_window_operations(
+    schedule: Schedule,
+) -> List[Tuple[float, float, Operation]]:
+    r"""
+    Return a list of all :class:`.WindowOperation`\s with start and end time.
 
     Parameters
     ----------
@@ -423,10 +441,9 @@ def get_window_operations(schedule: Schedule) -> List[Tuple[float, float, Operat
         List of all window operations in the schedule.
     """
     window_operations = []
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        _ = pls_idx  # explicitly not using pls_idx
+    for _, t_constr in enumerate(schedule.timing_constraints):
         operation = schedule.operations[t_constr["operation_repr"]]
-        if isinstance(operation, WindowOperation):
+        if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
 
                 t0 = t_constr["abs_time"] + pulse_info["t0"]

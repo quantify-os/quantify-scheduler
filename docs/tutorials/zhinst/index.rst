@@ -13,7 +13,7 @@ Introduction
 :mod:`quantify_scheduler` provides a stateless module: :mod:`~quantify_scheduler.backends.zhinst_backend`,
 that abstracts the complexity of setting up `Zurich Instruments <https://www.zhinst.com>`_ for
 experiments in a modern and automated fashion. :mod:`quantify_scheduler` combines Quantum Device-
-and Instrument properties with the :class:`~quantify_scheduler.types.Schedule` during compilation to generate waveforms
+and Instrument properties with the :class:`quantify_scheduler.schedules.schedule.Schedule` during compilation to generate waveforms
 and sequencing instructions specifically for Zurich Instruments hardware. More information about
 `complilation` can be found in the :ref:`User Guide <sec-user-guide>`.
 

@@ -5,11 +5,13 @@ Schedules intended to verify (test) functionality of the system.
 """
 
 from __future__ import annotations
+
 import numpy as np
 from numpy.typing import NDArray
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.pulse_library import SquarePulse, IdlePulse
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
+
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
 
 # pylint: disable=too-many-arguments

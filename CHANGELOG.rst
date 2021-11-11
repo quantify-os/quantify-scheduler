@@ -2,6 +2,46 @@
 Changelog
 =========
 
+
+0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
+--------------------------------------------------------------------------------------------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* InstrumentCoordinator - `last_schedule` is now a property (!252).
+* Structure - We have refactored the Operation and Schedule classes out of the types module and moved the different operation libraries (acquisition_library, gate_library, and pulse_library) (#217, !256).
+    * `quantify_scheduler.types.Operation` -> `quantify_scheduler.operations.operation.Operation`, the import `quantify_scheduler.Operation` still works.
+    * `quantify_scheduler.types.Schedule` -> `quantify_scheduler.schedules.schedule.Schedule`, the import `quantify_scheduler.Schedule` still works.
+    * `quantify_scheduler.types.CompiledSchedule` -> `quantify_scheduler.schedules.schedule.CompiledSchedule`
+    * `quantify_scheduler.types.ScheduleBase` -> `quantify_scheduler.schedules.schedule.ScheduleBase`
+    * `quantify_scheduler.types.AcquisitionMetadata` -> `quantify_scheduler.schedules.schedule.AcquisitionMetadata`
+    * `quantify_scheduler.acquisition_library` -> `quantify_scheduler.operations.acquisition_library`
+    * `quantify_scheduler.gate_library` -> `quantify_scheduler.operations.gate_library`
+    * `quantify_scheduler.pulse_library` -> `quantify_scheduler.operations.pulse_library`
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Control - Add option to set output port in heterodyne_spec_sched (!262)
+* Control - Expand SingleChannelScheduleGettable to support trace acquisitions (!248)
+* Control - Update create_dc_compensation_pulse behaviour and docstring. (!244)
+* Control - Refactor ScheduleGettableSingleChannel (!240, !249)
+* Control - Reduce the default init_duration of spectroscopy schedules (!237)
+* Generic ICC - Added a GenericInstrumentCoordinatorComponent. (!267)
+* ICCs - InstrumentCoordinatorComponentBase now has a `force_set_parameter` as a ManualParameter to enable the user to switch the lazy_set behaviour when setting parameters of the instruments connected to the InstrumentCoordinatorComponent. (!267)
+* Qblox ICCs - Adds a lazy_set behaviour by default when setting parameters with the same value to an instrument connected to the Qblox ICC. (!230)
+* Visualization - made matplotlib schedule visualization methods accessible as methods `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` of the `Schedule` class (!253)
+* Visualization - resolved a bug where a schedule was modified when drawing a circuit diagram (#197, !250)
+* Visualization - Add support for window operation to transmon backend (!245)
+* Infrastructure - Fix and enhance pre-commit + add to CI (!257, !265)
+* Infrastructure - Added prospector config file for CI. (!261)
+* Bugfix - Removed redundant `determine_absolute_timing` step in `qcompile`. (!259)
+* Bugfix - Ramp pulse sampling utilizing `np.linspace` behaviour changed. (!258)
+* Docs - Adds the new Quantify logo similar to quantify_core. (!266)
+* Docs - Enhance documentation of public API for reimported modules [imports aliases] (!254)
+* Docs - Fixes the funcparserlib error in rtd. (!251)
+* Docs - Updated Qblox backend docs to include the new features. (!247)
+
+
 0.5.0 Expanded feature sets hardware compilation backends (2021-10-25)
 ----------------------------------------------------------------------
 
@@ -41,6 +81,7 @@ Merged branches and closed issues
 * Qblox ICCs - Compensated integration time for Qblox QRM IC component (!199).
 * Qblox ICCs - Added error handling for error flags given by `get_sequencer_state` (!215)
 * QuantumDevice - Added docstrings to the TransmonElement parameters (!216, !218)
+* Qblox ICCs - QCoDeS parameters are now only set if they differ from the value in the cache (!230)
 * Visualization - Allow user defined axis for plotting circuit diagram (!206)
 * Visualization - Adds schedule plotting using matplotlib and a WindowOperation to help visualize pulse diagrams (!225, !232)
 * Other - Added method `sample_schedule` to sample a `Schedule` (!212)

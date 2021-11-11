@@ -4,9 +4,11 @@
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Optional, Tuple, Union
 
-from quantify_scheduler.enums import BinMode
 import numpy as np
-from .types import Operation
+
+from quantify_scheduler.enums import BinMode
+
+from .operation import Operation
 
 
 # pylint: disable=too-many-ancestors
@@ -373,7 +375,7 @@ class Reset(Operation):
 
         .. jupyter-execute::
 
-            from quantify_scheduler.gate_library import Reset
+            from quantify_scheduler.operations.gate_library import Reset
 
             reset_1 = Reset("q0")
             reset_2 = Reset("q1", "q2")

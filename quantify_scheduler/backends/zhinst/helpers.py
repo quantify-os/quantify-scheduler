@@ -8,8 +8,9 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
-from zhinst.qcodes import base
 from zhinst import qcodes
+from zhinst.qcodes import base
+
 from quantify_scheduler.helpers import time
 
 logger = logging.getLogger(__name__)
