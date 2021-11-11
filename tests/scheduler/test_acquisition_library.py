@@ -7,17 +7,18 @@
 # pylint: disable=eval-used
 from unittest import TestCase
 
-import pytest
 import numpy as np
-from quantify_scheduler.acquisition_library import (
+import pytest
+
+from quantify_scheduler import Operation
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     Trace,
 )
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.gate_library import X90
-from quantify_scheduler.pulse_library import DRAGPulse
-from quantify_scheduler.types import Operation
+from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.operations.pulse_library import DRAGPulse
 
 
 def test_ssb_integration_complex():

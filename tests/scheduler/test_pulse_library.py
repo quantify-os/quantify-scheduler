@@ -5,9 +5,10 @@
 from unittest import TestCase
 
 import pytest
+
 from quantify_scheduler import Operation
-from quantify_scheduler.gate_library import X90
-from quantify_scheduler.pulse_library import (
+from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
@@ -16,7 +17,6 @@ from quantify_scheduler.pulse_library import (
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
 )
-
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
 
@@ -249,7 +249,7 @@ def test_dccompensation_pulse_amp() -> None:
     pulse2 = create_dc_compensation_pulse(
         duration=1e-8,
         pulses=[pulse0, pulse1],
-        sampling_rate=int(1e9),
+        sampling_rate=int(1e16),
         port="LP",
     )
     TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.5)
@@ -258,10 +258,10 @@ def test_dccompensation_pulse_amp() -> None:
 def test_dccompensation_pulse_modulated() -> None:
     clock = ClockResource("clock", 1.0)
     pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock)
-    with pytest.raises(ValueError):
-        create_dc_compensation_pulse(
-            amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
-        )
+    pulse = create_dc_compensation_pulse(
+        amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
+    )
+    assert pulse.data["pulse_info"][0]["duration"] == 0.0
 
 
 def test_dccompensation_pulse_duration() -> None:

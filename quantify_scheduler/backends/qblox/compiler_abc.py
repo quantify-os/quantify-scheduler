@@ -5,46 +5,42 @@
 from __future__ import annotations
 
 import json
-from os import path, makedirs
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
-from typing import Optional, Dict, Any, Set, Tuple, List, Union
-from typing_extensions import Literal
+from os import makedirs, path
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
+from quantify_core.data.handling import gen_tuid, get_datadir
+from typing_extensions import Literal
 
-from quantify_core.data.handling import (
-    get_datadir,
-    gen_tuid,
+from quantify_scheduler.backends.qblox import (
+    constants,
+    driver_version_check,
+    helpers,
+    non_generic,
+    q1asm_instructions,
+    register_manager,
 )
-
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox import non_generic
-from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox import register_manager
-from quantify_scheduler.backends.qblox import helpers
-from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox import driver_version_check
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-
 from quantify_scheduler.backends.types.qblox import (
-    OpInfo,
-    BaseModuleSettings,
-    PulsarSettings,
     BasebandModuleSettings,
+    BaseModuleSettings,
+    OpInfo,
     PulsarRFSettings,
+    PulsarSettings,
+    QASMRuntimeSettings,
     RFModuleSettings,
     SequencerSettings,
-    QASMRuntimeSettings,
     StaticHardwareProperties,
 )
-
-from quantify_scheduler.helpers.waveforms import normalize_waveform_data
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
+from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 
 class InstrumentCompiler(ABC):

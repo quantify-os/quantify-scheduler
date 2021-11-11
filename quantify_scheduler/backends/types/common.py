@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from dataclasses_json import DataClassJsonMixin
+
 from quantify_scheduler import enums
 
 

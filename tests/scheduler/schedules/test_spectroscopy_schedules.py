@@ -3,9 +3,12 @@
 # pylint: disable=missing-function-docstring
 
 import tempfile
+
 from quantify_core.data.handling import set_datadir
-from quantify_scheduler.schedules import spectroscopy_schedules as sps
+
 from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.schedules import spectroscopy_schedules as sps
+
 from .compiles_all_backends import _CompilesAllBackends
 
 # TODO to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme

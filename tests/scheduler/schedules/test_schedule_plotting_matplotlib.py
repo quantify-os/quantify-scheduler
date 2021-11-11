@@ -2,16 +2,16 @@
 # Licensed according to the LICENCE file on the master branch
 # pylint: disable=missing-function-docstring
 
+import matplotlib.pyplot as plt
 import pytest
 
-import matplotlib.pyplot as plt
-from quantify_scheduler.types import Schedule
+from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import determine_absolute_timing
-from quantify_scheduler.pulse_library import SquarePulse, WindowOperation
+from quantify_scheduler.operations.pulse_library import SquarePulse, WindowOperation
 from quantify_scheduler.visualization.pulse_diagram import (
-    pulse_diagram_matplotlib,
     get_window_operations,
     plot_window_operations,
+    pulse_diagram_matplotlib,
 )
 
 

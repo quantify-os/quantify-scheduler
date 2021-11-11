@@ -1,9 +1,7 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-name
 
-from quantify_scheduler.compilation import (
-    validate_config,
-)
+from quantify_scheduler.compilation import validate_config
 
 
 def test_QuantumDevice_generate_device_config(mock_setup):

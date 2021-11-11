@@ -6,13 +6,15 @@
 # pylint: disable=redefined-outer-name
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
 from pathlib import Path
+from typing import Any, Dict, Tuple
 from unittest.mock import call
 
 import numpy as np
 import pytest
 from zhinst import qcodes
+
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (
@@ -20,7 +22,6 @@ from quantify_scheduler.backends.zhinst_backend import (
     ZIDeviceConfig,
 )
 from quantify_scheduler.instrument_coordinator.components import zhinst
-from quantify_scheduler.types import Schedule
 
 
 @pytest.fixture

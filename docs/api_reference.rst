@@ -3,6 +3,7 @@ quantify_scheduler
 ==================
 
 .. automodule:: quantify_scheduler
+    :members:
 
 backends
 ========
@@ -183,8 +184,13 @@ instrument_coordinator
 
 .. automodule:: quantify_scheduler.instrument_coordinator
     :members:
-    :show-inheritance:
 
+instrument_coordinator
+----------------------
+
+.. automodule:: quantify_scheduler.instrument_coordinator.instrument_coordinator
+    :members:
+    :show-inheritance:
 
 components
 ----------
@@ -193,11 +199,17 @@ components
     :members:
     :show-inheritance:
 
-
 base
 ~~~~
 
 .. automodule:: quantify_scheduler.instrument_coordinator.components.base
+    :members:
+    :show-inheritance:
+
+generic
+~~~~~~~
+
+.. automodule:: quantify_scheduler.instrument_coordinator.components.generic
     :members:
     :show-inheritance:
 
@@ -215,12 +227,50 @@ zhinst
     :members:
     :show-inheritance:
 
+operations
+==========
+
+.. automodule:: quantify_scheduler.operations
+    :members:
+
+
+acquisition_library
+-------------------
+
+.. automodule:: quantify_scheduler.operations.acquisition_library
+    :members:
+
+gate_library
+------------
+.. automodule:: quantify_scheduler.operations.gate_library
+    :members:
+
+
+operation
+---------
+.. automodule:: quantify_scheduler.operations.operation
+    :members:
+
+pulse_library
+-------------
+
+.. automodule:: quantify_scheduler.operations.pulse_library
+    :members:
+
+
 
 schedules
 =========
 
 .. automodule:: quantify_scheduler.schedules
     :members:
+
+
+schedule
+--------
+.. automodule:: quantify_scheduler.schedules.schedule
+    :members:
+
 
 spectroscopy_schedules
 ----------------------
@@ -285,12 +335,6 @@ pulse_diagram
 .. automodule:: quantify_scheduler.visualization.pulse_diagram
     :members:
 
-acquisition_library
-===================
-
-.. automodule:: quantify_scheduler.acquisition_library
-    :members:
-
 
 
 .. _api-compilation:
@@ -315,12 +359,6 @@ frontends
     :members:
 
 
-gate_library
-============
-
-.. automodule:: quantify_scheduler.gate_library
-    :members:
-
 
 
 gettables
@@ -344,26 +382,12 @@ math
     :members:
 
 
-pulse_library
-=============
-
-.. automodule:: quantify_scheduler.pulse_library
-    :members:
-
-
 .. _api-resources:
 
 resources
 =========
 
 .. automodule:: quantify_scheduler.resources
-    :members:
-
-
-types
-=====
-
-.. automodule:: quantify_scheduler.types
     :members:
 
 

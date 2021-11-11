@@ -1,9 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
-from quantify_scheduler import types
-from quantify_scheduler.pulse_library import SquarePulse, IdlePulse
-from quantify_scheduler.acquisition_library import Trace
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
+
 
 # pylint: disable=too-many-arguments
 def trace_schedule(
@@ -17,7 +18,7 @@ def trace_schedule(
     clock: str,
     init_duration: int = 200e-6,
     repetitions: int = 1,
-) -> types.Schedule:
+) -> Schedule:
     """
     Generate a schedule to perform raw trace acquisition.
 
@@ -53,7 +54,7 @@ def trace_schedule(
     :
         The Raw Trace acquisition Schedule.
     """
-    schedule = types.Schedule("Raw trace acquisition", repetitions)
+    schedule = Schedule("Raw trace acquisition", repetitions)
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
     schedule.add(IdlePulse(duration=init_duration), label="Dead time")
@@ -104,7 +105,7 @@ def two_tone_trace_schedule(
     ro_integration_time: float,
     init_duration: float = 200e-6,
     repetitions: int = 1,
-) -> types.Schedule:
+) -> Schedule:
     """
     Generate a schedule for performing a two-tone raw trace acquisition.
 
@@ -152,7 +153,7 @@ def two_tone_trace_schedule(
     :
         The Two-tone Trace acquisition Schedule.
     """
-    schedule = types.Schedule("Two-tone Trace acquisition", repetitions)
+    schedule = Schedule("Two-tone Trace acquisition", repetitions)
     schedule.add_resource(
         ClockResource(name=qubit_pulse_clock, freq=qubit_pulse_frequency)
     )

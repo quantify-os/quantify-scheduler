@@ -10,9 +10,10 @@ from unittest.case import TestCase
 import numpy as np
 import pytest
 
-from quantify_scheduler.gate_library import X90
+from quantify_scheduler import Schedule
 from quantify_scheduler.helpers.schedule import get_pulse_uuid
 from quantify_scheduler.helpers.waveforms import (
+    apply_mixer_skewness_corrections,
     area_pulse,
     area_pulses,
     exec_custom_waveform_function,
@@ -20,12 +21,11 @@ from quantify_scheduler.helpers.waveforms import (
     get_waveform,
     get_waveform_by_pulseid,
     get_waveform_size,
+    modulate_waveform,
     resize_waveform,
     shift_waveform,
-    apply_mixer_skewness_corrections,
-    modulate_waveform,
 )
-from quantify_scheduler.types import Schedule
+from quantify_scheduler.operations.gate_library import X90
 
 
 @pytest.mark.parametrize(

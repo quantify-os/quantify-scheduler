@@ -3,6 +3,7 @@
 """Common resources for use with the quantify_scheduler."""
 from collections import UserDict
 from typing import Optional
+
 import jsonschema
 from quantify_core.utilities.general import load_json_schema
 

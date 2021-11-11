@@ -7,7 +7,7 @@ This tutorial describes how to use quantify-schedule to generate pulses and acqu
 also visualized in the Quantum Analyzer Result tab of LabOne, using the UHFQA's AWG.
 
 For this tutorial lets use :func:`~quantify_scheduler.schedules.spectroscopy_schedules.heterodyne_spec_sched` to create a
-pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.acquisition_library.SSBIntegrationComplex`
+pulse level Schedule. This utility function is used for debugging :class:`~quantify_scheduler.operations.acquisition_library.SSBIntegrationComplex`
 acquisition with pulses of a large fixed duration.
 
 Requirements
@@ -44,10 +44,10 @@ Requirements
         pulse_duration=16e-9,
         frequency=7.04e9,
         acquisition_delay=0,
-        integration_time=1e-6, 
-        port="q0:res", 
-        clock="q0.ro", 
-        init_duration=1e-5, 
+        integration_time=1e-6,
+        port="q0:res",
+        clock="q0.ro",
+        init_duration=1e-5,
     )
     schedule.repetitions = 1
 
@@ -59,7 +59,7 @@ Requirements
         import quantify_scheduler.schemas.examples as examples
         path = Path(examples.__file__).parent.joinpath(filename)
         return json.loads(path.read_text())
-    
+
     # Load example configuration from quantify_scheduler.schemas.examples
     device_config_map = (load_example_json_scheme('transmon_test_config.json'))
 
@@ -72,7 +72,7 @@ Requirements
       "devices": [
         {
           "name": "uhfqa0",
-          "type": "UHFQA", 
+          "type": "UHFQA",
           "ref": "none",
           "channel_0": {
             "port": "q0:res",

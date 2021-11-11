@@ -4,13 +4,18 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from quantify_core.utilities import general
-from quantify_scheduler import types
+
+from quantify_scheduler import Operation
 from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.types import ScheduleBase, AcquisitionMetadata
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionMetadata,
+    CompiledSchedule,
+    ScheduleBase,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox
@@ -26,7 +31,7 @@ class CachedSchedule:
     _start_offset_in_seconds: Optional[float] = None
     _total_duration_in_seconds: Optional[float] = None
 
-    def __init__(self, schedule: types.CompiledSchedule):
+    def __init__(self, schedule: CompiledSchedule):
         self._schedule = schedule
 
         self._pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
@@ -37,7 +42,7 @@ class CachedSchedule:
         self._acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
     @property
-    def schedule(self) -> types.CompiledSchedule:
+    def schedule(self) -> CompiledSchedule:
         """
         Returns schedule.
         """
@@ -133,7 +138,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
     return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
 
 
-def get_total_duration(schedule: types.CompiledSchedule) -> float:
+def get_total_duration(schedule: CompiledSchedule) -> float:
     """
     Returns the total schedule duration in seconds.
 
@@ -170,7 +175,7 @@ def get_total_duration(schedule: types.CompiledSchedule) -> float:
 
 
 def get_operation_start(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -214,7 +219,7 @@ def get_operation_start(
 
 
 def get_operation_end(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
     timeslot_index: int,
 ) -> float:
     """
@@ -234,14 +239,14 @@ def get_operation_end(
         return 0.0
 
     t_constr = schedule.timing_constraints[timeslot_index]
-    operation: types.Operation = schedule.operations[t_constr["operation_repr"]]
+    operation: Operation = schedule.operations[t_constr["operation_repr"]]
     t0: float = t_constr["abs_time"]
 
     return t0 + operation.duration
 
 
 def get_port_timeline(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
 ) -> Dict[str, Dict[int, List[int]]]:
     """
     Returns a new dictionary containing the timeline of
@@ -263,7 +268,7 @@ def get_port_timeline(
     schedule
         The schedule.
     """
-    port_timeline_dict: Dict[str, Dict[int, List[int]]] = dict()
+    port_timeline_dict: Dict[str, Dict[int, List[int]]] = {}
 
     # Sort timing constraints based on abs_time and keep the original index.
     timing_constrains_map = dict(
@@ -296,10 +301,10 @@ def get_port_timeline(
         ):
             port = str(info["port"])
             if port not in port_timeline_dict:
-                port_timeline_dict[port] = dict()
+                port_timeline_dict[port] = {}
 
             if timeslot_index not in port_timeline_dict[port]:
-                port_timeline_dict[port][timeslot_index] = list()
+                port_timeline_dict[port][timeslot_index] = []
 
             port_timeline_dict[port][timeslot_index].append(uuid)
 
@@ -307,7 +312,7 @@ def get_port_timeline(
 
 
 def get_schedule_time_offset(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
     port_timeline_dict: Dict[str, Dict[int, List[int]]],
 ) -> float:
     """
@@ -340,7 +345,7 @@ def get_schedule_time_offset(
 
 
 def get_pulse_info_by_uuid(
-    schedule: types.CompiledSchedule,
+    schedule: CompiledSchedule,
 ) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of pulses with its
@@ -351,7 +356,7 @@ def get_pulse_info_by_uuid(
     schedule
         The schedule.
     """
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = dict()
+    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
@@ -374,7 +379,7 @@ def get_pulse_info_by_uuid(
     return pulseid_pulseinfo_dict
 
 
-def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str, Any]]:
+def get_acq_info_by_uuid(schedule: CompiledSchedule) -> Dict[int, Dict[str, Any]]:
     """
     Returns a lookup dictionary of unique identifiers
     of acquisition information.
@@ -384,7 +389,7 @@ def get_acq_info_by_uuid(schedule: types.CompiledSchedule) -> Dict[int, Dict[str
     schedule
         The schedule.
     """
-    acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = dict()
+    acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
 

@@ -7,69 +7,69 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
 import copy
-from typing import Dict, Any
-
-import os
-import re
 import inspect
 import json
-import tempfile
+import os
+import re
 import shutil
-import pytest
-import numpy as np
+import tempfile
+from typing import Any, Dict
 
+import numpy as np
+import pytest
 from qcodes.instrument.base import Instrument
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.gate_library import Reset, Measure, X
-from quantify_scheduler.pulse_library import (
+import quantify_scheduler.schemas.examples as es
+from quantify_scheduler import Schedule
+from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.qblox import (
+    compiler_container,
+    constants,
+    q1asm_instructions,
+)
+from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.helpers import (
+    find_all_port_clock_combinations,
+    find_inner_dicts_containing_key,
+    generate_uuid_from_wf_data,
+    generate_waveform_data,
+    to_grid_time,
+)
+from quantify_scheduler.backends.qblox.instrument_compilers import (
+    QcmModule,
+    QcmRfModule,
+    QrmModule,
+    QrmRfModule,
+)
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    QASMRuntimeSettings,
+)
+from quantify_scheduler.compilation import (
+    determine_absolute_timing,
+    device_compile,
+    qcompile,
+)
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
     StaircasePulse,
 )
-from quantify_scheduler.acquisition_library import Trace
-from quantify_scheduler.resources import ClockResource, BasebandClockResource
-from quantify_scheduler.compilation import (
-    qcompile,
-    determine_absolute_timing,
-    device_compile,
-)
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox.helpers import (
-    generate_waveform_data,
-    find_inner_dicts_containing_key,
-    find_all_port_clock_combinations,
-    to_grid_time,
-    generate_uuid_from_wf_data,
-)
-
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
-    readout_calibration_sched,
     allxy_sched,
+    readout_calibration_sched,
 )
-from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import (
-    QASMRuntimeSettings,
-    BasebandModuleSettings,
-)
-from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QcmModule,
-    QrmModule,
-    QcmRfModule,
-    QrmRfModule,
-)
-from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
-from quantify_scheduler.backends.qblox import constants
-
-import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
 

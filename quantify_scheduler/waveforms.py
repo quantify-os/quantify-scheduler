@@ -8,9 +8,10 @@ These functions are intended to be used to generate waveforms defined in the
 Examples of waveforms that are too advanced are flux pulses that require knowledge of
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
+from typing import List, Union
+
 import numpy as np
 from scipy import signal
-from typing import Union, List
 
 
 def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
@@ -24,7 +25,7 @@ def square_imaginary(
 
 
 def ramp(t, amp, offset=0) -> np.ndarray:
-    return np.linspace(offset, amp + offset, len(t))
+    return np.linspace(offset, amp + offset, len(t), endpoint=False)
 
 
 def staircase(

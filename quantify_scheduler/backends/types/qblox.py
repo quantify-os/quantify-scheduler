@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, Tuple, Union
 from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple, Union
+
 from dataclasses_json import DataClassJsonMixin
+
 from quantify_scheduler.backends.qblox import constants
 
 
