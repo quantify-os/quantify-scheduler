@@ -10,7 +10,11 @@ from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 
 
-class Trace(Operation):
+class AcquisitionOperation(Operation):
+    pass
+
+
+class Trace(AcquisitionOperation):
     """The Trace acquisition protocol measures a signal s(t)."""
 
     def __init__(
@@ -94,7 +98,7 @@ class Trace(Operation):
         return self._get_signature(acq_info)
 
 
-class WeightedIntegratedComplex(Operation):
+class WeightedIntegratedComplex(AcquisitionOperation):
     """
     Weighted integration acquisition protocol on a
     complex signal in a custom complex window.
@@ -208,7 +212,7 @@ class WeightedIntegratedComplex(Operation):
         return self._get_signature(acq_info)
 
 
-class SSBIntegrationComplex(Operation):
+class SSBIntegrationComplex(AcquisitionOperation):
     def __init__(
         self,
         port: str,

@@ -18,10 +18,7 @@ from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
-from quantify_scheduler.operations.acquisition_library import (
-    SSBIntegrationComplex,
-    WeightedIntegratedComplex,
-)
+from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
@@ -530,7 +527,7 @@ def plot_acquisition_operations(
     handles = []
     for idx, tc in enumerate(schedule.timing_constraints):
         operation = schedule.operations[tc["operation_repr"]]
-        if isinstance(operation, (SSBIntegrationComplex, WeightedIntegratedComplex)):
+        if isinstance(operation, AcquisitionOperation):
 
             t0 = tc["abs_time"]
             t1 = t0 + operation.duration
