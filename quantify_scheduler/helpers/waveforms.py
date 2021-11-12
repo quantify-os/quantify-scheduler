@@ -497,7 +497,8 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
     Calculates the area of a set of pulses.
 
     The area is exact for pulse durations that are integer multiples of the 1/`sampling_rate`.
-    For non-integer multiples, the area of the pulse is calculated, not the area of the sampled pulse
+    For non-integer multiples, an extra sample is added and the the pulse area is determined by interpolation using the given pulse duration.
+    This works nicely for linear pulses but will be slightly off for non-linear ones.
 
     Parameters
     ----------
