@@ -47,6 +47,11 @@ def test_pulse_diagram_matplotlib() -> None:
 def test_plot_acquisition_operations() -> None:
     schedule = Schedule("test")
     schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
+    determine_absolute_timing(schedule=schedule)
+    handles = plot_acquisition_operations(schedule)
+    assert len(handles) == 0
+
     schedule.add(SSBIntegrationComplex("P", clock="cl0.baseband", duration=2e-6))
     determine_absolute_timing(schedule=schedule)
-    plot_acquisition_operations(schedule)
+    handles = plot_acquisition_operations(schedule)
+    assert len(handles) == 1
