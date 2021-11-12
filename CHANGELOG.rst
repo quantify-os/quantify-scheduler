@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Unreleased changes
+------------------
+
+* Compilation - The `determine_absolute_scheduling` function now sorts the list of labels in the timing constraints, and then a binary search (via `np.searchsorted`) is applied. (!274)
+
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
 --------------------------------------------------------------------------------------------------
