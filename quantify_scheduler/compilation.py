@@ -8,6 +8,7 @@ import logging
 from copy import deepcopy
 
 import jsonschema
+import numpy as np
 from quantify_core.utilities.general import load_json_schema
 from typing_extensions import Literal
 
@@ -73,6 +74,10 @@ def determine_absolute_timing(
 
     last_constr["abs_time"] = 0
 
+    timing_constraints_labels = [tc["label"] for tc in schedule.timing_constraints]
+    sort_idx = np.argsort(timing_constraints_labels)
+    timing_constraints_labels_sorted = np.asarray(sorted(timing_constraints_labels))
+
     for t_constr in schedule.data["timing_constraints"][1:]:
         curr_op = schedule.operations[t_constr["operation_repr"]]
         if t_constr["ref_op"] is None:
@@ -80,11 +85,9 @@ def determine_absolute_timing(
             ref_op = last_op
         else:
             # this assumes the reference op exists. This is ensured in schedule.add
-            ref_constr = next(
-                item
-                for item in schedule.timing_constraints
-                if item["label"] == t_constr["ref_op"]
-            )
+            sidx = np.searchsorted(timing_constraints_labels_sorted, t_constr["ref_op"])
+            ref_constr_idx = sort_idx[sidx]
+            ref_constr = schedule.timing_constraints[ref_constr_idx]
             ref_op = schedule.operations[ref_constr["operation_repr"]]
 
         # duration = 1 is useful when e.g., drawing a circuit diagram.
