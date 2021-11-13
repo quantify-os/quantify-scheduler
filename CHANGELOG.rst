@@ -5,7 +5,8 @@ Changelog
 Unreleased changes
 ------------------
 
-* Compilation - The `determine_absolute_scheduling` function now sorts the list of labels in the timing constraints, and then a binary search (via `np.searchsorted`) is applied. (!274)
+* Compilation - The `determine_absolute_scheduling` function now sorts the list of labels in the timing constraints, and then a binary search (via `np.searchsorted`) is applied. (!272, !274)
+* Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
 
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
