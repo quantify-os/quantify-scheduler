@@ -89,10 +89,8 @@ def _check_staircase(pulse: OpInfo) -> bool:
         The pulse to check.
     """
     reserved_wf_func = "quantify_scheduler.waveforms.staircase"
-    if pulse.data["clock"] == BasebandClockResource.IDENTITY:
-        return pulse.data["wf_func"] == reserved_wf_func
-    return False
-
+    return pulse.data["wf_func"] == reserved_wf_func
+    
 
 def _staircase_waveform_data(
     data_dict: dict, sampling_rate: float
