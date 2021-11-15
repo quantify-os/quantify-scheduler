@@ -167,7 +167,7 @@ def hardware_compile(
     Main function driving the compilation. The principle behind the overall compilation
     works as follows:
 
-    For every instrument in the hardware mapping, we instantiate a compiler object. Then
+    For every instrument in the hardware configuration, we instantiate a compiler object. Then
     we assign all the pulses/acquisitions that need to be played by that instrument to
     the compiler, which then compiles for each instrument individually.
 
@@ -180,7 +180,7 @@ def hardware_compile(
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
     hardware_cfg
-        The hardware mapping of the setup.
+        The hardware configuration of the setup.
 
     Returns
     -------

@@ -391,8 +391,8 @@ def qcompile(
     device_cfg
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
-    hardware_mapping
-        Hardware mapping, defines the compilation step from
+    hardware_cfg
+        Hardware configuration, defines the compilation step from
         the pulse-level to a hardware backend.
 
     Returns
@@ -465,6 +465,6 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
         hw_compile = import_python_object_from_string(hardware_cfg["backend"])
         compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
     else:
-        # generate compiled schedule without hardware_mapping
+        # generate compiled schedule without hardware_configuration
         compiled_schedule = CompiledSchedule(schedule)
     return compiled_schedule
