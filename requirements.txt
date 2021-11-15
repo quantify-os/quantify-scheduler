@@ -15,6 +15,9 @@ typing_extensions
 quantify_core>=0.5.0
 qblox-instruments==0.5.2
 
+# We are using rich in our tutorials
+rich[jupyter]
+
 # tmp fixes
 
 funcparserlib==1.0.0a0 # https://github.com/vlasovskikh/funcparserlib/issues/69

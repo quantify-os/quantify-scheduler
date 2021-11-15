@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import ast
+import functools
 import inspect
 import logging
+import sys
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
@@ -17,6 +19,15 @@ from quantify_core.utilities import general
 
 from quantify_scheduler import enums
 from quantify_scheduler.json_utils import JSONSchemaValMixin
+
+current_python_version = sys.version_info
+
+if current_python_version.major >= 3 and current_python_version.minor > 7:
+    cached_locate = functools.lru_cache(locate)
+else:
+    # This is to fix an interface change between python 3.7 and > 3.7 for functools.
+    logging.info("cached_locate behaviour not available for python 3.7")
+    cached_locate = locate
 
 
 class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
@@ -298,7 +309,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
                 # first remove the class prefix
                 return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
                 # and then use locate to retrieve the type class
-                acq_info["acq_return_type"] = locate(return_type_str)
+                acq_info["acq_return_type"] = cached_locate(return_type_str)
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):
