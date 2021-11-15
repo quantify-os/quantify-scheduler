@@ -528,7 +528,7 @@ def plot_acquisition_operations(
     for idx, tc in enumerate(schedule.timing_constraints):
         operation = schedule.operations[tc["operation_repr"]]
         if isinstance(operation, AcquisitionOperation):
-            t0 = tc["abs_time"] + pulse_info["t0"]
+            t0 = tc["abs_time"] + operation.data["acquisition_info"][0]["t0"]
             t1 = t0 + operation.duration
             h = ax.axvspan(t0, t1, **kwargs)
             handles.append(h)
