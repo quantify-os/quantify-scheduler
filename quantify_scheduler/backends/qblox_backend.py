@@ -167,9 +167,9 @@ def hardware_compile(
     Main function driving the compilation. The principle behind the overall compilation
     works as follows:
 
-    For every instrument in the hardware configuration, we instantiate a compiler object.
-    Then we assign all the pulses/acquisitions that need to be played by that instrument
-    to the compiler, which then compiles for each instrument individually.
+    For every instrument in the hardware configuration, we instantiate a compiler
+    object. Then we assign all the pulses/acquisitions that need to be played by that
+    instrument to the compiler, which then compiles for each instrument individually.
 
     This function then returns all the compiled programs bundled together in a
     dictionary with the QCoDeS name of the instrument as key.
