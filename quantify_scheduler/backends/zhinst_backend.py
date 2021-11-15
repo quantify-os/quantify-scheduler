@@ -21,7 +21,7 @@ from quantify_scheduler.backends.zhinst import settings as zi_settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.resources import Resource
-from quantify_scheduler.schedules.schedule import CompiledSchedule
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -556,7 +556,7 @@ class ZIDeviceConfig:
 
 
 def compile_backend(
-    schedule: CompiledSchedule, hardware_cfg: Dict[str, Any]
+    schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> CompiledSchedule:
 
     """
