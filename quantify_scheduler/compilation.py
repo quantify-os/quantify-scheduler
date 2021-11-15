@@ -374,7 +374,7 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
+    schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None
 ) -> CompiledSchedule:
     """
     Compile and assemble a :class:`~.Schedule` into a
@@ -420,9 +420,7 @@ def qcompile(
         hardware_compile = getattr(importlib.import_module(mod), cls)
         # pylint: disable=fixme
         # FIXME: still contains a hardcoded argument in the kwargs
-        compiled_schedule = hardware_compile(
-            schedule, hardware_map=hardware_mapping, **kwargs
-        )
+        compiled_schedule = hardware_compile(schedule, hardware_map=hardware_mapping)
     else:
         # generate compiled schedule without hardware_mapping
         compiled_schedule = CompiledSchedule(schedule)
