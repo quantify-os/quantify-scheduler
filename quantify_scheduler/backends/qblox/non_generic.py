@@ -129,7 +129,8 @@ def _stitched_square_pulse_waveform_data(
         Sampling rate of the device.
     """
     time_duration = PULSE_STITCHING_DURATION
-    amp_i, amp_q = data_dict["amp"], 0
+    amp_complex = complex(data_dict["amp"])
+    amp_i, amp_q = amp_complex.real, amp_complex.imag
     wf_data = np.ones(int(time_duration * sampling_rate))
     if np.sum(wf_data) < 0:
         wf_data, amp_i, amp_q = -wf_data, -amp_i, -amp_q
