@@ -557,7 +557,7 @@ class ZIDeviceConfig:
 
 def compile_backend(
     schedule: CompiledSchedule, hardware_map: Dict[str, Any]
-) -> Dict[str, Union[ZIDeviceConfig, float]]:
+) -> CompiledSchedule:
 
     """
     Compiles backend for Zurich Instruments hardware according
@@ -575,8 +575,7 @@ def compile_backend(
     Returns
     -------
     :
-        A collection containing the compiled backend
-        configuration for each device.
+        The compiled schedule.
 
     Raises
     ------
@@ -624,7 +623,10 @@ def compile_backend(
             device.name, schedule, builder, acq_config
         )
 
-    return device_configs
+    # add the compiled instructions to the schedule data structure
+    schedule["compiled_instructions"] = device_configs
+    # Mark the schedule as a compiled schedule
+    return CompiledSchedule(schedule)
 
 
 def _add_lo_config(

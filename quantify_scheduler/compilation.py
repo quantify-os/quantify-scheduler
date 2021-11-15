@@ -420,14 +420,12 @@ def qcompile(
         hardware_compile = getattr(importlib.import_module(mod), cls)
         # pylint: disable=fixme
         # FIXME: still contains a hardcoded argument in the kwargs
-        compiled_instructions = hardware_compile(
+        compiled_schedule = hardware_compile(
             schedule, hardware_map=hardware_mapping, **kwargs
         )
-        # add the compiled instructions to the schedule data structure
-        schedule["compiled_instructions"] = compiled_instructions
-
-    # Mark the schedule as a compiled schedule
-    compiled_schedule = CompiledSchedule(schedule)
+    else:
+        # generate compiled schedule without hardware_mapping
+        compiled_schedule = CompiledSchedule(schedule)
 
     return compiled_schedule
 

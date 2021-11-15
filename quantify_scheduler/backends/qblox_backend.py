@@ -8,7 +8,7 @@ from typing import Any, Dict, Tuple
 # pylint: disable=no-name-in-module
 from quantify_core.utilities.general import make_hash, without
 
-from quantify_scheduler import Schedule
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.operations.pulse_library import WindowOperation
@@ -162,7 +162,7 @@ def _assign_pulse_and_acq_info_to_devices(
 
 def hardware_compile(
     schedule: Schedule, hardware_map: Dict[str, Any]
-) -> Dict[str, Any]:
+) -> CompiledSchedule:
     """
     Main function driving the compilation. The principle behind the overall compilation
     works as follows:
@@ -185,7 +185,7 @@ def hardware_compile(
     Returns
     -------
     :
-        The compiled program.
+        The compiled schedule.
     """
     portclock_map = generate_port_clock_to_device_map(hardware_map)
 
@@ -198,4 +198,8 @@ def hardware_compile(
         portclock_mapping=portclock_map,
     )
 
-    return container.compile(repetitions=schedule.repetitions)
+    compiled_instructions = container.compile(repetitions=schedule.repetitions)
+    # add the compiled instructions to the schedule data structure
+    schedule["compiled_instructions"] = compiled_instructions
+    # Mark the schedule as a compiled schedule
+    return CompiledSchedule(schedule)
