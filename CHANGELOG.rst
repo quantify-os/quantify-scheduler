@@ -9,7 +9,8 @@ Unreleased changes
 * Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
 * Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
 * qcompile - renamed the hardware_mapping argument into hardware_cfg (!165)
-* hardware_compile - Introduced this function to perform the hardware compilation, rather than returning an dictionary, it returns a compiled schedule (!224)
+* Compilation - renamed the hardware_mapping argument of qcompile into hardware_cfg (#165, !279)
+* Compilation - Introduced the hardware_compile function to perform the hardware compilation returning a CompiledSchedule (#224, !279)
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
 --------------------------------------------------------------------------------------------------
