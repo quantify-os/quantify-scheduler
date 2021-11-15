@@ -18,8 +18,6 @@ class AcquisitionOperation(Operation):  # pylint: disable=too-many-ancestors
     acquisition pulses in the pulse diagrams.
     """
 
-    pass
-
 
 class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
     """The Trace acquisition protocol measures a signal s(t)."""
