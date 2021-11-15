@@ -1120,7 +1120,7 @@ def test_acquisition_staircase_unique_acquisitions(tmp_test_data_dir):
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1187,7 +1187,7 @@ def test_acquisition_staircase_right_acq_channel(tmp_test_data_dir):
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]

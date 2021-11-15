@@ -374,7 +374,7 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None
+    schedule: Schedule, device_cfg: dict, hardware_cfg: dict = None
 ) -> CompiledSchedule:
     """
     Compile and assemble a :class:`~.Schedule` into a
@@ -411,21 +411,7 @@ def qcompile(
     schedule = deepcopy(schedule)
 
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-
-    if hardware_mapping is not None:
-        bck_name = hardware_mapping["backend"]
-        # import the required backend callable to compile onto the backend
-        (mod, cls) = bck_name.rsplit(".", 1)
-        # compile using the appropriate hardware backend
-        hardware_compile = getattr(importlib.import_module(mod), cls)
-        # pylint: disable=fixme
-        # FIXME: still contains a hardcoded argument in the kwargs
-        compiled_schedule = hardware_compile(schedule, hardware_map=hardware_mapping)
-    else:
-        # generate compiled schedule without hardware_mapping
-        compiled_schedule = CompiledSchedule(schedule)
-
-    return compiled_schedule
+    return hardware_compile(schedule, hardware_cfg=hardware_cfg)
 
 
 def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
@@ -454,3 +440,34 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     return schedule
+
+
+def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
+    """
+    Add compiled instructions to the schedule based on the hardware config file.
+
+    Parameters
+    ----------
+    schedule
+        To be compiled.
+    hardware_cfg
+        Hardware specific configuration, defines the compilation step from
+        the gate-level to the pulse level description.
+
+    Returns
+    -------
+    :
+        The compiled schedule.
+    """
+
+    if hardware_cfg is not None:
+        bck_name = hardware_cfg["backend"]
+        # import the required backend callable to compile onto the backend
+        (mod, cls) = bck_name.rsplit(".", 1)
+        # compile using the appropriate hardware backend
+        hw_compile = getattr(importlib.import_module(mod), cls)
+        compiled_schedule = hw_compile(schedule, hardware_map=hardware_cfg)
+    else:
+        # generate compiled schedule without hardware_mapping
+        compiled_schedule = CompiledSchedule(schedule)
+    return compiled_schedule
