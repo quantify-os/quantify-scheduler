@@ -90,7 +90,7 @@ def _check_staircase(pulse: OpInfo) -> bool:
     """
     reserved_wf_func = "quantify_scheduler.waveforms.staircase"
     return pulse.data["wf_func"] == reserved_wf_func
-    
+
 
 def _staircase_waveform_data(
     data_dict: dict, sampling_rate: float
