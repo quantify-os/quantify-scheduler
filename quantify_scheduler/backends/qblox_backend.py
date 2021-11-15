@@ -8,7 +8,7 @@ from typing import Any, Dict, Tuple
 # pylint: disable=no-name-in-module
 from quantify_core.utilities.general import make_hash, without
 
-from quantify_scheduler import Schedule
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.operations.pulse_library import WindowOperation
@@ -161,15 +161,15 @@ def _assign_pulse_and_acq_info_to_devices(
 
 
 def hardware_compile(
-    schedule: Schedule, hardware_map: Dict[str, Any]
-) -> Dict[str, Any]:
+    schedule: Schedule, hardware_cfg: Dict[str, Any]
+) -> CompiledSchedule:
     """
     Main function driving the compilation. The principle behind the overall compilation
     works as follows:
 
-    For every instrument in the hardware mapping, we instantiate a compiler object. Then
-    we assign all the pulses/acquisitions that need to be played by that instrument to
-    the compiler, which then compiles for each instrument individually.
+    For every instrument in the hardware configuration, we instantiate a compiler
+    object. Then we assign all the pulses/acquisitions that need to be played by that
+    instrument to the compiler, which then compiles for each instrument individually.
 
     This function then returns all the compiled programs bundled together in a
     dictionary with the QCoDeS name of the instrument as key.
@@ -179,18 +179,18 @@ def hardware_compile(
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
-    hardware_map
-        The hardware mapping of the setup.
+    hardware_cfg
+        The hardware configuration of the setup.
 
     Returns
     -------
     :
-        The compiled program.
+        The compiled schedule.
     """
-    portclock_map = generate_port_clock_to_device_map(hardware_map)
+    portclock_map = generate_port_clock_to_device_map(hardware_cfg)
 
     container = compiler_container.CompilerContainer.from_mapping(
-        schedule, hardware_map
+        schedule, hardware_cfg
     )
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
@@ -198,4 +198,8 @@ def hardware_compile(
         portclock_mapping=portclock_map,
     )
 
-    return container.compile(repetitions=schedule.repetitions)
+    compiled_instructions = container.compile(repetitions=schedule.repetitions)
+    # add the compiled instructions to the schedule data structure
+    schedule["compiled_instructions"] = compiled_instructions
+    # Mark the schedule as a compiled schedule
+    return CompiledSchedule(schedule)
