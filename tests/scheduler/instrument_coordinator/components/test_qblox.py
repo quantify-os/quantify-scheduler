@@ -281,12 +281,6 @@ def test_prepare(close_all_instruments, schedule_with_measurement, make_qcm, mak
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
 
-PATH_TO_FORCE_SET: str = (
-    "quantify_scheduler.instrument_coordinator.components.qblox.force_set_parameters"
-)
-
-
-@patch(PATH_TO_FORCE_SET, True)
 def test_prepare_force_set(
     close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
 ):
@@ -301,6 +295,9 @@ def test_prepare_force_set(
     qrm.instrument._set_reference_source.reset_mock()
 
     # Act
+    qcm.force_set_parameters(True)
+    qrm.force_set_parameters(True)
+
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 

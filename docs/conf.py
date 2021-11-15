@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # pylint: disable=wrong-import-position, unused-import, invalid-name
 #
-# quantify documentation build configuration file, created by
+# Quantify documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  9 13:47:02 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -132,6 +132,21 @@ napoleon_include_init_with_doc = True
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
+
+
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+
+# the white text fits better with the current sphinx theme
+# both files are in the repository
+# html_logo = "images/QUANTIFY-LOGO.svg"
+html_logo = "images/QUANTIFY-LOGO-WHITE-TEXT.svg"
+
+# The name of an image file (within the static path) to use as favicon of the
+# docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# pixels large.
+html_favicon = "images/QUANTIFY-FAVICON_16.png"
+
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
