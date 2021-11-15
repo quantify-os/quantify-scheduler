@@ -9,7 +9,10 @@ from copy import deepcopy
 
 import jsonschema
 import numpy as np
-from quantify_core.utilities.general import load_json_schema
+from quantify_core.utilities.general import (
+    import_python_object_from_string,
+    load_json_schema,
+)
 from typing_extensions import Literal
 
 from quantify_scheduler.enums import BinMode
@@ -432,9 +435,7 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
         The updated schedule.
     """
 
-    device_bck_name = device_cfg["backend"]
-    (mod, cls) = device_bck_name.rsplit(".", 1)
-    device_compilation_bck = getattr(importlib.import_module(mod), cls)
+    device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
@@ -461,11 +462,7 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
     """
 
     if hardware_cfg is not None:
-        bck_name = hardware_cfg["backend"]
-        # import the required backend callable to compile onto the backend
-        (mod, cls) = bck_name.rsplit(".", 1)
-        # compile using the appropriate hardware backend
-        hw_compile = getattr(importlib.import_module(mod), cls)
+        hw_compile = import_python_object_from_string(hardware_cfg["backend"])
         compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
     else:
         # generate compiled schedule without hardware_mapping
