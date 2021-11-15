@@ -319,7 +319,7 @@ from qcodes import Instrument
 
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 
-config = hardware_compile(sched, qblox_test_mapping)
+config = hardware_compile(sched, qblox_test_mapping)["compiled_instructions"]
 
 # %% [raw]
 # The compiled schedule can be uploaded to the hardware using the following commands.
