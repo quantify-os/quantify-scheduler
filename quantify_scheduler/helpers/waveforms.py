@@ -468,7 +468,7 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     return rescaled_data, amp_real, amp_imag
 
 
-def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
+def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
     """
     Calculates the area of a set of pulses.
 
@@ -479,7 +479,7 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
     pulses
         List of dictinary with information of the pulses
     sampling_rate
-        Sampling rate for the pulse
+        Sampling rate for the puls
 
     Returns
     -------
@@ -492,13 +492,16 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
     return area
 
 
-def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
+def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
     """
-    Calculates the area of a set of pulses.
+    Calculates the area of a single pulse.
 
-    The area is exact for pulse durations that are integer multiples of the 1/`sampling_rate`.
-    For non-integer multiples, an extra sample is added and the the pulse area is determined by interpolation using the given pulse duration.
-    This works nicely for linear pulses but will be slightly off for non-linear ones.
+    The sampled area is calculated, which means that the area calculatd is based on the sampled waveform.
+    This can differ slighly from the ideal area of the parameterized pulse.
+
+    The duration used for calculation is the duration of the pulse. This duration
+    is equal to the duration of the sampled waveform for pulse durations that
+    are integer multiples of the 1/`sampling_rate`.
 
     Parameters
     ----------
