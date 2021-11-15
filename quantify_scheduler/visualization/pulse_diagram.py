@@ -524,12 +524,16 @@ def plot_acquisition_operations(
     if ax is None:
         ax = plt.gca()
 
-    handles = []
-    for idx, tc in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[tc["operation_repr"]]
+    handles_list = []
+    for idx, timing_constraint in enumerate(schedule.timing_constraints):
+        _ = idx  # unused variable
+        operation = schedule.operations[timing_constraint["operation_repr"]]
         if isinstance(operation, AcquisitionOperation):
-            t0 = tc["abs_time"] + operation.data["acquisition_info"][0]["t0"]
+            t0 = (
+                timing_constraint["abs_time"]
+                + operation.data["acquisition_info"][0]["t0"]
+            )
             t1 = t0 + operation.duration
-            h = ax.axvspan(t0, t1, **kwargs)
-            handles.append(h)
-    return handles
+            handle = ax.axvspan(t0, t1, **kwargs)
+            handles_list.append(handle)
+    return handles_list

@@ -10,11 +10,18 @@ from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 
 
-class AcquisitionOperation(Operation):
+class AcquisitionOperation(Operation):  # pylint: disable=too-many-ancestors
+    """
+    This class is used to help differentiate an acquisition operation from the regular
+    operations. This enables us to use
+    :func:`~.visualization.pulse_diagram.plot_acquisition_operations` to highlight
+    acquisition pulses in the pulse diagrams.
+    """
+
     pass
 
 
-class Trace(AcquisitionOperation):
+class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
     """The Trace acquisition protocol measures a signal s(t)."""
 
     def __init__(
@@ -98,7 +105,9 @@ class Trace(AcquisitionOperation):
         return self._get_signature(acq_info)
 
 
-class WeightedIntegratedComplex(AcquisitionOperation):
+class WeightedIntegratedComplex(
+    AcquisitionOperation
+):  # pylint: disable=too-many-ancestors
     """
     Weighted integration acquisition protocol on a
     complex signal in a custom complex window.
@@ -212,7 +221,12 @@ class WeightedIntegratedComplex(AcquisitionOperation):
         return self._get_signature(acq_info)
 
 
-class SSBIntegrationComplex(AcquisitionOperation):
+class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-ancestors
+    """
+    This class implements a SingleSideBand Integration acquisition protocol with
+    complex results.
+    """
+
     def __init__(
         self,
         port: str,
@@ -319,7 +333,14 @@ class SSBIntegrationComplex(AcquisitionOperation):
         return self._get_signature(acq_info)
 
 
-class NumericalWeightedIntegrationComplex(WeightedIntegratedComplex):
+class NumericalWeightedIntegrationComplex(
+    WeightedIntegratedComplex
+):  # pylint: disable=too-many-ancestors
+    """
+    Implements a WeightedIntegratedComplex class using parameterized waveforms and
+    interpolation as the integration weights.
+    """
+
     def __init__(
         self,
         weights_a: List[complex],
