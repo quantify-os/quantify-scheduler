@@ -453,7 +453,7 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
         To be compiled.
     hardware_cfg
         Hardware specific configuration, defines the compilation step from
-        the gate-level to the pulse level description.
+        the quantum-device layer to the control-hardware layer.
 
     Returns
     -------
