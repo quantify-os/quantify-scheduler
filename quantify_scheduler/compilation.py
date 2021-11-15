@@ -466,7 +466,7 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
         (mod, cls) = bck_name.rsplit(".", 1)
         # compile using the appropriate hardware backend
         hw_compile = getattr(importlib.import_module(mod), cls)
-        compiled_schedule = hw_compile(schedule, hardware_map=hardware_cfg)
+        compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
     else:
         # generate compiled schedule without hardware_mapping
         compiled_schedule = CompiledSchedule(schedule)

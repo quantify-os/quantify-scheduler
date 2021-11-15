@@ -161,7 +161,7 @@ def _assign_pulse_and_acq_info_to_devices(
 
 
 def hardware_compile(
-    schedule: Schedule, hardware_map: Dict[str, Any]
+    schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> CompiledSchedule:
     """
     Main function driving the compilation. The principle behind the overall compilation
@@ -179,7 +179,7 @@ def hardware_compile(
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise and exception is raised.
-    hardware_map
+    hardware_cfg
         The hardware mapping of the setup.
 
     Returns
@@ -187,10 +187,10 @@ def hardware_compile(
     :
         The compiled schedule.
     """
-    portclock_map = generate_port_clock_to_device_map(hardware_map)
+    portclock_map = generate_port_clock_to_device_map(hardware_cfg)
 
     container = compiler_container.CompilerContainer.from_mapping(
-        schedule, hardware_map
+        schedule, hardware_cfg
     )
     _assign_pulse_and_acq_info_to_devices(
         schedule=schedule,

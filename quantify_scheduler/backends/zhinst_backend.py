@@ -556,7 +556,7 @@ class ZIDeviceConfig:
 
 
 def compile_backend(
-    schedule: CompiledSchedule, hardware_map: Dict[str, Any]
+    schedule: CompiledSchedule, hardware_cfg: Dict[str, Any]
 ) -> CompiledSchedule:
 
     """
@@ -570,7 +570,7 @@ def compile_backend(
     Parameters
     ----------
     schedule :
-    hardware_map :
+    hardware_cfg :
 
     Returns
     -------
@@ -585,9 +585,9 @@ def compile_backend(
     _validate_schedule(schedule)
 
     # Parse the hardware configuration file
-    devices: List[zhinst.Device] = _parse_devices(hardware_map["devices"])
+    devices: List[zhinst.Device] = _parse_devices(hardware_cfg["devices"])
     local_oscillators: Dict[str, common.LocalOscillator] = _parse_local_oscillators(
-        hardware_map["local_oscillators"]
+        hardware_cfg["local_oscillators"]
     )
 
     # Create CachedSchedule to populate schedule lookup dictionaries.
