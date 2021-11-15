@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -18,6 +18,7 @@ from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
+from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
@@ -499,3 +500,40 @@ def plot_window_operations(
         )
 
     return ax.get_figure(), ax
+
+
+def plot_acquisition_operations(
+    schedule: Schedule, ax: Optional[matplotlib.axes.Axes] = None, **kwargs
+) -> List[Any]:
+    """
+    Plot the acquisition operations in a schedule.
+
+    Parameters
+    ----------
+    schedule:
+        Schedule from which to plot window operations.
+    ax:
+        Axis handle to use for plotting.
+    kwargs:
+        Passed to matplotlib plotting routine
+    Returns
+    -------
+    :
+        List of handles
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    handles_list = []
+    for idx, timing_constraint in enumerate(schedule.timing_constraints):
+        _ = idx  # unused variable
+        operation = schedule.operations[timing_constraint["operation_repr"]]
+        if isinstance(operation, AcquisitionOperation):
+            t0 = (
+                timing_constraint["abs_time"]
+                + operation.data["acquisition_info"][0]["t0"]
+            )
+            t1 = t0 + operation.duration
+            handle = ax.axvspan(t0, t1, **kwargs)
+            handles_list.append(handle)
+    return handles_list

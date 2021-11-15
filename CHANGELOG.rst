@@ -7,6 +7,7 @@ Unreleased changes
 
 * Compilation - The `determine_absolute_scheduling` function now sorts the list of labels in the timing constraints, and then a binary search (via `np.searchsorted`) is applied. (!272, !274)
 * Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
+* Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
 * qcompile - renamed the hardware_mapping argument into hardware_cfg (!165)
 * hardware_compile - Introduced this function to perform the hardware compilation, rather than returning an dictionary, it returns a compiled schedule (!224)
 
