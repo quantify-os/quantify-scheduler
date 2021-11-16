@@ -414,7 +414,12 @@ def qcompile(
     schedule = deepcopy(schedule)
 
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    return hardware_compile(schedule, hardware_cfg=hardware_cfg)
+
+    if hardware_cfg is not None:
+        compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
+    else:
+        compiled_schedule = CompiledSchedule(schedule)
+    return compiled_schedule
 
 
 def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
@@ -443,7 +448,7 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     return schedule
 
 
-def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
+def hardware_compile(schedule: Schedule, hardware_cfg: dict):
     """
     Add compiled instructions to the schedule based on the hardware config file.
 
@@ -461,10 +466,6 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
         The compiled schedule.
     """
 
-    if hardware_cfg is not None:
-        hw_compile = import_python_object_from_string(hardware_cfg["backend"])
-        compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
-    else:
-        # generate compiled schedule without hardware_configuration
-        compiled_schedule = CompiledSchedule(schedule)
+    hw_compile = import_python_object_from_string(hardware_cfg["backend"])
+    compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
     return compiled_schedule
