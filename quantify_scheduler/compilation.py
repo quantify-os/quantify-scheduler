@@ -9,7 +9,10 @@ from copy import deepcopy
 
 import jsonschema
 import numpy as np
-from quantify_core.utilities.general import load_json_schema
+from quantify_core.utilities.general import (
+    import_python_object_from_string,
+    load_json_schema,
+)
 from typing_extensions import Literal
 
 from quantify_scheduler.enums import BinMode
@@ -374,7 +377,7 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
+    schedule: Schedule, device_cfg: dict, hardware_cfg: dict = None
 ) -> CompiledSchedule:
     """
     Compile and assemble a :class:`~.Schedule` into a
@@ -388,8 +391,8 @@ def qcompile(
     device_cfg
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
-    hardware_mapping
-        Hardware mapping, defines the compilation step from
+    hardware_cfg
+        Hardware configuration, defines the compilation step from
         the pulse-level to a hardware backend.
 
     Returns
@@ -411,25 +414,7 @@ def qcompile(
     schedule = deepcopy(schedule)
 
     schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-
-    if hardware_mapping is not None:
-        bck_name = hardware_mapping["backend"]
-        # import the required backend callable to compile onto the backend
-        (mod, cls) = bck_name.rsplit(".", 1)
-        # compile using the appropriate hardware backend
-        hardware_compile = getattr(importlib.import_module(mod), cls)
-        # pylint: disable=fixme
-        # FIXME: still contains a hardcoded argument in the kwargs
-        compiled_instructions = hardware_compile(
-            schedule, hardware_map=hardware_mapping, **kwargs
-        )
-        # add the compiled instructions to the schedule data structure
-        schedule["compiled_instructions"] = compiled_instructions
-
-    # Mark the schedule as a compiled schedule
-    compiled_schedule = CompiledSchedule(schedule)
-
-    return compiled_schedule
+    return hardware_compile(schedule, hardware_cfg=hardware_cfg)
 
 
 def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
@@ -450,11 +435,36 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
         The updated schedule.
     """
 
-    device_bck_name = device_cfg["backend"]
-    (mod, cls) = device_bck_name.rsplit(".", 1)
-    device_compilation_bck = getattr(importlib.import_module(mod), cls)
+    device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     return schedule
+
+
+def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
+    """
+    Add compiled instructions to the schedule based on the hardware config file.
+
+    Parameters
+    ----------
+    schedule
+        To be compiled.
+    hardware_cfg
+        Hardware specific configuration, defines the compilation step from
+        the quantum-device layer to the control-hardware layer.
+
+    Returns
+    -------
+    :
+        The compiled schedule.
+    """
+
+    if hardware_cfg is not None:
+        hw_compile = import_python_object_from_string(hardware_cfg["backend"])
+        compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
+    else:
+        # generate compiled schedule without hardware_configuration
+        compiled_schedule = CompiledSchedule(schedule)
+    return compiled_schedule

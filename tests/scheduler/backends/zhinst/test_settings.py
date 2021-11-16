@@ -51,11 +51,11 @@ def test_zi_settings_equality(tmp_test_data_dir):
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6
-    comp_sched_a = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched_a = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = -100e6
-    comp_sched_b = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
-    comp_sched_c = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched_b = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    comp_sched_c = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # Act
     sett_a = comp_sched_a.compiled_instructions["ic_uhfqa0"].settings_builder.build()

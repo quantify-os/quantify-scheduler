@@ -21,7 +21,7 @@ from quantify_scheduler.backends.zhinst import settings as zi_settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.resources import Resource
-from quantify_scheduler.schedules.schedule import CompiledSchedule
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -556,8 +556,8 @@ class ZIDeviceConfig:
 
 
 def compile_backend(
-    schedule: CompiledSchedule, hardware_map: Dict[str, Any]
-) -> Dict[str, Union[ZIDeviceConfig, float]]:
+    schedule: Schedule, hardware_cfg: Dict[str, Any]
+) -> CompiledSchedule:
 
     """
     Compiles backend for Zurich Instruments hardware according
@@ -570,13 +570,12 @@ def compile_backend(
     Parameters
     ----------
     schedule :
-    hardware_map :
+    hardware_cfg :
 
     Returns
     -------
     :
-        A collection containing the compiled backend
-        configuration for each device.
+        The compiled schedule.
 
     Raises
     ------
@@ -586,9 +585,9 @@ def compile_backend(
     _validate_schedule(schedule)
 
     # Parse the hardware configuration file
-    devices: List[zhinst.Device] = _parse_devices(hardware_map["devices"])
+    devices: List[zhinst.Device] = _parse_devices(hardware_cfg["devices"])
     local_oscillators: Dict[str, common.LocalOscillator] = _parse_local_oscillators(
-        hardware_map["local_oscillators"]
+        hardware_cfg["local_oscillators"]
     )
 
     # Create CachedSchedule to populate schedule lookup dictionaries.
@@ -624,7 +623,10 @@ def compile_backend(
             device.name, schedule, builder, acq_config
         )
 
-    return device_configs
+    # add the compiled instructions to the schedule data structure
+    schedule["compiled_instructions"] = device_configs
+    # Mark the schedule as a compiled schedule
+    return CompiledSchedule(schedule)
 
 
 def _add_lo_config(
