@@ -4,7 +4,7 @@
 from quantify_scheduler.compilation import validate_config
 
 
-def test_QuantumDevice_generate_device_config(mock_setup):
+def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
 
     quantum_device = mock_setup["quantum_device"]
     dev_cfg = quantum_device.generate_device_config()
@@ -13,7 +13,7 @@ def test_QuantumDevice_generate_device_config(mock_setup):
     assert {"q0", "q1"} <= set(dev_cfg["qubits"].keys())
 
 
-def test_QuantumDevice_generate_hardware_config(mock_setup):
+def test_QuantumDevice_generate_hardware_config(mock_setup: dict) -> None:
 
     quantum_device = mock_setup["quantum_device"]
 

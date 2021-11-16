@@ -4,6 +4,7 @@
 Python time wrapper functions.
 These function help to make time dependent modules testable.
 """
+
 import time
 
 
