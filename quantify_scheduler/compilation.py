@@ -449,7 +449,7 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     return schedule
 
 
-def hardware_compile(schedule: Schedule, hardware_cfg: dict):
+def hardware_compile(schedule: Schedule, hardware_cfg: dict) -> CompiledSchedule:
     """
     Add compiled instructions to the schedule based on the hardware config file.
 
