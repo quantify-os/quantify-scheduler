@@ -381,7 +381,9 @@ def test_compile_hardware_hdawg4_successfully(
     }
 
     # Act
-    device_configs = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)[
+        "compiled_instructions"
+    ]
 
     # Assert
     assert "hdawg0" in device_configs
@@ -475,7 +477,9 @@ def test_compile_hardware_uhfqa_successfully(
     }
 
     # Act
-    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)[
+        "compiled_instructions"
+    ]
 
     # Assert
     assert "uhfqa0" in device_configs
@@ -532,7 +536,9 @@ def test_hdawg4_sequence(
     ).lstrip("\n")
 
     # Act
-    compiled_instructions = zhinst_backend.compile_backend(schedule, hdawg_hardware_map)
+    compiled_instructions = zhinst_backend.compile_backend(
+        schedule, hdawg_hardware_map
+    )["compiled_instructions"]
 
     # Assert
     assert "hdawg0" in compiled_instructions
@@ -818,7 +824,9 @@ def test_uhfqa_sequence1(
     # pylint: enable=line-too-long
 
     # Act
-    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)[
+        "compiled_instructions"
+    ]
 
     # Assert
     assert "uhfqa0" in device_configs
@@ -881,7 +889,9 @@ def test_uhfqa_sequence2(
     # pylint: enable=line-too-long
 
     # Act
-    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)[
+        "compiled_instructions"
+    ]
 
     # Assert
     assert "uhfqa0" in device_configs
@@ -952,7 +962,9 @@ def test_uhfqa_sequence3(
     # pylint: enable=line-too-long
 
     # Act
-    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)
+    device_configs = zhinst_backend.compile_backend(schedule, uhfqa_hardware_map)[
+        "compiled_instructions"
+    ]
 
     # Assert
     assert "uhfqa0" in device_configs
@@ -1108,7 +1120,7 @@ def test_acquisition_staircase_unique_acquisitions(tmp_test_data_dir):
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1175,7 +1187,7 @@ def test_acquisition_staircase_right_acq_channel(tmp_test_data_dir):
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
