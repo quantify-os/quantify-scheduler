@@ -804,7 +804,7 @@ def test_looped_acquisition(dummy_pulsars):
     sched = determine_absolute_timing(sched)
     compiled_sched = qb.hardware_compile(sched, HARDWARE_MAPPING)
 
-    with open(compiled_sched["qrm0"]["seq0"]["seq_fn"]) as file:
+    with open(compiled_sched.compiled_instructions["qrm0"]["seq0"]["seq_fn"]) as file:
         qrm0_seq_instructions = json.load(file)
 
     baseline_assembly = os.path.join(
