@@ -715,8 +715,8 @@ def test_compile_with_pulse_stitching(
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
     waveforms = qcm0.get_waveforms(0)
-    assert waveforms['stitched_square_pulse_I']['data'] == [1.0]*1000
-    assert waveforms['stitched_square_pulse_Q']['data'] == [0.0]*1000
+    assert waveforms["stitched_square_pulse_I"]["data"] == [1.0] * 1000
+    assert waveforms["stitched_square_pulse_Q"]["data"] == [0.0] * 1000
 
 
 def test_qcm_acquisition_error():
