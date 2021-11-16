@@ -377,7 +377,7 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict, hardware_cfg: dict = None
+    schedule: Schedule, device_cfg: dict = None, hardware_cfg: dict = None
 ) -> CompiledSchedule:
     """
     Compile and assemble a :class:`~.Schedule` into a
@@ -413,7 +413,8 @@ def qcompile(
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
+    if device_cfg is not None:
+        schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
 
     if hardware_cfg is not None:
         compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
