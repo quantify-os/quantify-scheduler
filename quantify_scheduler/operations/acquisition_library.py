@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 # pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
+
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -32,7 +33,7 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         t0: float = 0,
         data: Optional[dict] = None,
-    ):
+    ) -> None:
         """
         Creates a new instance of Trace.
         The Trace acquisition protocol measures a signal s(t).
@@ -124,7 +125,7 @@ class WeightedIntegratedComplex(
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
-    ):
+    ) -> None:
         r"""
         Creates a new instance of WeightedIntegratedComplex.
         Weighted integration acquisition protocol on a
@@ -208,7 +209,7 @@ class WeightedIntegratedComplex(
                 ],
             }
         # certain fields are required in the acquisition data
-        if not "acq_return_type" in data["acquisition_info"][0]:
+        if "acq_return_type" not in data["acquisition_info"][0]:
             data["acquisition_info"][0]["acq_return_type"] = complex
             data["acquisition_info"][0]["protocol"] = "weighted_integrated_complex"
 
@@ -236,7 +237,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
-    ):
+    ) -> None:
         """
         Creates a new instance of SSBIntegrationComplex. Single Sideband
         Integration acquisition protocol with complex results.
@@ -320,7 +321,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
                 ],
             }
         # certain fields are required in the acquisition data
-        if not "acq_return_type" in data["acquisition_info"][0]:
+        if "acq_return_type" not in data["acquisition_info"][0]:
             data["acquisition_info"][0]["acq_return_type"] = complex
             data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
 
@@ -341,9 +342,9 @@ class NumericalWeightedIntegrationComplex(
 
     def __init__(
         self,
-        weights_a: List[complex],
-        weights_b: List[complex],
-        t: List[float],
+        weights_a: Union[List[complex], np.ndarray],
+        weights_b: Union[List[complex], np.ndarray],
+        t: Union[List[float], np.ndarray],
         port: str,
         clock: str,
         interpolation: str = "linear",
@@ -353,7 +354,7 @@ class NumericalWeightedIntegrationComplex(
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
-    ):
+    ) -> None:
         r"""
         Creates a new instance of NumericalWeightedIntegrationComplex.
         NumericalWeightedIntegrationComplex inherits from

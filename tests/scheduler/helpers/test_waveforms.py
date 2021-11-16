@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import inspect
-from typing import List
+from typing import Callable, List
 from unittest.case import TestCase
 
 import numpy as np
 import pytest
+from pytest_mock.plugin import MockerFixture
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.helpers.schedule import get_pulse_uuid
@@ -38,7 +39,7 @@ from quantify_scheduler.operations.gate_library import X90
         (33, 16, 48),
     ],
 )
-def test_resize_waveform(size: int, granularity: int, expected: int):
+def test_resize_waveform(size: int, granularity: int, expected: int) -> None:
     # Arrange
     waveform = np.arange(0, size, 1)
 
@@ -58,7 +59,7 @@ def test_resize_waveform(size: int, granularity: int, expected: int):
         ("quantify_scheduler.waveforms.drag", 2.4e9),
     ],
 )
-def test_get_waveform(mocker, wf_func: str, sampling_rate: float):
+def test_get_waveform(mocker: MockerFixture, wf_func: str, sampling_rate: int) -> None:
     # Arrange
     mock = mocker.patch(
         "quantify_scheduler.helpers.waveforms.exec_waveform_function", return_value=[]
@@ -66,7 +67,7 @@ def test_get_waveform(mocker, wf_func: str, sampling_rate: float):
     pulse_info_mock = {"duration": 1.6e-08, "wf_func": wf_func}
 
     # Act
-    get_waveform(pulse_info_mock, sampling_rate)
+    get_waveform(pulse_info_mock, int(sampling_rate))
 
     # Assert
     args, _ = mock.call_args
@@ -77,7 +78,7 @@ def test_get_waveform(mocker, wf_func: str, sampling_rate: float):
 
 def test_get_waveform_by_pulseid(
     schedule_with_pulse_info: Schedule,
-):
+) -> None:
     # Arrange
     operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
@@ -94,8 +95,8 @@ def test_get_waveform_by_pulseid(
 
 
 def test_get_waveform_by_pulseid_are_unique(
-    create_schedule_with_pulse_info,
-):
+    create_schedule_with_pulse_info: Callable,
+) -> None:
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(X90("q0"))
@@ -116,7 +117,7 @@ def test_get_waveform_by_pulseid_are_unique(
     assert callable(waveform_dict[pulse_id])
 
 
-def test_get_waveform_by_pulseid_empty(empty_schedule: Schedule):
+def test_get_waveform_by_pulseid_empty(empty_schedule: Schedule) -> None:
     # Arrange
     # Act
     waveform_dict = get_waveform_by_pulseid(empty_schedule)
@@ -134,7 +135,7 @@ def test_get_waveform_by_pulseid_empty(empty_schedule: Schedule):
         ("quantify_scheduler.waveforms.drag"),
     ],
 )
-def test_exec_waveform_function(wf_func: str, mocker):
+def test_exec_waveform_function(wf_func: str, mocker: MockerFixture) -> None:
     # Arrange
     pulse_duration = 1e-08
     t: np.ndarray = np.arange(0, 0 + pulse_duration, 1 / 1e9)
@@ -164,7 +165,9 @@ def test_exec_waveform_function(wf_func: str, mocker):
         ("module.function"),
     ],
 )
-def test_exec_waveform_function_with_custom(wf_func: str, mocker):
+def test_exec_waveform_function_with_custom(
+    wf_func: str, mocker: MockerFixture
+) -> None:
     # Arrange
     pulse_duration = 1e-08
     t: np.ndarray = np.arange(0, 0 + pulse_duration, 1 / 1e9)
@@ -189,14 +192,15 @@ def test_exec_waveform_function_with_custom(wf_func: str, mocker):
     assert waveform == []
 
 
-def test_exec_custom_waveform_function(mocker):
+def test_exec_custom_waveform_function(mocker: MockerFixture) -> None:
     # Arrange
     t = np.arange(0, 10, 1)
     pulse_info_mock = {"duration": 1.4e-9, "t0": 0}
 
+    # pylint: disable=W0613
     def custom_function(
         t: int, duration: float, t0: float
-    ):  # pylint: disable=unused-argument
+    ) -> None:  # pylint: disable=unused-argument
         pass
 
     mock = mocker.Mock()
@@ -213,7 +217,7 @@ def test_exec_custom_waveform_function(mocker):
     mock.assert_called_with(t=t, duration=1.4e-9, t0=0)
 
 
-def test_shift_waveform_misaligned():
+def test_shift_waveform_misaligned() -> None:
     # Arrange
     clock_rate: int = 2400000000
     t = np.arange(0, 16e-9, 1 / clock_rate)
@@ -241,7 +245,7 @@ def test_shift_waveform_misaligned():
     np.testing.assert_array_equal(shifted_waveform, expected)
 
 
-def test_shift_waveform_aligned():
+def test_shift_waveform_aligned() -> None:
     # Arrange
     clock_rate: int = 2400000000
     t = np.arange(0, 16e-9, 1 / clock_rate)
@@ -269,7 +273,7 @@ def test_shift_waveform_aligned():
         (33, 16, 48),
     ],
 )
-def test_get_waveform_size(size: int, granularity: int, expected: int):
+def test_get_waveform_size(size: int, granularity: int, expected: int) -> None:
     # Act
     new_size = get_waveform_size(np.ones(size), granularity)
 
@@ -277,7 +281,7 @@ def test_get_waveform_size(size: int, granularity: int, expected: int):
     assert expected == new_size
 
 
-def test_apply_mixer_skewness_corrections():
+def test_apply_mixer_skewness_corrections() -> None:
     # Arrange
     frequency = 10e6
     t = np.linspace(0, 1e-6, 1000)
@@ -294,14 +298,14 @@ def test_apply_mixer_skewness_corrections():
     amp_ratio_after = np.max(np.abs(waveform.real)) / np.max(np.abs(waveform.imag))
 
     # Assert
-    assert isinstance(waveform, (np.ndarray, np.generic))
+    assert isinstance(waveform, np.ndarray)
     assert pytest.approx(amp_ratio_after, amplitude_ratio)
     normalized_real = waveform.real / np.max(np.abs(waveform.real))
     normalized_imag = waveform.imag / np.max(np.abs(waveform.imag))
     assert np.allclose(normalized_real, normalized_imag)
 
 
-def test_modulate_waveform():
+def test_modulate_waveform() -> None:
     # Arrange
     frequency = 10e6
     t0 = 50e-9

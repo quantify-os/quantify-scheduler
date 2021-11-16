@@ -1,6 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Common resources for use with the quantify_scheduler."""
+
+from __future__ import annotations
+
 from collections import UserDict
 from typing import Optional
 
@@ -15,7 +18,7 @@ class Resource(UserDict):
     .. jsonschema:: schemas/resource.json
     """
 
-    def __init__(self, name: str, data: Optional[dict] = None):
+    def __init__(self, name: str, data: Optional[dict] = None) -> None:
         """
         Create a new instance of Resource.
 
@@ -36,7 +39,7 @@ class Resource(UserDict):
             self.data.update(data)
 
     @classmethod
-    def is_valid(cls, operation):
+    def is_valid(cls, operation: Resource) -> bool:
         """
         Validates the Resource against the schemas/resource.json jsonschema.
 
@@ -119,7 +122,7 @@ class ClockResource(Resource):
 
     def __init__(
         self, name: str, freq: float, phase: float = 0, data: Optional[dict] = None
-    ):
+    ) -> None:
         """
         A clock resource used to modulate pulses.
 
@@ -154,7 +157,7 @@ class BasebandClockResource(Resource):
 
     IDENTITY = "cl0.baseband"
 
-    def __init__(self, name: str, data: Optional[dict] = None):
+    def __init__(self, name: str, data: Optional[dict] = None) -> None:
         """
         A clock resource for pulses that operate at baseband.
 

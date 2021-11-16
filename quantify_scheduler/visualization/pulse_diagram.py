@@ -19,6 +19,7 @@ from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
+from quantify_scheduler.schedules.schedule import CompiledSchedule
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
@@ -76,7 +77,7 @@ def validate_pulse_info(pulse_info, port_map, t_constr, operation):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def pulse_diagram_plotly(
-    schedule: Schedule,
+    schedule: CompiledSchedule,
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,

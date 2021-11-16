@@ -4,6 +4,7 @@
 from unittest.mock import call
 
 import numpy as np
+from pytest_mock.plugin import MockerFixture
 
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst.resolvers import (
@@ -12,7 +13,7 @@ from quantify_scheduler.backends.zhinst.resolvers import (
 )
 
 
-def test_monitor_acquisition_resolver(mocker):
+def test_monitor_acquisition_resolver(mocker: MockerFixture) -> None:
     # Arrange
     real_data = [1, 2, 3]
     imag_data = [4, 5, 6]
@@ -42,7 +43,7 @@ def test_monitor_acquisition_resolver(mocker):
     assert complex_result.imag.tolist() == imag_data
 
 
-def test_result_acquisition_resolver(mocker):
+def test_result_acquisition_resolver(mocker: MockerFixture) -> None:
     # Arrange
     real_data = np.array([1, 2, 3])
     imag_data = np.array([4, 5, 6])
