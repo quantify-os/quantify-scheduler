@@ -431,7 +431,7 @@ class QASMProgram:
         bin_idx
             The bin_idx to store the result in.
         """
-        duration_ns = int(acquisition.duration * 1e9)
+        duration_ns = int(round(acquisition.duration * 1e9))
         if self.parent.settings.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
                 raise ValueError(
