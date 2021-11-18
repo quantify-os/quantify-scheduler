@@ -14,6 +14,18 @@ from quantify_core.utilities.general import load_json_schema
 
 from quantify_scheduler.helpers import inspect as inspect_helpers
 
+try:
+    # import jsonschema_rs
+    import fastjsonschema
+
+    def validate_json(data, schema):
+        """Validate schema using jsonschema-rs"""
+        return fastjsonschema.validate(schema, data)
+
+
+except ImportError:
+    from jsonschema import validate as validate_json
+
 
 class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
     """
@@ -28,7 +40,7 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
         """Checks if the object is valid according to its schema."""
 
         scheme = load_json_schema(__file__, cls.schema_filename)
-        jsonschema.validate(object_to_be_validated.data, scheme)
+        validate_json(object_to_be_validated.data, scheme)
         return True  # if no exception was raised during validation
 
 

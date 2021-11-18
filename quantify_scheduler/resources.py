@@ -7,8 +7,9 @@ from __future__ import annotations
 from collections import UserDict
 from typing import Optional
 
-import jsonschema
 from quantify_core.utilities.general import load_json_schema
+
+from quantify_scheduler.json_utils import validate_json
 
 
 class Resource(UserDict):
@@ -60,7 +61,7 @@ class Resource(UserDict):
             If the validation was successfull.
         """
         scheme = load_json_schema(__file__, "resource.json")
-        jsonschema.validate(operation.data, scheme)
+        validate_json(operation.data, scheme)
         return True  # if not exception was raised during validation
 
     @property
