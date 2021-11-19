@@ -156,7 +156,7 @@ def shift_waveform(
 
 def get_waveform(
     pulse_info: Dict[str, Any],
-    sampling_rate: int,
+    sampling_rate: float,
 ) -> np.ndarray:
     """
     Returns the waveform of a pulse_info dictionary.
@@ -468,9 +468,11 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     return rescaled_data, amp_real, amp_imag
 
 
-def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
+def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
     """
     Calculates the area of a set of pulses.
+
+    For details of the calculation see `area_pulse`.
 
     Parameters
     ----------
@@ -490,9 +492,17 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: int) -> float:
     return area
 
 
-def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
+def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
     """
-    Calculates the area of a set of pulses.
+    Calculates the area of a single pulse.
+
+    The sampled area is calculated, which means that the area calculatd is
+    based on the sampled waveform. This can differ slighly from the ideal area of
+    the parameterized pulse.
+
+    The duration used for calculation is the duration of the pulse. This duration
+    is equal to the duration of the sampled waveform for pulse durations that
+    are integer multiples of the 1/`sampling_rate`.
 
     Parameters
     ----------
@@ -508,6 +518,11 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: int) -> float:
         The area defined by the pulse
     """
     assert sampling_rate > 0
-    waveform: np.ndarray = get_waveform(pulse, sampling_rate)
+
     # Nice to have: Give the user the option to choose integration algorithm
-    return waveform.sum() / sampling_rate
+
+    if pulse["wf_func"] == "quantify_scheduler.waveforms.square":
+        return pulse["amp"] * pulse["duration"]
+
+    waveform: np.ndarray = get_waveform(pulse, sampling_rate)
+    return waveform.mean() * pulse["duration"]
