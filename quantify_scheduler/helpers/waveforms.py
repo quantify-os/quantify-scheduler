@@ -479,7 +479,7 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
     pulses
         List of dictinary with information of the pulses
     sampling_rate
-        Sampling rate for the puls
+        Sampling rate for the pulse
 
     Returns
     -------
