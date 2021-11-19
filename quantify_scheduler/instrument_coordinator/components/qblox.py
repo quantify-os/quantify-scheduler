@@ -497,6 +497,9 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         else:
             self._acquisition_manager = None
 
+        for seq_idx in range(self._hardware_properties.number_of_sequencers):
+            self._set_parameter(f"sequencer{seq_idx}_sync_en", False)
+
         if "settings" in program:
             settings_entry = program.pop("settings")
             pulsar_settings = self._hardware_properties.settings_type.from_dict(
