@@ -156,7 +156,7 @@ def shift_waveform(
 
 def get_waveform(
     pulse_info: Dict[str, Any],
-    sampling_rate: int,
+    sampling_rate: float,
 ) -> np.ndarray:
     """
     Returns the waveform of a pulse_info dictionary.
@@ -496,8 +496,9 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
     """
     Calculates the area of a single pulse.
 
-    The sampled area is calculated, which means that the area calculatd is based on the sampled waveform.
-    This can differ slighly from the ideal area of the parameterized pulse.
+    The sampled area is calculated, which means that the area calculatd is
+    based on the sampled waveform. This can differ slighly from the ideal area of
+    the parameterized pulse.
 
     The duration used for calculation is the duration of the pulse. This duration
     is equal to the duration of the sampled waveform for pulse durations that
@@ -522,6 +523,6 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
 
     if pulse["wf_func"] == "quantify_scheduler.waveforms.square":
         return pulse["amp"] * pulse["duration"]
-    else:
-        waveform: np.ndarray = get_waveform(pulse, sampling_rate)
-        return waveform.mean() * pulse["duration"]
+
+    waveform: np.ndarray = get_waveform(pulse, sampling_rate)
+    return waveform.mean() * pulse["duration"]

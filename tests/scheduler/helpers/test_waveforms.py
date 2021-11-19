@@ -64,7 +64,9 @@ def test_resize_waveform(size: int, granularity: int, expected: int) -> None:
         ("quantify_scheduler.waveforms.drag", 2.4e9),
     ],
 )
-def test_get_waveform(mocker: MockerFixture, wf_func: str, sampling_rate: int) -> None:
+def test_get_waveform(
+    mocker: MockerFixture, wf_func: str, sampling_rate: float
+) -> None:
     # Arrange
     mock = mocker.patch(
         "quantify_scheduler.helpers.waveforms.exec_waveform_function", return_value=[]
@@ -72,7 +74,7 @@ def test_get_waveform(mocker: MockerFixture, wf_func: str, sampling_rate: int) -
     pulse_info_mock = {"duration": 1.6e-08, "wf_func": wf_func}
 
     # Act
-    get_waveform(pulse_info_mock, int(sampling_rate))
+    get_waveform(pulse_info_mock, sampling_rate)
 
     # Assert
     args, _ = mock.call_args
