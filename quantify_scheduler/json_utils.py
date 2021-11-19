@@ -22,7 +22,7 @@ def validate_json(data, schema):
     return fastjsonschema.validate(schema, data)
 
 
-# @lru_cache
+@lru_cache
 def load_json_validator(
     relative_to: Union[str, pathlib.Path], filename: str
 ) -> Callable:

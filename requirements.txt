@@ -6,6 +6,7 @@ columnar
 matplotlib
 plotly
 jsonschema
+fastjsonschema
 dataclasses-json
 # zhinst versions pinned, see #187
 zhinst-qcodes==0.1.4
