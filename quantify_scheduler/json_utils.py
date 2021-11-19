@@ -5,26 +5,46 @@ from __future__ import annotations
 
 import ast
 import json
+import pathlib
 import re
+from functools import lru_cache
 from types import ModuleType
-from typing import Any, Dict, List, Type
+from typing import Any, Callable, Dict, List, Type, Union
 
-import jsonschema
+import fastjsonschema
 from quantify_core.utilities.general import load_json_schema
 
 from quantify_scheduler.helpers import inspect as inspect_helpers
 
-try:
-    # import jsonschema_rs
-    import fastjsonschema
 
-    def validate_json(data, schema):
-        """Validate schema using jsonschema-rs"""
-        return fastjsonschema.validate(schema, data)
+def validate_json(data, schema):
+    """Validate schema using jsonschema-rs"""
+    return fastjsonschema.validate(schema, data)
 
 
-except ImportError:
-    from jsonschema import validate as validate_json
+# @lru_cache
+def load_json_validator(
+    relative_to: Union[str, pathlib.Path], filename: str
+) -> Callable:
+    """
+    Load a JSON validator from file. Expects a 'schemas' directory in the same directory
+    as `relative_to`.
+
+
+    Parameters
+    ----------
+    relative_to
+        the file to begin searching from
+    filename
+        the JSON file to load
+    Returns
+    -------
+    Callable
+        The validator
+    """
+    definition = load_json_schema(relative_to, filename)
+    validator = fastjsonschema.compile(definition, handlers={}, formats={})
+    return validator
 
 
 class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
@@ -39,8 +59,8 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
     def is_valid(cls, object_to_be_validated) -> bool:
         """Checks if the object is valid according to its schema."""
 
-        scheme = load_json_schema(__file__, cls.schema_filename)
-        validate_json(object_to_be_validated.data, scheme)
+        validator = load_json_validator(__file__, cls.schema_filename)
+        validator.validate(object_to_be_validated.data)
         return True  # if no exception was raised during validation
 
 
