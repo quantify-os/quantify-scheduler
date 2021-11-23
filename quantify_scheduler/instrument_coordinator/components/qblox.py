@@ -702,7 +702,7 @@ class _QRMAcquisitionManager:
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
             "ssb_integration_complex": self._get_integration_amplitude_data,
-            "looped_periodic_acquisition": self._get_integration_amplitude_data,
+            "looped_periodic_acquisition": self._get_looped_periodic_acquisition,
             "trace": self._get_scope_data,
             # NB thresholded protocol is still missing since there is nothing in
             # the acquisition library for it yet.
@@ -896,6 +896,12 @@ class _QRMAcquisitionManager:
             compensated_data_q / self.integration_length_acq,
         )
         return compensated_data_i, compensated_data_q
+
+    def _get_looped_periodic_acquisition(
+        self, acquisitions: dict, acq_channel: int = 0
+    ):
+        i_data, q_data = self._get_integration_amplitude_data(acquisitions, acq_channel)
+        return i_data[::-1], q_data[::-1]
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
