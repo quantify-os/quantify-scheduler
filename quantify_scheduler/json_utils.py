@@ -57,10 +57,14 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
-        """Checks if the object is valid according to its schema."""
+        """Checks if the object is valid according to its schema
 
-        validator = load_json_validator(__file__, cls.schema_filename)
-        validator.validate(object_to_be_validated.data)
+        Raises:
+            Exception if the data is invalid
+        """
+
+        validator_method = load_json_validator(__file__, cls.schema_filename)
+        validator_method(object_to_be_validated.data)
         return True  # if no exception was raised during validation
 
 
