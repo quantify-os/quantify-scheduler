@@ -464,6 +464,10 @@ class QASMProgram:
         self.elapsed_time += constants.GRID_TIME
 
     def _acquire_looped(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
+        if bin_idx != 0:
+            raise ValueError('looped acquisition currently only works for acquisition '
+                             'index 0 with binmode average.')
+
         measurement_idx = acquisition.data["acq_channel"]
 
         duration = acquisition.data["integration_time"]
@@ -475,11 +479,11 @@ class QASMProgram:
         buffer_time = acquisition.data["buffer_time"]
         with self.loop(
             label=f"looped_acq{len(self.instructions)}", repetitions=number_of_times
-        ):
+        ) as loop_register:
             self.emit(
                 q1asm_instructions.ACQUIRE,
                 measurement_idx,
-                bin_idx,
+                loop_register,
                 duration_ns,
             )
             buffer_time_ns = helpers.to_grid_time(buffer_time)
@@ -607,7 +611,7 @@ class QASMProgram:
                         idx0=acq_idx0_reg,
                         idx1=acq_idx1_reg,
                     )
-                elif acquisition_func in (self._acquire_square, self._acquire_looped):
+                elif acquisition_func == self._acquire_square:
                     acquisition_func(
                         acquisition=acquisition,
                         bin_idx=acq_bin_idx_reg,
@@ -751,15 +755,15 @@ class QASMProgram:
 
         Parameters
         ----------
-        register
-            The register to use for the loop iterator.
         label
             The label to use for the jump.
         repetitions
             The amount of iterations to perform.
 
-        Returns
-        -------
+        Yields
+        ------
+        :
+            The register used as loop counter.
 
         Examples
         --------
@@ -801,7 +805,7 @@ class QASMProgram:
         self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
         self.emit(q1asm_instructions.NEW_LINE, label=label)
 
-        yield
+        yield register
 
         self.emit(q1asm_instructions.LOOP, register, f"@{label}")
         self._register_manager.free_register(register)

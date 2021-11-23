@@ -685,7 +685,11 @@ class Sequencer:
                 # this check exists to catch unexpected errors if we add more
                 # BinModes in the future.
                 raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
-
+            if acq_metadata.acq_protocol == 'looped_periodic_acquisition':
+                if len(acquisitions) > 1:
+                    raise ValueError('only one acquisition allowed if '
+                                     'looped_periodic_acquisition is used')
+                num_bins = acquisitions[0].data['num_times']
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
                 "index": acq_channel,

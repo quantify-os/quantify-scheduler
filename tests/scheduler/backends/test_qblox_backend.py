@@ -794,7 +794,7 @@ def test_looped_acquisition(dummy_pulsars):
         LoopedPeriodicAcquisition(
             port="q0:res",
             clock="q0.ro",
-            bin_mode=BinMode.APPEND,
+            bin_mode=BinMode.AVERAGE,
             integration_time=10e-6,
             buffer_time=400e-9,
             num_times=10000,
