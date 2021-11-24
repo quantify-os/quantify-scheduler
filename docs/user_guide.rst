@@ -383,7 +383,7 @@ Although one could use manually written configuration files and send the compile
     Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
     On top of the physical instruments is a hardware abstraction layer, that provides a hardware agnostic interface to execute compiled schedules.
     The instruments responsible for experiment control are treated to be as stateless as possible [*]_ .
-    The knowledge about the system that is required to generate the configuration files is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
+    The knowledge about the system that is required to generate the configuration files is described by the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and :code:`DeviceElement`\s.
     Several utility instruments are used to control the flow of the experiments.
 
 Physical instruments
@@ -403,11 +403,11 @@ This hardware abstraction layer is implemented as the :class:`~.InstrumentCoordi
 The quantum device and the device elements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The knowledge of the system is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
-The :code:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
-The :code:`QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
+The knowledge of the system is described by the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and :code:`DeviceElement`\s.
+The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
+The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
 
-Because the :code:`QuantumDevice` and the :code:`DeviceElement`\s are an :class:`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
+Because the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and the :code:`DeviceElement`\s are an :class:`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
 
 Experiment flow
 ~~~~~~~~~~~~~~~
@@ -441,7 +441,7 @@ We represent the settable as a :class:`qcodes.instrument.parameter.ManualParamet
     tau = ManualParameter("tau", label=r"Delay time", initial_value=0, unit="s")
 
 
-To execute the schedule with the right parameters, the :code:`ScheduleGettable` needs to have a reference to a template function that generates the schedule, the appropriate keyword arguments for that function, and a reference to the :code:`QuantumDevice` to generate the required configuration files.
+To execute the schedule with the right parameters, the :code:`ScheduleGettable` needs to have a reference to a template function that generates the schedule, the appropriate keyword arguments for that function, and a reference to the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` to generate the required configuration files.
 
 For the :math:`T_1` experiment, quantify-scheduler provides a schedule generating function as part of the :mod:`quantify_scheduler.schedules.timedomain_schedules`: the :func:`quantify_scheduler.schedules.timedomain_schedules.t1_sched`.
 
@@ -466,17 +466,14 @@ Rather than specifying the values of the delay times, we pass the parameter :cod
 The :code:`ScheduleGettable` is set up to evaluate the value of these parameter on every call of :code:`ScheduleGettable.get`.
 This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the :class:`~quantify_core.measurement.control.MeasurementControl`.
 
-Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :code:`QuantumDevice` for every iteration.
-This ensures that if a calibration parameter is changed on the :code:`QuantumDevice`, the compilation will be affected as expected.
+Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` for every iteration.
+This ensures that if a calibration parameter is changed on the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, the compilation will be affected as expected.
 
-.. warning::
-
-    :code:`QuantumDevice` class is not implemented yet.
 
 .. jupyter-execute::
 
-    # device = QuantumDevice(name="quantum_sample")
-    device = None # placeholder value
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+    device = QuantumDevice(name="quantum_sample")
 
 These ingredients can then be combined to perform the experiment:
 
@@ -487,7 +484,7 @@ These ingredients can then be combined to perform the experiment:
 
 .. warning::
 
-    :code:`ScheduleGettable` class is not implemented yet.
+    :code:`ScheduleGettable` class is not implemented yet. See :class:`~quantify_scheduler.gettables.ScheduleGettableSingleChannel` for an initial implementation supporting only one channel.
 
 .. code-block:: python
 
