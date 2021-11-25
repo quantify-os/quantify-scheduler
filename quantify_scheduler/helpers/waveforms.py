@@ -113,7 +113,7 @@ def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
 
 
 def shift_waveform(
-    waveform: np.ndarray, start_in_seconds: float, clock_rate: int, resolution: int
+    waveform: np.ndarray, start_in_seconds: float, sampling_rate: int, resolution: int
 ) -> Tuple[int, np.ndarray]:
     """
     Returns the waveform shifted with a number of samples
@@ -121,37 +121,37 @@ def shift_waveform(
     of the waveform in the clock time domain.
 
     Note: when using this method be sure that the pulse starts
-    at a `round(start_in_clocks)`.
+    at a `round(start_in_sequencer_count)`.
 
     .. code-block::
 
         waveform = np.ones(32)
-        clock_rate = int(2.4e9)
+        sampling_rate = int(2.4e9)
         resolution: int = 8
 
         t0: float = 16e-9
         #                 4.8 = 16e-9 / (8 / 2.4e9)
-        start_in_clocks = (t0 // (resolution / clock_rate))
+        start_in_sequencer_count = (t0 // (resolution / sampling_rate))
 
-        start_waveform_at_clock(start_in_clocks, waveform)
+        start_waveform_at_sequener_count(start_in_sequencer_count, waveform)
 
     Parameters
     ----------
     waveform
     start_in_seconds
-    clock_rate
+    sampling_rate
     resolution
         The sequencer resolution.
     """
 
-    start_in_clocks = round(start_in_seconds * clock_rate)
-    samples_shift = start_in_clocks % resolution
-    start_in_lowres_clock = start_in_clocks // resolution
+    start_in_samples_count = round(start_in_seconds * sampling_rate)
+    samples_shift = start_in_samples_count % resolution
+    start_in_sequencer_count = start_in_samples_count // resolution
 
     if samples_shift == 0:
-        return start_in_lowres_clock, waveform
+        return start_in_sequencer_count, waveform
 
-    return start_in_lowres_clock, np.concatenate([np.zeros(samples_shift), waveform])
+    return start_in_sequencer_count, np.concatenate([np.zeros(samples_shift), waveform])
 
 
 def get_waveform(
