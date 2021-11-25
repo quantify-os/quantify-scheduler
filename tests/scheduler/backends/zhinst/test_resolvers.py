@@ -15,8 +15,8 @@ from quantify_scheduler.backends.zhinst.resolvers import (
 
 def test_monitor_acquisition_resolver(mocker: MockerFixture) -> None:
     # Arrange
-    real_data = [1, 2, 3]
-    imag_data = [4, 5, 6]
+    real_data = np.array([1, 2, 3])
+    imag_data = np.array([4, 5, 6])
     get_mock = mocker.patch.object(
         zi_helpers,
         "get_value",
@@ -39,8 +39,8 @@ def test_monitor_acquisition_resolver(mocker: MockerFixture) -> None:
 
     # Assert
     assert get_mock.mock_calls == expected_calls
-    assert complex_result.real.tolist() == real_data
-    assert complex_result.imag.tolist() == imag_data
+    np.testing.assert_array_almost_equal(complex_result.real, real_data)
+    np.testing.assert_array_almost_equal(complex_result.imag, imag_data)
 
 
 def test_result_acquisition_resolver(mocker: MockerFixture) -> None:

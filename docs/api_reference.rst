@@ -14,6 +14,12 @@ backends
 qblox
 -----
 
+qblox_backend
+--------------
+
+.. automodule:: quantify_scheduler.backends.qblox_backend
+    :members:
+
 compiler_abc
 ~~~~~~~~~~~~
 
@@ -64,32 +70,14 @@ qasm_program
     :members:
 
 
-
-types
------
-
-common
-~~~~~~
-
-.. automodule:: quantify_scheduler.backends.types.common
-    :members:
-
-qblox
-~~~~~~
-
-.. automodule:: quantify_scheduler.backends.types.qblox
-    :members:
-
-zhinst
-~~~~~~
-
-.. automodule:: quantify_scheduler.backends.types.zhinst
-    :members:
-
-
-
 zhinst
 ------
+
+zhinst_backend
+--------------
+
+.. automodule:: quantify_scheduler.backends.zhinst_backend
+    :members:
 
 helpers
 ~~~~~~~
@@ -115,16 +103,26 @@ settings
 .. automodule:: quantify_scheduler.backends.zhinst.settings
     :members:
 
-qblox_backend
---------------
 
-.. automodule:: quantify_scheduler.backends.qblox_backend
+types
+-----
+
+common
+~~~~~~
+
+.. automodule:: quantify_scheduler.backends.types.common
     :members:
 
-zhinst_backend
---------------
+qblox
+~~~~~~
 
-.. automodule:: quantify_scheduler.backends.zhinst_backend
+.. automodule:: quantify_scheduler.backends.types.qblox
+    :members:
+
+zhinst
+~~~~~~
+
+.. automodule:: quantify_scheduler.backends.types.zhinst
     :members:
 
 
@@ -288,6 +286,9 @@ trace_schedules
 ---------------
 
 .. automodule:: quantify_scheduler.schedules.trace_schedules
+    :members:
+
+.. automodule:: quantify_scheduler.schedules.verification
     :members:
 
 schemas

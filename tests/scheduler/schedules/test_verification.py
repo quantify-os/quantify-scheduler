@@ -24,7 +24,7 @@ def gen_acquisition_staircase_sched(tmp_test_data_dir):
         "readout_pulse_amps": np.linspace(0, 0.5, 11),
         "readout_pulse_duration": 1e-6,
         "readout_frequency": 5e9,
-        "acquisition_delay": 4e-9,  # delay of 0 gives an invalid timing error in qblox backend
+        "acquisition_delay": 40e-9,  # delay of 0 gives an invalid timing error in qblox backend
         "integration_time": 2e-6,
         "port": "q0:res",
         "clock": "q0.ro",

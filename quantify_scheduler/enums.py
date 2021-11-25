@@ -41,8 +41,12 @@ class ModulationModeType(str, Enum):
     The modulation mode enum type.
 
     Used to set the modulation type to
-    None, premodulation or hardware modulation
-    respectively.
+
+    1. no modulation. ('none')
+    2. Software premodulation applied in the numerical waveforms. ('premod')
+    3. Hardware real-time modulation. ('modulate')
+
+    See also :class:`~quantify_scheduler.backends.types.common.Modulation` for the use.
     """
 
     NONE = "none"

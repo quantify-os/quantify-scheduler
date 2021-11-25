@@ -3,6 +3,7 @@
 """Schedule helper functions."""
 from __future__ import annotations
 
+import warnings
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
@@ -21,86 +22,6 @@ if TYPE_CHECKING:
     from quantify_scheduler.backends.types import qblox
 
 
-class CachedSchedule:
-    """
-    The CachedSchedule class wraps around the CompiledSchedule
-    class and populates the lookup dictionaries that are
-    used for compilation of the backends.
-    """
-
-    _start_offset_in_seconds: Optional[float] = None
-    _total_duration_in_seconds: Optional[float] = None
-
-    def __init__(self, schedule: CompiledSchedule):
-        self._schedule = schedule
-
-        self._pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
-        self._pulseid_waveformfn_dict = waveform_helpers.get_waveform_by_pulseid(
-            schedule
-        )
-        self._port_timeline_dict = get_port_timeline(schedule)
-        self._acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
-
-    @property
-    def schedule(self) -> CompiledSchedule:
-        """
-        Returns schedule.
-        """
-        return self._schedule
-
-    @property
-    def pulseid_pulseinfo_dict(self) -> Dict[int, Dict[str, Any]]:
-        """
-        Returns the pulse info lookup table.
-        """
-        return self._pulseid_pulseinfo_dict
-
-    @property
-    def pulseid_waveformfn_dict(self) -> Dict[int, waveform_helpers.GetWaveformPartial]:
-        """
-        Returns waveform function lookup table.
-        """
-        return self._pulseid_waveformfn_dict
-
-    @property
-    def acqid_acqinfo_dict(self) -> Dict[int, Dict[str, Any]]:
-        """
-        Returns the acquisition info lookup table.
-        """
-        return self._acqid_acqinfo_dict
-
-    @property
-    def port_timeline_dict(self) -> Dict[str, Dict[int, List[int]]]:
-        """
-        Returns the timeline per port lookup dictionary.
-        """
-        return self._port_timeline_dict
-
-    @property
-    def start_offset_in_seconds(self) -> float:
-        """
-        Returns the schedule start offset in seconds.
-        The start offset is determined by a Reset operation
-        at the start of one of the ports.
-        """
-        if self._start_offset_in_seconds is None:
-            self._start_offset_in_seconds = get_schedule_time_offset(
-                self.schedule, self.port_timeline_dict
-            )
-
-        return self._start_offset_in_seconds
-
-    @property
-    def total_duration_in_seconds(self) -> float:
-        """
-        Returns the schedule total duration in seconds.
-        """
-        if self._total_duration_in_seconds is None:
-            self._total_duration_in_seconds = get_total_duration(self.schedule)
-
-        return self._total_duration_in_seconds
-
-
 def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> int:
     """
     Returns an unique identifier for a pulse.
@@ -115,6 +36,12 @@ def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> in
     :
         The uuid hash.
     """
+    warnings.warn(
+        "`get_pulse_uuid` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     if excludes is None:
         excludes = ["t0"]
 
@@ -135,6 +62,12 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
     :
         The uuid hash.
     """
+    warnings.warn(
+        "`get_acq_uuid` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
 
 
@@ -152,6 +85,12 @@ def get_total_duration(schedule: CompiledSchedule) -> float:
     :
         Duration in seconds.
     """
+    warnings.warn(
+        "`get_total_duration` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
@@ -191,6 +130,12 @@ def get_operation_start(
     :
         The Operation start time in Seconds.
     """
+    warnings.warn(
+        "`get_operation_start` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
@@ -233,8 +178,14 @@ def get_operation_end(
     Returns
     -------
     :
-        The Operation start time in Seconds.
+        The Operation end time in Seconds.
     """
+    warnings.warn(
+        "`get_operation_end` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
@@ -268,10 +219,16 @@ def get_port_timeline(
     schedule
         The schedule.
     """
+    warnings.warn(
+        "`get_port_timeline` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     port_timeline_dict: Dict[str, Dict[int, List[int]]] = {}
 
     # Sort timing constraints based on abs_time and keep the original index.
-    timing_constrains_map = dict(
+    timing_constraints_map = dict(
         sorted(
             map(
                 lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints)
@@ -280,7 +237,7 @@ def get_port_timeline(
         )
     )
 
-    for timeslot_index, t_constr in timing_constrains_map.items():
+    for timeslot_index, t_constr in timing_constraints_map.items():
         operation = schedule.operations[t_constr["operation_repr"]]
         abs_time = t_constr["abs_time"]
 
@@ -330,6 +287,12 @@ def get_schedule_time_offset(
     :
         The operation t0 in seconds.
     """
+    warnings.warn(
+        "`get_schedule_time_offset` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     return min(
         map(
             lambda port: get_operation_start(
@@ -356,6 +319,12 @@ def get_pulse_info_by_uuid(
     schedule
         The schedule.
     """
+    warnings.warn(
+        "`get_pulse_info_by_uuid` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
@@ -389,6 +358,12 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> Dict[int, Dict[str, Any]
     schedule
         The schedule.
     """
+    warnings.warn(
+        "`get_acq_info_by_uuid` will be removed from this module in "
+        "quantify-scheduler >= 0.6.0.\n"
+        "It is currently being replaced by the timing_table property of a `Schedule`",
+        DeprecationWarning,
+    )
     acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
@@ -446,13 +421,12 @@ def extract_acquisition_metadata_from_schedule(
 
 
     """  # FIXME update when quantify-core!212 spec is ready # pylint: disable=fixme
-    # convert to a cached schedule to have useful metadata available.
-    cached_sched = CachedSchedule(schedule)
 
     # a dictionary containing the acquisition indices used for each channel
+    acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
     return _extract_acquisition_metadata_from_acquisition_protocols(
-        list(cached_sched.acqid_acqinfo_dict.values())
+        list(acqid_acqinfo_dict.values())
     )
 
 
