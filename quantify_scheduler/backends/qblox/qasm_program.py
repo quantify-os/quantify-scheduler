@@ -420,7 +420,7 @@ class QASMProgram:
         )
         self.elapsed_time += constants.GRID_TIME
 
-    def _verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
+    def verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
         duration_ns = int(duration * 1e9)
         if self.parent.settings.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
@@ -452,7 +452,7 @@ class QASMProgram:
             The bin_idx to store the result in.
         """
 
-        self._verify_square_acquisition_duration(acquisition, acquisition.duration)
+        self.verify_square_acquisition_duration(acquisition, acquisition.duration)
 
         measurement_idx = acquisition.data["acq_channel"]
         self.emit(
@@ -471,7 +471,7 @@ class QASMProgram:
         measurement_idx = acquisition.data["acq_channel"]
 
         duration = acquisition.data["integration_time"]
-        self._verify_square_acquisition_duration(acquisition, duration)
+        self.verify_square_acquisition_duration(acquisition, duration)
 
         duration_ns = helpers.to_grid_time(duration)
 
