@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Tuple, Any
+from typing import Optional, Dict, Tuple, Any, Union
 
 from abc import ABC, abstractmethod
 
@@ -108,8 +108,41 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         return None
 
     def acquire_average(self, qasm_program: QASMProgram):
+        bin_idx = self.operation_info.data["acq_index"]
+        self._acquire_square(qasm_program, bin_idx)
+
+    def acquire_append(self, qasm_program: QASMProgram):
         acquisition = self.operation_info
-        bin_idx = acquisition.data["acq_index"]
+        acq_bin_idx_reg = acquisition.bin_idx_register
+
+        qasm_program.emit(q1asm_instructions.NEW_LINE)
+
+        self._acquire_square(qasm_program, acq_bin_idx_reg)
+
+        acq_channel = acquisition.data["acq_channel"]
+        qasm_program.emit(
+            q1asm_instructions.ADD,
+            acq_bin_idx_reg,
+            1,
+            acq_bin_idx_reg,
+            comment=f"Increment bin_idx for ch{acq_channel}",
+        )
+        qasm_program.emit(q1asm_instructions.NEW_LINE)
+
+    def _acquire_square(
+        self, qasm_program: QASMProgram, bin_idx: Union[int, str]
+    ) -> None:
+        """
+        Adds the instruction for performing acquisitions without weights playback.
+
+        Parameters
+        ----------
+        qasm_program
+            The qasm program to add the acquisition to.
+        bin_idx
+            The bin_idx to store the result in.
+        """
+        acquisition = self.operation_info
 
         qasm_program.verify_square_acquisition_duration(
             acquisition, acquisition.duration
@@ -123,9 +156,6 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             constants.GRID_TIME,
         )
         qasm_program.elapsed_time += constants.GRID_TIME
-
-    def acquire_append(self, qasm_program: QASMProgram):
-        pass
 
 
 def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
