@@ -114,7 +114,7 @@ class StitchedSquarePulseStrategy(IOperationStrategy):
         qasm_program.elapsed_time += pulse_time_remaining
 
 
-class StairCasePulseStrategy(IOperationStrategy):
+class StaircasePulseStrategy(IOperationStrategy):
     def __init__(self, operation_info: types.OpInfo):
         self._pulse_info: types.OpInfo = operation_info
         self.output_mode = ""
@@ -139,21 +139,25 @@ class StairCasePulseStrategy(IOperationStrategy):
             num_steps = pulse.data["num_steps"]
             start_amp = pulse.data["start_amp"]
             final_amp = pulse.data["final_amp"]
-            step_duration = helpers.to_grid_time(pulse.duration / num_steps)
+            step_duration_ns = helpers.to_grid_time(pulse.duration / num_steps)
+
+            offset_param_label = (
+                "offset_awg_path1" if self.output_mode == "imag" else "offset_awg_path0"
+            )
 
             amp_step = (final_amp - start_amp) / (num_steps - 1)
             amp_step_immediate = qasm_program._expand_from_normalised_range(
                 amp_step
                 / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
                 constants.IMMEDIATE_SZ_OFFSET,
-                "offset_awg_path0",
+                offset_param_label,
                 pulse,
             )
             start_amp_immediate = qasm_program._expand_from_normalised_range(
                 start_amp
                 / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
                 constants.IMMEDIATE_SZ_OFFSET,
-                "offset_awg_path0",
+                offset_param_label,
                 pulse,
             )
             if start_amp_immediate < 0:
@@ -178,34 +182,53 @@ class StairCasePulseStrategy(IOperationStrategy):
             with qasm_program.loop(
                 f"ramp{len(qasm_program.instructions)}", repetitions=num_steps
             ):
-                qasm_program.emit(
-                    q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero
+                self._generate_step(
+                    qasm_program,
+                    offs_reg,
+                    offs_reg_zero,
+                    amp_step_immediate,
                 )
-                qasm_program.emit(
-                    q1asm_instructions.UPDATE_PARAMETERS,
-                    constants.GRID_TIME,
-                )
-                qasm_program.elapsed_time += constants.GRID_TIME
-                if amp_step_immediate >= 0:
-                    qasm_program.emit(
-                        q1asm_instructions.ADD,
-                        offs_reg,
-                        amp_step_immediate,
-                        offs_reg,
-                        comment=f"next incr offs by {amp_step_immediate}",
-                    )
-                else:
-                    qasm_program.emit(
-                        q1asm_instructions.SUB,
-                        offs_reg,
-                        -amp_step_immediate,
-                        offs_reg,
-                        comment=f"next incr offs by {amp_step_immediate}",
-                    )
-                qasm_program.auto_wait(step_duration - constants.GRID_TIME)
+                qasm_program.auto_wait(step_duration_ns - constants.GRID_TIME)
             qasm_program.elapsed_time += (
-                step_duration * (num_steps - 1) if num_steps > 1 else 0
+                step_duration_ns * (num_steps - 1) if num_steps > 1 else 0
             )
 
             qasm_program.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
             qasm_program.emit(q1asm_instructions.NEW_LINE)
+
+    def _generate_step(
+        self,
+        qasm_program: QASMProgram,
+        offs_reg: str,
+        offs_reg_zero: str,
+        amp_step_immediate: int,
+    ):
+        if self.output_mode == "imag":
+            qasm_program.emit(
+                q1asm_instructions.SET_AWG_OFFSET, offs_reg_zero, offs_reg
+            )
+        else:
+            qasm_program.emit(
+                q1asm_instructions.SET_AWG_OFFSET, offs_reg, offs_reg_zero
+            )
+        qasm_program.emit(
+            q1asm_instructions.UPDATE_PARAMETERS,
+            constants.GRID_TIME,
+        )
+        qasm_program.elapsed_time += constants.GRID_TIME
+        if amp_step_immediate >= 0:
+            qasm_program.emit(
+                q1asm_instructions.ADD,
+                offs_reg,
+                amp_step_immediate,
+                offs_reg,
+                comment=f"next incr offs by {amp_step_immediate}",
+            )
+        else:
+            qasm_program.emit(
+                q1asm_instructions.SUB,
+                offs_reg,
+                -amp_step_immediate,
+                offs_reg,
+                comment=f"next incr offs by {amp_step_immediate}",
+            )
