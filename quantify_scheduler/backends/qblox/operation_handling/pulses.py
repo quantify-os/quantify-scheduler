@@ -2,11 +2,8 @@ from __future__ import annotations
 
 from typing import Optional, Dict, Tuple, Any, Union
 
-from abc import ABC, abstractmethod
-
 import numpy as np
 
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 from quantify_scheduler.backends.qblox.operation_handling.base import (
@@ -47,9 +44,6 @@ class GenericPulseStrategy(IOperationStrategy):
         op_info = self.operation_info
         idx0, idx1 = get_indices_from_wf_dict(op_info.uuid, wf_dict=wf_dict)
 
-        qasm_program.wait_till_start_operation(
-            op_info
-        )  # TODO move line outside of this class
         qasm_program.update_runtime_settings(op_info)
         qasm_program.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
         qasm_program.elapsed_time += constants.GRID_TIME
@@ -68,15 +62,17 @@ class StitchedSquarePulseStrategy(IOperationStrategy):
 
     def generate_data(self, output_mode: str) -> np.ndarray:
         op_info = self.operation_info
-        waveform_data = helpers.generate_waveform_data(
-            op_info.data, sampling_rate=constants.SAMPLING_RATE
-        )
-        waveform_data, amp_real, amp_imag = normalize_waveform_data(waveform_data)
+        amplitude = op_info.data["amp"]
 
+        array_with_ones = np.ones(
+            int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
+        )
         if output_mode == "imag":
-            self.amplitude_path0, self.amplitude_path1 = amp_imag, amp_real
+            waveform_data = 1j*array_with_ones
+            self.amplitude_path0, self.amplitude_path1 = 0, amplitude
         else:
-            self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
+            waveform_data = array_with_ones
+            self.amplitude_path0, self.amplitude_path1 = amplitude, 0
 
         return waveform_data
 
@@ -86,6 +82,9 @@ class StitchedSquarePulseStrategy(IOperationStrategy):
 
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
+        # TODO this has to be fixed to use the amp param instead. I want to get rid of
+        #  the runtime settings
+        qasm_program.update_runtime_settings(self.operation_info)
         if repetitions > 0:
             with qasm_program.loop(
                 label=f"stitch{len(qasm_program.instructions)}",
