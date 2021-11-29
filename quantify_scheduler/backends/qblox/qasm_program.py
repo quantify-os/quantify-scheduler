@@ -421,7 +421,7 @@ class QASMProgram:
         self.elapsed_time += constants.GRID_TIME
 
     def verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
-        duration_ns = int(duration * 1e9)
+        duration_ns = int(np.round(duration * 1e9))
         if self.parent.settings.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
                 raise ValueError(
