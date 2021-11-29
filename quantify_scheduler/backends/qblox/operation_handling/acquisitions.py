@@ -9,13 +9,19 @@ import numpy as np
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
-from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy, get_indices_from_wf_dict
+from quantify_scheduler.backends.qblox.operation_handling.base import (
+    IOperationStrategy,
+    get_indices_from_wf_dict,
+)
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instructions
 
 
 class AcquisitionStrategyPartial(IOperationStrategy):
+    def __init__(self, operation_info: types.OpInfo):
+        self._acq_info: types.OpInfo = operation_info
+
     def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
         if qasm_program.time_last_acquisition_triggered is not None:
             if (
@@ -53,6 +59,10 @@ class AcquisitionStrategyPartial(IOperationStrategy):
     @abstractmethod
     def acquire_append(self, qasm_program: QASMProgram):
         pass
+
+    @property
+    def operation_info(self) -> types.OpInfo:
+        return self._acq_info
 
 
 class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
