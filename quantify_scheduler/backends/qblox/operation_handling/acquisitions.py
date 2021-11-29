@@ -118,3 +118,32 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             constants.GRID_TIME,
         )
         qasm_program.elapsed_time += constants.GRID_TIME
+
+
+class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
+    def generate_data(self, output_mode: str) -> np.ndarray:
+        waveform_data = helpers.generate_waveform_data(
+            self.operation_info.data, sampling_rate=constants.SAMPLING_RATE
+        )
+        return waveform_data
+
+    def acquire_average(self, qasm_program: QASMProgram):
+        acquisition = self.operation_info
+
+        bin_idx = self.operation_info.data["acq_index"]
+        measurement_idx = acquisition.data["acq_channel"]
+        idx0, idx1 = get_indices_from_wf_dict(op_info.uuid, wf_dict=wf_dict)
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_WEIGHED,
+            measurement_idx,
+            bin_idx,
+            idx0,
+            idx1,
+            constants.GRID_TIME,
+            comment=f"Store acq in acq_channel:{measurement_idx}, bin_idx:{bin_idx}",
+        )
+        qasm_program.elapsed_time += constants.GRID_TIME
+
+    def acquire_append(self, qasm_program: QASMProgram):
+        pass
