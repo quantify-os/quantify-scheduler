@@ -18,7 +18,6 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.enums import BinMode
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_abc
@@ -269,40 +268,46 @@ class QASMProgram:
                 )
         self.elapsed_time += number_of_times * (duration_ns + buffer_time_ns)
 
-    def update_runtime_settings(self, operation: OpInfo):
-        """
-        Adds the commands needed to correctly set the QASMRuntimeSettings.
+    def set_gain_from_voltage_range(
+        self, voltage_path0: float, voltage_path1: float, operation: Optional[OpInfo]
+    ):
+        max_awg_output_voltage = self.parent.static_hw_properties.max_awg_output_voltage
+        if np.abs(voltage_path0) > max_awg_output_voltage:
+            raise ValueError(
+                f"Attempting to set amplitude to an invalid value. "
+                f"Maximum voltage range is +-"
+                f"{max_awg_output_voltage} V for "
+                f"{self.parent.__class__.__name__}.\n"
+                f"{ValueError} V is set as amplitude for the I channel for "
+                f"{repr(operation)}"
+            )
+        if np.abs(voltage_path1) > max_awg_output_voltage:
+            raise ValueError(
+                f"Attempting to set amplitude to an invalid value. "
+                f"Maximum voltage range is +-"
+                f"{max_awg_output_voltage} V for "
+                f"{self.parent.__class__.__name__}.\n"
+                f"{voltage_path1} V is set as amplitude for the Q channel for "
+                f"{repr(operation)}"
+            )
 
-        Parameters
-        ----------
-        operation
-            The pulse to prepare the settings for.
-
-        Notes
-        -----
-            Currently only the AWG gain is set correctly, as that is the only one
-            actually used currently by the backend. Will be expanded in the future.
-        """
-        if operation.pulse_settings is None:
-            raise RuntimeError(f"No real-time settings found for {repr(operation)}.")
-
-        awg_gain_path0 = self._expand_from_normalised_range(
-            operation.pulse_settings.awg_gain_0,
+        awg_gain_path0_imm = self._expand_from_normalised_range(
+            voltage_path0/max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_0",
             operation,
         )
-        awg_gain_path1 = self._expand_from_normalised_range(
-            operation.pulse_settings.awg_gain_1,
+        awg_gain_path1_imm = self._expand_from_normalised_range(
+            voltage_path1/max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_1",
             operation,
         )
         self.emit(
             q1asm_instructions.SET_AWG_GAIN,
-            awg_gain_path0,
-            awg_gain_path1,
-            comment=f"setting gain for {operation.uuid}",
+            awg_gain_path0_imm,
+            awg_gain_path1_imm,
+            comment=f"setting gain for {operation.name}",
         )
 
     @staticmethod
