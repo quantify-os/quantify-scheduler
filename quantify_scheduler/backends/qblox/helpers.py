@@ -151,6 +151,45 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
     return str(waveform_hash)
 
 
+def add_to_wf_dict_if_unique(
+    wf_dict: Dict[str, Any], waveform: np.ndarray
+) -> Tuple[Dict[str, Any], str, int]:
+    """
+    Adds a waveform to the waveform dictionary if it is not yet in there and returns the
+    uuid and index. If it is already present it simply returns the uuid and index.
+
+    Parameters
+    ----------
+    wf_dict:
+        The waveform dict in the format expected by the sequencer.
+    waveform:
+        The waveform to add.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The (updated) wf_dict.
+    str
+        The uuid of the waveform.
+    int
+        The index.
+    """
+
+    def generate_entry(name: str, data: np.ndarray, idx: int) -> Dict[str, Any]:
+        return {name: {"data": data.tolist(), "index": idx}}
+
+    if not np.isrealobj(waveform):
+        raise RuntimeError(f"This function only accepts real arrays.")
+
+    uuid = generate_uuid_from_wf_data(waveform)
+    if uuid in wf_dict:
+        index: int = wf_dict[uuid]["index"]
+    else:
+        index = len(wf_dict)
+        wf_dict.update(generate_entry(uuid, waveform, len(wf_dict)))
+    return wf_dict, uuid, index
+
+
 def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     """
     Finds the output path index associated with the output names specified in the
