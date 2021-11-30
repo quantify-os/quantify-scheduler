@@ -132,19 +132,16 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
 
     def acquire_average(self, qasm_program: QASMProgram):
-        acquisition = self.operation_info
-
         bin_idx = self.operation_info.data["acq_index"]
-        measurement_idx = acquisition.data["acq_channel"]
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
-            measurement_idx,
+            self.acq_channel,
             bin_idx,
             self.waveform_index0,
             self.waveform_index1,
             constants.GRID_TIME,
-            comment=f"Store acq in acq_channel:{measurement_idx}, bin_idx:{bin_idx}",
+            comment=f"Store acq in acq_channel:{self.acq_channel}, bin_idx:{bin_idx}",
         )
         qasm_program.elapsed_time += constants.GRID_TIME
 
