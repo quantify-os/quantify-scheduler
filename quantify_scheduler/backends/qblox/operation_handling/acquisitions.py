@@ -73,8 +73,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         self._acquire_square(qasm_program, bin_idx)
 
     def acquire_append(self, qasm_program: QASMProgram):
-        acquisition = self.operation_info
-        acq_bin_idx_reg = acquisition.bin_idx_register
+        acq_bin_idx_reg = self.operation_info.bin_idx_register
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
@@ -102,10 +101,8 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         bin_idx
             The bin_idx to store the result in.
         """
-        acquisition = self.operation_info
-
         qasm_program.verify_square_acquisition_duration(
-            acquisition, acquisition.duration
+            self.operation_info, self.operation_info.duration
         )
 
         qasm_program.emit(
