@@ -20,8 +20,7 @@ def get_operation_strategy(
     )
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
-    else:
-        return _get_pulse_strategy(operation, instruction_generated_pulses_enabled)
+    return _get_pulse_strategy(operation, instruction_generated_pulses_enabled)
 
 
 def _get_acquisition_strategy(
