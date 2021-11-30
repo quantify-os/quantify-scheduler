@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any, Union
 
 from abc import abstractmethod
 
+import numpy as np
 
 from quantify_scheduler.enums import BinMode
 
@@ -119,12 +120,34 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         self.waveform_index1: Optional[int] = None
 
     def generate_data(self, wf_dict: Dict[str, Any]):
-        waveform_data = helpers.generate_waveform_data(
-            self.operation_info.data, sampling_rate=constants.SAMPLING_RATE
-        )
-        _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
-        _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
-        self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
+        waveform_indices = []
+        for idx, parameterized_waveform in enumerate(
+            self.operation_info.data["waveforms"]
+        ):
+            if idx > 1:
+                raise ValueError(
+                    f"Too many waveforms ("
+                    f"{len(self.operation_info.data['waveforms'])}) "
+                    f"specified as acquisition weights. Qblox hardware "
+                    f"only supports 2 real valued arrays as acquisition "
+                    f"weights.\n\nException caused by "
+                    f"{repr(self.operation_info)}."
+                )
+            waveform_data = helpers.generate_waveform_data(
+                parameterized_waveform, sampling_rate=constants.SAMPLING_RATE
+            )
+            if not (np.isrealobj(waveform_data)):
+                raise ValueError(
+                    f"Complex weights not supported by hardware. Please use two 1d "
+                    f"real-valued weights.\n\nException was triggered because of "
+                    f"{repr(self.operation_info)}."
+                )
+            _, _, waveform_index = helpers.add_to_wf_dict_if_unique(
+                wf_dict, waveform_data
+            )
+            waveform_indices[idx] = waveform_index
+
+        self.waveform_index0, self.waveform_index1 = waveform_indices
 
     def acquire_average(self, qasm_program: QASMProgram):
         bin_idx = self.operation_info.data["acq_index"]
