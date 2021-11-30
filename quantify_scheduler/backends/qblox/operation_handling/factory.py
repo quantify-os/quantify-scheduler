@@ -13,14 +13,11 @@ from quantify_scheduler.backends.qblox.operation_handling import (
 
 
 def get_operation_strategy(
-    operation: OpInfo, seq_settings: Dict[str, Any]
+    operation: OpInfo, force_generic: bool, output_mode: str
 ) -> base.IOperationStrategy:
-    instruction_generated_pulses_enabled = seq_settings.get(
-        "instruction_generated_pulses_enabled", False
-    )
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
-    return _get_pulse_strategy(operation, instruction_generated_pulses_enabled)
+    return _get_pulse_strategy(operation, force_generic, output_mode)
 
 
 def _get_acquisition_strategy(
@@ -43,12 +40,12 @@ def _get_acquisition_strategy(
 
 
 def _get_pulse_strategy(
-    operation: OpInfo, instruction_generated_pulses_enabled: bool
+    operation: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
 ) -> base.IOperationStrategy:
     if instruction_generated_pulses_enabled:
         wf_func = operation.data["wf_func"]
         if wf_func == "quantify_scheduler.waveforms.square":
-            return pulses.StitchedSquarePulseStrategy(operation)
+            return pulses.StitchedSquarePulseStrategy(operation, output_mode)
         elif wf_func == "quantify_scheduler.waveforms.staircase":
-            return pulses.StaircasePulseStrategy(operation)
-    return pulses.GenericPulseStrategy(operation)
+            return pulses.StaircasePulseStrategy(operation, output_mode)
+    return pulses.GenericPulseStrategy(operation, output_mode)

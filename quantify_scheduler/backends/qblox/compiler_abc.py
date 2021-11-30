@@ -10,6 +10,8 @@ from collections import defaultdict, deque
 from os import makedirs, path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from functools import partial
+
 import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
@@ -25,6 +27,10 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+from quantify_scheduler.backends.qblox.operation_handling.factory import (
+    get_operation_strategy,
+)
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
     BaseModuleSettings,
@@ -276,8 +282,8 @@ class Sequencer:
         self._name = name
         self.port = portclock[0]
         self.clock = portclock[1]
-        self.pulses: List[OpInfo] = []
-        self.acquisitions: List[OpInfo] = []
+        self.pulses: List[IOperationStrategy] = []
+        self.acquisitions: List[IOperationStrategy] = []
         self.associated_ext_lo: str = lo_name
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
@@ -498,54 +504,6 @@ class Sequencer:
                 waveforms_complex[pulse.uuid] = raw_wf_data
         return helpers.generate_waveform_dict(waveforms_complex)
 
-    def apply_output_mode_to_data(
-        self, pulse: OpInfo, data: np.ndarray, mode: Literal["complex", "real", "imag"]
-    ) -> np.ndarray:
-        """
-        Takes the pulse and ensures it is played on the right path for ``"real"`` or
-        ``"imag"`` mode, returns same ``data`` for ``mode == "complex"`` as this should
-        be handled correctly already.
-
-        Effectively this means that when ``data`` is an array of real numbers and the
-        ``mode == "imag"`` the data will be cast to an array of complex numbers,
-        otherwise the same ``data`` will be returned.
-
-        Parameters
-        ----------
-        pulse
-            The pulse information.
-        data
-            Real-valued array (when ``mode != "complex"``) or complex-valued array
-            (when ``mode == "complex"``).
-        mode
-            The output mode. Must be one of ``"complex"``, ``"real"`` or ``"imag"``.
-
-        Returns
-        -------
-        :
-            The (potentially made imag) data.
-
-        Raises
-        ------
-        ValueError
-            Mode is not ``"complex"`` but the input ``data`` has an imaginary part.
-        """
-        assert mode in ("complex", "real", "imag")
-
-        if mode == "complex":
-            return data
-
-        if not np.all((data.imag == 0)):
-            raise ValueError(
-                f"Attempting to play complex data on sequencer {self.name} of "
-                f"{self.parent.name} which is connected to a real output.\n\n"
-                f"Associated pulse:\n{repr(pulse)}"
-            )
-        if mode == "imag":
-            return 1.0j * data
-
-        return data  # mode is real
-
     def _generate_weights_dict(self) -> Dict[str, Any]:
         """
         Generates the dictionary that corresponds that contains the acq weights
@@ -685,11 +643,13 @@ class Sequencer:
                 # this check exists to catch unexpected errors if we add more
                 # BinModes in the future.
                 raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
-            if acq_metadata.acq_protocol == 'looped_periodic_acquisition':
+            if acq_metadata.acq_protocol == "looped_periodic_acquisition":
                 if len(acquisitions) > 1:
-                    raise ValueError('only one acquisition allowed if '
-                                     'looped_periodic_acquisition is used')
-                num_bins = acquisitions[0].data['num_times']
+                    raise ValueError(
+                        "only one acquisition allowed if "
+                        "looped_periodic_acquisition is used"
+                    )
+                num_bins = acquisitions[0].data["num_times"]
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
                 "index": acq_channel,
@@ -1181,12 +1141,30 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
-                    seq.pulses = pulse_data_list
+                    partial_func = partial(
+                        get_operation_strategy,
+                        force_generic=not seq.instruction_generated_pulses_enabled,
+                        output_mode=seq.output_mode,
+                    )
+                    func_map = map(
+                        partial_func,
+                        pulse_data_list,
+                    )
+                    seq.pulses = list(func_map)
 
         for portclock, acq_data_list in self._acquisitions.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
-                    seq.acquisitions = acq_data_list
+                    partial_func = partial(
+                        get_operation_strategy,
+                        force_generic=not seq.instruction_generated_pulses_enabled,
+                        output_mode=seq.output_mode,
+                    )
+                    func_map = map(
+                        partial_func,
+                        acq_data_list,
+                    )
+                    seq.acquisitions = list(func_map)
 
     @abstractmethod
     def assign_frequencies(self, sequencer: Sequencer):
