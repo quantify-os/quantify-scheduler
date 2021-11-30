@@ -53,7 +53,9 @@ class GenericPulseStrategy(PulseStrategyPartial):
     def insert_qasm(self, qasm_program: QASMProgram):
         op_info = self.operation_info
 
-        qasm_program.update_runtime_settings(op_info)
+        qasm_program.set_gain_from_voltage_range(
+            self.amplitude_path0, self.amplitude_path1, op_info
+        )
         qasm_program.emit(
             q1asm_instructions.PLAY,
             self.waveform_index0,
