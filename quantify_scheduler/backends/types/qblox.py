@@ -54,27 +54,6 @@ class StaticHardwareProperties:
 
 
 @dataclass
-class QASMRuntimeSettings:
-    """
-    Settings that can be changed dynamically by the sequencer during execution of the
-    schedule. This is in contrast to the relatively static :class:`~.SequencerSettings`.
-    """
-
-    awg_gain_0: float
-    """Gain set to the AWG output path 0. Value should be in the range -1.0 < param <
-    1.0. Else an exception will be raised during compilation."""
-    awg_gain_1: float
-    """Gain set to the AWG output path 1. Value should be in the range -1.0 < param <
-    1.0. Else an exception will be raised during compilation."""
-    awg_offset_0: float = 0.0
-    """Offset applied to the AWG output path 0. Value should be in the range -1.0 <
-    param < 1.0. Else an exception will be raised during compilation."""
-    awg_offset_1: float = 0.0
-    """Offset applied to the AWG output path 1. Value should be in the range -1.0 <
-    param < 1.0. Else an exception will be raised during compilation."""
-
-
-@dataclass
 class OpInfo(DataClassJsonMixin):
     """
     Data structure containing all the information describing a pulse or acquisition
@@ -91,14 +70,6 @@ class OpInfo(DataClassJsonMixin):
     Note that this is a combination of the start time "t_abs" of the schedule
     operation, and the t0 of the pulse/acquisition which specifies a time relative
     to "t_abs"."""
-    uuid: Optional[str] = None
-    """A unique identifier for this pulse/acquisition."""
-    pulse_settings: Optional[QASMRuntimeSettings] = None
-    """Settings that are to be set by the sequencer before playing this
-    pulse/acquisition. This is used for parameterized behavior e.g. setting a gain
-    parameter to change the pulse amplitude, instead of changing the waveform. This
-    allows to reuse the same waveform multiple times despite a difference in
-    amplitude."""
     bin_idx_register: Optional[str] = None
     """The register used to keep track of the bin index, only not None for append mode
     acquisitions."""
@@ -128,10 +99,11 @@ class OpInfo(DataClassJsonMixin):
         return "acq_index" in self.data
 
     def __repr__(self):
-        repr_string = 'Acquisition "' if self.is_acquisition else 'Pulse "'
-        repr_string += f"{str(self.name)} - {str(self.uuid)}"
-        repr_string += f'" (t={self.timing} to {self.timing+self.duration})'
-        repr_string += f" data={self.data}"
+        repr_string = (
+            f"{'Acquisition' if self.is_acquisition else 'Pulse'} "
+            f"{str(self.name)} (t={self.timing} to "
+            f"{self.timing + self.duration})\ndata={self.data}"
+        )
         return repr_string
 
 
