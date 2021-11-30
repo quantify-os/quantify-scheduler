@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import Optional, Dict, Tuple, Any, Union
+from typing import Optional, Dict, Any, Union
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
-import numpy as np
 
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 from quantify_scheduler.backends.qblox.operation_handling.base import (
     IOperationStrategy,
