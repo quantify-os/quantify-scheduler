@@ -488,45 +488,10 @@ class Sequencer:
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
         """
-        waveforms_complex = {}
+        wf_dict = {}
         for acq in self.acquisitions:
-            waveforms_data = acq.data["waveforms"]
-            if len(waveforms_data) == 0:
-                continue  # e.g. scope acquisition
-            if (
-                acq.data["protocol"] == "ssb_integration_complex"
-                or acq.data["protocol"] == "looped_periodic_acquisition"
-            ):
-                continue
-            if len(waveforms_data) != 2:
-                raise ValueError(
-                    f"Acquisitions need 2 waveforms (one for the I quadrature and one "
-                    f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
-                    "waveforms."
-                )
-            raw_wf_data_real = helpers.generate_waveform_data(
-                waveforms_data[0], sampling_rate=constants.SAMPLING_RATE
-            )
-            raw_wf_data_imag = helpers.generate_waveform_data(
-                waveforms_data[1], sampling_rate=constants.SAMPLING_RATE
-            )
-            acq.uuid = "{}_{}".format(
-                helpers.generate_uuid_from_wf_data(raw_wf_data_real),
-                helpers.generate_uuid_from_wf_data(raw_wf_data_imag),
-            )
-            if acq.uuid not in waveforms_complex:
-                self._settings.duration = len(raw_wf_data_real)
-                if not (
-                    np.all(np.isreal(raw_wf_data_real))
-                    and np.all(np.isreal(1.0j * raw_wf_data_imag))
-                ):  # since next step will break if either is complex
-                    raise NotImplementedError(
-                        f"Complex weights not implemented. Please use two 1d "
-                        f"real-valued weights. Exception was triggered because of "
-                        f"{repr(acq)}."
-                    )
-                waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
-        return helpers.generate_waveform_dict(waveforms_complex)
+            acq.generate_data(wf_dict)
+        return wf_dict
 
     def _generate_acq_declaration_dict(
         self,
