@@ -450,59 +450,28 @@ class Sequencer:
         ValueError
             I or Q amplitude is being set outside of maximum range.
         """
-        output_mode = helpers.output_mode_from_outputs(self._settings.connected_outputs)
-        waveforms_complex = {}
+        wf_dict = {}
         for pulse in self.pulses:
-            reserved_pulse_id = (
-                non_generic.check_reserved_pulse_id(pulse)
-                if self.instruction_generated_pulses_enabled
-                else None
-            )
-            if reserved_pulse_id is None:
-                raw_wf_data = helpers.generate_waveform_data(
-                    pulse.data, sampling_rate=constants.SAMPLING_RATE
-                )
-                raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
-                pulse.uuid = helpers.generate_uuid_from_wf_data(raw_wf_data)
-            else:
-                raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
-                    reserved_pulse_id, pulse.data, sampling_rate=constants.SAMPLING_RATE
-                )
-                pulse.uuid = reserved_pulse_id
-
-            if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
-                raise ValueError(
-                    f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-"
-                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
-                    f"{self.parent.__class__.__name__}.\n"
-                    f"{amp_i} V is set as amplitude for the I channel for "
-                    f"{repr(pulse)}"
-                )
-            if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
-                raise ValueError(
-                    f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-"
-                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
-                    f"{self.parent.__class__.__name__}.\n"
-                    f"{amp_q} V is set as amplitude for the Q channel for "
-                    f"{repr(pulse)}"
-                )
-            if output_mode == "imag":
-                # swapping variables since we want the real signal to play on the Q
-                # channel.
-                amp_i, amp_q = amp_q, amp_i
-
-            pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.static_hw_properties.max_awg_output_voltage,
-                awg_gain_1=amp_q / self.static_hw_properties.max_awg_output_voltage,
-            )
-            if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
-                raw_wf_data = self.apply_output_mode_to_data(
-                    pulse, raw_wf_data, output_mode
-                )
-                waveforms_complex[pulse.uuid] = raw_wf_data
-        return helpers.generate_waveform_dict(waveforms_complex)
+            pulse.generate_data(wf_dict=wf_dict)
+        return wf_dict
+            # if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
+            #     raise ValueError(
+            #         f"Attempting to set amplitude to an invalid value. "
+            #         f"Maximum voltage range is +-"
+            #         f"{self.static_hw_properties.max_awg_output_voltage} V for "
+            #         f"{self.parent.__class__.__name__}.\n"
+            #         f"{amp_i} V is set as amplitude for the I channel for "
+            #         f"{repr(pulse)}"
+            #     )
+            # if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
+            #     raise ValueError(
+            #         f"Attempting to set amplitude to an invalid value. "
+            #         f"Maximum voltage range is +-"
+            #         f"{self.static_hw_properties.max_awg_output_voltage} V for "
+            #         f"{self.parent.__class__.__name__}.\n"
+            #         f"{amp_q} V is set as amplitude for the Q channel for "
+            #         f"{repr(pulse)}"
+            #     )
 
     def _generate_weights_dict(self) -> Dict[str, Any]:
         """
@@ -582,7 +551,7 @@ class Sequencer:
 
     def _generate_acq_declaration_dict(
         self,
-        acquisitions: List[OpInfo],
+        acquisitions: List[IOperationStrategy],
         repetitions: int,
     ) -> Dict[str, Any]:
         """
@@ -606,6 +575,7 @@ class Sequencer:
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
+        acquisitions = list(map(lambda acq: acq.operation_info, acquisitions))
 
         # acquisition metadata for acquisitions relevant to this sequencer only
         acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
@@ -731,20 +701,17 @@ class Sequencer:
 
         # program body
         op_list = pulses + acquisitions
-        op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
+        op_list = sorted(
+            op_list,
+            key=lambda p: (p.operation_info.timing, p.operation_info.is_acquisition),
+        )
 
         with qasm.loop(label=loop_label, repetitions=repetitions):
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
-                if operation.is_acquisition:
-                    idx0, idx1 = self.get_indices_from_wf_dict(
-                        operation.uuid, weights_dict
-                    )
-                    qasm.wait_till_start_then_acquire(operation, idx0, idx1)
-                else:
-                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
-                    qasm.wait_till_start_then_play(operation, idx0, idx1)
+                qasm.wait_till_start_operation(operation.operation_info)
+                operation.insert_qasm(qasm)
 
             end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
