@@ -11,7 +11,6 @@ from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 from quantify_scheduler.backends.qblox.operation_handling.base import (
     IOperationStrategy,
-    get_indices_from_wf_dict,
 )
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
@@ -21,8 +20,9 @@ from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instruct
 class AcquisitionStrategyPartial(IOperationStrategy):
     def __init__(self, operation_info: types.OpInfo):
         self._acq_info: types.OpInfo = operation_info
+        self.bin_mode: BinMode = operation_info.data["bin_mode"]
 
-    def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
+    def insert_qasm(self, qasm_program: QASMProgram):
         if qasm_program.time_last_acquisition_triggered is not None:
             if (
                 qasm_program.elapsed_time - qasm_program.time_last_acquisition_triggered
@@ -40,16 +40,14 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
-        bin_mode = self.operation_info.data["bin_mode"]
-
-        if bin_mode == BinMode.AVERAGE:
+        if self.bin_mode == BinMode.AVERAGE:
             self.acquire_average(qasm_program)
-        elif bin_mode == BinMode.APPEND:
+        elif self.bin_mode == BinMode.APPEND:
             self.acquire_append(qasm_program)
         else:
             raise RuntimeError(
                 f"Attempting to process an acquisition with unknown bin "
-                f"mode {bin_mode}."
+                f"mode {self.bin_mode}."
             )
 
     @abstractmethod
@@ -66,7 +64,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
 
 class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
-    def generate_data(self, output_mode: str) -> None:
+    def generate_data(self, wf_dict: Dict[str, Any]) -> None:
         return None
 
     def acquire_average(self, qasm_program: QASMProgram):
@@ -121,25 +119,31 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 
 
 class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
-    def generate_data(self, output_mode: str) -> np.ndarray:
+    def __init__(self, operation_info: types.OpInfo):
+        super().__init__(operation_info)
+        self.waveform_index0: Optional[int] = None
+        self.waveform_index1: Optional[int] = None
+
+    def generate_data(self, wf_dict: Dict[str, Any]):
         waveform_data = helpers.generate_waveform_data(
             self.operation_info.data, sampling_rate=constants.SAMPLING_RATE
         )
-        return waveform_data
+        _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
+        _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
+        self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
 
     def acquire_average(self, qasm_program: QASMProgram):
         acquisition = self.operation_info
 
         bin_idx = self.operation_info.data["acq_index"]
         measurement_idx = acquisition.data["acq_channel"]
-        idx0, idx1 = get_indices_from_wf_dict(self.operation_info.uuid, wf_dict=wf_dict)
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
             measurement_idx,
             bin_idx,
-            idx0,
-            idx1,
+            self.waveform_index0,
+            self.waveform_index1,
             constants.GRID_TIME,
             comment=f"Store acq in acq_channel:{measurement_idx}, bin_idx:{bin_idx}",
         )

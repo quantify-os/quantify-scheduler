@@ -6,10 +6,8 @@ import numpy as np
 
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
-from quantify_scheduler.backends.qblox.operation_handling.base import (
-    IOperationStrategy,
-    get_indices_from_wf_dict,
-)
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instructions
@@ -95,8 +93,6 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
 
     def insert_qasm(self, qasm_program: QASMProgram):
         duration = self.operation_info.duration
-        idx0, idx1 = get_indices_from_wf_dict(self.operation_info.uuid, wf_dict=wf_dict)
-
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
         # TODO this has to be fixed to use the amp param instead. I want to get rid of
@@ -109,8 +105,8 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             ):
                 qasm_program.emit(
                     q1asm_instructions.PLAY,
-                    idx0,
-                    idx1,
+                    self.waveform_index0,
+                    self.waveform_index1,
                     helpers.to_grid_time(constants.PULSE_STITCHING_DURATION),
                 )
                 qasm_program.elapsed_time += repetitions * helpers.to_grid_time(
@@ -121,7 +117,12 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             duration % constants.PULSE_STITCHING_DURATION
         )
         if pulse_time_remaining > 0:
-            qasm_program.emit(q1asm_instructions.PLAY, idx0, idx1, pulse_time_remaining)
+            qasm_program.emit(
+                q1asm_instructions.PLAY,
+                self.waveform_index0,
+                self.waveform_index1,
+                pulse_time_remaining,
+            )
             qasm_program.emit(
                 q1asm_instructions.SET_AWG_GAIN,
                 0,
@@ -138,12 +139,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
     def generate_data(self, wf_dict: Dict[str, Any]):
         return None
 
-    def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
-        if self.output_mode == "":
-            raise RuntimeError(
-                f"Output_mode was never set for pulse {self.operation_info}"
-            )
-
+    def insert_qasm(self, qasm_program: QASMProgram):
         pulse = self.operation_info
 
         with qasm_program.temp_register(2) as (offs_reg, offs_reg_zero):
