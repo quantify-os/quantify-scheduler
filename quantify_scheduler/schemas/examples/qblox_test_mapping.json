@@ -147,4 +147,9 @@
         "lo_freq": 7200000000.0,
         "power": 1
     }
+    "lo1": {
+        "instrument_type": "LocalOscillator",
+        "lo_freq": 7200000000.0,
+        "power": 1
+    }
 }

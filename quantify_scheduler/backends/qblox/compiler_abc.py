@@ -1456,7 +1456,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency
+        Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -1497,7 +1497,7 @@ class QbloxRFModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency
+        Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
