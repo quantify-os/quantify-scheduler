@@ -37,7 +37,6 @@ from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     PulsarRFSettings,
     PulsarSettings,
-    QASMRuntimeSettings,
     RFModuleSettings,
     SequencerSettings,
     StaticHardwareProperties,
@@ -46,7 +45,6 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
-from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 
 class InstrumentCompiler(ABC):
@@ -454,24 +452,24 @@ class Sequencer:
         for pulse in self.pulses:
             pulse.generate_data(wf_dict=wf_dict)
         return wf_dict
-            # if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
-            #     raise ValueError(
-            #         f"Attempting to set amplitude to an invalid value. "
-            #         f"Maximum voltage range is +-"
-            #         f"{self.static_hw_properties.max_awg_output_voltage} V for "
-            #         f"{self.parent.__class__.__name__}.\n"
-            #         f"{amp_i} V is set as amplitude for the I channel for "
-            #         f"{repr(pulse)}"
-            #     )
-            # if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
-            #     raise ValueError(
-            #         f"Attempting to set amplitude to an invalid value. "
-            #         f"Maximum voltage range is +-"
-            #         f"{self.static_hw_properties.max_awg_output_voltage} V for "
-            #         f"{self.parent.__class__.__name__}.\n"
-            #         f"{amp_q} V is set as amplitude for the Q channel for "
-            #         f"{repr(pulse)}"
-            #     )
+        # if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
+        #     raise ValueError(
+        #         f"Attempting to set amplitude to an invalid value. "
+        #         f"Maximum voltage range is +-"
+        #         f"{self.static_hw_properties.max_awg_output_voltage} V for "
+        #         f"{self.parent.__class__.__name__}.\n"
+        #         f"{amp_i} V is set as amplitude for the I channel for "
+        #         f"{repr(pulse)}"
+        #     )
+        # if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
+        #     raise ValueError(
+        #         f"Attempting to set amplitude to an invalid value. "
+        #         f"Maximum voltage range is +-"
+        #         f"{self.static_hw_properties.max_awg_output_voltage} V for "
+        #         f"{self.parent.__class__.__name__}.\n"
+        #         f"{amp_q} V is set as amplitude for the Q channel for "
+        #         f"{repr(pulse)}"
+        #     )
 
     def _generate_weights_dict(self) -> Dict[str, Any]:
         """
