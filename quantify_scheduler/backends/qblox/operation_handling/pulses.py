@@ -131,17 +131,12 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         qasm_program.elapsed_time += pulse_time_remaining
 
 
-class StaircasePulseStrategy(IOperationStrategy):
-    def __init__(self, operation_info: types.OpInfo):
-        self._pulse_info: types.OpInfo = operation_info
-        self.output_mode = ""
+class StaircasePulseStrategy(PulseStrategyPartial):
+    def __init__(self, operation_info: types.OpInfo, output_mode: str):
+        super().__init__(operation_info, output_mode)
 
-    @property
-    def operation_info(self) -> types.OpInfo:
-        return self._pulse_info
-
-    def generate_data(self, output_mode: str):
-        self.output_mode = output_mode
+    def generate_data(self, wf_dict: Dict[str, Any]):
+        return None
 
     def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
         if self.output_mode == "":
