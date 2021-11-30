@@ -22,7 +22,6 @@ from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
     helpers,
-    non_generic,
     q1asm_instructions,
     register_manager,
 )
