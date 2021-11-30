@@ -132,7 +132,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
         bin_idx = self.operation_info.data["acq_index"]
         measurement_idx = acquisition.data["acq_channel"]
-        idx0, idx1 = get_indices_from_wf_dict(op_info.uuid, wf_dict=wf_dict)
+        idx0, idx1 = get_indices_from_wf_dict(self.operation_info.uuid, wf_dict=wf_dict)
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
