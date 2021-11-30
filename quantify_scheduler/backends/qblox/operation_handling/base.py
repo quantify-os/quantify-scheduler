@@ -18,9 +18,7 @@ class IOperationStrategy(ABC):
         pass
 
     @abstractmethod
-    def generate_data(
-        self, wf_dict: Dict[str, Any], output_mode: str
-    ) -> Optional[np.ndarray]:
+    def generate_data(self, wf_dict: Dict[str, Any]):
         pass
 
     @abstractmethod

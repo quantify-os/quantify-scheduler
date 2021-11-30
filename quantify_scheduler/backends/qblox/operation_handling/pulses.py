@@ -15,68 +15,85 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instructions
 
 
-class GenericPulseStrategy(IOperationStrategy):
-    def __init__(self, operation_info: types.OpInfo):
+class PulseStrategyPartial(IOperationStrategy):
+    def __init__(self, operation_info: types.OpInfo, output_mode: str):
         self._pulse_info: types.OpInfo = operation_info
-
-        self.amplitude_path0: Optional[float] = None
-        self.amplitude_path1: Optional[float] = None
+        self.output_mode = output_mode
 
     @property
     def operation_info(self) -> types.OpInfo:
         return self._pulse_info
 
-    def generate_data(self, output_mode: str) -> np.ndarray:
+
+class GenericPulseStrategy(PulseStrategyPartial):
+    def __init__(self, operation_info: types.OpInfo, output_mode: str):
+        super().__init__(operation_info, output_mode)
+
+        self.amplitude_path0: Optional[float] = None
+        self.amplitude_path1: Optional[float] = None
+
+        self.waveform_index0: Optional[int] = None
+        self.waveform_index1: Optional[int] = None
+
+    def generate_data(self, wf_dict: Dict[str, Any]):
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
             op_info.data, sampling_rate=constants.SAMPLING_RATE
         )
         waveform_data, amp_real, amp_imag = normalize_waveform_data(waveform_data)
 
-        if output_mode == "imag":
+        _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
+        _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
+
+        if self.output_mode == "imag":
+            self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
             self.amplitude_path0, self.amplitude_path1 = amp_imag, amp_real
         else:
+            self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
             self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
 
-        return waveform_data
-
-    def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
+    def insert_qasm(self, qasm_program: QASMProgram):
         op_info = self.operation_info
-        idx0, idx1 = get_indices_from_wf_dict(op_info.uuid, wf_dict=wf_dict)
 
         qasm_program.update_runtime_settings(op_info)
-        qasm_program.emit(q1asm_instructions.PLAY, idx0, idx1, constants.GRID_TIME)
+        qasm_program.emit(
+            q1asm_instructions.PLAY,
+            self.waveform_index0,
+            self.waveform_index1,
+            constants.GRID_TIME,
+        )
         qasm_program.elapsed_time += constants.GRID_TIME
 
 
-class StitchedSquarePulseStrategy(IOperationStrategy):
-    def __init__(self, operation_info: types.OpInfo):
-        self._pulse_info: types.OpInfo = operation_info
+class StitchedSquarePulseStrategy(PulseStrategyPartial):
+    def __init__(self, operation_info: types.OpInfo, output_mode: str):
+        super().__init__(operation_info, output_mode)
 
         self.amplitude_path0: Optional[float] = None
         self.amplitude_path1: Optional[float] = None
 
-    @property
-    def operation_info(self) -> types.OpInfo:
-        return self._pulse_info
+        self.waveform_index0: Optional[int] = None
+        self.waveform_index1: Optional[int] = None
 
-    def generate_data(self, output_mode: str) -> np.ndarray:
+    def generate_data(self, wf_dict: Dict[str, Any]):
         op_info = self.operation_info
         amplitude = op_info.data["amp"]
 
         array_with_ones = np.ones(
             int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
         )
-        if output_mode == "imag":
-            waveform_data = 1j * array_with_ones
+        _, _, idx_ones = helpers.add_to_wf_dict_if_unique(wf_dict, array_with_ones.real)
+        _, _, idx_zeros = helpers.add_to_wf_dict_if_unique(
+            wf_dict, array_with_ones.imag
+        )
+        if self.output_mode == "imag":
+            self.waveform_index0, self.waveform_index1 = idx_zeros, idx_ones
             self.amplitude_path0, self.amplitude_path1 = 0, amplitude
         else:
-            waveform_data = array_with_ones
+            self.waveform_index0, self.waveform_index1 = idx_ones, idx_zeros
             self.amplitude_path0, self.amplitude_path1 = amplitude, 0
 
-        return waveform_data
-
-    def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
+    def insert_qasm(self, qasm_program: QASMProgram):
         duration = self.operation_info.duration
         idx0, idx1 = get_indices_from_wf_dict(self.operation_info.uuid, wf_dict=wf_dict)
 
@@ -123,9 +140,8 @@ class StaircasePulseStrategy(IOperationStrategy):
     def operation_info(self) -> types.OpInfo:
         return self._pulse_info
 
-    def generate_data(self, output_mode: str) -> None:
+    def generate_data(self, output_mode: str):
         self.output_mode = output_mode
-        return None
 
     def insert_qasm(self, qasm_program: QASMProgram, wf_dict: Dict[str, Any]):
         if self.output_mode == "":
