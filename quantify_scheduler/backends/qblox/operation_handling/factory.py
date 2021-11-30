@@ -36,6 +36,10 @@ def _get_acquisition_strategy(
         return acquisitions.SquareAcquisitionStrategy(operation)
     elif protocol == "weighted_integrated_complex":
         return acquisitions.WeightedAcquisitionStrategy(operation)
+    raise ValueError(
+        f'Unknown acquisition protocol "{protocol}" encountered in '
+        f"Qblox backend when processing acquisition {repr(operation)}."
+    )
 
 
 def _get_pulse_strategy(
