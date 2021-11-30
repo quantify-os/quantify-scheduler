@@ -51,10 +51,8 @@ class GenericPulseStrategy(PulseStrategyPartial):
             self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
 
     def insert_qasm(self, qasm_program: QASMProgram):
-        op_info = self.operation_info
-
         qasm_program.set_gain_from_voltage_range(
-            self.amplitude_path0, self.amplitude_path1, op_info
+            self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
         qasm_program.emit(
             q1asm_instructions.PLAY,
@@ -97,9 +95,9 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         duration = self.operation_info.duration
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
-        # TODO this has to be fixed to use the amp param instead. I want to get rid of
-        #  the runtime settings
-        qasm_program.update_runtime_settings(self.operation_info)
+        qasm_program.set_gain_from_voltage_range(
+            self.amplitude_path0, self.amplitude_path1, self.operation_info
+        )
         if repetitions > 0:
             with qasm_program.loop(
                 label=f"stitch{len(qasm_program.instructions)}",
