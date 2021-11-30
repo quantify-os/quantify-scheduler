@@ -21,6 +21,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
     def __init__(self, operation_info: types.OpInfo):
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
+        self.acq_channel = operation_info.data["acq_channel"]
 
     def insert_qasm(self, qasm_program: QASMProgram):
         if qasm_program.time_last_acquisition_triggered is not None:
@@ -79,13 +80,12 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 
         self._acquire_square(qasm_program, acq_bin_idx_reg)
 
-        acq_channel = acquisition.data["acq_channel"]
         qasm_program.emit(
             q1asm_instructions.ADD,
             acq_bin_idx_reg,
             1,
             acq_bin_idx_reg,
-            comment=f"Increment bin_idx for ch{acq_channel}",
+            comment=f"Increment bin_idx for ch{self.acq_channel}",
         )
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
@@ -108,10 +108,9 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             acquisition, acquisition.duration
         )
 
-        measurement_idx = acquisition.data["acq_channel"]
         qasm_program.emit(
             q1asm_instructions.ACQUIRE,
-            measurement_idx,
+            self.acq_channel,
             bin_idx,
             constants.GRID_TIME,
         )
@@ -150,4 +149,32 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.elapsed_time += constants.GRID_TIME
 
     def acquire_append(self, qasm_program: QASMProgram):
-        pass
+        acq_bin_idx_reg = self.operation_info.bin_idx_register
+
+        with qasm_program.temp_register(2) as (acq_idx0_reg, acq_idx1_reg):
+            qasm_program.emit(q1asm_instructions.NEW_LINE)
+            qasm_program.emit(
+                q1asm_instructions.MOVE,
+                self.waveform_index0,
+                acq_idx0_reg,
+                comment=f"Store idx of acq I wave in {acq_idx0_reg}",
+            )
+            qasm_program.emit(
+                q1asm_instructions.MOVE,
+                self.waveform_index1,
+                acq_idx1_reg,
+                comment=f"Store idx of acq Q wave in {acq_idx1_reg}.",
+            )
+
+            qasm_program.emit(
+                q1asm_instructions.ACQUIRE_WEIGHED,
+                self.acq_channel,
+                acq_bin_idx_reg,
+                self.waveform_index0,
+                self.waveform_index1,
+                constants.GRID_TIME,
+                comment=f"Store acq in acq_channel:{self.acq_channel}, "
+                f"bin_idx:{acq_bin_idx_reg}",
+            )
+            qasm_program.emit(q1asm_instructions.NEW_LINE)
+            qasm_program.elapsed_time += constants.GRID_TIME
