@@ -5,7 +5,6 @@ scipy
 columnar
 matplotlib
 plotly
-jsonschema
 fastjsonschema
 dataclasses-json
 # zhinst versions pinned, see #187

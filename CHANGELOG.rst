@@ -11,6 +11,7 @@ Unreleased changes
 * Compilation - Make `device_cfg` an optional argument of qcompile(!281)
 * Compilation - renamed the hardware_mapping argument of qcompile into hardware_cfg (#165, !279)
 * Compilation - Introduced the hardware_compile function to perform the hardware compilation returning a CompiledSchedule (#224, !279)
+* General - Improve JSON validation speed (!284)
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
 --------------------------------------------------------------------------------------------------
