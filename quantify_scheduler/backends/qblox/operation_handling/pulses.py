@@ -33,12 +33,15 @@ class GenericPulseStrategy(PulseStrategyPartial):
         self.waveform_index0: Optional[int] = None
         self.waveform_index1: Optional[int] = None
 
+        self.waveform_len: Optional[int] = None
+
     def generate_data(self, wf_dict: Dict[str, Any]):
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
             op_info.data, sampling_rate=constants.SAMPLING_RATE
         )
         waveform_data, amp_real, amp_imag = normalize_waveform_data(waveform_data)
+        self.waveform_len = len(waveform_data)
 
         _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
         _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
@@ -59,6 +62,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             self.waveform_index0,
             self.waveform_index1,
             constants.GRID_TIME,
+            comment=f"play {self.operation_info.name} ({self.waveform_len} ns)",
         )
         qasm_program.elapsed_time += constants.GRID_TIME
 
@@ -141,41 +145,56 @@ class StaircasePulseStrategy(PulseStrategyPartial):
 
     def insert_qasm(self, qasm_program: QASMProgram):
         pulse = self.operation_info
+        num_steps = pulse.data["num_steps"]
+        start_amp = pulse.data["start_amp"]
+        final_amp = pulse.data["final_amp"]
+        step_duration_ns = helpers.to_grid_time(pulse.duration / num_steps)
 
+        offset_param_label = (
+            "offset_awg_path1" if self.output_mode == "imag" else "offset_awg_path0"
+        )
+
+        amp_step = (final_amp - start_amp) / (num_steps - 1)
+        amp_step_immediate = qasm_program._expand_from_normalised_range(
+            amp_step / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
+            constants.IMMEDIATE_SZ_OFFSET,
+            offset_param_label,
+            pulse,
+        )
+        start_amp_immediate = qasm_program._expand_from_normalised_range(
+            start_amp / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
+            constants.IMMEDIATE_SZ_OFFSET,
+            offset_param_label,
+            pulse,
+        )
+        if start_amp_immediate < 0:
+            start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
+
+        self._generate_staircase_loop(
+            qasm_program,
+            start_amp_immediate,
+            amp_step_immediate,
+            step_duration_ns,
+            num_steps,
+        )
+
+    def _generate_staircase_loop(
+        self,
+        qasm_program: QASMProgram,
+        start_amp_immediate: int,
+        amp_step_immediate: int,
+        step_duration_ns: int,
+        num_steps: int,
+    ):
         with qasm_program.temp_register(2) as (offs_reg, offs_reg_zero):
-            num_steps = pulse.data["num_steps"]
-            start_amp = pulse.data["start_amp"]
-            final_amp = pulse.data["final_amp"]
-            step_duration_ns = helpers.to_grid_time(pulse.duration / num_steps)
-
-            offset_param_label = (
-                "offset_awg_path1" if self.output_mode == "imag" else "offset_awg_path0"
-            )
-
-            amp_step = (final_amp - start_amp) / (num_steps - 1)
-            amp_step_immediate = qasm_program._expand_from_normalised_range(
-                amp_step
-                / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
-                constants.IMMEDIATE_SZ_OFFSET,
-                offset_param_label,
-                pulse,
-            )
-            start_amp_immediate = qasm_program._expand_from_normalised_range(
-                start_amp
-                / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
-                constants.IMMEDIATE_SZ_OFFSET,
-                offset_param_label,
-                pulse,
-            )
-            if start_amp_immediate < 0:
-                start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
-
             qasm_program.emit(
                 q1asm_instructions.SET_AWG_GAIN,
                 constants.IMMEDIATE_SZ_GAIN // 2,
                 constants.IMMEDIATE_SZ_GAIN // 2,
                 comment="set gain to known value",
             )
+
+            # Initialize registers
             qasm_program.emit(
                 q1asm_instructions.MOVE,
                 start_amp_immediate,
@@ -183,8 +202,12 @@ class StaircasePulseStrategy(PulseStrategyPartial):
                 comment="keeps track of the offsets",
             )
             qasm_program.emit(
-                q1asm_instructions.MOVE, 0, offs_reg_zero, comment="zero for Q channel"
+                q1asm_instructions.MOVE,
+                0,
+                offs_reg_zero,
+                comment="zero for unused output path",
             )
+
             qasm_program.emit(q1asm_instructions.NEW_LINE)
             with qasm_program.loop(
                 f"ramp{len(qasm_program.instructions)}", repetitions=num_steps
@@ -196,11 +219,17 @@ class StaircasePulseStrategy(PulseStrategyPartial):
                     amp_step_immediate,
                 )
                 qasm_program.auto_wait(step_duration_ns - constants.GRID_TIME)
+
             qasm_program.elapsed_time += (
                 step_duration_ns * (num_steps - 1) if num_steps > 1 else 0
             )
 
-            qasm_program.emit(q1asm_instructions.SET_AWG_OFFSET, 0, 0)
+            qasm_program.emit(
+                q1asm_instructions.SET_AWG_OFFSET,
+                0,
+                0,
+                comment="return offset to 0 after staircase.",
+            )
             qasm_program.emit(q1asm_instructions.NEW_LINE)
 
     def _generate_step(
