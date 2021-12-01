@@ -481,7 +481,7 @@ def plot_window_operations(
         The matplotlib ax.
     """
     if ax is None:
-        _, ax = plt.subplots()
+        ax = plt.gca()
 
     window_operations = get_window_operations(schedule)
 
