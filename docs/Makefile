@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -W --keep-going -n -w build_errors.log
+SPHINXOPTS    = -W --keep-going -n -w build_errors.log -v -P
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = quantify
 SOURCEDIR     = .

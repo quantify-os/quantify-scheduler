@@ -209,12 +209,6 @@ def test_generate_uninitalized_var() -> None:
 @pytest.mark.parametrize(
     "delay,expected_wait,device_type,expected_elapsed",
     [
-        (
-            0,
-            0,
-            DeviceType.HDAWG,
-            SEQC_INSTR_CLOCKS[DeviceType.HDAWG][SeqcInstructions.WAIT],
-        ),
         (3, 0, DeviceType.HDAWG, 3),
         (6, 3, DeviceType.HDAWG, 6),
         (
@@ -235,11 +229,13 @@ def test_add_wait(
     n_instr = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.WAIT]
     if device_type == DeviceType.HDAWG:
         if delay - n_instr < 0:
-            expected_instruction = f"wait({expected_wait});\t//  n_instr={n_instr} <--"
+            expected_instruction = (
+                f"wait({expected_wait});\t\t//  n_instr={n_instr} <--"
+            )
         else:
-            expected_instruction = f"wait({expected_wait});\t//  n_instr={n_instr}"
+            expected_instruction = f"wait({expected_wait});\t\t//  n_instr={n_instr}"
     elif device_type == DeviceType.UHFQA:
-        expected_instruction = f"wait({expected_wait});\t//  n_instr={delay}"
+        expected_instruction = f"wait({expected_wait});\t\t//  n_instr={delay}"
 
     # Act
     elapsed_clocks = add_wait(gen, delay, device_type)
@@ -247,3 +243,13 @@ def test_add_wait(
     # Assert
     assert elapsed_clocks == expected_elapsed
     assert gen._program[-1] == (0, expected_instruction)
+
+
+def test_add_wait_raises():
+    gen = SeqcILGenerator()
+    with pytest.raises(ValueError) as execinfo:
+        add_wait(gen, delay=2, device_type=DeviceType.HDAWG)
+    assert (
+        str(execinfo.value)
+        == "Minimum number of clocks to wait must be at least 3 (HDAWG) or 0 (UHFQA)!"
+    )

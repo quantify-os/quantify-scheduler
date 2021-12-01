@@ -24,11 +24,12 @@
                 "mode": "complex",
                 "modulation": {
                     "type": "premod",
-                    "interm_freq": 0
+                    "interm_freq": -100000000.0
                 },
                 "local_oscillator": "ic_mw_qubit",
                 "clock_frequency": 6000000000.0,
                 "line_trigger_delay": 1.91e-07,
+                "latency": 1e-08,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -37,9 +38,9 @@
                 "gain2": 1,
                 "mixer_corrections": {
                     "amp_ratio": 0.95,
-                    "phase_error": 90,
-                    "dc_offset_I": -0.542,
-                    "dc_offset_Q": -0.328
+                    "phase_error": 0.07,
+                    "dc_offset_I": -0.0542,
+                    "dc_offset_Q": -0.0328
                 }
             },
             "channel_1": {
@@ -48,11 +49,12 @@
                 "mode": "complex",
                 "modulation": {
                     "type": "premod",
-                    "interm_freq": 0
+                    "interm_freq": -100000000.0
                 },
                 "local_oscillator": "ic_mw_qubit",
                 "clock_frequency": 6000000000.0,
                 "line_trigger_delay": 1.91e-07,
+                "latency": 1e-08,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -61,9 +63,9 @@
                 "gain2": 1,
                 "mixer_corrections": {
                     "amp_ratio": 0.95,
-                    "phase_error": 90,
-                    "dc_offset_I": -0.542,
-                    "dc_offset_Q": -0.328
+                    "phase_error": 0.07,
+                    "dc_offset_I": 0.042,
+                    "dc_offset_Q": 0.028
                 }
             }
         },
@@ -77,7 +79,7 @@
                 "mode": "real",
                 "modulation": {
                     "type": "premod",
-                    "interm_freq": 0
+                    "interm_freq": 200000000.0
                 },
                 "local_oscillator": "ic_mw_readout",
                 "clock_frequency": 6000000000.0,

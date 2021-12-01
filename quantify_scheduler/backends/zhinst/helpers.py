@@ -377,25 +377,26 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
     return f"0b{bitmask}"
 
 
-def get_clock_rates(base_clock: float) -> Dict[int, int]:
+def get_sampling_rates(base_sampling_rate: float) -> Dict[int, int]:
     """
-    Returns the allowed clock rate values.
+    Returns the allowed sampling rate values.
     See zhinst User manuals, section /DEV..../AWGS/n/TIME
 
     Parameters
     ----------
-    base_clock :
-        The Instruments base clock rate.
+    base_sampling_rate :
+        The Instruments base sampling rate.
     Returns
     -------
     Dict[int, int]
-        The node and clock rate values.
+        The node value and corresponding sampling rate.
+        e.g. {0: 2400000, 1:1200000, ...} for the HDAWG.
     """
     return dict(
         map(
-            lambda i: (i, int(base_clock))
+            lambda i: (i, int(base_sampling_rate))
             if i == 0
-            else (i, int(base_clock / pow(2, i))),
+            else (i, int(base_sampling_rate / pow(2, i))),
             range(14),
         )
     )

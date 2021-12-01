@@ -27,6 +27,11 @@ from quantify_scheduler.helpers.waveforms import (
     shift_waveform,
 )
 from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.operations.pulse_library import (
+    RampPulse,
+    SquarePulse,
+    StaircasePulse,
+)
 
 
 @pytest.mark.parametrize(
@@ -59,7 +64,9 @@ def test_resize_waveform(size: int, granularity: int, expected: int) -> None:
         ("quantify_scheduler.waveforms.drag", 2.4e9),
     ],
 )
-def test_get_waveform(mocker: MockerFixture, wf_func: str, sampling_rate: int) -> None:
+def test_get_waveform(
+    mocker: MockerFixture, wf_func: str, sampling_rate: float
+) -> None:
     # Arrange
     mock = mocker.patch(
         "quantify_scheduler.helpers.waveforms.exec_waveform_function", return_value=[]
@@ -67,7 +74,7 @@ def test_get_waveform(mocker: MockerFixture, wf_func: str, sampling_rate: int) -
     pulse_info_mock = {"duration": 1.6e-08, "wf_func": wf_func}
 
     # Act
-    get_waveform(pulse_info_mock, int(sampling_rate))
+    get_waveform(pulse_info_mock, sampling_rate)
 
     # Assert
     args, _ = mock.call_args
@@ -141,6 +148,7 @@ def test_exec_waveform_function(wf_func: str, mocker: MockerFixture) -> None:
     t: np.ndarray = np.arange(0, 0 + pulse_duration, 1 / 1e9)
     pulse_info_stub = {
         "amp": 0.5,
+        "offset": 0,
         "duration": pulse_duration,
         "G_amp": 0.7,
         "D_amp": -0.2,
@@ -327,6 +335,7 @@ def test_area_pulse() -> None:
     pulse = {
         "wf_func": "quantify_scheduler.waveforms.square",
         "amp": 1,
+        "offset": 0,
         "duration": 1e-08,
         "phase": 0,
         "t0": 0,
@@ -342,6 +351,7 @@ def test_area_pulses() -> None:
         {
             "wf_func": "quantify_scheduler.waveforms.square",
             "amp": 1,
+            "offset": 0,
             "duration": 1e-08,
             "phase": 0,
             "t0": 0,
@@ -351,11 +361,44 @@ def test_area_pulses() -> None:
         {
             "wf_func": "quantify_scheduler.waveforms.ramp",
             "amp": 1,
+            "offset": 0,
             "duration": 1e-08,
             "t0": 0,
             "clock": "cl0.baseband",
             "port": "LP",
         },
     ]
+
     result = area_pulses(test_list, int(1e9))
     TestCase().assertAlmostEqual(result, 1.5e-8)
+
+
+def test_area_pulses_half_sampling() -> None:
+    operation = SquarePulse(amp=1, duration=10.5e-9, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    print(area)
+    TestCase().assertAlmostEqual(area, 10.5e-9)
+
+
+def test_area_pulses_long_pulse() -> None:
+    operation = SquarePulse(amp=1, duration=1e6, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e10)
+    TestCase().assertAlmostEqual(area, 1e6)
+
+
+def test_area_pulses_ramp_pulse_regression() -> None:
+    operation = RampPulse(amp=0, offset=1, duration=10.5e-9, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    TestCase().assertAlmostEqual(area, 10.5e-9)
+
+    operation = RampPulse(amp=1, offset=0, duration=10e-9, port="P")
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    TestCase().assertAlmostEqual(area, 5e-9)
+
+
+def test_area_pulses_staircase_pulse() -> None:
+    operation = StaircasePulse(
+        start_amp=0, final_amp=1, num_steps=5, duration=10e-9, port="P"
+    )
+    area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
+    TestCase().assertAlmostEqual(area, 5e-9)

@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def convert_to_instrument_coordinator_format(acquisition_results):
+def convert_to_instrument_coordinator_format(acquisition_results, n_acquisitions: int):
     """
     Converts the acquisition results format of the UHFQA component to
     the format required by InstrumentCoordinator.
@@ -39,9 +39,16 @@ def convert_to_instrument_coordinator_format(acquisition_results):
     reformatted_results: Dict[Tuple[int, int], Any] = dict()
     for acq_channel in acquisition_results:
         results_array = acquisition_results.get(acq_channel)
-        for i, complex_value in enumerate(results_array):
-            separated_value = (np.real(complex_value), np.imag(complex_value))
-            reformatted_results[(acq_channel, i)] = separated_value
+        # this case corresponds to a trace acquisition
+        if n_acquisitions == 1 and len(results_array) > 1:
+            reformatted_results[(acq_channel, 0)] = (
+                np.real(results_array),
+                np.imag(results_array),
+            )
+        else:
+            for i, complex_value in enumerate(results_array):
+                separated_value = (np.real(complex_value), np.imag(complex_value))
+                reformatted_results[(acq_channel, i)] = separated_value
     return reformatted_results
 
 
@@ -265,7 +272,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             acq_channel_results[acq_channel] = resolve(uhfqa=self.instrument)
 
         reformatted_results = convert_to_instrument_coordinator_format(
-            acq_channel_results
+            acq_channel_results, n_acquisitions=acq_config.n_acquisitions
         )
 
         return reformatted_results

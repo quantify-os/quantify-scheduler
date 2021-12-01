@@ -52,9 +52,9 @@ class Modulation(DataClassJsonMixin):
         The modulation mode type select. Allows
         to choose between. (default = ModulationModeType.NONE)
 
-        1. no modulation ('none')
-        2. Premodulation ('premod')
-        3. IQ Modulation ('modulate')
+        1. no modulation. ('none')
+        2. Software premodulation applied in the numerical waveforms. ('premod')
+        3. Hardware real-time modulation. ('modulate')
     interm_freq :
         The inter-modulation frequency (IF) in Hz. (default = 0.0).
     phase_shift :
