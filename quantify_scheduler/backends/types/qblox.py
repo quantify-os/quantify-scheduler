@@ -76,6 +76,14 @@ class OpInfo(DataClassJsonMixin):
     acquisitions."""
 
     @property
+    def port(self) -> str:
+        return self.data['port']
+
+    @property
+    def clock(self) -> str:
+        return self.data['clock']
+
+    @property
     def duration(self) -> float:
         """
         The duration of the pulse/acquisition.
