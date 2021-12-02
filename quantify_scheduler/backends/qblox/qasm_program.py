@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from columnar import columnar
@@ -15,12 +15,10 @@ from quantify_scheduler.backends.qblox import (
     constants,
     helpers,
     q1asm_instructions,
-    register_manager,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.qblox.register_manager import RegisterManager
+from quantify_scheduler.backends.types.qblox import OpInfo, StaticHardwareProperties
 
-if TYPE_CHECKING:
-    from quantify_scheduler.backends.qblox import compiler_abc
 
 
 class QASMProgram:
@@ -31,15 +29,13 @@ class QASMProgram:
     certain instructions with parameters, as well as update the elapsed time.
     """
 
-    def __init__(self, parent: compiler_abc.Sequencer):
-        self.parent = parent
-        """A reference to the sequencer for which we are compiling this program."""
-        self._register_manager: register_manager.RegisterManager = (
-            parent.register_manager
-        )
+    def __init__(self, static_hw_properties, register_manager: RegisterManager):
+        self._register_manager: RegisterManager = register_manager
+        self.static_hw_properties: StaticHardwareProperties = static_hw_properties
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
+        self.integration_length_acq: Optional[int] = None
         self.time_last_acquisition_triggered: Optional[int] = None
         """Time on which the last acquisition was triggered. Is `None` if no previous
         acquisition was triggered."""
@@ -215,7 +211,7 @@ class QASMProgram:
 
     def verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
         duration_ns = int(np.round(duration * 1e9))
-        if self.parent.settings.integration_length_acq is None:
+        if self.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
                 raise ValueError(
                     f"Attempting to perform square acquisition with a "
@@ -223,12 +219,12 @@ class QASMProgram:
                     f"duration is a multiple of {constants.GRID_TIME} "
                     f"ns.\n\nException caused by {repr(acquisition)}."
                 )
-            self.parent.settings.integration_length_acq = duration_ns
-        elif self.parent.settings.integration_length_acq != duration_ns:
+            self.integration_length_acq = duration_ns
+        elif self.integration_length_acq != duration_ns:
             raise ValueError(
                 f"Attempting to set an integration_length of {duration_ns} "
                 f"ns, while this was previously determined to be "
-                f"{self.parent.settings.integration_length_acq}. Please "
+                f"{self.integration_length_acq}. Please "
                 f"check whether all square acquisitions in the schedule "
                 f"have the same duration."
             )
@@ -271,13 +267,13 @@ class QASMProgram:
     def set_gain_from_voltage_range(
         self, voltage_path0: float, voltage_path1: float, operation: Optional[OpInfo]
     ):
-        max_awg_output_voltage = self.parent.static_hw_properties.max_awg_output_voltage
+        max_awg_output_voltage = self.static_hw_properties.max_awg_output_voltage
         if np.abs(voltage_path0) > max_awg_output_voltage:
             raise ValueError(
                 f"Attempting to set amplitude to an invalid value. "
                 f"Maximum voltage range is +-"
                 f"{max_awg_output_voltage} V for "
-                f"{self.parent.__class__.__name__}.\n"
+                f"{self.static_hw_properties.instrument_type}.\n"
                 f"{ValueError} V is set as amplitude for the I channel for "
                 f"{repr(operation)}"
             )
@@ -286,19 +282,19 @@ class QASMProgram:
                 f"Attempting to set amplitude to an invalid value. "
                 f"Maximum voltage range is +-"
                 f"{max_awg_output_voltage} V for "
-                f"{self.parent.__class__.__name__}.\n"
+                f"{self.static_hw_properties.instrument_type}.\n"
                 f"{voltage_path1} V is set as amplitude for the Q channel for "
                 f"{repr(operation)}"
             )
 
         awg_gain_path0_imm = self._expand_from_normalised_range(
-            voltage_path0/max_awg_output_voltage,
+            voltage_path0 / max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_0",
             operation,
         )
         awg_gain_path1_imm = self._expand_from_normalised_range(
-            voltage_path1/max_awg_output_voltage,
+            voltage_path1 / max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_1",
             operation,
