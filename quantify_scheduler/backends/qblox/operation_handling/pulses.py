@@ -54,7 +54,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
 
     def insert_qasm(self, qasm_program: QASMProgram):
-        qasm_program.set_gain_from_voltage_range(
+        qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
         qasm_program.emit(
@@ -99,7 +99,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         duration = self.operation_info.duration
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
-        qasm_program.set_gain_from_voltage_range(
+        qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
         if repetitions > 0:

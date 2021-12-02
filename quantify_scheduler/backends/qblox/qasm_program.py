@@ -267,7 +267,7 @@ class QASMProgram:
                 )
         self.elapsed_time += number_of_times * (duration_ns + buffer_time_ns)
 
-    def set_gain_from_voltage_range(
+    def set_gain_from_amplitude(
         self, voltage_path0: float, voltage_path1: float, operation: Optional[OpInfo]
     ):
         max_awg_output_voltage = self.static_hw_properties.max_awg_output_voltage
