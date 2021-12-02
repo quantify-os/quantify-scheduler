@@ -41,6 +41,7 @@ class StaticHardwareProperties:
     """
     Specifies the fixed hardware properties needed in the backend.
     """
+
     instrument_type: str
     """The type of instrument."""
     max_sequencers: int
@@ -76,14 +77,6 @@ class OpInfo(DataClassJsonMixin):
     acquisitions."""
 
     @property
-    def port(self) -> str:
-        return self.data['port']
-
-    @property
-    def clock(self) -> str:
-        return self.data['clock']
-
-    @property
     def duration(self) -> float:
         """
         The duration of the pulse/acquisition.
@@ -106,6 +99,12 @@ class OpInfo(DataClassJsonMixin):
             Is this an acquisition?
         """
         return "acq_index" in self.data
+
+    def __str__(self):
+        type_label: str = "Acquisition" if self.is_acquisition else "Pulse"
+        return (
+            f'{type_label} "{self.name}" (t0={self.timing}, duration={self.duration})'
+        )
 
     def __repr__(self):
         repr_string = (
