@@ -162,8 +162,8 @@ class TestGenericPulseStrategy:
         )
         assert waveform0_data == normalized_data.real.tolist()
         assert waveform1_data == normalized_data.imag.tolist()
-        assert strategy.amplitude_path0 == amp_real
-        assert strategy.amplitude_path1 == amp_imag
+        assert strategy.amplitude_path0 == amp_imag
+        assert strategy.amplitude_path1 == amp_real
 
     def test_insert_qasm(self, empty_qasm_program):
         # arrange
