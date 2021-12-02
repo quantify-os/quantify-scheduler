@@ -192,13 +192,13 @@ class TestGenericPulseStrategy:
         # assert
         assert (
             error.value.args[0]
-            == "Complex valued Pulse \"test_pulse_name\" (t0=0, duration=4e-09) "
+            == "Complex valued Pulse \"test_pulse_name\" (t0=0, duration=2.4e-08) "
                "detected but the sequencer is not expecting complex input. This "
                "can be caused by attempting to play complex valued waveforms on "
                "an output marked as real.\n\nException caused by Pulse "
-               "test_pulse_name (t=0 to 24e-09)\ndata={'wf_func': "
-               "'quantify_scheduler.waveforms.drag', 'duration': 4e-09, 'G_amp': "
-               "0.1234, 'D_amp': 1, 'nr_sigma': 3, 'phase': 0}."
+               "test_pulse_name (t=0 to 2.4e-08)\ndata={'wf_func': "
+               "'quantify_scheduler.waveforms.drag', 'duration': 2.4e-08, '"
+               "G_amp': 0.1234, 'D_amp': 1, 'nr_sigma': 3, 'phase': 0}."
         )
 
     def test_insert_qasm(self, empty_qasm_program):
