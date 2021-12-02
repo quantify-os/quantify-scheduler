@@ -25,8 +25,6 @@ def fixture_empty_qasm_program():
     yield QASMProgram(static_hw_properties, RegisterManager())
 
 
-
-
 class TestGenericPulseStrategy:
     def test_constructor(self):
         pulses.GenericPulseStrategy(
@@ -45,18 +43,29 @@ class TestGenericPulseStrategy:
         assert op_info == from_property
 
     @pytest.mark.parametrize(
-        "wf_func, wf_func_path, wf_kwargs",
+        "wf_func, wf_func_path, wf_kwargs, output_mode",
         [
-            (waveforms.square, "quantify_scheduler.waveforms.square", {"amp": 1}),
-            (waveforms.ramp, "quantify_scheduler.waveforms.ramp", {"amp": 0.1234}),
+            (
+                waveforms.square,
+                "quantify_scheduler.waveforms.square",
+                {"amp": 1},
+                "real",
+            ),
+            (
+                waveforms.ramp,
+                "quantify_scheduler.waveforms.ramp",
+                {"amp": 0.1234},
+                "real",
+            ),
             (
                 waveforms.soft_square,
                 "quantify_scheduler.waveforms.soft_square",
                 {"amp": -0.1234},
+                "real",
             ),
         ],
     )
-    def test_generate_data_real(self, wf_func, wf_func_path, wf_kwargs):
+    def test_generate_data_real(self, wf_func, wf_func_path, wf_kwargs, output_mode):
         # arrange
         duration = 24e-9
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
@@ -81,6 +90,38 @@ class TestGenericPulseStrategy:
         assert strategy.amplitude_path0 == amp_real
         assert strategy.amplitude_path1 == amp_imag
 
+    def test_generate_data_complex(self):
+        # arrange
+        duration = 24e-9
+        data = {
+            "wf_func": "quantify_scheduler.waveforms.drag",
+            "duration": duration,
+            "G_amp": -0.1234,
+            "D_amp": 1,
+            "nr_sigma": 3,
+            "phase": 0,
+        }
+
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = pulses.GenericPulseStrategy(op_info, output_mode="real")
+        wf_dict = {}
+        t_test = np.arange(0, duration, step=1e-9)
+
+        # act
+        strategy.generate_data(wf_dict=wf_dict)
+
+        # assert
+        waveforms_generated = list(wf_dict.values())
+        waveform0_data = waveforms_generated[0]["data"]
+        waveform1_data = waveforms_generated[1]["data"]
+        normalized_data, amp_real, amp_imag = normalize_waveform_data(
+            waveforms.drag(t=t_test, **data.pop("wf_func"))
+        )
+        assert waveform0_data == normalized_data.real.tolist()
+        assert waveform1_data == normalized_data.imag.tolist()
+        assert strategy.amplitude_path0 == amp_real
+        assert strategy.amplitude_path1 == amp_imag
+
     def test_insert_qasm(self, empty_qasm_program):
         # arrange
         qasm = empty_qasm_program
@@ -96,7 +137,7 @@ class TestGenericPulseStrategy:
         strategy.insert_qasm(qasm)
 
         # assert
-        line0 = ['', 'set_awg_gain', '13107,0', '# setting gain for test_pulse']
-        line1 = ['', 'play', '0,1,4', '# play test_pulse (24 ns)']
+        line0 = ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"]
+        line1 = ["", "play", "0,1,4", "# play test_pulse (24 ns)"]
         assert qasm.instructions[0] == line0
         assert qasm.instructions[1] == line1
