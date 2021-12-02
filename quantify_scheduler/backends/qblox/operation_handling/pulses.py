@@ -107,8 +107,6 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             else:
                 self.amplitude_path0, self.amplitude_path1 = amplitude, 0
 
-
-
     def insert_qasm(self, qasm_program: QASMProgram):
         duration = self.operation_info.duration
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
@@ -116,7 +114,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
-        if repetitions > 0:
+        if repetitions > 1:
             with qasm_program.loop(
                 label=f"stitch{len(qasm_program.instructions)}",
                 repetitions=repetitions,
@@ -130,6 +128,16 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
                 qasm_program.elapsed_time += repetitions * helpers.to_grid_time(
                     constants.PULSE_STITCHING_DURATION
                 )
+        elif repetitions == 1:
+            qasm_program.emit(
+                q1asm_instructions.PLAY,
+                self.waveform_index0,
+                self.waveform_index1,
+                helpers.to_grid_time(constants.PULSE_STITCHING_DURATION),
+            )
+            qasm_program.elapsed_time += helpers.to_grid_time(
+                constants.PULSE_STITCHING_DURATION
+            )
 
         pulse_time_remaining = helpers.to_grid_time(
             duration % constants.PULSE_STITCHING_DURATION
