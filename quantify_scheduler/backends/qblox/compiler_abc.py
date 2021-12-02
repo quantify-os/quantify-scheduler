@@ -253,6 +253,7 @@ class Sequencer:
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
         seq_settings: dict,
         lo_name: Optional[str] = None,
+        downconverter_freq: float = 0,
     ):
         """
         Constructor for the sequencer compiler.
@@ -271,6 +272,9 @@ class Sequencer:
         lo_name
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
+        downconverter_freq
+            The frequency of the downconverter LO, in case one is being used. Defaults to 0,
+            in case case no downconverter is being used.
         """
         self.parent = parent
         self._name = name
@@ -279,6 +283,7 @@ class Sequencer:
         self.pulses: List[OpInfo] = []
         self.acquisitions: List[OpInfo] = []
         self.associated_ext_lo: str = lo_name
+        self.downconverter_freq: float = downconverter_freq
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -1111,6 +1116,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             lo_name = io_cfg.get("lo_name", None)
+            downconverter_freq = io_cfg.get("downconverter_freq", 0)
 
             valid_seq_names = (
                 f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
@@ -1138,6 +1144,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     connected_outputs,
                     seq_cfg,
                     lo_name,
+                    downconverter_freq
                 )
 
         if len(sequencers) > self.static_hw_properties.max_sequencers:
@@ -1417,6 +1424,7 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
 
     if_freq = sequencer.frequency
     lo_freq = lo_compiler.frequency
+    downconverter_freq = sequencer.downconverter_freq
 
     if lo_freq is None and if_freq is None:
         raise ValueError(
@@ -1427,10 +1435,10 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         )
 
     if if_freq is not None:
-        lo_compiler.frequency = clk_freq - if_freq
+        lo_compiler.frequency = clk_freq - if_freq + downconverter_freq
 
     if lo_freq is not None:
-        if_freq = clk_freq - lo_freq
+        if_freq = clk_freq - lo_freq + downconverter_freq
         sequencer.frequency = if_freq
 
     if if_freq != 0 and if_freq is not None:
@@ -1550,7 +1558,7 @@ class QbloxRFModule(QbloxBaseModule):
                 )
 
             if if_freq is not None:
-                new_lo_freq = clk_freq - if_freq
+                new_lo_freq = clk_freq - if_freq + sequencer.downconverter_freq
                 if lo_freq is not None and new_lo_freq != lo_freq:
                     raise ValueError(
                         f"Attempting to set 'lo{complex_output}_freq' to frequency "
@@ -1563,7 +1571,7 @@ class QbloxRFModule(QbloxBaseModule):
                     self._settings.lo1_freq = new_lo_freq
 
             if lo_freq is not None:
-                sequencer.frequency = clk_freq - lo_freq
+                sequencer.frequency = clk_freq - lo_freq + sequencer.downconverter_freq
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
