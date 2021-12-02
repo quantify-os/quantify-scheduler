@@ -111,7 +111,7 @@ class TestGenericPulseStrategy:
         waveforms_generated = list(wf_dict.values())
         waveform0_data = waveforms_generated[0]["data"]
         waveform1_data = waveforms_generated[1]["data"]
-        del data['wf_func']
+        del data["wf_func"]
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
             waveforms.drag(t=t_test, **data)
         )
@@ -164,6 +164,42 @@ class TestGenericPulseStrategy:
         assert waveform1_data == normalized_data.imag.tolist()
         assert strategy.amplitude_path0 == amp_imag
         assert strategy.amplitude_path1 == amp_real
+
+    @pytest.mark.parametrize(
+        "output_mode",
+        ["real", "imag"],
+    )
+    def test_exception_wrong_mode(self, output_mode):
+        # arrange
+        duration = 4e-9
+        data = {
+            "wf_func": "quantify_scheduler.waveforms.drag",
+            "duration": duration,
+            "G_amp": 0.1234,
+            "D_amp": 1,
+            "nr_sigma": 3,
+            "phase": 0,
+        }
+
+        op_info = types.OpInfo(name="test_pulse_name", data=data, timing=0)
+        strategy = pulses.GenericPulseStrategy(op_info, output_mode=output_mode)
+        wf_dict = {}
+
+        # act
+        with pytest.raises(ValueError) as error:
+            strategy.generate_data(wf_dict=wf_dict)
+
+        # assert
+        assert (
+            error.value.args[0]
+            == "Complex valued Pulse \"test_pulse_name\" (t0=0, duration=4e-09) "
+               "detected but the sequencer is not expecting complex input. This "
+               "can be caused by attempting to play complex valued waveforms on "
+               "an output marked as real.\n\nException caused by Pulse "
+               "test_pulse_name (t=0 to 4e-09)\ndata={'wf_func': "
+               "'quantify_scheduler.waveforms.drag', 'duration': 4e-09, 'G_amp': "
+               "0.1234, 'D_amp': 1, 'nr_sigma': 3, 'phase': 0}."
+        )
 
     def test_insert_qasm(self, empty_qasm_program):
         # arrange
