@@ -28,7 +28,11 @@ class QASMProgram:
     certain instructions with parameters, as well as update the elapsed time.
     """
 
-    def __init__(self, static_hw_properties, register_manager: RegisterManager):
+    def __init__(
+        self,
+        static_hw_properties: StaticHardwareProperties,
+        register_manager: RegisterManager,
+    ):
         self._register_manager: RegisterManager = register_manager
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
         self.elapsed_time: int = 0
