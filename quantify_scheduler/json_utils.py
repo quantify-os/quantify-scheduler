@@ -6,7 +6,6 @@ from __future__ import annotations
 import ast
 import functools
 import json
-import logging
 import pathlib
 import re
 import sys
@@ -20,15 +19,7 @@ from quantify_scheduler.helpers import inspect as inspect_helpers
 
 current_python_version = sys.version_info
 
-if current_python_version.major >= 3 and current_python_version.minor > 7:
-    lru_cache = functools.lru_cache
-else:
-    # This is to fix an interface change between python 3.7 and > 3.7 for functools.
-    logging.info("lru_cache behaviour not available for python 3.7")
-
-    def lru_cache(obj):
-        """Dummy cache decorator"""
-        return obj
+lru_cache = functools.lru_cache(maxsize=200)
 
 
 def validate_json(data, schema):
