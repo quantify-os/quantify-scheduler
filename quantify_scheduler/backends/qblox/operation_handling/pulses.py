@@ -93,15 +93,21 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
         )
         _, _, idx_ones = helpers.add_to_wf_dict_if_unique(wf_dict, array_with_ones.real)
-        _, _, idx_zeros = helpers.add_to_wf_dict_if_unique(
-            wf_dict, array_with_ones.imag
-        )
-        if self.output_mode == "imag":
-            self.waveform_index0, self.waveform_index1 = idx_zeros, idx_ones
-            self.amplitude_path0, self.amplitude_path1 = 0, amplitude
-        else:
+        if self.output_mode == "complex":
+            _, _, idx_zeros = helpers.add_to_wf_dict_if_unique(
+                wf_dict, array_with_ones.imag
+            )
             self.waveform_index0, self.waveform_index1 = idx_ones, idx_zeros
             self.amplitude_path0, self.amplitude_path1 = amplitude, 0
+        else:
+            self.waveform_index0, self.waveform_index1 = idx_ones, idx_ones
+
+            if self.output_mode == "imag":
+                self.amplitude_path0, self.amplitude_path1 = 0, amplitude
+            else:
+                self.amplitude_path0, self.amplitude_path1 = amplitude, 0
+
+
 
     def insert_qasm(self, qasm_program: QASMProgram):
         duration = self.operation_info.duration
