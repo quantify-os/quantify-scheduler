@@ -43,29 +43,26 @@ class TestGenericPulseStrategy:
         assert op_info == from_property
 
     @pytest.mark.parametrize(
-        "wf_func, wf_func_path, wf_kwargs, output_mode",
+        "wf_func, wf_func_path, wf_kwargs",
         [
             (
                 waveforms.square,
                 "quantify_scheduler.waveforms.square",
                 {"amp": 1},
-                "real",
             ),
             (
                 waveforms.ramp,
                 "quantify_scheduler.waveforms.ramp",
                 {"amp": 0.1234},
-                "real",
             ),
             (
                 waveforms.soft_square,
                 "quantify_scheduler.waveforms.soft_square",
                 {"amp": -0.1234},
-                "real",
             ),
         ],
     )
-    def test_generate_data_real(self, wf_func, wf_func_path, wf_kwargs, output_mode):
+    def test_generate_data_real(self, wf_func, wf_func_path, wf_kwargs):
         # arrange
         duration = 24e-9
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
@@ -73,7 +70,7 @@ class TestGenericPulseStrategy:
         op_info = types.OpInfo(name="", data=data, timing=0)
         strategy = pulses.GenericPulseStrategy(op_info, output_mode="real")
         wf_dict = {}
-        t_test = np.arange(0, duration, step=1e-9)
+        t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
 
         # act
         strategy.generate_data(wf_dict=wf_dict)
@@ -92,18 +89,64 @@ class TestGenericPulseStrategy:
 
     def test_generate_data_complex(self):
         # arrange
-        duration = 24e-9
+        duration = 4e-9
         data = {
             "wf_func": "quantify_scheduler.waveforms.drag",
             "duration": duration,
-            "G_amp": -0.1234,
+            "G_amp": 0.1234,
             "D_amp": 1,
             "nr_sigma": 3,
             "phase": 0,
         }
 
         op_info = types.OpInfo(name="", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode="real")
+        strategy = pulses.GenericPulseStrategy(op_info, output_mode="complex")
+        wf_dict = {}
+        t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
+
+        # act
+        strategy.generate_data(wf_dict=wf_dict)
+
+        # assert
+        waveforms_generated = list(wf_dict.values())
+        waveform0_data = waveforms_generated[0]["data"]
+        waveform1_data = waveforms_generated[1]["data"]
+        del data['wf_func']
+        normalized_data, amp_real, amp_imag = normalize_waveform_data(
+            waveforms.drag(t=t_test, **data)
+        )
+        assert waveform0_data == normalized_data.real.tolist()
+        assert waveform1_data == normalized_data.imag.tolist()
+        assert strategy.amplitude_path0 == amp_real
+        assert strategy.amplitude_path1 == amp_imag
+
+    @pytest.mark.parametrize(
+        "wf_func, wf_func_path, wf_kwargs",
+        [
+            (
+                waveforms.square,
+                "quantify_scheduler.waveforms.square",
+                {"amp": 1},
+            ),
+            (
+                waveforms.ramp,
+                "quantify_scheduler.waveforms.ramp",
+                {"amp": 0.1234},
+            ),
+            (
+                waveforms.soft_square,
+                "quantify_scheduler.waveforms.soft_square",
+                {"amp": -0.1234},
+            ),
+        ],
+    )
+    def test_generate_data_imag(self, wf_func, wf_func_path, wf_kwargs):
+        # arrange
+        duration = 24e-9
+        data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
+
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = pulses.GenericPulseStrategy(op_info, output_mode="imag")
         wf_dict = {}
         t_test = np.arange(0, duration, step=1e-9)
 
@@ -115,7 +158,7 @@ class TestGenericPulseStrategy:
         waveform0_data = waveforms_generated[0]["data"]
         waveform1_data = waveforms_generated[1]["data"]
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
-            waveforms.drag(t=t_test, **data.pop("wf_func"))
+            wf_func(t=t_test, **wf_kwargs)
         )
         assert waveform0_data == normalized_data.real.tolist()
         assert waveform1_data == normalized_data.imag.tolist()
