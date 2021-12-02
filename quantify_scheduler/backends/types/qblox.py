@@ -41,7 +41,8 @@ class StaticHardwareProperties:
     """
     Specifies the fixed hardware properties needed in the backend.
     """
-
+    instrument_type: str
+    """The type of instrument."""
     max_sequencers: int
     """The amount of sequencers available."""
     max_awg_output_voltage: float
