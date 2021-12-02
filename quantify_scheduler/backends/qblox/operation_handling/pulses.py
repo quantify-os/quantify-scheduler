@@ -46,6 +46,14 @@ class GenericPulseStrategy(PulseStrategyPartial):
         _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
         _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
 
+        if not np.isrealobj(waveform_data) and not self.output_mode == "complex":
+            raise ValueError(
+                f"Complex valued {str(op_info)} detected but the sequencer"
+                f" is not expecting complex input. This can be caused by "
+                f"attempting to play complex valued waveforms on an output"
+                f" marked as real.\n\nException caused by {repr(op_info)}."
+            )
+
         if self.output_mode == "imag":
             self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
             self.amplitude_path0, self.amplitude_path1 = amp_imag, amp_real
