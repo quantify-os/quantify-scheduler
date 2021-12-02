@@ -20,7 +20,6 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types.qblox import OpInfo, StaticHardwareProperties
 
 
-
 class QASMProgram:
     """
     Class that holds the compiled Q1ASM program that is to be executed by the sequencer.
