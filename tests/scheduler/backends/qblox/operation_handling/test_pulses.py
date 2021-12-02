@@ -89,7 +89,7 @@ class TestGenericPulseStrategy:
 
     def test_generate_data_complex(self):
         # arrange
-        duration = 4e-9
+        duration = 24e-9
         data = {
             "wf_func": "quantify_scheduler.waveforms.drag",
             "duration": duration,
@@ -171,7 +171,7 @@ class TestGenericPulseStrategy:
     )
     def test_exception_wrong_mode(self, output_mode):
         # arrange
-        duration = 4e-9
+        duration = 24e-9
         data = {
             "wf_func": "quantify_scheduler.waveforms.drag",
             "duration": duration,
@@ -196,7 +196,7 @@ class TestGenericPulseStrategy:
                "detected but the sequencer is not expecting complex input. This "
                "can be caused by attempting to play complex valued waveforms on "
                "an output marked as real.\n\nException caused by Pulse "
-               "test_pulse_name (t=0 to 4e-09)\ndata={'wf_func': "
+               "test_pulse_name (t=0 to 24e-09)\ndata={'wf_func': "
                "'quantify_scheduler.waveforms.drag', 'duration': 4e-09, 'G_amp': "
                "0.1234, 'D_amp': 1, 'nr_sigma': 3, 'phase': 0}."
         )
