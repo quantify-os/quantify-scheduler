@@ -306,8 +306,8 @@ class Sequencer:
         For the baseband modules, these indices correspond directly to a physical output
         (e.g. index 0 corresponds to output 1 etc.).
 
-        For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
-        respectively, and 1 and 3 to path1 of those outputs.
+        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of output 1,
+        respectively, while indexes 2 and 3 correspond to path0 and path1 of output 2.
         """
         return self._settings.connected_outputs
 
