@@ -369,3 +369,21 @@ class TestStitchedSquarePulseStrategy:
         # assert
         for row_idx, instruction in enumerate(qasm.instructions):
             assert instruction == answer[row_idx]
+
+
+class TestStaircasePulseStrategy:
+    def test_constructor(self):
+        pulses.StaircasePulseStrategy(
+            types.OpInfo(name="", data={}, timing=0), output_mode="complex"
+        )
+
+    def test_operation_info_property(self):
+        # arrange
+        op_info = types.OpInfo(name="", data={}, timing=0)
+        strategy = pulses.StaircasePulseStrategy(op_info, output_mode="real")
+
+        # act
+        from_property = strategy.operation_info
+
+        # assert
+        assert op_info == from_property
