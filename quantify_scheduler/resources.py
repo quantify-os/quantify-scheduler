@@ -42,7 +42,7 @@ class Resource(UserDict):
     @classmethod
     def is_valid(cls, operation: Resource) -> bool:
         """
-        Validates the Resource against the schemas/resource.json jsonschema.
+        Validates the Resource against the schemas/resource.json fastjsonschema.
 
         Parameters
         ----------
@@ -50,15 +50,15 @@ class Resource(UserDict):
 
         Raises
         ------
-        jsonschema.exceptions.ValidationError
+        fastjsonschema.JsonSchemaException
             if the instance is invalid
-        jsonschema.exceptions.SchemaError
+        fastjsonschema.JsonSchemaDefinitionException
             if the schema itself is invalid
 
         Returns
         -------
         bool
-            If the validation was successfull.
+            If the validation was successful.
         """
         scheme = load_json_schema(__file__, "resource.json")
         validate_json(operation.data, scheme)
