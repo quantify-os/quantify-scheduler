@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 import ast
+import functools
 import json
 import pathlib
 import re
-from functools import lru_cache
+import sys
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Type, Union
 
@@ -15,6 +16,10 @@ import fastjsonschema
 from quantify_core.utilities.general import load_json_schema
 
 from quantify_scheduler.helpers import inspect as inspect_helpers
+
+current_python_version = sys.version_info
+
+lru_cache = functools.lru_cache(maxsize=200)
 
 
 def validate_json(data, schema):
