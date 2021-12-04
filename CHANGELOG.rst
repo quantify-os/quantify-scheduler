@@ -20,6 +20,7 @@ Unreleased changes
 * Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package
 * Operations - resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
 * Bugfix - For calculating the pulse area, the mathematical area is used instead of area of sampled pulse. (!242, !286)
+* Utilities - Improve JSON validation speed (!284)
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
 --------------------------------------------------------------------------------------------------

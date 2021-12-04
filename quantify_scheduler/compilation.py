@@ -7,7 +7,6 @@ import importlib
 import logging
 from copy import deepcopy
 
-import jsonschema
 import numpy as np
 from quantify_core.utilities.general import (
     import_python_object_from_string,
@@ -16,6 +15,7 @@ from quantify_core.utilities.general import (
 from typing_extensions import Literal
 
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.json_utils import validate_json
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -372,7 +372,7 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
         True if valid
     """
     scheme = load_json_schema(__file__, scheme_fn)
-    jsonschema.validate(config, scheme)
+    validate_json(config, scheme)
     return True
 
 
