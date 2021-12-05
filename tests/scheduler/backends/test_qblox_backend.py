@@ -1077,8 +1077,8 @@ def test_assign_frequencies():
     sched.add(X("q0"))
     sched.add(X("q1"))
 
-    q2_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
-    q3_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
+    q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
+    q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
 
     if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
     if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
@@ -1092,8 +1092,8 @@ def test_assign_frequencies():
     assert lo0 is None
     assert lo1 is not None
 
-    lo0 = q2_clock_freq - if0
-    if1 = q3_clock_freq - lo1
+    lo0 = q0_clock_freq - if0
+    if1 = q1_clock_freq - lo1
 
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
