@@ -7,8 +7,9 @@ from __future__ import annotations
 from collections import UserDict
 from typing import Optional
 
-import jsonschema
 from quantify_core.utilities.general import load_json_schema
+
+from quantify_scheduler.json_utils import validate_json
 
 
 class Resource(UserDict):
@@ -41,7 +42,7 @@ class Resource(UserDict):
     @classmethod
     def is_valid(cls, operation: Resource) -> bool:
         """
-        Validates the Resource against the schemas/resource.json jsonschema.
+        Validates the Resource against the schemas/resource.json fastjsonschema.
 
         Parameters
         ----------
@@ -49,18 +50,18 @@ class Resource(UserDict):
 
         Raises
         ------
-        jsonschema.exceptions.ValidationError
+        fastjsonschema.JsonSchemaException
             if the instance is invalid
-        jsonschema.exceptions.SchemaError
+        fastjsonschema.JsonSchemaDefinitionException
             if the schema itself is invalid
 
         Returns
         -------
         bool
-            If the validation was successfull.
+            If the validation was successful.
         """
         scheme = load_json_schema(__file__, "resource.json")
-        jsonschema.validate(operation.data, scheme)
+        validate_json(operation.data, scheme)
         return True  # if not exception was raised during validation
 
     @property
