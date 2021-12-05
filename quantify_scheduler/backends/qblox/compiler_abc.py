@@ -1144,7 +1144,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     connected_outputs,
                     seq_cfg,
                     lo_name,
-                    downconverter
+                    downconverter,
                 )
 
         if len(sequencers) > self.static_hw_properties.max_sequencers:
