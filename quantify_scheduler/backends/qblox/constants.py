@@ -40,3 +40,6 @@ MAX_MIXER_AMP_RATIO = 2.0
 as Q/I."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
+
+DOWNCONVERTER_FREQ: float = 4.4e9
+"""LO frequency used by the Qblox downconverter."""
