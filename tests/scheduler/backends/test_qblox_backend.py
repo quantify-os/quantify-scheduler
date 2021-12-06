@@ -1068,11 +1068,10 @@ def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode)
         assert seq_settings.connected_outputs[0] == output
 
 
-def test_assign_frequencies():
+def test_assign_frequencies_baseband():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    # Test for baseband
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q1"))
@@ -1102,22 +1101,49 @@ def test_assign_frequencies():
     assert compiled_instructions["lo1"]["lo_freq"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
-    # Test for baseband with downconverter
-    HW_MAPPING_DOWNCONVERTER = HARDWARE_MAPPING.copy()
-    HW_MAPPING_DOWNCONVERTER["qcm0"]["complex_output_0"]["downconverter"] = True
-    HW_MAPPING_DOWNCONVERTER["qcm0"]["complex_output_1"]["downconverter"] = True
+
+def test_assign_frequencies_baseband_downconverter():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q0"))
+    sched.add(X("q1"))
+
+    q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
+    q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
+    io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
+    io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("lo_freq")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    hw_mapping_downconverter = HARDWARE_MAPPING.copy()
+    hw_mapping_downconverter["qcm0"]["complex_output_0"]["downconverter"] = True
+    hw_mapping_downconverter["qcm0"]["complex_output_1"]["downconverter"] = True
+
+    compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
 
     lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
-
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HW_MAPPING_DOWNCONVERTER)
-    compiled_instructions = compiled_schedule["compiled_instructions"]
 
     assert compiled_instructions["lo0"]["lo_freq"] == lo0
     assert compiled_instructions["lo1"]["lo_freq"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
-    # Test for RF
+
+def test_assign_frequencies_rf():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
@@ -1148,17 +1174,51 @@ def test_assign_frequencies():
     assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
 
-    # Test for RF with downconverter
-    HW_MAPPING_DOWNCONVERTER = HARDWARE_MAPPING.copy()
-    HW_MAPPING_DOWNCONVERTER["qcm_rf0"]["complex_output_0"]["downconverter"] = True
-    HW_MAPPING_DOWNCONVERTER["qcm_rf0"]["complex_output_1"]["downconverter"] = True
+
+def test_assign_frequencies_rf_downconverter():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q2"))
+    sched.add(X("q3"))
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["seq1"].get("interm_freq")
+    lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
+    q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"]["interm_freq"]
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
+
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qcm_program = compiled_instructions["qcm_rf0"]
+    assert qcm_program["settings"]["lo0_freq"] == lo0
+    assert qcm_program["settings"]["lo1_freq"] == lo1
+    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+
+    hw_mapping_downconverter = HARDWARE_MAPPING.copy()
+    hw_mapping_downconverter["qcm_rf0"]["complex_output_0"]["downconverter"] = True
+    hw_mapping_downconverter["qcm_rf0"]["complex_output_1"]["downconverter"] = True
+
+    compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qcm_program = compiled_instructions["qcm_rf0"]
 
     lo0 = q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
-
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HW_MAPPING_DOWNCONVERTER)
-    compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm_rf0"]
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
