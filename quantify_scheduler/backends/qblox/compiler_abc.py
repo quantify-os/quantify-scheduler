@@ -273,8 +273,8 @@ class Sequencer:
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
         downconverter
-            Boolean which expresses whether a downconverter is being used or not. Defaults to `False`,
-            in case case no downconverter is being used.
+            Boolean which expresses whether a downconverter is being used or not.
+            Defaults to `False`, in case case no downconverter is being used.
         """
         self.parent = parent
         self._name = name
@@ -1425,9 +1425,9 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     if_freq = sequencer.frequency
     lo_freq = lo_compiler.frequency
 
-    """If downconverter is used, it's frequency will be used when calculating the
-    LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
-    LO/IF frequencies unchanged"""
+    # If downconverter is used, it's frequency will be used when calculating the
+    # LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
+    # LO/IF frequencies unchanged.
     if sequencer.downconverter:
         downconverter_freq = constants.DOWNCONVERTER_FREQ
     else:

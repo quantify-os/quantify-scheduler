@@ -1103,14 +1103,14 @@ def test_assign_frequencies():
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
     # Test for baseband with downconverter
-    HW_MAPPING_W_DOWNCONVERTER = HARDWARE_MAPPING.copy()
-    HW_MAPPING_W_DOWNCONVERTER["qcm0"]["complex_output_0"]["downconverter"] = True
-    HW_MAPPING_W_DOWNCONVERTER["qcm0"]["complex_output_1"]["downconverter"] = True
+    HW_MAPPING_DOWNCONVERTER = HARDWARE_MAPPING.copy()
+    HW_MAPPING_DOWNCONVERTER["qcm0"]["complex_output_0"]["downconverter"] = True
+    HW_MAPPING_DOWNCONVERTER["qcm0"]["complex_output_1"]["downconverter"] = True
 
     lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HW_MAPPING_W_DOWNCONVERTER)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HW_MAPPING_DOWNCONVERTER)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
     assert compiled_instructions["lo0"]["lo_freq"] == lo0
@@ -1149,14 +1149,14 @@ def test_assign_frequencies():
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
 
     # Test for RF with downconverter
-    HW_MAPPING_W_DOWNCONVERTER = HARDWARE_MAPPING.copy()
-    HW_MAPPING_W_DOWNCONVERTER["qcm_rf0"]["complex_output_0"]["downconverter"] = True
-    HW_MAPPING_W_DOWNCONVERTER["qcm_rf0"]["complex_output_1"]["downconverter"] = True
+    HW_MAPPING_DOWNCONVERTER = HARDWARE_MAPPING.copy()
+    HW_MAPPING_DOWNCONVERTER["qcm_rf0"]["complex_output_0"]["downconverter"] = True
+    HW_MAPPING_DOWNCONVERTER["qcm_rf0"]["complex_output_1"]["downconverter"] = True
 
     lo0 = q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HW_MAPPING_W_DOWNCONVERTER)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HW_MAPPING_DOWNCONVERTER)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
