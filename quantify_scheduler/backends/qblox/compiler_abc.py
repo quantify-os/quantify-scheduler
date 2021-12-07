@@ -1268,7 +1268,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         acq_mapping = {}
         for sequencer in self.sequencers.values():
-            mapping_items = map(extract_mapping_item, sequencer.acquisitions)
+            mapping_items = map(
+                extract_mapping_item,
+                [acq.operation_info for acq in sequencer.acquisitions],
+            )
             for item in mapping_items:
                 acq_mapping[item[0]] = (sequencer.name, item[1])
 
