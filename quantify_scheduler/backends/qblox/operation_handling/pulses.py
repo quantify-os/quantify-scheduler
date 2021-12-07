@@ -250,7 +250,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
                 q1asm_instructions.SET_AWG_OFFSET,
                 0,
                 0,
-                comment="return offset to 0 after staircase.",
+                comment="return offset to 0 after staircase",
             )
             qasm_program.emit(q1asm_instructions.NEW_LINE)
 
