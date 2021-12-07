@@ -286,7 +286,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
             qasm_program.emit(
                 q1asm_instructions.SUB,
                 offs_reg,
-                -amp_step_immediate,
+                abs(amp_step_immediate),
                 offs_reg,
-                comment=f"next incr offs by {amp_step_immediate}",
+                comment=f"next decr offs by {abs(amp_step_immediate)}",
             )
