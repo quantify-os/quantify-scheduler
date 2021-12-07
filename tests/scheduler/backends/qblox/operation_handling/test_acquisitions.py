@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Tests for acquisitions module."""
+from typing import Dict, Any
 
 import pytest
 import numpy as np
@@ -31,6 +32,74 @@ def fixture_empty_qasm_program():
     yield QASMProgram(static_hw_properties, RegisterManager())
 
 
+class MockAcquisition(acquisitions.AcquisitionStrategyPartial):
+    """Used for TestAcquisitionStrategyPartial."""
+
+    def generate_data(self, wf_dict: Dict[str, Any]):
+        pass
+
+    def acquire_append(self, qasm_program: QASMProgram):
+        pass
+
+    def acquire_average(self, qasm_program: QASMProgram):
+        pass
+
+
+class TestAcquisitionStrategyPartial:
+    """
+    There is some logic in the AcquisitionStrategyPartial class that deserves
+    testing.
+    """
+
+    def test_operation_info_property(self):
+        # arrange
+        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+
+        # act
+        from_property = strategy.operation_info
+
+        # assert
+        assert op_info == from_property
+
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_bin_mode(self, empty_qasm_program, bin_mode, mocker):
+        # arrange
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+        append_mock = mocker.patch.object(strategy, "acquire_append")
+        average_mock = mocker.patch.object(strategy, "acquire_average")
+
+        # act
+        strategy.insert_qasm(empty_qasm_program)
+
+        # assert
+        if bin_mode == BinMode.AVERAGE:
+            average_mock.assert_called_once()
+            append_mock.assert_not_called()
+        else:
+            average_mock.assert_not_called()
+            append_mock.assert_called_once()
+
+    def test_invalid_bin_mode(self, empty_qasm_program):
+        # arrange
+        data = {"bin_mode": "nonsense", "acq_channel": 0, "acq_index": 0}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+
+        # act
+        with pytest.raises(RuntimeError) as exc:
+            strategy.insert_qasm(empty_qasm_program)
+
+        # assert
+        assert (
+            exc.value.args[0]
+            == "Attempting to process an acquisition with unknown bin mode nonsense."
+        )
+
+
 class TestSquareAcquisitionStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
     def test_constructor(self, bin_mode):
@@ -38,3 +107,17 @@ class TestSquareAcquisitionStrategy:
         acquisitions.SquareAcquisitionStrategy(
             types.OpInfo(name="", data=data, timing=0)
         )
+
+    def test_generate_data(self):
+        # arrange
+        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        strategy = acquisitions.SquareAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        assert len(wf_dict) == 0
