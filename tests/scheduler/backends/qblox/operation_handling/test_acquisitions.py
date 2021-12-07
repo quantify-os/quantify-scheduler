@@ -183,7 +183,7 @@ class TestSquareAcquisitionStrategy:
             types.OpInfo(name="", data=data, timing=0)
         )
         strategy.operation_info.bin_idx_register = (
-            qasm._register_manager.allocate_register()
+            qasm.register_manager.allocate_register()
         )
         strategy.generate_data({})
 

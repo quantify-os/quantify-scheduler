@@ -33,7 +33,7 @@ class QASMProgram:
         static_hw_properties: StaticHardwareProperties,
         register_manager: RegisterManager,
     ):
-        self._register_manager: RegisterManager = register_manager
+        self.register_manager: RegisterManager = register_manager
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
@@ -423,7 +423,7 @@ class QASMProgram:
 
             qasm.instructions
         """
-        register = self._register_manager.allocate_register()
+        register = self.register_manager.allocate_register()
         comment = f"iterator for loop with label {label}"
 
         self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
@@ -432,7 +432,7 @@ class QASMProgram:
         yield register
 
         self.emit(q1asm_instructions.LOOP, register, f"@{label}")
-        self._register_manager.free_register(register)
+        self.register_manager.free_register(register)
 
     @contextmanager
     def temp_register(self, amount: int = 1) -> Union[List[str], str]:
@@ -452,8 +452,8 @@ class QASMProgram:
         """
         registers: List[str] = list()
         for _ in range(amount):
-            registers.append(self._register_manager.allocate_register())
+            registers.append(self.register_manager.allocate_register())
         yield registers if len(registers) > 1 else registers[0]
 
         for reg in registers:
-            self._register_manager.free_register(reg)
+            self.register_manager.free_register(reg)

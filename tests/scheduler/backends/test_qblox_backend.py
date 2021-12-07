@@ -1036,9 +1036,9 @@ def test_temp_register(amount):
         if isinstance(registers, str):
             registers = [registers]
         for reg in registers:
-            assert reg not in qasm._register_manager.available_registers
+            assert reg not in qasm.register_manager.available_registers
     for reg in registers:
-        assert reg in qasm._register_manager.available_registers
+        assert reg in qasm.register_manager.available_registers
 
 
 # --------- Test compilation functions ---------
