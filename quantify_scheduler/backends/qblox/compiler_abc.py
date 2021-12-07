@@ -620,7 +620,7 @@ class Sequencer:
         """
         loop_label = "start"
 
-        qasm = QASMProgram(parent=self)
+        qasm = QASMProgram(self.static_hw_properties, self.register_manager)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.RESET_PHASE)
