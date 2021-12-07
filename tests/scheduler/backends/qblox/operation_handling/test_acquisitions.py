@@ -120,11 +120,10 @@ class TestAcquisitionStrategyPartial:
         assert (
             exc.value.args[0]
             == "Attempting to start an acquisition at t=0 ns, while the last "
-            "acquisition was '\n 'started at t=0. Please ensure a minimum interval of "
-            "1000 ns between '\n 'acquisitions.\n'\n '\n'\n 'Error caused by "
-            "acquisition:\n'\n 'Acquisition  (t=0 to 1e-06)\n'\n \"data={"
-            "'bin_mode': 'nonsense', 'acq_channel': 0, 'acq_index': 0, 'duration': "
-            "\"\n '1e-06}."
+            "acquisition was started at t=0 ns. Please ensure a minimum interval of "
+            "1000 ns between acquisitions.\n\nError caused by acquisition:\n"
+            "Acquisition  (t=0 to 1e-06)\ndata={'bin_mode': 'nonsense', "
+            "'acq_channel': 0, 'acq_index': 0, 'duration': 1e-06}."
         )
 
 

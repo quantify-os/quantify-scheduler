@@ -33,10 +33,10 @@ class AcquisitionStrategyPartial(IOperationStrategy):
                 < constants.MIN_TIME_BETWEEN_ACQUISITIONS
             ):
                 raise ValueError(
-                    f"Attempting to start an acquisition at t={qasm_program.elapsed_time} "
-                    f"ns, while the last acquisition was started at "
-                    f"t={qasm_program.time_last_acquisition_triggered}. Please ensure "
-                    f"a minimum interval of "
+                    f"Attempting to start an acquisition at t="
+                    f"{qasm_program.elapsed_time} ns, while the last acquisition was "
+                    f"started at t={qasm_program.time_last_acquisition_triggered} ns. "
+                    f"Please ensure a minimum interval of "
                     f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
                     f"acquisitions.\n\nError caused by acquisition:\n"
                     f"{repr(self.operation_info)}."
