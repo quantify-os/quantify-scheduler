@@ -701,7 +701,7 @@ class Sequencer:
                     comment=f"Initialize acquisition bin_idx for "
                     f"ch{acq.operation_info.data['acq_channel']}",
                 )
-            acq.bin_idx_register = acq_bin_idx_reg
+            acq.operation_info.bin_idx_register = acq_bin_idx_reg
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
