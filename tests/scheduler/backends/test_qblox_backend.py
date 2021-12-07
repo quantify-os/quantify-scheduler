@@ -47,10 +47,8 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import (
-    BasebandModuleSettings,
-    QASMRuntimeSettings,
-)
+from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
+
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
