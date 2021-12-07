@@ -1,3 +1,7 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Classes for handling acquisitions."""
+
 from __future__ import annotations
 
 from typing import Optional, Dict, Any, Union
