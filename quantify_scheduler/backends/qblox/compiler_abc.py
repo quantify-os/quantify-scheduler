@@ -664,6 +664,8 @@ class Sequencer:
 
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)
+
+        self._settings.integration_length_acq = qasm.integration_length_acq
         return str(qasm)
 
     def _initialize_append_mode_registers(
