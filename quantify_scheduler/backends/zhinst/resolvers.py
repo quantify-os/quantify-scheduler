@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
+
 from __future__ import annotations
 
 from typing import Tuple
@@ -27,7 +28,7 @@ def monitor_acquisition_resolver(
     (node_i, node_q) = monitor_nodes
     results_i = zi_helpers.get_value(uhfqa, node_i)
     results_q = zi_helpers.get_value(uhfqa, node_q)
-    return np.vectorize(complex)(results_i, results_q)
+    return results_i + 1j * results_q
 
 
 def result_acquisition_resolver(

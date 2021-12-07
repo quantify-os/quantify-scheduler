@@ -15,5 +15,5 @@ from quantify_scheduler.schemas.examples import utils
         "zhinst_test_mapping.json",
     ],
 )
-def test_load_json_example_scheme(filename: str):
+def test_load_json_example_scheme(filename: str) -> None:
     utils.load_json_example_scheme(filename)

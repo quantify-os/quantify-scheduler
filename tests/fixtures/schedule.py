@@ -47,10 +47,10 @@ def load_example_qblox_hardware_config() -> Dict[str, Any]:
 
 @pytest.fixture
 def load_example_zhinst_hardware_config() -> Dict[str, Any]:
-    def _load_example_qblox_hardware_config():
+    def _load_example_zhinst_hardware_config():
         return dict(ZHINST_HARDWARE_MAPPING)
 
-    yield _load_example_qblox_hardware_config
+    yield _load_example_zhinst_hardware_config
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@
 """Frontends for the quantify_scheduler."""
 
 
-def openql_sequencer_frontend(filename: str):
+def openql_sequencer_frontend(filename: str) -> None:
     """
     Reads an OpenQL cQASM file and converts
     """

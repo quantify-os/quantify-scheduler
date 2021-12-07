@@ -452,6 +452,15 @@ def baseband_square_pulse_schedule():
     sched.add(Reset("q0"))
     sched.add(
         SquarePulse(
+            amp=0.0,
+            duration=2.5e-6,
+            port="q0:mw",
+            clock=BasebandClockResource.IDENTITY,
+            t0=1e-6,
+        )
+    )
+    sched.add(
+        SquarePulse(
             amp=2.0,
             duration=2.5e-6,
             port="q0:mw",
@@ -703,8 +712,12 @@ def test_compile_with_pulse_stitching(
     full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
+    # assert
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    waveforms = qcm0.get_waveforms(0)
+    assert waveforms["stitched_square_pulse_I"]["data"] == [1.0] * 1000
+    assert waveforms["stitched_square_pulse_Q"]["data"] == [0.0] * 1000
 
 
 def _func_for_hook_test(qasm: QASMProgram):

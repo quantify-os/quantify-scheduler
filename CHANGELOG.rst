@@ -8,9 +8,19 @@ Unreleased changes
 * Compilation - The `determine_absolute_scheduling` function now sorts the list of labels in the timing constraints, and then a binary search (via `np.searchsorted`) is applied. (!272, !274)
 * Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
 * Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
-* qcompile - renamed the hardware_mapping argument into hardware_cfg (!165)
+* Compilation - Make `device_cfg` an optional argument of qcompile(!281)
 * Compilation - renamed the hardware_mapping argument of qcompile into hardware_cfg (#165, !279)
 * Compilation - Introduced the hardware_compile function to perform the hardware compilation returning a CompiledSchedule (#224, !279)
+* Zhinst backend - Large parts of the Zhinst backend have been rewritten. This should resolve a range of issues. (!263)
+    - Calculation of the timelines for different operations now makes using of a timing table, improving code readability and debugability.
+    - Timing issues related to triggering should be resolved (#218)
+    - The backend can now always use the same hardware configuration file (#214)
+    - Acquisition is now done using the StartQA instruction (#213)
+    - error handling in the Zhinst backend has been improved catching several exceptions at compile time of the schedule instead of manifesting in unexpected results during runtime.
+* Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package
+* Operations - resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
+* Bugfix - For calculating the pulse area, the mathematical area is used instead of area of sampled pulse. (!242, !286)
+* Utilities - Improve JSON validation speed (!284)
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
 --------------------------------------------------------------------------------------------------

@@ -52,6 +52,11 @@ class Rxy(Operation):
         if not isinstance(phi, float):
             phi = float(phi)
 
+        # this solves an issue where different rotations with the same rotation angle
+        # modulo a full period are treated as distinct operations in the OperationDict.
+        theta = theta % 360
+        phi = phi % 360
+
         if data is None:
             tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
             plot_func = "quantify_scheduler.visualization.circuit_diagram.gate_box"
@@ -74,7 +79,7 @@ class Rxy(Operation):
             )
 
             data = {
-                "name": f"Rxy({theta:.2f}, {phi:.2f}, '{qubit}')",
+                "name": f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')",
                 "gate_info": {
                     "unitary": unitary,
                     "tex": tex,
@@ -93,7 +98,7 @@ class Rxy(Operation):
         theta = gate_info["theta"]
         phi = gate_info["phi"]
         qubit = gate_info["qubits"][0]
-        return f"{self.__class__.__name__}(theta={theta}, phi={phi}, qubit='{qubit}')"
+        return f"{self.__class__.__name__}(theta={theta:.8g}, phi={phi:.8g}, qubit='{qubit}')"
 
 
 class X(Rxy):

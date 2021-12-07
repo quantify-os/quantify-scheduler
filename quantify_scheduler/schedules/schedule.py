@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import uuid4
 
+import numpy as np
+import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from typing_extensions import Literal
@@ -250,9 +252,11 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         # NB imported here to avoid circular import
         # pylint: disable=import-outside-toplevel
-        import quantify_scheduler.visualization.pulse_diagram as pd
+        from quantify_scheduler.visualization.pulse_diagram import (
+            pulse_diagram_matplotlib,
+        )
 
-        return pd.pulse_diagram_matplotlib(
+        return pulse_diagram_matplotlib(
             schedule=self,
             sampling_rate=sampling_rate,
             ax=ax,
@@ -260,6 +264,96 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             modulation=modulation,
             modulation_if=modulation_if,
         )
+
+    @property
+    def timing_table(self) -> pd.io.formats.style.Styler:
+        """
+        A styled pandas dataframe containing the absolute timing of pulses and
+        acquisitions in a schedule.
+
+        This table is constructed based on the abs_time key in the
+        :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.timing_constraints`.
+        This requires the timing to have been determined.
+
+        Parameters
+        ----------
+        schedule
+            a schedule for which the absolute timing has been determined.
+
+        Returns
+        -------
+        :
+            styled_timing_table, a pandas Styler containing a dataframe with
+            an overview of the timing of the pulses and acquisitions present in the
+            schedule. The data frame can be accessed through the .data attribute of
+            the Styler.
+
+        Raises
+        ------
+        ValueError
+            When the absolute timing has not been determined during compilation.
+        """
+
+        timing_table = pd.DataFrame(
+            columns=[
+                "waveform_op_id",  # a readable id based on the operation
+                "port",
+                "clock",
+                "is_acquisition",  # a bool which helps determine if an operation is
+                # an acquisition or not. (True is it is an acquisition operation)
+                "abs_time",  # start of the operation in absolute time (s)
+                "duration",  # duration of the operation in absolute time (s)
+                "operation",
+                "wf_idx",
+            ]
+        )
+
+        for t_constr in self.timing_constraints:
+            if "abs_time" not in t_constr:
+                # when this exception is encountered
+                raise ValueError("Absolute time has not been determined yet.")
+            operation = self.operations[t_constr["operation_repr"]]
+
+            # iterate over pulse information
+            for i, pulse_info in enumerate(operation["pulse_info"]):
+                abs_time = pulse_info["t0"] + t_constr["abs_time"]
+                df_row = {
+                    "waveform_op_id": t_constr["operation_repr"] + f"_p_{i}",
+                    "port": pulse_info["port"],
+                    "clock": pulse_info["clock"],
+                    "abs_time": abs_time,
+                    "duration": pulse_info["duration"],
+                    "is_acquisition": False,
+                    "operation": t_constr["operation_repr"],
+                    "wf_idx": i,
+                }
+                timing_table = timing_table.append(df_row, ignore_index=True)
+
+            # iterate over acquisition information
+            for i, acq_info in enumerate(operation["acquisition_info"]):
+                abs_time = acq_info["t0"] + t_constr["abs_time"]
+                df_row = {
+                    "waveform_op_id": t_constr["operation_repr"] + f"_acq_{i}",
+                    "port": acq_info["port"],
+                    "clock": acq_info["clock"],
+                    "abs_time": abs_time,
+                    "duration": acq_info["duration"],
+                    "is_acquisition": True,
+                    "operation": t_constr["operation_repr"],
+                    "wf_idx": i,
+                }
+                timing_table = timing_table.append(df_row, ignore_index=True)
+
+        # apply a style so that time is easy to read.
+        # this works under the assumption that we are using timings on the order of
+        # nanoseconds.
+        styled_timing_table = timing_table.style.format(
+            {
+                "abs_time": lambda val: f"{val*1e9:,.1f} ns",
+                "duration": lambda val: f"{val*1e9:,.1f} ns",
+            }
+        )
+        return styled_timing_table
 
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
@@ -453,6 +547,17 @@ class CompiledSchedule(ScheduleBase):
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 
+        self._hardware_timing_table: pd.DataFrame = pd.DataFrame()
+
+        # N.B. this relies on a bit of a dirty monkey patch way of adding these
+        # properties. Not so nice.
+        if hasattr(schedule, "_hardware_timing_table"):
+            self._hardware_timing_table = schedule._hardware_timing_table
+
+        self._hardware_waveform_dict: Dict[str, np.ndarray] = {}
+        if hasattr(schedule, "_hardware_waveform_dict"):
+            self._hardware_waveform_dict = schedule._hardware_waveform_dict
+
         # ensure keys exist
         self.data["compiled_instructions"] = {}
 
@@ -488,6 +593,47 @@ class CompiledSchedule(ScheduleBase):
             return isinstance(object_to_be_validated, CompiledSchedule)
 
         return False
+
+    @property
+    def hardware_timing_table(self) -> pd.io.formats.style.Styler:
+        """
+        Returns a timing table representing all operations at the Control-hardware
+        layer.
+
+        Note that this timing table is typically different from the `.timing_table` in
+        that it contains more hardware specific information such as channels, clock
+        cycles and samples and corrections for things such as gain.
+
+        This hardware timing table is intended to provide a more
+
+        This table is constructed based on the timing_table and modified during
+        compilation in one of the hardware back ends and optionally added to the
+        schedule. Not all back ends support this feature.
+        """
+        styled_hardware_timing_table = self._hardware_timing_table.style.format(
+            {
+                "abs_time": lambda val: f"{val*1e9:,.1f} ns",
+                "duration": lambda val: f"{val*1e9:,.1f} ns",
+                "clock_cycle_start": lambda val: f"{val:,.1f}",
+                "sample_start": lambda val: f"{val:,.1f}",
+            }
+        )
+
+        return styled_hardware_timing_table
+
+    @property
+    def hardware_waveform_dict(self) -> Dict[str, np.ndarray]:
+        """
+        Returns a waveform dictionary representing all waveforms at the Control-hardware
+        layer.
+
+        Where the waveforms are represented as abstract waveforms in the Operations,
+        this dictionary contains the numerical arrays that are uploaded to the hardware.
+
+        This dictionary is constructed during compilation in the hardware back ends and
+         optionally added to the schedule. Not all back ends support this feature.
+        """
+        return self._hardware_waveform_dict
 
 
 @dataclass

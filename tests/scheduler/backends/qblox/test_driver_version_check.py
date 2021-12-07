@@ -21,6 +21,8 @@ from quantify_scheduler.backends.qblox.driver_version_check import (
 def test_verify_qblox_instruments_version():
     verify_qblox_instruments_version(build.__version__)
 
+    verify_qblox_instruments_version("0.5.*")
+
     nonsense_version = "nonsense.driver.version"
     with pytest.raises(DriverVersionError) as wrong_version:
         verify_qblox_instruments_version(nonsense_version)

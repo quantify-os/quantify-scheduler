@@ -4,10 +4,8 @@
 from __future__ import annotations
 
 import ast
-import functools
 import inspect
 import logging
-import sys
 from collections import UserDict
 from copy import deepcopy
 from enum import Enum
@@ -18,16 +16,9 @@ import numpy as np
 from quantify_core.utilities import general
 
 from quantify_scheduler import enums
-from quantify_scheduler.json_utils import JSONSchemaValMixin
+from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 
-current_python_version = sys.version_info
-
-if current_python_version.major >= 3 and current_python_version.minor > 7:
-    cached_locate = functools.lru_cache(locate)
-else:
-    # This is to fix an interface change between python 3.7 and > 3.7 for functools.
-    logging.info("cached_locate behaviour not available for python 3.7")
-    cached_locate = locate
+cached_locate = lru_cache(locate)
 
 
 class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors

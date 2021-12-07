@@ -499,7 +499,7 @@ class DRAGPulse(Operation):
 
 def create_dc_compensation_pulse(
     pulses: List[Operation],
-    sampling_rate: int,
+    sampling_rate: float,
     port: str,
     t0: float = 0,
     amp: Optional[float] = None,

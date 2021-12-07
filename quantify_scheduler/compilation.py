@@ -7,7 +7,6 @@ import importlib
 import logging
 from copy import deepcopy
 
-import jsonschema
 import numpy as np
 from quantify_core.utilities.general import (
     import_python_object_from_string,
@@ -16,6 +15,7 @@ from quantify_core.utilities.general import (
 from typing_extensions import Literal
 
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.json_utils import validate_json
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -372,12 +372,12 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
         True if valid
     """
     scheme = load_json_schema(__file__, scheme_fn)
-    jsonschema.validate(config, scheme)
+    validate_json(config, scheme)
     return True
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict, hardware_cfg: dict = None
+    schedule: Schedule, device_cfg: dict = None, hardware_cfg: dict = None
 ) -> CompiledSchedule:
     """
     Compile and assemble a :class:`~.Schedule` into a
@@ -413,8 +413,14 @@ def qcompile(
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    return hardware_compile(schedule, hardware_cfg=hardware_cfg)
+    if device_cfg is not None:
+        schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
+
+    if hardware_cfg is not None:
+        compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
+    else:
+        compiled_schedule = CompiledSchedule(schedule)
+    return compiled_schedule
 
 
 def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
@@ -443,7 +449,7 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     return schedule
 
 
-def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
+def hardware_compile(schedule: Schedule, hardware_cfg: dict) -> CompiledSchedule:
     """
     Add compiled instructions to the schedule based on the hardware config file.
 
@@ -461,10 +467,6 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict = None):
         The compiled schedule.
     """
 
-    if hardware_cfg is not None:
-        hw_compile = import_python_object_from_string(hardware_cfg["backend"])
-        compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
-    else:
-        # generate compiled schedule without hardware_configuration
-        compiled_schedule = CompiledSchedule(schedule)
+    hw_compile = import_python_object_from_string(hardware_cfg["backend"])
+    compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
     return compiled_schedule

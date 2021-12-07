@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.figure import Figure
 
 import quantify_scheduler.visualization.pulse_scheme as pls
 
@@ -7,7 +8,10 @@ cm = 1 / 2.54  # inch to cm conversion
 
 
 @pytest.mark.mpl_image_compare(style="default", savefig_kwargs={"dpi": 300})
-def test_plot_pulses_single_q():
+def test_plot_pulses_single_q() -> Figure:
+    """
+    Generates figure for testing
+    """
     fig, ax = pls.new_pulse_fig((7 * cm, 3 * cm))
 
     # Plot pulses
@@ -26,7 +30,11 @@ def test_plot_pulses_single_q():
 
 
 @pytest.mark.mpl_image_compare(style="default", savefig_kwargs={"dpi": 300})
-def test_plot_pulses_n_q():
+def test_plot_pulses_n_q() -> Figure:
+    """
+    Generates figure for testing
+    """
+
     # Two-qubit pulse scheme (Grover's algorithm)
     fig = plt.figure(figsize=(9 * cm, 5 * cm))
     labHeight = 1.25
