@@ -1,3 +1,7 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the master branch
+"""Tests for pulses module."""
+
 import pytest
 import numpy as np
 
