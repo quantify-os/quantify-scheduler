@@ -121,3 +121,51 @@ class TestSquareAcquisitionStrategy:
 
         # assert
         assert len(wf_dict) == 0
+
+    def test_acquire_average(self, empty_qasm_program):
+        # arrange
+        qasm = empty_qasm_program
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 1e-6,
+        }
+        strategy = acquisitions.SquareAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_average(qasm)
+
+        # assert
+        assert qasm.instructions == [["", "acquire", "0,0,4", ""]]
+
+    def test_acquire_append(self, empty_qasm_program):
+        # arrange
+        qasm = empty_qasm_program
+        data = {
+            "bin_mode": BinMode.APPEND,
+            "acq_channel": 0,
+            "acq_index": 1,
+            "duration": 1e-6,
+        }
+        strategy = acquisitions.SquareAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.operation_info.bin_idx_register = (
+            qasm._register_manager.allocate_register()
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_append(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            ["", "", "", ""],
+            ["", "acquire", "0,R0,4", ""],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0"],
+            ["", "", "", ""],
+        ]
