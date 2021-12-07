@@ -17,11 +17,11 @@ from quantify_scheduler.backends.qblox.operation_handling import (
 
 
 def get_operation_strategy(
-    operation: OpInfo, force_generic: bool, output_mode: str
+    operation: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
 ) -> base.IOperationStrategy:
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
-    return _get_pulse_strategy(operation, force_generic, output_mode)
+    return _get_pulse_strategy(operation, instruction_generated_pulses_enabled, output_mode)
 
 
 def _get_acquisition_strategy(

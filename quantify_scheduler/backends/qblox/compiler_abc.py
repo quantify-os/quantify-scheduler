@@ -1016,7 +1016,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     partial_func = partial(
                         get_operation_strategy,
-                        force_generic=not seq.instruction_generated_pulses_enabled,
+                        force_generic=seq.instruction_generated_pulses_enabled,
                         output_mode=seq.output_mode,
                     )
                     func_map = map(
@@ -1030,7 +1030,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     partial_func = partial(
                         get_operation_strategy,
-                        force_generic=not seq.instruction_generated_pulses_enabled,
+                        force_generic=seq.instruction_generated_pulses_enabled,
                         output_mode=seq.output_mode,
                     )
                     func_map = map(
@@ -1235,7 +1235,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if not sequencer.acquisitions:
                     continue
                 acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-                    sequencer.acquisitions
+                    [acq.operation_info for acq in sequencer.acquisitions]
                 )
                 program["acq_metadata"][sequencer.name] = acq_metadata
 
