@@ -667,7 +667,7 @@ class Sequencer:
         return str(qasm)
 
     def _initialize_append_mode_registers(
-        self, qasm: QASMProgram, acquisitions: List[OpInfo]
+        self, qasm: QASMProgram, acquisitions: List[IOperationStrategy]
     ):
         """
         Adds the instructions to initialize the registers needed to use the append
@@ -682,10 +682,10 @@ class Sequencer:
         """
         channel_to_reg = {}
         for acq in acquisitions:
-            if acq.data["bin_mode"] != BinMode.APPEND:
+            if acq.operation_info.data["bin_mode"] != BinMode.APPEND:
                 continue
 
-            channel = acq.data["acq_channel"]
+            channel = acq.operation_info.data["acq_channel"]
             if channel in channel_to_reg:
                 acq_bin_idx_reg = channel_to_reg[channel]
             else:
@@ -697,7 +697,7 @@ class Sequencer:
                     0,
                     acq_bin_idx_reg,
                     comment=f"Initialize acquisition bin_idx for "
-                    f"ch{acq.data['acq_channel']}",
+                    f"ch{acq.operation_info.data['acq_channel']}",
                 )
             acq.bin_idx_register = acq_bin_idx_reg
 
