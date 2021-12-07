@@ -178,13 +178,13 @@ class StaircasePulseStrategy(PulseStrategyPartial):
 
         amp_step = (final_amp - start_amp) / (num_steps - 1)
         amp_step_immediate = qasm_program._expand_from_normalised_range(
-            amp_step / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
+            amp_step / qasm_program.static_hw_properties.max_awg_output_voltage,
             constants.IMMEDIATE_SZ_OFFSET,
             offset_param_label,
             pulse,
         )
         start_amp_immediate = qasm_program._expand_from_normalised_range(
-            start_amp / qasm_program.parent.static_hw_properties.max_awg_output_voltage,
+            start_amp / qasm_program.static_hw_properties.max_awg_output_voltage,
             constants.IMMEDIATE_SZ_OFFSET,
             offset_param_label,
             pulse,
