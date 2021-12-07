@@ -99,6 +99,34 @@ class TestAcquisitionStrategyPartial:
             == "Attempting to process an acquisition with unknown bin mode nonsense."
         )
 
+    def test_start_acq_too_soon(self, empty_qasm_program):
+        # arrange
+        qasm = empty_qasm_program
+        qasm.time_last_acquisition_triggered = 0
+        data = {
+            "bin_mode": "nonsense",
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 1e-6,
+        }
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+
+        # act
+        with pytest.raises(ValueError) as exc:
+            strategy.insert_qasm(qasm)
+
+        # assert
+        assert (
+            exc.value.args[0]
+            == "Attempting to start an acquisition at t=0 ns, while the last "
+            "acquisition was '\n 'started at t=0. Please ensure a minimum interval of "
+            "1000 ns between '\n 'acquisitions.\n'\n '\n'\n 'Error caused by "
+            "acquisition:\n'\n 'Acquisition  (t=0 to 1e-06)\n'\n \"data={"
+            "'bin_mode': 'nonsense', 'acq_channel': 0, 'acq_index': 0, 'duration': "
+            "\"\n '1e-06}."
+        )
+
 
 class TestSquareAcquisitionStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
