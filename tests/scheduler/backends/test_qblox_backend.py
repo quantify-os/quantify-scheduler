@@ -30,6 +30,7 @@ from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
     q1asm_instructions,
+    register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
@@ -64,7 +65,6 @@ from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
-    StaircasePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
@@ -507,6 +507,20 @@ def real_square_pulse_schedule():
     return sched
 
 
+@pytest.fixture(name="empty_qasm_program")
+def fixture_empty_qasm_program():
+    static_hw_properties = types.StaticHardwareProperties(
+        instrument_type="QCM",
+        max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
+        max_awg_output_voltage=2.5,
+        marker_configuration=types.MarkerConfiguration(start=0b1111, end=0b0000),
+        mixer_dc_offset_range=types.BoundedParameter(
+            min_val=-2.5, max_val=2.5, units="V"
+        ),
+    )
+    yield QASMProgram(static_hw_properties, register_manager.RegisterManager())
+
+
 # --------- Test utility functions ---------
 
 
@@ -702,24 +716,6 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     assert iterations == 10
 
 
-def test_compile_with_pulse_stitching(
-    dummy_pulsars, hardware_cfg_baseband, baseband_square_pulse_schedule
-):
-    sched = baseband_square_pulse_schedule
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    sched.repetitions = 11
-    full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
-
-    # assert
-    qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
-    waveforms = qcm0.get_waveforms(0)
-    assert waveforms["stitched_square_pulse_I"]["data"] == [1.0] * 1000
-    assert waveforms["stitched_square_pulse_Q"]["data"] == [0.0] * 1000
-
-
 def _func_for_hook_test(qasm: QASMProgram):
     qasm.instructions.insert(
         0, QASMProgram.get_instruction_as_list(q1asm_instructions.NOP)
@@ -863,22 +859,16 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
 # --------- Test QASMProgram class ---------
 
 
-def test_emit():
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+def test_emit(empty_qasm_program):
+    qasm = empty_qasm_program
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm.instructions) == 2
 
 
-def test_auto_wait():
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+def test_auto_wait(empty_qasm_program):
+    qasm = empty_qasm_program
     qasm.auto_wait(120)
     assert len(qasm.instructions) == 1
     qasm.auto_wait(70000)
@@ -891,65 +881,10 @@ def test_auto_wait():
         qasm.auto_wait(-120)
 
 
-def test_wait_till_start_then_play():
-    minimal_pulse_data = {"duration": 20e-9}
-    runtime_settings = QASMRuntimeSettings(1, 1)
-    pulse = qb.OpInfo(
-        name="test_pulse",
-        uuid="test_pulse",
-        data=minimal_pulse_data,
-        timing=4e-9,
-        pulse_settings=runtime_settings,
-    )
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert len(qasm.instructions) == 3
-    assert qasm.instructions[0][1] == q1asm_instructions.WAIT
-    assert qasm.instructions[1][1] == q1asm_instructions.SET_AWG_GAIN
-    assert qasm.instructions[2][1] == q1asm_instructions.PLAY
-
-    pulse = qb.OpInfo(
-        name="test_pulse",
-        uuid="test_pulse",
-        data=minimal_pulse_data,
-        timing=1e-9,
-        pulse_settings=runtime_settings,
-    )
-    with pytest.raises(ValueError):
-        qasm.wait_till_start_then_play(pulse, 0, 1)
-
-
-def test_wait_till_start_then_acquire():
-    minimal_pulse_data = {
-        "duration": 20e-9,
-        "acq_index": 0,
-        "acq_channel": 1,
-        "bin_mode": BinMode.AVERAGE,
-        "protocol": "ssb_integration_complex",
-    }
-    acq = qb.OpInfo(
-        name="SSBIntegrationComplex",
-        uuid="test_acq",
-        data=minimal_pulse_data,
-        timing=4e-9,
-    )
-    qrm = QrmModule(
-        None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
-    )
-    qasm = QASMProgram(qrm.sequencers["seq0"])
-    qasm.wait_till_start_then_acquire(acq, None, None)
-    assert len(qasm.instructions) == 2
-    assert qasm.instructions[0][1] == q1asm_instructions.WAIT
-    assert qasm.instructions[1][1] == q1asm_instructions.ACQUIRE
-
-
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(
-        name="test_acq", uuid="test_acq", data=minimal_pulse_data, timing=4e-9
+        name="test_acq", data=minimal_pulse_data, timing=4e-9
     )
     expanded_val = QASMProgram._expand_from_normalised_range(
         1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
@@ -961,61 +896,6 @@ def test_expand_from_normalised_range():
         )
 
 
-def test_pulse_stitching_qasm_prog():
-    minimal_pulse_data = {
-        "wf_func": "quantify_scheduler.waveforms.square",
-        "duration": 20.5e-6,
-    }
-    runtime_settings = QASMRuntimeSettings(1, 1)
-    pulse = qb.OpInfo(
-        name="stitched_square_pulse",
-        uuid="stitched_square_pulse",
-        data=minimal_pulse_data,
-        timing=4e-9,
-        pulse_settings=runtime_settings,
-    )
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert qasm.instructions[2][2] == "20,R0"
-
-
-@pytest.mark.parametrize("start_amp, final_amp", [(-1.1, 2.1), (1.23456, -2)])
-def test_staircase_qasm_prog(start_amp, final_amp):
-
-    s_ramp_pulse = StaircasePulse(start_amp, final_amp, 10, 12.4e-6, "q0:mw")
-
-    runtime_settings = QASMRuntimeSettings(1, 1)
-    pulse = qb.OpInfo(
-        name="staircase",
-        uuid="staircase",
-        data=s_ramp_pulse.data["pulse_info"][0],
-        timing=4e-9,
-        pulse_settings=runtime_settings,
-    )
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    qasm.wait_till_start_then_play(pulse, 0, 1)
-
-    amp_step_used = int(qasm.instructions[9][2].split(",")[1])
-    if final_amp < start_amp:
-        amp_step_used = -amp_step_used
-    steps_taken = int(qasm.instructions[5][2].split(",")[0])
-    init_amp = int(qasm.instructions[2][2].split(",")[0])
-    if init_amp > constants.IMMEDIATE_SZ_OFFSET:
-        init_amp = init_amp - constants.REGISTER_SIZE
-
-    final_amp_imm = amp_step_used * (steps_taken - 1) + init_amp
-    awg_output_volt = qcm.static_hw_properties.max_awg_output_voltage
-
-    final_amp_volt = 2 * final_amp_imm / constants.IMMEDIATE_SZ_OFFSET * awg_output_volt
-    assert final_amp_volt == pytest.approx(final_amp, 1e-3)
-
-
 def test_to_grid_time():
     time_ns = to_grid_time(8e-9)
     assert time_ns == 8
@@ -1023,13 +903,10 @@ def test_to_grid_time():
         to_grid_time(7e-9)
 
 
-def test_loop():
+def test_loop(empty_qasm_program):
     num_rep = 10
 
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+    qasm = empty_qasm_program
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
     with qasm.loop("this_loop", repetitions=num_rep):
         qasm.emit(q1asm_instructions.WAIT, 20)
@@ -1040,11 +917,8 @@ def test_loop():
 
 
 @pytest.mark.parametrize("amount", [1, 2, 3, 40])
-def test_temp_register(amount):
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+def test_temp_register(amount, empty_qasm_program):
+    qasm = empty_qasm_program
     with qasm.temp_register(amount) as registers:
         if isinstance(registers, str):
             registers = [registers]
