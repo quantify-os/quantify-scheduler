@@ -387,3 +387,63 @@ class TestStaircasePulseStrategy:
 
         # assert
         assert op_info == from_property
+
+    def test_generate_data(self):
+        # arrange
+        op_info = types.OpInfo(name="", data={}, timing=0)
+        strategy = pulses.StaircasePulseStrategy(op_info, output_mode="real")
+
+        # act
+        data = strategy.generate_data({})
+
+        # assert
+        assert data is None
+
+    @pytest.mark.parametrize(
+        "start_amp, final_amp, num_steps, output_mode, answer",
+        [
+            (
+                0,
+                1,
+                10,
+                "real",
+                [
+                    ["", "set_awg_gain", "32767,32767", "# set gain to known value"],
+                    ["", "move", "0,R0", "# keeps track of the offsets"],
+                    ["", "move", "0,R1", "# zero for unused output path"],
+                    ["", "", "", ""],
+                    ["", "move", "10,R10", "# iterator for loop with label ramp4"],
+                    ["ramp4:", "", "", ""],
+                    ["", "set_awg_offs", "R0,R1", ""],
+                    ["", "upd_param", "4", ""],
+                    ["", "add", "R0,1456,R0", "# next incr offs by 1456"],
+                    ["", "wait", "96", ""],
+                    ["", "loop", "R10,@ramp4", ""],
+                    ["", "set_awg_offs", "0,0", "# return offset to 0 after staircase"],
+                    ["", "", "", ""],
+                ],
+            ),
+        ],
+    )
+    def test_insert_qasm(
+        self, empty_qasm_program, start_amp, final_amp, num_steps, output_mode, answer
+    ):
+        # arrange
+        qasm = empty_qasm_program
+        wf_func_path, wf_kwargs = (
+            "quantify_scheduler.waveforms.staircase",
+            {"start_amp": start_amp, "final_amp": final_amp, "num_steps": num_steps},
+        )
+
+        data = {"wf_func": wf_func_path, "duration": 1e-6, **wf_kwargs}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = pulses.StaircasePulseStrategy(op_info, output_mode=output_mode)
+
+        strategy.generate_data({})
+
+        # act
+        strategy.insert_qasm(qasm)
+
+        # assert
+        for row_idx, instruction in enumerate(qasm.instructions):
+            assert instruction == answer[row_idx]
