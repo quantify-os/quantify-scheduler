@@ -17,6 +17,7 @@ Unreleased changes
     - The backend can now always use the same hardware configuration file (#214)
     - Acquisition is now done using the StartQA instruction (#213)
     - error handling in the Zhinst backend has been improved catching several exceptions at compile time of the schedule instead of manifesting in unexpected results during runtime.
+    - Local oscillators through the ZI backend uses the GenericInstrumentCoordinatorComponent. Configures other parameters other than frequency. (!283, #204)
 * Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package
     - Added support for the Qblox Downconverter
 * Operations - resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)

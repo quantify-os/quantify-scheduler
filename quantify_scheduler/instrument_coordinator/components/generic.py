@@ -7,11 +7,12 @@ import logging
 from typing import Any, Dict
 
 from qcodes.instrument.base import InstrumentBase
-
 import quantify_scheduler.instrument_coordinator.utility as util
 from quantify_scheduler.instrument_coordinator.components import base
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_NAME = "generic"
 
 
 class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancestors
@@ -29,10 +30,9 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     # NB `_instances` also used by `Instrument` class
     _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
-    default_name = "generic_instrument_coordinator_component"
 
     def __new__(
-        cls, name: str = default_name
+        cls, name: str = DEFAULT_NAME
     ) -> base.InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
@@ -44,7 +44,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def __init__(self, name: str = default_name) -> None:
+    def __init__(self, name: str = DEFAULT_NAME) -> None:
 
         instrument = InstrumentBase(name=name)
         super().__init__(instrument)
@@ -107,14 +107,29 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
                     + "'instrument_name.parameter_name'"
                 )
                 raise KeyError(error_msg + hint_msg)
-            instrument_name, parameter_name = key.split(".")
+            instrument_name, parameter_name = key.split(".", maxsplit=1)
             instrument = self.find_instrument(instrument_name)
-            if self.force_set_parameters():
-                instrument.set(param_name=parameter_name, value=value)
-            else:
-                util.lazy_set(
-                    instrument=instrument, parameter_name=parameter_name, val=value
-                )
+            try:
+                # HACK for instr.channel.param
+                if "." in parameter_name:
+                    channel_name, parameter_name = parameter_name.split(".", maxsplit=1)
+                    channel = getattr(instrument, channel_name)
+                    channel.set(param_name=parameter_name, value=value)
+                    continue
+                if self.force_set_parameters():
+                    instrument.set(param_name=parameter_name, value=value)
+                else:
+                    util.lazy_set(
+                        instrument=instrument, parameter_name=parameter_name, val=value
+                    )
+            except KeyError as e:
+                set_function = getattr(instrument, parameter_name)
+                if callable(set_function):
+                    set_function(value)
+                else:
+                    raise RuntimeError(
+                        f"{key} is neither a parameter nor a callable function"
+                    ) from e
 
     def retrieve_acquisition(self) -> Any:
         pass
