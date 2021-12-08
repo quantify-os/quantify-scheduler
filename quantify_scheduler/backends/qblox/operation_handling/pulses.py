@@ -18,17 +18,47 @@ from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instruct
 
 
 class PulseStrategyPartial(IOperationStrategy):
+    """Contains the logic shared between all the pulses."""
+
     def __init__(self, operation_info: types.OpInfo, output_mode: str):
+        """
+        Constructor.
+
+        Parameters
+        ----------
+        operation_info
+            The operation info that corresponds to this pulse.
+        output_mode
+            Either "real", "imag" or complex depending on whether the signal affects
+            only path0, path1 or both.
+        """
         self._pulse_info: types.OpInfo = operation_info
         self.output_mode = output_mode
 
     @property
     def operation_info(self) -> types.OpInfo:
+        """Property for retrieving the operation info."""
         return self._pulse_info
 
 
 class GenericPulseStrategy(PulseStrategyPartial):
+    """
+    Default class for handling pulses. No assumptions are made with regards to the
+    pulse shape and no optimizations are done.
+    """
+
     def __init__(self, operation_info: types.OpInfo, output_mode: str):
+        """
+        Constructor for this strategy.
+
+        Parameters
+        ----------
+        operation_info
+            The operation info that corresponds to this pulse.
+        output_mode
+            Either "real", "imag" or complex depending on whether the signal affects
+            only path0, path1 or both.
+        """
         super().__init__(operation_info, output_mode)
 
         self.amplitude_path0: Optional[float] = None
@@ -40,6 +70,15 @@ class GenericPulseStrategy(PulseStrategyPartial):
         self.waveform_len: Optional[int] = None
 
     def generate_data(self, wf_dict: Dict[str, Any]):
+        """
+        Generates the data and adds them to the wf_dict (if not already present).
+
+        Parameters
+        ----------
+        wf_dict
+            The dictionary to add the waveform to. N.B. the dictionary is modified in
+            function.
+        """
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
             op_info.data, sampling_rate=constants.SAMPLING_RATE
@@ -66,6 +105,15 @@ class GenericPulseStrategy(PulseStrategyPartial):
             self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
 
     def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this pulse.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
@@ -73,7 +121,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             q1asm_instructions.PLAY,
             self.waveform_index0,
             self.waveform_index1,
-            constants.GRID_TIME,
+            constants.GRID_TIME,  # N.B. the waveform keeps playing
             comment=f"play {self.operation_info.name} ({self.waveform_len} ns)",
         )
         qasm_program.elapsed_time += constants.GRID_TIME
