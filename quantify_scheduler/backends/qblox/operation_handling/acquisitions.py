@@ -94,13 +94,32 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
     """
 
     def generate_data(self, wf_dict: Dict[str, Any]) -> None:
+        """Returns None as no waveform is needed."""
         return None
 
     def acquire_average(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming averaging is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         bin_idx = self.operation_info.data["acq_index"]
         self._acquire_square(qasm_program, bin_idx)
 
     def acquire_append(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming append is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         acq_bin_idx_reg = self.bin_idx_register
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
@@ -127,7 +146,8 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The qasm program to add the acquisition to.
         bin_idx
-            The bin_idx to store the result in.
+            The bin_idx to store the result in, can be either an int (for immediates) or
+            a str (for registers).
         """
         qasm_program.verify_square_acquisition_duration(
             self.operation_info, self.operation_info.duration
