@@ -899,7 +899,6 @@ class _QRMAcquisitionManager:
         )
         return compensated_data_i, compensated_data_q
 
-
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
     ) -> float:
