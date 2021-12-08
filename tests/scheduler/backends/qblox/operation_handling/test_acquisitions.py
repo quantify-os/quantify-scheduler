@@ -195,3 +195,37 @@ class TestSquareAcquisitionStrategy:
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch0"],
             ["", "", "", ""],
         ]
+
+
+class TestWeightedAcquisitionStrategy:
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_constructor(self, bin_mode):
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        acquisitions.WeightedAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+
+    def test_generate_data(self):
+        # arrange
+        waveforms = [
+            {"wf_func": "quantify_scheduler.waveforms.square", "amp": 1, "duration": 1e-6},
+            {"wf_func": "quantify_scheduler.waveforms.square", "amp": 0, "duration": 1e-6},
+        ]
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "waveforms": waveforms,
+        }
+        strategy = acquisitions.WeightedAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        answers = [np.ones(1000).tolist(), np.zeros(1000).tolist()]
+        for idx, waveform in enumerate(wf_dict.values()):
+            assert waveform['data'] == answers[idx]
