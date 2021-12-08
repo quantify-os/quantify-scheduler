@@ -5,6 +5,7 @@ Module that holds all the string literals that are valid instructions that can b
 executed by the sequencer in Qblox hardware.
 """
 # Control
+
 ILLEGAL = "illegal"
 STOP = "stop"
 NOP = "nop"

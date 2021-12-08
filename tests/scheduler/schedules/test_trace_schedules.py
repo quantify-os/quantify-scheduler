@@ -6,9 +6,9 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.schedules import trace_schedules
 
 
-def test_trace_schedule():
+def test_trace_schedule() -> None:
     # Arrange
-    init_duration = 1e-5
+    init_duration: int = int(1e-5)
     integration_time = 1e-6
     pulse_duration = 500e-9
     pulse_delay = 0
@@ -55,7 +55,7 @@ def test_trace_schedule():
     assert schedule.timing_constraints[2]["rel_time"] == acquisition_delay
 
 
-def test_two_tone_trace_schedule():
+def test_two_tone_trace_schedule() -> None:
     # Arrange
     init_duration = 1e-5
     integration_time = 1e-6

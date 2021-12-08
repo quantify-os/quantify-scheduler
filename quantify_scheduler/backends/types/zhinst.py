@@ -55,6 +55,8 @@ class Output(DataClassJsonMixin):
         Accepted value between -1 and + 1. (default = 1.0)
     line_trigger_delay :
         The ZI Instrument output triggers. (default = -1.0)
+    latency :
+        The specified channel latency in seconds. (default = 0.)
     triggers :
         The ZI Instrument input triggers. (default = [])
     markers :
@@ -72,6 +74,7 @@ class Output(DataClassJsonMixin):
     gain1: int = 0
     gain2: int = 0
     line_trigger_delay: float = -1
+    latency: float = 0.0
     triggers: List[int] = field(default_factory=lambda: [])
     markers: List[Union[str, int]] = field(default_factory=lambda: [])
     mixer_corrections: Optional[common.MixerCorrections] = None
@@ -105,7 +108,8 @@ class Device(DataClassJsonMixin):
     channel_3 :
         The fourth physical channel properties.
     channelgrouping :
-        The HDAWG channelgrouping property. (default = 0)
+        The HDAWG channelgrouping property. (default = 0) corresponding to a single
+        sequencer controlling a pair (2) awg outputs.
     clock_select :
         The clock rate divisor which will be used to get
         the instruments clock rate from the lookup dictionary in
@@ -119,16 +123,12 @@ class Device(DataClassJsonMixin):
     device_type :
         The Zurich Instruments hardware type. (default = DeviceType.NONE)
         This field is automatically populated.
-    clock_rate :
-        The Instruments clock rate.
+    sample_rate :
+        The Instruments sampling clock rate.
         This field is automatically populated.
     n_channels :
         The number of physical channels of this ZI Instrument.
         This field is automatically populated.
-    last_seq_wait_clocks :
-        The number of clocks tics to wait between the last sequence
-        for the QAS to process and not time out. (default = 2000)
-        [Only relevant for UHFQA]
     """
 
     name: str
@@ -141,10 +141,9 @@ class Device(DataClassJsonMixin):
     channel_3: Optional[Output] = None
     clock_select: Optional[int] = 0
     channelgrouping: int = 0
-    last_seq_wait_clocks: int = 2000
     mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
     device_type: DeviceType = DeviceType.NONE
-    clock_rate: Optional[int] = field(init=False)
+    sample_rate: Optional[int] = field(init=False)
     n_channels: int = field(init=False)
 
     def __post_init__(self):
@@ -268,29 +267,27 @@ class WaveformDestination(Enum):
 class InstrumentInfo:
     """Instrument information record type."""
 
-    clock_rate: int
-    resolution: int
-    granularity: int
+    sample_rate: int
+
+    num_samples_per_clock: int  # number of samples per clock cycle (sequencer_rate)
+    granularity: int  # waveforms need to be a multiple of this many samples.
     mode: enums.InstrumentOperationMode = enums.InstrumentOperationMode.OPERATING
-    low_res_clock: float = field(init=False)
+    sequencer_rate: float = field(init=False)
 
     def __post_init__(self):
         """Initializes fields after initializing object."""
-        self.low_res_clock = self.resolution / self.clock_rate
+        self.sequencer_rate = self.num_samples_per_clock / self.sample_rate
 
 
 @dataclass(frozen=True)
 class Instruction:
     """Sequence base instruction record type."""
 
-    uuid: int
+    waveform_id: str
     abs_time: float
-    timeslot_index: int
-    start_in_seconds: float
-    start_in_clocks: int
+    clock_cycle_start: int
 
-    duration_in_seconds: float
-    duration_in_clocks: int
+    duration: float
 
     @staticmethod
     def default():
@@ -301,74 +298,35 @@ class Instruction:
         -------
         Instruction :
         """
-        return Instruction(-1, 0, 0, 0, 0, 0, 0)
+        return Instruction("None", 0, 0, 0)
 
 
 @dataclass(frozen=True)
-class Measure(Instruction):
+class Acquisition(Instruction):
     """
-    Sequence measurement instruction record type.
-
-    Note that a measurement like this always uses two weights in the UHFQA.
+    This instruction indicates that an acquisition is to be triggered in the UHFQA.
+    If a waveform_id is specified, this waveform will be used as the integration weight.
     """
-
-    weights_i: np.ndarray
-    weights_q: np.ndarray
-
-    def __str__(self):
-        return (
-            "Measure(\n"
-            f"\tuuid={self.uuid},\n"
-            f"\tabs_time_ns={self.abs_time * 1e9},\n"
-            f"\ttimeslot_index={self.timeslot_index},\n"
-            f"\tstart_in_ns={self.start_in_seconds*1e9}\n"
-            f"\tstart_in_clocks={self.start_in_clocks},\n"
-            f"\tduration_in_seconds={self.duration_in_seconds},\n"
-            f"\tduration_in_clocks={self.duration_in_clocks}\n"
-            f"\tweights_i={self.weights_i}\n"
-            f"\tweights_q={self.weights_q}\n"
-            ")"
-        )
 
     def __repr__(self):
         return (
-            f"Measure(uuid: {self.uuid} |abs_time: {self.abs_time * 1e9} "
-            f"|t0: {self.start_in_seconds * 1e9} |dt: {self.duration_in_seconds * 1e9} "
-            f"|c0: {self.start_in_clocks} |dc: {self.duration_in_clocks} "
-            f"|len: {len(self.weights_i)} )"
+            f"Acquisition(waveform_id: {self.waveform_id}"
+            f"|abs_time: {self.abs_time * 1e9} ns"
+            f"|dt: {self.duration * 1e9} ns"
+            f"|c0: {self.clock_cycle_start}"
         )
 
 
 @dataclass(frozen=True)
 class Wave(Instruction):
-    """Sequence waveform instruction record type."""
-
-    waveform: np.ndarray
-    n_samples: int
-    n_samples_scaled: int
+    """
+    This instruction indicates that a waveform  should be played.
+    """
 
     def __repr__(self):
         return (
-            f"Wave(uuid :{self.uuid}"
-            f"|abs_time :{self.abs_time * 1e9}"
-            f"|t0 :{self.start_in_seconds * 1e9}"
-            f"|dt :{self.duration_in_seconds * 1e9}"
-            f"|c0 :{self.start_in_clocks}"
-            f"|dc :{self.duration_in_clocks}"
-            f"|n_samples :{self.n_samples}"
-            f"|d_scaled :{self.n_samples_scaled - self.n_samples}"
-            f"|len_wf :{len(self.waveform)})"
-        )
-
-    @staticmethod
-    def __header__():
-        return "%-20s | %-12s | %-12s | %-12s | %-8s | %-8s | %-6s | %-6s " % (
-            "uuid",
-            "abs_time",
-            "t0",
-            "duration",
-            "start",
-            "duration",
-            "length",
-            "n shifted",
+            f"Wave(waveform_id: {self.waveform_id}"
+            f"|abs_time: {self.abs_time * 1e9} ns"
+            f"|dt: {self.duration * 1e9} ns"
+            f"|c0: {self.clock_cycle_start}"
         )

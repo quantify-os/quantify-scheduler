@@ -1,8 +1,10 @@
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
 
-def test_ClockResource():
-    # clock associated with qubit
+def test_clock_resource() -> None:
+    """
+    Clock associated with qubit.
+    """
     clock = ClockResource("q0:cl:01", freq=6.5e9, phase=23.9)
     assert clock.data["name"] == "q0:cl:01"
     assert clock.data["freq"] == 6.5e9
@@ -15,8 +17,10 @@ def test_ClockResource():
     assert clock.data["phase"] == 0
 
 
-def test_BasebandClockResource():
-    # clock associated with qubit
+def test_baseband_clock_resource() -> None:
+    """
+    Clock associated with qubit.
+    """
     clock = BasebandClockResource("baseband")
     assert clock.data["name"] == "baseband"
     assert clock.data["freq"] == 0

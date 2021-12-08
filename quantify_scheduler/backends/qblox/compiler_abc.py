@@ -253,6 +253,7 @@ class Sequencer:
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
         seq_settings: dict,
         lo_name: Optional[str] = None,
+        downconverter: bool = False,
     ):
         """
         Constructor for the sequencer compiler.
@@ -271,6 +272,9 @@ class Sequencer:
         lo_name
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
+        downconverter
+            Boolean which expresses whether a downconverter is being used or not.
+            Defaults to `False`, in case case no downconverter is being used.
         """
         self.parent = parent
         self._name = name
@@ -279,6 +283,7 @@ class Sequencer:
         self.pulses: List[OpInfo] = []
         self.acquisitions: List[OpInfo] = []
         self.associated_ext_lo: str = lo_name
+        self.downconverter: bool = downconverter
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -301,8 +306,8 @@ class Sequencer:
         For the baseband modules, these indices correspond directly to a physical output
         (e.g. index 0 corresponds to output 1 etc.).
 
-        For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
-        respectively, and 1 and 3 to path1 of those outputs.
+        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of output 1,
+        respectively, while indexes 2 and 3 correspond to path0 and path1 of output 2.
         """
         return self._settings.connected_outputs
 
@@ -1111,6 +1116,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             lo_name = io_cfg.get("lo_name", None)
+            downconverter = io_cfg.get("downconverter", False)
 
             valid_seq_names = (
                 f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
@@ -1138,6 +1144,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     connected_outputs,
                     seq_cfg,
                     lo_name,
+                    downconverter,
                 )
 
         if len(sequencers) > self.static_hw_properties.max_sequencers:
@@ -1418,6 +1425,14 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     if_freq = sequencer.frequency
     lo_freq = lo_compiler.frequency
 
+    # If downconverter is used, its frequency will be used when calculating the
+    # LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
+    # LO/IF frequencies unchanged.
+    if sequencer.downconverter:
+        downconverter_freq = constants.DOWNCONVERTER_FREQ
+    else:
+        downconverter_freq = 0
+
     if lo_freq is None and if_freq is None:
         raise ValueError(
             f"Frequency settings underconstraint for sequencer {sequencer.name} "
@@ -1427,10 +1442,10 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         )
 
     if if_freq is not None:
-        lo_compiler.frequency = clk_freq - if_freq
+        lo_compiler.frequency = clk_freq - if_freq + downconverter_freq
 
     if lo_freq is not None:
-        if_freq = clk_freq - lo_freq
+        if_freq = clk_freq - lo_freq + downconverter_freq
         sequencer.frequency = if_freq
 
     if if_freq != 0 and if_freq is not None:
@@ -1456,7 +1471,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency
+        Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -1497,7 +1512,7 @@ class QbloxRFModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
-        An abstract method that should be overridden. Meant to assign an IF frequency
+        Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
         For each sequencer, the following relation is obeyed:
         :math:`f_{RF} = f_{LO} + f_{IF}`.
@@ -1549,8 +1564,16 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
+            """If downconverter is used, it's frequency will be used when calculating the
+            LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
+            LO/IF frequencies unchanged"""
+            if sequencer.downconverter:
+                downconverter_freq = constants.DOWNCONVERTER_FREQ
+            else:
+                downconverter_freq = 0
+
             if if_freq is not None:
-                new_lo_freq = clk_freq - if_freq
+                new_lo_freq = clk_freq - if_freq + downconverter_freq
                 if lo_freq is not None and new_lo_freq != lo_freq:
                     raise ValueError(
                         f"Attempting to set 'lo{complex_output}_freq' to frequency "
@@ -1563,7 +1586,7 @@ class QbloxRFModule(QbloxBaseModule):
                     self._settings.lo1_freq = new_lo_freq
 
             if lo_freq is not None:
-                sequencer.frequency = clk_freq - lo_freq
+                sequencer.frequency = clk_freq - lo_freq + downconverter_freq
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):

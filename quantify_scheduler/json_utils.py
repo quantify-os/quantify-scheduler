@@ -4,15 +4,52 @@
 from __future__ import annotations
 
 import ast
+import functools
 import json
+import pathlib
 import re
+import sys
 from types import ModuleType
-from typing import Any, Dict, List, Type
+from typing import Any, Callable, Dict, List, Type, Union
 
-import jsonschema
+import fastjsonschema
 from quantify_core.utilities.general import load_json_schema
 
 from quantify_scheduler.helpers import inspect as inspect_helpers
+
+current_python_version = sys.version_info
+
+lru_cache = functools.lru_cache(maxsize=200)
+
+
+def validate_json(data, schema):
+    """Validate schema using jsonschema-rs"""
+    return fastjsonschema.validate(schema, data)
+
+
+@lru_cache
+def load_json_validator(
+    relative_to: Union[str, pathlib.Path], filename: str
+) -> Callable:
+    """
+    Load a JSON validator from file. Expects a 'schemas' directory in the same directory
+    as `relative_to`.
+
+
+    Parameters
+    ----------
+    relative_to
+        the file to begin searching from
+    filename
+        the JSON file to load
+    Returns
+    -------
+    Callable
+        The validator
+    """
+    definition = load_json_schema(relative_to, filename)
+    validator = fastjsonschema.compile(definition, handlers={}, formats={})
+    return validator
 
 
 class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
@@ -25,10 +62,21 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
-        """Checks if the object is valid according to its schema."""
+        """Checks if the object is valid according to its schema
 
-        scheme = load_json_schema(__file__, cls.schema_filename)
-        jsonschema.validate(object_to_be_validated.data, scheme)
+        Raises
+        ------
+        fastjsonschema.JsonSchemaException
+            if the data is invalid
+
+        Returns
+        -------
+        :
+
+        """
+
+        validator_method = load_json_validator(__file__, cls.schema_filename)
+        validator_method(object_to_be_validated.data)
         return True  # if no exception was raised during validation
 
 

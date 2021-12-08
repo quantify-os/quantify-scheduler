@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Module containing the InstrumentCoordinator interface."""
+
 from __future__ import annotations
 
 from abc import abstractmethod
@@ -28,17 +29,13 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def close(self):
+    def close(self) -> None:
         """Makes sure the instances reference is released so that garbage collector can
         claim the object"""
         _ = self._no_gc_instances.pop(self.instrument_ref())
         super().close()
 
-    def __init__(
-        self,
-        instrument: base.InstrumentBase,
-        **kwargs,
-    ) -> None:
+    def __init__(self, instrument: base.InstrumentBase, **kwargs: Any) -> None:
         """Instantiates the InstrumentCoordinatorComponentBase base class."""
         super().__init__(f"ic_{instrument.name}", **kwargs)
 

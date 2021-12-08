@@ -16,7 +16,9 @@ import numpy as np
 from quantify_core.utilities import general
 
 from quantify_scheduler import enums
-from quantify_scheduler.json_utils import JSONSchemaValMixin
+from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
+
+cached_locate = lru_cache(locate)
 
 
 class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
@@ -298,7 +300,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
                 # first remove the class prefix
                 return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
                 # and then use locate to retrieve the type class
-                acq_info["acq_return_type"] = locate(return_type_str)
+                acq_info["acq_return_type"] = cached_locate(return_type_str)
 
             for waveform in acq_info["waveforms"]:
                 if "t" in waveform and isinstance(waveform["t"], str):

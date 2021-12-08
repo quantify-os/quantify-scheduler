@@ -12,7 +12,7 @@ jupyter_sphinx>=0.3.2
 sphinx-jsonschema>=1.15
 sphinx-autobuild
 sphinx-togglebutton
-sphinx-autodoc-typehints
+sphinx-autodoc-typehints>=1.12.0
 twine==1.14.0
 pytest
 pytest-runner
@@ -30,19 +30,17 @@ pre-commit
 pre-commit-hooks # common hooks for git repos
 isort>=5.10.0 # sort python imports
 
-scanpydoc==0.6 # pinned because 0.7 is made for sphinx-autodoc-typehints==1.12.0 but sphinx-toolbox requires sphinx-autodoc-typehints==1.11.1
+scanpydoc>=0.7.1 # ensures latest typing_extensions is used in sphinx (https://github.com/theislab/scanpydoc/issues/31)
 docutils<0.17 # pinned due to issue #175 (quantify-core)
 rich[jupyter]
 jupytext
-
+qcodes>=0.28.0 # document Parameter attributes
 
 # scheduler-only
 
 cachecontrol # see issue quantify-scheduler#129
 lockfile # see issue quantify-scheduler#129
 pytest-mpl
-sphinx-toolbox  # required by enum_tools when building the docs, 2.4.1 requires sphinx==3.3.1
-enum_tools # requires sphinx-toolbox when building docs
 
 # Prospector
 prospector

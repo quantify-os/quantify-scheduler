@@ -131,7 +131,7 @@ class ScheduleGettableSingleChannel:
         self._compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.quantum_device.generate_device_config(),
-            hardware_mapping=self.quantum_device.generate_hardware_config(),
+            hardware_cfg=self.quantum_device.generate_hardware_config(),
         )
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
