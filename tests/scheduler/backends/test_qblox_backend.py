@@ -798,12 +798,12 @@ def test_auto_wait(empty_qasm_program):
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
-    expanded_val = QASMProgram._expand_from_normalised_range(
+    expanded_val = QASMProgram.expand_from_normalised_range(
         1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
     )
     assert expanded_val == constants.IMMEDIATE_SZ_WAIT // 2
     with pytest.raises(ValueError):
-        QASMProgram._expand_from_normalised_range(
+        QASMProgram.expand_from_normalised_range(
             10, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
         )
 

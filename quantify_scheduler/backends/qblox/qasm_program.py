@@ -290,13 +290,13 @@ class QASMProgram:
                 f"{repr(operation)}"
             )
 
-        awg_gain_path0_imm = self._expand_from_normalised_range(
+        awg_gain_path0_imm = self.expand_from_normalised_range(
             voltage_path0 / max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_0",
             operation,
         )
-        awg_gain_path1_imm = self._expand_from_normalised_range(
+        awg_gain_path1_imm = self.expand_from_normalised_range(
             voltage_path1 / max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_1",
@@ -310,7 +310,7 @@ class QASMProgram:
         )
 
     @staticmethod
-    def _expand_from_normalised_range(
+    def expand_from_normalised_range(
         val: float,
         immediate_size: int,
         param: Optional[str] = None,
