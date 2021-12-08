@@ -330,7 +330,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         if start_amp_immediate < 0:
             start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
 
-        self._generate_staircase_loop(
+        self._generate_staircase(
             qasm_program,
             start_amp_immediate,
             amp_step_immediate,
@@ -338,7 +338,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
             num_steps,
         )
 
-    def _generate_staircase_loop(
+    def _generate_staircase(
         self,
         qasm_program: QASMProgram,
         start_amp_immediate: int,
@@ -346,6 +346,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         step_duration_ns: int,
         num_steps: int,
     ):
+        """Generates the actual staircase."""
         with qasm_program.temp_register(2) as (offs_reg, offs_reg_zero):
             qasm_program.emit(
                 q1asm_instructions.SET_AWG_GAIN,
@@ -399,6 +400,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         offs_reg_zero: str,
         amp_step_immediate: int,
     ):
+        """Generates the inner part of the loop."""
         if self.output_mode == "imag":
             qasm_program.emit(
                 q1asm_instructions.SET_AWG_OFFSET, offs_reg_zero, offs_reg
