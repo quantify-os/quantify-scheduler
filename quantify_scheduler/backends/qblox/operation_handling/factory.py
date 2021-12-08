@@ -32,7 +32,7 @@ def _get_acquisition_strategy(
         if protocol == "trace" and operation.data["bin_mode"] == BinMode.APPEND.value:
             raise ValueError(
                 f"Trace acquisition does not support APPEND bin mode.\n\n"
-                f"Acquisition {repr(operation)} caused this exception to occur."
+                f"{repr(operation)} caused this exception to occur."
             )
         return acquisitions.SquareAcquisitionStrategy(operation)
     elif protocol == "weighted_integrated_complex":
