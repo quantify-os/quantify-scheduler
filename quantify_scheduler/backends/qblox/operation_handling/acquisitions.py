@@ -154,7 +154,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             _, _, waveform_index = helpers.add_to_wf_dict_if_unique(
                 wf_dict, waveform_data
             )
-            waveform_indices[idx] = waveform_index
+            waveform_indices.append(waveform_index)
 
         self.waveform_index0, self.waveform_index1 = waveform_indices
 
