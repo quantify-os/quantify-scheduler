@@ -396,29 +396,24 @@ class QASMProgram:
 
         .. jupyter-execute::
 
-            import inspect, json
-            from quantify_scheduler import Schedule
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-            from quantify_scheduler.schemas.examples import utils
-            from quantify_scheduler.backends.qblox import (
-                instrument_compilers, compiler_container
+            from quantify_scheduler.backends.qblox import register_manager, constants
+            from quantify_scheduler.backends.types.qblox import (
+                StaticHardwareProperties,
+                MarkerConfiguration,
+                BoundedParameter,
             )
 
-            HARDWARE_MAPPING = utils.load_json_example_scheme(
-                "qblox_test_mapping.json"
+            static_hardware_properties = static_hw_properties = StaticHardwareProperties(
+                instrument_type="QCM",
+                max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
+                max_awg_output_voltage=2.5,
+                marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+                mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
             )
+            qasm = QASMProgram(static_hardware_properties, register_manager.RegisterManager())
 
-            sched = Schedule("example")
-            container = compiler_container.CompilerContainer(sched)
-            qcm = instrument_compilers.QcmModule(
-                container,
-                "qcm0",
-                total_play_time=10,
-                hw_mapping=HARDWARE_MAPPING["qcm0"]
-            )
-            qasm = QASMProgram(qcm.sequencers["seq0"])
-
-            with qasm.loop(label='repeat', repetitions=10):
+            with qasm.loop(label="repeat", repetitions=10):
                 qasm.auto_wait(100)
 
             qasm.instructions
