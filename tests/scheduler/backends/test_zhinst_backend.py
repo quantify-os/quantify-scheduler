@@ -883,8 +883,12 @@ def test_compile_backend_with_undefined_local_oscillator(
     {
         "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
         "local_oscillators": [{
-            "name": "lo0",
-            "frequency": 4.8e9
+            "unique_name": "lo0",
+            "instrument_name": "lo0",
+            "frequency":
+                {
+                    "frequency": 4.8e9
+                }
         }],
         "devices": [
             {
@@ -929,12 +933,20 @@ def test_compile_backend_with_duplicate_local_oscillator(
       "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
       "local_oscillators": [
         {
-          "name": "lo0",
-          "frequency": 4.7e9
+          "unique_name": "lo0",
+          "instrument_name": "lo_rs_sgs100a",
+          "frequency":
+            {
+                "frequency": 4.7e9
+            }
         },
         {
-          "name": "lo0",
-          "frequency": 4.8e9
+          "unique_name": "lo0",
+          "instrument_name": "lo_rs_sgs100a",
+          "frequency":
+            {
+                "frequency": 4.8e9
+            }
         }
       ],
       "devices": [
