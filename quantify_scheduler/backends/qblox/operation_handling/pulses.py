@@ -203,14 +203,14 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this pulse. If the pulse is at least twice the stitching duration, a loop will
+        be used.
 
         Parameters
         ----------
         qasm_program
-
-        Returns
-        -------
-
+            The QASMProgram to add the assembly instructions to.
         """
         duration = self.operation_info.duration
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
@@ -268,13 +268,42 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
 
 
 class StaircasePulseStrategy(PulseStrategyPartial):
+    """
+    If this strategy is used, a staircase is generated through offset instructions,
+    without using waveform memory.
+    """
+
     def __init__(self, operation_info: types.OpInfo, output_mode: str):
+        """
+        Constructor for StaircasePulseStrategy.
+
+        Parameters
+        ----------
+        operation_info
+            The operation info that corresponds to this pulse.
+        output_mode
+            Either "real", "imag" or complex depending on whether the signal affects
+            only path0, path1 or both.
+        """
         super().__init__(operation_info, output_mode)
 
     def generate_data(self, wf_dict: Dict[str, Any]):
+        """Returns None as no waveforms are generated in this strategy."""
         return None
 
     def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this pulse.
+
+        Steps are generated using offset instructions. Using output_mode "real" or
+        "complex" will cause the signal to appear on path0, "imag" on path1.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         pulse = self.operation_info
         num_steps = pulse.data["num_steps"]
         start_amp = pulse.data["start_amp"]
