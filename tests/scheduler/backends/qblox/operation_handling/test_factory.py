@@ -166,7 +166,7 @@ def test_trace_append_exception():
     assert (
         exc.value.args[0]
         == "Trace acquisition does not support APPEND bin mode.\n\nAcquisition  "
-           "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'trace', "
-           "'acq_channel': 0, 'acq_index': 0, 'bin_mode': <BinMode.APPEND: "
-           "'append'>} caused this exception to occur."
+        "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'trace', "
+        "'acq_channel': 0, 'acq_index': 0, 'bin_mode': <BinMode.APPEND: "
+        "'append'>} caused this exception to occur."
     )
