@@ -63,6 +63,36 @@ qasm_program
 .. automodule:: quantify_scheduler.backends.qblox.qasm_program
     :members:
 
+operation_handling
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling
+    :members:
+
+base
+""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.base
+    :members:
+
+factory
+"""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.factory
+    :members:
+
+pulses
+""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.pulses
+    :members:
+
+acquisitions
+""""""""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.acquisitions
+    :members:
+
 
 zhinst
 ------
