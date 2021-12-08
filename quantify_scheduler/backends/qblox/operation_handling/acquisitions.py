@@ -21,7 +21,10 @@ from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instruct
 
 
 class AcquisitionStrategyPartial(IOperationStrategy):
+    """Contains the logic shared between all the acquisitions."""
+
     def __init__(self, operation_info: types.OpInfo):
+        """Constructor of superclass."""
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
         self.acq_channel = operation_info.data["acq_channel"]
@@ -30,6 +33,18 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         mode acquisitions."""
 
     def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition. This function calls either acquire_average or acquire_append,
+        depending on the bin mode.
+
+        The acquire_average and acquire_append are to be implemented in the subclass.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         if qasm_program.time_last_acquisition_triggered is not None:
             if (
                 qasm_program.elapsed_time - qasm_program.time_last_acquisition_triggered
@@ -61,18 +76,23 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
     @abstractmethod
     def acquire_average(self, qasm_program: QASMProgram):
-        pass
+        """Adds the assembly to the program for a bin_mode==AVERAGE acquisition."""
 
     @abstractmethod
     def acquire_append(self, qasm_program: QASMProgram):
-        pass
+        """Adds the assembly to the program for a bin_mode==APPEND acquisition."""
 
     @property
     def operation_info(self) -> types.OpInfo:
+        """Property for retrieving the operation info."""
         return self._acq_info
 
 
 class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
+    """
+    Performs a square acquisition (so without acquisition weights).
+    """
+
     def generate_data(self, wf_dict: Dict[str, Any]) -> None:
         return None
 
