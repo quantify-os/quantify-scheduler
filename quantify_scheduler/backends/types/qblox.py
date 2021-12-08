@@ -55,7 +55,7 @@ class StaticHardwareProperties:
     calibration."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class OpInfo(DataClassJsonMixin):
     """
     Data structure containing all the information describing a pulse or acquisition
