@@ -71,6 +71,7 @@ class TestAcquisitionStrategyPartial:
         strategy = MockAcquisition(op_info)
         append_mock = mocker.patch.object(strategy, "acquire_append")
         average_mock = mocker.patch.object(strategy, "acquire_average")
+        strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
 
         # act
         strategy.insert_qasm(empty_qasm_program)
@@ -181,9 +182,7 @@ class TestSquareAcquisitionStrategy:
         strategy = acquisitions.SquareAcquisitionStrategy(
             types.OpInfo(name="", data=data, timing=0)
         )
-        strategy.operation_info.bin_idx_register = (
-            qasm.register_manager.allocate_register()
-        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
         strategy.generate_data({})
 
         # act

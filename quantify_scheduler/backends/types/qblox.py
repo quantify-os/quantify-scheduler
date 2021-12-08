@@ -72,9 +72,6 @@ class OpInfo(DataClassJsonMixin):
     Note that this is a combination of the start time "t_abs" of the schedule
     operation, and the t0 of the pulse/acquisition which specifies a time relative
     to "t_abs"."""
-    bin_idx_register: Optional[str] = None
-    """The register used to keep track of the bin index, only not None for append mode
-    acquisitions."""
 
     @property
     def duration(self) -> float:

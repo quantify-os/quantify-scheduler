@@ -25,6 +25,9 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
         self.acq_channel = operation_info.data["acq_channel"]
+        self.bin_idx_register: Optional[str] = None
+        """The register used to keep track of the bin index, only not None for append
+        mode acquisitions."""
 
     def insert_qasm(self, qasm_program: QASMProgram):
         if qasm_program.time_last_acquisition_triggered is not None:
@@ -45,8 +48,10 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
         if self.bin_mode == BinMode.AVERAGE:
+            assert self.bin_idx_register is None
             self.acquire_average(qasm_program)
         elif self.bin_mode == BinMode.APPEND:
+            assert self.bin_idx_register is not None
             self.acquire_append(qasm_program)
         else:
             raise RuntimeError(
@@ -76,7 +81,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         self._acquire_square(qasm_program, bin_idx)
 
     def acquire_append(self, qasm_program: QASMProgram):
-        acq_bin_idx_reg = self.operation_info.bin_idx_register
+        acq_bin_idx_reg = self.bin_idx_register
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
@@ -168,7 +173,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.elapsed_time += constants.GRID_TIME
 
     def acquire_append(self, qasm_program: QASMProgram):
-        acq_bin_idx_reg = self.operation_info.bin_idx_register
+        acq_bin_idx_reg = self.bin_idx_register
 
         with qasm_program.temp_register(2) as (acq_idx0_reg, acq_idx1_reg):
             qasm_program.emit(q1asm_instructions.NEW_LINE)

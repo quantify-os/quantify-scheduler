@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from functools import partial
 
-import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -27,6 +26,9 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
+    AcquisitionStrategyPartial,
+)
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
 )
@@ -669,7 +671,7 @@ class Sequencer:
         return str(qasm)
 
     def _initialize_append_mode_registers(
-        self, qasm: QASMProgram, acquisitions: List[IOperationStrategy]
+        self, qasm: QASMProgram, acquisitions: List[AcquisitionStrategyPartial]
     ):
         """
         Adds the instructions to initialize the registers needed to use the append
@@ -701,7 +703,7 @@ class Sequencer:
                     comment=f"Initialize acquisition bin_idx for "
                     f"ch{acq.operation_info.data['acq_channel']}",
                 )
-            acq.operation_info.bin_idx_register = acq_bin_idx_reg
+            acq.bin_idx_register = acq_bin_idx_reg
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
