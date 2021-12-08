@@ -3,12 +3,41 @@
     "mode": "calibration",
     "local_oscillators": [
         {
-            "name": "ic_mw_qubit",
-            "frequency": null
+            "unique_name": "mw_qubit_ch1",
+            "instrument_name": "mw_qubit",
+            "generic_icc_name": "ic_generic",
+            "frequency":
+                {
+                    "ch_1.frequency": null
+                },
+            "power":
+                {
+                    "power": 13
+                }
         },
         {
-            "name": "ic_mw_readout",
-            "frequency": null
+            "unique_name": "mw_qubit_ch2",
+            "instrument_name": "mw_qubit",
+            "frequency":
+                {
+                    "ch_2.frequency": null
+                },
+            "power":
+                {
+                    "ch_2.power": 10
+                }
+        },
+        {
+            "unique_name": "mw_readout",
+            "instrument_name": "mw_readout",
+            "frequency":
+                {
+                    "frequency": null
+                },
+            "power":
+                {
+                    "power": 16
+                }
         }
     ],
     "devices": [
@@ -24,11 +53,12 @@
                 "mode": "complex",
                 "modulation": {
                     "type": "premod",
-                    "interm_freq": 0
+                    "interm_freq": -100000000.0
                 },
-                "local_oscillator": "ic_mw_qubit",
+                "local_oscillator": "mw_qubit_ch1",
                 "clock_frequency": 6000000000.0,
                 "line_trigger_delay": 1.91e-07,
+                "latency": 1e-08,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -37,9 +67,9 @@
                 "gain2": 1,
                 "mixer_corrections": {
                     "amp_ratio": 0.95,
-                    "phase_error": 90,
-                    "dc_offset_I": -0.542,
-                    "dc_offset_Q": -0.328
+                    "phase_error": 0.07,
+                    "dc_offset_I": -0.0542,
+                    "dc_offset_Q": -0.0328
                 }
             },
             "channel_1": {
@@ -48,11 +78,12 @@
                 "mode": "complex",
                 "modulation": {
                     "type": "premod",
-                    "interm_freq": 0
+                    "interm_freq": -100000000.0
                 },
-                "local_oscillator": "ic_mw_qubit",
+                "local_oscillator": "mw_qubit_ch2",
                 "clock_frequency": 6000000000.0,
                 "line_trigger_delay": 1.91e-07,
+                "latency": 1e-08,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -61,9 +92,9 @@
                 "gain2": 1,
                 "mixer_corrections": {
                     "amp_ratio": 0.95,
-                    "phase_error": 90,
-                    "dc_offset_I": -0.542,
-                    "dc_offset_Q": -0.328
+                    "phase_error": 0.07,
+                    "dc_offset_I": 0.042,
+                    "dc_offset_Q": 0.028
                 }
             }
         },
@@ -77,9 +108,9 @@
                 "mode": "real",
                 "modulation": {
                     "type": "premod",
-                    "interm_freq": 0
+                    "interm_freq": 200000000.0
                 },
-                "local_oscillator": "ic_mw_readout",
+                "local_oscillator": "mw_readout",
                 "clock_frequency": 6000000000.0,
                 "triggers": [
                     2

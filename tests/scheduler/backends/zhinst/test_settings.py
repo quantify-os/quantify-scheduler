@@ -51,11 +51,11 @@ def test_zi_settings_equality(tmp_test_data_dir):
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6
-    comp_sched_a = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched_a = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = -100e6
-    comp_sched_b = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
-    comp_sched_c = qcompile(sched, device_cfg=device_cfg, hardware_mapping=hw_cfg)
+    comp_sched_b = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    comp_sched_c = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # Act
     sett_a = comp_sched_a.compiled_instructions["ic_uhfqa0"].settings_builder.build()
@@ -99,7 +99,7 @@ def test_zi_settings_apply(mocker):
     instrument = make_ufhqa(mocker)
     apply_fn = mocker.Mock()
     daq_settings = [settings.ZISetting("daq/foo/bar", 0, apply_fn)]
-    awg_settings = [(0, settings.ZISetting("awg/foo/bar", 1, apply_fn))]
+    awg_settings = {0: settings.ZISetting("awg/foo/bar", 1, apply_fn)}
 
     # Act
     zi_settings = settings.ZISettings(daq_settings, awg_settings)
@@ -144,7 +144,7 @@ def test_zi_settings_as_dict(mocker):
     # Arrange
     apply_fn = mocker.Mock()
     daq_settings = [settings.ZISetting("daq/foo/bar", 0, apply_fn)]
-    awg_settings = [(0, settings.ZISetting("awg/foo/bar", 1, apply_fn))]
+    awg_settings = {0: settings.ZISetting("awg/foo/bar", 1, apply_fn)}
 
     # Act
     zi_settings = settings.ZISettings(daq_settings, awg_settings)
@@ -159,16 +159,13 @@ def test_zi_settings_serialize_wave(mocker):
     instrument = make_ufhqa(mocker)
     wave = np.ones(48)
     daq_settings = [settings.ZISetting("awgs/0/waveform/waves/0", wave, mocker.Mock())]
-    awg_settings = [
-        (
-            0,
-            settings.ZISetting(
-                "compiler/sourcestring",
-                "wave w0 = gauss(128, 64, 32);",
-                mocker.Mock(),
-            ),
-        )
-    ]
+    awg_settings = {
+        0: settings.ZISetting(
+            "compiler/sourcestring",
+            "wave w0 = gauss(128, 64, 32);",
+            mocker.Mock(),
+        ),
+    }
 
     root = Path(".")
     touch = mocker.patch.object(Path, "touch")
@@ -221,7 +218,7 @@ def test_zi_settings_serialize_command_table(mocker):
     write_text = mocker.patch.object(Path, "write_text")
 
     # Act
-    zi_settings = settings.ZISettings(daq_settings, [])
+    zi_settings = settings.ZISettings(daq_settings, {})
     zi_settings.serialize(root, instrument)
 
     # Assert
@@ -245,24 +242,18 @@ def test_zi_settings_serialize_command_table(mocker):
 def test_zi_settings_serialize_compiler_source(mocker):
     # Arrange
     instrument = make_ufhqa(mocker)
-    awg_settings = [
-        (
-            0,
-            settings.ZISetting(
-                "compiler/sourcestring",
-                "wave w0 = gauss(128, 64, 32);",
-                mocker.Mock(),
-            ),
+    awg_settings = {
+        0: settings.ZISetting(
+            "compiler/sourcestring",
+            "wave w0 = gauss(128, 64, 32);",
+            mocker.Mock(),
         ),
-        (
-            2,
-            settings.ZISetting(
-                "compiler/sourcestring",
-                "wave w0 = gauss(128, 64, 32);",
-                mocker.Mock(),
-            ),
+        2: settings.ZISetting(
+            "compiler/sourcestring",
+            "wave w0 = gauss(128, 64, 32);",
+            mocker.Mock(),
         ),
-    ]
+    }
 
     root = Path(".")
     touch = mocker.patch.object(Path, "touch")
@@ -317,7 +308,7 @@ def test_zi_settings_serialize_integration_weights(mocker):
     write_text = mocker.patch.object(Path, "write_text")
 
     # Act
-    zi_settings = settings.ZISettings(daq_settings, [])
+    zi_settings = settings.ZISettings(daq_settings, {})
     zi_settings.serialize(root, instrument)
 
     # Assert
@@ -432,24 +423,18 @@ def test_awg_indexes(mocker):
     # Arrange
     instrument = mocker.create_autospec(base.ZIBaseInstrument, instance=True)
     instrument._serial = "dev1234"
-    awg_settings = [
-        (
-            0,
-            settings.ZISetting(
-                "compiler/sourcestring",
-                "wave w0 = gauss(128, 64, 32);",
-                mocker.Mock(),
-            ),
+    awg_settings = {
+        0: settings.ZISetting(
+            "compiler/sourcestring",
+            "wave w0 = gauss(128, 64, 32);",
+            mocker.Mock(),
         ),
-        (
-            1,
-            settings.ZISetting(
-                "compiler/sourcestring",
-                "wave w0 = gauss(128, 64, 32);",
-                mocker.Mock(),
-            ),
+        1: settings.ZISetting(
+            "compiler/sourcestring",
+            "wave w0 = gauss(128, 64, 32);",
+            mocker.Mock(),
         ),
-    ]
+    }
 
     # Act
     zi_settings = settings.ZISettings([], awg_settings)

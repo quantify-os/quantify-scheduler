@@ -24,3 +24,5 @@ Contributors
 * Pieter Eendebak <pieter.eendebak@tno.nl>
 * Gijs Vermariën <gijs@orangeqs.com>
 * Jordy Gloudemans <jgloudemans@qblox.com>
+* Damaz de Jong <ddejong@qblox.com>
+* Michiel Dubbelman <michiel@orangeqs.com>

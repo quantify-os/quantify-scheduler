@@ -1,6 +1,8 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+from __future__ import annotations
+
 from textwrap import dedent
 
 import pytest
@@ -14,7 +16,7 @@ from quantify_scheduler.backends.zhinst.seqc_il_generator import (
 )
 
 
-def test___declare_local():
+def test___declare_local() -> None:
     # Arrange
     gen = SeqcILGenerator()
 
@@ -25,11 +27,11 @@ def test___declare_local():
         gen._declare_local("wave", "w0")
 
     # Assert
-    assert "Duplicate local variable 'w0'!" == str(execinfo.value)
+    assert str(execinfo.value) == "Duplicate local variable 'w0'!"
     assert gen._variables["w0"] == ("wave w0", None)
 
 
-def test___assign_local():
+def test___assign_local() -> None:
     # Arrange
     gen = SeqcILGenerator()
 
@@ -41,11 +43,11 @@ def test___assign_local():
     gen._assign_local("w0", "custom_wave")
 
     # Assert
-    assert "Undefined reference 'w0'!" == str(execinfo.value)
+    assert str(execinfo.value) == "Undefined reference 'w0'!"
     assert gen._variables["w0"] == ("wave w0", "custom_wave")
 
 
-def test__scope():
+def test__scope() -> None:
     # Arrange
     gen = SeqcILGenerator()
 
@@ -72,10 +74,10 @@ def test__scope():
     assert level2 == 2
     assert level3 == 1
     assert level4 == 0
-    assert "SeqcILGenerator scope level is to low!" == str(execinfo.value)
+    assert str(execinfo.value) == "SeqcILGenerator scope level is to low!"
 
 
-def test_declare_var_and_assign():
+def test_declare_var_and_assign() -> None:
     # Arrange
     gen = SeqcILGenerator()
     name: str = "foo"
@@ -88,7 +90,7 @@ def test_declare_var_and_assign():
     assert gen._variables[name] == (f"var {name}", f"{value};")
 
 
-def test_declare_wave_and_assign():
+def test_declare_wave_and_assign() -> None:
     # Arrange
     gen = SeqcILGenerator()
     name: str = "foo"
@@ -108,7 +110,7 @@ def test_declare_wave_and_assign():
         (1, "waitDigTrigger(1, 1);"),
     ],
 )
-def test_emit_wait_dig_trigger(index: int, expected: str):
+def test_emit_wait_dig_trigger(index: int, expected: str) -> None:
     # Arrange
     gen = SeqcILGenerator()
 
@@ -119,7 +121,7 @@ def test_emit_wait_dig_trigger(index: int, expected: str):
     assert gen._program[-1] == (0, expected)
 
 
-def test__generate():
+def test__generate() -> None:
     # Arrange
     gen = SeqcILGenerator()
 
@@ -185,7 +187,7 @@ def test__generate():
     assert program == expected
 
 
-def test_generate_uninitalized_var():
+def test_generate_uninitalized_var() -> None:
     # Arrange
     gen = SeqcILGenerator()
     expected = dedent(
@@ -207,12 +209,6 @@ def test_generate_uninitalized_var():
 @pytest.mark.parametrize(
     "delay,expected_wait,device_type,expected_elapsed",
     [
-        (
-            0,
-            0,
-            DeviceType.HDAWG,
-            SEQC_INSTR_CLOCKS[DeviceType.HDAWG][SeqcInstructions.WAIT],
-        ),
         (3, 0, DeviceType.HDAWG, 3),
         (6, 3, DeviceType.HDAWG, 6),
         (
@@ -227,17 +223,19 @@ def test_generate_uninitalized_var():
 )
 def test_add_wait(
     delay: int, expected_wait: int, device_type: DeviceType, expected_elapsed: int
-):
+) -> None:
     # Arrange
     gen = SeqcILGenerator()
     n_instr = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.WAIT]
     if device_type == DeviceType.HDAWG:
         if delay - n_instr < 0:
-            expected_instruction = f"wait({expected_wait});\t//  n_instr={n_instr} <--"
+            expected_instruction = (
+                f"wait({expected_wait});\t\t//  n_instr={n_instr} <--"
+            )
         else:
-            expected_instruction = f"wait({expected_wait});\t//  n_instr={n_instr}"
+            expected_instruction = f"wait({expected_wait});\t\t//  n_instr={n_instr}"
     elif device_type == DeviceType.UHFQA:
-        expected_instruction = f"wait({expected_wait});\t//  n_instr={delay}"
+        expected_instruction = f"wait({expected_wait});\t\t//  n_instr={delay}"
 
     # Act
     elapsed_clocks = add_wait(gen, delay, device_type)
@@ -245,3 +243,13 @@ def test_add_wait(
     # Assert
     assert elapsed_clocks == expected_elapsed
     assert gen._program[-1] == (0, expected_instruction)
+
+
+def test_add_wait_raises():
+    gen = SeqcILGenerator()
+    with pytest.raises(ValueError) as execinfo:
+        add_wait(gen, delay=2, device_type=DeviceType.HDAWG)
+    assert (
+        str(execinfo.value)
+        == "Minimum number of clocks to wait must be at least 3 (HDAWG) or 0 (UHFQA)!"
+    )

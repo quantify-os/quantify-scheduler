@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Constants for compilation to Qblox hardware."""
 
+
 IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
 """Size of gain instruction immediates in Q1ASM programs."""
 IMMEDIATE_SZ_WAIT = pow(2, 16) - 1
@@ -39,3 +40,6 @@ MAX_MIXER_AMP_RATIO = 2.0
 as Q/I."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
+
+DOWNCONVERTER_FREQ: float = 4.4e9
+"""LO frequency used by the Qblox downconverter."""

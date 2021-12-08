@@ -287,7 +287,7 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
 
 
 @pytest.mark.parametrize(
-    "base_clock,expected",
+    "base_sampling_rate,expected",
     [
         (
             2.4e9,
@@ -329,10 +329,10 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
         ),
     ],
 )
-def test_get_clock_rates(base_clock: float, expected: Dict[int, int]):
+def test_get_sampling_rates(base_sampling_rate: float, expected: Dict[int, int]):
 
     # Act
-    values = zi_helpers.get_clock_rates(base_clock)
+    values = zi_helpers.get_sampling_rates(base_sampling_rate)
 
     # Assert
     assert values == expected
