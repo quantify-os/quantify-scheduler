@@ -21,7 +21,9 @@ def get_operation_strategy(
 ) -> base.IOperationStrategy:
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
-    return _get_pulse_strategy(operation, instruction_generated_pulses_enabled, output_mode)
+    return _get_pulse_strategy(
+        operation, instruction_generated_pulses_enabled, output_mode
+    )
 
 
 def _get_acquisition_strategy(
