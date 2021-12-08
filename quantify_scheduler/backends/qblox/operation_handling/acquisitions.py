@@ -163,12 +163,33 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 
 
 class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
+    """
+    Performs a weighted acquisition.
+    """
+
     def __init__(self, operation_info: types.OpInfo):
+        """
+        Constructor for this strategy.
+
+        Parameters
+        ----------
+        operation_info
+            The operation info that corresponds to this acquisition.
+        """
         super().__init__(operation_info)
         self.waveform_index0: Optional[int] = None
         self.waveform_index1: Optional[int] = None
 
     def generate_data(self, wf_dict: Dict[str, Any]):
+        """
+        Generates the waveform data for both acquisition weights.
+
+        Parameters
+        ----------
+        wf_dict
+            The dictionary to add the waveform to. N.B. the dictionary is modified in
+            function.
+        """
         waveform_indices = []
         for idx, parameterized_waveform in enumerate(
             self.operation_info.data["waveforms"]
@@ -199,6 +220,15 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         self.waveform_index0, self.waveform_index1 = waveform_indices
 
     def acquire_average(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming averaging is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         bin_idx = self.operation_info.data["acq_index"]
 
         qasm_program.emit(
@@ -213,6 +243,16 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.elapsed_time += constants.GRID_TIME
 
     def acquire_append(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming append is used. Registers will be used for the weight
+        indexes and the bin index.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
         acq_bin_idx_reg = self.bin_idx_register
 
         with qasm_program.temp_register(2) as (acq_idx0_reg, acq_idx1_reg):
