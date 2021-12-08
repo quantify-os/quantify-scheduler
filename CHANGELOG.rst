@@ -2,15 +2,28 @@
 Changelog
 =========
 
-Unreleased changes
-------------------
+0.5.2 Fixes to backends, and other incremental fixes  (2021-12-08)
+------------------------------------------------------------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Dependency on `jsonschema` has been replaced with `fastjsonschema`. (!284, !293)
+* Zhinst hardware config json schema has changed. See the example schema. (!283)
+* In `hardware_compile` function, the `hardware_map` is changed to `hardware_cfg` parameter. (!279)
+* Remove enum tools dependency (!270)
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Compilation - The `determine_absolute_scheduling` function now sorts the list of labels in the timing constraints, and then a binary search (via `np.searchsorted`) is applied. (!272, !274)
-* Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
-* Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
 * Compilation - Make `device_cfg` an optional argument of qcompile(!281)
 * Compilation - renamed the hardware_mapping argument of qcompile into hardware_cfg (#165, !279)
 * Compilation - Introduced the hardware_compile function to perform the hardware compilation returning a CompiledSchedule (#224, !279)
+* Docs - Updating user guide to mention correctly the QuantumDevice and ScheduleGettable(s) available. (!209)
+* Infrastructure - Adds rich package in the requirements since tutorials use it. (!276)
+* Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
+* Operations - Resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
+* Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
 * Zhinst backend - Large parts of the Zhinst backend have been rewritten. This should resolve a range of issues. (!263)
     - Calculation of the timelines for different operations now makes using of a timing table, improving code readability and debugability.
     - Timing issues related to triggering should be resolved (#218)
@@ -18,11 +31,20 @@ Unreleased changes
     - Acquisition is now done using the StartQA instruction (#213)
     - error handling in the Zhinst backend has been improved catching several exceptions at compile time of the schedule instead of manifesting in unexpected results during runtime.
     - Local oscillators through the ZI backend uses the GenericInstrumentCoordinatorComponent. Configures other parameters other than frequency. (!283, #204)
-* Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package
-    - Added support for the Qblox Downconverter
-* Operations - resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
-* Bugfix - For calculating the pulse area, the mathematical area is used instead of area of sampled pulse. (!242, !286)
+* Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package (!290)
+    - Added support for the Qblox Downconverter (!297)
+    - Added workaround for staircase_amplitude. (!292)
+    - Fix looped acquisition integration time, fix acquire index offset by one (!291)
+    - Qblox instruments version == 0.5.3 (!289)
+    - Fix sequencer_sync_en not being reset in the qblox instrument coordinator component. (!285)
+    - Fix rounding of time to samples in qblox backend (!282)
+    - Fix pulse stitching at zero amplitude. (!280)
+    - Allow instruction generated staircase with modulation (!278)
 * Utilities - Improve JSON validation speed (!284)
+* Utilities - Improve operation deserialization speed (!273)
+* Bugfix - For calculating the pulse area, the mathematical area is used instead of area of sampled pulse. (!242, !286)
+* Bugfix - Fix for plot window operations (!294)
+
 
 0.5.1 Incremental fixes, refactoring, and addition of convenience methods and classes (2021-11-11)
 --------------------------------------------------------------------------------------------------
