@@ -50,12 +50,6 @@ instrument_compilers
 .. automodule:: quantify_scheduler.backends.qblox.instrument_compilers
     :members:
 
-non_generic
-~~~~~~~~~~~
-
-.. automodule:: quantify_scheduler.backends.qblox.non_generic
-    :members:
-
 
 q1asm_instructions
 ~~~~~~~~~~~~~~~~~~
