@@ -82,7 +82,7 @@ def make_generic_qcodes_instruments(request):
 def test_initialize(make_generic_qcodes_instruments):
     test_instruments = make_generic_qcodes_instruments
     generic_icc = test_instruments["generic_icc"]
-    assert generic_icc.name == "ic_generic_instrument_coordinator_component"
+    assert generic_icc.name == "ic_generic"
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])

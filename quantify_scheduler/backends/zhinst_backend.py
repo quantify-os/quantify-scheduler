@@ -25,6 +25,9 @@ from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import Resource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+from quantify_scheduler.instrument_coordinator.components.generic import (
+    DEFAULT_NAME as generic_icc_default_name,
+)
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -514,13 +517,13 @@ def _parse_local_oscillators(data: Dict[str, Any]) -> Dict[str, common.LocalOsci
         data, many=True
     )
     for local_oscillator in lo_list:
-        if local_oscillator.name in local_oscillators:
+        if local_oscillator.unique_name in local_oscillators:
             raise RuntimeError(
-                f"Duplicate entry LocalOscillators '{local_oscillator.name}' in "
+                f"Duplicate entry LocalOscillators '{local_oscillator.unique_name}' in "
                 "hardware configuration!"
             )
 
-        local_oscillators[local_oscillator.name] = local_oscillator
+        local_oscillators[local_oscillator.unique_name] = local_oscillator
 
     return local_oscillators
 
@@ -912,19 +915,23 @@ def _add_lo_config(
     """
     # N.B. when using baseband pulses no LO will be associated to the channel.
     # this case is caught in the case where the channel.clock is not specified.
-    name = channel.local_oscillator
+    unique_name = channel.local_oscillator
 
-    if name not in local_oscillators:
-        raise KeyError(f'Missing configuration for LocalOscillator "{name}"')
+    if unique_name not in local_oscillators:
+        raise KeyError(f'Missing configuration for LocalOscillator "{unique_name}"')
 
-    local_oscillator = local_oscillators[name]
+    local_oscillator = local_oscillators[unique_name]
+
+    # Get the power of the local oscillator
+    ((power_key, power_val),) = local_oscillator.power.items()
 
     # the frequencies from the config file
-    lo_freq = local_oscillator.frequency
+    ((lo_freq_key, lo_freq_val),) = local_oscillator.frequency.items()
+
     interm_freq = channel.modulation.interm_freq
 
-    if (lo_freq is not None) and (interm_freq is not None):
-        rf_freq = lo_freq + interm_freq
+    if (lo_freq_val is not None) and (interm_freq is not None):
+        rf_freq = lo_freq_val + interm_freq
     else:
         channel_clock_resource = resources.get(channel.clock)
         if channel_clock_resource is not None:
@@ -935,27 +942,41 @@ def _add_lo_config(
             # in the schedule.
             return
 
-    if lo_freq is None and interm_freq is not None:
-        lo_freq = rf_freq - interm_freq
-        local_oscillator.frequency = lo_freq
+    if lo_freq_val is None and interm_freq is not None:
+        lo_freq_val = rf_freq - interm_freq
+        local_oscillator.frequency[lo_freq_key] = lo_freq_val
 
-    elif interm_freq is None and lo_freq is not None:
-        interm_freq = rf_freq - lo_freq
+    elif interm_freq is None and lo_freq_val is not None:
+        interm_freq = rf_freq - lo_freq_val
         channel.modulation.interm_freq = interm_freq
 
-    elif interm_freq is None and lo_freq is None:
+    elif interm_freq is None and lo_freq_val is None:
         raise ValueError(
             "Either local oscillator frequency or channel intermediate frequency "
             f'must be set for LocalOscillator "{name}"'
         )
 
-    if local_oscillator.name in device_configs:
+    if local_oscillator.unique_name in device_configs:
         # the device_config currently only contains the frequency
-        if device_configs[local_oscillator.name] != lo_freq:
+        if device_configs[local_oscillator.unique_name].get("frequency") != lo_freq_val:
             raise ValueError(
-                f'Multiple frequencies assigned to LocalOscillator "{name}"'
+                f'Multiple frequencies assigned to LocalOscillator "{unique_name}"'
             )
-    device_configs[local_oscillator.name] = lo_freq
+
+    lo_config = {
+        f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
+        f"{local_oscillator.instrument_name}.{power_key}": power_val,
+    }
+
+    if local_oscillator.generic_icc_name:
+        generic_icc_name = local_oscillator.generic_icc_name
+    else:
+        generic_icc_name = f"ic_{generic_icc_default_name}"
+
+    if generic_icc_name in device_configs:
+        device_configs[generic_icc_name].update(lo_config)
+    else:
+        device_configs[generic_icc_name] = lo_config
 
 
 def _add_wave_nodes(
