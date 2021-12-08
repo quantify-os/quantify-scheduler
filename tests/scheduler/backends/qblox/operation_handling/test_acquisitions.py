@@ -207,15 +207,25 @@ class TestWeightedAcquisitionStrategy:
 
     def test_generate_data(self):
         # arrange
-        waveforms = [
-            {"wf_func": "quantify_scheduler.waveforms.square", "amp": 1, "duration": 1e-6},
-            {"wf_func": "quantify_scheduler.waveforms.square", "amp": 0, "duration": 1e-6},
+        duration = 1e-6
+        t_test = np.arange(0, duration, step=1e-9)
+        weights = [
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 1,
+                "duration": duration,
+            },
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 0,
+                "duration": duration,
+            },
         ]
         data = {
             "bin_mode": BinMode.AVERAGE,
             "acq_channel": 0,
             "acq_index": 0,
-            "waveforms": waveforms,
+            "waveforms": weights,
         }
         strategy = acquisitions.WeightedAcquisitionStrategy(
             types.OpInfo(name="", data=data, timing=0)
@@ -226,6 +236,9 @@ class TestWeightedAcquisitionStrategy:
         strategy.generate_data(wf_dict)
 
         # assert
-        answers = [np.ones(1000).tolist(), np.zeros(1000).tolist()]
+        answers = [
+            waveforms.square(t_test, amp=1).tolist(),
+            waveforms.square(t_test, amp=0).tolist(),
+        ]
         for idx, waveform in enumerate(wf_dict.values()):
-            assert waveform['data'] == answers[idx]
+            assert waveform["data"] == answers[idx]
