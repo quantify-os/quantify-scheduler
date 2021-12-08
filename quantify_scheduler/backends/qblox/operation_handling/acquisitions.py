@@ -194,8 +194,8 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                 q1asm_instructions.ACQUIRE_WEIGHED,
                 self.acq_channel,
                 acq_bin_idx_reg,
-                self.waveform_index0,
-                self.waveform_index1,
+                acq_idx0_reg,
+                acq_idx1_reg,
                 constants.GRID_TIME,
                 comment=f"Store acq in acq_channel:{self.acq_channel}, "
                 f"bin_idx:{acq_bin_idx_reg}",
