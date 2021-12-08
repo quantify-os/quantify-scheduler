@@ -242,3 +242,42 @@ class TestWeightedAcquisitionStrategy:
         ]
         for idx, waveform in enumerate(wf_dict.values()):
             assert waveform["data"] == answers[idx]
+
+    def test_acquire_average(self, empty_qasm_program):
+        # arrange
+        qasm = empty_qasm_program
+        weights = [
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 1,
+                "duration": 1e-6,
+            },
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 0,
+                "duration": 1e-6,
+            },
+        ]
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 2,
+            "acq_index": 12,
+            "waveforms": weights,
+        }
+        strategy = acquisitions.WeightedAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_average(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_weighed",
+                "2,12,0,1,4",
+                "# Store acq in acq_channel:2, bin_idx:12",
+            ]
+        ]
