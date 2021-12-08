@@ -138,3 +138,35 @@ def test_invalid_protocol_exception():
         " 1.2e-08, 'protocol': 'nonsense', 'acq_channel': 0, 'acq_index': 0,"
         " 'bin_mode': <BinMode.AVERAGE: 'average'>}."
     )
+
+
+def test_trace_append_exception():
+    # arrange
+    instruction_generated_pulses_enabled = True
+    output_mode = "complex"
+    op_info = OpInfo(
+        name="",
+        data={
+            "duration": 12e-9,
+            "protocol": "trace",
+            "acq_channel": 0,
+            "acq_index": 0,
+            "bin_mode": BinMode.APPEND,
+        },
+        timing=0,
+    )
+
+    # act
+    with pytest.raises(ValueError) as exc:
+        factory.get_operation_strategy(
+            op_info, instruction_generated_pulses_enabled, output_mode
+        )
+
+    # assert
+    assert (
+        exc.value.args[0]
+        == "Trace acquisition does not support APPEND bin mode.\n\nAcquisition  "
+           "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'trace', "
+           "'acq_channel': 0, 'acq_index': 0, 'bin_mode': <BinMode.APPEND: "
+           "'append'>} caused this exception to occur."
+    )
