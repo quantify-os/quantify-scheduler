@@ -281,3 +281,47 @@ class TestWeightedAcquisitionStrategy:
                 "# Store acq in acq_channel:2, bin_idx:12",
             ]
         ]
+
+    def test_acquire_append(self, empty_qasm_program):
+        # arrange
+        qasm = empty_qasm_program
+        weights = [
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 1,
+                "duration": 1e-6,
+            },
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 0,
+                "duration": 1e-6,
+            },
+        ]
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 2,
+            "acq_index": 12,
+            "waveforms": weights,
+        }
+        strategy = acquisitions.WeightedAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_append(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            ["", "", "", ""],
+            ["", "move", "0,R1", "# Store idx of acq I wave in R1"],
+            ["", "move", "1,R10", "# Store idx of acq Q wave in R10."],
+            [
+                "",
+                "acquire_weighed",
+                "2,R0,R1,R10,4",
+                "# Store acq in acq_channel:2, bin_idx:R0",
+            ],
+            ["", "", "", ""],
+        ]
