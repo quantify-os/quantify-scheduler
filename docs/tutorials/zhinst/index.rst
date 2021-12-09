@@ -1,5 +1,5 @@
-Tutorials Zurich Instruments Backend
-====================================
+Zurich Instruments Backend
+==========================
 
 
 Introduction
