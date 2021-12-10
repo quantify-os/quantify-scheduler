@@ -231,6 +231,8 @@ def pulse_diagram_plotly(
 
         for acq_info in operation["acquisition_info"]:
             port: str = acq_info["port"]
+            label = operation["name"]
+
             row = port_map[port] + 1
             t = t_constr["abs_time"] + acq_info["t0"]
             yref: str = f"y{row} domain" if row != 1 else "y domain"
@@ -242,7 +244,7 @@ def pulse_diagram_plotly(
                     marker=dict(
                         size=15,
                         color="rgba(0,0,0,.25)",
-                        symbol=["arrow-bar-left", "arrow-bar-right"]
+                        symbol=["arrow-bar-left", "arrow-bar-right"],
                     ),
                 ),
                 row=row,
@@ -256,7 +258,7 @@ def pulse_diagram_plotly(
                 y0=0,
                 x1=t + acq_info["duration"],
                 y1=1,
-                name="Hello",
+                name=label,
                 line=dict(
                     color="rgba(0,0,0,0)",
                     width=3,
