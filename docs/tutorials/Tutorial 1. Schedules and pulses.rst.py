@@ -42,7 +42,7 @@ sched = Schedule("Hello quantum world!")
 
 sched
 
-# %% [markdown]
+# %% [raw]
 # As we can see, our newly created schedule is still empty. We need to manually add operations to it. In the `quantify_scheduler` there are three types of operations: pulses, acquisitions and gates and all of these have explicit timing control. In this tutorial we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
 #
 # While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify_scheduler`. These pulses are described in the `pulse_library`. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
@@ -58,7 +58,7 @@ square_pulse = sched.add(
 
 sched
 
-# %% [markdown]
+# %% [raw]
 # You may have noticed that we passed a port and a clock to the pulse. These parameters specify where on our quantum device we are sending these pulses. The port marks the physical location on the chip, whilst the clock tracks the frequency of the signal. This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
 
 # %%
@@ -69,7 +69,7 @@ sched.add_resource(readout_clock)
 
 sched
 
-# %% [markdown]
+# %% [raw]
 # The `quantify_scheduler` provides several visualisation tools to show the schedule that you made, but in order to show these we first need to instruct the scheduler to calculate the pulse timings.
 #
 # Note that these plots are interactive and modulation is not shown by default.
@@ -97,7 +97,7 @@ sched.add(
 compilation.determine_absolute_timing(sched)
 pulse_diagram_plotly(sched)
 
-# %% [markdown]
+# %% [raw]
 # We can see that `rel_time=500e-9` schedules the pulse 500 ns shifted relative to the end of the `ref_op`. If no additional arguments are passed, operations are added directly after the operation that was added last.
 #
 # Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can chose to instead specify it relative to the beginning. This is done by passing `ref_pt='start'`.
@@ -115,7 +115,7 @@ sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 compilation.determine_absolute_timing(sched)
 pulse_diagram_plotly(sched)
 
-# %% [markdown]
+# %% [raw]
 # We see that we added a DRAG pulse to the schedule. Two things stand out:
 #
 # 1. The DRAG pulse is plotted seperately from the square pulse, this is because the we specified a different port for this pulse than we did for the square pulse.
@@ -162,5 +162,5 @@ sched = pulse_train_schedule(1, 200e-9, 300e-9, 5)
 compilation.determine_absolute_timing(sched)
 pulse_diagram_plotly(sched)
 
-# %% [markdown]
+# %% [raw]
 # Note that we used the `BasebandClockResource` as clock, which is always at 0 Hz and added automatically to the schedule for convienence. We can see that the pulses start every 500 ns and are 200 ns long.
