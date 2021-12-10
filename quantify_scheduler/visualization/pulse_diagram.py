@@ -244,6 +244,7 @@ def pulse_diagram_plotly(
                 go.Scatter(
                     x=[t, t + acq_info["duration"]],
                     y=[0, 0],
+                    name=label,
                     mode="markers",
                     marker=dict(
                         size=15,
