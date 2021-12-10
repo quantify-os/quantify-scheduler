@@ -5,17 +5,29 @@ Welcome to Quantify's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
    :glob:
 
    installation
    user_guide
-   tutorials/*
-   tutorials/qblox/index
-   tutorials/zhinst/index
    contributing
    authors
    changelog
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+   :glob:
+
+   tutorials/*
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Backends
+   :glob:
+
+   tutorials/qblox/index
+   tutorials/zhinst/index
 
 
 API Reference
