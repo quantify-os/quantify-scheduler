@@ -49,25 +49,25 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
                 offset_idx += 1
 
 
-def validate_pulse_info(pulse_info, port_map, t_constr, operation):
+def validate_operation_data(operation_data, port_map, t_constr, operation):
     """Validates if the pulse information is valid for visualization."""
-    if pulse_info["port"] not in port_map:
+    if operation_data["port"] not in port_map:
         # Do not draw pulses for this port
         return False
 
-    if pulse_info["port"] is None:
+    if operation_data["port"] is None:
         logger.warning(
             "Unable to sample pulse for pulse_info due to missing 'port' for "
             f"operation name={operation['name']} "
-            f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
+            f"id={t_constr['operation_repr']} operation_data={operation_data}"
         )
         return False
 
-    if pulse_info["wf_func"] is None:
+    if operation_data["wf_func"] is None:
         logger.warning(
             "Unable to sample pulse for pulse_info due to missing 'wf_func' for "
             f"operation name={operation['name']} "
-            f"id={t_constr['operation_repr']} pulse_info={pulse_info}"
+            f"id={t_constr['operation_repr']} operation_data={operation_data}"
         )
         return False
     return True
@@ -139,7 +139,9 @@ def pulse_diagram_plotly(
         operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, t_constr, operation
+            ):
                 continue
 
             # port to map the waveform too
@@ -231,6 +233,10 @@ def pulse_diagram_plotly(
 
         for acq_info in operation["acquisition_info"]:
             port: str = acq_info["port"]
+            if not validate_operation_data(
+                acq_info, port_map, t_constr, operation
+            ):
+                continue
             label = operation["name"]
 
             row = port_map[port] + 1
@@ -349,7 +355,9 @@ def sample_schedule(
         operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, t_constr, operation
+            ):
                 logging.info(f"Operation {operation} is not valid for plotting.")
 
             # times at which to evaluate waveform
@@ -381,7 +389,9 @@ def sample_schedule(
 
         for pulse_info in operation["pulse_info"]:
 
-            if not validate_pulse_info(pulse_info, port_map, t_constr, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, t_constr, operation
+            ):
                 continue
 
             # port to map the waveform too
