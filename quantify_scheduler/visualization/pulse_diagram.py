@@ -36,11 +36,11 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
 
     for t_constr in schedule.timing_constraints:
         operation = schedule.operations[t_constr["operation_repr"]]
-        for pulse_info in operation["pulse_info"]:
+        for operation_info in operation["pulse_info"] + operation["acquisition_info"]:
             if offset_idx == ports_length:
                 return
 
-            port = pulse_info["port"]
+            port = operation_info["port"]
             if port is None:
                 continue
 
@@ -211,6 +211,59 @@ def pulse_diagram_plotly(
                     col=1,
                 )
 
+            fig.update_xaxes(
+                row=row,
+                col=1,
+                tickformat=".2s",
+                hoverformat=".3s",
+                ticksuffix="s",
+                showgrid=True,
+            )
+            fig.update_yaxes(
+                row=row,
+                col=1,
+                tickformat=".2s",
+                hoverformat=".3s",
+                ticksuffix="V",
+                title=port,
+                range=[-1.1, 1.1],
+            )
+
+        for acq_info in operation["acquisition_info"]:
+            port: str = acq_info["port"]
+            row = port_map[port] + 1
+            t = t_constr["abs_time"] + acq_info["t0"]
+            yref: str = f"y{row} domain" if row != 1 else "y domain"
+            fig.add_trace(
+                go.Scatter(
+                    x=[t, t + acq_info["duration"]],
+                    y=[0, 0],
+                    mode="markers",
+                    marker=dict(
+                        size=15,
+                        color="rgba(0,0,0,.25)",
+                        symbol=["arrow-bar-left", "arrow-bar-right"]
+                    ),
+                ),
+                row=row,
+                col=1,
+            )
+            fig.add_shape(
+                type="rect",
+                xref="x",
+                yref=yref,
+                x0=t,
+                y0=0,
+                x1=t + acq_info["duration"],
+                y1=1,
+                name="Hello",
+                line=dict(
+                    color="rgba(0,0,0,0)",
+                    width=3,
+                ),
+                fillcolor="rgba(255,0,0,0.1)",
+                layer="below",
+            )
             fig.update_xaxes(
                 row=row,
                 col=1,
