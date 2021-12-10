@@ -89,9 +89,9 @@ pulse_diagram_plotly(sched)
 
 # %%
 sched.add(
-    pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro"), 
-    ref_op=square_pulse, 
-    rel_time=500e-9
+    pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro"),
+    ref_op=square_pulse,
+    rel_time=500e-9,
 )
 
 compilation.determine_absolute_timing(sched)
@@ -104,9 +104,11 @@ pulse_diagram_plotly(sched)
 
 # %%
 sched.add(
-    pulse_library.DRAGPulse(G_amp=.5, D_amp=.5, duration=1e-6, phase=0, port="q0:mw", clock="q0.01"), 
+    pulse_library.DRAGPulse(
+        G_amp=0.5, D_amp=0.5, duration=1e-6, phase=0, port="q0:mw", clock="q0.01"
+    ),
     ref_op=square_pulse,
-    ref_pt='start'
+    ref_pt="start",
 )
 sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 
@@ -129,18 +131,32 @@ pulse_diagram_plotly(sched)
 # %%
 from quantify_scheduler.resources import BasebandClockResource
 
-def pulse_train_schedule(amp: float, time_high: float, time_low: float, amount_of_pulses: int) -> Schedule:
+
+def pulse_train_schedule(
+    amp: float, time_high: float, time_low: float, amount_of_pulses: int
+) -> Schedule:
     sched = Schedule("Pulse train schedule")
     square_pulse = sched.add(
-        pulse_library.SquarePulse(amp=amp, duration=time_high, port="q0:fl", clock=BasebandClockResource.IDENTITY),
+        pulse_library.SquarePulse(
+            amp=amp,
+            duration=time_high,
+            port="q0:fl",
+            clock=BasebandClockResource.IDENTITY,
+        ),
     )
-    for _ in range(amount_of_pulses-1):
+    for _ in range(amount_of_pulses - 1):
         square_pulse = sched.add(
-            pulse_library.SquarePulse(amp=amp, duration=time_high, port="q0:fl", clock=BasebandClockResource.IDENTITY),
+            pulse_library.SquarePulse(
+                amp=amp,
+                duration=time_high,
+                port="q0:fl",
+                clock=BasebandClockResource.IDENTITY,
+            ),
             rel_time=time_low,
-            ref_op=square_pulse
+            ref_op=square_pulse,
         )
     return sched
+
 
 sched = pulse_train_schedule(1, 200e-9, 300e-9, 5)
 compilation.determine_absolute_timing(sched)
