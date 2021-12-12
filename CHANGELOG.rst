@@ -11,6 +11,7 @@ Unreleased changes
 * Compilation - Make `device_cfg` an optional argument of qcompile(!281)
 * Compilation - renamed the hardware_mapping argument of qcompile into hardware_cfg (#165, !279)
 * Compilation - Introduced the hardware_compile function to perform the hardware compilation returning a CompiledSchedule (#224, !279)
+* Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
 * Zhinst backend - Large parts of the Zhinst backend have been rewritten. This should resolve a range of issues. (!263)
     - Calculation of the timelines for different operations now makes using of a timing table, improving code readability and debugability.
     - Timing issues related to triggering should be resolved (#218)
@@ -19,6 +20,7 @@ Unreleased changes
     - error handling in the Zhinst backend has been improved catching several exceptions at compile time of the schedule instead of manifesting in unexpected results during runtime.
 * Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package
     - Added support for the Qblox Downconverter
+* Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
 * Operations - resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
 * Bugfix - For calculating the pulse area, the mathematical area is used instead of area of sampled pulse. (!242, !286)
 * Utilities - Improve JSON validation speed (!284)
