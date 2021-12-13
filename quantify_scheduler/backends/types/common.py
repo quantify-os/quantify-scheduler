@@ -69,15 +69,31 @@ class Modulation(DataClassJsonMixin):
 @dataclass
 class LocalOscillator(DataClassJsonMixin):
     """
-    The backend LocalOssilator record type.
+    The backend LocalOscillator record type.
 
     Parameters
     ----------
-    name :
+    unique_name :
+        The unique name identifying the combination of instrument and
+        channel/parameters.
+    instrument_name :
         The QCodes name of the LocalOscillator.
+    generic_icc_name :
+        The name of the GenericInstrumentCoordinatorComponent attached to this device.
     frequency :
-        The local oscillator (LO) frequency in Hz.
+        A dict which tells the generic icc what parameter maps to the local oscillator
+        (LO) frequency in Hz.
+    power :
+        A dict which tells the generic icc what parameter maps to the local oscillator
+        (LO) power in dBm.
+    parameters :
+        A dict which allows setting of channel specific parameters of the device. Cannot
+        be used together with frequency and power.
     """
 
-    name: str
-    frequency: Optional[float]
+    unique_name: str
+    instrument_name: str
+    generic_icc_name: Optional[str] = None
+    frequency: Optional[dict] = None
+    power: Optional[dict] = None
+    parameters: Optional[dict] = None
