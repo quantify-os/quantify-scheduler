@@ -828,8 +828,8 @@ class _QRMAcquisitionManager:
                     f"acq_channel={acq_channel}  was out-of-range."
                 )
         # NB hardware already divides by avg_count for scope mode
-        scope_data_i = scope_data["path0"]["data"]
-        scope_data_q = scope_data["path1"]["data"]
+        scope_data_i = np.array(scope_data["path0"]["data"])
+        scope_data_q = np.array(scope_data["path1"]["data"])
         return scope_data_i, scope_data_q
 
     def _get_integration_data(

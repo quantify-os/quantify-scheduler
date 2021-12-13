@@ -195,7 +195,7 @@ class ScheduleGettableSingleChannel:
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
                 for acq_idx in acq_indices:
-                    val = np.array(acquired_data[(acq_channel, acq_idx)])
+                    val = acquired_data[(acq_channel, acq_idx)]
                     dataset[acq_channel] = val[0] + 1j * val[1]
 
         elif acq_metadata.bin_mode == BinMode.AVERAGE:
@@ -204,7 +204,7 @@ class ScheduleGettableSingleChannel:
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
                 for acq_idx in acq_indices:
-                    val = np.array(acquired_data[(acq_channel, acq_idx)])
+                    val = acquired_data[(acq_channel, acq_idx)]
                     dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
             # This gettable only supports one acquisition channel
