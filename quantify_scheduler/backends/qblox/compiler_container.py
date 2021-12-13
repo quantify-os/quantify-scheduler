@@ -136,9 +136,7 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        # pylint: disable=fixme
-        # TODO It seems to work for classes too. See quantify-core!232
-        compiler: type = general.import_func_from_string(instrument)
+        compiler: type = general.import_python_object_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(
