@@ -269,3 +269,20 @@ def test_measurement_specification_of_binmode(load_example_transmon_config):
     for key, value in comp_sched.data["operation_dict"].items():
         if "Measure" in key:
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
+
+
+def test_compile_trace_acquisition(load_example_transmon_config):
+
+    sched = Schedule("Test schedule")
+    q0 = "q0"
+    sched.add(Reset(q0))
+    sched.add(Rxy(90, 0, qubit=q0))
+    sched.add(Measure(q0), label="M0")
+
+    device_cfg = deepcopy(load_example_transmon_config())
+    device_cfg["qubits"]["q0"]["params"]["acquisition"] = "Trace"
+
+    sched = add_pulse_information_transmon(sched, device_cfg=device_cfg)
+
+    measure_repr = sched.timing_constraints[-1]["operation_repr"]
+    assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"
