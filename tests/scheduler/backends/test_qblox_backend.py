@@ -118,7 +118,7 @@ def hardware_cfg_baseband():
                 "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -200,7 +200,7 @@ def hardware_cfg_multiplexing():
                 "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
