@@ -142,9 +142,9 @@ class LOSettings(DataClassJsonMixin):
     """
 
     power: Dict[str, float]
-    """Power of the LO source, the format is {parameter_name: value}."""
+    """Power of the LO source."""
     frequency: Dict[str, Optional[float]]
-    """The frequency to set the LO to, the format is {parameter_name: value}."""
+    """The frequency to set the LO to."""
 
     @classmethod
     def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
