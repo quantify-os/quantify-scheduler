@@ -170,6 +170,15 @@ class LOSettings(DataClassJsonMixin):
                 f"missing from settings. 'power' is required as an entry for Local "
                 f"Oscillators."
             )
+        if "generic_icc_name" in mapping:
+            generic_icc_name = mapping["generic_icc_name"]
+            default_generic_icc_name = "generic_instrument_coordinator_component"
+            if generic_icc_name != default_generic_icc_name:
+                raise NotImplementedError(
+                    f"Specified name '{generic_icc_name}' as a generic instrument "
+                    f"coordinator component, but the Qblox backend currently only "
+                    f"supports using the default name '{default_generic_icc_name}'"
+                )
 
         power_entry: Union[float, Dict[str, float]] = mapping["power"]
         if not isinstance(power_entry, dict):  # floats allowed for convenience
