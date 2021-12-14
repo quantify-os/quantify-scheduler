@@ -3,7 +3,8 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
+from collections import abc
 
 from quantify_scheduler.backends.qblox import compiler_abc, compiler_container
 from quantify_scheduler.backends.qblox.constants import (
@@ -49,10 +50,19 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         hw_mapping
             The hardware mapping dict for this instrument.
         """
+
+        def _extract_parameter(
+            parameter_dict: Dict[str, Optional[float]]
+        ) -> Tuple[str, Optional[float]]:
+            items: abc.ItemsView = parameter_dict.items()
+            return list(items)[0]
+
         super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = LOSettings.from_mapping(hw_mapping)
-        self.freq_param_name, self._frequency = list(self._settings.frequency)[0]
-        self.power_param_name, self._power = list(self._settings.power)[0]
+        self.freq_param_name, self._frequency = _extract_parameter(
+            self._settings.frequency
+        )
+        self.power_param_name, self._power = _extract_parameter(self._settings.power)
 
     @property
     def frequency(self) -> float:
