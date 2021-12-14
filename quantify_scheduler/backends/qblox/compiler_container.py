@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Set
 
 from quantify_core.utilities import general
 
@@ -45,6 +45,7 @@ class CompilerContainer:
         """
         self.instrument_compilers = {}
         """The compilers for the individual instruments."""
+        self.generics: Set[str] = set()
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
         """
@@ -155,6 +156,8 @@ class CompilerContainer:
             Hardware mapping for this instrument.
         """
         compiler = instrument(self, name, self.total_play_time, mapping)
+        if isinstance(compiler, compiler_classes.LocalOscillator):
+            self.generics.add(name)
         self.instrument_compilers[name] = compiler
 
     @classmethod
