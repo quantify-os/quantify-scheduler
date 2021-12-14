@@ -65,12 +65,21 @@ class CompilerContainer:
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
+        # for now name is hardcoded, but should be read from config.
+        generic_icc_name = "generic_instrument_coordinator_component"
         compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
             compiled_instrument_program = compiler.compile(repetitions=repetitions)
 
             if compiled_instrument_program is not None:
-                compiled_schedule[name] = compiled_instrument_program
+                if name in self.generics:
+                    if generic_icc_name not in compiled_schedule:
+                        compiled_schedule[generic_icc_name] = {}
+                    compiled_schedule[generic_icc_name].update(
+                        compiled_instrument_program
+                    )
+                else:
+                    compiled_schedule[name] = compiled_instrument_program
         return compiled_schedule
 
     def add_instrument_compiler(
