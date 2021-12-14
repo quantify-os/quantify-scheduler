@@ -74,7 +74,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         :
             The current frequency.
         """
-        return self._settings.frequency["frequency"]
+        return self._frequency
 
     @frequency.setter
     def frequency(self, value: float):
