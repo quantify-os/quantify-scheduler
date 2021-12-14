@@ -143,7 +143,7 @@ class LOSettings(DataClassJsonMixin):
 
     power: Dict[str, float]
     """Power of the LO source, the format is {parameter_name: value}."""
-    frequency: Dict[str, float]
+    frequency: Dict[str, Optional[float]]
     """The frequency to set the LO to, the format is {parameter_name: value}."""
 
     @classmethod
@@ -163,11 +163,19 @@ class LOSettings(DataClassJsonMixin):
         :
             Instantiated LOSettings from the mapping dict.
         """
+
+        if "power" not in mapping:
+            raise KeyError(
+                f"Attempting to compile settings for a local oscillator but 'power' is "
+                f"missing from settings. 'power' is required as an entry for Local "
+                f"Oscillators."
+            )
+
         power_entry: Union[float, Dict[str, float]] = mapping["power"]
         if isinstance(power_entry, float):  # floats allowed for convenience
             power_entry = {"power": power_entry}
-        freq_entry: Union[float, Dict[str, float]] = mapping["frequency"]
-        if isinstance(freq_entry, float):
+        freq_entry: Union[float, Dict[str, Optional[float]]] = mapping["frequency"]
+        if isinstance(freq_entry, float) or freq_entry is None:
             freq_entry = {"frequency": freq_entry}
 
         return cls(power=power_entry, frequency=freq_entry)
