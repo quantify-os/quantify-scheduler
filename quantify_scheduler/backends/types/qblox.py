@@ -142,14 +142,16 @@ class LOSettings(DataClassJsonMixin):
     """
 
     power: Dict[str, float]
-    """Power of the LO source."""
+    """Power of the LO source, the format is {parameter_name: value}."""
     frequency: Dict[str, float]
-    """The frequency to set the LO to."""
+    """The frequency to set the LO to, the format is {parameter_name: value}."""
 
     @classmethod
     def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
         """
-        Factory method for the LOSettings from a mapping dict.
+        Factory method for the LOSettings from a mapping dict. The required format is
+        {"frequency": {parameter_name: value}, "power": {parameter_name: value}}. For
+        convenience {"frequency": value, "power": value} is also allowed.
 
         Parameters
         ----------
@@ -161,8 +163,8 @@ class LOSettings(DataClassJsonMixin):
         :
             Instantiated LOSettings from the mapping dict.
         """
-        power_entry : Union[float, Dict[str, float]] = mapping["power"]
-        if isinstance(power_entry, float):
+        power_entry: Union[float, Dict[str, float]] = mapping["power"]
+        if isinstance(power_entry, float):  # floats allowed for convenience
             power_entry = {"power": power_entry}
         freq_entry: Union[float, Dict[str, float]] = mapping["frequency"]
         if isinstance(freq_entry, float):
