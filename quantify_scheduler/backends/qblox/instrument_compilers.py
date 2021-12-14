@@ -51,6 +51,8 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         """
         super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = LOSettings.from_mapping(hw_mapping)
+        self.freq_param_name, self._frequency = list(self._settings.frequency)[0]
+        self.power_param_name, self._power = list(self._settings.power)[0]
 
     @property
     def frequency(self) -> float:
@@ -62,7 +64,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         :
             The current frequency.
         """
-        return self._settings.lo_freq
+        return self._settings.frequency["frequency"]
 
     @frequency.setter
     def frequency(self, value: float):
@@ -82,14 +84,14 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             frequency to a different value than what it is currently set to. This would
             indicate an invalid configuration in the hardware mapping.
         """
-        if self._settings.lo_freq is not None:
-            if value != self._settings.lo_freq:
+        if self._frequency is not None:
+            if value != self._frequency:
                 raise ValueError(
                     f"Attempting to set LO {self.name} to frequency {value}, "
                     f"while it has previously already been set to "
-                    f"{self._settings.lo_freq}!"
+                    f"{self._frequency}!"
                 )
-        self._settings.lo_freq = value
+        self._frequency = value
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
@@ -106,9 +108,12 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             Dictionary containing all the information the InstrumentCoordinator
             component needs to set the parameters appropriately.
         """
-        if self.frequency is None:
+        if self._frequency is None:
             return None
-        return self._settings.to_dict()
+        return {
+            f"{self.name}.{self.freq_param_name}": self._frequency,
+            f"{self.name}.{self.power_param_name}": self._power,
+        }
 
 
 class QcmModule(compiler_abc.QbloxBasebandModule):
