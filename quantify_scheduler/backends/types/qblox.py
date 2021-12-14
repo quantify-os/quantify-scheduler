@@ -135,7 +135,7 @@ class OpInfo(DataClassJsonMixin):
         return repr_string
 
 
-@dataclass
+@dataclass(frozen=True)
 class LOSettings(DataClassJsonMixin):
     """
     Dataclass containing all the settings for a generic LO instrument.
