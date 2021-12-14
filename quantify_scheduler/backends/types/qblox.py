@@ -141,9 +141,9 @@ class LOSettings(DataClassJsonMixin):
     Dataclass containing all the settings for a generic LO instrument.
     """
 
-    power: float
+    power: Dict[str, float]
     """Power of the LO source."""
-    lo_freq: Optional[float]
+    frequency: Dict[str, float]
     """The frequency to set the LO to."""
 
     @classmethod
@@ -161,7 +161,14 @@ class LOSettings(DataClassJsonMixin):
         :
             Instantiated LOSettings from the mapping dict.
         """
-        return cls(power=mapping["power"], lo_freq=mapping["lo_freq"])
+        power_entry : Union[float, Dict[str, float]] = mapping["power"]
+        if isinstance(power_entry, float):
+            power_entry = {"power": power_entry}
+        freq_entry: Union[float, Dict[str, float]] = mapping["frequency"]
+        if isinstance(freq_entry, float):
+            freq_entry = {"frequency": freq_entry}
+
+        return cls(power=power_entry, frequency=freq_entry)
 
 
 @dataclass
