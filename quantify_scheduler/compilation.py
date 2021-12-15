@@ -240,6 +240,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                     # pylint: disable=fixme
                     op.add_acquisition(  # TODO protocol hardcoded
                         Trace(
+                            clock=q_cfg["resources"]["clock_ro"],
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
                             acq_channel=op["gate_info"]["acq_channel"][idx],
