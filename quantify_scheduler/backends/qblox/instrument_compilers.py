@@ -65,7 +65,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         self.power_param_name, self._power = _extract_parameter(self._settings.power)
 
     @property
-    def frequency(self) -> float:
+    def frequency(self) -> Optional[float]:
         """
         Getter for the frequency.
 
