@@ -50,7 +50,7 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
 
 
 def validate_operation_data(operation_data, port_map, t_constr, operation):
-    """Validates if the pulse information is valid for visualization."""
+    """Validates if the pulse/acquisition information is valid for visualization."""
     if operation_data["port"] not in port_map:
         # Do not draw pulses for this port
         return False
