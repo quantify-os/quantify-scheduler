@@ -317,7 +317,7 @@ class QASMProgram:
         operation: Optional[OpInfo] = None,
     ):
         """
-        Takes a the value of a parameter in normalized form (abs(param) <= 1.0), and
+        Takes the value of a parameter in normalized form (abs(param) <= 1.0), and
         expands it to an integer in the appropriate range required by the sequencer.
 
         Parameters

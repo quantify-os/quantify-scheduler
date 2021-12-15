@@ -90,7 +90,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
 class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
     """
-    Performs a square acquisition (so without acquisition weights).
+    Performs a square acquisition (i.e. without acquisition weights).
     """
 
     def generate_data(self, wf_dict: Dict[str, Any]) -> None:

@@ -58,8 +58,8 @@ class StaticHardwareProperties:
 @dataclass(frozen=True)
 class OpInfo(DataClassJsonMixin):
     """
-    Data structure containing all the information describing a pulse or acquisition
-    needed to play it.
+    Data structure describing a pulse or acquisition and containing all the information
+    required to play it.
     """
 
     name: str
