@@ -136,10 +136,9 @@ def pulse_diagram_plotly(
     colors = px.colors.qualitative.Plotly
     col_idx: int = 0
 
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+    for pulse_idx, t_constr in enumerate(schedule.timing_constraints):
         operation = schedule.operations[t_constr["operation_repr"]]
 
-        port: str = ""
         for pulse_info in operation["pulse_info"]:
             if not validate_operation_data(pulse_info, port_map, t_constr, operation):
                 continue
@@ -187,7 +186,7 @@ def pulse_diagram_plotly(
                     y=waveform.real,
                     mode="lines",
                     name=label,
-                    legendgroup=pls_idx,
+                    legendgroup=pulse_idx,
                     showlegend=True,
                     line_color=colors[col_idx],
                     hoverinfo="x+y+name",
@@ -204,7 +203,7 @@ def pulse_diagram_plotly(
                         y=waveform.imag,
                         mode="lines",
                         name=f"Im[{label}]",
-                        legendgroup=pls_idx,
+                        legendgroup=pulse_idx,
                         showlegend=True,
                         line_color="darkgrey",
                         hoverinfo="x+y+name",
