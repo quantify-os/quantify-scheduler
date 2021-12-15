@@ -166,9 +166,9 @@ class LOSettings(DataClassJsonMixin):
 
         if "power" not in mapping:
             raise KeyError(
-                f"Attempting to compile settings for a local oscillator but 'power' is "
-                f"missing from settings. 'power' is required as an entry for Local "
-                f"Oscillators."
+                "Attempting to compile settings for a local oscillator but 'power' is "
+                "missing from settings. 'power' is required as an entry for Local "
+                "Oscillators."
             )
         if "generic_icc_name" in mapping:
             generic_icc_name = mapping["generic_icc_name"]
