@@ -63,7 +63,7 @@ def validate_operation_data(operation_data, port_map, t_constr, operation):
         )
         return False
 
-    if "acq_index" not in operation_data:
+    if "acq_index" not in operation_data:  # This will be skipped for acquisitions
         if operation_data["wf_func"] is None:
             logger.warning(
                 "Unable to sample pulse for pulse_info due to missing 'wf_func' for "
