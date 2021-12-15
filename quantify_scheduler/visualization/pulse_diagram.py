@@ -143,7 +143,7 @@ def pulse_diagram_plotly(
             if not validate_operation_data(pulse_info, port_map, t_constr, operation):
                 continue
 
-            # port to map the waveform too
+            # port to map the waveform to
             port: str = pulse_info["port"]
 
             # function to generate waveform
