@@ -57,7 +57,7 @@ def validate_operation_data(operation_data, port_map, t_constr, operation):
 
     if operation_data["port"] is None:
         logger.warning(
-            "Unable to sample pulse for pulse_info due to missing 'port' for "
+            "Unable to sample waveform for operation_data due to missing 'port' for "
             f"operation name={operation['name']} "
             f"id={t_constr['operation_repr']} operation_data={operation_data}"
         )
