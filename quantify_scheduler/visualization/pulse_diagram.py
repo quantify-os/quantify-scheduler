@@ -233,10 +233,10 @@ def pulse_diagram_plotly(
         for acq_info in operation["acquisition_info"]:
             if not validate_operation_data(acq_info, port_map, t_constr, operation):
                 continue
-            port: str = acq_info["port"]
+            acq_port: str = acq_info["port"]
             label = operation["name"]
 
-            row = port_map[port] + 1
+            row = port_map[acq_port] + 1
             t = t_constr["abs_time"] + acq_info["t0"]
             yref: str = f"y{row} domain" if row != 1 else "y domain"
             fig.add_trace(
@@ -284,7 +284,7 @@ def pulse_diagram_plotly(
                 tickformat=".2s",
                 hoverformat=".3s",
                 ticksuffix="V",
-                title=port,
+                title=acq_port,
                 range=[-1.1, 1.1],
             )
 
