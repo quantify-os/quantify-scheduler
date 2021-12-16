@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Set
 
 from quantify_core.utilities import general
 
@@ -45,6 +45,7 @@ class CompilerContainer:
         """
         self.instrument_compilers = {}
         """The compilers for the individual instruments."""
+        self.generics: Set[str] = set()
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
         """
@@ -64,12 +65,21 @@ class CompilerContainer:
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
+        # for now name is hardcoded, but should be read from config.
+        generic_icc_name = "generic"
         compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
             compiled_instrument_program = compiler.compile(repetitions=repetitions)
 
             if compiled_instrument_program is not None:
-                compiled_schedule[name] = compiled_instrument_program
+                if name in self.generics:
+                    if generic_icc_name not in compiled_schedule:
+                        compiled_schedule[generic_icc_name] = {}
+                    compiled_schedule[generic_icc_name].update(
+                        compiled_instrument_program
+                    )
+                else:
+                    compiled_schedule[name] = compiled_instrument_program
         return compiled_schedule
 
     def add_instrument_compiler(
@@ -136,9 +146,7 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        # pylint: disable=fixme
-        # TODO It seems to work for classes too. See quantify-core!232
-        compiler: type = general.import_func_from_string(instrument)
+        compiler: type = general.import_python_object_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(
@@ -157,6 +165,8 @@ class CompilerContainer:
             Hardware mapping for this instrument.
         """
         compiler = instrument(self, name, self.total_play_time, mapping)
+        if isinstance(compiler, compiler_classes.LocalOscillator):
+            self.generics.add(name)
         self.instrument_compilers[name] = compiler
 
     @classmethod

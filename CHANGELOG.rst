@@ -7,6 +7,7 @@ Unreleased changes
 
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
+* Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 
 
 0.5.2 Fixes to backends, and other incremental fixes  (2021-12-08)

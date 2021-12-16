@@ -135,21 +135,23 @@ class OpInfo(DataClassJsonMixin):
         return repr_string
 
 
-@dataclass
+@dataclass(frozen=True)
 class LOSettings(DataClassJsonMixin):
     """
     Dataclass containing all the settings for a generic LO instrument.
     """
 
-    power: float
+    power: Dict[str, float]
     """Power of the LO source."""
-    lo_freq: Optional[float]
+    frequency: Dict[str, Optional[float]]
     """The frequency to set the LO to."""
 
     @classmethod
     def from_mapping(cls, mapping: Dict[str, Any]) -> LOSettings:
         """
-        Factory method for the LOSettings from a mapping dict.
+        Factory method for the LOSettings from a mapping dict. The required format is
+        {"frequency": {parameter_name: value}, "power": {parameter_name: value}}. For
+        convenience {"frequency": value, "power": value} is also allowed.
 
         Parameters
         ----------
@@ -161,7 +163,31 @@ class LOSettings(DataClassJsonMixin):
         :
             Instantiated LOSettings from the mapping dict.
         """
-        return cls(power=mapping["power"], lo_freq=mapping["lo_freq"])
+
+        if "power" not in mapping:
+            raise KeyError(
+                "Attempting to compile settings for a local oscillator but 'power' is "
+                "missing from settings. 'power' is required as an entry for Local "
+                "Oscillators."
+            )
+        if "generic_icc_name" in mapping:
+            generic_icc_name = mapping["generic_icc_name"]
+            default_generic_icc_name = "generic"
+            if generic_icc_name != default_generic_icc_name:
+                raise NotImplementedError(
+                    f"Specified name '{generic_icc_name}' as a generic instrument "
+                    f"coordinator component, but the Qblox backend currently only "
+                    f"supports using the default name '{default_generic_icc_name}'"
+                )
+
+        power_entry: Union[float, Dict[str, float]] = mapping["power"]
+        if not isinstance(power_entry, dict):  # floats allowed for convenience
+            power_entry = {"power": power_entry}
+        freq_entry: Union[float, Dict[str, Optional[float]]] = mapping["frequency"]
+        if not isinstance(freq_entry, dict):
+            freq_entry = {"frequency": freq_entry}
+
+        return cls(power=power_entry, frequency=freq_entry)
 
 
 @dataclass
