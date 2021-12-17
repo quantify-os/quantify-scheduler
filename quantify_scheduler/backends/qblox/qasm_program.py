@@ -213,6 +213,25 @@ class QASMProgram:
             )
 
     def verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
+        """
+        Verifies if the square acquisition is valid by checking constraints on the
+        duration.
+
+        Parameters
+        ----------
+        acquisition:
+            The operation info of the acquisition to process.
+        duration:
+            The duration to verify.
+
+        Raises
+        ------
+        ValueError
+            When attempting to perform an acquisition of a duration that is not a
+            multiple of 4 ns.
+        ValueError
+            When using a different duration than previous acquisitions.
+        """
         duration_ns = int(np.round(duration * 1e9))
         if self.integration_length_acq is None:
             if duration_ns % constants.GRID_TIME != 0:
