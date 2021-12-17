@@ -329,7 +329,7 @@ class QASMProgram:
                 f"Maximum voltage range is +-"
                 f"{max_awg_output_voltage} V for "
                 f"{self.static_hw_properties.instrument_type}.\n"
-                f"{ValueError} V is set as amplitude for the I channel for "
+                f"{voltage_path0} V is set as amplitude for the I channel for "
                 f"{repr(operation)}"
             )
         if np.abs(voltage_path1) > max_awg_output_voltage:
