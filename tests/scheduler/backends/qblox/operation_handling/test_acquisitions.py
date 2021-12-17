@@ -6,6 +6,8 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
+# pylint: disable=no-self-use
+
 
 from typing import Dict, Any
 
