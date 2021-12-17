@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Generator
 
 import numpy as np
 from columnar import columnar
@@ -486,7 +486,7 @@ class QASMProgram:
         self.register_manager.free_register(register)
 
     @contextmanager
-    def temp_registers(self, amount: int = 1) -> List[str]:
+    def temp_registers(self, amount: int = 1) -> Generator[List[str]]:
         """
         Context manager for using a register temporarily. Frees up the register
         afterwards.
