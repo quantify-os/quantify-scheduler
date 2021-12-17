@@ -179,7 +179,7 @@ def add_to_wf_dict_if_unique(
         return {name: {"data": data.tolist(), "index": idx}}
 
     if not np.isrealobj(waveform):
-        raise RuntimeError(f"This function only accepts real arrays.")
+        raise RuntimeError("This function only accepts real arrays.")
 
     uuid = generate_uuid_from_wf_data(waveform)
     if uuid in wf_dict:
