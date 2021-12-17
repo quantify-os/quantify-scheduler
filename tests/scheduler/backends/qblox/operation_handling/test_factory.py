@@ -9,6 +9,8 @@
 
 import pytest
 
+from typing import Type
+
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.backends.qblox.operation_handling import (
@@ -74,7 +76,7 @@ TEST_OP_INFO_MAPPING = {
 )
 def test_get_operation_strategy(
     op_info: OpInfo,
-    answer: type(base.IOperationStrategy),
+    answer: Type[base.IOperationStrategy],
 ):
     # arrange
     instruction_generated_pulses_enabled = True
