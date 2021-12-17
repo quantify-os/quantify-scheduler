@@ -209,7 +209,7 @@ class QASMProgram:
             operation.timing, grid_time_ns=constants.GRID_TIME
         ):
             raise ValueError(
-                f"Start time of operation is invalid. Qblox QcmModule and QRM "
+                f"Start time of operation is invalid. Qblox QCM and QRM "
                 f"enforce a grid time of {constants.GRID_TIME} ns. Please "
                 f"make sure all operations start at an interval of "
                 f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
@@ -270,7 +270,7 @@ class QASMProgram:
         if bin_idx != 0:
             raise ValueError(
                 "looped acquisition currently only works for acquisition "
-                "index 0 with binmode average."
+                "index 0 in `BinMode` `AVERAGE`."
             )
 
         measurement_idx = acquisition.data["acq_channel"]
@@ -398,7 +398,7 @@ class QASMProgram:
         if np.abs(val) > 1.0:
             raise ValueError(
                 f"{param} is set to {val}. Parameter must be in the range "
-                f"-1.0 <= param <= 1.0 for {repr(operation)}."
+                f"-1.0 <= {param} <= 1.0 for {repr(operation)}."
             )
         return int(val * immediate_size // 2)
 
