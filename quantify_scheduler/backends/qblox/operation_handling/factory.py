@@ -55,7 +55,7 @@ def _get_acquisition_strategy(
                 f"{repr(operation)} caused this exception to occur."
             )
         return acquisitions.SquareAcquisitionStrategy(operation)
-    elif protocol == "weighted_integrated_complex":
+    if protocol == "weighted_integrated_complex":
         return acquisitions.WeightedAcquisitionStrategy(operation)
     raise ValueError(
         f'Unknown acquisition protocol "{protocol}" encountered in '
@@ -71,6 +71,6 @@ def _get_pulse_strategy(
         wf_func = operation.data["wf_func"]
         if wf_func == "quantify_scheduler.waveforms.square":
             return pulses.StitchedSquarePulseStrategy(operation, output_mode)
-        elif wf_func == "quantify_scheduler.waveforms.staircase":
+        if wf_func == "quantify_scheduler.waveforms.staircase":
             return pulses.StaircasePulseStrategy(operation, output_mode)
     return pulses.GenericPulseStrategy(operation, output_mode)
