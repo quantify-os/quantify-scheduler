@@ -7,6 +7,8 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
 # pylint: disable=no-self-use
+# pylint: disable=too-many-variables
+# pylint: disable=too-many-arguments
 
 import pytest
 import numpy as np
