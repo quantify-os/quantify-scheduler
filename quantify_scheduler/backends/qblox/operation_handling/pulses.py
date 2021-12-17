@@ -219,6 +219,9 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         duration = self.operation_info.duration
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
+        assert self.amplitude_path0 is not None
+        assert self.amplitude_path1 is not None
+
         qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
