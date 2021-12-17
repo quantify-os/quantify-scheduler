@@ -423,6 +423,8 @@ class StaircasePulseStrategy(PulseStrategyPartial):
                 comment=f"next incr offs by {amp_step_immediate}",
             )
         else:
+            # if negative, we want to subtract a positive number, since we cannot add a
+            # negative one.
             qasm_program.emit(
                 q1asm_instructions.SUB,
                 offs_reg,
