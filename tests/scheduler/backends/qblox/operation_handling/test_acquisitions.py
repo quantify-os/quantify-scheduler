@@ -69,6 +69,8 @@ class TestAcquisitionStrategyPartial:
         strategy = MockAcquisition(op_info)
         append_mock = mocker.patch.object(strategy, "acquire_append")
         average_mock = mocker.patch.object(strategy, "acquire_average")
+        # pylint: disable=attribute-defined-outside-init
+        # what pylint claims here is simply not true
         strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
 
         # act
