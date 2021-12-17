@@ -526,7 +526,9 @@ class Sequencer:
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
-        acquisitions = list(map(lambda acq: acq.operation_info, acquisitions))
+        acquisitions: List[OpInfo] = list(
+            map(lambda acq: acq.operation_info, acquisitions)
+        )
 
         # acquisition metadata for acquisitions relevant to this sequencer only
         acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
