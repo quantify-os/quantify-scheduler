@@ -734,8 +734,8 @@ def test_qasm_hook(pulse_only_schedule):
     sched.repetitions = 11
     full_program = qcompile(sched, DEVICE_CFG, hw_config)
     qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
-    with open(qrm0_seq0_json) as f:
-        program = json.load(f)["program"]
+    with open(qrm0_seq0_json) as file:
+        program = json.load(file)["program"]
     program_lines = program.splitlines()
     assert program_lines[1].strip() == q1asm_instructions.NOP
 
