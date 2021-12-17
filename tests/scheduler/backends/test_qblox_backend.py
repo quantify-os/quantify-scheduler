@@ -505,18 +505,11 @@ def real_square_pulse_schedule():
     return sched
 
 
-@pytest.fixture(name="empty_qasm_program")
+@pytest.fixture(name="empty_qasm_program_qcm")
 def fixture_empty_qasm_program():
-    static_hw_properties = types.StaticHardwareProperties(
-        instrument_type="QCM",
-        max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
-        max_awg_output_voltage=2.5,
-        marker_configuration=types.MarkerConfiguration(start=0b1111, end=0b0000),
-        mixer_dc_offset_range=types.BoundedParameter(
-            min_val=-2.5, max_val=2.5, units="V"
-        ),
+    return QASMProgram(
+        QcmModule.static_hw_properties, register_manager.RegisterManager()
     )
-    yield QASMProgram(static_hw_properties, register_manager.RegisterManager())
 
 
 # --------- Test utility functions ---------
@@ -771,16 +764,16 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
 # --------- Test QASMProgram class ---------
 
 
-def test_emit(empty_qasm_program):
-    qasm = empty_qasm_program
+def test_emit(empty_qasm_program_qcm):
+    qasm = empty_qasm_program_qcm
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm.instructions) == 2
 
 
-def test_auto_wait(empty_qasm_program):
-    qasm = empty_qasm_program
+def test_auto_wait(empty_qasm_program_qcm):
+    qasm = empty_qasm_program_qcm
     qasm.auto_wait(120)
     assert len(qasm.instructions) == 1
     qasm.auto_wait(70000)
@@ -813,10 +806,10 @@ def test_to_grid_time():
         to_grid_time(7e-9)
 
 
-def test_loop(empty_qasm_program):
+def test_loop(empty_qasm_program_qcm):
     num_rep = 10
 
-    qasm = empty_qasm_program
+    qasm = empty_qasm_program_qcm
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
     with qasm.loop("this_loop", repetitions=num_rep):
         qasm.emit(q1asm_instructions.WAIT, 20)
@@ -827,8 +820,8 @@ def test_loop(empty_qasm_program):
 
 
 @pytest.mark.parametrize("amount", [1, 2, 3, 40])
-def test_temp_register(amount, empty_qasm_program):
-    qasm = empty_qasm_program
+def test_temp_register(amount, empty_qasm_program_qcm):
+    qasm = empty_qasm_program_qcm
     with qasm.temp_register(amount) as registers:
         if isinstance(registers, str):
             registers = [registers]
