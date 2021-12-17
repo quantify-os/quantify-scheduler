@@ -60,8 +60,8 @@ class GenericPulseStrategy(PulseStrategyPartial):
         operation_info
             The operation info that corresponds to this pulse.
         output_mode
-            Either "real", "imag" or complex depending on whether the signal affects
-            only path0, path1 or both.
+            Either "real", "imag" or "complex" depending on whether the signal affects
+            only path0, path1 or both, respectively.
         """
         super().__init__(operation_info, output_mode)
 
@@ -314,15 +314,16 @@ class StaircasePulseStrategy(PulseStrategyPartial):
             "offset_awg_path1" if self.output_mode == "imag" else "offset_awg_path0"
         )
 
-        amp_step = (final_amp - start_amp) / (num_steps - 1)
-        amp_step_immediate = qasm_program.expand_from_normalised_range(
-            amp_step / qasm_program.static_hw_properties.max_awg_output_voltage,
+        start_amp_immediate = qasm_program.expand_from_normalised_range(
+            start_amp / qasm_program.static_hw_properties.max_awg_output_voltage,
             constants.IMMEDIATE_SZ_OFFSET,
             offset_param_label,
             pulse,
         )
-        start_amp_immediate = qasm_program.expand_from_normalised_range(
-            start_amp / qasm_program.static_hw_properties.max_awg_output_voltage,
+
+        amp_step = (final_amp - start_amp) / (num_steps - 1)
+        amp_step_immediate = qasm_program.expand_from_normalised_range(
+            amp_step / qasm_program.static_hw_properties.max_awg_output_voltage,
             constants.IMMEDIATE_SZ_OFFSET,
             offset_param_label,
             pulse,
