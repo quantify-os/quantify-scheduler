@@ -303,7 +303,25 @@ class QASMProgram:
 
     def set_gain_from_amplitude(
         self, voltage_path0: float, voltage_path1: float, operation: Optional[OpInfo]
-    ):
+    ) -> None:
+        """
+        Sets the gain such that a 1.0 in waveform memory corresponds to the specified
+        voltage. i.e. changes the full scale range.
+
+        Parameters
+        ----------
+        voltage_path0
+            Voltage to set on path0.
+        voltage_path1
+            Voltage to set on path1.
+        operation
+            The operation for which this is done. Used for the exception messages.
+
+        Raises
+        ------
+        ValueError
+            Trying to set a voltage outside the max range of the instrument.
+        """
         max_awg_output_voltage = self.static_hw_properties.max_awg_output_voltage
         if np.abs(voltage_path0) > max_awg_output_voltage:
             raise ValueError(
