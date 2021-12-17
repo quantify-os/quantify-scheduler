@@ -832,7 +832,7 @@ def test_loop(empty_qasm_program):
 def test_temp_register(amount, empty_qasm_program):
     qasm = empty_qasm_program
     with qasm.temp_register(amount) as registers:
-        if isinstance(registers, str):
+        if amount == 1:
             registers = [registers]
         for reg in registers:
             assert reg not in qasm.register_manager.available_registers
