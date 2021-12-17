@@ -119,7 +119,7 @@ def hardware_cfg_baseband():
                 "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -201,7 +201,7 @@ def hardware_cfg_multiplexing():
                 "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -989,8 +989,8 @@ def test_assign_frequencies_baseband():
     if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
     io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
     io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
-    lo0 = HARDWARE_MAPPING[io0_lo_name].get("lo_freq")
-    lo1 = HARDWARE_MAPPING[io1_lo_name].get("lo_freq")
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("frequency")
 
     assert if0 is not None
     assert if1 is None
@@ -1003,8 +1003,9 @@ def test_assign_frequencies_baseband():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert compiled_instructions["lo0"]["lo_freq"] == lo0
-    assert compiled_instructions["lo1"]["lo_freq"] == lo1
+    generic_icc = "generic"
+    assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
+    assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
 
@@ -1023,8 +1024,8 @@ def test_assign_frequencies_baseband_downconverter():
     if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
     io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
     io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
-    lo0 = HARDWARE_MAPPING[io0_lo_name].get("lo_freq")
-    lo1 = HARDWARE_MAPPING[io1_lo_name].get("lo_freq")
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("frequency")
 
     assert if0 is not None
     assert if1 is None
@@ -1041,8 +1042,9 @@ def test_assign_frequencies_baseband_downconverter():
     lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    assert compiled_instructions["lo0"]["lo_freq"] == lo0
-    assert compiled_instructions["lo1"]["lo_freq"] == lo1
+    generic_icc = "generic"
+    assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
+    assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
 
