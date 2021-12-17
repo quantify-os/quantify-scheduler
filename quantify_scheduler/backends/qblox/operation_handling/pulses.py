@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Optional, Dict, Any
 
+from collections import namedtuple
+
 import logging
 import numpy as np
 
@@ -269,6 +271,14 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         qasm_program.elapsed_time += pulse_time_remaining
 
 
+_StaircaseParameters = namedtuple(
+    "_StaircaseParameters",
+    ["start_amp_immediate", "amp_step_immediate", "step_duration_ns", "num_steps"],
+)
+"""Used to keep track of all the parameters that are to be used for generating the
+assembly for the staircase."""
+
+
 class StaircasePulseStrategy(PulseStrategyPartial):
     """
     If this strategy is used, a staircase is generated through offset instructions,
@@ -319,21 +329,16 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         if start_amp_immediate < 0:
             start_amp_immediate += constants.REGISTER_SIZE  # registers are unsigned
 
-        self._generate_staircase(
-            qasm_program,
-            start_amp_immediate,
-            amp_step_immediate,
-            step_duration_ns,
-            num_steps,
+        staircase_params = _StaircaseParameters(
+            start_amp_immediate=start_amp_immediate,
+            amp_step_immediate=amp_step_immediate,
+            step_duration_ns=step_duration_ns,
+            num_steps=num_steps,
         )
+        self._generate_staircase(qasm_program, staircase_params)
 
     def _generate_staircase(
-        self,
-        qasm_program: QASMProgram,
-        start_amp_immediate: int,
-        amp_step_immediate: int,
-        step_duration_ns: int,
-        num_steps: int,
+        self, qasm_program: QASMProgram, staircase_params: _StaircaseParameters
     ):
         """Generates the actual staircase."""
         with qasm_program.temp_register(2) as (offs_reg, offs_reg_zero):
@@ -347,7 +352,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
             # Initialize registers
             qasm_program.emit(
                 q1asm_instructions.MOVE,
-                start_amp_immediate,
+                staircase_params.start_amp_immediate,
                 offs_reg,
                 comment="keeps track of the offsets",
             )
@@ -360,18 +365,23 @@ class StaircasePulseStrategy(PulseStrategyPartial):
 
             qasm_program.emit(q1asm_instructions.NEW_LINE)
             with qasm_program.loop(
-                f"ramp{len(qasm_program.instructions)}", repetitions=num_steps
+                f"ramp{len(qasm_program.instructions)}",
+                repetitions=staircase_params.num_steps,
             ):
                 self._generate_step(
                     qasm_program,
                     offs_reg,
                     offs_reg_zero,
-                    amp_step_immediate,
+                    staircase_params.amp_step_immediate,
                 )
-                qasm_program.auto_wait(step_duration_ns - constants.GRID_TIME)
+                qasm_program.auto_wait(
+                    staircase_params.step_duration_ns - constants.GRID_TIME
+                )
 
             qasm_program.elapsed_time += (
-                step_duration_ns * (num_steps - 1) if num_steps > 1 else 0
+                staircase_params.step_duration_ns * (staircase_params.num_steps - 1)
+                if staircase_params.num_steps > 1
+                else 0
             )
 
             qasm_program.emit(
