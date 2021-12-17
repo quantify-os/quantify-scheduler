@@ -376,6 +376,8 @@ class QASMProgram:
         ----------
         val
             The value of the parameter to expand.
+        immediate_size
+            The size of the immediate. Used to find the max int value.
         param
             The name of the parameter, to make a possible exception message more
             descriptive.
