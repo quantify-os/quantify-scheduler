@@ -354,11 +354,12 @@ class QASMProgram:
             "awg_gain_1",
             operation,
         )
+        comment = f"setting gain for {operation.name}" if operation else ""
         self.emit(
             q1asm_instructions.SET_AWG_GAIN,
             awg_gain_path0_immediate,
             awg_gain_path1_immediate,
-            comment=f"setting gain for {operation.name}",
+            comment=comment,
         )
 
     @staticmethod
