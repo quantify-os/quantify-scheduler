@@ -713,7 +713,7 @@ def _func_for_hook_test(qasm: QASMProgram):
     )
 
 
-def test_qasm_hook(dummy_pulsars, pulse_only_schedule):
+def test_qasm_hook(pulse_only_schedule):
     hw_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qrm0": {
