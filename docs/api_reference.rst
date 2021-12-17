@@ -63,6 +63,12 @@ qasm_program
 .. automodule:: quantify_scheduler.backends.qblox.qasm_program
     :members:
 
+register_manager
+~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.backends.qblox.register_manager
+    :members:
+
 operation_handling
 ~~~~~~~~~~~~~~~~~~
 
