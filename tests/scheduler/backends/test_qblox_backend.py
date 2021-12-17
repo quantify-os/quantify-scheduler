@@ -13,7 +13,7 @@ import os
 import re
 import shutil
 import tempfile
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -55,9 +55,7 @@ from quantify_scheduler.compilation import (
     device_compile,
     qcompile,
 )
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
-    SSBIntegrationComplex,
     Trace,
 )
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
