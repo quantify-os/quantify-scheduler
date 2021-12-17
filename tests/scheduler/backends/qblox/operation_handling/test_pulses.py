@@ -400,6 +400,8 @@ class TestStaircasePulseStrategy:
         strategy = pulses.StaircasePulseStrategy(op_info, output_mode="real")
 
         # act
+        # pylint: disable=assignment-from-none
+        # this is what we want to verify
         data = strategy.generate_data({})
 
         # assert
