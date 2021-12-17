@@ -33,6 +33,17 @@ class QASMProgram:
         static_hw_properties: StaticHardwareProperties,
         register_manager: RegisterManager,
     ):
+        """
+        Instantiates the QASMProgram.
+
+        Parameters
+        ----------
+        static_hw_properties
+            Dataclass holding the properties of the hardware that this program is to be
+            played on.
+        register_manager
+            The register manager that keeps track of the occupied/available registers.
+        """
         self.register_manager: RegisterManager = register_manager
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
         self.elapsed_time: int = 0
