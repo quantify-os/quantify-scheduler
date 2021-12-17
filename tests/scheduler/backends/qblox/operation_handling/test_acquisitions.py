@@ -54,7 +54,7 @@ class TestAcquisitionStrategyPartial:
         assert op_info == from_property
 
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
-    def test_bin_mode(self, empty_qasm_program, bin_mode, mocker):
+    def test_bin_mode(self, empty_qasm_program_qrm, bin_mode, mocker):
         # arrange
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
         op_info = types.OpInfo(name="", data=data, timing=0)
@@ -64,7 +64,7 @@ class TestAcquisitionStrategyPartial:
         strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
 
         # act
-        strategy.insert_qasm(empty_qasm_program)
+        strategy.insert_qasm(empty_qasm_program_qrm)
 
         # assert
         if bin_mode == BinMode.AVERAGE:
@@ -74,7 +74,7 @@ class TestAcquisitionStrategyPartial:
             average_mock.assert_not_called()
             append_mock.assert_called_once()
 
-    def test_invalid_bin_mode(self, empty_qasm_program):
+    def test_invalid_bin_mode(self, empty_qasm_program_qrm):
         # arrange
         data = {"bin_mode": "nonsense", "acq_channel": 0, "acq_index": 0}
         op_info = types.OpInfo(name="", data=data, timing=0)
@@ -82,7 +82,7 @@ class TestAcquisitionStrategyPartial:
 
         # act
         with pytest.raises(RuntimeError) as exc:
-            strategy.insert_qasm(empty_qasm_program)
+            strategy.insert_qasm(empty_qasm_program_qrm)
 
         # assert
         assert (
