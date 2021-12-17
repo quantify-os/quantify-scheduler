@@ -45,11 +45,15 @@ class QASMProgram:
             The register manager that keeps track of the occupied/available registers.
         """
         self.register_manager: RegisterManager = register_manager
+        """The register manager that keeps track of the occupied/available registers."""
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
+        """Dataclass holding the properties of the hardware that this program is to be
+        played on."""
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
         self.integration_length_acq: Optional[int] = None
+        """Integration length to use for the square acquisition."""
         self.time_last_acquisition_triggered: Optional[int] = None
         """Time on which the last acquisition was triggered. Is `None` if no previous
         acquisition was triggered."""
