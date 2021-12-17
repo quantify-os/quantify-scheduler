@@ -8,28 +8,18 @@ import numpy as np
 
 from quantify_scheduler import waveforms
 
-from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.enums import BinMode
 
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 
 
-@pytest.fixture(name="empty_qasm_program")
+@pytest.fixture(name="empty_qasm_program_qrm")
 def fixture_empty_qasm_program():
-    static_hw_properties = types.StaticHardwareProperties(
-        instrument_type="QRM",
-        max_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
-        max_awg_output_voltage=0.5,
-        marker_configuration=types.MarkerConfiguration(start=0b1111, end=0b0000),
-        mixer_dc_offset_range=types.BoundedParameter(
-            min_val=-0.5, max_val=0.5, units="V"
-        ),
-    )
-    yield QASMProgram(static_hw_properties, RegisterManager())
+    yield QASMProgram(QrmModule.static_hw_properties, RegisterManager())
 
 
 class MockAcquisition(acquisitions.AcquisitionStrategyPartial):
@@ -100,9 +90,9 @@ class TestAcquisitionStrategyPartial:
             == "Attempting to process an acquisition with unknown bin mode nonsense."
         )
 
-    def test_start_acq_too_soon(self, empty_qasm_program):
+    def test_start_acq_too_soon(self, empty_qasm_program_qrm):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qrm
         qasm.time_last_acquisition_triggered = 0
         data = {
             "bin_mode": "nonsense",
@@ -150,9 +140,9 @@ class TestSquareAcquisitionStrategy:
         # assert
         assert len(wf_dict) == 0
 
-    def test_acquire_average(self, empty_qasm_program):
+    def test_acquire_average(self, empty_qasm_program_qrm):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qrm
         data = {
             "bin_mode": BinMode.AVERAGE,
             "acq_channel": 0,
@@ -170,9 +160,9 @@ class TestSquareAcquisitionStrategy:
         # assert
         assert qasm.instructions == [["", "acquire", "0,0,4", ""]]
 
-    def test_acquire_append(self, empty_qasm_program):
+    def test_acquire_append(self, empty_qasm_program_qrm):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qrm
         data = {
             "bin_mode": BinMode.APPEND,
             "acq_channel": 0,
@@ -243,9 +233,9 @@ class TestWeightedAcquisitionStrategy:
         for idx, waveform in enumerate(wf_dict.values()):
             assert waveform["data"] == answers[idx]
 
-    def test_acquire_average(self, empty_qasm_program):
+    def test_acquire_average(self, empty_qasm_program_qrm):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qrm
         weights = [
             {
                 "wf_func": "quantify_scheduler.waveforms.square",
@@ -282,9 +272,9 @@ class TestWeightedAcquisitionStrategy:
             ]
         ]
 
-    def test_acquire_append(self, empty_qasm_program):
+    def test_acquire_append(self, empty_qasm_program_qrm):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qrm
         weights = [
             {
                 "wf_func": "quantify_scheduler.waveforms.square",
