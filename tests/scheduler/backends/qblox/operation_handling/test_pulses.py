@@ -506,7 +506,13 @@ class TestStaircasePulseStrategy:
         ],
     )
     def test_insert_qasm(
-        self, empty_qasm_program_qcm, start_amp, final_amp, num_steps, output_mode, answer
+        self,
+        empty_qasm_program_qcm,
+        start_amp,
+        final_amp,
+        num_steps,
+        output_mode,
+        answer,
     ):
         # arrange
         qasm = empty_qasm_program_qcm
