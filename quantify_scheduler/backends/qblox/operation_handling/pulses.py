@@ -275,20 +275,6 @@ class StaircasePulseStrategy(PulseStrategyPartial):
     without using waveform memory.
     """
 
-    def __init__(self, operation_info: types.OpInfo, output_mode: str):
-        """
-        Constructor for StaircasePulseStrategy.
-
-        Parameters
-        ----------
-        operation_info
-            The operation info that corresponds to this pulse.
-        output_mode
-            Either "real", "imag" or complex depending on whether the signal affects
-            only path0, path1 or both.
-        """
-        super().__init__(operation_info, output_mode)
-
     def generate_data(self, wf_dict: Dict[str, Any]):
         """Returns None as no waveforms are generated in this strategy."""
         return None
