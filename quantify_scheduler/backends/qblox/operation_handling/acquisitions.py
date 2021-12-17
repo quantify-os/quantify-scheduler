@@ -255,7 +255,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         """
         acq_bin_idx_reg = self.bin_idx_register
 
-        with qasm_program.temp_register(2) as (acq_idx0_reg, acq_idx1_reg):
+        with qasm_program.temp_registers(2) as (acq_idx0_reg, acq_idx1_reg):
             qasm_program.emit(q1asm_instructions.NEW_LINE)
             qasm_program.emit(
                 q1asm_instructions.MOVE,

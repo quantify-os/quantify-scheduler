@@ -344,7 +344,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         self, qasm_program: QASMProgram, staircase_params: _StaircaseParameters
     ):
         """Generates the actual staircase."""
-        with qasm_program.temp_register(2) as (offs_reg, offs_reg_zero):
+        with qasm_program.temp_registers(2) as (offs_reg, offs_reg_zero):
             qasm_program.emit(
                 q1asm_instructions.SET_AWG_GAIN,
                 constants.IMMEDIATE_SZ_GAIN // 2,

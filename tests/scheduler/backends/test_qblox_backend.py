@@ -822,9 +822,7 @@ def test_loop(empty_qasm_program_qcm):
 @pytest.mark.parametrize("amount", [1, 2, 3, 40])
 def test_temp_register(amount, empty_qasm_program_qcm):
     qasm = empty_qasm_program_qcm
-    with qasm.temp_register(amount) as registers:
-        if amount == 1:
-            registers = [registers]
+    with qasm.temp_registers(amount) as registers:
         for reg in registers:
             assert reg not in qasm.register_manager.available_registers
     for reg in registers:
