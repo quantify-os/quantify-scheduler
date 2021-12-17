@@ -7,9 +7,9 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
 
-import pytest
-
 from typing import Type
+
+import pytest
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.types.qblox import OpInfo
