@@ -526,12 +526,12 @@ class Sequencer:
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
-        acquisitions: List[OpInfo] = list(
+        acquisition_infos: List[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
         )
 
         # acquisition metadata for acquisitions relevant to this sequencer only
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
+        acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisition_infos)
 
         # initialize an empty dictionary for the format required by pulsar
         acq_declaration_dict = {}
@@ -567,12 +567,12 @@ class Sequencer:
                 # BinModes in the future.
                 raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
             if acq_metadata.acq_protocol == "looped_periodic_acquisition":
-                if len(acquisitions) > 1:
+                if len(acquisition_infos) > 1:
                     raise ValueError(
                         "only one acquisition allowed if "
                         "looped_periodic_acquisition is used"
                     )
-                num_bins = acquisitions[0].data["num_times"]
+                num_bins = acquisition_infos[0].data["num_times"]
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
                 "index": acq_channel,
