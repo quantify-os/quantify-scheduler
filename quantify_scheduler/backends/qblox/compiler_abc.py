@@ -531,7 +531,9 @@ class Sequencer:
         )
 
         # acquisition metadata for acquisitions relevant to this sequencer only
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisition_infos)
+        acq_metadata = _extract_acquisition_metadata_from_acquisitions(
+            acquisition_infos
+        )
 
         # initialize an empty dictionary for the format required by pulsar
         acq_declaration_dict = {}
