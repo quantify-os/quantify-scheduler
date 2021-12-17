@@ -88,7 +88,7 @@ def test_get_operation_strategy(
     )
 
     # assert
-    assert type(obj) == answer
+    assert isinstance(obj, answer)
 
 
 @pytest.mark.parametrize(
@@ -112,7 +112,7 @@ def test_get_operation_strategy_no_instr_gen(
     )
 
     # assert
-    assert type(obj) == pulses.GenericPulseStrategy
+    assert isinstance(obj, pulses.GenericPulseStrategy)
 
 
 def test_invalid_protocol_exception():
