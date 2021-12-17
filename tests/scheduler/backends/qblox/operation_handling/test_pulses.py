@@ -10,23 +10,15 @@ from quantify_scheduler import waveforms
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.qblox.operation_handling import pulses
 
 
-@pytest.fixture(name="empty_qasm_program")
+@pytest.fixture(name="empty_qasm_program_qcm")
 def fixture_empty_qasm_program():
-    static_hw_properties = types.StaticHardwareProperties(
-        instrument_type="QCM",
-        max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
-        max_awg_output_voltage=2.5,
-        marker_configuration=types.MarkerConfiguration(start=0b1111, end=0b0000),
-        mixer_dc_offset_range=types.BoundedParameter(
-            min_val=-2.5, max_val=2.5, units="V"
-        ),
-    )
-    yield QASMProgram(static_hw_properties, RegisterManager())
+    yield QASMProgram(QcmModule.static_hw_properties, RegisterManager())
 
 
 class TestGenericPulseStrategy:
@@ -205,9 +197,9 @@ class TestGenericPulseStrategy:
             "G_amp': 0.1234, 'D_amp': 1, 'nr_sigma': 3, 'phase': 0}."
         )
 
-    def test_insert_qasm(self, empty_qasm_program):
+    def test_insert_qasm(self, empty_qasm_program_qcm):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qcm
         duration = 24e-9
         wf_func_path, wf_kwargs = ("quantify_scheduler.waveforms.square", {"amp": 1})
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
@@ -357,9 +349,9 @@ class TestStitchedSquarePulseStrategy:
             ),
         ],
     )
-    def test_insert_qasm(self, empty_qasm_program, duration, answer):
+    def test_insert_qasm(self, empty_qasm_program_qcm, duration, answer):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qcm
         wf_func_path, wf_kwargs = ("quantify_scheduler.waveforms.square", {"amp": 1})
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
 
@@ -514,10 +506,10 @@ class TestStaircasePulseStrategy:
         ],
     )
     def test_insert_qasm(
-        self, empty_qasm_program, start_amp, final_amp, num_steps, output_mode, answer
+        self, empty_qasm_program_qcm, start_amp, final_amp, num_steps, output_mode, answer
     ):
         # arrange
-        qasm = empty_qasm_program
+        qasm = empty_qasm_program_qcm
         wf_func_path, wf_kwargs = (
             "quantify_scheduler.waveforms.staircase",
             {"start_amp": start_amp, "final_amp": final_amp, "num_steps": num_steps},
