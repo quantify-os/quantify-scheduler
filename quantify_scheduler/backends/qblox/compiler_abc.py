@@ -495,7 +495,7 @@ class Sequencer:
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
         """
-        wf_dict = {}
+        wf_dict: Dict[str, Any] = {}
         for acq in self.acquisitions:
             acq.generate_data(wf_dict)
         return wf_dict
