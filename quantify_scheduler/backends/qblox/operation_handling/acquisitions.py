@@ -207,7 +207,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             waveform_data = helpers.generate_waveform_data(
                 parameterized_waveform, sampling_rate=constants.SAMPLING_RATE
             )
-            if not (np.isrealobj(waveform_data)):
+            if not np.isrealobj(waveform_data):
                 raise ValueError(
                     f"Complex weights not supported by hardware. Please use two 1d "
                     f"real-valued weights.\n\nException was triggered because of "
