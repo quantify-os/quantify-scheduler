@@ -124,6 +124,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
+        assert acq_bin_idx_reg is not None
         self._acquire_square(qasm_program, acq_bin_idx_reg)
 
         qasm_program.emit(
