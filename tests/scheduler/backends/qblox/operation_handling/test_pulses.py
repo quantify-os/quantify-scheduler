@@ -116,6 +116,8 @@ class TestGenericPulseStrategy:
         waveform0_data = waveforms_generated[0]["data"]
         waveform1_data = waveforms_generated[1]["data"]
         del data["wf_func"]
+        # pylint: disable=unexpected-keyword-arg
+        # pylint doesn't understand the del so it thinks we are passing wf_func
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
             waveforms.drag(t=t_test, **data)
         )
