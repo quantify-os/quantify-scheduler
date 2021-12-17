@@ -454,7 +454,7 @@ class Sequencer:
         ValueError
             I or Q amplitude is being set outside of maximum range.
         """
-        wf_dict = {}
+        wf_dict: Dict[str, Any] = {}
         for pulse in self.pulses:
             pulse.generate_data(wf_dict=wf_dict)
         return wf_dict
