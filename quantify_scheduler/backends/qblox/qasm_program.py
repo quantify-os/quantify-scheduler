@@ -428,6 +428,7 @@ class QASMProgram:
 
     @contextmanager
     def loop(self, label: str, repetitions: int = 1):
+        # pylint: disable=line-too-long
         """
         Defines a context manager that can be used to generate a loop in the QASM
         program.
