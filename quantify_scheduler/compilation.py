@@ -72,52 +72,64 @@ def determine_absolute_timing(
         )
 
     # iterate over the objects in the schedule.
-    last_constr = schedule.timing_constraints[0]
-    last_op = schedule.operations[last_constr["operation_repr"]]
+    last_schedulable = schedule.timing_constraints[0]
+    last_op = schedule.operations[last_schedulable["operation_id"]]
 
-    last_constr["abs_time"] = 0
+    last_schedulable["abs_time"] = 0
 
-    timing_constraints_labels = [tc["label"] for tc in schedule.timing_constraints]
-    sort_idx = np.argsort(timing_constraints_labels)
-    timing_constraints_labels_sorted = np.asarray(sorted(timing_constraints_labels))
+    schedulable_names = [str(tc) for tc in schedule.timing_constraints]
+    sort_idx = np.argsort(schedulable_names)
+    schedulable_names_sorted = np.asarray(sorted(schedulable_names))
 
-    for t_constr in schedule.data["timing_constraints"][1:]:
-        curr_op = schedule.operations[t_constr["operation_repr"]]
-        if t_constr["ref_op"] is None:
-            ref_constr = last_constr
-            ref_op = last_op
-        else:
-            # this assumes the reference op exists. This is ensured in schedule.add
-            sidx = np.searchsorted(timing_constraints_labels_sorted, t_constr["ref_op"])
-            ref_constr_idx = sort_idx[sidx]
-            ref_constr = schedule.timing_constraints[ref_constr_idx]
-            ref_op = schedule.operations[ref_constr["operation_repr"]]
+    for schedulable in schedule.data["timing_constraints"][1:]:
+        curr_op = schedule.operations[schedulable["operation_id"]]
+        if len(schedulable.data["timing_constraints"]) == 0:
+            schedulable.add_timing_constraint(ref_schedulable=last_schedulable)
+        # elif len(schedulable.data['timing_constraints'] ) > 1:
+        #    raise Exception('currently, the number of timing constraints per schedulable is restricted to at most 1')
+        # print(schedulable)
+        for t_constr in schedulable.data["timing_constraints"]:
+            if t_constr["ref_schedulable"] is None:
+                ref_schedulable = last_schedulable
+                ref_op = last_op
+            else:
+                # this assumes the reference op exists. This is ensured in schedule.add
+                sidx = np.searchsorted(
+                    schedulable_names_sorted, str(t_constr["ref_schedulable"])
+                )
+                ref_schedulable_idx = sort_idx[sidx]
+                ref_schedulable = schedule.timing_constraints[ref_schedulable_idx]
+                ref_op = schedule.operations[ref_schedulable["operation_id"]]
 
-        # duration = 1 is useful when e.g., drawing a circuit diagram.
-        duration_ref_op = ref_op.duration if time_unit == "physical" else 1
+            # duration = 1 is useful when e.g., drawing a circuit diagram.
+            duration_ref_op = ref_op.duration if time_unit == "physical" else 1
 
-        if t_constr["ref_pt"] == "start":
-            t0 = ref_constr["abs_time"]
-        elif t_constr["ref_pt"] == "center":
-            t0 = ref_constr["abs_time"] + duration_ref_op / 2
-        elif t_constr["ref_pt"] == "end":
-            t0 = ref_constr["abs_time"] + duration_ref_op
-        else:
-            raise NotImplementedError(
-                'Timing "{}" not supported by backend'.format(ref_constr["abs_time"])
-            )
+            if t_constr["ref_pt"] == "start":
+                t0 = ref_schedulable["abs_time"]
+            elif t_constr["ref_pt"] == "center":
+                t0 = ref_schedulable["abs_time"] + duration_ref_op / 2
+            elif t_constr["ref_pt"] == "end":
+                t0 = ref_schedulable["abs_time"] + duration_ref_op
+            else:
+                raise NotImplementedError(
+                    'Timing "{}" not supported by backend'.format(
+                        ref_constr["abs_time"]
+                    )
+                )
 
-        duration_new_op = curr_op.duration if time_unit == "physical" else 1
+            duration_new_op = curr_op.duration if time_unit == "physical" else 1
 
-        if t_constr["ref_pt_new"] == "start":
-            t_constr["abs_time"] = t0 + t_constr["rel_time"]
-        elif t_constr["ref_pt_new"] == "center":
-            t_constr["abs_time"] = t0 + t_constr["rel_time"] - duration_new_op / 2
-        elif t_constr["ref_pt_new"] == "end":
-            t_constr["abs_time"] = t0 + t_constr["rel_time"] - duration_new_op
-
+            if t_constr["ref_pt_new"] == "start":
+                abs_time = t0 + t_constr["rel_time"]
+            elif t_constr["ref_pt_new"] == "center":
+                abs_time = t0 + t_constr["rel_time"] - duration_new_op / 2
+            elif t_constr["ref_pt_new"] == "end":
+                abs_time = t0 + t_constr["rel_time"] - duration_new_op
+            if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:
+                schedulable["abs_time"] = abs_time
+            # print(f'\tref {str(ref_schedulable)} time {ref_schedulable["abs_time"]}')
         # update last_constraint and operation for next iteration of the loop
-        last_constr = t_constr
+        last_schedulable = schedulable
         last_op = curr_op
 
     return schedule

@@ -427,51 +427,22 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self.data["resource_dict"][resource.name] = resource
 
     # pylint: disable=too-many-arguments
-    def add(
-        self,
-        operation: Operation,
-        rel_time: float = 0,
-        ref_op: str = None,
-        ref_pt: Literal["start", "center", "end"] = "end",
-        ref_pt_new: Literal["start", "center", "end"] = "start",
-        label: str = None,
-    ) -> str:
+    def add(self, operation: Operation, label: str = None,) -> Schedulable:
         """
         Add an :class:`quantify_scheduler.operations.operation.Operation` to the
-        schedule and specify timing constraints.
-
-        A timing constraint constrains the operation in time by specifying the time
-        (:code:`"rel_time"`) between a reference operation and the added operation.
-        The time can be specified with respect to the "start", "center", or "end" of
-        the operations.
-        The reference operation (:code:`"ref_op"`) is specified using its label
-        property.
-        See also :attr:`~.ScheduleBase.timing_constraints`.
+        schedule.
 
         Parameters
         ----------
         operation
             The operation to add to the schedule
-        rel_time
-            relative time between the reference operation and the added operation.
-            the time is the time between the "ref_pt" in the reference operation and
-            "ref_pt_new" of the operation that is added.
-        ref_op
-            label of the reference operation. If set to :code:`None`, will default
-            to the last added operation.
-        ref_pt
-            reference point in reference operation must be one of
-            ('start', 'center', 'end').
-        ref_pt_new
-            reference point in added operation must be one of
-            ('start', 'center', 'end').
         label
             a unique string that can be used as an identifier when adding operations.
             if set to None, a random hash will be generated instead.
         Returns
         -------
         :
-            returns the (unique) label of the last added operation.
+            returns the schedulable created on the schedule
         """
         assert isinstance(operation, Operation)
 
@@ -485,7 +456,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                     [
                         item
                         for item in self.data["timing_constraints"]
-                        if item["label"] == label
+                        if item["name"] == label
                     ]
                 )
                 == 0
@@ -493,34 +464,100 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             if not label_is_unique:
                 raise ValueError(f'Label "{label}" must be unique.')
 
+        operation_id = str(operation)
+        self.data["operation_dict"][operation_id] = operation
+        element = Schedulable(name=label, operation_id=operation_id, schedule=self)
+        self.data["timing_constraints"].append(element)
+
+        return element
+
+
+class Schedulable(UserDict):
+    """
+    This class represents an element on a schedule. It contains all timing information of the element.
+    It also specifies what the element should do, currently represented by an operation ID.
+    """
+
+    def __init__(self, name, operation_id, schedule):
+        """
+
+        Parameters
+        ----------
+        name
+            The name of this schedulable, by which it can be referenced by other schedulables
+        operation_id
+            The operation id which is to be executed by this schedulable
+        schedule
+            The schedule on which the schedulable is created. This allows to scheduable to find other elements on the schedule
+        """
+        super().__init__()
+
+        self.data["name"] = name
+        self.data["operation_id"] = operation_id
+        self.data["timing_constraints"] = []
+
+        self.schedule = schedule
+
+    def add_timing_constraint(
+        self,
+        rel_time: float = 0,
+        ref_schedulable: str = None,
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
+    ):
+        """
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference operation and the added operation.
+        The time can be specified with respect to the "start", "center", or "end" of
+        the operations.
+        The reference schedulable (:code:`"ref_schedulable"`) is specified using its name
+        property.
+        See also :attr:`~.ScheduleBase.timing_constraints`.
+
+        Parameters
+        ----------
+        rel_time
+            relative time between the reference operation and the added operation.
+            the time is the time between the "ref_pt" in the reference operation and
+            "ref_pt_new" of the operation that is added.
+        ref_schedulable
+            name of the reference schedulable. If set to :code:`None`, will default
+            to the last added operation.
+        ref_pt
+            reference point in reference operation must be one of
+            ('start', 'center', 'end').
+        ref_pt_new
+            reference point in added operation must be one of
+            ('start', 'center', 'end').
+        """
+
         # assert that the reference operation exists
-        if ref_op is not None:
+        if ref_schedulable is not None:
             ref_exists = (
                 len(
                     [
                         item
-                        for item in self.data["timing_constraints"]
-                        if item["label"] == ref_op
+                        for item in self.schedule.data["timing_constraints"]
+                        if str(item) == str(ref_schedulable)
                     ]
                 )
                 == 1
             )
             if not ref_exists:
-                raise ValueError(f'Reference "{ref_op}" does not exist in schedule.')
+                raise ValueError(
+                    f'Reference "{ref_schedulable}" does not exist in schedule.'
+                )
 
-        operation_id = str(operation)
-        self.data["operation_dict"][operation_id] = operation
         timing_constr = {
-            "label": label,
             "rel_time": rel_time,
-            "ref_op": ref_op,
+            "ref_schedulable": ref_schedulable,
             "ref_pt_new": ref_pt_new,
             "ref_pt": ref_pt,
-            "operation_repr": operation_id,
         }
         self.data["timing_constraints"].append(timing_constr)
 
-        return label
+    def __str__(self):
+        return str(self.data["name"])
 
 
 # pylint: disable=too-many-ancestors
