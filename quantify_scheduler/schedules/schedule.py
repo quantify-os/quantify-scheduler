@@ -427,7 +427,11 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self.data["resource_dict"][resource.name] = resource
 
     # pylint: disable=too-many-arguments
-    def add(self, operation: Operation, label: str = None,) -> Schedulable:
+    def add(
+        self,
+        operation: Operation,
+        label: str = None,
+    ) -> Schedulable:
         """
         Add an :class:`quantify_scheduler.operations.operation.Operation` to the
         schedule.
