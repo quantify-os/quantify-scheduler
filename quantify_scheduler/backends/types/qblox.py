@@ -172,7 +172,7 @@ class LOSettings(DataClassJsonMixin):
             )
         if "generic_icc_name" in mapping:
             generic_icc_name = mapping["generic_icc_name"]
-            default_generic_icc_name = "generic"
+            default_generic_icc_name = "ic_generic"
             if generic_icc_name != default_generic_icc_name:
                 raise NotImplementedError(
                     f"Specified name '{generic_icc_name}' as a generic instrument "
