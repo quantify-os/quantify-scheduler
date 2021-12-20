@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
+import numpy as np
 from zhinst import qcodes
 from zhinst.qcodes import base
 
@@ -16,7 +17,7 @@ from quantify_scheduler.helpers import time
 logger = logging.getLogger(__name__)
 
 
-def get_value(instrument: base.ZIBaseInstrument, node: str) -> str:
+def get_value(instrument: base.ZIBaseInstrument, node: str) -> np.ndarray:
     """
     Gets the value of a ZI node.
 
