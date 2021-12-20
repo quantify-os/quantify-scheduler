@@ -2,12 +2,14 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+from typing import Any
 from unittest import TestCase
 
 import numpy as np
 import pytest
-from quantify_scheduler import Operation
-from quantify_scheduler.gate_library import (
+
+from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
     X90,
@@ -18,10 +20,9 @@ from quantify_scheduler.gate_library import (
     X,
     Y,
 )
-from quantify_scheduler.types import Schedule
 
 
-def test_schedule_add_timing_constraints():
+def test_schedule_add_timing_constraints() -> None:
     sched = Schedule("my exp")
     test_lab = "test label"
     x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
@@ -60,16 +61,16 @@ def test_schedule_add_timing_constraints():
         Measure("q0", "q9"),
     ],
 )
-def test_gate_is_valid(operation: Operation):
+def test_gate_is_valid(operation: Operation) -> None:
     assert Operation.is_valid(operation)
 
 
-def test_rxy_is_valid():
+def test_rxy_is_valid() -> None:
     rxy_q5 = Rxy(theta=124, phi=23.9, qubit="q5")
     assert Operation.is_valid(rxy_q5)
 
 
-def is__repr__equal(obj):
+def is__repr__equal(obj: Operation) -> None:
     """
     Asserts that evaulating the representation
     of a thing is identical to the thing
@@ -80,7 +81,7 @@ def is__repr__equal(obj):
     assert eval(repr(obj)) == obj
 
 
-def is__str__equal(obj):
+def is__str__equal(obj: Any) -> None:
     """
     Asserts if the string representation
     equals the object type.
@@ -106,7 +107,7 @@ def is__str__equal(obj):
         Measure("q0", "q6", acq_index=92),
     ],
 )
-def test__repr__(operation: Operation):
+def test__repr__(operation: Operation) -> None:
     is__repr__equal(operation)
 
 
@@ -128,7 +129,7 @@ def test__repr__(operation: Operation):
         Measure("q0", "q6", acq_index=92),
     ],
 )
-def test__str__(operation: Operation):
+def test__str__(operation: Operation) -> None:
     is__str__equal(operation)
 
 
@@ -150,7 +151,7 @@ def test__str__(operation: Operation):
         Measure("q0", "q6", acq_index=92),
     ],
 )
-def test_deserialize(operation: Operation):
+def test_deserialize(operation: Operation) -> None:
     # Arrange
     operation_repr: str = repr(operation)
 
@@ -195,7 +196,7 @@ def test_deserialize(operation: Operation):
         Measure("q0", "q6", acq_index=92),
     ],
 )
-def test__repr__modify_not_equal(operation: Operation):
+def test__repr__modify_not_equal(operation: Operation) -> None:
     # Arrange
     obj = eval(repr(operation))
     assert obj == operation

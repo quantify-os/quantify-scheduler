@@ -5,10 +5,11 @@
 from unittest import TestCase
 
 import pytest
+
 import numpy as np
 from quantify_scheduler import Operation
-from quantify_scheduler.gate_library import X90
-from quantify_scheduler.pulse_library import (
+from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
@@ -18,11 +19,10 @@ from quantify_scheduler.pulse_library import (
     NumericalPulse,
     decompose_long_square_pulse,
 )
-
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
 
-def test_operation_duration_single_pulse():
+def test_operation_duration_single_pulse() -> None:
     dgp = DRAGPulse(
         G_amp=0.8, D_amp=-0.3, phase=24.3, duration=20e-9, clock="cl:01", port="p.01"
     )
@@ -31,7 +31,7 @@ def test_operation_duration_single_pulse():
     assert idle.duration == pytest.approx(50e-9)
 
 
-def test_operation_duration_single_pulse_delayed():
+def test_operation_duration_single_pulse_delayed() -> None:
     dgp = DRAGPulse(
         G_amp=0.8,
         D_amp=-0.3,
@@ -44,7 +44,7 @@ def test_operation_duration_single_pulse_delayed():
     assert dgp.duration == pytest.approx(13.4e-9)
 
 
-def test_operation_add_pulse():
+def test_operation_add_pulse() -> None:
     dgp1 = DRAGPulse(
         G_amp=0.8, D_amp=-0.3, phase=0, duration=20e-9, clock="cl:01", port="p.01", t0=0
     )
@@ -61,7 +61,7 @@ def test_operation_add_pulse():
     assert len(x90["pulse_info"]) == 1
 
 
-def test_operation_duration_composite_pulse():
+def test_operation_duration_composite_pulse() -> None:
     dgp1 = DRAGPulse(
         G_amp=0.8,
         D_amp=-0.3,
@@ -121,11 +121,11 @@ def test_operation_duration_composite_pulse():
         ),
     ],
 )
-def test_pulse_is_valid(operation: Operation):
+def test_pulse_is_valid(operation: Operation) -> None:
     assert Operation.is_valid(operation)
 
 
-def test_decompose_long_square_pulse():
+def test_decompose_long_square_pulse() -> None:
     # Non matching durations ("extra" pulse needed to get the necessary duration)
     duration = 200e-9
     duration_sq_max = 16e-9
@@ -185,7 +185,7 @@ def test_decompose_long_square_pulse():
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
-def test__repr__(operation: Operation):
+def test__repr__(operation: Operation) -> None:
     assert eval(repr(operation)) == operation
 
 
@@ -202,7 +202,7 @@ def test__repr__(operation: Operation):
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
-def test__str__(operation: Operation):
+def test__str__(operation: Operation) -> None:
     assert isinstance(eval(str(operation)), type(operation))
 
 
@@ -219,7 +219,7 @@ def test__str__(operation: Operation):
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
-def test_deserialize(operation: Operation):
+def test_deserialize(operation: Operation) -> None:
     # Arrange
     operation_repr: str = repr(operation)
 
@@ -243,7 +243,7 @@ def test_deserialize(operation: Operation):
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
     ],
 )
-def test__repr__modify_not_equal(operation: Operation):
+def test__repr__modify_not_equal(operation: Operation) -> None:
     # Arrange
     obj = eval(repr(operation))
     assert obj == operation
@@ -266,7 +266,7 @@ def test_dccompensation_pulse_amp() -> None:
     pulse2 = create_dc_compensation_pulse(
         duration=1e-8,
         pulses=[pulse0, pulse1],
-        sampling_rate=int(1e9),
+        sampling_rate=int(1e16),
         port="LP",
     )
     TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.5)
@@ -275,10 +275,10 @@ def test_dccompensation_pulse_amp() -> None:
 def test_dccompensation_pulse_modulated() -> None:
     clock = ClockResource("clock", 1.0)
     pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock)
-    with pytest.raises(ValueError):
-        create_dc_compensation_pulse(
-            amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
-        )
+    pulse = create_dc_compensation_pulse(
+        amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
+    )
+    assert pulse.data["pulse_info"][0]["duration"] == 0.0
 
 
 def test_dccompensation_pulse_duration() -> None:

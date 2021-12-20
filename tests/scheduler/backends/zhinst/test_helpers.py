@@ -8,8 +8,9 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 from zhinst.qcodes.base import ZIBaseInstrument
-from quantify_scheduler.helpers import time
+
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.helpers import time
 
 
 @pytest.mark.parametrize(
@@ -286,7 +287,7 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
 
 
 @pytest.mark.parametrize(
-    "base_clock,expected",
+    "base_sampling_rate,expected",
     [
         (
             2.4e9,
@@ -328,10 +329,10 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
         ),
     ],
 )
-def test_get_clock_rates(base_clock: float, expected: Dict[int, int]):
+def test_get_sampling_rates(base_sampling_rate: float, expected: Dict[int, int]):
 
     # Act
-    values = zi_helpers.get_clock_rates(base_clock)
+    values = zi_helpers.get_sampling_rates(base_sampling_rate)
 
     # Assert
     assert values == expected
@@ -416,31 +417,6 @@ def test_set_and_compile_awg_seqc_upload_failed(mocker):
 
     # Assert
     assert str(execinfo.value) == "Upload failed: \nSome error occured"
-
-
-def test_set_and_compile_awg_seqc_compiled_with_warning(mocker):
-    # Arrange
-    awg_module = mocker.Mock()
-    awg_module.get_int.side_effect = [2]
-    awg_module.get_string.side_effect = ["Some warning occured"]
-    awg = mocker.Mock()
-    awg._awg._module = awg_module
-    instrument = mocker.create_autospec(ZIBaseInstrument, instance=True)
-    instrument.awg = awg
-
-    mocker.patch.object(zi_helpers, "get_value", return_value="")
-    mocker.patch.object(time, "sleep")
-
-    awg_index = 0
-    node: str = "compiler/sourcestring"
-    value: str = "abc"
-
-    # Act
-    with pytest.raises(Warning) as execinfo:
-        zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
-
-    # Assert
-    assert str(execinfo.value) == "Compiled with warning: \nSome warning occured"
 
 
 def test_set_and_compile_awg_seqc_upload_timeout(mocker):

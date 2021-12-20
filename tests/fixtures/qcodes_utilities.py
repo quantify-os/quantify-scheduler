@@ -3,7 +3,6 @@
 """Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
-
 import pytest
 from qcodes import Instrument
 

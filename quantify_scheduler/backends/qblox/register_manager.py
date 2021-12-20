@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the master branch
 """Utility class for dynamically allocating registers for Qblox sequencers."""
 from typing import Set
+
 from quantify_scheduler.backends.qblox import constants
 
 
@@ -10,7 +11,7 @@ class RegisterManager:
     Utility class that keeps track of all the registers that are still available.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Instantiates the `RegisterManager`.
         """
@@ -102,7 +103,7 @@ def _verify_valid_register(register_name: str) -> None:
         Invalid register name passed.
     """
 
-    def raise_error():
+    def raise_error() -> None:
         raise ValueError(
             f"Invalid register '{register_name}'! The correct format is 'R' followed by"
             f" an integer between 0 and {constants.NUMBER_OF_REGISTERS}."

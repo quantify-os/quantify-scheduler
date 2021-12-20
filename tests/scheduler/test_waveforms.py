@@ -4,17 +4,19 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
+
 from quantify_scheduler.waveforms import (
-    square,
     drag,
     staircase,
     interpolated_complex_waveform,
     modulate_wave,
     rotate_wave,
+    square,
+    staircase,
 )
 
 
-def test_square_wave():
+def test_square_wave() -> None:
     amped_sq = square(np.arange(50), 2.44)
     npt.assert_array_equal(amped_sq, np.linspace(2.44, 2.44, 50))
 
@@ -23,7 +25,7 @@ def test_square_wave():
     npt.assert_array_equal(amped_sq_iq.imag, np.linspace(0, 0, 20))
 
 
-def test_staircase():
+def test_staircase() -> None:
     t = np.linspace(0, 1e-6, 20)
     sig = staircase(t, -1, 2, 4)
     answer = np.array(
@@ -53,7 +55,7 @@ def test_staircase():
     npt.assert_array_equal(sig, answer)
 
 
-def test_drag_ns():
+def test_drag_ns() -> None:
     duration = 20e-9
     nr_sigma = 3
     G_amp = 0.5
@@ -124,7 +126,7 @@ def test_interpolated_complex_waveform(test_wf, test_time, answer):
     npt.assert_array_equal(answer, result)
 
 
-def test_rotate_wave():
+def test_rotate_wave() -> None:
 
     I = np.ones(10)  # noqa # Q component is zero
     Q = np.zeros(10)  # noqa # not used as input, only used for testing
@@ -150,7 +152,7 @@ def test_rotate_wave():
     npt.assert_array_almost_equal(Q, rot_wf.imag)
 
 
-def test_modulate():
+def test_modulate() -> None:
     fs = 100
     f = 4
     t = np.arange(fs)

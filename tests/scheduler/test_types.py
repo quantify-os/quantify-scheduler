@@ -6,10 +6,14 @@
 import json
 
 import numpy as np
+import pandas as pd
 import pytest
-from quantify_scheduler import Operation, Schedule, CompiledSchedule
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.gate_library import (
+from quantify_core.data.handling import set_datadir
+
+from quantify_scheduler import CompiledSchedule, Operation, Schedule
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
     X90,
@@ -20,9 +24,10 @@ from quantify_scheduler.gate_library import (
     X,
     Y,
 )
-from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture(scope="module", autouse=False)
@@ -84,7 +89,7 @@ def test_schedule_bell():
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
         sched.add(Measure(q0, q1), label="M {:.2f} deg".format(theta))
 
-    assert len(sched.operations) == 24
+    assert len(sched.operations) == 24 - 1  # angle theta == 360 will evaluate to 0
     assert len(sched.timing_constraints) == 105
 
     assert Schedule.is_valid(sched)
@@ -255,3 +260,122 @@ def test_compiled_t1_sched_valid(t1_schedule):
 
     assert Schedule.is_valid(test_schedule)
     assert CompiledSchedule.is_valid(test_schedule)
+
+
+def test_t1_sched_circuit_diagram(t1_schedule):
+    """
+    Tests that the test schedule can be visualized
+    """
+    # will only test that a figure is created and runs without errors
+    _ = t1_schedule.plot_circuit_diagram_mpl()
+
+
+def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
+    """
+    Tests that the test schedule can be visualized
+    """
+
+    set_datadir(tmp_test_data_dir)
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
+
+    # will only test that a figure is created and runs without errors
+    _ = comp_sched.plot_pulse_diagram_mpl()
+
+
+def test_sched_timing_table(tmp_test_data_dir):
+
+    schedule = Schedule(name="test_sched", repetitions=10)
+    qubit = "q0"
+    times = [0, 10e-6, 30e-6]
+    for i, tau in enumerate(times):
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(X(qubit), label=f"pi {i}")
+        schedule.add(
+            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+        )
+
+    with pytest.raises(ValueError):
+        _ = schedule.timing_table
+
+    set_datadir(tmp_test_data_dir)
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    comp_sched = qcompile(schedule, device_cfg=device_cfg)
+    # will only test that a figure is created and runs without errors
+    timing_table = comp_sched.timing_table
+
+    assert set(timing_table.data.keys()) == {
+        "abs_time",
+        "clock",
+        "duration",
+        "is_acquisition",
+        "port",
+        "waveform_op_id",
+        "operation",
+        "wf_idx",
+    }
+
+    assert len(timing_table.data) == 12
+
+    np.testing.assert_almost_equal(
+        actual=np.array(timing_table.data["abs_time"]),
+        desired=np.array(
+            [
+                0,
+                200e-6,
+                200e-6,
+                200e-6 + 120e-9,  # acq delay
+                200e-6 + 420e-9,
+                400e-6 + 420e-9,
+                410e-6 + 420e-9,
+                410e-6 + 540e-9,
+                410e-6 + 840e-9,
+                610e-6 + 840e-9,
+                640e-6 + 840e-9,
+                640e-6 + 960e-9,
+            ]
+        ),
+        decimal=10,
+    )
+
+
+def test_sched_hardware_timing_table(
+    t1_schedule,
+    load_example_transmon_config,
+    load_example_zhinst_hardware_config,
+):
+    # assert that files properly compile
+    compiled_schedule = qcompile(
+        t1_schedule,  # pylint: disable=no-member
+        load_example_transmon_config(),
+        load_example_zhinst_hardware_config(),
+    )
+    hardware_timing_table = compiled_schedule.hardware_timing_table
+    columns_of_hw_timing_table = hardware_timing_table.columns
+
+    assert isinstance(hardware_timing_table, pd.io.formats.style.Styler)
+    assert "clock_cycle_start" in columns_of_hw_timing_table
+    assert "sample_start" in columns_of_hw_timing_table
+    assert "hardware_channel" in columns_of_hw_timing_table
+    assert "waveform_id" in columns_of_hw_timing_table
+
+
+def test_sched_hardware_waveform_dict(
+    t1_schedule,
+    load_example_transmon_config,
+    load_example_zhinst_hardware_config,
+):
+    # assert that files properly compile
+    compiled_schedule = qcompile(
+        t1_schedule,  # pylint: disable=no-member
+        load_example_transmon_config(),
+        load_example_zhinst_hardware_config(),
+    )
+    hardware_timing_table = compiled_schedule.hardware_timing_table
+    hardware_waveform_dict = compiled_schedule.hardware_waveform_dict
+
+    for waveform_id in hardware_timing_table.data.waveform_id:
+        if "Reset" in waveform_id:
+            # Ignore the reset operation because it will return None
+            continue
+        assert isinstance(hardware_waveform_dict.get(waveform_id), np.ndarray)

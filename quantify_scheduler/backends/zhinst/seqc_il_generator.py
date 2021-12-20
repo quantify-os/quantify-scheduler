@@ -26,6 +26,7 @@ class SeqcInstructions(Enum):
         "AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER"
     )
     EXECUTE_TABLE_ENTRY = "executeTableEntry"
+    START_QA = "startQA"
 
 
 SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
@@ -41,177 +42,9 @@ SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
         SeqcInstructions.PLAY_WAVE: 0,
         SeqcInstructions.SET_TRIGGER: 1,
         SeqcInstructions.ARM_INTEGRATION: 3,
+        SeqcInstructions.START_QA: 6,
     },
 }
-
-
-class SeqcInfo:
-    """
-    The Sequencer information class containing durations,
-    offsets, pulses and clocks.
-    """
-
-    sequencer_clock: float
-
-    def __init__(
-        self,
-        cached_schedule: schedule_helpers.CachedSchedule,
-        output: zhinst.Output,
-        low_res_clock: float,
-    ) -> None:
-        self.sequencer_clock = low_res_clock
-        self._line_trigger_delay_in_seconds = output.line_trigger_delay
-
-        self._schedule_offset_in_seconds = cached_schedule.start_offset_in_seconds
-        self._schedule_duration_in_seconds: float = (
-            cached_schedule.total_duration_in_seconds - self._schedule_offset_in_seconds
-        )
-        timeslot_indexes: List[int] = list(
-            cached_schedule.port_timeline_dict[output.port].keys()
-        )
-        self._timeline_start_in_seconds: float = (
-            schedule_helpers.get_operation_start(
-                cached_schedule.schedule,
-                timeslot_index=timeslot_indexes[0],
-            )
-            - self.schedule_offset_in_seconds
-        )
-        self._timeline_end_in_seconds: float = (
-            schedule_helpers.get_operation_end(
-                cached_schedule.schedule, timeslot_index=timeslot_indexes[-1]
-            )
-            - self.schedule_offset_in_seconds
-        )
-
-    def to_clocks(self, seconds: float) -> int:
-        """
-        Returns the converted value in clocks.
-
-        Parameters
-        ----------
-        seconds : float
-
-        Returns
-        -------
-        int
-        """
-        if seconds <= 0:
-            return 0
-        return round(seconds / self.sequencer_clock)
-
-    @property
-    def schedule_offset_in_seconds(self) -> float:
-        """
-        Returns the schedule start offset in seconds.
-        The offset is determined by the Reset Operation.
-
-        Returns
-        -------
-        float
-        """
-        return self._schedule_offset_in_seconds
-
-    @property
-    def schedule_offset_in_clocks(self) -> int:
-        """
-        Returns the schedule start offset in clocks.
-        The offset is determined by the Reset Operation.
-
-        Returns
-        -------
-        int
-        """
-        return self.to_clocks(self.schedule_offset_in_seconds)
-
-    @property
-    def schedule_duration_in_seconds(self) -> float:
-        """
-        Returns the total schedule duration in seconds.
-
-        Returns
-        -------
-        float
-        """
-        return self._schedule_duration_in_seconds
-
-    @property
-    def schedule_duration_in_clocks(self) -> int:
-        """
-        Returns the total schedule duration in clocks.
-
-        Returns
-        -------
-        int
-        """
-        return self.to_clocks(self.schedule_duration_in_seconds)
-
-    @property
-    def timeline_start_in_seconds(self) -> float:
-        """
-        Returns the port timeline start in seconds.
-
-        Returns
-        -------
-        float
-        """
-        return self._timeline_start_in_seconds
-
-    @property
-    def timeline_start_in_clocks(self) -> int:
-        """
-        Returns the port timeline start in clocks.
-
-        Returns
-        -------
-        float
-        """
-        return self.to_clocks(self.timeline_start_in_seconds)
-
-    @property
-    def timeline_end_in_seconds(self) -> float:
-        """
-        Returns the port timeline end in seconds.
-
-        Returns
-        -------
-        float
-        """
-        return self._timeline_end_in_seconds
-
-    @property
-    def timeline_end_in_clocks(self) -> int:
-        """
-        Returns the port timeline start in clocks.
-
-        Returns
-        -------
-        float
-        """
-        return self.to_clocks(self.timeline_end_in_seconds)
-
-    @property
-    def line_trigger_delay_in_seconds(self) -> float:
-        """
-        Returns the configured line delay when using
-        triggers in seconds.
-
-        Returns
-        -------
-        float
-        """
-        return self._line_trigger_delay_in_seconds
-
-    @property
-    def line_trigger_delay_in_clocks(self) -> int:
-        """
-        Returns the configured line delay when using
-        triggers in clocks.
-
-        Returns
-        -------
-        int
-        """
-        return self.to_clocks(self.line_trigger_delay_in_seconds)
 
 
 class SeqcILGenerator(object):
@@ -393,6 +226,14 @@ class SeqcILGenerator(object):
         else:
             self._assign_local(name, f'"{value}";')
 
+    def emit_blankline(self) -> None:
+        """
+        Emits a blank line to the program.
+
+        This is typically used to create a visual separation for readability.
+        """
+        self._emit("")
+
     def emit_comment(self, text: str) -> None:
         """
         Emit a comment to the program.
@@ -439,9 +280,33 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            name :
-                The variable name.
+            names :
+                The wave names to be played. This should refer to the wave variable name
+                as defined in the seqc, or the wave index in the commandtable
+                to be played.
+            comment :
+                The inline comment to be emitted in the seqc.
+
+        Examples
+        --------
+        An example for the use of the playWave instruction from the LabOne Programming
+        Manual.
+
+        Ensure that the "wave_file" variable (the name argument) corresponds to a
+        filename that was declared using the declareWave
+
+        .. code-block::
+
+            //Definition inline with playWave
+            playWave("wave_file");
+            //Assign first to a wave data type, then use
+            wave w = "wave_file";
+            playWave(w)
+
         """
+        if comment != "":
+            comment = f"\t// {comment}"
+
         _names = ", ".join(names)
         self._emit(f"playWave({_names});{comment}")
 
@@ -450,6 +315,35 @@ class SeqcILGenerator(object):
         Emit waitWave to the program.
         """
         self._emit(f"waitWave();{comment}")
+
+    def emit_start_qa(self, comment: str = "") -> None:
+        """
+        Starts the Quantum Analysis Result and Input units by setting and clearing
+        appropriate AWG trigger output signals. The choice of whether to start one or
+        the other or both  units can be controlled using the command argument. An
+        bitmask may be used to select explicitly which of the ten possible qubit
+        results should be read. If no qubit results are enabled, then the Quantum
+        Analysis Result unit will not be triggered. An optional value may be used to
+        set the normal trigger outputs of the AWG together with starting the
+        Quantum Analysis Result and input units. If the
+        value is not used, then the trigger signals will be cleared.
+
+        Parameter
+
+        - monitor: Enable for QA monitor, default: false
+        - result_address: Set address associated with result, default: 0x0
+        - trigger: Trigger value, default: 0x0
+        - weighted_integrator_mask: Integration unit enable mask, default: QA_INT_ALL
+
+        """
+
+        # using default arguments to start all channels for acquisition.
+        # example based on the UHFQA manual.
+
+        if comment != "":
+            comment = f"\t// {comment}"
+
+        self._emit(f"startQA(QA_INT_ALL, true);{comment}")
 
     def emit_wait(self, cycles: int, comment: str = "") -> None:
         """
@@ -482,7 +376,10 @@ class SeqcILGenerator(object):
             index :
                 The trigger to wait on, by default 0
         """
-        trigger: str = None
+
+        if comment != "":
+            comment = f"\t// {comment}"
+
         if index == 0:
             trigger = f"waitDigTrigger(1);{comment}"
         else:
@@ -498,7 +395,7 @@ class SeqcILGenerator(object):
         self._emit("startQAMonitor();")
 
     def emit_start_qa_result(
-        self, bitmask: Optional[str] = "", trigger: Optional[str] = ""
+        self, bitmask: Optional[str] = None, trigger: Optional[str] = None
     ) -> None:
         """
         Starts the Quantum Analysis Result unit by setting
@@ -523,8 +420,11 @@ class SeqcILGenerator(object):
             unit. If no trigger is specified it will clear
             the triggers, by default ""
         """
-        params = ", ".join([bitmask, trigger])
-        self._emit(f"startQAResult({params});")
+        if bitmask is None and trigger is None:
+            self._emit("startQAResult();")
+        else:
+            params = ", ".join([bitmask, trigger])
+            self._emit(f"startQAResult({params});")
 
     def emit_begin_while(self, predicate: str = "true") -> None:
         """
@@ -629,7 +529,14 @@ def add_wait(
     -------
     int
         The number of clocks waited.
+
+    Raises
+    ------
+    ValueError
     """
+    if comment != "":
+        comment = f"{comment}\t"
+
     assert delay >= 0
 
     elapsed_clocks: int = 0
@@ -642,18 +549,17 @@ def add_wait(
         n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.WAIT]
         cycles_to_wait = delay - n_assembly_instructions
 
+    # cycles to wait checks for
     if cycles_to_wait < 0:
-        logger.warning("Minimum number of clocks to wait must at least be 3!")
-        seqc_gen.emit_wait(
-            0, comment=f"\t// {comment} n_instr={n_assembly_instructions} <--"
+        raise ValueError(
+            "Minimum number of clocks to wait must be at least 3 (HDAWG) or 0 (UHFQA)!"
         )
-        elapsed_clocks = n_assembly_instructions
-    else:
-        seqc_gen.emit_wait(
-            cycles_to_wait,
-            comment=f"\t// {comment} n_instr={n_assembly_instructions}",
-        )
-        elapsed_clocks = delay
+
+    seqc_gen.emit_wait(
+        cycles_to_wait,
+        comment=f"\t\t// {comment} n_instr={n_assembly_instructions}",
+    )
+    elapsed_clocks = delay
 
     return elapsed_clocks
 
@@ -680,10 +586,43 @@ def add_play_wave(
     int
         Elapsed number of clock cycles.
     """
+    if comment != "":
+        comment = f"{comment}\t"
+
     n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.PLAY_WAVE]
     seqc_gen.emit_play_wave(
         *variable,
         comment=f"\t// {comment} n_instr={n_assembly_instructions}",
+    )
+    return n_assembly_instructions
+
+
+def add_start_qa(
+    seqc_gen: SeqcILGenerator,
+    device_type: zhinst.DeviceType,
+    comment: str = "",
+) -> int:
+    """
+    Adds a startQA instruction to the
+    seqc program.
+    See :func:`~quantify_scheduler.backends.zhinst.seqc_il_generator.SeqcILGenerator.emit_start_qa`
+    for more details.
+
+    Parameters
+    ----------
+    seqc_gen :
+    device_type :
+    comment :
+
+    Returns
+    -------
+    int
+        Elapsed number of clock cycles.
+    """
+    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.START_QA]
+
+    seqc_gen.emit_start_qa(
+        comment=f"{comment} n_instr={n_assembly_instructions}",
     )
     return n_assembly_instructions
 
@@ -772,45 +711,22 @@ def add_set_trigger(
     return n_assembly_instructions
 
 
-def add_seqc_info(seqc_gen: SeqcILGenerator, seqc_info: SeqcInfo):
+def declare_csv_waveform_variables(
+    seqc_gen: SeqcILGenerator,
+    device_name: str,
+    waveform_indices: List[int],
+    awg_index: int = 0,
+):
     """
-    Add Sequence Information to the SeqcILGenerator using comments.
+    Declares waveforms and links them to filenames of .csv files.
 
-    Parameters
-    ----------
-    seqc_gen :
-    seqc_info :
+    e.g. `wave w0 = `uhfqa1234_awg0_wave0`
     """
-    seqc_gen.emit_comment(
-        f"Schedule offset: {seqc_info.schedule_offset_in_seconds:.9f}s "
-        + f"{seqc_info.schedule_offset_in_clocks:d} clocks"
-    )
-    seqc_gen.emit_comment(
-        f"Schedule duration: {seqc_info.schedule_duration_in_seconds:.9f}s "
-        + f"{seqc_info.schedule_duration_in_clocks:d} clocks"
-    )
-    seqc_gen.emit_comment(
-        f"Sequence start: {seqc_info.timeline_start_in_seconds:.9f}s "
-        + f"{seqc_info.timeline_start_in_clocks:d} clocks"
-    )
-    seq_duration_in_seconds = (
-        seqc_info.timeline_end_in_seconds - seqc_info.timeline_start_in_seconds
-    )
-    seq_duration_in_clocks = (
-        seqc_info.timeline_end_in_clocks - seqc_info.timeline_start_in_clocks
-    )
-    seqc_gen.emit_comment(
-        f"Sequence duration: {seq_duration_in_seconds:.9f}s "
-        + f"{seq_duration_in_clocks:d} clocks"
-    )
-    seqc_gen.emit_comment(
-        f"Sequence end: {seqc_info.timeline_end_in_seconds:.9f}s "
-        + f"{seqc_info.timeline_end_in_clocks:d} clocks"
-    )
-    seqc_gen.emit_comment(
-        f"Line delay: {seqc_info.line_trigger_delay_in_seconds:.9f}s "
-        + f"{seqc_info.line_trigger_delay_in_clocks:d} clocks"
-    )
+    for waveform_index in waveform_indices:
+        name: str = f"w{waveform_index:d}"
+        seqc_gen.declare_wave(
+            name, f"{device_name}_awg{awg_index}_wave{waveform_index:d}"
+        )
 
 
 def add_csv_waveform_variables(

@@ -8,6 +8,8 @@ These functions are intended to be used to generate waveforms defined in the
 Examples of waveforms that are too advanced are flux pulses that require knowledge of
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
+from typing import List, Union
+
 import numpy as np
 from scipy import signal, interpolate
 from typing import Union, List
@@ -24,7 +26,7 @@ def square_imaginary(
 
 
 def ramp(t, amp, offset=0) -> np.ndarray:
-    return np.linspace(offset, amp + offset, len(t))
+    return np.linspace(offset, amp + offset, len(t), endpoint=False)
 
 
 def staircase(
@@ -81,9 +83,11 @@ def soft_square(t, amp):
     amp
 
     """
-    square_ = square(t, amp)
-    window = signal.windows.hann(int(len(t) / 2))
-    return signal.convolve(square_, window, mode="same") / sum(window)
+    data = square(t, amp)
+    if len(t) > 1:
+        window = signal.windows.hann(int(len(t) / 2))
+        data = signal.convolve(data, window, mode="same") / sum(window)
+    return data
 
 
 def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:

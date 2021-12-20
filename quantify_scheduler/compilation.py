@@ -2,24 +2,32 @@
 # Licensed according to the LICENCE file on the master branch
 """Compiler for the quantify_scheduler."""
 from __future__ import annotations
+
 import importlib
 import logging
 from copy import deepcopy
+
+import numpy as np
+from quantify_core.utilities.general import (
+    import_python_object_from_string,
+    load_json_schema,
+)
 from typing_extensions import Literal
 
-import jsonschema
-from quantify_core.utilities.general import load_json_schema
-
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.acquisition_library import SSBIntegrationComplex, Trace
-from quantify_scheduler.pulse_library import (
+from quantify_scheduler.json_utils import validate_json
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    Trace,
+)
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     SoftSquarePulse,
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.types import Schedule, CompiledSchedule
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +39,10 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`. It does this by:
+    :attr:`~.ScheduleBase.timing_constraints`. It does this by:
 
         1. iterating over all and elements in the
-            :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`.
+            :attr:`~.ScheduleBase.timing_constraints`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -69,6 +77,10 @@ def determine_absolute_timing(
 
     last_constr["abs_time"] = 0
 
+    timing_constraints_labels = [tc["label"] for tc in schedule.timing_constraints]
+    sort_idx = np.argsort(timing_constraints_labels)
+    timing_constraints_labels_sorted = np.asarray(sorted(timing_constraints_labels))
+
     for t_constr in schedule.data["timing_constraints"][1:]:
         curr_op = schedule.operations[t_constr["operation_repr"]]
         if t_constr["ref_op"] is None:
@@ -76,11 +88,9 @@ def determine_absolute_timing(
             ref_op = last_op
         else:
             # this assumes the reference op exists. This is ensured in schedule.add
-            ref_constr = next(
-                item
-                for item in schedule.timing_constraints
-                if item["label"] == t_constr["ref_op"]
-            )
+            sidx = np.searchsorted(timing_constraints_labels_sorted, t_constr["ref_op"])
+            ref_constr_idx = sort_idx[sidx]
+            ref_constr = schedule.timing_constraints[ref_constr_idx]
             ref_op = schedule.operations[ref_constr["operation_repr"]]
 
         # duration = 1 is useful when e.g., drawing a circuit diagram.
@@ -148,10 +158,10 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     The following gate type operations are supported by this compilation step.
 
-    - :class:`~quantify_scheduler.gate_library.Rxy`
-    - :class:`~quantify_scheduler.gate_library.Reset`
-    - :class:`~quantify_scheduler.gate_library.Measure`
-    - :class:`~quantify_scheduler.gate_library.CZ`
+    - :class:`~quantify_scheduler.operations.gate_library.Rxy`
+    - :class:`~quantify_scheduler.operations.gate_library.Reset`
+    - :class:`~quantify_scheduler.operations.gate_library.Measure`
+    - :class:`~quantify_scheduler.operations.gate_library.CZ`
 
 
     .. rubric:: Configuration specification
@@ -164,13 +174,14 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     for op in schedule.operations.values():
         if op.valid_pulse:
             for p in op["pulse_info"]:
-                if p["clock"] not in schedule.resources:
-                    raise ValueError(
-                        "Operation '{}' contains an unknown clock '{}'; ensure "
-                        "this resource has been added to the schedule.".format(
-                            str(op), p["clock"]
+                if "clock" in p:
+                    if p["clock"] not in schedule.resources:
+                        raise ValueError(
+                            "Operation '{}' contains an unknown clock '{}'; ensure "
+                            "this resource has been added to the schedule.".format(
+                                str(op), p["clock"]
+                            )
                         )
-                    )
             continue
 
         if op.valid_acquisition:
@@ -229,6 +240,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                     # pylint: disable=fixme
                     op.add_acquisition(  # TODO protocol hardcoded
                         Trace(
+                            clock=q_cfg["resources"]["clock_ro"],
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
                             acq_channel=op["gate_info"]["acq_channel"][idx],
@@ -361,16 +373,17 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
         True if valid
     """
     scheme = load_json_schema(__file__, scheme_fn)
-    jsonschema.validate(config, scheme)
+    validate_json(config, scheme)
     return True
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict, hardware_mapping: dict = None, **kwargs
+    schedule: Schedule, device_cfg: dict = None, hardware_cfg: dict = None
 ) -> CompiledSchedule:
     """
-    Compile and assemble a :class:`~.Schedule` into a :class:`~.CompiledSchedule`
-    ready for execution using the :class:`~.InstrumentCoordinator`.
+    Compile and assemble a :class:`~.Schedule` into a
+    :class:`~.CompiledSchedule` ready for execution using the
+    :class:`~.InstrumentCoordinator`.
 
     Parameters
     ----------
@@ -379,8 +392,8 @@ def qcompile(
     device_cfg
         Device specific configuration, defines the compilation step from
         the gate-level to the pulse level description.
-    hardware_mapping
-        Hardware mapping, defines the compilation step from
+    hardware_cfg
+        Hardware configuration, defines the compilation step from
         the pulse-level to a hardware backend.
 
     Returns
@@ -401,26 +414,13 @@ def qcompile(
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
+    if device_cfg is not None:
+        schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
 
-    if hardware_mapping is not None:
-        bck_name = hardware_mapping["backend"]
-        # import the required backend callable to compile onto the backend
-        (mod, cls) = bck_name.rsplit(".", 1)
-        # compile using the appropriate hardware backend
-        hardware_compile = getattr(importlib.import_module(mod), cls)
-        # pylint: disable=fixme
-        # FIXME: still contains a hardcoded argument in the kwargs
-        compiled_instructions = hardware_compile(
-            schedule, hardware_map=hardware_mapping, **kwargs
-        )
-        # add the compiled instructions to the schedule data structure
-        schedule["compiled_instructions"] = compiled_instructions
-
-    # Mark the schedule as a compiled schedule
-    compiled_schedule = CompiledSchedule(schedule)
-
+    if hardware_cfg is not None:
+        compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
+    else:
+        compiled_schedule = CompiledSchedule(schedule)
     return compiled_schedule
 
 
@@ -442,11 +442,32 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
         The updated schedule.
     """
 
-    device_bck_name = device_cfg["backend"]
-    (mod, cls) = device_bck_name.rsplit(".", 1)
-    device_compilation_bck = getattr(importlib.import_module(mod), cls)
+    device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     return schedule
+
+
+def hardware_compile(schedule: Schedule, hardware_cfg: dict) -> CompiledSchedule:
+    """
+    Add compiled instructions to the schedule based on the hardware config file.
+
+    Parameters
+    ----------
+    schedule
+        To be compiled.
+    hardware_cfg
+        Hardware specific configuration, defines the compilation step from
+        the quantum-device layer to the control-hardware layer.
+
+    Returns
+    -------
+    :
+        The compiled schedule.
+    """
+
+    hw_compile = import_python_object_from_string(hardware_cfg["backend"])
+    compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
+    return compiled_schedule

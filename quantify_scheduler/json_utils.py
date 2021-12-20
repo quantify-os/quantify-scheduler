@@ -3,14 +3,53 @@
 """Module containing quantify JSON utilities."""
 from __future__ import annotations
 
-import json
 import ast
+import functools
+import json
+import pathlib
 import re
+import sys
 from types import ModuleType
-from typing import Any, Dict, List, Type
-import jsonschema
+from typing import Any, Callable, Dict, List, Type, Union
+
+import fastjsonschema
 from quantify_core.utilities.general import load_json_schema
+
 from quantify_scheduler.helpers import inspect as inspect_helpers
+
+current_python_version = sys.version_info
+
+lru_cache = functools.lru_cache(maxsize=200)
+
+
+def validate_json(data, schema):
+    """Validate schema using jsonschema-rs"""
+    return fastjsonschema.validate(schema, data)
+
+
+@lru_cache
+def load_json_validator(
+    relative_to: Union[str, pathlib.Path], filename: str
+) -> Callable:
+    """
+    Load a JSON validator from file. Expects a 'schemas' directory in the same directory
+    as `relative_to`.
+
+
+    Parameters
+    ----------
+    relative_to
+        the file to begin searching from
+    filename
+        the JSON file to load
+    Returns
+    -------
+    Callable
+        The validator
+    """
+    definition = load_json_schema(relative_to, filename)
+    validator = fastjsonschema.compile(definition, handlers={}, formats={})
+    return validator
 
 
 class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
@@ -23,13 +62,22 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
-        """Checks if the object is valid according to its schema."""
-        # schema_filename = "schedule.json"
+        """Checks if the object is valid according to its schema
 
-        scheme = load_json_schema(__file__, cls.schema_filename)
-        jsonschema.validate(object_to_be_validated.data, scheme)
-        # _ = object_to_be_validated.hash  # test that the hash property evaluates
-        return True  # if not exception was raised during validation
+        Raises
+        ------
+        fastjsonschema.JsonSchemaException
+            if the data is invalid
+
+        Returns
+        -------
+        :
+
+        """
+
+        validator_method = load_json_validator(__file__, cls.schema_filename)
+        validator_method(object_to_be_validated.data)
+        return True  # if no exception was raised during validation
 
 
 class ScheduleJSONDecoder(json.JSONDecoder):
@@ -37,7 +85,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
     The Quantify Schedule JSONDecoder.
 
     The ScheduleJSONDecoder is used to convert a string with JSON content into a
-    :class:`~quantify_scheduler.types.Schedule`.
+    :class:`quantify_scheduler.schedules.schedule.Schedule`.
 
     To avoid the execution of malicious code ScheduleJSONDecoder uses
     :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance
@@ -52,9 +100,9 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         The list of serializable classes can be extended with custom classes by
         providing the `modules` keyword argument. These classes have to implement
-        :class:`~quantify_scheduler.types.Operation` and overload the :code:`__str__`
-        and :code:`__repr__` methods in order to serialize and deserialize domain
-        objects into a valid JSON-format.
+        :class:`quantify_scheduler.operations.operation.Operation` and overload the
+        :code:`__str__` and :code:`__repr__` methods in order to serialize and
+        deserialize domain objects into a valid JSON-format.
 
         Keyword Arguments
         -----------------
@@ -71,12 +119,13 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         )
 
         # Use local import to void Error('Operation' from partially initialized module
-        # 'quantify_scheduler.types')
-        from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
+        # 'quantify_scheduler')
+        # pylint: disable=import-outside-toplevel
+        from quantify_scheduler import resources
+        from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
             acquisition_library,
             gate_library,
             pulse_library,
-            resources,
         )
 
         self._modules: List[ModuleType] = [
@@ -93,7 +142,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Parameters
         ----------
-        obj :
+        obj
             The dictionary to deserialize.
 
         Returns
@@ -121,7 +170,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Parameters
         ----------
-        obj : str
+        obj
             The value of dictionary pair to deserialize.
 
         Returns
@@ -156,7 +205,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
 
         Parameters
         ----------
-        obj :
+        obj
             A pair of JSON objects.
 
         Returns
@@ -181,13 +230,13 @@ class ScheduleJSONEncoder(json.JSONEncoder):
         object.
         """
         # Use local import to void Error('Operation' from partially initialized module
-        # 'quantify_scheduler.types')
+        # 'quantify_scheduler')
         from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
-            types,
+            Operation,
             resources,
         )
 
-        if isinstance(o, (types.Operation, resources.Resource)):
+        if isinstance(o, (Operation, resources.Resource)):
             return repr(o)
         if hasattr(o, "__dict__"):
             return o.__dict__

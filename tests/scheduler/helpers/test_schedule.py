@@ -7,9 +7,12 @@
 from __future__ import annotations
 
 import numpy as np
-from quantify_scheduler.gate_library import X90, Measure, Reset
+from pytest import approx
+
+from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
+    extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
     get_acq_uuid,
     get_operation_end,
@@ -19,9 +22,8 @@ from quantify_scheduler.helpers.schedule import (
     get_pulse_uuid,
     get_schedule_time_offset,
     get_total_duration,
-    extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.types import Schedule
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
 
@@ -338,7 +340,7 @@ def test_get_total_duration(
 
     # Assert
     assert duration0 == 0.0
-    assert duration1 == 1.6e-08
+    assert duration1 == 20e-9
     assert (
         duration2
         == init_duration
@@ -373,14 +375,14 @@ def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_puls
     # Assert
     assert start_empty == 0.0
     assert start0_x90 == 0.0
-    assert start0_measure == 1.6e-08
+    assert start0_measure == 20e-9
     assert start1_measure == 0.0
-    assert start1_x90 == 1.6e-08
+    assert start1_x90 == 20e-9
 
 
 def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_info):
     # Arrange
-    mw_duration = 16e-9
+    mw_duration = 20e-9
     ro_acquisition_delay = 120e-9
     ro_integration_time = 300e-9
 
@@ -406,9 +408,11 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
     # Assert
     assert end_empty == 0.0
     assert endt0_x90 == mw_duration
-    assert end0_measure == mw_duration + ro_acquisition_delay + ro_integration_time
-    assert end1_measure == ro_acquisition_delay + ro_integration_time
-    assert end1_x90 == ro_acquisition_delay + ro_integration_time + mw_duration
+    assert end0_measure == approx(
+        mw_duration + ro_acquisition_delay + ro_integration_time
+    )
+    assert end1_measure == approx(ro_acquisition_delay + ro_integration_time)
+    assert end1_x90 == approx(ro_acquisition_delay + ro_integration_time + mw_duration)
 
 
 def test_get_schedule_time_offset(

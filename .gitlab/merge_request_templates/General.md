@@ -10,7 +10,7 @@ Motivate why the particular solution was chosen.
 --------------------
 
 ## Merge checklist
-See also [merge request guidelines](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/contributing.html#merge-request-guidelines)
+See also [merge request guidelines](https://quantify-quantify-core.readthedocs-hosted.com/en/develop/contributing.html#merge-request-guidelines)
 
 - [ ] Merge request has been reviewed and approved by a project maintainer.
 - [ ] Merge request contains a clear description of the proposed changes and the issue it addresses.
@@ -19,7 +19,7 @@ See also [merge request guidelines](https://quantify-quantify-core.readthedocs-h
 - [ ] New code is documented and docstrings use [numpydoc format](https://numpydoc.readthedocs.io/en/latest/format.html).
 - [ ] `CHANGELOG.rst` and `AUTHORS.rst` have been updated (when applicable).
 - [ ] CI pipelines pass
-    - black code-formatting passes (gitlab-ci),
+    - `pre-commit run --all-files --hook-stage commit` passes (gitlab-ci),
     - test suite passes (gitlab-ci),
     - no degradation in code-coverage (codacy),
     - no (serious) new pylint code quality issues introduced (codacy),

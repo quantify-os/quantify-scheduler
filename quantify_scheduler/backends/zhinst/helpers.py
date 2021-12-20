@@ -8,14 +8,16 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
-from zhinst.qcodes import base
+import numpy as np
 from zhinst import qcodes
+from zhinst.qcodes import base
+
 from quantify_scheduler.helpers import time
 
 logger = logging.getLogger(__name__)
 
 
-def get_value(instrument: base.ZIBaseInstrument, node: str) -> str:
+def get_value(instrument: base.ZIBaseInstrument, node: str) -> np.ndarray:
     """
     Gets the value of a ZI node.
 
@@ -127,54 +129,11 @@ def set_awg_value(
     awgs[awg_index]._awg._module.set(node, value)
 
 
-def check_recompile(
-    instrument: base.ZIBaseInstrument,
-    awg_index: int,
-    new_seqc: str,
-    waveforms_dict: dict,
-) -> bool:
-    """
-    Checks whether the instrument needs to be recompiled again.
-    Ideal behaviour is that if there are changes to the seqc or
-    the waveforms, then, the recompile step cannot be skipped.
-
-    Parameters
-    ----------
-    instrument :
-        The ZI instrument object.
-    awg_index :
-        The awg to configure.
-    new_seqc :
-        The new seqc to be compared against the current uploaded.
-    waveforms_dict :
-        The new waveforms to be compared against the current uploaded.
-
-    Returns
-    -------
-    :
-        A boolean on whether to skip the recompile. True if the recompile step
-        can be skipped. False otherwise.
-    """
-    current_seqc = get_value(instrument, f"awgs/{awg_index}/sequencer/program")
-    skip_recompile = False
-    if (
-        len(current_seqc) == len(new_seqc)
-        and hash(current_seqc) == hash(new_seqc)
-        and current_seqc == new_seqc
-    ):
-        skip_recompile = True
-    # FIXME: We are always returning false from this function, a deviation from
-    # the ideal behaviour as we do not yet know how to obtain the current
-    # uploaded waveforms. Ideally we need to return the skip_recompile variable.
-    return False
-
-
 def set_and_compile_awg_seqc(
     instrument: base.ZIBaseInstrument,
     awg_index: int,
     node: str,
     value: str,
-    waveforms_dict: dict = None,
 ):
     """
     Uploads and compiles the AWG sequencer program.
@@ -196,20 +155,6 @@ def set_and_compile_awg_seqc(
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awg = awgs[awg_index]
 
-    # Assert the current Sequencer program with the new
-    skip_recompile = check_recompile(
-        instrument=instrument,
-        awg_index=awg_index,
-        new_seqc=value,
-        waveforms_dict=waveforms_dict,
-    )
-
-    if skip_recompile:
-        print(
-            f'{awg.name}: Compilation status: SKIPPED. reason="identical sequence and waveforms"'
-        )
-        return
-
     # Set the new 'compiler/sourcestring' value
     set_awg_value(instrument, awg_index, node, value)
 
@@ -225,7 +170,7 @@ def set_and_compile_awg_seqc(
 
     if status == 2:
         status_str = awg_module.get_string("compiler/statusstring")
-        raise Warning(f"Compiled with warning: \n{status_str}")
+        logger.warning(f"Compiled with warning: \n{status_str}")
 
     if status == 0:
         print(f"{awg.name}: Compilation successful")
@@ -433,25 +378,26 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
     return f"0b{bitmask}"
 
 
-def get_clock_rates(base_clock: float) -> Dict[int, int]:
+def get_sampling_rates(base_sampling_rate: float) -> Dict[int, int]:
     """
-    Returns the allowed clock rate values.
+    Returns the allowed sampling rate values.
     See zhinst User manuals, section /DEV..../AWGS/n/TIME
 
     Parameters
     ----------
-    base_clock :
-        The Instruments base clock rate.
+    base_sampling_rate :
+        The Instruments base sampling rate.
     Returns
     -------
     Dict[int, int]
-        The node and clock rate values.
+        The node value and corresponding sampling rate.
+        e.g. {0: 2400000, 1:1200000, ...} for the HDAWG.
     """
     return dict(
         map(
-            lambda i: (i, int(base_clock))
+            lambda i: (i, int(base_sampling_rate))
             if i == 0
-            else (i, int(base_clock / pow(2, i))),
+            else (i, int(base_sampling_rate / pow(2, i))),
             range(14),
         )
     )

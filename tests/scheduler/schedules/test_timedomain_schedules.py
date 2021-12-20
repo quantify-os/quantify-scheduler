@@ -4,12 +4,15 @@
 # pylint: disable=no-self-use
 
 import tempfile
-import pytest
+
 import numpy as np
+import pytest
 from quantify_core.data.handling import set_datadir
-from quantify_scheduler.schedules import timedomain_schedules as ts
+
 from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.schedules import timedomain_schedules as ts
 from quantify_scheduler.schemas.examples import utils
+
 from .compiles_all_backends import _CompilesAllBackends
 
 # FIXME to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
@@ -244,10 +247,11 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
         set_datadir(tmp_dir.name)
+        times = np.linspace(4.0e-6, 80e-6, 20)
         cls.sched_kwargs = {
-            "times": np.linspace(4.0e-6, 80e-6, 20),
+            "times": times,
             "qubit": "q0",
-            "artificial_detuning": 250e3,
+            "artificial_detuning": 8 / times[-1],
             "repetitions": 10,
         }
 
@@ -280,7 +284,8 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         assert any(op["rel_time"] == 3e-6 for op in sched.timing_constraints)
 
     def test_operations(self):
-        assert len(self.sched.operations) == 2 + len(self.sched_kwargs["times"]) * 2
+        # 2 initial pi/2, 20 acquisitions + 6 unique rotation angles for 2nd pi/2
+        assert len(self.sched.operations) == 2 + 20 + 6
 
 
 class TestRamseySched(_CompilesAllBackends):

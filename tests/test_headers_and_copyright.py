@@ -1,14 +1,15 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
-import os
-import re
 import datetime
+import os
 import pprint
+import re
 from pathlib import Path
+
 import pytest
 
 
-def test_header():
+def test_header() -> None:
     skipfiles = {"__init__.py", "conftest.py", "setup.py"}
     skipdirs = {"docs", ".", "tests", "__pycache__", "venv"}
     failures = []
@@ -36,7 +37,7 @@ def test_header():
         pytest.fail("Bad headers:\n{}".format(pprint.pformat(failures)))
 
 
-def test_docs_copyright():
+def test_docs_copyright() -> None:
     quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
     conf_file = quantify_scheduler_path / "docs" / "conf.py"
     copyright_found = False

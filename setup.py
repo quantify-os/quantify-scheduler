@@ -2,7 +2,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.rst") as readme_file:
     readme = readme_file.read()
@@ -22,7 +22,7 @@ with open("requirements_setup.txt") as setup_requirements_file:
 with open("requirements_dev.txt") as test_requirements_file:
     test_requirements = test_requirements_file.read().splitlines()
 
-version = "0.4.0"
+version = "0.5.2"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",

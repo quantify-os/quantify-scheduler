@@ -8,19 +8,22 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend register manager."""
 import pytest
+
 from quantify_scheduler.backends.qblox import register_manager
 
 
 class TestRegisterManager:
     @pytest.fixture(name="make_rm")
-    def fixture_make_rm(self):
+    def fixture_make_rm(self) -> register_manager.RegisterManager:
         return register_manager.RegisterManager()
 
-    def test_available_registers(self, make_rm):
+    def test_available_registers(
+        self, make_rm: register_manager.RegisterManager
+    ) -> None:
         pool = make_rm
         assert pool.available_registers == pool._available_registers
 
-    def test_allocate_register(self, make_rm):
+    def test_allocate_register(self, make_rm: register_manager.RegisterManager) -> None:
         pool = make_rm
         initial_amount_of_registers = len(pool.available_registers)
         pool.allocate_register()
@@ -28,7 +31,7 @@ class TestRegisterManager:
         # since we remove one from the pool when we allocate
         assert len(pool.available_registers) == initial_amount_of_registers - 1
 
-    def test_free_register(self, make_rm):
+    def test_free_register(self, make_rm: register_manager.RegisterManager) -> None:
         pool = make_rm
         reg = pool.allocate_register()
         assert reg not in pool.available_registers
@@ -49,7 +52,7 @@ class TestRegisterManager:
         ("hello@qblox.com", False),
     ],
 )
-def test__verify_invalid_register(register: str, is_valid: bool):
+def test__verify_invalid_register(register: str, is_valid: bool) -> None:
     if is_valid:
         register_manager._verify_valid_register(register)
     else:

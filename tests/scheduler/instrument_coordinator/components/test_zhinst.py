@@ -6,13 +6,15 @@
 # pylint: disable=redefined-outer-name
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
 from pathlib import Path
+from typing import Any, Dict, Tuple
 from unittest.mock import call
 
 import numpy as np
 import pytest
 from zhinst import qcodes
+
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (
@@ -20,7 +22,6 @@ from quantify_scheduler.backends.zhinst_backend import (
     ZIDeviceConfig,
 )
 from quantify_scheduler.instrument_coordinator.components import zhinst
-from quantify_scheduler.types import Schedule
 
 
 @pytest.fixture
@@ -54,6 +55,9 @@ def make_uhfqa(mocker):
         uhfqa.name = name
         uhfqa._serial = serial
         uhfqa.awg = mocker.create_autospec(qcodes.uhfqa.AWG, instance=True)
+        # the quantum analyzer setup "qas"
+        uhfqa.qas = [None] * 1
+        uhfqa.qas[0] = mocker.create_autospec(None, instance=True)
 
         component = zhinst.UHFQAInstrumentCoordinatorComponent(uhfqa)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=uhfqa)
@@ -73,12 +77,12 @@ def test_hdawg_start(mocker, make_hdawg):
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
         list(),
-        [
-            (0, mocker.Mock()),
-            (1, mocker.Mock()),
-            (2, mocker.Mock()),
-            (3, mocker.Mock()),
-        ],
+        {
+            0: mocker.Mock(),
+            1: mocker.Mock(),
+            2: mocker.Mock(),
+            3: mocker.Mock(),
+        },
     )
 
     # Act
@@ -101,12 +105,12 @@ def test_hdawg_stop(mocker, make_hdawg):
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
         list(),
-        [
-            (0, mocker.Mock()),
-            (1, mocker.Mock()),
-            (2, mocker.Mock()),
-            (3, mocker.Mock()),
-        ],
+        {
+            0: mocker.Mock(),
+            1: mocker.Mock(),
+            2: mocker.Mock(),
+            3: mocker.Mock(),
+        },
     )
 
     # Act
@@ -126,9 +130,7 @@ def test_hdawg_stop(mocker, make_hdawg):
 def test_hdawg_prepare(mocker, make_hdawg):
     # Arrange
     hdawg: zhinst.HDAWGInstrumentCoordinatorComponent = make_hdawg("hdawg0", "dev1234")
-    config = ZIDeviceConfig(
-        "hdawg0", Schedule("test"), settings.ZISettingsBuilder(), None
-    )
+    config = ZIDeviceConfig("hdawg0", settings.ZISettingsBuilder(), None)
     serialize = mocker.patch.object(settings.ZISettings, "serialize")
     apply = mocker.patch.object(settings.ZISettings, "apply")
     mocker.patch("quantify_core.data.handling.get_datadir", return_value=".")
@@ -161,12 +163,12 @@ def test_hdawg_wait_done(mocker, make_hdawg):
     get_awg_spy = mocker.patch.object(hdawg, "get_awg", wraps=hdawg.get_awg)
     hdawg.zi_settings = settings.ZISettings(
         list(),
-        [
-            (0, mocker.Mock()),
-            (1, mocker.Mock()),
-            (2, mocker.Mock()),
-            (3, mocker.Mock()),
-        ],
+        {
+            0: mocker.Mock(),
+            1: mocker.Mock(),
+            2: mocker.Mock(),
+            3: mocker.Mock(),
+        },
     )
     timeout: int = 20
 
@@ -193,9 +195,9 @@ def test_uhfqa_start(mocker, make_uhfqa):
     uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     uhfqa.zi_settings = settings.ZISettings(
         list(),
-        [
-            (0, mocker.Mock()),
-        ],
+        {
+            0: mocker.Mock(),
+        },
     )
 
     # Act
@@ -210,9 +212,9 @@ def test_uhfqa_stop(mocker, make_uhfqa):
     uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     uhfqa.zi_settings = settings.ZISettings(
         list(),
-        [
-            (0, mocker.Mock()),
-        ],
+        {
+            0: mocker.Mock(),
+        },
     )
 
     # Act
@@ -225,9 +227,7 @@ def test_uhfqa_stop(mocker, make_uhfqa):
 def test_uhfqa_prepare(mocker, make_uhfqa):
     # Arrange
     uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
-    config = ZIDeviceConfig(
-        "hdawg0", Schedule("test"), settings.ZISettingsBuilder(), None
-    )
+    config = ZIDeviceConfig("hdawg0", settings.ZISettingsBuilder(), None)
     serialize = mocker.patch.object(settings.ZISettings, "serialize")
     apply = mocker.patch.object(settings.ZISettings, "apply")
     mocker.patch("quantify_core.data.handling.get_datadir", return_value=".")
@@ -258,7 +258,6 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
 
     config = ZIDeviceConfig(
         "hdawg0",
-        Schedule("test"),
         settings.ZISettingsBuilder(),
         ZIAcquisitionConfig(1, {0: resolver}),
     )
@@ -275,15 +274,19 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     acq_result = uhfqa.retrieve_acquisition()
 
     expected_acq_result: Dict[Tuple[int, int], Any] = dict()
-    for i, value in enumerate(expected_data):
-        expected_acq_result[(0, i)] = (value, 0.0)
+    expected_acq_result[(0, 0)] = (expected_data, np.zeros(expected_data.shape))
 
     # Assert
     assert not acq_result is None
-    assert (0, 2) in acq_result
+    assert (0, 0) in acq_result
 
     for key in acq_result:
-        assert acq_result[key] == expected_acq_result[key]
+        np.testing.assert_array_almost_equal(
+            acq_result[key][0], expected_acq_result[key][0]
+        )
+        np.testing.assert_array_almost_equal(
+            acq_result[key][1], expected_acq_result[key][1]
+        )
 
 
 def test_uhfqa_wait_done(mocker, make_uhfqa):

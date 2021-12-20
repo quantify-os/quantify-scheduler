@@ -1,10 +1,15 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the master branch
 """Common resources for use with the quantify_scheduler."""
+
+from __future__ import annotations
+
 from collections import UserDict
 from typing import Optional
-import jsonschema
+
 from quantify_core.utilities.general import load_json_schema
+
+from quantify_scheduler.json_utils import validate_json
 
 
 class Resource(UserDict):
@@ -14,7 +19,7 @@ class Resource(UserDict):
     .. jsonschema:: schemas/resource.json
     """
 
-    def __init__(self, name: str, data: Optional[dict] = None):
+    def __init__(self, name: str, data: Optional[dict] = None) -> None:
         """
         Create a new instance of Resource.
 
@@ -35,9 +40,9 @@ class Resource(UserDict):
             self.data.update(data)
 
     @classmethod
-    def is_valid(cls, operation):
+    def is_valid(cls, operation: Resource) -> bool:
         """
-        Validates the Resource against the schemas/resource.json jsonschema.
+        Validates the Resource against the schemas/resource.json fastjsonschema.
 
         Parameters
         ----------
@@ -45,18 +50,18 @@ class Resource(UserDict):
 
         Raises
         ------
-        jsonschema.exceptions.ValidationError
+        fastjsonschema.JsonSchemaException
             if the instance is invalid
-        jsonschema.exceptions.SchemaError
+        fastjsonschema.JsonSchemaDefinitionException
             if the schema itself is invalid
 
         Returns
         -------
         bool
-            If the validation was successfull.
+            If the validation was successful.
         """
         scheme = load_json_schema(__file__, "resource.json")
-        jsonschema.validate(operation.data, scheme)
+        validate_json(operation.data, scheme)
         return True  # if not exception was raised during validation
 
     @property
@@ -118,7 +123,7 @@ class ClockResource(Resource):
 
     def __init__(
         self, name: str, freq: float, phase: float = 0, data: Optional[dict] = None
-    ):
+    ) -> None:
         """
         A clock resource used to modulate pulses.
 
@@ -153,7 +158,7 @@ class BasebandClockResource(Resource):
 
     IDENTITY = "cl0.baseband"
 
-    def __init__(self, name: str, data: Optional[dict] = None):
+    def __init__(self, name: str, data: Optional[dict] = None) -> None:
         """
         A clock resource for pulses that operate at baseband.
 

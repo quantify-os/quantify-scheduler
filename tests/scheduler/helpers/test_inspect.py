@@ -4,9 +4,9 @@
 from quantify_scheduler.helpers import inspect
 
 
-def test_get_classes():
+def test_get_classes() -> None:
     # Arrange
-    from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
+    from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
         gate_library,
     )
 

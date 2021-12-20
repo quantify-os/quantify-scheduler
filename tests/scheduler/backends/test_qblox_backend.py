@@ -7,69 +7,69 @@
 # Licensed according to the LICENCE file on the master branch
 """Tests for Qblox backend."""
 import copy
-from typing import Dict, Any
-
-import os
-import re
 import inspect
 import json
-import tempfile
+import os
+import re
 import shutil
-import pytest
-import numpy as np
+import tempfile
+from typing import Any, Dict
 
+import numpy as np
+import pytest
 from qcodes.instrument.base import Instrument
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
-from quantify_scheduler.types import Schedule
-from quantify_scheduler.gate_library import Reset, Measure, X
-from quantify_scheduler.pulse_library import (
+import quantify_scheduler.schemas.examples as es
+from quantify_scheduler import Schedule
+from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.qblox import (
+    compiler_container,
+    constants,
+    q1asm_instructions,
+)
+from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.helpers import (
+    find_all_port_clock_combinations,
+    find_inner_dicts_containing_key,
+    generate_uuid_from_wf_data,
+    generate_waveform_data,
+    to_grid_time,
+)
+from quantify_scheduler.backends.qblox.instrument_compilers import (
+    QcmModule,
+    QcmRfModule,
+    QrmModule,
+    QrmRfModule,
+)
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    QASMRuntimeSettings,
+)
+from quantify_scheduler.compilation import (
+    determine_absolute_timing,
+    device_compile,
+    qcompile,
+)
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
     StaircasePulse,
 )
-from quantify_scheduler.acquisition_library import Trace
-from quantify_scheduler.resources import ClockResource, BasebandClockResource
-from quantify_scheduler.compilation import (
-    qcompile,
-    determine_absolute_timing,
-    device_compile,
-)
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox.helpers import (
-    generate_waveform_data,
-    find_inner_dicts_containing_key,
-    find_all_port_clock_combinations,
-    to_grid_time,
-    generate_uuid_from_wf_data,
-)
-
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
-    readout_calibration_sched,
     allxy_sched,
+    readout_calibration_sched,
 )
-from quantify_scheduler.backends import qblox_backend as qb
-from quantify_scheduler.backends.types.qblox import (
-    QASMRuntimeSettings,
-    BasebandModuleSettings,
-)
-from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QcmModule,
-    QrmModule,
-    QcmRfModule,
-    QrmRfModule,
-)
-from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import q1asm_instructions, compiler_container
-from quantify_scheduler.backends.qblox import constants
-
-import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
 
@@ -118,7 +118,7 @@ def hardware_cfg_baseband():
                 "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -200,7 +200,7 @@ def hardware_cfg_multiplexing():
                 "seq1": {"port": "q1:mw", "clock": "q1.01"},
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -449,6 +449,15 @@ def duplicate_measure_schedule():
 def baseband_square_pulse_schedule():
     sched = Schedule("baseband_square_pulse_schedule")
     sched.add(Reset("q0"))
+    sched.add(
+        SquarePulse(
+            amp=0.0,
+            duration=2.5e-6,
+            port="q0:mw",
+            clock=BasebandClockResource.IDENTITY,
+            t0=1e-6,
+        )
+    )
     sched.add(
         SquarePulse(
             amp=2.0,
@@ -702,8 +711,12 @@ def test_compile_with_pulse_stitching(
     full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
+    # assert
     qcm0 = dummy_pulsars[0]
     qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    waveforms = qcm0.get_waveforms(0)
+    assert waveforms["stitched_square_pulse_I"]["data"] == [1.0] * 1000
+    assert waveforms["stitched_square_pulse_Q"]["data"] == [0.0] * 1000
 
 
 def test_qcm_acquisition_error():
@@ -1055,41 +1068,84 @@ def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode)
         assert seq_settings.connected_outputs[0] == output
 
 
-def test_assign_frequencies():
+def test_assign_frequencies_baseband():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    # Test for baseband
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q1"))
 
-    q2_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
-    q3_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
+    q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
+    q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
 
     if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
     if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
     io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
     io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
-    lo0 = HARDWARE_MAPPING[io0_lo_name].get("lo_freq")
-    lo1 = HARDWARE_MAPPING[io1_lo_name].get("lo_freq")
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("frequency")
 
     assert if0 is not None
     assert if1 is None
     assert lo0 is None
     assert lo1 is not None
 
-    lo0 = q2_clock_freq - if0
-    if1 = q3_clock_freq - lo1
+    lo0 = q0_clock_freq - if0
+    if1 = q1_clock_freq - lo1
 
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert compiled_instructions["lo0"]["lo_freq"] == lo0
-    assert compiled_instructions["lo1"]["lo_freq"] == lo1
+    generic_icc = "generic"
+    assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
+    assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
 
-    # Test for RF
+
+def test_assign_frequencies_baseband_downconverter():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q0"))
+    sched.add(X("q1"))
+
+    q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
+    q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
+    io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
+    io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
+    lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
+    lo1 = HARDWARE_MAPPING[io1_lo_name].get("frequency")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    hw_mapping_downconverter = HARDWARE_MAPPING.copy()
+    hw_mapping_downconverter["qcm0"]["complex_output_0"]["downconverter"] = True
+    hw_mapping_downconverter["qcm0"]["complex_output_1"]["downconverter"] = True
+
+    compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+
+    lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+
+    generic_icc = "generic"
+    assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
+    assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
+    assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+
+
+def test_assign_frequencies_rf():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
@@ -1116,6 +1172,56 @@ def test_assign_frequencies():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
+    assert qcm_program["settings"]["lo0_freq"] == lo0
+    assert qcm_program["settings"]["lo1_freq"] == lo1
+    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+
+
+def test_assign_frequencies_rf_downconverter():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("two_gate_experiment")
+    sched.add(X("q2"))
+    sched.add(X("q3"))
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"].get("interm_freq")
+    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["seq1"].get("interm_freq")
+    lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"].get("lo_freq")
+
+    assert if0 is not None
+    assert if1 is None
+    assert lo0 is None
+    assert lo1 is not None
+
+    q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
+    q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
+
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"]["interm_freq"]
+    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
+
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qcm_program = compiled_instructions["qcm_rf0"]
+    assert qcm_program["settings"]["lo0_freq"] == lo0
+    assert qcm_program["settings"]["lo1_freq"] == lo1
+    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+
+    hw_mapping_downconverter = HARDWARE_MAPPING.copy()
+    hw_mapping_downconverter["qcm_rf0"]["complex_output_0"]["downconverter"] = True
+    hw_mapping_downconverter["qcm_rf0"]["complex_output_1"]["downconverter"] = True
+
+    compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qcm_program = compiled_instructions["qcm_rf0"]
+
+    lo0 = q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1

@@ -4,9 +4,11 @@
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Optional, Tuple, Union
 
-from quantify_scheduler.enums import BinMode
 import numpy as np
-from .types import Operation
+
+from quantify_scheduler.enums import BinMode
+
+from .operation import Operation
 
 
 # pylint: disable=too-many-ancestors
@@ -50,6 +52,11 @@ class Rxy(Operation):
         if not isinstance(phi, float):
             phi = float(phi)
 
+        # this solves an issue where different rotations with the same rotation angle
+        # modulo a full period are treated as distinct operations in the OperationDict.
+        theta = theta % 360
+        phi = phi % 360
+
         if data is None:
             tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
             plot_func = "quantify_scheduler.visualization.circuit_diagram.gate_box"
@@ -72,7 +79,7 @@ class Rxy(Operation):
             )
 
             data = {
-                "name": f"Rxy({theta:.2f}, {phi:.2f}, '{qubit}')",
+                "name": f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')",
                 "gate_info": {
                     "unitary": unitary,
                     "tex": tex,
@@ -91,7 +98,7 @@ class Rxy(Operation):
         theta = gate_info["theta"]
         phi = gate_info["phi"]
         qubit = gate_info["qubits"][0]
-        return f"{self.__class__.__name__}(theta={theta}, phi={phi}, qubit='{qubit}')"
+        return f"{self.__class__.__name__}(theta={theta:.8g}, phi={phi:.8g}, qubit='{qubit}')"
 
 
 class X(Rxy):
@@ -373,7 +380,7 @@ class Reset(Operation):
 
         .. jupyter-execute::
 
-            from quantify_scheduler.gate_library import Reset
+            from quantify_scheduler.operations.gate_library import Reset
 
             reset_1 = Reset("q0")
             reset_2 = Reset("q1", "q2")

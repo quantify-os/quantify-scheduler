@@ -34,11 +34,16 @@ quantify-scheduler
     :target: https://github.com/psf/black
     :alt: Code style
 
+
+.. figure:: https://orangeqs.com/logos/QUANTIFY_LANDSCAPE.svg
+    :align: center
+    :alt: Quantify logo
+
 Quantify is a python based data acquisition platform focused on Quantum Computing and solid-state physics experiments.
 It is build on top of `QCoDeS <https://qcodes.github.io/Qcodes/>`_ and is a spiritual successor of `PycQED <https://github.com/DiCarloLab-Delft/PycQED_py3>`_.
 Quantify currently consists of `quantify-core <https://pypi.org/project/quantify-core/>`_ and `quantify-scheduler <https://pypi.org/project/quantify-scheduler/>`_.
 
-Take a look at the documentation for quantify-scheduler: `stable <https://quantify-quantify-scheduler.readthedocs-hosted.com/en/stable/>`_ (or `develop <https://quantify-quantify-scheduler.readthedocs-hosted.com/en/develop/>`_).
+Take a look at the documentation for quantify-scheduler: `last release <https://quantify-quantify-scheduler.readthedocs-hosted.com/>`_ (or `develop <https://quantify-quantify-scheduler.readthedocs-hosted.com/en/develop/>`_).
 
 Quantify-scheduler is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
 The control model allows quantum gate- and pulse-level descriptions to be combined in a clearly defined and hardware-agnostic way.

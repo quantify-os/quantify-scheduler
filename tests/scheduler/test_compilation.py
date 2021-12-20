@@ -3,20 +3,21 @@
 # pylint: disable=missing-function-docstring
 
 from copy import deepcopy
-from quantify_scheduler.enums import BinMode
+
 import numpy as np
 import pytest
-from quantify_scheduler import Schedule
+
+from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
     determine_absolute_timing,
     qcompile,
     validate_config,
 )
-from quantify_scheduler.gate_library import CNOT, CZ, Measure, Reset, Rxy
-from quantify_scheduler.pulse_library import SquarePulse
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
-from quantify_scheduler.types import Operation
 
 
 def test_determine_absolute_timing_ideal_clock():
@@ -268,3 +269,20 @@ def test_measurement_specification_of_binmode(load_example_transmon_config):
     for key, value in comp_sched.data["operation_dict"].items():
         if "Measure" in key:
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
+
+
+def test_compile_trace_acquisition(load_example_transmon_config):
+
+    sched = Schedule("Test schedule")
+    q0 = "q0"
+    sched.add(Reset(q0))
+    sched.add(Rxy(90, 0, qubit=q0))
+    sched.add(Measure(q0), label="M0")
+
+    device_cfg = deepcopy(load_example_transmon_config())
+    device_cfg["qubits"]["q0"]["params"]["acquisition"] = "Trace"
+
+    sched = add_pulse_information_transmon(sched, device_cfg=device_cfg)
+
+    measure_repr = sched.timing_constraints[-1]["operation_repr"]
+    assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"

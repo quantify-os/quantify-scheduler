@@ -21,19 +21,19 @@ It extends the circuit model from quantum information processing by adding a pul
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
 
-In quantify-scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a :class:`~quantify_scheduler.types.Schedule` .
-The :class:`~quantify_scheduler.types.Schedule` contains information on *when* operations should be performed.
-When adding operations to a schedule, one does not need to specify how to represent this :class:`~quantify_scheduler.types.Operation` on all (both gate and pulse) abstraction levels.
+In quantify-scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a :class:`.Schedule` .
+The :class:`.Schedule` contains information on *when* operations should be performed.
+When adding operations to a schedule, one does not need to specify how to represent this :class:`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`~quantify_scheduler.types.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 Creating a schedule
 -------------------
 
-The most convenient way to interact with a :class:`~quantify_scheduler.types.Schedule` is through the :mod:`quantify_scheduler` API.
-In the following example, we will create a function to generate a :class:`~quantify_scheduler.types.Schedule` for a a `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ and visualize one instance of such a circuit.
+The most convenient way to interact with a :class:`.Schedule` is through the :mod:`quantify_scheduler` API.
+In the following example, we will create a function to generate a :class:`.Schedule` for a a `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ and visualize one instance of such a circuit.
 
 
 .. jupyter-execute::
@@ -41,7 +41,7 @@ In the following example, we will create a function to generate a :class:`~quant
 
     # import the Schedule class and some basic operations.
     from quantify_scheduler import Schedule
-    from quantify_scheduler.gate_library import Reset, Measure, CZ, Rxy, X90
+    from quantify_scheduler.operations.gate_library import Reset, Measure, CZ, Rxy, X90
 
     def bell_schedule(angles, q0:str, q1:str, repetitions: int):
 
@@ -91,8 +91,8 @@ Concepts and terminology
 
 Quantify-scheduler can be understood by understanding the following concepts.
 
-- :class:`~quantify_scheduler.types.Schedule`\s describe when an operation needs to be applied.
-- :class:`~quantify_scheduler.types.Operation`\s describe what needs to be done.
+- :class:`.Schedule`\s describe when an operation needs to be applied.
+- :class:`.Operation`\s describe what needs to be done.
 - :class:`~quantify_scheduler.resources.Resource`\s describe where an operation should be applied.
 - :ref:`Compilation <sec-compilation>`: between different abstraction layers and onto a hardware backend.
 
@@ -108,11 +108,11 @@ The following table shows an overview of the different concepts and how these ar
       - Quantum-circuit layer
       - Quantum-device layer
     * - When
-      - :class:`~quantify_scheduler.types.Schedule`
+      - :class:`.Schedule`
       - --
       - --
     * - What
-      - :class:`~quantify_scheduler.types.Operation`
+      - :class:`.Operation`
       - :ref:`Gates and Measurements <sec-user-guide-gates-measurement>`
       - :ref:`Pulses and acquisition protocols <sec-user-guide-pulses-acq-protocols>`
     * - Where
@@ -134,9 +134,9 @@ Gates and measurements
 ^^^^^^^^^^^^^^^^^^^^^^
 In this description operations are `quantum gates <https://en.wikipedia.org/wiki/Quantum_logic_gate>`_  that act on idealized qubits as part of a `quantum circuit <https://en.wikipedia.org/wiki/Quantum_circuit>`_.
 Operations can be represented by (idealized) unitaries acting on qubits.
-The :mod:`~quantify_scheduler.gate_library` contains common operations (including the measurement operation) described at the quantum-circuit level.
+The :mod:`~quantify_scheduler.operations.gate_library` contains common operations (including the measurement operation) described at the quantum-circuit level.
 
-The :class:`~quantify_scheduler.gate_library.Measure` is a special operation that represents a measurement on a qubit.
+The :class:`~quantify_scheduler.operations.gate_library.Measure` is a special operation that represents a measurement on a qubit.
 In addition to the qubit it acts on, one also needs to specify where to store the data.
 
 .. _sec-user-guide-qubits:
@@ -150,7 +150,24 @@ Valid qubits are strings that appear in the :ref:`device configuration file<sec-
 
 Visualization
 ^^^^^^^^^^^^^
-A :class:`~quantify_scheduler.types.Schedule` containing operations can be visualized using as a circuit diagram using :func:`quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A :class:`.Schedule` containing operations can be visualized using as a circuit diagram using :func:`~quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+
+Alternatively, one can plot the waveforms in schedules using :func:`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_matplotlib`:
+
+.. jupyter-execute::
+
+    from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
+    from quantify_scheduler.compilation import determine_absolute_timing
+    from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
+
+    schedule = Schedule("waveforms")
+    schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
+    schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+    schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
+    determine_absolute_timing(schedule)
+
+    _ = pulse_diagram_matplotlib(schedule, sampling_rate=20e6)
+
 
 Summary
 ^^^^^^^
@@ -174,11 +191,11 @@ These waveforms can be used to implement the idealized operations expressed on t
 Pulses and acquisition protocols
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The pulse-level description typically contains parameterization information, such as amplitudes, durations and so forth required to synthesize the waveform on control hardware.
-The :mod:`~quantify_scheduler.pulse_library` contains a collection of commonly used pulses.
+The :mod:`~quantify_scheduler.operations.pulse_library` contains a collection of commonly used pulses.
 
 Measurements are represented as acquisition protocols.
 Acquisition protocols describe the processing steps to perform on an acquired signal in order to interpret it.
-The :mod:`~quantify_scheduler.acquisition_library` contains a collection of commonly used acquisition protocols.
+The :mod:`~quantify_scheduler.operations.acquisition_library` contains a collection of commonly used acquisition protocols.
 
 .. _sec-user-guide-ports-clocks:
 
@@ -242,17 +259,17 @@ This is schematically shown in :numref:`compilation_overview`.
     :width: 900px
 
     A schematic overview of the different abstraction layers and the compilation process.
-    Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a :class:`~quantify_scheduler.types.Schedule` .
-    The information specified in the :ref:`device configuration<sec-device-config>` is used during compilation to add information on how to represent :class:`~quantify_scheduler.types.Operation` s specified at the quantum-circuit level as control pulses.
+    Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a :class:`.Schedule` .
+    The information specified in the :ref:`device configuration<sec-device-config>` is used during compilation to add information on how to represent :class:`.Operation` s specified at the quantum-circuit level as control pulses.
     The information in the :ref:`hardware configuration <sec-hardware-config>` is then used to compile the control pulses into instructions suitable for hardware execution.
 
 
-In the first compilation step, pulse information is added to all operations that are not valid pulses (see :attr:`~quantify_scheduler.types.Operation.valid_pulse`) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
+In the first compilation step, pulse information is added to all operations that are not valid pulses (see :attr:`.Operation.valid_pulse`) based on the information specified in the :ref:`device configuration file<sec-device-config>`.
 
 A second compilation step takes the schedule at the pulse level and translates this for use on a hardware back end.
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the :ref:`hardware configuration file<sec-hardware-config>`.
 
-Both compilation steps can be triggered by passing a :class:`~quantify_scheduler.types.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
+Both compilation steps can be triggered by passing a :class:`.Schedule` and the appropriate configuration files to :func:`~quantify_scheduler.compilation.qcompile`.
 
 .. note::
 
@@ -366,7 +383,7 @@ Although one could use manually written configuration files and send the compile
     Physical instruments are QCoDeS drivers that are directly responsible for executing commands on the control hardware.
     On top of the physical instruments is a hardware abstraction layer, that provides a hardware agnostic interface to execute compiled schedules.
     The instruments responsible for experiment control are treated to be as stateless as possible [*]_ .
-    The knowledge about the system that is required to generate the configuration files is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
+    The knowledge about the system that is required to generate the configuration files is described by the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and :code:`DeviceElement`\s.
     Several utility instruments are used to control the flow of the experiments.
 
 Physical instruments
@@ -380,24 +397,25 @@ As such, the state of the instruments in the software is intended to track the s
 Hardware abstraction layer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
-This hardware abstraction layer is implemented as the :class:`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` to which individual :class:`InstrumentCoordinatorComponent <quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase>`\s are added that provide the uniform interface to the individual instruments.
+This hardware abstraction layer is implemented as the :class:`~.InstrumentCoordinator` to which individual :class:`InstrumentCoordinatorComponent <.InstrumentCoordinatorComponentBase>`\s are added that provide the uniform interface to the individual instruments.
 
 
 The quantum device and the device elements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The knowledge of the system is described by the :code:`QuantumDevice` and :code:`DeviceElement`\s.
-The :code:`QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
-The :code:`QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
+The knowledge of the system is described by the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and :code:`DeviceElement`\s.
+The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
+The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` also contains references to individual :code:`DeviceElement`\s, representations of elements on a device (e.g, a transmon qubit) containing the (calibrated) control-pulse parameters.
 
-Because the :code:`QuantumDevice` and the :code:`DeviceElement`\s are an :class:`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
+Because the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and the :code:`DeviceElement`\s are an :class:`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
 
 Experiment flow
 ~~~~~~~~~~~~~~~
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of :mod:`quantify_core`.
-Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`~quantify_core.measurement.MeasurementControl` and are responsible for the experiment flow.
-This flow is schematically show in :numref:`experiments_control_flow`.
+Central in this framework are the schedule :mod:`quantify_scheduler.gettables` that can be used by the :class:`~quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
+
+This flow is schematically shown in :numref:`experiments_control_flow`.
 
 
 .. figure:: /images/experiments_control_flow.svg
@@ -412,7 +430,7 @@ Let us consider the example of an experiment used to measure the coherence time 
 In this experiment a :math:`\pi` pulse is used to excite the qubit, which is left to idle for a time :math:`\tau` before it is measured.
 This experiment is then repeated for different :math:`\tau` and averaged.
 
-In terms of settables and gettables to use with the :class:`~quantify_core.measurement.MeasurementControl`, the settable in this experiment is the delay time :math:`\tau`, and the gettable is the execution of the schedule.
+In terms of settables and gettables to use with the :class:`~quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time :math:`\tau`, and the gettable is the execution of the schedule.
 
 We represent the settable as a :class:`qcodes.instrument.parameter.ManualParameter`:
 
@@ -423,7 +441,7 @@ We represent the settable as a :class:`qcodes.instrument.parameter.ManualParamet
     tau = ManualParameter("tau", label=r"Delay time", initial_value=0, unit="s")
 
 
-To execute the schedule with the right parameters, the :code:`ScheduleGettable` needs to have a reference to a template function that generates the schedule, the appropriate keyword arguments for that function, and a reference to the :code:`QuantumDevice` to generate the required configuration files.
+To execute the schedule with the right parameters, the :code:`ScheduleGettable` needs to have a reference to a template function that generates the schedule, the appropriate keyword arguments for that function, and a reference to the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` to generate the required configuration files.
 
 For the :math:`T_1` experiment, quantify-scheduler provides a schedule generating function as part of the :mod:`quantify_scheduler.schedules.timedomain_schedules`: the :func:`quantify_scheduler.schedules.timedomain_schedules.t1_sched`.
 
@@ -446,19 +464,16 @@ Rather than specifying the values of the delay times, we pass the parameter :cod
     }
 
 The :code:`ScheduleGettable` is set up to evaluate the value of these parameter on every call of :code:`ScheduleGettable.get`.
-This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the :class:`~quantify_core.measurement.MeasurementControl`.
+This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the :class:`~quantify_core.measurement.control.MeasurementControl`.
 
-Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :code:`QuantumDevice` for every iteration.
-This ensures that if a calibration parameter is changed on the :code:`QuantumDevice`, the compilation will be affected as expected.
+Similar to how the schedule keyword arguments are evaluated for every call to :code:`ScheduleGettable.get`, the device config and hardware config files are re-generated from the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` for every iteration.
+This ensures that if a calibration parameter is changed on the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, the compilation will be affected as expected.
 
-.. warning::
-
-    :code:`QuantumDevice` class is not implemented yet.
 
 .. jupyter-execute::
 
-    # device = QuantumDevice(name="quantum_sample")
-    device = None # placeholder value
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+    device = QuantumDevice(name="quantum_sample")
 
 These ingredients can then be combined to perform the experiment:
 
@@ -469,7 +484,7 @@ These ingredients can then be combined to perform the experiment:
 
 .. warning::
 
-    :code:`ScheduleGettable` class is not implemented yet.
+    :code:`ScheduleGettable` class is not implemented yet. See :class:`~quantify_scheduler.gettables.ScheduleGettableSingleChannel` for an initial implementation supporting only one channel.
 
 .. code-block:: python
 
@@ -490,7 +505,7 @@ and the resulting dataset can be analyzed using
 
 .. jupyter-execute::
 
-    from quantify_core.analysis.t1_analysis import T1Analysis
+    # from quantify_core.analysis.t1_analysis import T1Analysis
     # analysis = T1Analysis(label=label).run()
 
 
@@ -498,4 +513,3 @@ and the resulting dataset can be analyzed using
 .. rubric:: Footnotes
 
 .. [*] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
-

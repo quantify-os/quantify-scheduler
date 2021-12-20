@@ -1,6 +1,48 @@
 repos:
-  - repo: https://github.com/ambv/black
-    rev: 20.8b1
+  - repo: local  # set up all as local to manage packages with pip in Docker
     hooks:
-    - id: black
-      language_version: python3
+      # NB to ignore git hook when for a specific commit/push:
+      # git commit ... --no-verify
+      # git push ... --no-verify
+
+      # NB if `requirements_dev.txt` are installed in a virtual env, then
+      # the git commit/push must be executed in the same env (applies to IDEs as well!)
+
+      # ################################################################################
+      # Static analysis before committing
+      # ################################################################################
+
+      # To install these hooks run:
+      # pre-commit install --hook-type pre-commit
+      # To execute them manually run:
+      # pre-commit run --all-files --hook-stage commit
+
+      # pip install pre-commit-hooks  # provides the utilities below
+
+      # pip install black
+      - id: black
+        name: Python code autoformatter [black]
+        language_version: python3
+        entry: black
+        args: ["--fast"]
+        stages: [commit]
+        language: python
+        types: [python]
+
+      # ################################################################################
+      # Run tests before pushing
+      # ################################################################################
+
+      # To install this hook run:
+      # pre-commit install --hook-type pre-push
+      # To execute it manually run:
+      # pre-commit run --hook-stage push
+
+      - id: pytest
+        name: Run tests
+        entry: pytest
+        args: ["-n", "auto"]  # run in parallel, requires pytest-xdist
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]

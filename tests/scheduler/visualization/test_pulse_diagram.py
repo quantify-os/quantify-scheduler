@@ -2,16 +2,15 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import json
 import inspect
+import json
 from pathlib import Path
 
-from quantify_scheduler import Schedule
-from quantify_scheduler.gate_library import Reset, Measure, Rxy
-from quantify_scheduler.compilation import qcompile
-import quantify_scheduler.visualization.pulse_diagram as plsd
 import quantify_scheduler.schemas.examples as es
-
+import quantify_scheduler.visualization.pulse_diagram as plsd
+from quantify_scheduler import Schedule
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy
 
 esp = inspect.getfile(es)
 cfg_f = Path(esp).parent / "transmon_test_config.json"
@@ -19,7 +18,7 @@ with open(cfg_f, "r") as f:
     DEVICE_CFG = json.load(f)
 
 # Proper verification of this, probably requires some horrible selenium malarkey
-def test_pulse_diagram_plotly():
+def test_pulse_diagram_plotly() -> None:
     sched = Schedule("Test schedule")
 
     # define the resources
@@ -30,9 +29,8 @@ def test_pulse_diagram_plotly():
     sched.add(Rxy(theta=90, phi=0, qubit=qubit_0))
     sched.add(Measure(qubit_0, qubit_1), label="M0")
     # pulse information is added
-    sched = qcompile(sched, DEVICE_CFG, None)
-
+    compiled_sched = qcompile(sched, DEVICE_CFG, None)
     # It should be possible to generate this visualization after compilation
-    fig = plsd.pulse_diagram_plotly(sched)
+    fig = plsd.pulse_diagram_plotly(compiled_sched)
 
     assert fig.data
