@@ -9,6 +9,7 @@ Unreleased changes
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
+* Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
 
 
 0.5.2 Fixes to backends, and other incremental fixes  (2021-12-08)
