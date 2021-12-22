@@ -59,7 +59,7 @@ square_pulse = sched.add(
 sched
 
 # %% [raw]
-# You may have noticed that we passed a port and a clock to the pulse. These parameters specify where on our quantum device we are sending these pulses. The port marks the physical location on the chip, whilst the clock tracks the frequency of the signal. This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
+# You may have noticed that we passed a port and a clock to the pulse. The port specifies the physical location on the quantum chip to which we are sending the pulses, whilst the clock tracks the frequency of the signal. This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
 
 # %%
 from quantify_scheduler.resources import ClockResource
