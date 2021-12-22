@@ -51,8 +51,8 @@ Each device in the setup can be individually configured using the entry in the c
                 }
             }
         },
-        "lo0": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 20},
-        "lo1": {"instrument_type": "LocalOscillator", "lo_freq": 7.2e9, "power": 20}
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20}
     }
 
 .. jupyter-execute::

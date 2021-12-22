@@ -50,12 +50,6 @@ instrument_compilers
 .. automodule:: quantify_scheduler.backends.qblox.instrument_compilers
     :members:
 
-non_generic
-~~~~~~~~~~~
-
-.. automodule:: quantify_scheduler.backends.qblox.non_generic
-    :members:
-
 
 q1asm_instructions
 ~~~~~~~~~~~~~~~~~~
@@ -67,6 +61,42 @@ qasm_program
 ~~~~~~~~~~~~
 
 .. automodule:: quantify_scheduler.backends.qblox.qasm_program
+    :members:
+
+register_manager
+~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.backends.qblox.register_manager
+    :members:
+
+operation_handling
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling
+    :members:
+
+base
+""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.base
+    :members:
+
+factory
+"""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.factory
+    :members:
+
+pulses
+""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.pulses
+    :members:
+
+acquisitions
+""""""""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.acquisitions
     :members:
 
 
