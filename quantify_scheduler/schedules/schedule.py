@@ -431,7 +431,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self,
         operation: Operation,
         rel_time: float = 0,
-        ref_schedulable: Schedulable = None,
+        ref_op: Schedulable = None,
         ref_pt: Literal["start", "center", "end"] = "end",
         ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
@@ -448,7 +448,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             relative time between the reference operation and the added operation.
             the time is the time between the "ref_pt" in the reference operation and
             "ref_pt_new" of the operation that is added.
-        ref_schedulable
+        ref_op
             reference schedulable. If set to :code:`None`, will default
             to the last added operation.
         ref_pt
@@ -488,7 +488,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         operation_id = str(operation)
         self.data["operation_dict"][operation_id] = operation
         element = Schedulable(name=label, operation_id=operation_id, schedule=self)
-        element.add_timing_constraint(rel_time, ref_schedulable, ref_pt, ref_pt_new)
+        element.add_timing_constraint(rel_time, ref_op, ref_pt, ref_pt_new)
         self.data["timing_constraints"].append(element)
 
         return element
@@ -517,6 +517,10 @@ class Schedulable(UserDict):
         self.data["name"] = name
         self.data["operation_id"] = operation_id
         self.data["timing_constraints"] = []
+
+        # the next lines are to prevent breaking the existing API
+        self.data["operation_repr"] = operation_id
+        self.data["label"] = name
 
         self.schedule = schedule
 
