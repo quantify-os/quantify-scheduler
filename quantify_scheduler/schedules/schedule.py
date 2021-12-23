@@ -228,7 +228,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         plot_backend: Literal["mpl"] = "mpl",
     ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
         """
-        Creates a circuit diagram visualization of the schedule using matplotlib.
+        Creates a circuit diagram visualization of the schedule using the specified plotting backend.
 
         The circuit diagram visualization visualizes the schedule at the quantum circuit
         layer.
