@@ -29,15 +29,12 @@
 #
 #     :jupyter-download:script:`Tutorial 5. Operations and Qubits`
 
-# %%
-from pprint import pprint
-
 # %% [raw]
 # Gates, measurements and qubits
 # ------------------------------
 #
-# In the previous tutorials, operations were created on the pulse level. On the pulse level, operations are defined by their waveforms which have to be defined explicitly and are not linked directly to a qubit operation.
-# In addition to the pulse level, `quantify_scheduler` allows creating operations on the circuit level.
+# In the previous tutorials, experiments were created on the pulse level. On this level, operations are defined by their waveforms which have to be set explicitly and are not linked directly to a qubit operation.
+# To allow working at a greater level of abstraction, `quantify_scheduler` allows creating operations on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 # Instead of specifying waveforms, operations are defined by the intended qubit operation.
 #
 # Many of the gates used in the circuit layer description are defined in :module:`quantify_scheduler.operations.gate_library` such as `Reset`, `X90` and `Measure`.
@@ -51,39 +48,49 @@ Measure(q1)
 CZ(q0, q1)
 Reset(q0)
 
-# %% [markdown]
-# Let's investigate the different components present in the circuit level description of the operation. As an example, we create an 45 degree rotation operation over the x-axis.
+# %% [raw]
+# Let's investigate the different components present in the circuit level description of the operation. As an example, we create a 45 degree rotation operation over the x-axis.
 
 # %%
 from pprint import pprint
-pprint(Rxy(theta=45.0, phi=0.0, qubit=q0).data)
+rxy45 = Rxy(theta=45.0, phi=0.0, qubit=q0)
+pprint(rxy45.data)
 
-# %% [markdown]
-# As we can see, the structure of a circuit level operation is similar to a pulse lever operation. However, the information is contained inside the `gate_info` entry rather than the `pulse_info` entry of the data dictionary. The schema for the `gate_info` entry can be obtained as:
+# %% [raw]
+# As we can see, the structure of a circuit level operation is similar to a pulse level operation. However, the information is contained inside the `gate_info` entry rather than the `pulse_info` entry of the data dictionary. The schema for the `gate_info` entry can be obtained as:
 
 # %%
-from quantify_core.utilities import general
-general.load_json_schema(Reset(q0).__file__,'operation.json')
+import importlib.resources
+from quantify_scheduler import schemas
+import json
+operation_schema = json.loads(importlib.resources.read_text(schemas, 'operation.json'))
+
+# %% [raw]
+# The required properties for `gate_info` are found inside the schema together with a brief description of them
+
+# %%
+pprint(operation_schema['properties']['gate_info']['properties'])
 
 # %%
 from quantify_scheduler.schemas import operation
 
 # %% [raw]
+# Additionaly, for the `rxy45` operation we see the additional fields `operation_type`, `phi` and `theta`. These extra fields assist the compiler in order to determine the pulses corresponding to this operation. The additional fields needed for the compilation step depend on which compiler is used and what `operation_type` is specified.
+
+# %% [raw]
 # Schedule creation from the circuit layer
 # ----------------------------------------
 #
-# `quantify_scheduler`  allows defining schedules on the circuit level rather than the pulse level as well.
-#  allowing for creating schedules on a more abstract level. We exemplify this extra layer of abstraction using `Bell violations`. can be added to the schedule directly,
+# The circuit level operations can be used to create a `schedule` within `quantify_scheduler` using the same method as for the pulse level operations.
+# This enables creating schedules on a more abstract level.
+# We exemplify this extra layer of abstraction by creating a `schedule` for measuring `Bell violations`.
 #
-# The high-level gate layer can be mixed with the pulse level.
+# Within a single `schedule`, high-level circuit layer operations can be mixed with pulse level operations.
 # This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in sec. 1.6.
 
 # %% [raw]
-# Bell circuit
-# ~~~~~~~~~~~~
-#
-# As the first example, we want to perform the
-# `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_ .
+# As the first example, we want to create a schedule for performing the
+# `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`.
 # The goal of the Bell experiment is to create a Bell state
 # :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` followed by a measurement.
 # By rotating the measurement basis, or equivalently one of the qubits, it is possible
@@ -113,21 +120,34 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     sched.add(
         Measure(q1, acq_index=acq_idx),
         label="M q1 {:.2f} deg".format(theta),
-        ref_pt="start",
+        ref_pt="start"
     )
+
+sched
 
 # %% [raw]
 # Visualizing the quantum circuit
 # -------------------------------
 #
-# And we can use this to create a default visualization:
+# We can directly visualize the created schedule on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`. 
+# Every operation is shown on the qubit it affects
 
 # %%
 # %matplotlib inline
 
 f, ax = sched.plot_circuit_diagram_mpl()
-# all gates are plotted, but it doesn't all fit in a matplotlib figure
+# all gates are plotted, but it doesn't all fit in a matplotlib figure.
+# Therefore we use `set_xlim` to limit the number of gates shown.
 ax.set_xlim(-0.5, 9.5)
+
+# %% [raw]
+#
+
+# %%
+try:
+    sched.plot_pulse_diagram_mpl()
+except RuntimeError as e:
+    print(e)
 
 # %% [raw]
 # Device configuration and compilation
