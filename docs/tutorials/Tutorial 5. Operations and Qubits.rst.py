@@ -36,31 +36,44 @@ from pprint import pprint
 # Gates, measurements and qubits
 # ------------------------------
 #
-# In the previous tutorials, operations were created on the pulse level. This means that the pulse shapes have to be defined explicitly and do not explicitly refer to the qubit operation to perform.
+# In the previous tutorials, operations were created on the pulse level. On the pulse level, operations are defined by their waveforms which have to be defined explicitly and are not linked directly to a qubit operation.
+# In addition to the pulse level, `quantify_scheduler` allows creating operations on the circuit level.
+# Instead of specifying waveforms, operations are defined by the intended qubit operation.
 #
 # Many of the gates used in the circuit layer description are defined in :module:`quantify_scheduler.operations.gate_library` such as `Reset`, `X90` and `Measure`.
+# Operations are instantiated by providing them with the name of the qubit(s) on which they operate:
 
 # %%
 from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, Rxy
-
-# %% [raw]
-# Gates operate on qubit resources which are currently specified by their name, e.g.,
-
-# %%
 q0, q1 = ("q0", "q1")
+X90(q0)
+Measure(q1)
+CZ(q0, q1)
+Reset(q0)
 
-# %% [raw]
-# this allows specifying operations as
+# %% [markdown]
+# Let's investigate the different components present in the circuit level description of the operation. As an example, we create an 45 degree rotation operation over the x-axis.
 
 # %%
-X90(q0)
+from pprint import pprint
+pprint(Rxy(theta=45.0, phi=0.0, qubit=q0).data)
+
+# %% [markdown]
+# As we can see, the structure of a circuit level operation is similar to a pulse lever operation. However, the information is contained inside the `gate_info` entry rather than the `pulse_info` entry of the data dictionary. The schema for the `gate_info` entry can be obtained as:
+
+# %%
+from quantify_core.utilities import general
+general.load_json_schema(Reset(q0).__file__,'operation.json')
+
+# %%
+from quantify_scheduler.schemas import operation
 
 # %% [raw]
 # Schedule creation from the circuit layer
 # ----------------------------------------
 #
 # `quantify_scheduler`  allows defining schedules on the circuit level rather than the pulse level as well.
-# Instead of specifying the pulse shapes, the intended qubit operation can be added to the schedule directly, allowing for creating schedules on a more abstract level. We exemplify this extra layer of abstraction using `Bell violations`.
+#  allowing for creating schedules on a more abstract level. We exemplify this extra layer of abstraction using `Bell violations`. can be added to the schedule directly,
 #
 # The high-level gate layer can be mixed with the pulse level.
 # This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in sec. 1.6.
