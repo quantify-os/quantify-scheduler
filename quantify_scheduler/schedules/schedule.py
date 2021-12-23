@@ -10,11 +10,13 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import uuid4
+import warnings
 
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+import plotly.graph_objects as go
 from typing_extensions import Literal
 
 from quantify_scheduler import enums, json_utils, resources
@@ -250,20 +252,82 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ax:
             Axis onto which to plot.
         """
-        # NB imported here to avoid circular import
-        # pylint: disable=import-outside-toplevel
-        from quantify_scheduler.visualization.pulse_diagram import (
-            pulse_diagram_matplotlib,
+        warnings.warn(
+            "`plot_pulse_diagram_mpl` will be removed from this module in "
+            "quantify-scheduler >= 0.6.0.\n"
+            "Instead, use `plot_pulse_diagram`",
+            DeprecationWarning,
         )
+        return self.plot_pulse_diagram(port_list, sampling_rate, modulation, modulation_if, "mpl", {'ax': ax})
 
-        return pulse_diagram_matplotlib(
-            schedule=self,
-            sampling_rate=sampling_rate,
-            ax=ax,
-            port_list=port_list,
-            modulation=modulation,
-            modulation_if=modulation_if,
-        )
+    # pylint: disable=too-many-arguments
+    def plot_pulse_diagram(
+        self,
+        port_list: Optional[List[str]] = None,
+        sampling_rate: float = 1e9,
+        modulation: Literal["off", "if", "clock"] = "off",
+        modulation_if: float = 0.0,
+        plot_backend: Literal["mpl", "plotly"] = "mpl",
+        plot_kwargs: Optional[dict] = None
+    ) -> Union[Tuple[Figure, Axes], go.Figure]:
+        """
+        Creates a visualization of all the pulses in a schedule using the specified plot_backend.
+
+        The pulse diagram visualizes the schedule at the quantum device layer.
+        For this visualization to work, all operations need to have the information
+        present (e.g., pulse info) to represent these on the quantum-circuit level and
+        requires the absolute timing to have been determined.
+        This information is typically added when the quantum-device level compilation is
+        performed.
+
+        Alias of :func:`.pulse_diagram.pulse_diagram_matplotlib`.
+
+        port_list :
+            A list of ports to show. if set to `None` will use the first
+            8 ports it encounters in the sequence.
+        modulation :
+            Determines if modulation is included in the visualization.
+        modulation_if :
+            Modulation frequency used when modulation is set to "if".
+        sampling_rate :
+            The time resolution used to sample the schedule in Hz.
+        plot_backend:
+            Plotting library to use, can either be 'mpl' or 'plotly'.
+        plot_kwargs:
+            Dictionary of keyword arguments to pass to the plotting backend
+        """
+        if plot_kwargs is None:
+            plot_kwargs = {}
+        if plot_backend == 'mpl':
+            # NB imported here to avoid circular import
+            # pylint: disable=import-outside-toplevel
+            from quantify_scheduler.visualization.pulse_diagram import (
+                pulse_diagram_matplotlib,
+            )
+
+            return pulse_diagram_matplotlib(
+                schedule=self,
+                sampling_rate=sampling_rate,
+                port_list=port_list,
+                modulation=modulation,
+                modulation_if=modulation_if,
+                **plot_kwargs
+            )
+        elif plot_backend == 'plotly':
+            # NB imported here to avoid circular import
+            # pylint: disable=import-outside-toplevel
+            from quantify_scheduler.visualization.pulse_diagram import (
+                pulse_diagram_plotly,
+            )
+
+            return pulse_diagram_plotly(
+                schedule=self,
+                sampling_rate=sampling_rate,
+                port_list=port_list,
+                modulation=modulation,
+                modulation_if=modulation_if,
+                **plot_kwargs
+            )
 
     @property
     def timing_table(self) -> pd.io.formats.style.Styler:
