@@ -141,6 +141,11 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
 
 class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
+    """
+    A class representing a dummy Local Oscillator,
+    for development and testing purposes.
+    """
+
     def __init__(self, name: str):
         """
         Create an instance of the Generic instrument.
