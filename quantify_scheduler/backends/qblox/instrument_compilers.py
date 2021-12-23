@@ -3,7 +3,8 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
+from collections import abc
 
 from quantify_scheduler.backends.qblox import compiler_abc, compiler_container
 from quantify_scheduler.backends.qblox.constants import (
@@ -49,11 +50,22 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         hw_mapping
             The hardware mapping dict for this instrument.
         """
+
+        def _extract_parameter(
+            parameter_dict: Dict[str, Optional[float]]
+        ) -> Tuple[str, Optional[float]]:
+            items: abc.ItemsView = parameter_dict.items()
+            return list(items)[0]
+
         super().__init__(parent, name, total_play_time, hw_mapping)
         self._settings = LOSettings.from_mapping(hw_mapping)
+        self.freq_param_name, self._frequency = _extract_parameter(
+            self._settings.frequency
+        )
+        self.power_param_name, self._power = _extract_parameter(self._settings.power)
 
     @property
-    def frequency(self) -> float:
+    def frequency(self) -> Optional[float]:
         """
         Getter for the frequency.
 
@@ -62,7 +74,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         :
             The current frequency.
         """
-        return self._settings.lo_freq
+        return self._frequency
 
     @frequency.setter
     def frequency(self, value: float):
@@ -82,14 +94,14 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             frequency to a different value than what it is currently set to. This would
             indicate an invalid configuration in the hardware mapping.
         """
-        if self._settings.lo_freq is not None:
-            if value != self._settings.lo_freq:
+        if self._frequency is not None:
+            if value != self._frequency:
                 raise ValueError(
                     f"Attempting to set LO {self.name} to frequency {value}, "
                     f"while it has previously already been set to "
-                    f"{self._settings.lo_freq}!"
+                    f"{self._frequency}!"
                 )
-        self._settings.lo_freq = value
+        self._frequency = value
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
@@ -106,9 +118,12 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             Dictionary containing all the information the InstrumentCoordinator
             component needs to set the parameters appropriately.
         """
-        if self.frequency is None:
+        if self._frequency is None:
             return None
-        return self._settings.to_dict()
+        return {
+            f"{self.name}.{self.freq_param_name}": self._frequency,
+            f"{self.name}.{self.power_param_name}": self._power,
+        }
 
 
 class QcmModule(compiler_abc.QbloxBasebandModule):
@@ -118,6 +133,7 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
@@ -133,6 +149,7 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
@@ -147,6 +164,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QCM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
@@ -161,6 +179,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QRM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.25,
         # N.B one of the output switches works inverted, hence the 1101 instead of 1111.
