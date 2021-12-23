@@ -213,11 +213,57 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ax
             matplotlib axis object.
         """
+        warnings.warn(
+            "`plot_circuit_diagram_mpl` will be removed from this module in "
+            "quantify-scheduler >= 0.6.0.\n"
+            "Instead, use `plot_circuit_diagram`",
+            DeprecationWarning,
+        )
+        return self.plot_circuit_diagram(figsize, ax, "mpl")
+
+    def plot_circuit_diagram(
+        self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None, plot_backend: Literal["mpl"] = "mpl"
+    ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
+        """
+        Creates a circuit diagram visualization of the schedule using matplotlib.
+
+        The circuit diagram visualization visualizes the schedule at the quantum circuit
+        layer.
+        This visualization provides no timing information, only showing the order of
+        operations.
+        Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations for
+        which no information is specified at the gate level are visualized using an
+        icon (e.g., a stylized wavy pulse) depending on the information specified at
+        the quantum device layer.
+
+        Alias of :func:`.circuit_diagram.circuit_diagram_matplotlib`.
+
+        Parameters
+        ----------
+        schedule
+            the schedule to render.
+        figsize
+            matplotlib figsize.
+        ax
+            Axis handle to use for plotting.
+        plot_backend
+            Plotting backend to use, currently only 'mpl' is supported
+
+        Returns
+        -------
+        fig
+            matplotlib figure object.
+        ax
+            matplotlib axis object.
+        """
         # NB imported here to avoid circular import
         # pylint: disable=import-outside-toplevel
-        import quantify_scheduler.visualization.circuit_diagram as cd
+        if plot_backend == 'mpl':
+            import quantify_scheduler.visualization.circuit_diagram as cd
 
-        return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
+            return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
+        else:
+            raise ValueError(f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}")
 
     # pylint: disable=too-many-arguments
     def plot_pulse_diagram_mpl(
