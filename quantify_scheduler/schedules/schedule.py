@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import plotly.graph_objects as go
 from typing_extensions import Literal
 
 from quantify_scheduler import enums, json_utils, resources
@@ -25,6 +24,7 @@ from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
+    import plotly.graph_objects as go
 
 
 # pylint: disable=too-many-ancestors
@@ -228,7 +228,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         plot_backend: Literal["mpl"] = "mpl",
     ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
         """
-        Creates a circuit diagram visualization of the schedule using the specified plotting backend.
+        Creates a circuit diagram visualization of the schedule using the specified
+        plotting backend.
 
         The circuit diagram visualization visualizes the schedule at the quantum circuit
         layer.
@@ -265,10 +266,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             import quantify_scheduler.visualization.circuit_diagram as cd
 
             return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
-        else:
-            raise ValueError(
-                f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
-            )
+
+        raise ValueError(
+            f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
+        )
 
     # pylint: disable=too-many-arguments
     def plot_pulse_diagram_mpl(
@@ -324,7 +325,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         plot_kwargs: Optional[dict] = None,
     ) -> Union[Tuple[Figure, Axes], go.Figure]:
         """
-        Creates a visualization of all the pulses in a schedule using the specified plot_backend.
+        Creates a visualization of all the pulses in a schedule using the specified
+        ploting backend.
 
         The pulse diagram visualizes the schedule at the quantum device layer.
         For this visualization to work, all operations need to have the information
@@ -381,10 +383,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 modulation_if=modulation_if,
                 **plot_kwargs,
             )
-        else:
-            raise ValueError(
-                f"plot_backend must be equal to either 'mpl' or 'plotly', value given: {repr(plot_backend)}"
-            )
+        raise ValueError(
+            f"plot_backend must be equal to either 'mpl' or 'plotly', "
+            f"value given: {repr(plot_backend)}"
+        )
 
     @property
     def timing_table(self) -> pd.io.formats.style.Styler:
