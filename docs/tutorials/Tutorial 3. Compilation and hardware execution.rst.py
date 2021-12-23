@@ -30,14 +30,14 @@
 #     :jupyter-download:script:`Tutorial 3. Compilation and hardware execution`
 
 # %% [raw]
-# Schedule definition
-# -------------------
-#
 # Compilation allows converting the schedules introduced in Tutorial 1 into a set of instructions that the control hardware needs to execute.
 #
 # In this notebook we will define an example schedule, demonstrate how to compile it and run it with our hardware setup.
 
 # %% [raw]
+# Schedule definition
+# -------------------
+#
 # We start by defining an example schedule.
 
 # %%
