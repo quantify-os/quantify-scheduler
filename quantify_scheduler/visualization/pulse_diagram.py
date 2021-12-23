@@ -19,7 +19,6 @@ from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
-from quantify_scheduler.schedules.schedule import CompiledSchedule
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:

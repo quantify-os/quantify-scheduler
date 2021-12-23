@@ -368,7 +368,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 modulation_if=modulation_if,
                 **plot_kwargs,
             )
-        elif plot_backend == "plotly":
+        if plot_backend == "plotly":
             # NB imported here to avoid circular import
             # pylint: disable=import-outside-toplevel
             from quantify_scheduler.visualization.pulse_diagram import (
