@@ -430,6 +430,10 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     def add(
         self,
         operation: Operation,
+        rel_time: float = 0,
+        ref_schedulable: Schedulable = None,
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
     ) -> Schedulable:
         """
@@ -440,6 +444,19 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         ----------
         operation
             The operation to add to the schedule
+        rel_time
+            relative time between the reference operation and the added operation.
+            the time is the time between the "ref_pt" in the reference operation and
+            "ref_pt_new" of the operation that is added.
+        ref_schedulable
+            reference schedulable. If set to :code:`None`, will default
+            to the last added operation.
+        ref_pt
+            reference point in reference operation must be one of
+            ('start', 'center', 'end').
+        ref_pt_new
+            reference point in added operation must be one of
+            ('start', 'center', 'end').
         label
             a unique string that can be used as an identifier when adding operations.
             if set to None, a random hash will be generated instead.
@@ -471,6 +488,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         operation_id = str(operation)
         self.data["operation_dict"][operation_id] = operation
         element = Schedulable(name=label, operation_id=operation_id, schedule=self)
+        element.add_timing_constraint(rel_time, ref_schedulable, ref_pt, ref_pt_new)
         self.data["timing_constraints"].append(element)
 
         return element
@@ -505,7 +523,7 @@ class Schedulable(UserDict):
     def add_timing_constraint(
         self,
         rel_time: float = 0,
-        ref_schedulable: str = None,
+        ref_schedulable: Schedulable = None,
         ref_pt: Literal["start", "center", "end"] = "end",
         ref_pt_new: Literal["start", "center", "end"] = "start",
     ):

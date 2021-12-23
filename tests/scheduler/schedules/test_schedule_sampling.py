@@ -66,8 +66,7 @@ def test_sample_modulated_waveform() -> None:
     square_pulse_op = SquarePulse(amp=0.2, duration=3e-9, port="SDP", clock="clock0")
     schedule.add(square_pulse_op)
     square_pulse_op = SquarePulse(amp=0.2, duration=3e-9, port="T")
-    scheduable = schedule.add(square_pulse_op)
-    scheduable.add_timing_constraint(ref_pt="start")
+    scheduable = schedule.add(square_pulse_op, ref_pt="start")
     determine_absolute_timing(schedule=schedule)
 
     timestamps, waveforms = sample_schedule(
