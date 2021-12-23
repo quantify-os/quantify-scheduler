@@ -222,7 +222,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self.plot_circuit_diagram(figsize, ax, "mpl")
 
     def plot_circuit_diagram(
-        self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None, plot_backend: Literal["mpl"] = "mpl"
+        self,
+        figsize: Tuple[int, int] = None,
+        ax: Optional[Axes] = None,
+        plot_backend: Literal["mpl"] = "mpl",
     ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
         """
         Creates a circuit diagram visualization of the schedule using matplotlib.
@@ -258,12 +261,14 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         # NB imported here to avoid circular import
         # pylint: disable=import-outside-toplevel
-        if plot_backend == 'mpl':
+        if plot_backend == "mpl":
             import quantify_scheduler.visualization.circuit_diagram as cd
 
             return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
         else:
-            raise ValueError(f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}")
+            raise ValueError(
+                f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
+            )
 
     # pylint: disable=too-many-arguments
     def plot_pulse_diagram_mpl(
@@ -304,7 +309,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             "Instead, use `plot_pulse_diagram`",
             DeprecationWarning,
         )
-        return self.plot_pulse_diagram(port_list, sampling_rate, modulation, modulation_if, "mpl", {'ax': ax})
+        return self.plot_pulse_diagram(
+            port_list, sampling_rate, modulation, modulation_if, "mpl", {"ax": ax}
+        )
 
     # pylint: disable=too-many-arguments
     def plot_pulse_diagram(
@@ -314,7 +321,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         modulation: Literal["off", "if", "clock"] = "off",
         modulation_if: float = 0.0,
         plot_backend: Literal["mpl", "plotly"] = "mpl",
-        plot_kwargs: Optional[dict] = None
+        plot_kwargs: Optional[dict] = None,
     ) -> Union[Tuple[Figure, Axes], go.Figure]:
         """
         Creates a visualization of all the pulses in a schedule using the specified plot_backend.
@@ -344,7 +351,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         if plot_kwargs is None:
             plot_kwargs = {}
-        if plot_backend == 'mpl':
+        if plot_backend == "mpl":
             # NB imported here to avoid circular import
             # pylint: disable=import-outside-toplevel
             from quantify_scheduler.visualization.pulse_diagram import (
@@ -357,9 +364,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 port_list=port_list,
                 modulation=modulation,
                 modulation_if=modulation_if,
-                **plot_kwargs
+                **plot_kwargs,
             )
-        elif plot_backend == 'plotly':
+        elif plot_backend == "plotly":
             # NB imported here to avoid circular import
             # pylint: disable=import-outside-toplevel
             from quantify_scheduler.visualization.pulse_diagram import (
@@ -372,10 +379,12 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 port_list=port_list,
                 modulation=modulation,
                 modulation_if=modulation_if,
-                **plot_kwargs
+                **plot_kwargs,
             )
         else:
-            raise ValueError(f"plot_backend must be equal to either 'mpl' or 'plotly', value given: {repr(plot_backend)}")
+            raise ValueError(
+                f"plot_backend must be equal to either 'mpl' or 'plotly', value given: {repr(plot_backend)}"
+            )
 
     @property
     def timing_table(self) -> pd.io.formats.style.Styler:
