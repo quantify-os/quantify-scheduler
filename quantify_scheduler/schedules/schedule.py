@@ -374,6 +374,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 modulation_if=modulation_if,
                 **plot_kwargs
             )
+        else:
+            raise ValueError(f"plot_backend must be equal to either 'mpl' or 'plotly', value given: {repr(plot_backend)}")
 
     @property
     def timing_table(self) -> pd.io.formats.style.Styler:
