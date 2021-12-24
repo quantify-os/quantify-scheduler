@@ -5,6 +5,13 @@ Changelog
 Unreleased changes
 ------------------
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for backend independent plotting
