@@ -1028,8 +1028,8 @@ def test_assign_frequencies_baseband_downconverter():
     compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = -q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
     generic_icc = "ic_generic"
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
@@ -1114,8 +1114,8 @@ def test_assign_frequencies_rf_downconverter():
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
-    lo0 = q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = -q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
