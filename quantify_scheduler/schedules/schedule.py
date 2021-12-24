@@ -326,7 +326,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     ) -> Union[Tuple[Figure, Axes], go.Figure]:
         """
         Creates a visualization of all the pulses in a schedule using the specified
-        ploting backend.
+        plotting backend.
 
         The pulse diagram visualizes the schedule at the quantum device layer.
         For this visualization to work, all operations need to have the information
@@ -335,7 +335,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         This information is typically added when the quantum-device level compilation is
         performed.
 
-        Alias of :func:`.pulse_diagram.pulse_diagram_matplotlib`.
+        Alias of :func:`.pulse_diagram.pulse_diagram_matplotlib` and
+        :func:`.pulse_diagram.pulse_diagram_plotly`.
 
         port_list :
             A list of ports to show. if set to `None` will use the first
@@ -350,6 +351,11 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             Plotting library to use, can either be 'mpl' or 'plotly'.
         plot_kwargs:
             Dictionary of keyword arguments to pass to the plotting backend
+
+        Returns
+        -------
+        Union[Tuple[Figure, Axes], :class:`!plotly.graph_objects.Figure`]
+            the plot
         """
         if plot_kwargs is None:
             plot_kwargs = {}
