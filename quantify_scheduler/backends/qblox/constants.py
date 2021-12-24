@@ -5,7 +5,7 @@
 
 IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
 """Size of gain instruction immediates in Q1ASM programs."""
-IMMEDIATE_SZ_WAIT = pow(2, 16) - 1
+MAX_WAIT_TIME_IMMEDIATE = pow(2, 16) - 4
 """Size of wait instruction immediates in Q1ASM programs."""
 IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
 """Size of offset instruction immediates in Q1ASM programs."""
