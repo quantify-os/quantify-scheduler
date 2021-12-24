@@ -18,7 +18,7 @@ class Rxy(Operation):
     A single qubit rotation around an axis in the equator of the Bloch sphere.
 
 
-    This operation can be represented by the following unitary:
+    This operation can be represented by the following unitary as defined in https://doi.org/10.1109/TQE.2020.2965810:
 
     .. math::
 
@@ -72,7 +72,7 @@ class Rxy(Operation):
                         -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
                     ],
                     [
-                        -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
+                        -1j * np.exp(1j * phi_r) * np.sin(theta_r / 2),
                         np.cos(theta_r / 2),
                     ],
                 ]
