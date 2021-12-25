@@ -66,7 +66,7 @@ class CompilerContainer:
             compiler.prepare()
 
         # for now name is hardcoded, but should be read from config.
-        generic_icc_name = "generic"
+        generic_icc_name = "ic_generic"
         compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
             compiled_instrument_program = compiler.compile(repetitions=repetitions)
