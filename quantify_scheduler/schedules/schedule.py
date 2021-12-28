@@ -500,14 +500,14 @@ class Schedulable(UserDict):
         """
         # assert the name is unique
         name_is_unique = (
-                len(
-                    [
-                        item
-                        for item in schedule["timing_constraints"]
-                        if item["name"] == name
-                    ]
-                )
-                == 0
+            len(
+                [
+                    item
+                    for item in schedule["timing_constraints"]
+                    if item["name"] == name
+                ]
+            )
+            == 0
         )
         if not name_is_unique:
             raise ValueError(f'Name "{name}" must be unique.')
