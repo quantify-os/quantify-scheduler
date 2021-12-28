@@ -35,7 +35,7 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
     offset_idx: int = 0
 
     for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_id"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
         for operation_info in operation["pulse_info"] + operation["acquisition_info"]:
             if offset_idx == ports_length:
                 return
@@ -350,7 +350,7 @@ def sample_schedule(
 
     time_window: list = None
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_id"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
             if not validate_operation_data(pulse_info, port_map, t_constr, operation):
@@ -380,7 +380,7 @@ def sample_schedule(
     waveforms = {key: np.zeros_like(timestamps) for key in port_map}
 
     for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_id"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
         logger.debug(f"{pls_idx}: {operation}")
 
         for pulse_info in operation["pulse_info"]:
@@ -503,7 +503,7 @@ def get_window_operations(
     """
     window_operations = []
     for _, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_id"]]
+        operation = schedule.operations[t_constr["operation_repr"]]
         if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
 
@@ -587,7 +587,7 @@ def plot_acquisition_operations(
     handles_list = []
     for idx, timing_constraint in enumerate(schedule.timing_constraints):
         _ = idx  # unused variable
-        operation = schedule.operations[timing_constraint["operation_id"]]
+        operation = schedule.operations[timing_constraint["operation_repr"]]
         if isinstance(operation, AcquisitionOperation):
             t0 = (
                 timing_constraint["abs_time"]

@@ -73,7 +73,7 @@ def determine_absolute_timing(
 
     # iterate over the objects in the schedule.
     last_schedulable = schedule.timing_constraints[0]
-    last_op = schedule.operations[last_schedulable["operation_id"]]
+    last_op = schedule.operations[last_schedulable["operation_repr"]]
 
     last_schedulable["abs_time"] = 0
 
@@ -82,7 +82,7 @@ def determine_absolute_timing(
     schedulable_names_sorted = np.asarray(sorted(schedulable_names))
 
     for schedulable in schedule.data["timing_constraints"][1:]:
-        curr_op = schedule.operations[schedulable["operation_id"]]
+        curr_op = schedule.operations[schedulable["operation_repr"]]
         if len(schedulable.data["timing_constraints"]) == 0:
             schedulable.add_timing_constraint(ref_schedulable=last_schedulable)
         # elif len(schedulable.data['timing_constraints'] ) > 1:
@@ -99,7 +99,7 @@ def determine_absolute_timing(
                 )
                 ref_schedulable_idx = sort_idx[sidx]
                 ref_schedulable = schedule.timing_constraints[ref_schedulable_idx]
-                ref_op = schedule.operations[ref_schedulable["operation_id"]]
+                ref_op = schedule.operations[ref_schedulable["operation_repr"]]
 
             # duration = 1 is useful when e.g., drawing a circuit diagram.
             duration_ref_op = ref_op.duration if time_unit == "physical" else 1

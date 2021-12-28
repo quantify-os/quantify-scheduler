@@ -469,25 +469,10 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         if label is None:
             label = str(uuid4())
-        else:
-            # assert that the label of the operation does not exists in the
-            # timing constraints.
-            label_is_unique = (
-                len(
-                    [
-                        item
-                        for item in self.data["timing_constraints"]
-                        if item["name"] == label
-                    ]
-                )
-                == 0
-            )
-            if not label_is_unique:
-                raise ValueError(f'Label "{label}" must be unique.')
 
         operation_id = str(operation)
         self.data["operation_dict"][operation_id] = operation
-        element = Schedulable(name=label, operation_id=operation_id, schedule=self)
+        element = Schedulable(name=label, operation_repr=operation_id, schedule=self)
         element.add_timing_constraint(rel_time, ref_op, ref_pt, ref_pt_new)
         self.data["timing_constraints"].append(element)
 
@@ -500,26 +485,40 @@ class Schedulable(UserDict):
     It also specifies what the element should do, currently represented by an operation ID.
     """
 
-    def __init__(self, name, operation_id, schedule):
+    def __init__(self, name, operation_repr, schedule):
         """
 
         Parameters
         ----------
         name
-            The name of this schedulable, by which it can be referenced by other schedulables
-        operation_id
-            The operation id which is to be executed by this schedulable
+            The name of this schedulable, by which it can be referenced by other schedulables.
+            Separate schedulables cannot share the same name
+        operation_repr
+            The operation which is to be executed by this schedulable
         schedule
             The schedule on which the schedulable is created. This allows to scheduable to find other elements on the schedule
         """
+        # assert the name is unique
+        name_is_unique = (
+                len(
+                    [
+                        item
+                        for item in schedule["timing_constraints"]
+                        if item["name"] == name
+                    ]
+                )
+                == 0
+        )
+        if not name_is_unique:
+            raise ValueError(f'Name "{name}" must be unique.')
+
         super().__init__()
 
         self.data["name"] = name
-        self.data["operation_id"] = operation_id
+        self.data["operation_repr"] = operation_repr
         self.data["timing_constraints"] = []
 
         # the next lines are to prevent breaking the existing API
-        self.data["operation_repr"] = operation_id
         self.data["label"] = name
 
         self.schedule = schedule
