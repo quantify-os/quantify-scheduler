@@ -47,12 +47,18 @@ def test_trace_schedule() -> None:
         schedule.timing_constraints[1]["operation_repr"]
     ]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
-    assert schedule.timing_constraints[1]['timing_constraints'][0]["rel_time"] == pulse_delay
+    assert (
+        schedule.timing_constraints[1]["timing_constraints"][0]["rel_time"]
+        == pulse_delay
+    )
 
     # Trace
     trace_acq_op = schedule.operations[schedule.timing_constraints[2]["operation_repr"]]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
-    assert schedule.timing_constraints[2]['timing_constraints'][0]["rel_time"] == acquisition_delay
+    assert (
+        schedule.timing_constraints[2]["timing_constraints"][0]["rel_time"]
+        == acquisition_delay
+    )
 
 
 def test_two_tone_trace_schedule() -> None:
@@ -107,7 +113,7 @@ def test_two_tone_trace_schedule() -> None:
     square_pulse_op = schedule.operations[t_const["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert t_const["label"] == "readout_pulse"
-    assert t_const['timing_constraints'][0]["rel_time"] == 2e-9
+    assert t_const["timing_constraints"][0]["rel_time"] == 2e-9
     assert pulse_info["duration"] == 500e-9
     assert pulse_info["port"] == "q0:res"
 
@@ -116,6 +122,6 @@ def test_two_tone_trace_schedule() -> None:
     trace_op = schedule.operations[t_const["operation_repr"]]
     acq_info = trace_op["acquisition_info"][0]
     assert t_const["label"] == "acquisition"
-    assert t_const['timing_constraints'][0]["rel_time"] == -20e-9
+    assert t_const["timing_constraints"][0]["rel_time"] == -20e-9
     assert acq_info["duration"] == integration_time
     assert acq_info["port"] == "q0:res"
