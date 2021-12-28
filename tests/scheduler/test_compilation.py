@@ -40,7 +40,7 @@ def test_determine_absolute_timing_ideal_clock():
 
     for constr in sched.data["timing_constraints"]:
         assert "abs_time" not in constr.keys()
-        assert constr["rel_time"] == 0
+        assert constr['timing_constraints'][0]["rel_time"] == 0
 
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
@@ -172,7 +172,7 @@ def test_pulse_and_clock(load_example_transmon_config):
     sched = Schedule("pulse_no_clock")
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
-    op_hash = next(op for op in sched.timing_constraints if op["label"] == op_label)[
+    op_hash = next(op for op in sched.timing_constraints if op["label"] == str(op_label))[
         "operation_repr"
     ]
     with pytest.raises(ValueError) as execinfo:

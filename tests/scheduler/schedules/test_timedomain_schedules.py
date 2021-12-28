@@ -227,7 +227,7 @@ class TestT1Sched(_CompilesAllBackends):
         for i, constr in enumerate(self.sched.timing_constraints):
             assert constr["label"] == labels[i]
             if (i - 2) % 3 == 0:  # every measurement operation
-                assert constr["rel_time"] == self.sched_kwargs["times"][i // 3]
+                assert constr['timing_constraints'][0]["rel_time"] == self.sched_kwargs["times"][i // 3]
 
     # pylint: disable=no-self-use
     def test_sched_float_times(self, load_example_transmon_config):
@@ -267,7 +267,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
             if i % 4 == 0:
                 assert constr["label"][:5] == "Reset"
             if (i - 2) % 4 == 0:  # every second pi/2 operation
-                assert constr["rel_time"] == self.sched_kwargs["times"][i // 4]
+                assert constr['timing_constraints'][0]["rel_time"] == self.sched_kwargs["times"][i // 4]
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
@@ -281,7 +281,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
 
         sched = ts.ramsey_sched(**sched_kwargs)
         sched = qcompile(sched, load_example_transmon_config())
-        assert any(op["rel_time"] == 3e-6 for op in sched.timing_constraints)
+        assert any(op['timing_constraints'][0]["rel_time"] == 3e-6 for op in sched.timing_constraints)
 
     def test_operations(self):
         # 2 initial pi/2, 20 acquisitions + 6 unique rotation angles for 2nd pi/2
@@ -310,7 +310,7 @@ class TestRamseySched(_CompilesAllBackends):
             if i % 4 == 0:
                 assert constr["label"][:5] == "Reset"
             if (i - 2) % 4 == 0:  # every second pi/2 operation
-                assert constr["rel_time"] == self.sched_kwargs["times"][i // 4]
+                assert constr['timing_constraints'][0]["rel_time"] == self.sched_kwargs["times"][i // 4]
             if (i - 3) % 4 == 0:
                 assert constr["label"][:11] == "Measurement"
 
@@ -362,9 +362,9 @@ class TestEchoSched(_CompilesAllBackends):
             if i % 5 == 0:
                 assert constr["label"][:5] == "Reset"
             if (i - 2) % 5 == 0:  # every second pi/2 operation
-                assert constr["rel_time"] == self.sched_kwargs["times"][i // 5] / 2
+                assert constr['timing_constraints'][0]["rel_time"] == self.sched_kwargs["times"][i // 5] / 2
             if (i - 3) % 5 == 0:  # every second pi/2 operation
-                assert constr["rel_time"] == self.sched_kwargs["times"][i // 5] / 2
+                assert constr['timing_constraints'][0]["rel_time"] == self.sched_kwargs["times"][i // 5] / 2
             if (i - 4) % 5 == 0:
                 assert constr["label"][:11] == "Measurement"
 

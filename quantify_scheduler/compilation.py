@@ -113,7 +113,7 @@ def determine_absolute_timing(
             else:
                 raise NotImplementedError(
                     'Timing "{}" not supported by backend'.format(
-                        ref_constr["abs_time"]
+                        ref_schedulable["abs_time"]
                     )
                 )
 
