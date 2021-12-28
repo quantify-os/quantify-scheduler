@@ -8,9 +8,10 @@ import json
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from os import makedirs, path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
-import numpy as np
+from functools import partial
+
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -20,18 +21,23 @@ from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
     helpers,
-    non_generic,
     q1asm_instructions,
     register_manager,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
+    AcquisitionStrategyPartial,
+)
+from quantify_scheduler.backends.qblox.operation_handling.factory import (
+    get_operation_strategy,
+)
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
     BaseModuleSettings,
     OpInfo,
     PulsarRFSettings,
     PulsarSettings,
-    QASMRuntimeSettings,
     RFModuleSettings,
     SequencerSettings,
     StaticHardwareProperties,
@@ -40,7 +46,6 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
-from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 
 class InstrumentCompiler(ABC):
@@ -280,8 +285,8 @@ class Sequencer:
         self._name = name
         self.port = portclock[0]
         self.clock = portclock[1]
-        self.pulses: List[OpInfo] = []
-        self.acquisitions: List[OpInfo] = []
+        self.pulses: List[IOperationStrategy] = []
+        self.acquisitions: List[IOperationStrategy] = []
         self.associated_ext_lo: str = lo_name
         self.downconverter: bool = downconverter
 
@@ -296,6 +301,12 @@ class Sequencer:
         self._settings = SequencerSettings.initialize_from_config_dict(
             seq_settings=seq_settings, connected_outputs=connected_outputs
         )
+
+        self.qasm_hook_func: Optional[Callable] = seq_settings.get(
+            "qasm_hook_func", None
+        )
+        """Allows the user to inject custom Q1ASM code into the compilation, just prior
+         to returning the final string."""
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -443,107 +454,10 @@ class Sequencer:
         ValueError
             I or Q amplitude is being set outside of maximum range.
         """
-        output_mode = helpers.output_mode_from_outputs(self._settings.connected_outputs)
-        waveforms_complex = {}
+        wf_dict: Dict[str, Any] = {}
         for pulse in self.pulses:
-            reserved_pulse_id = (
-                non_generic.check_reserved_pulse_id(pulse)
-                if self.instruction_generated_pulses_enabled
-                else None
-            )
-            if reserved_pulse_id is None:
-                raw_wf_data = helpers.generate_waveform_data(
-                    pulse.data, sampling_rate=constants.SAMPLING_RATE
-                )
-                raw_wf_data, amp_i, amp_q = normalize_waveform_data(raw_wf_data)
-                pulse.uuid = helpers.generate_uuid_from_wf_data(raw_wf_data)
-            else:
-                raw_wf_data, amp_i, amp_q = non_generic.generate_reserved_waveform_data(
-                    reserved_pulse_id, pulse.data, sampling_rate=constants.SAMPLING_RATE
-                )
-                pulse.uuid = reserved_pulse_id
-
-            if np.abs(amp_i) > self.static_hw_properties.max_awg_output_voltage:
-                raise ValueError(
-                    f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-"
-                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
-                    f"{self.parent.__class__.__name__}.\n"
-                    f"{amp_i} V is set as amplitude for the I channel for "
-                    f"{repr(pulse)}"
-                )
-            if np.abs(amp_q) > self.static_hw_properties.max_awg_output_voltage:
-                raise ValueError(
-                    f"Attempting to set amplitude to an invalid value. "
-                    f"Maximum voltage range is +-"
-                    f"{self.static_hw_properties.max_awg_output_voltage} V for "
-                    f"{self.parent.__class__.__name__}.\n"
-                    f"{amp_q} V is set as amplitude for the Q channel for "
-                    f"{repr(pulse)}"
-                )
-            if output_mode == "imag":
-                # swapping variables since we want the real signal to play on the Q
-                # channel.
-                amp_i, amp_q = amp_q, amp_i
-
-            pulse.pulse_settings = QASMRuntimeSettings(
-                awg_gain_0=amp_i / self.static_hw_properties.max_awg_output_voltage,
-                awg_gain_1=amp_q / self.static_hw_properties.max_awg_output_voltage,
-            )
-            if pulse.uuid not in waveforms_complex and raw_wf_data is not None:
-                raw_wf_data = self.apply_output_mode_to_data(
-                    pulse, raw_wf_data, output_mode
-                )
-                waveforms_complex[pulse.uuid] = raw_wf_data
-        return helpers.generate_waveform_dict(waveforms_complex)
-
-    def apply_output_mode_to_data(
-        self, pulse: OpInfo, data: np.ndarray, mode: Literal["complex", "real", "imag"]
-    ) -> np.ndarray:
-        """
-        Takes the pulse and ensures it is played on the right path for ``"real"`` or
-        ``"imag"`` mode, returns same ``data`` for ``mode == "complex"`` as this should
-        be handled correctly already.
-
-        Effectively this means that when ``data`` is an array of real numbers and the
-        ``mode == "imag"`` the data will be cast to an array of complex numbers,
-        otherwise the same ``data`` will be returned.
-
-        Parameters
-        ----------
-        pulse
-            The pulse information.
-        data
-            Real-valued array (when ``mode != "complex"``) or complex-valued array
-            (when ``mode == "complex"``).
-        mode
-            The output mode. Must be one of ``"complex"``, ``"real"`` or ``"imag"``.
-
-        Returns
-        -------
-        :
-            The (potentially made imag) data.
-
-        Raises
-        ------
-        ValueError
-            Mode is not ``"complex"`` but the input ``data`` has an imaginary part.
-        """
-        assert mode in ("complex", "real", "imag")
-
-        if mode == "complex":
-            return data
-
-        if not np.all((data.imag == 0)):
-            raise ValueError(
-                f"Attempting to play complex data on sequencer {self.name} of "
-                f"{self.parent.name} which is connected to a real output.\n\n"
-                f"Associated pulse:\n{repr(pulse)}"
-            )
-        if mode == "imag":
-            return 1.0j * data
-
-        return data  # mode is real
+            pulse.generate_data(wf_dict=wf_dict)
+        return wf_dict
 
     def _generate_weights_dict(self) -> Dict[str, Any]:
         """
@@ -581,46 +495,14 @@ class Sequencer:
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
         """
-        waveforms_complex = {}
+        wf_dict: Dict[str, Any] = {}
         for acq in self.acquisitions:
-            waveforms_data = acq.data["waveforms"]
-            if len(waveforms_data) == 0:
-                continue  # e.g. scope acquisition
-            if acq.data["protocol"] == "ssb_integration_complex":
-                continue
-            if len(waveforms_data) != 2:
-                raise ValueError(
-                    f"Acquisitions need 2 waveforms (one for the I quadrature and one "
-                    f"for the Q quadrature).\n\n{acq} has {len(waveforms_data)}"
-                    "waveforms."
-                )
-            raw_wf_data_real = helpers.generate_waveform_data(
-                waveforms_data[0], sampling_rate=constants.SAMPLING_RATE
-            )
-            raw_wf_data_imag = helpers.generate_waveform_data(
-                waveforms_data[1], sampling_rate=constants.SAMPLING_RATE
-            )
-            acq.uuid = "{}_{}".format(
-                helpers.generate_uuid_from_wf_data(raw_wf_data_real),
-                helpers.generate_uuid_from_wf_data(raw_wf_data_imag),
-            )
-            if acq.uuid not in waveforms_complex:
-                self._settings.duration = len(raw_wf_data_real)
-                if not (
-                    np.all(np.isreal(raw_wf_data_real))
-                    and np.all(np.isreal(1.0j * raw_wf_data_imag))
-                ):  # since next step will break if either is complex
-                    raise NotImplementedError(
-                        f"Complex weights not implemented. Please use two 1d "
-                        f"real-valued weights. Exception was triggered because of "
-                        f"{repr(acq)}."
-                    )
-                waveforms_complex[acq.uuid] = raw_wf_data_real + raw_wf_data_imag
-        return helpers.generate_waveform_dict(waveforms_complex)
+            acq.generate_data(wf_dict)
+        return wf_dict
 
     def _generate_acq_declaration_dict(
         self,
-        acquisitions: List[OpInfo],
+        acquisitions: List[IOperationStrategy],
         repetitions: int,
     ) -> Dict[str, Any]:
         """
@@ -644,9 +526,14 @@ class Sequencer:
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
+        acquisition_infos: List[OpInfo] = list(
+            map(lambda acq: acq.operation_info, acquisitions)
+        )
 
         # acquisition metadata for acquisitions relevant to this sequencer only
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(acquisitions)
+        acq_metadata = _extract_acquisition_metadata_from_acquisitions(
+            acquisition_infos
+        )
 
         # initialize an empty dictionary for the format required by pulsar
         acq_declaration_dict = {}
@@ -681,7 +568,13 @@ class Sequencer:
                 # this check exists to catch unexpected errors if we add more
                 # BinModes in the future.
                 raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
-
+            if acq_metadata.acq_protocol == "looped_periodic_acquisition":
+                if len(acquisition_infos) > 1:
+                    raise ValueError(
+                        "only one acquisition allowed if "
+                        "looped_periodic_acquisition is used"
+                    )
+                num_bins = acquisition_infos[0].data["num_times"]
             acq_declaration_dict[str(acq_channel)] = {
                 "num_bins": num_bins,
                 "index": acq_channel,
@@ -699,8 +592,6 @@ class Sequencer:
     def generate_qasm_program(
         self,
         total_sequence_time: float,
-        awg_dict: Optional[Dict[str, Any]] = None,
-        weights_dict: Optional[Dict[str, Any]] = None,
         repetitions: Optional[int] = 1,
     ) -> str:
         """
@@ -730,15 +621,6 @@ class Sequencer:
         total_sequence_time
             Total time the program needs to play for. If the sequencer would be done
             before this time, a wait is added at the end to ensure synchronization.
-        awg_dict
-            Dictionary containing the pulse waveform data and the index that is assigned
-            to the I and Q waveforms, as generated by the `generate_awg_dict` function.
-            This is used to extract the relevant indexes when adding a play instruction.
-        weights_dict
-            Dictionary containing the acquisition waveform data and the index that is
-            assigned to the I and Q waveforms, as generated by the `generate_acq_dict`
-            function. This is used to extract the relevant indexes when adding an
-            acquire instruction.
         repetitions
             Number of times to repeat execution of the schedule.
 
@@ -749,7 +631,7 @@ class Sequencer:
         """
         loop_label = "start"
 
-        qasm = QASMProgram(parent=self)
+        qasm = QASMProgram(self.static_hw_properties, self.register_manager)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.RESET_PHASE)
@@ -763,20 +645,17 @@ class Sequencer:
 
         # program body
         op_list = pulses + acquisitions
-        op_list = sorted(op_list, key=lambda p: (p.timing, p.is_acquisition))
+        op_list = sorted(
+            op_list,
+            key=lambda p: (p.operation_info.timing, p.operation_info.is_acquisition),
+        )
 
         with qasm.loop(label=loop_label, repetitions=repetitions):
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
-                if operation.is_acquisition:
-                    idx0, idx1 = self.get_indices_from_wf_dict(
-                        operation.uuid, weights_dict
-                    )
-                    qasm.wait_till_start_then_acquire(operation, idx0, idx1)
-                else:
-                    idx0, idx1 = self.get_indices_from_wf_dict(operation.uuid, awg_dict)
-                    qasm.wait_till_start_then_play(operation, idx0, idx1)
+                qasm.wait_till_start_operation(operation.operation_info)
+                operation.insert_qasm(qasm)
 
             end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
@@ -793,10 +672,15 @@ class Sequencer:
         qasm.set_marker(self.static_hw_properties.marker_configuration.end)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
+
+        if self.qasm_hook_func:
+            self.qasm_hook_func(qasm)
+
+        self._settings.integration_length_acq = qasm.integration_length_acq
         return str(qasm)
 
     def _initialize_append_mode_registers(
-        self, qasm: QASMProgram, acquisitions: List[OpInfo]
+        self, qasm: QASMProgram, acquisitions: List[AcquisitionStrategyPartial]
     ):
         """
         Adds the instructions to initialize the registers needed to use the append
@@ -811,10 +695,10 @@ class Sequencer:
         """
         channel_to_reg = {}
         for acq in acquisitions:
-            if acq.data["bin_mode"] != BinMode.APPEND:
+            if acq.operation_info.data["bin_mode"] != BinMode.APPEND:
                 continue
 
-            channel = acq.data["acq_channel"]
+            channel = acq.operation_info.data["acq_channel"]
             if channel in channel_to_reg:
                 acq_bin_idx_reg = channel_to_reg[channel]
             else:
@@ -826,34 +710,9 @@ class Sequencer:
                     0,
                     acq_bin_idx_reg,
                     comment=f"Initialize acquisition bin_idx for "
-                    f"ch{acq.data['acq_channel']}",
+                    f"ch{acq.operation_info.data['acq_channel']}",
                 )
             acq.bin_idx_register = acq_bin_idx_reg
-
-    @staticmethod
-    def get_indices_from_wf_dict(uuid: str, wf_dict: Dict[str, Any]) -> Tuple[int, int]:
-        """
-        Takes a waveforms_dict or weights_dict and extracts the waveform indices based
-        off of the uuid of the pulse/acquisition.
-
-        Parameters
-        ----------
-        uuid
-            The unique identifier of the pulse/acquisition.
-        wf_dict
-            The awg or acq dict that holds the waveform data and indices.
-
-        Returns
-        -------
-        :
-            Index of the I waveform.
-        :
-            Index of the Q waveform.
-        """
-        name_real, name_imag = helpers.generate_waveform_names_from_uuid(uuid)
-        idx_real = None if name_real not in wf_dict else wf_dict[name_real]["index"]
-        idx_imag = None if name_imag not in wf_dict else wf_dict[name_imag]["index"]
-        return idx_real, idx_imag
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -963,8 +822,6 @@ class Sequencer:
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,
-            awg_dict,
-            weights_dict,
             repetitions=repetitions,
         )
 
@@ -1171,13 +1028,33 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
+                instr_gen_pulses = seq.instruction_generated_pulses_enabled
                 if seq.portclock == portclock:
-                    seq.pulses = pulse_data_list
+                    partial_func = partial(
+                        get_operation_strategy,
+                        instruction_generated_pulses_enabled=instr_gen_pulses,
+                        output_mode=seq.output_mode,
+                    )
+                    func_map = map(
+                        partial_func,
+                        pulse_data_list,
+                    )
+                    seq.pulses = list(func_map)
 
         for portclock, acq_data_list in self._acquisitions.items():
             for seq in self.sequencers.values():
+                instr_gen_pulses = seq.instruction_generated_pulses_enabled
                 if seq.portclock == portclock:
-                    seq.acquisitions = acq_data_list
+                    partial_func = partial(
+                        get_operation_strategy,
+                        instruction_generated_pulses_enabled=instr_gen_pulses,
+                        output_mode=seq.output_mode,
+                    )
+                    func_map = map(
+                        partial_func,
+                        acq_data_list,
+                    )
+                    seq.acquisitions = list(func_map)
 
     @abstractmethod
     def assign_frequencies(self, sequencer: Sequencer):
@@ -1320,7 +1197,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         scope_acq_seq = None
         for seq in self.sequencers.values():
-            has_scope = any(map(is_scope_acquisition, seq.acquisitions))
+            op_infos = [acq.operation_info for acq in seq.acquisitions]
+            has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:
                 if scope_acq_seq is not None:
                     raise ValueError(
@@ -1374,7 +1252,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if not sequencer.acquisitions:
                     continue
                 acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-                    sequencer.acquisitions
+                    [acq.operation_info for acq in sequencer.acquisitions]
                 )
                 program["acq_metadata"][sequencer.name] = acq_metadata
 
@@ -1405,7 +1283,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         acq_mapping = {}
         for sequencer in self.sequencers.values():
-            mapping_items = map(extract_mapping_item, sequencer.acquisitions)
+            mapping_items = map(
+                extract_mapping_item,
+                [acq.operation_info for acq in sequencer.acquisitions],
+            )
             for item in mapping_items:
                 acq_mapping[item[0]] = (sequencer.name, item[1])
 
@@ -1430,6 +1311,7 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     # LO/IF frequencies unchanged.
     if sequencer.downconverter:
         downconverter_freq = constants.DOWNCONVERTER_FREQ
+        clk_freq = -clk_freq
     else:
         downconverter_freq = 0
 
@@ -1569,6 +1451,7 @@ class QbloxRFModule(QbloxBaseModule):
             LO/IF frequencies unchanged"""
             if sequencer.downconverter:
                 downconverter_freq = constants.DOWNCONVERTER_FREQ
+                clk_freq = -clk_freq
             else:
                 downconverter_freq = 0
 
