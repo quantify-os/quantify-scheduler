@@ -38,25 +38,25 @@ def test_trace_schedule() -> None:
     assert len(schedule.timing_constraints) == 3
     # IdlePulse
     idle_pulse_op = schedule.operations[
-        schedule.timing_constraints[0]["operation_repr"]
+        list(schedule.timing_constraints.values())[0]["operation_repr"]
     ]
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # SquarePulse
     square_pulse_op = schedule.operations[
-        schedule.timing_constraints[1]["operation_repr"]
+        list(schedule.timing_constraints.values())[1]["operation_repr"]
     ]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
     assert (
-        schedule.timing_constraints[1]["timing_constraints"][0]["rel_time"]
+        list(schedule.timing_constraints.values())[1]["timing_constraints"][0]["rel_time"]
         == pulse_delay
     )
 
     # Trace
-    trace_acq_op = schedule.operations[schedule.timing_constraints[2]["operation_repr"]]
+    trace_acq_op = schedule.operations[list(schedule.timing_constraints.values())[2]["operation_repr"]]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
     assert (
-        schedule.timing_constraints[2]["timing_constraints"][0]["rel_time"]
+        list(schedule.timing_constraints.values())[2]["timing_constraints"][0]["rel_time"]
         == acquisition_delay
     )
 
@@ -95,13 +95,13 @@ def test_two_tone_trace_schedule() -> None:
     assert len(schedule.timing_constraints) == 4
 
     # IdlePulse
-    t_const = schedule.timing_constraints[0]
+    t_const = list(schedule.timing_constraints.values())[0]
     idle_pulse_op = schedule.operations[t_const["operation_repr"]]
     assert t_const["label"] == "Reset"
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # Qubit pulse
-    t_const = schedule.timing_constraints[1]
+    t_const = list(schedule.timing_constraints.values())[1]
     square_pulse_op = schedule.operations[t_const["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert t_const["label"] == "qubit_pulse"
@@ -109,7 +109,7 @@ def test_two_tone_trace_schedule() -> None:
     assert pulse_info["duration"] == 16e-9
 
     # Readout pulse
-    t_const = schedule.timing_constraints[2]
+    t_const = list(schedule.timing_constraints.values())[2]
     square_pulse_op = schedule.operations[t_const["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert t_const["label"] == "readout_pulse"
@@ -118,7 +118,7 @@ def test_two_tone_trace_schedule() -> None:
     assert pulse_info["port"] == "q0:res"
 
     # Trace Acquisition
-    t_const = schedule.timing_constraints[3]
+    t_const = list(schedule.timing_constraints.values())[3]
     trace_op = schedule.operations[t_const["operation_repr"]]
     acq_info = trace_op["acquisition_info"][0]
     assert t_const["label"] == "acquisition"

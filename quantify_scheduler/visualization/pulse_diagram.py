@@ -34,7 +34,7 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
     """
     offset_idx: int = 0
 
-    for t_constr in schedule.timing_constraints:
+    for t_constr in schedule.timing_constraints.values():
         operation = schedule.operations[t_constr["operation_repr"]]
         for operation_info in operation["pulse_info"] + operation["acquisition_info"]:
             if offset_idx == ports_length:
@@ -136,7 +136,7 @@ def pulse_diagram_plotly(
     colors = px.colors.qualitative.Plotly
     col_idx: int = 0
 
-    for pulse_idx, t_constr in enumerate(schedule.timing_constraints):
+    for pulse_idx, t_constr in enumerate(schedule.timing_constraints.values()):
         operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
@@ -349,7 +349,7 @@ def sample_schedule(
         ports_length = len(port_map)
 
     time_window: list = None
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints.values()):
         operation = schedule.operations[t_constr["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
@@ -379,7 +379,7 @@ def sample_schedule(
     timestamps = np.arange(time_window[0], time_window[1], 1 / sampling_rate)
     waveforms = {key: np.zeros_like(timestamps) for key in port_map}
 
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
+    for pls_idx, t_constr in enumerate(schedule.timing_constraints.values()):
         operation = schedule.operations[t_constr["operation_repr"]]
         logger.debug(f"{pls_idx}: {operation}")
 
@@ -502,7 +502,7 @@ def get_window_operations(
         List of all window operations in the schedule.
     """
     window_operations = []
-    for _, t_constr in enumerate(schedule.timing_constraints):
+    for _, t_constr in enumerate(schedule.timing_constraints.values()):
         operation = schedule.operations[t_constr["operation_repr"]]
         if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
@@ -585,7 +585,7 @@ def plot_acquisition_operations(
         ax = plt.gca()
 
     handles_list = []
-    for idx, timing_constraint in enumerate(schedule.timing_constraints):
+    for idx, timing_constraint in enumerate(schedule.timing_constraints.values()):
         _ = idx  # unused variable
         operation = schedule.operations[timing_constraint["operation_repr"]]
         if isinstance(operation, AcquisitionOperation):

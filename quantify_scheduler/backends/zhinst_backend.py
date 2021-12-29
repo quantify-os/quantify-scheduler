@@ -567,7 +567,7 @@ def _validate_schedule(schedule: Schedule) -> None:
             f"Undefined timing constraints for schedule '{schedule.name}'!"
         )
 
-    for t_constr in schedule.timing_constraints:
+    for t_constr in schedule.timing_constraints.values():
 
         if "abs_time" not in t_constr:
             raise ValueError(

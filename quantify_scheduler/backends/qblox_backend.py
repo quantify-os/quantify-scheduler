@@ -85,7 +85,7 @@ def _assign_pulse_and_acq_info_to_devices(
         port-clock combination that is not defined in the hardware configuration.
     """
 
-    for op_timing_constraint in schedule.timing_constraints:
+    for op_timing_constraint in schedule.timing_constraints.values():
         op_hash = op_timing_constraint["operation_repr"]
         op_data = schedule.operations[op_hash]
 

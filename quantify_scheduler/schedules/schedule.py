@@ -43,7 +43,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     - operation_dict - a hash table containing the unique
         :class:`quantify_scheduler.operations.operation.Operation` s added to the
         schedule.
-    - timing_constraints - a list of all timing constraints added between operations.
+    - timing_constraints - a dictionaryt of all timing constraints added
+        between operations.
 
     The :class:`~.Schedule` provides an API to create schedules.
     The :class:`~.CompiledSchedule` represents a schedule after
@@ -56,8 +57,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     The :attr:`~.ScheduleBase.operations` is a dictionary of all
     unique operations used in the schedule and contain the information on *what*
     operation to apply *where*.
-    The :attr:`~.ScheduleBase.timing_constraints` is a list of
-    dictionaries describing timing constraints between operations, i.e. when to apply
+    The :attr:`~.ScheduleBase.timing_constraints` is a dictionary of
+    Schedulables describing timing constraints between operations, i.e. when to apply
     an operation.
 
 
@@ -101,7 +102,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self.data["operation_dict"]
 
     @property
-    def timing_constraints(self) -> List[Dict[str, Any]]:
+    def timing_constraints(self) -> Dict[str, Any]:
         """
         A list of dictionaries describing timing constraints between operations.
 
@@ -311,7 +312,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ]
         )
 
-        for t_constr in self.timing_constraints:
+        for t_constr in self.timing_constraints.values():
             if "abs_time" not in t_constr:
                 # when this exception is encountered
                 raise ValueError("Absolute time has not been determined yet.")
@@ -397,7 +398,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         # ensure keys exist
         self.data["operation_dict"] = {}
-        self.data["timing_constraints"] = []
+        self.data["timing_constraints"] = {}
         self.data["resource_dict"] = {}
         self.data["name"] = "nameless"
         self.data["repetitions"] = repetitions
@@ -477,7 +478,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self.data["operation_dict"][operation_id] = operation
         element = Schedulable(name=label, operation_repr=operation_id, schedule=self)
         element.add_timing_constraint(rel_time, ref_op, ref_pt, ref_pt_new)
-        self.data["timing_constraints"].append(element)
+        self.data["timing_constraints"].update({label: element})
 
         return element
 
@@ -487,7 +488,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     def __setstate__(self, state):
         self.data = state
         print(self.timing_constraints)
-        for schedulable in self.timing_constraints:
+        for schedulable in self.timing_constraints.values():
             schedulable.schedule = weakref.proxy(self)
 
 class Schedulable(UserDict):
@@ -519,8 +520,8 @@ class Schedulable(UserDict):
             len(
                 [
                     item
-                    for item in schedule["timing_constraints"]
-                    if item["name"] == name
+                    for item in schedule["timing_constraints"].keys()
+                    if item == name
                 ]
             )
             == 0
@@ -577,8 +578,8 @@ class Schedulable(UserDict):
                 len(
                     [
                         item
-                        for item in self.schedule.data["timing_constraints"]
-                        if str(item) == str(ref_schedulable)
+                        for item in self.schedule.data["timing_constraints"].keys()
+                        if item == str(ref_schedulable)
                     ]
                 )
                 == 1
@@ -614,7 +615,7 @@ class Schedulable(UserDict):
         :
         """
         cls = f"{self.__class__.__name__}"
-        return f"{cls}(data={self.data})"
+        return f"{cls}(None, None, None, data={self.data})"
 
     def __getstate__(self):
         return self.data

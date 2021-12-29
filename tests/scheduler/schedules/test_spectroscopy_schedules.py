@@ -46,7 +46,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
             self.sched_kwargs["init_duration"] + self.sched_kwargs["acquisition_delay"],
         ]
 
-        for i, constr in enumerate(sched.timing_constraints):
+        for i, constr in enumerate(sched.timing_constraints.values()):
             assert constr["label"] == labels[i]
             assert constr["abs_time"] == abs_times[i]
 
@@ -96,7 +96,7 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
         t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
         abs_times = [0, self.sched_kwargs["init_duration"], t2, t3]
 
-        for i, constr in enumerate(sched.timing_constraints):
+        for i, constr in enumerate(sched.timing_constraints.values()):
             assert constr["label"] == labels[i]
             assert constr["abs_time"] == abs_times[i]
 

@@ -38,14 +38,14 @@ def test_determine_absolute_timing_ideal_clock():
     assert len(sched.data["operation_dict"]) == 4
     assert len(sched.data["timing_constraints"]) == 5
 
-    for constr in sched.data["timing_constraints"]:
+    for constr in sched.data["timing_constraints"].values():
         assert "abs_time" not in constr.keys()
         assert constr["timing_constraints"][0]["rel_time"] == 0
 
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        constr["abs_time"] for constr in timed_sched.data["timing_constraints"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4]
 
@@ -54,7 +54,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        constr["abs_time"] for constr in timed_sched.data["timing_constraints"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1]
 
@@ -62,7 +62,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        constr["abs_time"] for constr in timed_sched.data["timing_constraints"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
@@ -70,7 +70,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        constr["abs_time"] for constr in timed_sched.data["timing_constraints"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
@@ -78,7 +78,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        constr["abs_time"] for constr in timed_sched.data["timing_constraints"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2, 1.5]
 
@@ -173,7 +173,7 @@ def test_pulse_and_clock(load_example_transmon_config):
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
     op_hash = next(
-        op for op in sched.timing_constraints if op["label"] == str(op_label)
+        op for op in sched.timing_constraints.values() if op["label"] == str(op_label)
     )["operation_repr"]
     with pytest.raises(ValueError) as execinfo:
         add_pulse_information_transmon(sched, device_cfg=load_example_transmon_config())
@@ -284,5 +284,5 @@ def test_compile_trace_acquisition(load_example_transmon_config):
 
     sched = add_pulse_information_transmon(sched, device_cfg=device_cfg)
 
-    measure_repr = sched.timing_constraints[-1]["operation_repr"]
+    measure_repr = list(sched.timing_constraints.values())[-1]["operation_repr"]
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"

@@ -196,7 +196,7 @@ def get_waveform_by_pulseid(
         The schedule.
     """
     pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = dict()
-    for t_constr in schedule.timing_constraints:
+    for t_constr in schedule.timing_constraints.values():
         operation = schedule.operations[t_constr["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)

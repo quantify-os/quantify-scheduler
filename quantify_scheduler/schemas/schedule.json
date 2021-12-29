@@ -20,8 +20,8 @@
             "default": 1
         },
         "timing_constraints": {
-            "type": "array",
-            "description": "A list containing timing constraints.",
+            "type": "object",
+            "description": "A dictionary containing timing constraints.",
             "properties": {
                 "label": {
                     "type": "string",

@@ -104,7 +104,7 @@ def get_total_duration(schedule: CompiledSchedule) -> float:
 
     operations_ends = map(
         _get_operation_end,
-        enumerate(schedule.timing_constraints),
+        enumerate(schedule.timing_constraints.values()),
     )
 
     return max(
@@ -139,7 +139,7 @@ def get_operation_start(
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
-    t_constr = schedule.timing_constraints[timeslot_index]
+    t_constr = list(schedule.timing_constraints.values())[timeslot_index]
     operation = schedule.operations[t_constr["operation_repr"]]
 
     t0: float = t_constr["abs_time"]
@@ -189,7 +189,7 @@ def get_operation_end(
     if len(schedule.timing_constraints) == 0:
         return 0.0
 
-    t_constr = schedule.timing_constraints[timeslot_index]
+    t_constr = list(schedule.timing_constraints.values())[timeslot_index]
     operation: Operation = schedule.operations[t_constr["operation_repr"]]
     t0: float = t_constr["abs_time"]
 
@@ -231,7 +231,7 @@ def get_port_timeline(
     timing_constraints_map = dict(
         sorted(
             map(
-                lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints)
+                lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints.values())
             ),
             key=lambda pair: pair[1]["abs_time"],
         )
@@ -326,7 +326,7 @@ def get_pulse_info_by_uuid(
         DeprecationWarning,
     )
     pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
-    for t_constr in schedule.timing_constraints:
+    for t_constr in schedule.timing_constraints.values():
         operation = schedule.operations[t_constr["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = get_pulse_uuid(pulse_info)
@@ -365,7 +365,7 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> Dict[int, Dict[str, Any]
         DeprecationWarning,
     )
     acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
-    for t_constr in schedule.timing_constraints:
+    for t_constr in schedule.timing_constraints.values():
         operation = schedule.operations[t_constr["operation_repr"]]
 
         for acq_info in operation["acquisition_info"]:
