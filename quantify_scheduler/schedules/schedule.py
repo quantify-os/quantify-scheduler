@@ -612,7 +612,7 @@ class Schedulable(UserDict):
         :
         """
         cls = f"{self.__class__.__name__}"
-        return f"{cls}(None, None, None, data={self.data})"
+        return f"{cls}(0, 0, 0, data={self.data})"
 
     def __getstate__(self):
         return self.data
