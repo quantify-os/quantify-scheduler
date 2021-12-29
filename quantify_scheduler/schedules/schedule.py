@@ -7,6 +7,7 @@ import json
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
+import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import uuid4
@@ -478,6 +479,13 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         return element
 
+    def __getstate__(self):
+        return self.data
+
+    def __setstate__(self, state):
+        self.data = state
+        for schedulable in self.timing_constraints:
+            schedulable.schedule = weakref.proxy(self)
 
 class Schedulable(UserDict):
     """
@@ -521,7 +529,8 @@ class Schedulable(UserDict):
         # the next lines are to prevent breaking the existing API
         self.data["label"] = name
 
-        self.schedule = schedule
+        self.schedule = weakref.proxy(schedule)
+        #self.schedule = schedule
 
     def add_timing_constraint(
         self,
@@ -583,6 +592,12 @@ class Schedulable(UserDict):
 
     def __str__(self):
         return str(self.data["name"])
+
+    def __getstate__(self):
+        return self.data
+
+    def __setstate__(self, state):
+        self.data=state
 
 
 # pylint: disable=too-many-ancestors
