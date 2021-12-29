@@ -176,8 +176,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
         name = schedule_data["name"]
+        sched = Schedule.__new__(Schedule)
+        sched.__setstate__(schedule_data)
 
-        return Schedule(name, data=schedule_data)
+        return sched
 
     def plot_circuit_diagram_mpl(
         self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None
@@ -484,6 +486,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
     def __setstate__(self, state):
         self.data = state
+        print(self.timing_constraints)
         for schedulable in self.timing_constraints:
             schedulable.schedule = weakref.proxy(self)
 
@@ -493,7 +496,7 @@ class Schedulable(UserDict):
     It also specifies what the element should do, currently represented by an operation ID.
     """
 
-    def __init__(self, name, operation_repr, schedule):
+    def __init__(self, name, operation_repr, schedule, data: dict = None):
         """
 
         Parameters
@@ -506,6 +509,11 @@ class Schedulable(UserDict):
         schedule
             The schedule on which the schedulable is created. This allows to scheduable to find other elements on the schedule
         """
+        super().__init__()
+        if data is not None:
+            self.data = data
+            return
+
         # assert the name is unique
         name_is_unique = (
             len(
@@ -519,8 +527,6 @@ class Schedulable(UserDict):
         )
         if not name_is_unique:
             raise ValueError(f'Name "{name}" must be unique.')
-
-        super().__init__()
 
         self.data["name"] = name
         self.data["operation_repr"] = operation_repr
@@ -593,11 +599,28 @@ class Schedulable(UserDict):
     def __str__(self):
         return str(self.data["name"])
 
+    def __repr__(self) -> str:
+        """
+        Returns the string representation  of this instance.
+
+        This represenation can always be evalued to create a new instance.
+
+        .. code-block::
+
+            eval(repr(operation))
+
+        Returns
+        -------
+        :
+        """
+        cls = f"{self.__class__.__name__}"
+        return f"{cls}(data={self.data})"
+
     def __getstate__(self):
         return self.data
 
     def __setstate__(self, state):
-        self.data=state
+        self.data = state
 
 
 # pylint: disable=too-many-ancestors
