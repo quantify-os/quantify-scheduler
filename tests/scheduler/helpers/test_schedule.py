@@ -39,7 +39,9 @@ def test_get_info_by_uuid(
     schedule_with_pulse_info: Schedule,
 ):
     # Arrange
-    operation_repr = list(schedule_with_pulse_info.timing_constraints.values())[0]["operation_repr"]
+    operation_repr = list(schedule_with_pulse_info.timing_constraints.values())[0][
+        "operation_repr"
+    ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
 
@@ -109,7 +111,9 @@ def test_get_port_timeline(
     schedule_with_pulse_info: Schedule,
 ):
     # Arrange
-    operation_repr = list(schedule_with_pulse_info.timing_constraints.values())[0]["operation_repr"]
+    operation_repr = list(schedule_with_pulse_info.timing_constraints.values())[0][
+        "operation_repr"
+    ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     port = pulse_info_0["port"]
@@ -240,7 +244,9 @@ def test_get_port_timeline_with_duplicate_op(
     schedule.add(X90_q0)
     create_schedule_with_pulse_info(schedule)
 
-    X90_q0_operation_id = list(schedule.timing_constraints.values())[0]["operation_repr"]
+    X90_q0_operation_id = list(schedule.timing_constraints.values())[0][
+        "operation_repr"
+    ]
     X90_q0_pulse_info = schedule.operations[X90_q0_operation_id]["pulse_info"][0]
     X90_q0_pulse_id = get_pulse_uuid(X90_q0_pulse_info)
 

@@ -154,7 +154,9 @@ class TestRabiSched(_CompilesAllBackends):
             assert constr["label"] == labels[i]
 
         for i, exp_amp in enumerate(amps):
-            rabi_op_hash = list(sched.timing_constraints.values())[3 * i + 1]["operation_repr"]
+            rabi_op_hash = list(sched.timing_constraints.values())[3 * i + 1][
+                "operation_repr"
+            ]
             rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
             assert rabi_pulse["G_amp"] == exp_amp
             assert rabi_pulse["D_amp"] == 0

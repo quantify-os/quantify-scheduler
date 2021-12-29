@@ -491,6 +491,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         for schedulable in self.timing_constraints.values():
             schedulable.schedule = weakref.proxy(self)
 
+
 class Schedulable(UserDict):
     """
     This class represents an element on a schedule. It contains all timing information of the element.
@@ -518,11 +519,7 @@ class Schedulable(UserDict):
         # assert the name is unique
         name_is_unique = (
             len(
-                [
-                    item
-                    for item in schedule["timing_constraints"].keys()
-                    if item == name
-                ]
+                [item for item in schedule["timing_constraints"].keys() if item == name]
             )
             == 0
         )
@@ -537,7 +534,7 @@ class Schedulable(UserDict):
         self.data["label"] = name
 
         self.schedule = weakref.proxy(schedule)
-        #self.schedule = schedule
+        # self.schedule = schedule
 
     def add_timing_constraint(
         self,

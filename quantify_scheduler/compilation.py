@@ -77,9 +77,9 @@ def determine_absolute_timing(
 
     last_schedulable["abs_time"] = 0
 
-    #schedulable_names = [str(tc) for tc in schedule.timing_constraints]
-    #sort_idx = np.argsort(schedulable_names)
-    #schedulable_names_sorted = np.asarray(sorted(schedulable_names))
+    # schedulable_names = [str(tc) for tc in schedule.timing_constraints]
+    # sort_idx = np.argsort(schedulable_names)
+    # schedulable_names_sorted = np.asarray(sorted(schedulable_names))
 
     for schedulable in list(schedule.data["timing_constraints"].values())[1:]:
         curr_op = schedule.operations[schedulable["operation_repr"]]
@@ -94,7 +94,9 @@ def determine_absolute_timing(
                 ref_op = last_op
             else:
                 # this assumes the reference op exists. This is ensured in schedule.add
-                ref_schedulable = schedule.timing_constraints[str(t_constr["ref_schedulable"])]
+                ref_schedulable = schedule.timing_constraints[
+                    str(t_constr["ref_schedulable"])
+                ]
                 ref_op = schedule.operations[ref_schedulable["operation_repr"]]
 
             # duration = 1 is useful when e.g., drawing a circuit diagram.

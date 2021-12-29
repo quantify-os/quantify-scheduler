@@ -135,7 +135,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
-        self.classes.update({'Schedulable': Schedulable})
+        self.classes.update({"Schedulable": Schedulable})
 
     def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -237,7 +237,7 @@ class ScheduleJSONEncoder(json.JSONEncoder):
         from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
             Operation,
             resources,
-            Schedulable
+            Schedulable,
         )
 
         if isinstance(o, (Operation, resources.Resource, Schedulable)):

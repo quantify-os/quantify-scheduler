@@ -231,7 +231,8 @@ def get_port_timeline(
     timing_constraints_map = dict(
         sorted(
             map(
-                lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints.values())
+                lambda pair: (pair[0], pair[1]),
+                enumerate(schedule.timing_constraints.values()),
             ),
             key=lambda pair: pair[1]["abs_time"],
         )
