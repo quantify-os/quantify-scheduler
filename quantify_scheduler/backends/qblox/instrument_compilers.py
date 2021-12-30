@@ -133,6 +133,7 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
@@ -148,6 +149,7 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
@@ -162,6 +164,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QCM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
@@ -176,6 +179,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QRM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.25,
         # N.B one of the output switches works inverted, hence the 1101 instead of 1111.
