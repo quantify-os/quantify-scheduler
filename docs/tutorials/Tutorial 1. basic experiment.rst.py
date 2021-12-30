@@ -197,7 +197,7 @@ dict(islice(sched.data["operation_dict"].items(), 5))
 #
 
 # %%
-sched.data["timing_constraints"][:6]
+list(sched.data["timing_constraints"].values())[:6]
 
 # %% [raw]
 #
