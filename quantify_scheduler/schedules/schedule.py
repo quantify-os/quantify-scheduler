@@ -612,10 +612,12 @@ class Schedulable(UserDict):
         :
         """
         cls = f"{self.__class__.__name__}"
-        return f"{cls}(name='{self.data['name']}', " \
-               f"operation_repr='', " \
-               f"schedule='', " \
-               f"data={self.data})"
+        return (
+            f"{cls}(name='{self.data['name']}', "
+            f"operation_repr='', "
+            f"schedule='', "
+            f"data={self.data})"
+        )
 
     def __getstate__(self):
         return self.data
