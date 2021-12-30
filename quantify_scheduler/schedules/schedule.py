@@ -612,8 +612,8 @@ class Schedulable(UserDict):
         :
         """
         cls = f"{self.__class__.__name__}"
-        return f"{cls}(name={self.data['name']}, " \
-               f"operation_repr={self.data['operation_repr']}, " \
+        return f"{cls}(name='{self.data['name']}', " \
+               f"operation_repr='', " \
                f"schedule='', " \
                f"data={self.data})"
 
