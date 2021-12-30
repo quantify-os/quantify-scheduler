@@ -136,6 +136,8 @@ f, ax = sched.plot_circuit_diagram_mpl()
 # Therefore we use `set_xlim` to limit the number of gates shown.
 ax.set_xlim(-0.5, 9.5);
 
+# %%
+
 # %% [raw]
 # In previous tutorials, we visualized the `schedules` on the pulse level using `sched.plot_pulse_diagram_mpl`.
 # Up until now, however, all gates have been defined on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` without defining the corresponding pulseshapes.
@@ -146,6 +148,15 @@ ax.set_xlim(-0.5, 9.5);
 try:
     sched.plot_pulse_diagram_mpl()
 except RuntimeError as e:
+    print(e)
+
+# %% [raw]
+# And similarly for the `timing_table`:
+
+# %%
+try:
+    sched.timing_table
+except ValueError as e:
     print(e)
 
 # %% [raw]
@@ -176,6 +187,9 @@ with open(cfg_f, "r") as f:
     transmon_test_config = json.load(f)
 
 pprint(list(transmon_test_config.keys()))
+
+# %% [raw]
+# Before explaning how this can be used to compile schedules, let us first investigate the contents of the configuration file.
 
 # %%
 transmon_test_config['backend']
@@ -210,14 +224,28 @@ pprint(transmon_test_config['qubits']['q0'])
 # %%
 pprint(transmon_test_config['edges'])
 
+# %% [raw]
+# Now that we went through the different components of the configuration file, let's use it to compile our previously defined schedule.
+# The `device_compile` function takes care of this task and adds pulse information based on the configuration file, as discussed above.
+# It also determines the timing of the different pulses in the schedule.
+
 # %%
 from quantify_scheduler.compilation import device_compile
 
 pulse_sched = device_compile(sched, transmon_test_config)
 
+# %% [markdown]
+# Now that the timings have been determined, we can show the `timing_table`:
+
+# %%
+pulse_sched.timing_table
+
+# %% [raw]
+# And since all pulse information has been determined, we can show the pulse diagram as well:
+
 # %%
 f, ax = pulse_sched.plot_pulse_diagram_mpl()
-ax.set_xlim(0.4005e-3, 0.4006e-3)
+ax.set_xlim(0.4005e-3, 0.4006e-3);
 
 # %% [raw]
 # Quantum Backends
