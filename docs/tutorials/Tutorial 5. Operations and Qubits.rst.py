@@ -71,9 +71,6 @@ operation_schema = json.loads(importlib.resources.read_text(schemas, 'operation.
 # %%
 pprint(operation_schema['properties']['gate_info']['properties'])
 
-# %%
-from quantify_scheduler.schemas import operation
-
 # %% [raw]
 # Additionaly, for the `rxy45` operation we see the additional fields `operation_type`, `phi` and `theta`. These extra fields assist the compiler in order to determine the pulses corresponding to this operation. The additional fields needed for the compilation step depend on which compiler is used and what `operation_type` is specified.
 
@@ -96,8 +93,7 @@ from quantify_scheduler.schemas import operation
 # By rotating the measurement basis, or equivalently one of the qubits, it is possible
 # to observe violations of the CSHS inequality.
 #
-# We create this experiment using a
-# :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
+# We create this experiment using the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
 # This allows defining the Bell schedule as:
 
 # %%
@@ -130,7 +126,7 @@ sched
 # -------------------------------
 #
 # We can directly visualize the created schedule on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`. 
-# Every operation is shown on the qubit it affects
+# This visualization shows every operation on a line representing the different qubits.
 
 # %%
 # %matplotlib inline
@@ -138,9 +134,12 @@ sched
 f, ax = sched.plot_circuit_diagram_mpl()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure.
 # Therefore we use `set_xlim` to limit the number of gates shown.
-ax.set_xlim(-0.5, 9.5)
+ax.set_xlim(-0.5, 9.5);
 
 # %% [raw]
+# In previous tutorials, we visualized the `schedules` on the pulse level using `sched.plot_pulse_diagram_mpl`.
+# Up until now, however, all gates have been defined on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` without defining the corresponding pulseshapes.
+# Therefore, trying to run `sched.plot_pulse_diagram_mpl()` will raise an error which signifies no `pulse_info` is present in the schedule:
 #
 
 # %%
@@ -153,8 +152,10 @@ except RuntimeError as e:
 # Device configuration and compilation
 # ------------------------------------
 #
-# The compilation from the gate-level to the pulse-level description is done using the
-# :ref:`device configuration file<Device configuration file>`.
+# The aim of this section is to add pulse information to the schedule.
+# In order to generate this information, some device properties must be specified which is done using the :ref:`device configuration file<Device configuration file>`.
+#
+# Using the configuration file, the schedule can be compiled, appending pulse information to every gate in the schedule. Before continuing to the compilation step, however, we will first unpack the configuration file.
 #
 # Here we will use a configuration file for a transmon based system that is part of the
 # quantify-scheduler test suite.
@@ -174,7 +175,40 @@ cfg_f = Path(esp).parent / "transmon_test_config.json"
 with open(cfg_f, "r") as f:
     transmon_test_config = json.load(f)
 
-transmon_test_config
+pprint(list(transmon_test_config.keys()))
+
+# %%
+transmon_test_config['backend']
+
+# %% [raw]
+# The backend of the configuration file specifies what function will be used to add pulse information to the gates. In other words, it specifies how to interpret the qubit parameters present in the configuration file and achieve the required gates.
+#
+# Let us briefly investigate this function:
+
+# %%
+from quantify_core.utilities.general import import_python_object_from_string
+device_compilation_backend = import_python_object_from_string(transmon_test_config['backend'])
+help(device_compilation_backend)
+
+# %% [raw]
+# A more detailed description of the configuration file can be obtained from the specified JSON schema:
+
+# %%
+transmon_schema = json.loads(importlib.resources.read_text(schemas, 'transmon_cfg.json'))
+pprint(transmon_schema['properties'])
+
+# %% [markdown]
+# As can be seen form the JSON schema, the :ref:`device configuration file<Device configuration file>` also contains the parameters required by the `device_compilation_backend` for all qubits and edges.
+
+# %%
+pprint(list(transmon_test_config['qubits'].keys()))
+
+# %%
+# For every qubit we can investigate the contained parameters
+pprint(transmon_test_config['qubits']['q0'])
+
+# %%
+pprint(transmon_test_config['edges'])
 
 # %%
 from quantify_scheduler.compilation import device_compile
