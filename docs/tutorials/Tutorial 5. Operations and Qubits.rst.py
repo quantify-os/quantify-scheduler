@@ -130,11 +130,12 @@ sched
 
 # %%
 # %matplotlib inline
-
+import matplotlib.pyplot as plt
 f, ax = sched.plot_circuit_diagram_mpl()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure.
 # Therefore we use `set_xlim` to limit the number of gates shown.
-ax.set_xlim(-0.5, 9.5);
+ax.set_xlim(-0.5, 9.5)
+plt.show()
 
 # %%
 
@@ -250,8 +251,39 @@ ax.set_xlim(0.4005e-3, 0.4006e-3);
 # %% [raw]
 # Quantum Backends
 # ----------------
+# The :ref:`device configuration file<Device configuration file>` contains all knowledge of the physical device under test (DUT). Together with the :ref:`hardware configuration file<Hardware configuration file>` which contains the different hardware connections, all information is represented.
+# To generate these configuration files on the fly, `quantify_scheduler` provides the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and :code:`DeviceElement` classes.
+# These classes contain the information necessary to generate the config files and allow changing their parameters on-the-fly.
+# The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class represents the DUT containing different :code:`DeviceElement`s.
+# Currently, `quantify_scheduler` contains the :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` class to represent a qubit connected to a feedline. We show their interaction below:
 
 # %%
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+# first create a device under test:
+dut = QuantumDevice('DUT')
+
+# then create a transmon element
+transmon = TransmonElement('transmon1')
+
+# Finally, add the transmon element to the QuantumDevice:
+dut.add_component(transmon)
+dut, dut.components()
+
+# %% [raw]
+# The different transmon properties can be set through the `TransmonElement`
+# e.g.
+
+# %%
+transmon.freq_01(6e9)
+list(transmon.parameters.keys())
+
+# %% [raw]
+# The device configuration is now simply obtained using `dut.generate_device_config()`.
+# In order for this command to provide a correct device configuration, the different parameters need to be specified in the `TransmonElement` and `QuantumDevice` objects.
+
+# %%
+pprint(dut.generate_device_config())
 
 # %% [raw]
 # Mixing pulse and circuit layer operations
@@ -270,9 +302,8 @@ from quantify_scheduler.resources import ClockResource
 sched = Schedule("Chevron Experiment")
 acq_idx = 0
 
-for duration in np.linspace(
-    20e-9, 60e-9, 6
-):  # NB multiples of 4 ns need to be used due to limitations of the pulsars
+ # NB multiples of 4 ns need to be used due to limitations of the pulsars
+for duration in np.linspace(20e-9, 60e-9, 6):
     for amp in np.linspace(0.1, 1.0, 10):
         begin = sched.add(Reset("q0", "q1"))
         sched.add(X("q0"), ref_op=begin, ref_pt="end")
@@ -291,6 +322,11 @@ for duration in np.linspace(
 
 sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
+# %%
+fig, ax = sched.plot_circuit_diagram_mpl()
+ax.set_xlim(-0.5, 9.5)
+ax.texts = [t for t in ax.texts if t.get_position()[0]<9.5]
+
 # %% [raw]
 # Note that we add Pulses using the same interface as Gates. Pulses are Operations, and
 # as such support the same timing and reference operators as Gates.
@@ -301,12 +337,17 @@ sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse 
 #     resources of the schedule. It may be necessary to add this clock manually, as in
 #     the final line of the above example
 #
-# We can also quickly compile using the :func:`!qcompile` function and the associated
-# configuration files:
+# Rather than first using :func:`!device_compile` and subsequently :func:`!hardware_compile`, the two function calls can be combined using :func:`!qcompile`.
 
 # %%
 from quantify_scheduler.compilation import qcompile
+dut.close()
+dut = QuantumDevice('DUT')
+dut.add_component(TransmonElement('q0'))
+dut.add_component(TransmonElement('q1'))
+cfg = qcompile(sched, dut.generate_device_config(), dut.generate_hardware_config())
 
-cfg = qcompile(sched, transmon_test_config, qblox_test_mapping)
+# %%
+dut.get_component('q0')
 
 # %%
