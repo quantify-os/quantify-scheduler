@@ -628,33 +628,20 @@ def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
     path_idx = output_index % 2  # even or odd output
     return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"
 
-class PulsarQCMComponent(_QCMComponent):
 
+class PulsarQCMComponent(_QCMComponent):
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
-        reference_source: str = options['settings']['ref']
+        reference_source: str = options["settings"]["ref"]
         self._set_parameter("reference_source", reference_source)
+
 
 class PulsarQRMComponent(_QRMComponent):
-
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
-        reference_source: str = options['settings']['ref']
+        reference_source: str = options["settings"]["ref"]
         self._set_parameter("reference_source", reference_source)
 
-class PulsarQCMRFComponent(_QCMRFComponent):
-
-    def prepare(self, options: Dict[str, dict]) -> None:
-        super().prepare(options)
-        reference_source: str = options['settings']['ref']
-        self._set_parameter("reference_source", reference_source)
-
-class PulsarQRMRFComponent(_QRMRFComponent):
-
-    def prepare(self, options: Dict[str, dict]) -> None:
-        super().prepare(options)
-        reference_source: str = options['settings']['ref']
-        self._set_parameter("reference_source", reference_source)
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
 """
@@ -972,9 +959,7 @@ class _QRMAcquisitionManager:
         return channel_data["acquisition"]["bins"]
 
 
-ClusterModule = Union[
-    _QCMComponent, _QRMComponent, _QRMRFComponent, _QCMRFComponent
-]
+ClusterModule = Union[_QCMComponent, _QRMComponent, _QRMRFComponent, _QCMRFComponent]
 """Type that combines all the possible modules for a cluster."""
 
 
