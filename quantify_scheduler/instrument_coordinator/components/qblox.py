@@ -271,6 +271,7 @@ class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponen
         """
         self.instrument.stop_sequencer()
 
+    @abstractmethod
     def _configure_global_settings(self, settings: PulsarSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
@@ -280,7 +281,6 @@ class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponen
         settings
             The settings to configure it to.
         """
-        self._set_parameter("reference_source", settings.ref)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -425,7 +425,6 @@ class _QCMComponent(BaseQbloxInstrumentCoordinatorComponent):
         settings
             The settings to configure it to.
         """
-        super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter("out0_offset", settings.offset_ch0_path0)
@@ -546,7 +545,6 @@ class _QRMComponent(BaseQbloxInstrumentCoordinatorComponent):
         settings
             The settings to configure it to.
         """
-        super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter("out0_offset", settings.offset_ch0_path0)
@@ -584,8 +582,6 @@ class _QCMRFComponent(_QCMComponent):
         settings
             The settings to configure it to.
         """
-        self._set_parameter("reference_source", settings.ref)
-
         if settings.lo0_freq is not None:
             self._set_parameter("out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
@@ -618,8 +614,6 @@ class _QRMRFComponent(_QRMComponent):
         settings
             The settings to configure it to.
         """
-        self._set_parameter("reference_source", settings.ref)
-
         if settings.lo0_freq is not None:
             self._set_parameter("out0_in0_lo_freq", settings.lo0_freq)
 
