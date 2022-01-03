@@ -171,18 +171,18 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 )
 
 
-class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
+class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     """Qblox Pulsar InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
+        """Create a new instance of BaseQbloxInstrumentCoordinatorComponent base class."""
         super().__init__(instrument, **kwargs)
         if (
             instrument._get_lo_hw_present()
             is not self._hardware_properties.has_internal_lo
         ):
             raise RuntimeError(
-                "PulsarInstrumentCoordinatorComponent not compatible with the "
+                "BaseQbloxInstrumentCoordinatorComponent not compatible with the "
                 "provided instrument. Please confirm whether your device "
                 "is a RF module (has an internal LO)."
             )
@@ -343,7 +343,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
+class _QCMComponent(BaseQbloxInstrumentCoordinatorComponent):
     """
     Pulsar QCM specific InstrumentCoordinator component.
     """
@@ -351,7 +351,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
-        """Create a new instance of PulsarQCMComponent."""
+        """Create a new instance of _QCMComponent."""
         assert isinstance(instrument, pulsar_qcm.pulsar_qcm_qcodes)
         super().__init__(instrument, **kwargs)
 
@@ -438,7 +438,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
+class _QRMComponent(BaseQbloxInstrumentCoordinatorComponent):
     """
     Pulsar QRM specific InstrumentCoordinator component.
     """
@@ -446,7 +446,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
-        """Create a new instance of PulsarQRMComponent."""
+        """Create a new instance of _QRMComponent."""
         assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
         self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
         """Holds all the acquisition related logic."""
@@ -568,7 +568,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         self._set_parameter(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
 
-class PulsarQCMRFComponent(PulsarQCMComponent):
+class _QCMRFComponent(_QCMComponent):
     """
     Pulsar QCM-RF specific InstrumentCoordinator component.
     """
@@ -602,7 +602,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
             self._set_parameter("out1_offset_path1", settings.offset_ch1_path1)
 
 
-class PulsarQRMRFComponent(PulsarQRMComponent):
+class _QRMRFComponent(_QRMComponent):
     """
     Pulsar QRM-RF specific InstrumentCoordinator component.
     """
@@ -652,7 +652,7 @@ class _QRMAcquisitionManager:
 
     def __init__(
         self,
-        parent: PulsarQRMComponent,
+        parent: _QRMComponent,
         number_of_sequencers: int,
         acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
         acquisition_metadata: AcquisitionMetadata,
@@ -674,7 +674,7 @@ class _QRMAcquisitionManager:
         acquisition_metadata
             Provides a summary of the used channels bins and acquisition protocols.
         """
-        self.parent: PulsarQRMComponent = parent
+        self.parent: _QRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.acquisition_mapping: Dict[
             Tuple[int, int], Tuple[str, str]
@@ -952,7 +952,7 @@ class _QRMAcquisitionManager:
 
 
 ClusterModule = Union[
-    PulsarQCMComponent, PulsarQRMComponent, PulsarQRMRFComponent, PulsarQCMRFComponent
+    _QCMComponent, _QRMComponent, _QRMRFComponent, _QCMRFComponent
 ]
 """Type that combines all the possible modules for a cluster."""
 
@@ -1098,9 +1098,9 @@ def _construct_component_from_instrument_driver(
         )
     is_rf: bool = driver._get_lo_hw_present()
     icc_class: type = {
-        (True, False): PulsarQCMComponent,
-        (True, True): PulsarQCMRFComponent,
-        (False, False): PulsarQRMComponent,
-        (False, True): PulsarQRMRFComponent,
+        (True, False): _QCMComponent,
+        (True, True): _QCMRFComponent,
+        (False, False): _QRMComponent,
+        (False, True): _QRMRFComponent,
     }[(is_qcm, is_rf)]
     return icc_class(driver)
