@@ -145,25 +145,25 @@ class _StaticHardwareProperties:
     """The number of output paths that can be used."""
 
 
-_PULSAR_QCM_PROPERTIES = _StaticHardwareProperties(
+_QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
-_PULSAR_QRM_PROPERTIES = _StaticHardwareProperties(
+_QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
 )
-_PULSAR_QCM_RF_PROPERTIES = _StaticHardwareProperties(
+_QCM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarRFSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
-_PULSAR_QRM_RF_PROPERTIES = _StaticHardwareProperties(
+_QRM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarRFSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
@@ -347,7 +347,7 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QCM specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QCM_PROPERTIES
+    _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQCMComponent."""
@@ -442,7 +442,7 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
     Pulsar QRM specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QRM_PROPERTIES
+    _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
         """Create a new instance of PulsarQRMComponent."""
@@ -572,7 +572,7 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
     Pulsar QCM-RF specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QCM_RF_PROPERTIES
+    _hardware_properties = _QCM_RF_PROPERTIES
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -606,7 +606,7 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
     Pulsar QRM-RF specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QRM_RF_PROPERTIES
+    _hardware_properties = _QRM_RF_PROPERTIES
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
