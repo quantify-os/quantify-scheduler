@@ -8,12 +8,14 @@ Unreleased changes
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
+* Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
+* Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for easier method names, and enable plotly visualization directly from `ScheduleBase` (!313)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).

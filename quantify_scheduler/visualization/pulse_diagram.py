@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -19,11 +19,10 @@ from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
-from quantify_scheduler.schedules.schedule import CompiledSchedule
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
-    from quantify_scheduler import Operation, Schedule
+    from quantify_scheduler import Operation, Schedule, CompiledSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +77,13 @@ def validate_operation_data(operation_data, port_map, t_constr, operation):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def pulse_diagram_plotly(
-    schedule: CompiledSchedule,
+    schedule: Union[Schedule, CompiledSchedule],
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
-    sampling_rate: int = 1e9,
+    sampling_rate: float = 1e9,
 ) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
@@ -433,7 +432,7 @@ def sample_schedule(
 
 
 def pulse_diagram_matplotlib(
-    schedule: Schedule,
+    schedule: Union[Schedule, CompiledSchedule],
     port_list: Optional[List[str]] = None,
     sampling_rate: float = 1e9,
     modulation: Literal["off", "if", "clock"] = "off",
