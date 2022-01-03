@@ -48,7 +48,7 @@
 # they operate:
 
 # %%
-from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, Rxy
+from quantify_scheduler.operations.gate_library import CZ, X, X90, Measure, Reset, Rxy
 
 q0, q1 = ("q0", "q1")
 X90(q0)
@@ -209,8 +209,6 @@ except ValueError as e:
 
 # %%
 import inspect
-import json
-import os
 from pathlib import Path
 
 import quantify_scheduler.schemas.examples as es
@@ -357,7 +355,6 @@ pprint(dut.generate_device_config())
 # X gates on a pair of qubits.
 
 # %%
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 
