@@ -42,6 +42,7 @@
 
 # %%
 from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, Rxy
+
 q0, q1 = ("q0", "q1")
 X90(q0)
 Measure(q1)
@@ -53,6 +54,7 @@ Reset(q0)
 
 # %%
 from pprint import pprint
+
 rxy45 = Rxy(theta=45.0, phi=0.0, qubit=q0)
 pprint(rxy45.data)
 
@@ -63,13 +65,14 @@ pprint(rxy45.data)
 import importlib.resources
 from quantify_scheduler import schemas
 import json
-operation_schema = json.loads(importlib.resources.read_text(schemas, 'operation.json'))
+
+operation_schema = json.loads(importlib.resources.read_text(schemas, "operation.json"))
 
 # %% [raw]
 # The required properties for `gate_info` are found inside the schema together with a brief description of them
 
 # %%
-pprint(operation_schema['properties']['gate_info']['properties'])
+pprint(operation_schema["properties"]["gate_info"]["properties"])
 
 # %% [raw]
 # Additionaly, for the `rxy45` operation we see the additional fields `operation_type`, `phi` and `theta`. These extra fields assist the compiler in order to determine the pulses corresponding to this operation. The additional fields needed for the compilation step depend on which compiler is used and what `operation_type` is specified.
@@ -116,7 +119,7 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     sched.add(
         Measure(q1, acq_index=acq_idx),
         label="M q1 {:.2f} deg".format(theta),
-        ref_pt="start"
+        ref_pt="start",
     )
 
 sched
@@ -125,12 +128,13 @@ sched
 # Visualizing the quantum circuit
 # -------------------------------
 #
-# We can directly visualize the created schedule on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`. 
+# We can directly visualize the created schedule on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 # This visualization shows every operation on a line representing the different qubits.
 
 # %%
 # %matplotlib inline
 import matplotlib.pyplot as plt
+
 f, ax = sched.plot_circuit_diagram_mpl()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure.
 # Therefore we use `set_xlim` to limit the number of gates shown.
@@ -193,7 +197,7 @@ pprint(list(transmon_test_config.keys()))
 # Before explaning how this can be used to compile schedules, let us first investigate the contents of the configuration file.
 
 # %%
-transmon_test_config['backend']
+transmon_test_config["backend"]
 
 # %% [raw]
 # The backend of the configuration file specifies what function will be used to add pulse information to the gates. In other words, it specifies how to interpret the qubit parameters present in the configuration file and achieve the required gates.
@@ -202,28 +206,33 @@ transmon_test_config['backend']
 
 # %%
 from quantify_core.utilities.general import import_python_object_from_string
-device_compilation_backend = import_python_object_from_string(transmon_test_config['backend'])
+
+device_compilation_backend = import_python_object_from_string(
+    transmon_test_config["backend"]
+)
 help(device_compilation_backend)
 
 # %% [raw]
 # A more detailed description of the configuration file can be obtained from the specified JSON schema:
 
 # %%
-transmon_schema = json.loads(importlib.resources.read_text(schemas, 'transmon_cfg.json'))
-pprint(transmon_schema['properties'])
+transmon_schema = json.loads(
+    importlib.resources.read_text(schemas, "transmon_cfg.json")
+)
+pprint(transmon_schema["properties"])
 
 # %% [markdown]
 # As can be seen form the JSON schema, the :ref:`device configuration file<Device configuration file>` also contains the parameters required by the `device_compilation_backend` for all qubits and edges.
 
 # %%
-pprint(list(transmon_test_config['qubits'].keys()))
+pprint(list(transmon_test_config["qubits"].keys()))
 
 # %%
 # For every qubit we can investigate the contained parameters
-pprint(transmon_test_config['qubits']['q0'])
+pprint(transmon_test_config["qubits"]["q0"])
 
 # %%
-pprint(transmon_test_config['edges'])
+pprint(transmon_test_config["edges"])
 
 # %% [raw]
 # Now that we went through the different components of the configuration file, let's use it to compile our previously defined schedule.
@@ -246,7 +255,7 @@ pulse_sched.timing_table
 
 # %%
 f, ax = pulse_sched.plot_pulse_diagram_mpl()
-ax.set_xlim(0.4005e-3, 0.4006e-3);
+ax.set_xlim(0.4005e-3, 0.4006e-3)
 
 # %% [raw]
 # Quantum Backends
@@ -260,11 +269,12 @@ ax.set_xlim(0.4005e-3, 0.4006e-3);
 # %%
 from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
 # first create a device under test:
-dut = QuantumDevice('DUT')
+dut = QuantumDevice("DUT")
 
 # then create a transmon element
-transmon = TransmonElement('transmon1')
+transmon = TransmonElement("transmon1")
 
 # Finally, add the transmon element to the QuantumDevice:
 dut.add_component(transmon)
@@ -302,7 +312,7 @@ from quantify_scheduler.resources import ClockResource
 sched = Schedule("Chevron Experiment")
 acq_idx = 0
 
- # NB multiples of 4 ns need to be used due to limitations of the pulsars
+# NB multiples of 4 ns need to be used due to limitations of the pulsars
 for duration in np.linspace(20e-9, 60e-9, 6):
     for amp in np.linspace(0.1, 1.0, 10):
         begin = sched.add(Reset("q0", "q1"))
@@ -325,7 +335,7 @@ sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse 
 # %%
 fig, ax = sched.plot_circuit_diagram_mpl()
 ax.set_xlim(-0.5, 9.5)
-ax.texts = [t for t in ax.texts if t.get_position()[0]<9.5]
+ax.texts = [t for t in ax.texts if t.get_position()[0] < 9.5]
 
 # %% [raw]
 # Note that we add Pulses using the same interface as Gates. Pulses are Operations, and
@@ -341,15 +351,18 @@ ax.texts = [t for t in ax.texts if t.get_position()[0]<9.5]
 
 # %%
 from quantify_scheduler.compilation import qcompile
+
 dut.close()
-dut = QuantumDevice('DUT')
-q0 = TransmonElement('q0')
-q1 = TransmonElement('q1')
+dut = QuantumDevice("DUT")
+q0 = TransmonElement("q0")
+q1 = TransmonElement("q1")
 dut.add_component(q0)
 dut.add_component(q1)
-dut.get_component('q0').mw_amp180(0.6)
-dut.get_component('q1').mw_amp180(0.6)
-compiled_sched = qcompile(sched, dut.generate_device_config(), dut.generate_hardware_config())
+dut.get_component("q0").mw_amp180(0.6)
+dut.get_component("q1").mw_amp180(0.6)
+compiled_sched = qcompile(
+    sched, dut.generate_device_config(), dut.generate_hardware_config()
+)
 
 # %% [raw]
 # So, finally, we can show the timing table associated to the chevron schedule and plot its pulse diagram:
@@ -359,6 +372,6 @@ compiled_sched.timing_table
 
 # %%
 f, ax = compiled_sched.plot_pulse_diagram_mpl()
-ax.set_xlim(200e-6, 200.4e-6);
+ax.set_xlim(200e-6, 200.4e-6)
 
 # %%
