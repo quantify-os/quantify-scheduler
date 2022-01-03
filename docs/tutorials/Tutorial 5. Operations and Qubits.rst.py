@@ -16,7 +16,7 @@
 #  .. _sec-tutorial5:
 #
 # Tutorial 5. Operations and Qubits
-# ================================
+# =================================
 #
 #  .. jupyter-kernel::
 #    :id: Tutorial 5. Operations and Qubits
@@ -37,7 +37,7 @@
 # To allow working at a greater level of abstraction, `quantify_scheduler` allows creating operations on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 # Instead of specifying waveforms, operations are defined by the intended qubit operation.
 #
-# Many of the gates used in the circuit layer description are defined in :module:`quantify_scheduler.operations.gate_library` such as `Reset`, `X90` and `Measure`.
+# Many of the gates used in the circuit layer description are defined in :class:`quantify_scheduler.operations.gate_library` such as `Reset`, `X90` and `Measure`.
 # Operations are instantiated by providing them with the name of the qubit(s) on which they operate:
 
 # %%
