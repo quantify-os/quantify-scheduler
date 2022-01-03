@@ -343,11 +343,22 @@ ax.texts = [t for t in ax.texts if t.get_position()[0]<9.5]
 from quantify_scheduler.compilation import qcompile
 dut.close()
 dut = QuantumDevice('DUT')
-dut.add_component(TransmonElement('q0'))
-dut.add_component(TransmonElement('q1'))
-cfg = qcompile(sched, dut.generate_device_config(), dut.generate_hardware_config())
+q0 = TransmonElement('q0')
+q1 = TransmonElement('q1')
+dut.add_component(q0)
+dut.add_component(q1)
+dut.get_component('q0').mw_amp180(0.6)
+dut.get_component('q1').mw_amp180(0.6)
+compiled_sched = qcompile(sched, dut.generate_device_config(), dut.generate_hardware_config())
+
+# %% [raw]
+# So, finally, we can show the timing table associated to the chevron schedule and plot its pulse diagram:
 
 # %%
-dut.get_component('q0')
+compiled_sched.timing_table
+
+# %%
+f, ax = compiled_sched.plot_pulse_diagram_mpl()
+ax.set_xlim(200e-6, 200.4e-6);
 
 # %%
