@@ -115,6 +115,22 @@ This means that in order to generate a certain :math:`f_{RF}`, we need to specif
 dictionary, we therefore either set the :code:`lo_freq` or the :code:`interm_freq` and leave the other to be calculated by
 the backend by specifying it as :code:`None`. Specifying both will raise an error if it violates :math:`f_{RF} = f_{IF} + f_{LO}`.
 
+**Note**: Some Qblox costumers may have a custom downconverter module operating at 4.4 GHz. In order to use it with this backend, the user should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below:
+
+.. code-block:: python
+    :linenos:
+
+    "complex_output_0": {
+        "line_gain_db": 0,
+        "lo_name": "lo0",
+        "downconverter": True,
+        "seq0": {
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "interm_freq": 50e6
+        }
+    }
+
 Mixer corrections
 ^^^^^^^^^^^^^^^^^
 
