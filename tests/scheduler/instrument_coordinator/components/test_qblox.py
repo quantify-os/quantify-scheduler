@@ -168,7 +168,7 @@ def fixture_mock_acquisition_data():
 def make_qcm_rf(mocker):
     def _make_qcm_rf(
         name: str = "qcm_rf0", serial: str = "dummy"
-    ) -> qblox.PulsarQCMRFComponent:
+    ) -> qblox._QCMRFComponent:
         mocker.patch(
             "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
             return_value=True,
@@ -180,7 +180,7 @@ def make_qcm_rf(mocker):
         qcm_rf = pulsar_qcm.pulsar_qcm_dummy(name)
         qcm_rf._serial = serial
 
-        component = qblox.PulsarQCMRFComponent(qcm_rf)
+        component = qblox._QCMRFComponent(qcm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm_rf)
         mocker.patch.object(
             component.instrument,
@@ -197,7 +197,7 @@ def make_qcm_rf(mocker):
 def make_qrm_rf(mocker):
     def _make_qrm_rf(
         name: str = "qrm_rf0", serial: str = "dummy"
-    ) -> qblox.PulsarQRMRFComponent:
+    ) -> qblox._QRMRFComponent:
         mocker.patch(
             "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
             return_value=True,
@@ -209,7 +209,7 @@ def make_qrm_rf(mocker):
         qrm_rf = pulsar_qrm.pulsar_qrm_dummy(name)
         qrm_rf._serial = serial
 
-        component = qblox.PulsarQRMRFComponent(qrm_rf)
+        component = qblox._QRMRFComponent(qrm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm_rf)
         mocker.patch.object(
             component.instrument,
