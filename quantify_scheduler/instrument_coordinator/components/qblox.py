@@ -248,7 +248,8 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
                         logger.error(
                             f"[{self.name}|seq{idx}] Encountered flag {flag} in "
                             f"returned value by `get_sequencer_state` which is not "
-                            f"defined in {self.__module__}."
+                            f"defined in {self.__module__}. Please refer to the Qblox "
+                            f"instruments documentation for more info."
                         )
                     else:
                         flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
