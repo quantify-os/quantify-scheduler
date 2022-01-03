@@ -105,10 +105,12 @@ hw_config = {
 #
 # 1. Device compilation
 #    - The device compilation step transforms the provided schedule (consisting of pulses and/or gates) into a schedule executable by the quantum device (/quantum chip). This involves, for example, converting the schedule's operations into operations that the quantum chip can perform, as well as timing the operations according to the chip's characteristics.
+#
 # 2. Hardware compilation
 #    - This step generates:
-#      1. A set of parameters for each of the control stack's instruments in order to configure them properly for the execution of the schedule at hand. These parameters typically don't change during the whole execution of the schedule.
-#      2. A compiled program for each instrument (compilation target) containing instructions that dictates what the quantum device must do in order for the schedule to be executed.
+#
+#   * A set of parameters for each of the control stack's instruments in order to configure them properly for the execution of the schedule at hand. These parameters typically don't change during the whole execution of the schedule.
+#   * A compiled program for each instrument (compilation target) containing instructions that dictates what the quantum device must do in order for the schedule to be executed.
 #
 # We can perform each of these steps independently (via :func:`~quantify_scheduler.compilation.device_compile` and :func:`~quantify_scheduler.compilation.hardware_compile` functions), or perform them directly together via :func:`~quantify_scheduler.compilation.qcompile`.
 #
