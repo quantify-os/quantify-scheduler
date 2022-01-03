@@ -1311,6 +1311,7 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     # LO/IF frequencies unchanged.
     if sequencer.downconverter:
         downconverter_freq = constants.DOWNCONVERTER_FREQ
+        clk_freq = -clk_freq
     else:
         downconverter_freq = 0
 
@@ -1450,6 +1451,7 @@ class QbloxRFModule(QbloxBaseModule):
             LO/IF frequencies unchanged"""
             if sequencer.downconverter:
                 downconverter_freq = constants.DOWNCONVERTER_FREQ
+                clk_freq = -clk_freq
             else:
                 downconverter_freq = 0
 

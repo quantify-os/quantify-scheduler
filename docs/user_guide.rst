@@ -480,10 +480,6 @@ These ingredients can then be combined to perform the experiment:
     from quantify_core.measurement import MeasurementControl
     meas_ctrl = MeasurementControl("meas_ctrl")
 
-.. warning::
-
-    :code:`ScheduleGettable` class is not implemented yet. See :class:`~quantify_scheduler.gettables.ScheduleGettableSingleChannel` for an initial implementation supporting only one channel.
-
 .. code-block:: python
 
     t1_gettable = ScheduleGettable(
