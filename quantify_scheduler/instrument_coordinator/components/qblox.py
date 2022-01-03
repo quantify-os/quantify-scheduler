@@ -624,11 +624,6 @@ class _QRMRFComponent(_QRMComponent):
             self._set_parameter("out0_offset_path1", settings.offset_ch0_path1)
 
 
-def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
-    path_idx = output_index % 2  # even or odd output
-    return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"
-
-
 class PulsarQCMComponent(_QCMComponent):
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
@@ -641,6 +636,11 @@ class PulsarQRMComponent(_QRMComponent):
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
         self._set_parameter("reference_source", reference_source)
+
+
+def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
+    path_idx = output_index % 2  # even or odd output
+    return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"
 
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
