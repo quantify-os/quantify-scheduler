@@ -118,6 +118,7 @@ the backend by specifying it as :code:`None`. Specifying both will raise an erro
 **Note**: Some Qblox costumers may have a custom downconverter module operating at 4.4 GHz. In order to use it with this backend, the user should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below:
 
 .. code-block:: python
+    :emphasize-lines: 4
     :linenos:
 
     "complex_output_0": {
