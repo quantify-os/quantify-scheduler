@@ -628,6 +628,7 @@ class _QRMRFComponent(_QRMComponent):
 
 class PulsarQCMComponent(_QCMComponent):
     """A component for a baseband Pulsar QCM."""
+
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
@@ -636,6 +637,7 @@ class PulsarQCMComponent(_QCMComponent):
 
 class PulsarQRMComponent(_QRMComponent):
     """A component for a baseband Pulsar QRM."""
+
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
