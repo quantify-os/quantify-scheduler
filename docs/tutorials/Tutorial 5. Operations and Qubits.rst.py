@@ -159,13 +159,11 @@ sched
 # %matplotlib inline
 import matplotlib.pyplot as plt
 
-f, ax = sched.plot_circuit_diagram_mpl()
+f, ax = sched.plot_circuit_diagram()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure.
 # Therefore we use `set_xlim` to limit the number of gates shown.
 ax.set_xlim(-0.5, 9.5)
 plt.show()
-
-# %%
 
 # %% [raw]
 # In previous tutorials, we visualized the `schedules` on the pulse level using
@@ -179,7 +177,7 @@ plt.show()
 
 # %%
 try:
-    sched.plot_pulse_diagram_mpl()
+    sched.plot_pulse_diagram()
 except RuntimeError as e:
     print(e)
 
@@ -292,7 +290,7 @@ pulse_sched.timing_table
 # well:
 
 # %%
-f, ax = pulse_sched.plot_pulse_diagram_mpl()
+f, ax = pulse_sched.plot_pulse_diagram()
 ax.set_xlim(0.4005e-3, 0.4006e-3)
 
 # %% [raw]
@@ -382,7 +380,7 @@ for duration in np.linspace(20e-9, 60e-9, 6):
 sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
 
 # %%
-fig, ax = sched.plot_circuit_diagram_mpl()
+fig, ax = sched.plot_circuit_diagram()
 ax.set_xlim(-0.5, 9.5)
 for t in ax.texts:
     if t.get_position()[0] > 9.5:
@@ -425,7 +423,7 @@ compiled_sched = qcompile(
 compiled_sched.timing_table
 
 # %%
-f, ax = compiled_sched.plot_pulse_diagram_mpl()
+f, ax = compiled_sched.plot_pulse_diagram()
 ax.set_xlim(200e-6, 200.4e-6)
 
 # %%
