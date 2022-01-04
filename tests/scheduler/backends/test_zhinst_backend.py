@@ -429,8 +429,7 @@ def test_validate_schedule(
         zhinst_backend._validate_schedule(empty_schedule)
 
     assert (
-        str(execinfo.value)
-        == "Undefined schedulables for schedule 'Empty Experiment'!"
+        str(execinfo.value) == "Undefined schedulables for schedule 'Empty Experiment'!"
     )
 
     with pytest.raises(ValueError) as execinfo:

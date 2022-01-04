@@ -139,7 +139,9 @@ def pulse_diagram_plotly(
         operation = schedule.operations[schedulable["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(pulse_info, port_map, schedulable, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, schedulable, operation
+            ):
                 continue
 
             # port to map the waveform to
@@ -352,7 +354,9 @@ def sample_schedule(
         operation = schedule.operations[schedulable["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(pulse_info, port_map, schedulable, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, schedulable, operation
+            ):
                 logging.info(f"Operation {operation} is not valid for plotting.")
 
             # times at which to evaluate waveform
@@ -384,7 +388,9 @@ def sample_schedule(
 
         for pulse_info in operation["pulse_info"]:
 
-            if not validate_operation_data(pulse_info, port_map, schedulable, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, schedulable, operation
+            ):
                 continue
 
             # port to map the waveform too
@@ -588,10 +594,7 @@ def plot_acquisition_operations(
         _ = idx  # unused variable
         operation = schedule.operations[schedulable["operation_repr"]]
         if isinstance(operation, AcquisitionOperation):
-            t0 = (
-                schedulable["abs_time"]
-                + operation.data["acquisition_info"][0]["t0"]
-            )
+            t0 = schedulable["abs_time"] + operation.data["acquisition_info"][0]["t0"]
             t1 = t0 + operation.duration
             handle = ax.axvspan(t0, t1, **kwargs)
             handles_list.append(handle)

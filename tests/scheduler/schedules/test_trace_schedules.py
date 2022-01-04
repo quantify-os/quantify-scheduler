@@ -48,9 +48,7 @@ def test_trace_schedule() -> None:
     ]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
     assert (
-        list(schedule.schedulables.values())[1]["timing_constraints"][0][
-            "rel_time"
-        ]
+        list(schedule.schedulables.values())[1]["timing_constraints"][0]["rel_time"]
         == pulse_delay
     )
 
@@ -60,9 +58,7 @@ def test_trace_schedule() -> None:
     ]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
     assert (
-        list(schedule.schedulables.values())[2]["timing_constraints"][0][
-            "rel_time"
-        ]
+        list(schedule.schedulables.values())[2]["timing_constraints"][0]["rel_time"]
         == acquisition_delay
     )
 

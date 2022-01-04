@@ -45,7 +45,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4]
 
@@ -62,7 +63,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
@@ -70,7 +72,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
@@ -78,7 +81,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2, 1.5]
 

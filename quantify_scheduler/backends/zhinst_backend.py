@@ -563,9 +563,7 @@ def _validate_schedule(schedule: Schedule) -> None:
         The validation error.
     """
     if len(schedule.schedulables) == 0:
-        raise ValueError(
-            f"Undefined schedulables for schedule '{schedule.name}'!"
-        )
+        raise ValueError(f"Undefined schedulables for schedule '{schedule.name}'!")
 
     for schedulable in schedule.schedulables.values():
 

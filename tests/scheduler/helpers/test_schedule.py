@@ -244,9 +244,7 @@ def test_get_port_timeline_with_duplicate_op(
     schedule.add(X90_q0)
     create_schedule_with_pulse_info(schedule)
 
-    X90_q0_operation_id = list(schedule.schedulables.values())[0][
-        "operation_repr"
-    ]
+    X90_q0_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     X90_q0_pulse_info = schedule.operations[X90_q0_operation_id]["pulse_info"][0]
     X90_q0_pulse_id = get_pulse_uuid(X90_q0_pulse_info)
 
