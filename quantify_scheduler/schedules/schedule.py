@@ -59,7 +59,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     The :attr:`~.ScheduleBase.operations` is a dictionary of all
     unique operations used in the schedule and contain the information on *what*
     operation to apply *where*.
-    The :attr:`~.ScheduleBase.timing_constraints` is a dictionary of
+    The :attr:`~.ScheduleBase.schedulables` is a dictionary of
     Schedulables describing timing constraints between operations, i.e. when to apply
     an operation.
 
