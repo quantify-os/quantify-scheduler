@@ -46,7 +46,11 @@ def fixture_make_cluster(mocker):
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
 
         qcm0 = cluster.cluster_qcm_dummy(f"{name}_qcm0")
+        mocker.patch.object(qcm0, "reference_source", wraps=qcm0.reference_source)
+
         qcm1 = cluster.cluster_qcm_dummy(f"{name}_qcm1")
+        mocker.patch.object(qcm1, "reference_source", wraps=qcm1.reference_source)
+
         component.add_modules(qcm0, qcm1)
 
         return component
@@ -311,6 +315,29 @@ def test_prepare_force_set(
     # Assert
     qcm.instrument._set_reference_source.assert_called()
     qrm.instrument._set_reference_source.assert_called()
+
+
+def test_prepare_ref_source_cluster(close_all_instruments, make_basic_schedule, make_cluster):
+    # Arrange
+    cluster: qblox.ClusterComponent = make_cluster("cluster0")
+    qcm_module = cluster._cluster_modules["cluster0_qcm0"]
+    qcm_module.instrument.reference_source("internal")
+    qcm_module.instrument.reference_source.reset_mock()
+    sched = make_basic_schedule("q4")
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            sched, DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        cluster.prepare(prog["cluster0"])
+
+    # Assert
+    qcm_module.instrument.reference_source.assert_not_called()
 
 
 def test_prepare_lazy(

@@ -3,7 +3,7 @@
     "cluster0": {
         "ref": "internal",
         "instrument_type": "Cluster",
-        "cl_qcm0": {
+        "cluster0_qcm0": {
             "instrument_type": "QCM",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -17,7 +17,7 @@
                 }
             }
         },
-        "cl_qcm_rf0": {
+        "cluster0_qcm_rf0": {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
                 "line_gain_db": 0,
