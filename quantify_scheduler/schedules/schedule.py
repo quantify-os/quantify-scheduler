@@ -45,7 +45,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     - operation_dict - a hash table containing the unique
         :class:`quantify_scheduler.operations.operation.Operation` s added to the
         schedule.
-    - timing_constraints - a dictionaryt of all timing constraints added
+    - schedulables - a dictionary of all timing constraints added
         between operations.
 
     The :class:`~.Schedule` provides an API to create schedules.
@@ -55,7 +55,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     The :class:`~.Schedule` contains information on the
     :attr:`~.ScheduleBase.operations` and
-    :attr:`~.ScheduleBase.timing_constraints`.
+    :attr:`~.ScheduleBase.schedulables`.
     The :attr:`~.ScheduleBase.operations` is a dictionary of all
     unique operations used in the schedule and contain the information on *what*
     operation to apply *where*.
@@ -405,7 +405,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         acquisitions in a schedule.
 
         This table is constructed based on the abs_time key in the
-        :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.timing_constraints`.
+        :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.schedulables`.
         This requires the timing to have been determined.
 
         Parameters
@@ -677,7 +677,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         the operations.
         The reference schedulable (:code:`"ref_schedulable"`) is specified using its name
         property.
-        See also :attr:`~.ScheduleBase.timing_constraints`.
+        See also :attr:`~.ScheduleBase.schedulables`.
 
         Parameters
         ----------

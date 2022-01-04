@@ -39,10 +39,10 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~.ScheduleBase.timing_constraints`. It does this by:
+    :attr:`~.ScheduleBase.schedulables`. It does this by:
 
         1. iterating over all and elements in the
-            :attr:`~.ScheduleBase.timing_constraints`.
+            :attr:`~.ScheduleBase.schedulables`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 

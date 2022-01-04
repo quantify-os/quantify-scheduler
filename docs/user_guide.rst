@@ -26,7 +26,7 @@ The :class:`.Schedule` contains information on *when* operations should be perfo
 When adding operations to a schedule, one does not need to specify how to represent this :class:`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`.ScheduleBase.schedulables`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 Creating a schedule
