@@ -317,7 +317,9 @@ def test_prepare_force_set(
     qrm.instrument._set_reference_source.assert_called()
 
 
-def test_prepare_ref_source_cluster(close_all_instruments, make_basic_schedule, make_cluster):
+def test_prepare_ref_source_cluster(
+    close_all_instruments, make_basic_schedule, make_cluster
+):
     # Arrange
     cluster: qblox.ClusterComponent = make_cluster("cluster0")
     qcm_module = cluster._cluster_modules["cluster0_qcm0"]
@@ -329,9 +331,7 @@ def test_prepare_ref_source_cluster(close_all_instruments, make_basic_schedule, 
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
-        compiled_schedule = qcompile(
-            sched, DEVICE_CFG, HARDWARE_MAPPING
-        )
+        compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
         prog = compiled_schedule["compiled_instructions"]
 
         cluster.prepare(prog["cluster0"])

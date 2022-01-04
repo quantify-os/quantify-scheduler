@@ -91,6 +91,7 @@ def make_basic_schedule() -> Callable[[str], Schedule]:
         schedule = Schedule(f"Basic schedule {qubit}")
         schedule.add(X90(qubit))
         return schedule
+
     return _make_basic_schedule
 
 
