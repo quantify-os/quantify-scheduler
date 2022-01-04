@@ -562,14 +562,14 @@ def _validate_schedule(schedule: Schedule) -> None:
     ValueError
         The validation error.
     """
-    if len(schedule.timing_constraints) == 0:
+    if len(schedule.schedulables) == 0:
         raise ValueError(
-            f"Undefined timing constraints for schedule '{schedule.name}'!"
+            f"Undefined schedulables for schedule '{schedule.name}'!"
         )
 
-    for t_constr in schedule.timing_constraints.values():
+    for schedulable in schedule.schedulables.values():
 
-        if "abs_time" not in t_constr:
+        if "abs_time" not in schedulable:
             raise ValueError(
                 "Absolute timing has not been determined "
                 + f"for the schedule '{schedule.name}'!"

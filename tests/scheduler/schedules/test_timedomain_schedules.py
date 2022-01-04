@@ -62,9 +62,9 @@ class TestRabiPulse(_CompilesAllBackends):
         t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
         abs_times = [0, self.sched_kwargs["init_duration"], t2, t3]
 
-        for i, constr in enumerate(sched.timing_constraints.values()):
-            assert constr["label"] == labels[i]
-            assert constr["abs_time"] == abs_times[i]
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
+            assert schedulable["abs_time"] == abs_times[i]
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
@@ -96,13 +96,13 @@ class TestRabiSched(_CompilesAllBackends):
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
         abs_times = [0, 200e-6, 200e-6 + 20e-9]
 
-        assert len(self.sched.timing_constraints) == len(labels)
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
-            assert constr["label"] == labels[i]
-            assert constr["abs_time"] == abs_times[i]
+        assert len(self.sched.schedulables) == len(labels)
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
+            assert schedulable["abs_time"] == abs_times[i]
 
     def test_rabi_pulse_ops(self):
-        rabi_op_hash = list(self.sched.timing_constraints.values())[1]["operation_repr"]
+        rabi_op_hash = list(self.sched.schedulables.values())[1]["operation_repr"]
         rabi_pulse = self.sched.operations[rabi_op_hash]["pulse_info"][0]
         assert rabi_pulse["G_amp"] == 0.2
         assert rabi_pulse["D_amp"] == 0
@@ -122,11 +122,11 @@ class TestRabiSched(_CompilesAllBackends):
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
-        assert len(sched.timing_constraints) == len(labels)
-        for i, constr in enumerate(sched.timing_constraints.values()):
-            assert constr["label"] == labels[i]
+        assert len(sched.schedulables) == len(labels)
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
 
-        rabi_op_hash = list(sched.timing_constraints.values())[1]["operation_repr"]
+        rabi_op_hash = list(sched.schedulables.values())[1]["operation_repr"]
         rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
         assert rabi_pulse["G_amp"] == 0.5
         assert rabi_pulse["D_amp"] == 0
@@ -149,12 +149,12 @@ class TestRabiSched(_CompilesAllBackends):
         labels = []
         for j in range(5):
             labels += [f"Reset {j}", f"Rabi_pulse {j}", f"Measurement {j}"]
-        assert len(sched.timing_constraints) == len(labels)
-        for i, constr in enumerate(sched.timing_constraints.values()):
-            assert constr["label"] == labels[i]
+        assert len(sched.schedulables) == len(labels)
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
 
         for i, exp_amp in enumerate(amps):
-            rabi_op_hash = list(sched.timing_constraints.values())[3 * i + 1][
+            rabi_op_hash = list(sched.schedulables.values())[3 * i + 1][
                 "operation_repr"
             ]
             rabi_pulse = sched.operations[rabi_op_hash]["pulse_info"][0]
@@ -180,9 +180,9 @@ class TestRabiSched(_CompilesAllBackends):
         for j in range(6):
             labels += [f"Reset {j}", f"Rabi_pulse {j}", f"Measurement {j}"]
 
-        assert len(sched.timing_constraints) == len(labels)
-        for i, constr in enumerate(sched.timing_constraints.values()):
-            assert constr["label"] == labels[i]
+        assert len(sched.schedulables) == len(labels)
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
 
     def test_batched_variant_incompatible(self):
         with pytest.raises(ValueError):
@@ -197,7 +197,7 @@ class TestRabiSched(_CompilesAllBackends):
 
     def test_correct_inference_of_port_clock(self):
         # operation 1 is tested in test_timing to be the Rabi pulse
-        op_name = list(self.sched.timing_constraints.values())[1]["operation_repr"]
+        op_name = list(self.sched.schedulables.values())[1]["operation_repr"]
         rabi_op = self.sched.operations[op_name]
         assert rabi_op["pulse_info"][0]["port"] == "q0:mw"
         assert rabi_op["pulse_info"][0]["clock"] == "q0.01"
@@ -226,11 +226,11 @@ class TestT1Sched(_CompilesAllBackends):
         for i in range(len(self.sched_kwargs["times"])):
             labels += [l.format(i) for l in label_tmpl]
 
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
-            assert constr["label"] == labels[i]
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
             if (i - 2) % 3 == 0:  # every measurement operation
                 assert (
-                    constr["timing_constraints"][0]["rel_time"]
+                    schedulable["timing_constraints"][0]["rel_time"]
                     == self.sched_kwargs["times"][i // 3]
                 )
 
@@ -268,16 +268,16 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
             if i % 4 == 0:
-                assert constr["label"][:5] == "Reset"
+                assert schedulable["label"][:5] == "Reset"
             if (i - 2) % 4 == 0:  # every second pi/2 operation
                 assert (
-                    constr["timing_constraints"][0]["rel_time"]
+                    schedulable["timing_constraints"][0]["rel_time"]
                     == self.sched_kwargs["times"][i // 4]
                 )
             if (i - 3) % 4 == 0:
-                assert constr["label"][:11] == "Measurement"
+                assert schedulable["label"][:11] == "Measurement"
 
     # pylint: disable=no-self-use
     def test_sched_float_times(self, load_example_transmon_config):
@@ -291,7 +291,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         sched = qcompile(sched, load_example_transmon_config())
         assert any(
             op["timing_constraints"][0]["rel_time"] == 3e-6
-            for op in sched.timing_constraints.values()
+            for op in sched.schedulables.values()
         )
 
     def test_operations(self):
@@ -317,16 +317,16 @@ class TestRamseySched(_CompilesAllBackends):
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
             if i % 4 == 0:
-                assert constr["label"][:5] == "Reset"
+                assert schedulable["label"][:5] == "Reset"
             if (i - 2) % 4 == 0:  # every second pi/2 operation
                 assert (
-                    constr["timing_constraints"][0]["rel_time"]
+                    schedulable["timing_constraints"][0]["rel_time"]
                     == self.sched_kwargs["times"][i // 4]
                 )
             if (i - 3) % 4 == 0:
-                assert constr["label"][:11] == "Measurement"
+                assert schedulable["label"][:11] == "Measurement"
 
     # pylint: disable=no-self-use
     def test_sched_float_times(self, load_example_transmon_config):
@@ -372,21 +372,21 @@ class TestEchoSched(_CompilesAllBackends):
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
             if i % 5 == 0:
-                assert constr["label"][:5] == "Reset"
+                assert schedulable["label"][:5] == "Reset"
             if (i - 2) % 5 == 0:  # every second pi/2 operation
                 assert (
-                    constr["timing_constraints"][0]["rel_time"]
+                    schedulable["timing_constraints"][0]["rel_time"]
                     == self.sched_kwargs["times"][i // 5] / 2
                 )
             if (i - 3) % 5 == 0:  # every second pi/2 operation
                 assert (
-                    constr["timing_constraints"][0]["rel_time"]
+                    schedulable["timing_constraints"][0]["rel_time"]
                     == self.sched_kwargs["times"][i // 5] / 2
                 )
             if (i - 4) % 5 == 0:
-                assert constr["label"][:11] == "Measurement"
+                assert schedulable["label"][:11] == "Measurement"
 
     def test_operations(self):
         # 4 for an echo
@@ -407,11 +407,11 @@ class TestAllXYSched(_CompilesAllBackends):
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
             if i % 4 == 0:
-                assert constr["label"][:5] == "Reset"
+                assert schedulable["label"][:5] == "Reset"
             if (i - 3) % 4 == 0:
-                assert constr["label"][:11] == "Measurement"
+                assert schedulable["label"][:11] == "Measurement"
 
     def test_operations(self):
         # 6 +21 operations (x90, y90, X180, Y180, idle, reset, 21*measurement)
@@ -432,11 +432,11 @@ class TestAllXYSchedElement(_CompilesAllBackends):
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, constr in enumerate(self.sched.timing_constraints.values()):
+        for i, schedulable in enumerate(self.sched.schedulables.values()):
             if i % 4 == 0:
-                assert constr["label"][:5] == "Reset"
+                assert schedulable["label"][:5] == "Reset"
             if (i - 3) % 4 == 0:
-                assert constr["label"][:11] == "Measurement"
+                assert schedulable["label"][:11] == "Measurement"
 
     def test_operations(self):
         # 4 operations (X180, Y180, reset, measurement)

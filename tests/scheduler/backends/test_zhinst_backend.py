@@ -430,7 +430,7 @@ def test_validate_schedule(
 
     assert (
         str(execinfo.value)
-        == "Undefined timing constraints for schedule 'Empty Experiment'!"
+        == "Undefined schedulables for schedule 'Empty Experiment'!"
     )
 
     with pytest.raises(ValueError) as execinfo:

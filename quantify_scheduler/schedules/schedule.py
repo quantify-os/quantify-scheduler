@@ -104,15 +104,15 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self.data["operation_dict"]
 
     @property
-    def timing_constraints(self) -> Dict[str, Any]:
+    def schedulables(self) -> Dict[str, Any]:
         """
-        A list of dictionaries describing timing constraints between operations.
+        A list of schedulables describing the timing of operations.
 
-        A timing constraint constrains the operation in time by specifying the time
-        (:code:`"rel_time"`) between a reference operation and the added operation.
-        The time can be specified with respect to a reference point (:code:`"ref_pt"')
-        on the reference operation (:code:`"ref_op"`) and a reference point on the next
-        added operation (:code:`"ref_pt_new"').
+        A schedulable uses timing constraints to constrain the operation in time by
+        specifying the time (:code:`"rel_time"`) between a reference operation and the
+        added operation. The time can be specified with respect to a reference point
+        (:code:`"ref_pt"') on the reference operation (:code:`"ref_op"`) and a reference
+        point on the next added operation (:code:`"ref_pt_new"').
         A reference point can be either the "start", "center", or "end" of an
         operation. The reference operation (:code:`"ref_op"`) is specified using its
         label property.
@@ -134,7 +134,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             Instead use the :meth:`~.Schedule.add`
 
         """
-        return self.data["timing_constraints"]
+        return self.data["schedulables"]
 
     @property
     def resources(self) -> Dict[str, Resource]:
@@ -441,38 +441,38 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ]
         )
 
-        for t_constr in self.timing_constraints.values():
-            if "abs_time" not in t_constr:
+        for schedulable in self.schedulables.values():
+            if "abs_time" not in schedulable:
                 # when this exception is encountered
                 raise ValueError("Absolute time has not been determined yet.")
-            operation = self.operations[t_constr["operation_repr"]]
+            operation = self.operations[schedulable["operation_repr"]]
 
             # iterate over pulse information
             for i, pulse_info in enumerate(operation["pulse_info"]):
-                abs_time = pulse_info["t0"] + t_constr["abs_time"]
+                abs_time = pulse_info["t0"] + schedulable["abs_time"]
                 df_row = {
-                    "waveform_op_id": t_constr["operation_repr"] + f"_p_{i}",
+                    "waveform_op_id": schedulable["operation_repr"] + f"_p_{i}",
                     "port": pulse_info["port"],
                     "clock": pulse_info["clock"],
                     "abs_time": abs_time,
                     "duration": pulse_info["duration"],
                     "is_acquisition": False,
-                    "operation": t_constr["operation_repr"],
+                    "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }
                 timing_table = timing_table.append(df_row, ignore_index=True)
 
             # iterate over acquisition information
             for i, acq_info in enumerate(operation["acquisition_info"]):
-                abs_time = acq_info["t0"] + t_constr["abs_time"]
+                abs_time = acq_info["t0"] + schedulable["abs_time"]
                 df_row = {
-                    "waveform_op_id": t_constr["operation_repr"] + f"_acq_{i}",
+                    "waveform_op_id": schedulable["operation_repr"] + f"_acq_{i}",
                     "port": acq_info["port"],
                     "clock": acq_info["clock"],
                     "abs_time": abs_time,
                     "duration": acq_info["duration"],
                     "is_acquisition": True,
-                    "operation": t_constr["operation_repr"],
+                    "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }
                 timing_table = timing_table.append(df_row, ignore_index=True)
@@ -527,7 +527,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         # ensure keys exist
         self.data["operation_dict"] = {}
-        self.data["timing_constraints"] = {}
+        self.data["schedulables"] = {}
         self.data["resource_dict"] = {}
         self.data["name"] = "nameless"
         self.data["repetitions"] = repetitions
@@ -607,7 +607,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self.data["operation_dict"][operation_id] = operation
         element = Schedulable(name=label, operation_repr=operation_id, schedule=self)
         element.add_timing_constraint(rel_time, ref_op, ref_pt, ref_pt_new)
-        self.data["timing_constraints"].update({label: element})
+        self.data["schedulables"].update({label: element})
 
         return element
 
@@ -616,8 +616,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
     def __setstate__(self, state):
         self.data = state
-        print(self.timing_constraints)
-        for schedulable in self.timing_constraints.values():
+        for schedulable in self.schedulables.values():
             schedulable.schedule = weakref.proxy(self)
 
 
@@ -648,7 +647,7 @@ class Schedulable(UserDict):
         # assert the name is unique
         name_is_unique = (
             len(
-                [item for item in schedule["timing_constraints"].keys() if item == name]
+                [item for item in schedule["schedulables"].keys() if item == name]
             )
             == 0
         )
@@ -704,7 +703,7 @@ class Schedulable(UserDict):
                 len(
                     [
                         item
-                        for item in self.schedule.data["timing_constraints"].keys()
+                        for item in self.schedule.data["schedulables"].keys()
                         if item == str(ref_schedulable)
                     ]
                 )

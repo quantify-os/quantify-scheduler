@@ -252,8 +252,8 @@ def circuit_diagram_matplotlib(
     # will be plotted on the 'other' timeline.
     # Note: needs to be done before creating figure and axhline
     # in order to avoid unnecessary redraws.
-    for t_constr in schedule.timing_constraints.values():
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
         if operation.valid_pulse:
             try:
                 for pulse_info in operation["pulse_info"]:
@@ -289,10 +289,10 @@ def circuit_diagram_matplotlib(
     ax.set_yticklabels(qubit_map.keys())
 
     total_duration = 0
-    for t_constr in schedule.timing_constraints.values():
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
 
-        time = t_constr["abs_time"]
+        time = schedulable["abs_time"]
         total_duration = total_duration if total_duration > time else time
 
         if operation.valid_gate:
