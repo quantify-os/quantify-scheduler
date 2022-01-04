@@ -148,7 +148,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return (
             f'{self.__class__.__name__} "{self.data["name"]}" containing '
             f'({len(self.data["operation_dict"])}) '
-            f'{len(self.data["timing_constraints"])}  (unique) operations.'
+            f'{len(self.data["schedulables"])}  (unique) operations.'
         )
 
     def to_json(self) -> str:
