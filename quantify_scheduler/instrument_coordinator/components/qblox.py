@@ -175,7 +175,9 @@ class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponen
     """Qblox Pulsar InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of BaseQbloxInstrumentCoordinatorComponent base class."""
+        """
+        Create a new instance of BaseQbloxInstrumentCoordinatorComponent base class.
+        """
         super().__init__(instrument, **kwargs)
         if (
             instrument._get_lo_hw_present()
@@ -625,6 +627,7 @@ class _QRMRFComponent(_QRMComponent):
 
 
 class PulsarQCMComponent(_QCMComponent):
+    """A component for a baseband Pulsar QCM."""
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
@@ -632,6 +635,7 @@ class PulsarQCMComponent(_QCMComponent):
 
 
 class PulsarQRMComponent(_QRMComponent):
+    """A component for a baseband Pulsar QRM."""
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
