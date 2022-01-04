@@ -620,11 +620,13 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             schedulable.schedule = weakref.proxy(self)
 
 
-class Schedulable(UserDict):
+class Schedulable(JSONSchemaValMixin, UserDict):
     """
     This class represents an element on a schedule. It contains all timing information of the element.
     It also specifies what the element should do, currently represented by an operation ID.
     """
+
+    schema_filename = "schedulable.json"
 
     def __init__(self, name, operation_repr, schedule, data: dict = None):
         """
