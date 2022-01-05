@@ -323,8 +323,7 @@ def test_prepare_ref_source_cluster(
     # Arrange
     cluster: qblox.ClusterComponent = make_cluster("cluster0")
     qcm_module = cluster._cluster_modules["cluster0_qcm0"]
-    qcm_module.instrument.reference_source("internal")
-    qcm_module.instrument.reference_source.reset_mock()
+    qcm_module.instrument.reference_source("internal")  # put it in a known state
     sched = make_basic_schedule("q4")
 
     # Act
@@ -337,7 +336,8 @@ def test_prepare_ref_source_cluster(
         cluster.prepare(prog["cluster0"])
 
     # Assert
-    qcm_module.instrument.reference_source.assert_not_called()
+    # Assert it's only set in initialization
+    qcm_module.instrument.reference_source.assert_called_once()
 
 
 def test_prepare_lazy(
