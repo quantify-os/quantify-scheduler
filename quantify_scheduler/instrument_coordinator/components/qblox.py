@@ -172,7 +172,7 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 
 
 class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
-    """Qblox Pulsar InstrumentCoordinator component base class."""
+    """Qblox InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
         """
