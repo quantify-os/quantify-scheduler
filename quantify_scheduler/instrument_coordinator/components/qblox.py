@@ -171,12 +171,12 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 )
 
 
-class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
+class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponentBase):
     """Qblox InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
         """
-        Create a new instance of BaseQbloxInstrumentCoordinatorComponent base class.
+        Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
         """
         super().__init__(instrument, **kwargs)
         if (
@@ -184,7 +184,7 @@ class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponen
             is not self._hardware_properties.has_internal_lo
         ):
             raise RuntimeError(
-                "BaseQbloxInstrumentCoordinatorComponent not compatible with the "
+                "QbloxInstrumentCoordinatorComponentBase not compatible with the "
                 "provided instrument. Please confirm whether your device "
                 "is a RF module (has an internal LO)."
             )
@@ -345,7 +345,7 @@ class BaseQbloxInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponen
 
 
 # pylint: disable=too-many-ancestors
-class _QCMComponent(BaseQbloxInstrumentCoordinatorComponent):
+class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     Pulsar QCM specific InstrumentCoordinator component.
     """
@@ -439,7 +439,7 @@ class _QCMComponent(BaseQbloxInstrumentCoordinatorComponent):
 
 
 # pylint: disable=too-many-ancestors
-class _QRMComponent(BaseQbloxInstrumentCoordinatorComponent):
+class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     Pulsar QRM specific InstrumentCoordinator component.
     """
