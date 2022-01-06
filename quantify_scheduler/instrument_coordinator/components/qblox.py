@@ -268,6 +268,9 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         Stops all execution.
         """
+        for idx in range(self._hardware_properties.number_of_sequencers):
+            # disable sync to prevent hanging on next run if instrument is not used.
+            self._set_parameter(f"sequencer{idx}_sync_en", False)
         self.instrument.stop_sequencer()
 
     def _configure_global_settings(self, settings: PulsarSettings) -> None:
