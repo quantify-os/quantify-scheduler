@@ -307,6 +307,10 @@ class Sequencer:
         )
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
+        self.latency_correction_ns: int = int(
+            round(seq_settings.get("latency_correction", 0)) * 1e9
+        )
+        """Latency correction to apply to start of the program."""
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -651,6 +655,14 @@ class Sequencer:
         )
 
         with qasm.loop(label=loop_label, repetitions=repetitions):
+            # Adds the latency correction, this needs to be a minimum of 4 ns,
+            # so all sequencers get delayed by at least that.
+            qasm.emit(
+                q1asm_instructions.WAIT,
+                constants.GRID_TIME + self.latency_correction_ns,
+                comment=f"Latency correction of {self.latency_correction_ns} ns.",
+            )
+
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
