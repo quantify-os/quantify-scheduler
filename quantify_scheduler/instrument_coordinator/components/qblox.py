@@ -145,25 +145,25 @@ class _StaticHardwareProperties:
     """The number of output paths that can be used."""
 
 
-_PULSAR_QCM_PROPERTIES = _StaticHardwareProperties(
+_QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
-_PULSAR_QRM_PROPERTIES = _StaticHardwareProperties(
+_QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
 )
-_PULSAR_QCM_RF_PROPERTIES = _StaticHardwareProperties(
+_QCM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarRFSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
-_PULSAR_QRM_RF_PROPERTIES = _StaticHardwareProperties(
+_QRM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarRFSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
@@ -171,18 +171,20 @@ _PULSAR_QRM_RF_PROPERTIES = _StaticHardwareProperties(
 )
 
 
-class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
-    """Qblox Pulsar InstrumentCoordinator component base class."""
+class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponentBase):
+    """Qblox InstrumentCoordinator component base class."""
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of PulsarInstrumentCoordinatorComponent base class."""
+        """
+        Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
+        """
         super().__init__(instrument, **kwargs)
         if (
             instrument._get_lo_hw_present()
             is not self._hardware_properties.has_internal_lo
         ):
             raise RuntimeError(
-                "PulsarInstrumentCoordinatorComponent not compatible with the "
+                "QbloxInstrumentCoordinatorComponentBase not compatible with the "
                 "provided instrument. Please confirm whether your device "
                 "is a RF module (has an internal LO)."
             )
@@ -248,7 +250,8 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
                         logger.error(
                             f"[{self.name}|seq{idx}] Encountered flag {flag} in "
                             f"returned value by `get_sequencer_state` which is not "
-                            f"defined in {self.__module__}."
+                            f"defined in {self.__module__}. Please refer to the Qblox "
+                            f"instruments documentation for more info."
                         )
                     else:
                         flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
@@ -270,6 +273,7 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         """
         self.instrument.stop_sequencer()
 
+    @abstractmethod
     def _configure_global_settings(self, settings: PulsarSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
@@ -279,7 +283,6 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
         settings
             The settings to configure it to.
         """
-        self._set_parameter("reference_source", settings.ref)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -342,15 +345,15 @@ class PulsarInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBa
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
+class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     Pulsar QCM specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QCM_PROPERTIES
+    _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
-        """Create a new instance of PulsarQCMComponent."""
+        """Create a new instance of _QCMComponent."""
         assert isinstance(instrument, pulsar_qcm.pulsar_qcm_qcodes)
         super().__init__(instrument, **kwargs)
 
@@ -424,7 +427,6 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
         settings
             The settings to configure it to.
         """
-        super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter("out0_offset", settings.offset_ch0_path0)
@@ -437,15 +439,15 @@ class PulsarQCMComponent(PulsarInstrumentCoordinatorComponent):
 
 
 # pylint: disable=too-many-ancestors
-class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
+class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     Pulsar QRM specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QRM_PROPERTIES
+    _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
-        """Create a new instance of PulsarQRMComponent."""
+        """Create a new instance of _QRMComponent."""
         assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
         self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
         """Holds all the acquisition related logic."""
@@ -545,7 +547,6 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         settings
             The settings to configure it to.
         """
-        super()._configure_global_settings(settings)
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter("out0_offset", settings.offset_ch0_path0)
@@ -567,12 +568,12 @@ class PulsarQRMComponent(PulsarInstrumentCoordinatorComponent):
         self._set_parameter(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
 
 
-class PulsarQCMRFComponent(PulsarQCMComponent):
+class _QCMRFComponent(_QCMComponent):
     """
     Pulsar QCM-RF specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QCM_RF_PROPERTIES
+    _hardware_properties = _QCM_RF_PROPERTIES
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -583,8 +584,6 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
         settings
             The settings to configure it to.
         """
-        self._set_parameter("reference_source", settings.ref)
-
         if settings.lo0_freq is not None:
             self._set_parameter("out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
@@ -601,12 +600,12 @@ class PulsarQCMRFComponent(PulsarQCMComponent):
             self._set_parameter("out1_offset_path1", settings.offset_ch1_path1)
 
 
-class PulsarQRMRFComponent(PulsarQRMComponent):
+class _QRMRFComponent(_QRMComponent):
     """
     Pulsar QRM-RF specific InstrumentCoordinator component.
     """
 
-    _hardware_properties = _PULSAR_QRM_RF_PROPERTIES
+    _hardware_properties = _QRM_RF_PROPERTIES
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
@@ -617,8 +616,6 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
         settings
             The settings to configure it to.
         """
-        self._set_parameter("reference_source", settings.ref)
-
         if settings.lo0_freq is not None:
             self._set_parameter("out0_in0_lo_freq", settings.lo0_freq)
 
@@ -627,6 +624,24 @@ class PulsarQRMRFComponent(PulsarQRMComponent):
             self._set_parameter("out0_offset_path0", settings.offset_ch0_path0)
         if settings.offset_ch0_path1 is not None:
             self._set_parameter("out0_offset_path1", settings.offset_ch0_path1)
+
+
+class PulsarQCMComponent(_QCMComponent):
+    """A component for a baseband Pulsar QCM."""
+
+    def prepare(self, options: Dict[str, dict]) -> None:
+        super().prepare(options)
+        reference_source: str = options["settings"]["ref"]
+        self._set_parameter("reference_source", reference_source)
+
+
+class PulsarQRMComponent(_QRMComponent):
+    """A component for a baseband Pulsar QRM."""
+
+    def prepare(self, options: Dict[str, dict]) -> None:
+        super().prepare(options)
+        reference_source: str = options["settings"]["ref"]
+        self._set_parameter("reference_source", reference_source)
 
 
 def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
@@ -651,7 +666,7 @@ class _QRMAcquisitionManager:
 
     def __init__(
         self,
-        parent: PulsarQRMComponent,
+        parent: _QRMComponent,
         number_of_sequencers: int,
         acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
         acquisition_metadata: AcquisitionMetadata,
@@ -673,7 +688,7 @@ class _QRMAcquisitionManager:
         acquisition_metadata
             Provides a summary of the used channels bins and acquisition protocols.
         """
-        self.parent: PulsarQRMComponent = parent
+        self.parent: _QRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.acquisition_mapping: Dict[
             Tuple[int, int], Tuple[str, str]
@@ -950,9 +965,7 @@ class _QRMAcquisitionManager:
         return channel_data["acquisition"]["bins"]
 
 
-ClusterModule = Union[
-    PulsarQCMComponent, PulsarQRMComponent, PulsarQRMRFComponent, PulsarQCMRFComponent
-]
+ClusterModule = Union[_QCMComponent, _QRMComponent, _QRMRFComponent, _QCMRFComponent]
 """Type that combines all the possible modules for a cluster."""
 
 
@@ -1097,9 +1110,9 @@ def _construct_component_from_instrument_driver(
         )
     is_rf: bool = driver._get_lo_hw_present()
     icc_class: type = {
-        (True, False): PulsarQCMComponent,
-        (True, True): PulsarQCMRFComponent,
-        (False, False): PulsarQRMComponent,
-        (False, True): PulsarQRMRFComponent,
+        (True, False): _QCMComponent,
+        (True, True): _QCMRFComponent,
+        (False, False): _QRMComponent,
+        (False, True): _QRMRFComponent,
     }[(is_qcm, is_rf)]
     return icc_class(driver)
