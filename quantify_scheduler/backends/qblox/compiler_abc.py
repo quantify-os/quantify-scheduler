@@ -325,7 +325,8 @@ class Sequencer:
             raise ValueError(
                 f"Latency correction of {latency_correction_ns} ns specified for "
                 f"{self.name} of {self.parent.name}. Please use a correction that is "
-                f"less than {constants.IMMEDIATE_MAX_WAIT_TIME - constants.GRID_TIME}."
+                f"less than {constants.IMMEDIATE_MAX_WAIT_TIME - constants.GRID_TIME} "
+                f"ns."
             )
         if latency_correction_ns % 4 != 0:
             logger.warning(
