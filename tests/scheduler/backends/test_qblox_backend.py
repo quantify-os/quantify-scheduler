@@ -1358,6 +1358,7 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
 class TestLatencyCorrection:
     """Class to group all the tests related to latency correction in backend."""
 
+    # pylint: disable=no-self-use
     def test_compilation_valid(
         self,
         hardware_cfg_latency_correction,
