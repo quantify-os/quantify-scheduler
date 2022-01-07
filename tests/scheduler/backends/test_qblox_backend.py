@@ -92,6 +92,26 @@ except ImportError:
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
 # --------- Test fixtures ---------
+@pytest.fixture(name="hardware_cfg_latency_correction")
+def make_hardware_cfg_latency_correction():
+    def _make_hardware_cfg_latency_correction(correction: float, port: str, clock: str):
+        return {
+            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "qcm0": {
+                "instrument_type": "Pulsar_QCM",
+                "ref": "internal",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "seq0": {
+                        "port": port,
+                        "clock": clock,
+                        "latency_correction": correction,
+                    },
+                },
+            },
+        }
+
+    return _make_hardware_cfg_latency_correction
 
 
 @pytest.fixture
@@ -1332,6 +1352,35 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+class TestLatencyCorrection:
+    """Class to group all the tests related to latency correction in backend."""
+
+    def test_compilation_valid(
+        self,
+        hardware_cfg_latency_correction,
+        load_example_transmon_config,
+        dummy_pulsars,
+    ):
+        # Arrange
+        tmp_dir = tempfile.TemporaryDirectory()
+        set_datadir(tmp_dir.name)
+
+        sched = Schedule("single_gate_experiment")
+        sched.add(X("q0"))
+
+        hw_cfg = hardware_cfg_latency_correction(
+            correction=4e-9, port="q0:mw", clock="q0.01"
+        )
+        # Act
+        compiled_sched = qcompile(sched, load_example_transmon_config(), hw_cfg)
+        compiled_instr = compiled_sched.compiled_instructions
+
+        # Assert
+        dummy_pulsars[0].sequencer0_waveforms_and_program(
+            compiled_instr["qcm0"]["seq0"]["seq_fn"]
+        )
 
 
 def _strip_comments(program: str):
