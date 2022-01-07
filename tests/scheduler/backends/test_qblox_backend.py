@@ -9,6 +9,7 @@
 import copy
 import inspect
 import json
+import logging
 import os
 import re
 import shutil
@@ -1381,6 +1382,31 @@ class TestLatencyCorrection:
         dummy_pulsars[0].sequencer0_waveforms_and_program(
             compiled_instr["qcm0"]["seq0"]["seq_fn"]
         )
+
+    def test_warning(
+        self, hardware_cfg_latency_correction, load_example_transmon_config, caplog
+    ):
+        tmp_dir = tempfile.TemporaryDirectory()
+        set_datadir(tmp_dir.name)
+
+        sched = Schedule("single_gate_experiment")
+        sched.add(X("q0"))
+
+        hw_cfg = hardware_cfg_latency_correction(
+            correction=2e-9, port="q0:mw", clock="q0.01"
+        )
+
+        # Act
+        with caplog.at_level(
+            logging.WARNING, logger="quantify_scheduler.backends.qblox.compiler_abc"
+        ):
+            qcompile(sched, load_example_transmon_config(), hw_cfg)
+
+        # Assert
+        answer = "Latency correction of 2 ns specified for seq0 of qcm0, which is " \
+                 "not a multiple of 4 ns. This feature should be considered " \
+                 "experimental and stable results are not guaranteed at this stage."
+        assert answer in caplog.messages
 
 
 def _strip_comments(program: str):
