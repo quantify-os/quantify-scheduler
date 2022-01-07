@@ -119,7 +119,9 @@ the backend by specifying it as :code:`None`. Specifying both will raise an erro
 Downconverter
 """""""""""""
 
-Some users may have a custom Qblox downconverter module operating at 4.4 GHz. In order to use it with this backend, we should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below:
+Some users may have a custom Qblox downconverter module operating at 4.4 GHz.
+In order to use it with this backend, we should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below.
+The result is that the downconversion stage will be taken into account when calculating the IF or LO frequency (whichever was undefined) during compilation, such that the signal reaching the target port is at the desired clock frequency.
 
 .. jupyter-execute::
     :hide-output:
