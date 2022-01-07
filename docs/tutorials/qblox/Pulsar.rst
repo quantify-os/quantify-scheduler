@@ -61,7 +61,7 @@ Each device in the setup can be individually configured using the entry in the c
 
     test_sched = Schedule("test_sched")
     test_sched.add(
-        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01")
+        pulse_library.SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01")
     )
     test_sched.add_resource(ClockResource(name="q0.01", freq=7e9))
     test_sched = determine_absolute_timing(test_sched)
@@ -119,22 +119,30 @@ the backend by specifying it as :code:`None`. Specifying both will raise an erro
 Downconverter
 """""""""""""
 
-Some Qblox costumers may have a custom downconverter module operating at 4.4 GHz. In order to use it with this backend, the user should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below:
+Some users may have a custom Qblox downconverter module operating at 4.4 GHz. In order to use it with this backend, we should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below:
 
-.. code-block:: python
-    :emphasize-lines: 4
+.. jupyter-execute::
+    :hide-output:
+    :emphasize-lines: 7
     :linenos:
 
-    "complex_output_0": {
-        "line_gain_db": 0,
-        "lo_name": "lo0",
-        "downconverter": True,
-        "seq0": {
-            "port": "q0:mw",
-            "clock": "q0.01",
-            "interm_freq": 50e6
+    mapping_config_rf = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM_RF",
+            "ref": "internal",
+            "complex_output_0": {
+                "downconverter": True,
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50000000.0
+                }
+            }
         }
     }
+    hardware_compile(test_sched, mapping_config_rf)
+
 
 Mixer corrections
 ^^^^^^^^^^^^^^^^^
