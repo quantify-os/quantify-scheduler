@@ -316,7 +316,7 @@ class Sequencer:
 
     def _get_latency_correction_ns(self, seq_settings: Dict[str, Any]) -> int:
         latency_correction_ns = int(
-            round(seq_settings.get("latency_correction", 0)) * 1e9
+            round(seq_settings.get("latency_correction", 0) * 1e9)
         )
         if (
             latency_correction_ns
