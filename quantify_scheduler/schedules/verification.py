@@ -226,6 +226,45 @@ def multiplexing_staircase_sched(
     init_duration: float = 1e-6,
     repetitions: int = 1,
 ) -> Schedule:
+    """
+    Adds two simultaneous staircases where the amplitudes are varied in opposite order.
+
+    The schedule will always use acquisition channels 0 and 1.
+
+    Parameters
+    ----------
+    pulse_amps
+        Amplitudes of the square readout pulse in Volts. The second staircase will use
+        this same array in reverse order.
+    pulse_duration
+        duration of the spectroscopy pulse in seconds.
+    acquisition_delay
+        start of the data acquisition with respect to the start of the spectroscopy
+        pulse in seconds.
+    integration_time
+        integration time of the data acquisition in seconds.
+    ro_port
+        location on the device where the signal should should be interpreted.
+    ro_clock0
+        Clock used to modulate the first staircase.
+    ro_clock1
+        Clock used to modulate the second staircase.
+    readout_frequency0
+        readout_frequency of the spectroscopy pulse and of the data acquisition in
+        Hertz of the first staircase.
+    readout_frequency1
+        readout_frequency of the spectroscopy pulse and of the data acquisition in
+        Hertz of the second staircase.
+    init_duration :
+        The relaxation time or dead time.
+    repetitions
+        The amount of times the Schedule will be repeated.
+
+    Returns
+    -------
+    :
+        The generated schedule.
+    """
     def add_staircase_step(sched, ref_op, amp, clock, acq_channel, acq_index, delay):
         pulse = sched.add(
             SquarePulse(
