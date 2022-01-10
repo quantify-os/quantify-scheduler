@@ -265,6 +265,7 @@ def multiplexing_staircase_sched(
     :
         The generated schedule.
     """
+
     def add_staircase_step(sched, ref_op, amp, clock, acq_channel, acq_index, delay):
         pulse = sched.add(
             SquarePulse(
