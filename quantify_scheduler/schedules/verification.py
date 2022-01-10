@@ -211,3 +211,66 @@ def awg_staircase_sched(
         )
 
     return sched
+
+
+def multiplexing_sched(
+        pulse_amps: NDArray[np.ScalarType],
+        pulse_duration: float,
+        acquisition_delay: float,
+        integration_time: float,
+        ro_port: str,
+        ro_clock0: str,
+        ro_clock1: str,
+        readout_frequency0: float,
+        readout_frequency1: float,
+        init_duration: float = 1e-6,
+        repetitions: int = 1,
+) -> Schedule:
+
+    def add_staircase_step(sched, ref_op, amp, clock, acq_channel, acq_index, delay):
+        pulse = sched.add(
+            SquarePulse(
+                duration=pulse_duration,
+                amp=amp,
+                port=ro_port,
+                clock=clock,
+            ),
+            ref_op=ref_op,
+            ref_pt='end'
+        )
+
+        sched.add(
+            SSBIntegrationComplex(
+                duration=integration_time,
+                port=ro_port,
+                clock=clock,
+                acq_index=acq_index,
+                acq_channel=acq_channel,
+            ),
+            ref_op=pulse,
+            ref_pt="start",
+            rel_time=delay,
+        )
+        return pulse
+
+    sched = Schedule(name="Multiplexing sched",
+                     repetitions=repetitions)
+
+    sched.add_resource(ClockResource(name=ro_clock0, freq=readout_frequency0))
+    sched.add_resource(ClockResource(name=ro_clock1, freq=readout_frequency1))
+
+    # ensure pulse_amps is an iterable when passing floats.
+    pulse_amps = np.asarray(pulse_amps)
+    pulse_amps = pulse_amps.reshape(pulse_amps.shape or (1,))
+    pulse_amps_reversed = np.flip(pulse_amps)
+
+    ref_pulse = sched.add(IdlePulse(duration=init_duration))
+    for acq_index, (pulse_amp0, pulse_amp1) in enumerate(
+            zip(pulse_amps, pulse_amps_reversed)):
+        add_staircase_step(sched, ref_pulse, pulse_amp0, ro_clock0, acq_channel=0,
+                           acq_index=acq_index, delay=acquisition_delay)
+        ref_pulse = add_staircase_step(sched, ref_pulse, pulse_amp1, ro_clock1,
+                                       acq_channel=1, acq_index=acq_index,
+                                       delay=acquisition_delay)
+    sched.repetitions = repetitions
+    return sched
