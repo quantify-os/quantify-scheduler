@@ -192,7 +192,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
                 args.append(node.value)
             elif isinstance(node, ast.keyword):
                 kwargs[node.arg] = ast.literal_eval(node.value)
-        print(class_name, args, kwargs)
+
         if class_name not in self.classes:
             return obj
 
@@ -214,8 +214,6 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         :
             The deserialized result.
         """
-        print()
-        print(type(obj), obj)
         if isinstance(obj, dict):
             return self.decode_dict(obj)
         return obj
