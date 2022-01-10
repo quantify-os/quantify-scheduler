@@ -213,7 +213,7 @@ def awg_staircase_sched(
     return sched
 
 
-def multiplexing_sched(
+def multiplexing_staircase_sched(
     pulse_amps: NDArray[np.ScalarType],
     pulse_duration: float,
     acquisition_delay: float,
