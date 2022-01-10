@@ -214,19 +214,18 @@ def awg_staircase_sched(
 
 
 def multiplexing_sched(
-        pulse_amps: NDArray[np.ScalarType],
-        pulse_duration: float,
-        acquisition_delay: float,
-        integration_time: float,
-        ro_port: str,
-        ro_clock0: str,
-        ro_clock1: str,
-        readout_frequency0: float,
-        readout_frequency1: float,
-        init_duration: float = 1e-6,
-        repetitions: int = 1,
+    pulse_amps: NDArray[np.ScalarType],
+    pulse_duration: float,
+    acquisition_delay: float,
+    integration_time: float,
+    ro_port: str,
+    ro_clock0: str,
+    ro_clock1: str,
+    readout_frequency0: float,
+    readout_frequency1: float,
+    init_duration: float = 1e-6,
+    repetitions: int = 1,
 ) -> Schedule:
-
     def add_staircase_step(sched, ref_op, amp, clock, acq_channel, acq_index, delay):
         pulse = sched.add(
             SquarePulse(
@@ -236,7 +235,7 @@ def multiplexing_sched(
                 clock=clock,
             ),
             ref_op=ref_op,
-            ref_pt='end'
+            ref_pt="end",
         )
 
         sched.add(
@@ -253,8 +252,7 @@ def multiplexing_sched(
         )
         return pulse
 
-    sched = Schedule(name="Multiplexing sched",
-                     repetitions=repetitions)
+    sched = Schedule(name="Multiplexing sched", repetitions=repetitions)
 
     sched.add_resource(ClockResource(name=ro_clock0, freq=readout_frequency0))
     sched.add_resource(ClockResource(name=ro_clock1, freq=readout_frequency1))
@@ -266,11 +264,25 @@ def multiplexing_sched(
 
     ref_pulse = sched.add(IdlePulse(duration=init_duration))
     for acq_index, (pulse_amp0, pulse_amp1) in enumerate(
-            zip(pulse_amps, pulse_amps_reversed)):
-        add_staircase_step(sched, ref_pulse, pulse_amp0, ro_clock0, acq_channel=0,
-                           acq_index=acq_index, delay=acquisition_delay)
-        ref_pulse = add_staircase_step(sched, ref_pulse, pulse_amp1, ro_clock1,
-                                       acq_channel=1, acq_index=acq_index,
-                                       delay=acquisition_delay)
+        zip(pulse_amps, pulse_amps_reversed)
+    ):
+        add_staircase_step(
+            sched,
+            ref_pulse,
+            pulse_amp0,
+            ro_clock0,
+            acq_channel=0,
+            acq_index=acq_index,
+            delay=acquisition_delay,
+        )
+        ref_pulse = add_staircase_step(
+            sched,
+            ref_pulse,
+            pulse_amp1,
+            ro_clock1,
+            acq_channel=1,
+            acq_index=acq_index,
+            delay=acquisition_delay,
+        )
     sched.repetitions = repetitions
     return sched
