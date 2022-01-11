@@ -142,7 +142,7 @@ def test_missing_edge(load_example_transmon_config):
 
 def test_empty_sched():
     sched = Schedule("empty")
-    with pytest.raises(ValueError, match="schedule 'empty' contains no operations"):
+    with pytest.raises(ValueError, match="schedule 'empty' contains no schedulables"):
         determine_absolute_timing(sched)
 
 

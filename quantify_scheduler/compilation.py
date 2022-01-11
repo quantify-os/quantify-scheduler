@@ -63,7 +63,7 @@ def determine_absolute_timing(
         determined.
     """  # pylint: disable=line-too-long
     if len(schedule.schedulables) == 0:
-        raise ValueError("schedule '{}' contains no operations".format(schedule.name))
+        raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
 
     valid_time_units = ("physical", "ideal")
     if time_unit not in valid_time_units:
@@ -77,17 +77,10 @@ def determine_absolute_timing(
 
     last_schedulable["abs_time"] = 0
 
-    # schedulable_names = [str(tc) for tc in schedule.timing_constraints]
-    # sort_idx = np.argsort(schedulable_names)
-    # schedulable_names_sorted = np.asarray(sorted(schedulable_names))
-
     for schedulable in list(schedule.data["schedulables"].values())[1:]:
         curr_op = schedule.operations[schedulable["operation_repr"]]
         if len(schedulable.data["timing_constraints"]) == 0:
             schedulable.add_timing_constraint(ref_schedulable=last_schedulable)
-        # elif len(schedulable.data['timing_constraints'] ) > 1:
-        #    raise Exception('currently, the number of timing constraints per schedulable is restricted to at most 1')
-        # print(schedulable)
         for t_constr in schedulable.data["timing_constraints"]:
             if t_constr["ref_schedulable"] is None:
                 ref_schedulable = last_schedulable
@@ -125,7 +118,7 @@ def determine_absolute_timing(
                 abs_time = t0 + t_constr["rel_time"] - duration_new_op
             if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:
                 schedulable["abs_time"] = abs_time
-            # print(f'\tref {str(ref_schedulable)} time {ref_schedulable["abs_time"]}')
+
         # update last_constraint and operation for next iteration of the loop
         last_schedulable = schedulable
         last_op = curr_op

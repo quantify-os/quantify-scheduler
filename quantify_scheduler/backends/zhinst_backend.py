@@ -567,7 +567,7 @@ def _validate_schedule(schedule: Schedule) -> None:
 
     for schedulable in schedule.schedulables.values():
 
-        if "abs_time" not in schedulable:
+        if "abs_time" not in schedulable.keys():
             raise ValueError(
                 "Absolute timing has not been determined "
                 + f"for the schedule '{schedule.name}'!"

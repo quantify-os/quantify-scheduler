@@ -193,7 +193,7 @@ from itertools import islice
 dict(islice(sched.data["operation_dict"].items(), 5))
 
 # %% [raw]
-# The schedulables are stored as a list of pulses.
+# The schedulables are stored as a dictionary, each entry containing a scheduled item.
 #
 
 # %%

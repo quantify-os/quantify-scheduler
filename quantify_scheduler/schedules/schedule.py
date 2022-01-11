@@ -639,7 +639,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         operation_repr
             The operation which is to be executed by this schedulable
         schedule
-            The schedule on which the schedulable is created. This allows to scheduable to find other elements on the schedule
+            The schedule to which the schedulable is added. This allows to scheduable to find other elements on the schedule
         """
         super().__init__()
         if data is not None:
@@ -672,7 +672,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     ):
         """
         A timing constraint constrains the operation in time by specifying the time
-        (:code:`"rel_time"`) between a reference operation and the added operation.
+        (:code:`"rel_time"`) between a reference schedulable and the added schedulable.
         The time can be specified with respect to the "start", "center", or "end" of
         the operations.
         The reference schedulable (:code:`"ref_schedulable"`) is specified using its name
@@ -682,36 +682,28 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         Parameters
         ----------
         rel_time
-            relative time between the reference operation and the added operation.
+            relative time between the reference schedulable and the added schedulable.
             the time is the time between the "ref_pt" in the reference operation and
             "ref_pt_new" of the operation that is added.
         ref_schedulable
             name of the reference schedulable. If set to :code:`None`, will default
             to the last added operation.
         ref_pt
-            reference point in reference operation must be one of
+            reference point in reference schedulable must be one of
             ('start', 'center', 'end').
         ref_pt_new
-            reference point in added operation must be one of
+            reference point in added schedulable must be one of
             ('start', 'center', 'end').
         """
 
         # assert that the reference operation exists
-        if ref_schedulable is not None:
-            ref_exists = (
-                len(
-                    [
-                        item
-                        for item in self.schedule.data["schedulables"].keys()
-                        if item == str(ref_schedulable)
-                    ]
-                )
-                == 1
+        if (
+            ref_schedulable is not None
+            and str(ref_schedulable) not in self.schedule.data["schedulables"].keys()
+        ):
+            raise ValueError(
+                f'Reference "{ref_schedulable}" does not exist in schedule.'
             )
-            if not ref_exists:
-                raise ValueError(
-                    f'Reference "{ref_schedulable}" does not exist in schedule.'
-                )
 
         timing_constr = {
             "rel_time": rel_time,
