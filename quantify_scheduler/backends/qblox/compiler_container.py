@@ -10,6 +10,7 @@ from quantify_core.utilities import general
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
+from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.helpers.schedule import get_total_duration
 
 
@@ -24,7 +25,7 @@ class CompilerContainer:
     It is recommended to construct this object using the `from_mapping` factory method.
     """
 
-    def __init__(self, schedule: Schedule):
+    def __init__(self, schedule: Schedule, hardware_cfg: Dict[str, Any]):
         """
         Constructor for the instrument container.
 
@@ -46,6 +47,23 @@ class CompilerContainer:
         self.instrument_compilers = {}
         """The compilers for the individual instruments."""
         self.generics: Set[str] = set()
+        """Set of generic instruments in the setup."""
+        self.schedule = schedule
+        """The schedule to be compiled."""
+        self.hardware_cfg = hardware_cfg
+        """The control hardware setup."""
+
+    def prepare(self):
+        portclock_map = helpers.generate_port_clock_to_device_map(self.hardware_cfg)
+
+        helpers.assign_pulse_and_acq_info_to_devices(
+            schedule=self.schedule,
+            device_compilers=self.instrument_compilers,
+            portclock_mapping=portclock_map,
+        )
+
+        for compiler in self.instrument_compilers.values():
+            compiler.prepare()
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
         """
@@ -62,8 +80,6 @@ class CompilerContainer:
             Dictionary containing all the compiled programs for each instrument. The key
             refers to the name of the instrument that the program belongs to.
         """
-        for compiler in self.instrument_compilers.values():
-            compiler.prepare()
 
         # for now name is hardcoded, but should be read from config.
         generic_icc_name = "ic_generic"
@@ -182,7 +198,7 @@ class CompilerContainer:
         mapping
             The hardware mapping.
         """
-        composite = cls(schedule)
+        composite = cls(schedule, mapping)
         for instr_name, instr_cfg in mapping.items():
             if not isinstance(instr_cfg, dict):
                 continue
