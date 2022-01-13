@@ -219,7 +219,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         # and values containing instructions in the format specific to that type
         # of hardware. See also the specification in the CompiledSchedule class.
         for instrument_name, args in compiled_instructions.items():
-            self.get_component(instrument_name).prepare(args)
+            self.get_component(
+                base.instrument_to_component_name(instrument_name)
+            ).prepare(args)
 
     def start(self) -> None:
         """

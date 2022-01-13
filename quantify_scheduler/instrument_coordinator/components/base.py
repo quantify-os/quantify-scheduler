@@ -11,6 +11,23 @@ from qcodes.instrument import base, parameter
 from qcodes.utils import validators
 
 
+def instrument_to_component_name(instrument_name: str) -> str:
+    """
+    Gives the name of the instrument coordinator component.
+
+    Parameters
+    ----------
+    instrument_name
+        The name of the instrument.
+
+    Returns
+    -------
+    :
+        The name of the instrument coordinator component.
+    """
+    return f"ic_{instrument_name}"
+
+
 class InstrumentCoordinatorComponentBase(base.Instrument):
     """The InstrumentCoordinator component abstract interface."""
 
@@ -37,7 +54,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
 
     def __init__(self, instrument: base.InstrumentBase, **kwargs: Any) -> None:
         """Instantiates the InstrumentCoordinatorComponentBase base class."""
-        super().__init__(f"ic_{instrument.name}", **kwargs)
+        super().__init__(instrument_to_component_name(instrument.name), **kwargs)
 
         self.add_parameter(
             "instrument_ref",

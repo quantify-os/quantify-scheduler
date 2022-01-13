@@ -233,7 +233,7 @@ def test_prepare(
 
     # Act
     test_sched = Schedule(name="test_schedule")
-    args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
+    args = {"dev0": {"foo": 0}, "dev1": {"foo": 1}}
     test_sched["compiled_instructions"] = args
     compiled_sched = CompiledSchedule(test_sched)
 
@@ -242,8 +242,8 @@ def test_prepare(
     # Assert
     assert get_component_spy.call_args_list == [call("ic_dev0"), call("ic_dev1")]
 
-    component1.prepare.assert_called_with(args["ic_dev0"])
-    component2.prepare.assert_called_with(args["ic_dev1"])
+    component1.prepare.assert_called_with(args["dev0"])
+    component2.prepare.assert_called_with(args["dev1"])
 
 
 def test_start(close_all_instruments, instrument_coordinator, dummy_components):

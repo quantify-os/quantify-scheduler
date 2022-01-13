@@ -149,12 +149,12 @@ class LOSettings(DataClassJsonMixin):
             )
         if "generic_icc_name" in mapping:
             generic_icc_name = mapping["generic_icc_name"]
-            default_generic_icc_name = "ic_generic"
-            if generic_icc_name != default_generic_icc_name:
+            if generic_icc_name != constants.GENERIC_IC_COMPONENT_NAME:
                 raise NotImplementedError(
                     f"Specified name '{generic_icc_name}' as a generic instrument "
                     f"coordinator component, but the Qblox backend currently only "
-                    f"supports using the default name '{default_generic_icc_name}'"
+                    f"supports using the default name "
+                    f"'{constants.GENERIC_IC_COMPONENT_NAME}'"
                 )
 
         power_entry: Union[float, Dict[str, float]] = mapping["power"]
