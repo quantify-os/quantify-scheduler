@@ -877,8 +877,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         super().__init__(parent, name, total_play_time, hw_mapping)
         driver_version_check.verify_qblox_instruments_version()
 
-        self.portclock_map = self._generate_portclock_to_seq_map()
-        self.sequencers = self._construct_sequencers()
+        self.portclock_map = (
+            self._generate_portclock_to_seq_map()
+        )  # TODO rewrite and move
         self.is_pulsar: bool = True
         """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
         by the cluster compiler if needed."""
@@ -961,7 +962,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
-        ]
+        ]  # TODO this appears to be repeated compared to _generate_portclock_to_seq_map
         sequencers = {}
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
@@ -975,38 +976,29 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             lo_name = io_cfg.get("lo_name", None)
             downconverter = io_cfg.get("downconverter", False)
 
-            valid_seq_names = (
-                f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
-            )
-            for seq_name in valid_seq_names:
-                if seq_name not in io_cfg:
-                    continue
+            targets: list = io_cfg.get("targets", [])
+            for target in targets:
+                portclock = target["port"], target["clock"]
 
-                seq_cfg = io_cfg[seq_name]
-                portclock = seq_cfg["port"], seq_cfg["clock"]
-
-                if seq_name in sequencers:
-                    raise ValueError(
-                        f"Attempting to create multiple instances of "
-                        f"{seq_name}. Is it defined multiple times in "
-                        f"the hardware configuration?"
+                if portclock in self.portclocks_with_data:
+                    connected_outputs = helpers.output_name_to_outputs(io)
+                    seq_name = f"seq{len(sequencers)}"
+                    sequencers[seq_name] = Sequencer(
+                        self,
+                        seq_name,
+                        portclock,
+                        self.static_hw_properties,
+                        connected_outputs,
+                        target,
+                        lo_name,
+                        downconverter,
                     )
-                connected_outputs = helpers.output_name_to_outputs(io)
 
-                sequencers[seq_name] = Sequencer(
-                    self,
-                    seq_name,
-                    portclock,
-                    self.static_hw_properties,
-                    connected_outputs,
-                    seq_cfg,
-                    lo_name,
-                    downconverter,
-                )
-
+        # TODO substitute this to check if more than 6 targets are active
+        # TODO verify that each portclock combination is only mentioned once
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
-                "Attempting to construct too many sequencer compilers. "
+                "Number of simultaneous pulse targets exceeds number of sequencers."
                 f"Maximum allowed for {self.__class__.__name__} is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )
@@ -1087,6 +1079,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             self.hw_mapping
         )
         self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
+        self.sequencers = self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
