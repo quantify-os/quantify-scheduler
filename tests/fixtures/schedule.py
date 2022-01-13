@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Dict, Optional, Callable, List
 
 import numpy as np
 import pytest
@@ -90,6 +90,17 @@ def make_basic_schedule() -> Callable[[str], Schedule]:
     def _make_basic_schedule(qubit: str) -> Schedule:
         schedule = Schedule(f"Basic schedule {qubit}")
         schedule.add(X90(qubit))
+        return schedule
+
+    return _make_basic_schedule
+
+
+@pytest.fixture
+def make_basic_multi_qubit_schedule() -> Callable[[str], Schedule]:
+    def _make_basic_schedule(qubits: List[str]) -> Schedule:
+        schedule = Schedule(f"Basic schedule {qubits}")
+        for qubit in qubits:
+            schedule.add(X90(qubit))
         return schedule
 
     return _make_basic_schedule
