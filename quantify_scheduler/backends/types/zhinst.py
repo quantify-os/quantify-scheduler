@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Python dataclasses for quantify-scheduler json-schemas."""
 from dataclasses import dataclass, field
 from enum import Enum, unique
