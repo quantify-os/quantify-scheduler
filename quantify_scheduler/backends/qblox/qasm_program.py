@@ -138,7 +138,12 @@ class QASMProgram:
             comment=f"set markers to {marker_setting}",
         )
 
-    def auto_wait(self, wait_time: int, count_as_elapsed_time: bool = True) -> None:
+    def auto_wait(
+        self,
+        wait_time: int,
+        count_as_elapsed_time: bool = True,
+        comment: Optional[str] = None,
+    ) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
@@ -153,6 +158,8 @@ class QASMProgram:
             If true, this wait time is taken into account when keeping track of timing.
             Otherwise, the wait instructions are added but this wait time is ignored in
             the timing calculations in the rest of the program.
+        comment
+            Allows to override the default comment.
 
         Raises
         ------
@@ -168,6 +175,7 @@ class QASMProgram:
                 f" ns."
             )
 
+        comment = comment if comment else f"auto generated wait ({wait_time} ns)"
         if wait_time > constants.IMMEDIATE_MAX_WAIT_TIME:
             repetitions = wait_time // constants.IMMEDIATE_MAX_WAIT_TIME
 
@@ -179,21 +187,25 @@ class QASMProgram:
                     self.emit(
                         q1asm_instructions.WAIT,
                         constants.IMMEDIATE_MAX_WAIT_TIME,
-                        comment="auto generated wait",
+                        comment=comment,
                     )
             else:
                 for _ in range(repetitions):
                     self.emit(
                         q1asm_instructions.WAIT,
                         constants.IMMEDIATE_MAX_WAIT_TIME,
-                        comment="auto generated wait",
+                        comment=comment,
                     )
             time_left = wait_time % constants.IMMEDIATE_MAX_WAIT_TIME
         else:
             time_left = int(wait_time)
 
         if time_left > 0:
-            self.emit(q1asm_instructions.WAIT, time_left)
+            self.emit(
+                q1asm_instructions.WAIT,
+                time_left,
+                comment=comment,
+            )
 
         if count_as_elapsed_time:
             self.elapsed_time += wait_time

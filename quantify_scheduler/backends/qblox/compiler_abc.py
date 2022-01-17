@@ -318,16 +318,6 @@ class Sequencer:
         latency_correction_ns = int(
             round(seq_settings.get("latency_correction", 0) * 1e9)
         )
-        if (
-            latency_correction_ns
-            > constants.IMMEDIATE_MAX_WAIT_TIME - constants.GRID_TIME
-        ):
-            raise ValueError(
-                f"Latency correction of {latency_correction_ns} ns specified for "
-                f"{self.name} of {self.parent.name}. Please use a correction that is "
-                f"less than {constants.IMMEDIATE_MAX_WAIT_TIME - constants.GRID_TIME} "
-                f"ns."
-            )
         if latency_correction_ns % 4 != 0:
             logger.warning(
                 f"Latency correction of {latency_correction_ns} ns specified"
@@ -682,9 +672,9 @@ class Sequencer:
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
-        qasm.emit(
-            q1asm_instructions.WAIT,
+        qasm.auto_wait(
             constants.GRID_TIME + self.latency_correction_ns,
+            count_as_elapsed_time=False,
             comment=f"Latency correction of {self.latency_correction_ns} ns.",
         )
         with qasm.loop(label=loop_label, repetitions=repetitions):
