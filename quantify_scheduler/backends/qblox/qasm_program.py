@@ -138,7 +138,7 @@ class QASMProgram:
             comment=f"set markers to {marker_setting}",
         )
 
-    def auto_wait(self, wait_time: int) -> None:
+    def auto_wait(self, wait_time: int, count_as_elapsed_time: bool = True) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
@@ -149,6 +149,10 @@ class QASMProgram:
         ----------
         wait_time
             Time to wait in ns.
+        count_as_elapsed_time
+            If true, this wait time is taken into account when keeping track of timing.
+            Otherwise, the wait instructions are added but this wait time is ignored in
+            the timing calculations in the rest of the program.
 
         Raises
         ------
@@ -166,6 +170,8 @@ class QASMProgram:
 
         if wait_time > constants.IMMEDIATE_MAX_WAIT_TIME:
             repetitions = wait_time // constants.IMMEDIATE_MAX_WAIT_TIME
+
+            # number of instructions where it becomes worthwhile to use a loop.
             instr_number_using_loop = 4
             if repetitions > instr_number_using_loop:
                 loop_label = f"wait{len(self.instructions)}"
@@ -189,7 +195,8 @@ class QASMProgram:
         if time_left > 0:
             self.emit(q1asm_instructions.WAIT, time_left)
 
-        self.elapsed_time += wait_time
+        if count_as_elapsed_time:
+            self.elapsed_time += wait_time
 
     def wait_till_start_operation(self, operation: OpInfo) -> None:
         """
