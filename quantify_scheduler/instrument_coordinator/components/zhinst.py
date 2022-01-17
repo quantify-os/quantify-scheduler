@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Module containing Zurich Instruments InstrumentCoordinator Components."""
 # pylint: disable=useless-super-delegation
 # pylint: disable=too-many-arguments
