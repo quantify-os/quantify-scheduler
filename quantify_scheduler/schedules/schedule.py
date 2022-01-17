@@ -642,12 +642,13 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         Parameters
         ----------
         name
-            The name of this schedulable, by which it can be referenced by other schedulables.
-            Separate schedulables cannot share the same name
+            The name of this schedulable, by which it can be referenced by other
+            schedulables. Separate schedulables cannot share the same name
         operation_repr
             The operation which is to be executed by this schedulable
         schedule
-            The schedule to which the schedulable is added. This allows to scheduable to find other elements on the schedule
+            The schedule to which the schedulable is added. This allows to scheduable to
+            find other elements on the schedule
         """
         super().__init__()
         if data is not None:
@@ -683,8 +684,8 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         (:code:`"rel_time"`) between a reference schedulable and the added schedulable.
         The time can be specified with respect to the "start", "center", or "end" of
         the operations.
-        The reference schedulable (:code:`"ref_schedulable"`) is specified using its name
-        property.
+        The reference schedulable (:code:`"ref_schedulable"`) is specified using its
+        name property.
         See also :attr:`~.ScheduleBase.schedulables`.
 
         Parameters
