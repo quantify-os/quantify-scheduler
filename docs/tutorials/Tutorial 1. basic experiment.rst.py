@@ -194,6 +194,8 @@ dict(islice(sched.data["operation_dict"].items(), 5))
 
 # %% [raw]
 # The schedulables are stored as a dictionary, each entry containing a scheduled item.
+# Here we inspect the first 6 entries in `sched.data["schedulables"]` representing the
+# first 6 scheduled items in the schedule.
 #
 
 # %%
