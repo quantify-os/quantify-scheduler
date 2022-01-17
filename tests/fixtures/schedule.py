@@ -4,12 +4,12 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 
 import numpy as np
 import pytest
@@ -83,6 +83,16 @@ def basic_schedule() -> Schedule:
     schedule = Schedule("Basic schedule")
     schedule.add(X90("q0"))
     return schedule
+
+
+@pytest.fixture
+def make_basic_schedule() -> Callable[[str], Schedule]:
+    def _make_basic_schedule(qubit: str) -> Schedule:
+        schedule = Schedule(f"Basic schedule {qubit}")
+        schedule.add(X90(qubit))
+        return schedule
+
+    return _make_basic_schedule
 
 
 @pytest.fixture

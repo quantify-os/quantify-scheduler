@@ -70,7 +70,7 @@ intersphinx_mapping = {
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
     "fastjsonschema": ("https://horejsek.github.io/python-fastjsonschema/", None),
     "quantify-core": (
-        "https://quantify-quantify-core.readthedocs-hosted.com/en/develop/",
+        "https://quantify-quantify-core.readthedocs-hosted.com/en/latest/",
         None,
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
@@ -173,7 +173,7 @@ html_context = {
     "display_gitlab": True,
     "gitlab_user": "quantify-os",
     "gitlab_repo": "quantify-scheduler",
-    "gitlab_version": "develop/docs/",
+    "gitlab_version": "main/docs/",
 }
 
 # -- Options for LaTeX output ------------------------------------------

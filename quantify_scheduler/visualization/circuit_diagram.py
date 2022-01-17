@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Plotting functions used in the visualization backend of the sequencer."""
 from __future__ import annotations
 
