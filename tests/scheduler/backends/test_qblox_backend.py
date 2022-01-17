@@ -1411,31 +1411,6 @@ class TestLatencyCorrection:
         )
         assert answer in caplog.messages
 
-    def test_value_error(
-        self, hardware_cfg_latency_correction, load_example_transmon_config
-    ):
-        # Arrange
-        tmp_dir = tempfile.TemporaryDirectory()
-        set_datadir(tmp_dir.name)
-
-        sched = Schedule("single_gate_experiment")
-        sched.add(X("q0"))
-
-        hw_cfg = hardware_cfg_latency_correction(
-            correction=65e-3, port="q0:mw", clock="q0.01"
-        )
-
-        # Act
-        with pytest.raises(ValueError) as exc:
-            qcompile(sched, load_example_transmon_config(), hw_cfg)
-
-        # Assert
-        assert (
-            exc.value.args[0]
-            == "Latency correction of 65000000 ns specified for seq0 of qcm0. Please "
-            "use a correction that is less than 65528 ns."
-        )
-
 
 def _strip_comments(program: str):
     # helper function for comparing programs
