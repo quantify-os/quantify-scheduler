@@ -54,14 +54,6 @@ class CompilerContainer:
         """The control hardware setup."""
 
     def prepare(self):
-        portclock_map = helpers.generate_port_clock_to_device_map(self.hardware_cfg)
-
-        helpers.assign_pulse_and_acq_info_to_devices(
-            schedule=self.schedule,
-            device_compilers=self.instrument_compilers,
-            portclock_mapping=portclock_map,
-        )
-
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 

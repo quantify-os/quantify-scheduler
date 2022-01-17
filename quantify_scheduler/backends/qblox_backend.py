@@ -8,7 +8,7 @@ from typing import Any, Dict
 # pylint: disable=no-name-in-module
 
 from quantify_scheduler import CompiledSchedule, Schedule
-from quantify_scheduler.backends.qblox import compiler_container
+from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
 def hardware_compile(
@@ -41,6 +41,14 @@ def hardware_compile(
 
     container = compiler_container.CompilerContainer.from_mapping(
         schedule, hardware_cfg
+    )
+
+    portclock_map = helpers.generate_port_clock_to_device_map(hardware_cfg)
+
+    helpers.assign_pulse_and_acq_info_to_devices(
+        schedule=schedule,
+        device_compilers=container.instrument_compilers,
+        portclock_mapping=portclock_map,
     )
 
     compiled_instructions = container.prepare()
