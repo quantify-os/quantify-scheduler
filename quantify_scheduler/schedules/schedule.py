@@ -622,8 +622,16 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
 class Schedulable(JSONSchemaValMixin, UserDict):
     """
-    This class represents an element on a schedule. It contains all timing information of the element.
-    It also specifies what the element should do, currently represented by an operation ID.
+    This class represents an element on a schedule. All elements on a schedule are
+    schedulables. A schedulable contains all information regarding the timing of this
+    element as well as the operation being executing by this element.
+    This operation is currently represented by an operation ID.
+
+    Schedulables can contain an arbitrary number of timing constraints to determine the
+    timing. Multiple different contraints are currently resolved by delaying the element
+    until after all timing constraints have been met, to aid compatibility.
+    To specify an exact timing between two schedulables, please ensure to only specify
+    exactly one timing constraint.
     """
 
     schema_filename = "schedulable.json"
