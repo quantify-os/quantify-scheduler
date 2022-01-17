@@ -4,7 +4,7 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
 import copy
 import inspect
@@ -1013,7 +1013,7 @@ def test_assign_frequencies_baseband():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1052,7 +1052,7 @@ def test_assign_frequencies_baseband_downconverter():
     lo0 = -q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = -q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1

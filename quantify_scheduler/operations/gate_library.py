@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Optional, Tuple, Union
