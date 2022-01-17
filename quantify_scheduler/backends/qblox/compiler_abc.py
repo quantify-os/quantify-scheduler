@@ -680,14 +680,14 @@ class Sequencer:
             key=lambda p: (p.operation_info.timing, p.operation_info.is_acquisition),
         )
 
+        # Adds the latency correction, this needs to be a minimum of 4 ns,
+        # so all sequencers get delayed by at least that.
+        qasm.emit(
+            q1asm_instructions.WAIT,
+            constants.GRID_TIME + self.latency_correction_ns,
+            comment=f"Latency correction of {self.latency_correction_ns} ns.",
+        )
         with qasm.loop(label=loop_label, repetitions=repetitions):
-            # Adds the latency correction, this needs to be a minimum of 4 ns,
-            # so all sequencers get delayed by at least that.
-            qasm.emit(
-                q1asm_instructions.WAIT,
-                constants.GRID_TIME + self.latency_correction_ns,
-                comment=f"Latency correction of {self.latency_correction_ns} ns.",
-            )
 
             op_queue = deque(op_list)
             while len(op_queue) > 0:
