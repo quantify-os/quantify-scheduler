@@ -44,8 +44,10 @@ def search_settable_param(
         for root_attr_dict in root_attr_dicts_list:
             if child_parameter_name in root_attr_dict:
                 root_param = root_attr_dict.get(child_parameter_name)
+            if callable(child_parameter_name):
+                root_param = child_parameter_name
 
-    if not isinstance(root_param, Parameter):
+    if not (isinstance(root_param, Parameter) or callable(root_param)):
         raise ValueError(
             f"Could not find settable parameter "
             f'"{nested_parameter_name}" in instrument "{instrument}"'
