@@ -408,7 +408,7 @@ def generate_port_clock_to_device_map(
 
 
 # pylint: disable=too-many-locals
-def assign_pulse_and_acq_info_to_devices(
+def _assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],
     portclock_mapping: Dict[Tuple[str, str], str],
@@ -514,3 +514,39 @@ def assign_pulse_and_acq_info_to_devices(
                 )
             dev = portclock_mapping[(port, clock)]
             device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
+
+
+def assign_pulse_and_acq_info_to_devices(
+    schedule: Schedule,
+    mapping: Dict[str, Any],
+    device_compilers: Dict[str, Any],
+):
+    """
+    Traverses the schedule and generates `OpInfo` objects for every pulse and
+    acquisition, and assigns it to the correct `InstrumentCompiler`.
+
+    Parameters
+    ----------
+    schedule
+        The schedule to extract the pulse and acquisition info from.
+    mapping
+        The hardware mapping config.
+    device_compilers
+        Dictionary containing InstrumentCompilers as values and their names as keys.
+
+
+    Raises
+    ------
+    RuntimeError
+        This exception is raised then the function encountered an operation that has no
+        pulse or acquisition info assigned to it.
+    KeyError
+        This exception is raised when attempting to assign a pulse with a port-clock
+        combination that is not defined in the hardware configuration.
+    KeyError
+        This exception is raised when attempting to assign an acquisition with a
+        port-clock combination that is not defined in the hardware configuration.
+    """
+
+    portclock_mapping = generate_port_clock_to_device_map(mapping)
+    _assign_pulse_and_acq_info_to_devices(schedule, device_compilers, portclock_mapping)
