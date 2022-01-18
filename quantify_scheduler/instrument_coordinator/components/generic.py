@@ -109,15 +109,24 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
                 raise KeyError(error_msg + hint_msg)
             instrument_name, parameter_name = key.split(".", maxsplit=1)
             instrument = self.find_instrument(instrument_name)
-            if self.force_set_parameters():
-                param_to_set = util.search_settable_param(
-                    instrument=instrument, nested_parameter_name=parameter_name
-                )
-                param_to_set.set(value=value)
-            else:
-                util.lazy_set(
-                    instrument=instrument, parameter_name=parameter_name, val=value
-                )
+            try:
+                if self.force_set_parameters():
+                    param_to_set = util.search_settable_param(
+                        instrument=instrument, nested_parameter_name=parameter_name
+                    )
+                    param_to_set.set(value=value)
+                else:
+                    util.lazy_set(
+                        instrument=instrument, parameter_name=parameter_name, val=value
+                    )
+            except ValueError as e:
+                set_function = getattr(instrument, parameter_name)
+                if callable(set_function):
+                    set_function(value)
+                else:
+                    raise RuntimeError(
+                        f"{key} is neither a parameter nor a callable function"
+                    ) from e
 
     def retrieve_acquisition(self) -> Any:
         pass
