@@ -34,6 +34,7 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
+    _assign_pulse_and_acq_info_to_devices,
     assign_pulse_and_acq_info_to_devices,
     generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
@@ -604,12 +605,10 @@ def test_contruct_sequencer(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
-    portclock_map = generate_port_clock_to_device_map(HARDWARE_MAPPING)
-
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
+        mapping=HARDWARE_MAPPING,
         device_compilers={"qcm0": test_module},
-        portclock_mapping=portclock_map,
     )
 
     test_module.sequencers = test_module._construct_sequencers()
@@ -855,15 +854,28 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 
 
 # --------- Test compilation functions ---------
-def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
+def test__assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
     portclock_map = generate_port_clock_to_device_map(HARDWARE_MAPPING)
 
     container = compiler_container.CompilerContainer.from_mapping(
         sched_with_pulse_info, HARDWARE_MAPPING
     )
-    assign_pulse_and_acq_info_to_devices(
+    _assign_pulse_and_acq_info_to_devices(
         sched_with_pulse_info, container.instrument_compilers, portclock_map
+    )
+    qrm = container.instrument_compilers["qrm0"]
+    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
+    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+
+
+def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
+    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+    container = compiler_container.CompilerContainer.from_mapping(
+        sched_with_pulse_info, HARDWARE_MAPPING
+    )
+    assign_pulse_and_acq_info_to_devices(
+        sched_with_pulse_info, HARDWARE_MAPPING, container.instrument_compilers
     )
     qrm = container.instrument_compilers["qrm0"]
     assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
@@ -874,6 +886,9 @@ def test_container_prepare(pulse_only_schedule):
     sched = device_compile(pulse_only_schedule, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
+    )
+    assign_pulse_and_acq_info_to_devices(
+        sched, HARDWARE_MAPPING, container.instrument_compilers
     )
     container.prepare()
 
@@ -893,11 +908,10 @@ def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisit
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    portclock_map = generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
+        mapping=HARDWARE_MAPPING,
         device_compilers=container.instrument_compilers,
-        portclock_mapping=portclock_map,
     )
     for instr in container.instrument_compilers.values():
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
@@ -916,6 +930,9 @@ def test_container_prepare_baseband(
     container = compiler_container.CompilerContainer.from_mapping(
         sched, hardware_cfg_baseband
     )
+    assign_pulse_and_acq_info_to_devices(
+        sched, hardware_cfg_baseband, container.instrument_compilers
+    )
     container.prepare()
 
     assert (
@@ -925,12 +942,14 @@ def test_container_prepare_baseband(
 
 
 def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
-    sched = device_compile(baseband_square_pulse_schedule, DEVICE_CFG)
+    sched = device_compile(pulse_only_schedule_no_lo, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
+    assign_pulse_and_acq_info_to_devices(
+        sched, HARDWARE_MAPPING, container.instrument_compilers
+    )
     container.prepare()
-    container.compile(repetitions=10)
 
     assert container.instrument_compilers["qrm1"].sequencers["seq0"].frequency == 100e6
 
@@ -987,6 +1006,11 @@ def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode)
     container = compiler_container.CompilerContainer.from_mapping(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
+    sched = device_compile(real_square_pulse_schedule, DEVICE_CFG)
+    assign_pulse_and_acq_info_to_devices(
+        sched, hardware_cfg_real_mode, container.instrument_compilers
+    )
+    container.prepare()
     qcm0 = container.instrument_compilers["qcm0"]
     for output, seq_name in enumerate(f"seq{i}" for i in range(3)):
         seq_settings = qcm0.sequencers[seq_name].settings
