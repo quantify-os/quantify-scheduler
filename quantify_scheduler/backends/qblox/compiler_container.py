@@ -25,7 +25,7 @@ class CompilerContainer:
     It is recommended to construct this object using the `from_mapping` factory method.
     """
 
-    def __init__(self, schedule: Schedule, hardware_cfg: Dict[str, Any]):
+    def __init__(self, schedule: Schedule):
         """
         Constructor for the instrument container.
 
@@ -48,10 +48,6 @@ class CompilerContainer:
         """The compilers for the individual instruments."""
         self.generics: Set[str] = set()
         """Set of generic instruments in the setup."""
-        self.schedule = schedule
-        """The schedule to be compiled."""
-        self.hardware_cfg = hardware_cfg
-        """The control hardware setup."""
 
     def prepare(self):
         for compiler in self.instrument_compilers.values():
@@ -190,7 +186,7 @@ class CompilerContainer:
         mapping
             The hardware mapping.
         """
-        composite = cls(schedule, mapping)
+        composite = cls(schedule)
         for instr_name, instr_cfg in mapping.items():
             if not isinstance(instr_cfg, dict):
                 continue
