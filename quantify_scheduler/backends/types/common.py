@@ -86,6 +86,9 @@ class LocalOscillator(DataClassJsonMixin):
     power :
         A dict which tells the generic icc what parameter maps to the local oscillator
         (LO) power in dBm.
+    phase :
+        A dict which tells the generic icc what parameter maps to the local oscillator
+        (LO) phase in radians.
     parameters :
         A dict which allows setting of channel specific parameters of the device. Cannot
         be used together with frequency and power.
@@ -96,4 +99,5 @@ class LocalOscillator(DataClassJsonMixin):
     generic_icc_name: Optional[str] = None
     frequency: Optional[dict] = None
     power: Optional[dict] = None
+    phase: Optional[dict] = None
     parameters: Optional[dict] = None

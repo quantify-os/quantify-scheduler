@@ -928,6 +928,10 @@ def _add_lo_config(
     # the frequencies from the config file
     ((lo_freq_key, lo_freq_val),) = local_oscillator.frequency.items()
 
+    # Get the phase of the local oscillator
+    if local_oscillator.phase:
+        ((phase_key, phase_val),) = local_oscillator.phase.items()
+
     interm_freq = channel.modulation.interm_freq
 
     if (lo_freq_val is not None) and (interm_freq is not None):
@@ -965,9 +969,17 @@ def _add_lo_config(
 
     lo_config = {
         f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
-        f"{local_oscillator.instrument_name}.{power_key}": power_val,
     }
 
+    if power_val:
+        lo_config[f"{local_oscillator.instrument_name}.{power_key}"] = power_val
+
+    if local_oscillator.phase:
+        lo_config[f"{local_oscillator.instrument_name}.{phase_key}"] = phase_val
+
+    # This line detects if the generic_icc_name exists in the local_oscillator entry of
+    # the hardware_config. If it exists, then, it takes the entry value, if not, the
+    # generic_icc_name takes the default value from the generic icc base module.
     if local_oscillator.generic_icc_name:
         generic_icc_name = local_oscillator.generic_icc_name
     else:
