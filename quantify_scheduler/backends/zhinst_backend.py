@@ -983,7 +983,7 @@ def _add_lo_config(
     if local_oscillator.generic_icc_name:
         generic_icc_name = local_oscillator.generic_icc_name
     else:
-        generic_icc_name = f"ic_{generic_icc_default_name}"
+        generic_icc_name = generic_icc_default_name
 
     if generic_icc_name in device_configs:
         device_configs[generic_icc_name].update(lo_config)
