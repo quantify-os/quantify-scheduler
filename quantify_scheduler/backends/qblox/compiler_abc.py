@@ -634,8 +634,6 @@ class Sequencer:
         qasm = QASMProgram(self.static_hw_properties, self.register_manager)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
-        qasm.emit(q1asm_instructions.RESET_PHASE)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
         pulses = [] if self.pulses is None else self.pulses
@@ -651,6 +649,8 @@ class Sequencer:
         )
 
         with qasm.loop(label=loop_label, repetitions=repetitions):
+            qasm.emit(q1asm_instructions.RESET_PHASE)
+            qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
