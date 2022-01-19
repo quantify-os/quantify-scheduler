@@ -185,7 +185,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
                         "port": port,
                     }
                 ],
-        }
+            }
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
