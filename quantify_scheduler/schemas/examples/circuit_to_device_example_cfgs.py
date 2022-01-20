@@ -1,5 +1,11 @@
 example_transmon_cfg = {
     "backend": "quantify_scheduler.compilation.add_pulse_information",
+    "clocks": {
+        "q0.01": 6020000000.0,
+        "q0.ro": 7040000000.0,
+        "q1.01": 5020000000.0,
+        "q1.ro": 6900000000.0,
+    },
     "qubits": {
         "q0": {
             # example of a pulse with one-to-one mapping (directly use Pulse class)
@@ -9,7 +15,7 @@ example_transmon_cfg = {
             },
             # example of a pulse with a parametrized mapping, use a constructor class.
             "Rxy": {
-                "generator_func": "quantify_scheduler.operations.pulse_generators.gen_rxy_drag_pulse",
+                "generator_func": "quantify_scheduler.operations.pulse_generators.rxy_drag_pulse",
                 "gate_info_generator_kwargs": [
                     "theta",
                     "phi",
@@ -19,8 +25,6 @@ example_transmon_cfg = {
                 "port": "q0:mw",
                 "clock": "q0.01",
                 "duration": 20e-9,
-                # this sets the frequency of the clock, not sure if it should be here.
-                "clock_frequency": 6020000000.0,
             },
             # here we add a Z pulse using a square flux pulse to detune the qubit. Alternatively
             "Z": {
@@ -32,13 +36,16 @@ example_transmon_cfg = {
             },
             # the measurement also has a parametrized mapping, and uses a constructor class.
             "measure": {
-                "generator_func": "quantify_scheduler.operations.pulse_generators.DispersiveMeasurement",
+                "generator_func": "quantify_scheduler.operations.measurement_generators.dispersive_measurement",
                 "gate_info_generator_kwargs": ["acq_index", "bin_mode"],
                 "port": "q0:ro",
                 "clock": "q0.ro",
-                "pulse_type": "Square",
-                "pulse_amp": 0.2,
-                "pulse_duration": 2e-6,
+                "pulse_type": "SquarePulse",
+                "pulse_amp": 0.0005,
+                "pulse_duration": 160e-9,
+                "acq_delay": 120e-9,
+                "acq_duration": 300e-9,
+                "acq_protocol": "SSBIntegrationComplex",
                 "acq_channel": 0,  # channel corresponding to this qubit
             },
         },
@@ -58,8 +65,19 @@ example_transmon_cfg = {
                 "port": "q1:mw",
                 "clock": "q1.01",
                 "duration": 20e-9,
-                # this sets the frequency of the clock, not sure if it should be here.
-                "frequency": 5020000000.0,
+            },
+            "measure": {
+                "generator_func": "quantify_scheduler.operations.measurement_generators.dispersive_measurement",
+                "gate_info_generator_kwargs": ["acq_index", "bin_mode"],
+                "port": "q0:ro",
+                "clock": "q0.ro",
+                "pulse_type": "SquarePulse",
+                "pulse_amp": 0.0005,
+                "pulse_duration": 160e-9,
+                "acq_delay": 120e-9,
+                "acq_duration": 300e-9,
+                "acq_protocol": "SSBIntegrationComplex",
+                "acq_channel": 0,  # channel corresponding to this qubit
             },
         },
     },
