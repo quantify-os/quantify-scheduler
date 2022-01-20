@@ -24,7 +24,7 @@ from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
-    ex_transmon_cfg,
+    example_transmon_cfg,
 )
 
 
@@ -49,27 +49,27 @@ def test_compile_transmon_program_legacy(load_example_transmon_config):
         sched, device_cfg=load_example_transmon_config()
     )
 
-    new_dev_schd = compile_circuit_to_device(sched, device_cfg=ex_transmon_cfg)
+    new_dev_schd = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_Rxy_operations_compile():
     sched = Schedule("Test schedule")
     sched.add(Rxy(90, 0, qubit="q0"))
     sched.add(Rxy(180, 45, qubit="q0"))
-    new_dev_schd = compile_circuit_to_device(sched, device_cfg=ex_transmon_cfg)
+    new_dev_schd = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_Reset_operations_compile():
     sched = Schedule("Test schedule")
     sched.add(Reset("q0"))
-    new_dev_schd = compile_circuit_to_device(sched, device_cfg=ex_transmon_cfg)
+    new_dev_schd = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_qubit_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(Rxy(90, 0, qubit="q20"))
     with pytest.raises(KeyError):
-        new_dev_schd = compile_circuit_to_device(sched, device_cfg=ex_transmon_cfg)
+        new_dev_schd = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_operation_not_in_config_raises():
@@ -77,10 +77,10 @@ def test_operation_not_in_config_raises():
     sched.add(Rxy(90, 0, qubit="q0"))
     sched.add(Rxy(180, 45, qubit="q0"))
     with pytest.raises(KeyError):
-        new_dev_schd = compile_circuit_to_device(sched, device_cfg=ex_transmon_cfg)
+        new_dev_schd = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 # def test_Rxy_operations_compile():
 #     sched = Schedule("Test schedule")
 #     sched.add(Rxy(90, 0, qubit="q0"))
-#     new_dev_schd = compile_circuit_to_device(sched, device_cfg=ex_transmon_cfg)
+#     new_dev_schd = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
