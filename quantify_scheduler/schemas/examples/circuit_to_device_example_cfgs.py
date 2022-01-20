@@ -1,3 +1,6 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+
 example_transmon_cfg = {
     "backend": "quantify_scheduler.compilation.add_pulse_information",
     "clocks": {
