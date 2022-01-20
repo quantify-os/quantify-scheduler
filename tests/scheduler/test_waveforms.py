@@ -11,6 +11,7 @@ from quantify_scheduler.waveforms import (
     rotate_wave,
     square,
     staircase,
+    sudden_net_zero,
 )
 
 
@@ -93,6 +94,27 @@ def test_drag_ns() -> None:
     exp_waveform.real -= np.mean([exp_waveform.real[0], exp_waveform.real[-1]])
     exp_waveform.imag -= np.mean([exp_waveform.imag[0], exp_waveform.imag[-1]])
     np.testing.assert_array_almost_equal(waveform, exp_waveform, decimal=3)
+
+
+def test_sudden_net_zero() -> None:
+    times = np.arange(0, 40e-9, 1e-9)
+    amp_A = 0.4
+    amp_B = 0.5
+    net_zero_A_scale = 0.95
+
+    waveform = sudden_net_zero(
+        times,
+        amp_A=amp_A,
+        amp_B=0.5,
+        net_zero_A_scale=net_zero_A_scale,
+        t_pulse=20e-9,
+        t_phi=2e-9,
+        t_integral_correction=10e-9,
+    )
+
+    assert np.sum(waveform) == 0
+    assert np.max(waveform) == amp_A
+    assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
 
 
 def test_rotate_wave() -> None:

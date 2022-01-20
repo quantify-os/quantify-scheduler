@@ -216,6 +216,67 @@ def drag(
     return rot_drag_wave
 
 
+def sudden_net_zero(
+    t: np.ndarray,
+    amp_A: float,
+    amp_B: float,
+    net_zero_A_scale: float,
+    t_pulse: float,
+    t_phi: float,
+    t_integral_correction: float,
+):
+    """
+    Generates the sudden net zero waveform from :cite:t:`negirneac_high_fidelity_2021`.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    amp_A
+        amplitude of the main square pulse
+    amp_B
+        scaling correction for the final sample of the first square and first sample
+        of the second square pulse.
+    net-zero_A_scale
+        amplitude scaling correction factor of the negative arm of the net-zero pulse.
+    t_pulse
+        the total duration of the two half square pulses
+    t_phi
+        the idling duration between the two half pulses
+    t_integral correction
+        the duration in which any non-zero pulse amplitude needs to be corrected.
+    """
+
+    # the waveform itself
+    first_arm = amp_A * (
+        np.heaviside(np.around(t, decimals=12), 1)
+        - np.heaviside(np.around(t - t_pulse / 2, decimals=12), amp_B)
+    )
+    second_arm = (
+        -1
+        * amp_A
+        * net_zero_A_scale
+        * (
+            np.heaviside(np.around(t - t_phi - t_pulse / 2, decimals=12), amp_B)
+            - np.heaviside(np.around(t - t_phi - t_pulse, decimals=12), 0)
+        )
+    )
+    amps = first_arm + second_arm
+
+    # adding a correction to ensure the integral evaluates to 0
+    sampling_rate = t[1] - t[0]
+    num_corr_samples = t_integral_correction / sampling_rate
+    corr_amp = -np.sum(amps) / num_corr_samples
+    corr_amps = amps + corr_amp * (
+        np.heaviside(np.around(t - t_phi - t_pulse, decimals=12), 0)
+        - np.heaviside(
+            np.around(t - t_phi - t_pulse - t_integral_correction, decimals=12), 0
+        )
+    )
+
+    return corr_amps
+
+
 # ----------------------------------
 # Utility functions
 # ----------------------------------
