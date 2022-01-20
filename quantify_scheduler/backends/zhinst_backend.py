@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Backend for Zurich Instruments."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
@@ -928,6 +928,10 @@ def _add_lo_config(
     # the frequencies from the config file
     ((lo_freq_key, lo_freq_val),) = local_oscillator.frequency.items()
 
+    # Get the phase of the local oscillator
+    if local_oscillator.phase:
+        ((phase_key, phase_val),) = local_oscillator.phase.items()
+
     interm_freq = channel.modulation.interm_freq
 
     if (lo_freq_val is not None) and (interm_freq is not None):
@@ -965,13 +969,21 @@ def _add_lo_config(
 
     lo_config = {
         f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
-        f"{local_oscillator.instrument_name}.{power_key}": power_val,
     }
 
+    if power_val:
+        lo_config[f"{local_oscillator.instrument_name}.{power_key}"] = power_val
+
+    if local_oscillator.phase:
+        lo_config[f"{local_oscillator.instrument_name}.{phase_key}"] = phase_val
+
+    # This line detects if the generic_icc_name exists in the local_oscillator entry of
+    # the hardware_config. If it exists, then, it takes the entry value, if not, the
+    # generic_icc_name takes the default value from the generic icc base module.
     if local_oscillator.generic_icc_name:
         generic_icc_name = local_oscillator.generic_icc_name
     else:
-        generic_icc_name = f"ic_{generic_icc_default_name}"
+        generic_icc_name = generic_icc_default_name
 
     if generic_icc_name in device_configs:
         device_configs[generic_icc_name].update(lo_config)

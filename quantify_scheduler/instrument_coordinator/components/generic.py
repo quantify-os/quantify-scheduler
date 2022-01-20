@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Module containing a Generic InstrumentCoordinator Component."""
 from __future__ import annotations
 
@@ -110,19 +110,16 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
             instrument_name, parameter_name = key.split(".", maxsplit=1)
             instrument = self.find_instrument(instrument_name)
             try:
-                # HACK for instr.channel.param
-                if "." in parameter_name:
-                    channel_name, parameter_name = parameter_name.split(".", maxsplit=1)
-                    channel = getattr(instrument, channel_name)
-                    channel.set(param_name=parameter_name, value=value)
-                    continue
                 if self.force_set_parameters():
-                    instrument.set(param_name=parameter_name, value=value)
+                    param_to_set = util.search_settable_param(
+                        instrument=instrument, nested_parameter_name=parameter_name
+                    )
+                    param_to_set.set(value=value)
                 else:
                     util.lazy_set(
                         instrument=instrument, parameter_name=parameter_name, val=value
                     )
-            except KeyError as e:
+            except ValueError as e:
                 set_function = getattr(instrument, parameter_name)
                 if callable(set_function):
                     set_function(value)

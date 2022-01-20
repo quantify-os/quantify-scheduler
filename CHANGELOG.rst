@@ -9,6 +9,7 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 * Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
 * Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
+* Hardware config - Removed the need for a `ic_` prefix from the hardware config (!312).
 * Compilation - Deprecated `add_pulse_information_transmon` in favor of `compilation.backends.circuit_to_device_backend.compile_circuit_to_device`(#64, #67, !xx).
 
 Merged branches and closed issues
