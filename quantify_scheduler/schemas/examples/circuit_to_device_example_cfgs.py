@@ -55,7 +55,7 @@ example_transmon_cfg = {
                 "duration": 200e-6,
             },
             "Rxy": {
-                "generator_func": "quantify_scheduler.operations.pulse_generators.DRAG",
+                "generator_func": "quantify_scheduler.operations.pulse_generators.rxy_drag_pulse",
                 "gate_info_generator_kwargs": [
                     "theta",
                     "phi",
@@ -72,7 +72,7 @@ example_transmon_cfg = {
                 "port": "q0:ro",
                 "clock": "q0.ro",
                 "pulse_type": "SquarePulse",
-                "pulse_amp": 0.0005,
+                "pulse_amp": 0.9,
                 "pulse_duration": 160e-9,
                 "acq_delay": 120e-9,
                 "acq_duration": 300e-9,
@@ -83,7 +83,17 @@ example_transmon_cfg = {
     },
     "edges": {
         "q0-q1": {
-            "CZ": {},
+            "CZ": {
+                "generator_func": "quantify_scheduler.operations.pulse_library.SuddenNetZeroPulse",
+                "port": "q0:fl",
+                "clock": "cl0.baseband",
+                "amp_A": 0.5,
+                "amp_B": 0.4,
+                "net_zero_A_scale": 0.95,
+                "t_pulse": 20e-9,
+                "t_phi": 2e-9,
+                "t_integral_correction": 10e-9,
+            },
         },
     },
 }

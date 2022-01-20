@@ -391,10 +391,10 @@ def qcompile(
         The schedule to be compiled.
     device_cfg
         Device specific configuration, defines the compilation step from
-        the gate-level to the pulse level description.
+        the quantum-circuit layer to the quantum-device layer description.
     hardware_cfg
         Hardware configuration, defines the compilation step from
-        the pulse-level to a hardware backend.
+        the quantum-device to a hardware layer.
 
     Returns
     -------

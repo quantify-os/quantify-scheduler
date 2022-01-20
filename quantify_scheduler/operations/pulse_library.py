@@ -258,6 +258,85 @@ class SquarePulse(Operation):
         return self._get_signature(pulse_info)
 
 
+class SuddenNetZeroPulse(Operation):
+    """The sudden net-zero (SNZ) pulse from :cite:t:`negirneac_high_fidelity_2021`."""
+
+    def __init__(
+        self,
+        amp_A: float,
+        amp_B: float,
+        net_zero_A_scale: float,
+        t_pulse: float,
+        t_phi: float,
+        t_integral_correction: float,
+        port: str,
+        clock: str = BasebandClockResource.IDENTITY,
+        t0: float = 0,
+        data: Optional[dict] = None,
+    ):
+        """
+        The sudden net-zero (SNZ) pulse from :cite:t:`negirneac_high_fidelity_2021`.
+
+        The SuddenNetZeroPulse is a real-valued pulse that can be used to implement a
+        conditional phase gate in transmon qubits.
+
+        Parameters
+        ----------
+        amp_A
+            amplitude of the main square pulse
+        amp_B
+            scaling correction for the final sample of the first square and first sample
+            of the second square pulse.
+        net-zero_A_scale
+            amplitude scaling correction factor of the negative arm of the net-zero
+            pulse.
+        t_pulse
+            the total duration of the two half square pulses
+        t_phi
+            the idling duration between the two half pulses
+        t_integral correction
+            the duration in which any non-zero pulse amplitude needs to be corrected.
+        port
+            Port of the pulse, must be capable of playing a complex waveform.
+        clock
+            Clock used to modulate the pulse.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        duration = t_pulse + t_phi + t_integral_correction
+
+        if data is None:
+            data = {
+                "name": "SuddenNetZeroPulse",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify_scheduler.waveforms.sudden_net_zero",
+                        "amp_A": amp_A,
+                        "amp_B": amp_B,
+                        "net_zero_A_scale": net_zero_A_scale,
+                        "t_pulse": t_pulse,
+                        "t_phi": t_phi,
+                        "t_integral_correction": t_integral_correction,
+                        "duration": duration,
+                        "phase": 0,
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 def decompose_long_square_pulse(
     duration: float, duration_max: float, single_duration: bool = False, **kwargs
 ) -> list:

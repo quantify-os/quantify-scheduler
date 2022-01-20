@@ -13,8 +13,18 @@ from quantify_scheduler.resources import ClockResource, BasebandClockResource
 
 def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
     """
-    Adds pulse_info and acquisition_info to all operations that have gate_info
-    specified
+    Adds the information required to represent operations on the quantum-device
+    abstraction layer to operations that contain information on how to be represented
+    on the quantum-circuit layer.
+
+    Parameters
+    ----------
+    schedule
+        The schedule to be compiled.
+    device_cfg
+        Device specific configuration, defines the compilation step from
+        the quantum-circuit layer to the quantum-device layer description.
+
     """
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)

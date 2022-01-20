@@ -247,6 +247,10 @@ def sudden_net_zero(
         the duration in which any non-zero pulse amplitude needs to be corrected.
     """
 
+    # this transform is because all step functions are defined with respect to the
+    # start of the waveform.
+    t = t - min(t)
+
     # the waveform itself
     first_arm = amp_A * (
         np.heaviside(np.around(t, decimals=12), 1)
