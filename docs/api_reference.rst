@@ -177,30 +177,6 @@ transmon_element
 
 
 
-helpers
-=======
-
-.. automodule:: quantify_scheduler.helpers
-    :members:
-
-inspect
---------
-.. automodule:: quantify_scheduler.helpers.inspect
-    :members:
-
-
-schedule
---------
-.. automodule:: quantify_scheduler.helpers.schedule
-    :members:
-
-
-time
-----
-.. automodule:: quantify_scheduler.helpers.time
-    :members:
-
-
 waveforms
 ---------
 .. automodule:: quantify_scheduler.helpers.waveforms
@@ -428,6 +404,38 @@ waveforms
 .. automodule:: quantify_scheduler.waveforms
     :members:
 
+
+Modules for internal usage
+==========================
+
+structure
+---------
+
+.. automodule:: quantify_scheduler.structure
+    :members: DataStructure
+
+helpers
+-------
+
+.. automodule:: quantify_scheduler.helpers
+    :members:
+
+inspect
+~~~~~~~
+.. automodule:: quantify_scheduler.helpers.inspect
+    :members:
+
+
+schedule
+~~~~~~~~
+.. automodule:: quantify_scheduler.helpers.schedule
+    :members:
+
+
+time
+~~~~
+.. automodule:: quantify_scheduler.helpers.time
+    :members:
 
 
 
