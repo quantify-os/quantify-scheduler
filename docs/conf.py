@@ -70,7 +70,7 @@ intersphinx_mapping = {
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
     "fastjsonschema": ("https://horejsek.github.io/python-fastjsonschema/", None),
     "quantify-core": (
-        "https://quantify-quantify-core.readthedocs-hosted.com/en/develop/",
+        "https://quantify-quantify-core.readthedocs-hosted.com/en/latest/",
         None,
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
@@ -97,7 +97,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Quantify-Scheduler"
-copyright = "2020-2021, Qblox & Orange Quantum Systems"
+copyright = "2020-2022, Qblox & Orange Quantum Systems"
 author = "The Quantify consortium"
 
 
@@ -173,7 +173,7 @@ html_context = {
     "display_gitlab": True,
     "gitlab_user": "quantify-os",
     "gitlab_repo": "quantify-scheduler",
-    "gitlab_version": "develop/docs/",
+    "gitlab_version": "main/docs/",
 }
 
 # -- Options for LaTeX output ------------------------------------------

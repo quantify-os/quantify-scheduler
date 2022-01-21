@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -46,7 +46,11 @@ def fixture_make_cluster(mocker):
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
 
         qcm0 = cluster.cluster_qcm_dummy(f"{name}_qcm0")
+        mocker.patch.object(qcm0, "reference_source", wraps=qcm0.reference_source)
+
         qcm1 = cluster.cluster_qcm_dummy(f"{name}_qcm1")
+        mocker.patch.object(qcm1, "reference_source", wraps=qcm1.reference_source)
+
         component.add_modules(qcm0, qcm1)
 
         return component
@@ -168,7 +172,7 @@ def fixture_mock_acquisition_data():
 def make_qcm_rf(mocker):
     def _make_qcm_rf(
         name: str = "qcm_rf0", serial: str = "dummy"
-    ) -> qblox.PulsarQCMRFComponent:
+    ) -> qblox._QCMRFComponent:
         mocker.patch(
             "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
             return_value=True,
@@ -180,7 +184,7 @@ def make_qcm_rf(mocker):
         qcm_rf = pulsar_qcm.pulsar_qcm_dummy(name)
         qcm_rf._serial = serial
 
-        component = qblox.PulsarQCMRFComponent(qcm_rf)
+        component = qblox._QCMRFComponent(qcm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm_rf)
         mocker.patch.object(
             component.instrument,
@@ -197,7 +201,7 @@ def make_qcm_rf(mocker):
 def make_qrm_rf(mocker):
     def _make_qrm_rf(
         name: str = "qrm_rf0", serial: str = "dummy"
-    ) -> qblox.PulsarQRMRFComponent:
+    ) -> qblox._QRMRFComponent:
         mocker.patch(
             "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
             return_value=True,
@@ -209,7 +213,7 @@ def make_qrm_rf(mocker):
         qrm_rf = pulsar_qrm.pulsar_qrm_dummy(name)
         qrm_rf._serial = serial
 
-        component = qblox.PulsarQRMRFComponent(qrm_rf)
+        component = qblox._QRMRFComponent(qrm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm_rf)
         mocker.patch.object(
             component.instrument,
@@ -311,6 +315,29 @@ def test_prepare_force_set(
     # Assert
     qcm.instrument._set_reference_source.assert_called()
     qrm.instrument._set_reference_source.assert_called()
+
+
+def test_prepare_ref_source_cluster(
+    close_all_instruments, make_basic_schedule, make_cluster
+):
+    # Arrange
+    cluster: qblox.ClusterComponent = make_cluster("cluster0")
+    qcm_module = cluster._cluster_modules["cluster0_qcm0"]
+    qcm_module.instrument.reference_source("internal")  # put it in a known state
+    sched = make_basic_schedule("q4")
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+        prog = compiled_schedule["compiled_instructions"]
+
+        cluster.prepare(prog["cluster0"])
+
+    # Assert
+    # Assert it's only set in initialization
+    qcm_module.instrument.reference_source.assert_called_once()
 
 
 def test_prepare_lazy(

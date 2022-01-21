@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Compiler base and utility classes for Qblox backend."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
@@ -1311,6 +1311,7 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     # LO/IF frequencies unchanged.
     if sequencer.downconverter:
         downconverter_freq = constants.DOWNCONVERTER_FREQ
+        clk_freq = -clk_freq
     else:
         downconverter_freq = 0
 
@@ -1450,6 +1451,7 @@ class QbloxRFModule(QbloxBaseModule):
             LO/IF frequencies unchanged"""
             if sequencer.downconverter:
                 downconverter_freq = constants.DOWNCONVERTER_FREQ
+                clk_freq = -clk_freq
             else:
                 downconverter_freq = 0
 

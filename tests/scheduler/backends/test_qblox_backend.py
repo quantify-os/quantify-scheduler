@@ -4,7 +4,7 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
 import copy
 import inspect
@@ -790,12 +790,12 @@ def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
     acq = qb.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
     expanded_val = QASMProgram.expand_from_normalised_range(
-        1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
+        1, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
     )
-    assert expanded_val == constants.IMMEDIATE_SZ_WAIT // 2
+    assert expanded_val == constants.IMMEDIATE_MAX_WAIT_TIME // 2
     with pytest.raises(ValueError):
         QASMProgram.expand_from_normalised_range(
-            10, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
+            10, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
         )
 
 
@@ -992,7 +992,7 @@ def test_assign_frequencies_baseband():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1028,10 +1028,10 @@ def test_assign_frequencies_baseband_downconverter():
     compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = -q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1114,8 +1114,8 @@ def test_assign_frequencies_rf_downconverter():
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
-    lo0 = q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = -q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
@@ -1172,7 +1172,7 @@ def test_cluster_settings(pulse_only_schedule):
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
     cluster_compiler.prepare()
-    cl_qcm0 = cluster_compiler.instrument_compilers["cl_qcm0"]
+    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_qcm0"]
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 
 

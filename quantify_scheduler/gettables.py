@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 r"""
 Module containing :class:`~quantify_core.measurement.types.Gettable`\s for use with
 quantify-scheduler.
@@ -14,7 +14,9 @@ quantify-scheduler.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Tuple, Union, List, Optional
+
+import logging
 
 import numpy as np
 from qcodes import Parameter
@@ -25,12 +27,14 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
+    AcquisitionMetadata,
 )
 
+logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
-class ScheduleGettableSingleChannel:
+class ScheduleGettable:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
     set to return either static (demodulated) I and Q values or magnitude and phase.
@@ -48,14 +52,16 @@ class ScheduleGettableSingleChannel:
         quantum_device: QuantumDevice,
         schedule_function: Callable[..., Schedule],
         schedule_kwargs: Dict[str, Any],
+        num_channels: int = 1,
+        data_labels: Optional[List[str]] = None,
         real_imag: bool = True,
         batched: bool = False,
         max_batch_size: int = 1024,
         always_initialize=True,
     ):
         """
-        Create a new instance of ScheduleGettableSingleChannel which is used to do I and Q
-        acquisition.
+        Create a new instance of ScheduleGettable which is used to do I and Q
+        acquisition or alternatively magnitude and phase.
 
         Parameters
         ----------
@@ -71,6 +77,13 @@ class ScheduleGettableSingleChannel:
             a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
             evaluated every time :code:`.get()` is called before being passed to the
             :code:`schedule_function`.
+        num_channels
+            The number of channels to expect in the acquisition data.
+        data_labels
+            Allows to specify custom labels. Needs to be precisely 2*num_channels if
+            specified. The order is [Voltage I 0, Voltage Q 0, Voltage I 1, Voltage Q 1,
+            ...], in case real_imag==True, otherwise [Magnitude 0, Phase 0, Magnitude 1,
+            Phase 1, ...].
         real_imag
             If true, the gettable returns I, Q values. Otherwise, magnitude and phase
             (degrees) are returned.
@@ -85,6 +98,15 @@ class ScheduleGettableSingleChannel:
             If True, then reinitialize the schedule on each invocation of `get`. If
             False, then only initialize the first invocation of `get`.
         """
+        self._data_labels_specified = data_labels is not None
+        if data_labels and len(data_labels) != 2 * num_channels:
+            raise ValueError(
+                f"Specified {num_channels} acquisition channels for "
+                f"{self.__class__.__name__}, but {len(data_labels)} data labels were "
+                f"specified. Please give precisely {2 * num_channels} labels, "
+                f"corresponding to "
+                f"num_channels*{'I and Q' if real_imag else 'magnitude and phase'}."
+            )
 
         self.always_initialize = always_initialize
         self.is_initialized = False
@@ -92,13 +114,29 @@ class ScheduleGettableSingleChannel:
 
         self.real_imag = real_imag
         if self.real_imag:
-            self.name = ["I", "Q"]
-            self.label = ["Voltage I", "Voltage Q"]
-            self.unit = ["V", "V"]
+            self.name = ["I", "Q"] * num_channels
+            if data_labels:
+                self.label = data_labels
+            else:
+                self.label = [
+                    f"Voltage {iq}{ch}"
+                    for ch in range(num_channels)
+                    for iq in ["I", "Q"]
+                ]
+                logger.info(f"Auto-generating labels. {self.label}")
+            self.unit = ["V", "V"] * num_channels
         else:
-            self.name = ["magn", "phase"]
-            self.label = ["Magnitude", "Phase"]
-            self.unit = ["V", "deg"]
+            self.name = ["magn", "phase"] * num_channels
+            if data_labels:
+                self.label = data_labels
+            else:
+                self.label = [
+                    f"{val_label}{ch}"
+                    for ch in range(num_channels)
+                    for val_label in ["Magnitude", "Phase"]
+                ]
+                logger.info(f"Auto-generating labels. {self.label}")
+            self.unit = ["V", "deg"] * num_channels
 
         self.batched = batched
         self.batch_size = max_batch_size
@@ -111,7 +149,7 @@ class ScheduleGettableSingleChannel:
         # the quantum device object containing setup configuration information
         self.quantum_device = quantum_device
 
-    def __call__(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+    def __call__(self) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
         """Acquire and return data"""
         return self.get()
 
@@ -120,6 +158,7 @@ class ScheduleGettableSingleChannel:
         This generates the schedule and uploads the compiled instructions to the
         hardware using the instrument coordinator.
         """
+        logger.debug("Initializing schedule gettable.")
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
         # generate a schedule using the evaluated keyword arguments dict
@@ -144,7 +183,7 @@ class ScheduleGettableSingleChannel:
         """Return the schedule used in this class"""
         return self._compiled_schedule
 
-    def get(self) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+    def get(self) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
         """
         Start the experimental sequence and retrieve acquisition data.
 
@@ -167,12 +206,17 @@ class ScheduleGettableSingleChannel:
         acquired_data = instr_coordinator.retrieve_acquisition()
         instr_coordinator.stop()
 
-        result = self.process_acquired_data(acquired_data)
+        acq_metadata = extract_acquisition_metadata_from_schedule(
+            self.compiled_schedule
+        )
+        result = self.process_acquired_data(
+            acquired_data, acq_metadata, self.compiled_schedule.repetitions
+        )
         return result
 
     def process_acquired_data(
-        self, acquired_data
-    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
+    ) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
         """
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.
@@ -183,9 +227,6 @@ class ScheduleGettableSingleChannel:
 
         # retrieve the acquisition results
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
-        acq_metadata = extract_acquisition_metadata_from_schedule(
-            self.compiled_schedule
-        )
 
         if (
             acq_metadata.bin_mode == BinMode.AVERAGE
@@ -207,18 +248,11 @@ class ScheduleGettableSingleChannel:
                     val = acquired_data[(acq_channel, acq_idx)]
                     dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
-            # This gettable only supports one acquisition channel
-            if len(dataset.keys()) != 1:
-                raise ValueError(
-                    "Expected a single channel in the retrieved acquisitions "
-                    f"dataset.keys={dataset.keys()}."
-                )
-
         elif acq_metadata.bin_mode == BinMode.APPEND:
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(
-                    len(acq_indices) * self.compiled_schedule.repetitions, dtype=complex
+                    len(acq_indices) * repetitions, dtype=complex
                 )
                 acq_stride = len(acq_indices)
                 for acq_idx in acq_indices:
@@ -232,19 +266,29 @@ class ScheduleGettableSingleChannel:
             )
 
         # Reshaping of the data before returning
+        return_data = []
+        for idx, (acq_channel, vals) in enumerate(dataset.items()):
+            if not self._data_labels_specified and idx != acq_channel:
+                logger.warning(
+                    f"Default data_labels may not match the acquisition channel. "
+                    f"Element {idx} with label {self.label[idx]} corresponds to "
+                    f"acq_channel {acq_channel}, while they were expected to match. To "
+                    f"fix this behavior either specify custom data_labels, or ensure "
+                    f"your acquisition channels are sequential starting from 0."
+                )
 
-        # N.B. this only works if there is a single channel i.e., len(dataset.keys())==1
-        for vals in dataset.values():
             if self.batched is False:
                 # for iterative mode, we expect only a single value.
                 assert (len(vals)) == 1
 
-            # N.B. if there would be multiple channels the return would be outside
-            # of this for loop
             if self.real_imag:
-                return vals.real, vals.imag
-            # implicit else
-            return np.abs(vals), np.angle(vals, deg=True)
+                return_data.append(vals.real)
+                return_data.append(vals.imag)
+            else:
+                return_data.append(np.abs(vals))
+                return_data.append(np.angle(vals, deg=True))
+        logger.debug(f"Returning {len(return_data)} values.")
+        return tuple(return_data)
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:

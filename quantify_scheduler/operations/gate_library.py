@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Optional, Tuple, Union
@@ -18,7 +18,7 @@ class Rxy(Operation):
     A single qubit rotation around an axis in the equator of the Bloch sphere.
 
 
-    This operation can be represented by the following unitary:
+    This operation can be represented by the following unitary as defined in https://doi.org/10.1109/TQE.2020.2965810:
 
     .. math::
 
@@ -72,7 +72,7 @@ class Rxy(Operation):
                         -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
                     ],
                     [
-                        -1j * np.exp(-1j * phi_r) * np.sin(theta_r / 2),
+                        -1j * np.exp(1j * phi_r) * np.sin(theta_r / 2),
                         np.cos(theta_r / 2),
                     ],
                 ]
