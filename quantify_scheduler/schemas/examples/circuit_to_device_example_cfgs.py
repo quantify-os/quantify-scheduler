@@ -80,7 +80,7 @@ example_transmon_cfg = {
                 "acq_delay": 120e-9,
                 "acq_duration": 300e-9,
                 "acq_protocol": "SSBIntegrationComplex",
-                "acq_channel": 0,  # channel corresponding to this qubit
+                "acq_channel": 1,  # channel corresponding to this qubit
             },
         },
     },
