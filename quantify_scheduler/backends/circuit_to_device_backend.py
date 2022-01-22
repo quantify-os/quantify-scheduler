@@ -69,7 +69,7 @@ def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
         else:
             # we only support 2-qubit operations and single-qubit operations.
             # some single-qubit operations (reset, measure) can be expressed as acting
-            # on multiple qubit simultaneously. That is covered through this for-loop.
+            # on multiple qubits simultaneously. That is covered through this for-loop.
             for qubit in qubits:
                 if qubit not in device_cfg["qubits"].keys():
                     raise QubitKeyError(
