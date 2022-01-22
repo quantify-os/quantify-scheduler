@@ -38,14 +38,6 @@ class QuantumDevice(Instrument):
             " are located on this QuantumDevice.",
         )
 
-        default_cfg = "quantify_scheduler.compilation.add_pulse_information_transmon"
-        self.add_parameter(
-            "device_cfg_backend",
-            initial_value=default_cfg,
-            parameter_class=ManualParameter,
-            vals=validators.Strings(),
-        )
-
         self.add_parameter(
             "instr_measurement_control",
             docstring="A reference to the measurement control instrument.",
@@ -112,16 +104,26 @@ class QuantumDevice(Instrument):
         """
 
         # initialize a dictionary with the right structure
-        device_configuration = {
-            "backend": self.device_cfg_backend(),
-            "qubits": {},
-            "edges": {},
-        }
+        device_configuration = {"backend": "", "clocks": {}, "qubits": {}, "edges": {}}
 
-        # iterate over all components. For now, all are assumed to be qubits.
         for comp_name in self.components():
             comp = self.get_component(comp_name)
-            device_configuration["qubits"].update(comp.generate_config())
+            element_cfg = comp.generate_device_config()
+            for key in ["clocks", "qubits", "edges"]:
+                device_configuration[key].update(element_cfg[key])
+            device_configuration["backend"] = element_cfg["backend"]
+
+        # # initialize a dictionary with the right structure
+        # device_configuration = {
+        #     "backend": self.device_cfg_backend(),
+        #     "qubits": {},
+        #     "edges": {},
+        # }
+
+        # # iterate over all components. For now, all are assumed to be qubits.
+        # for comp_name in self.components():
+        #     comp = self.get_component(comp_name)
+        #     device_configuration["qubits"].update(comp.generate_config())
 
         return device_configuration
 

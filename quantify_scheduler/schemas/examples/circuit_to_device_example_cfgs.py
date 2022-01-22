@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 example_transmon_cfg = {
-    "backend": "quantify_scheduler.compilation.add_pulse_information",
+    "backend": "quantify_scheduler.backends.circuit_to_device_backend.compile_circuit_to_device",
     "clocks": {
         "q0.01": 6020000000.0,
         "q0.ro": 7040000000.0,
@@ -80,7 +80,7 @@ example_transmon_cfg = {
                 "acq_delay": 120e-9,
                 "acq_duration": 300e-9,
                 "acq_protocol": "SSBIntegrationComplex",
-                "acq_channel": 0,  # channel corresponding to this qubit
+                "acq_channel": 1,  # channel corresponding to this qubit
             },
         },
     },

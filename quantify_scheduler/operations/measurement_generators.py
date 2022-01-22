@@ -38,6 +38,10 @@ def dispersive_measurement(
     device.
 
     """
+    # ensures default argument is used if not specified at gate level.
+    if bin_mode == None:
+        bin_mode = BinMode.AVERAGE
+
     # Note that the funny structure here comes from the fact that the measurement
     # is a composite operation. We need to either introduce some level of nesting
     # in the structure of arguments (to re-use our custom structure), or just keep
