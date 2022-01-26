@@ -877,9 +877,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         super().__init__(parent, name, total_play_time, hw_mapping)
         driver_version_check.verify_qblox_instruments_version()
 
-        self.portclock_map = (
-            self._generate_portclock_to_seq_map()
-        )  # TODO rewrite and move
         self.is_pulsar: bool = True
         """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
         by the cluster compiler if needed."""
@@ -890,7 +887,20 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
         """Returns all the port and clocks available to this device."""
-        return list(self.portclock_map.keys())
+
+        portclocks = []
+
+        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
+            f"real_output_{i}" for i in range(4)
+        ]
+
+        for io in valid_ios:
+            if io not in self.hw_mapping:
+                continue
+            targets = self.hw_mapping[io].get("targets", [])
+            portclocks += [(target["port"], target["clock"]) for target in targets]
+
+        return portclocks
 
     @property
     @abstractmethod
@@ -907,40 +917,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         differences between the different modules.
         """
 
-    def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
-        """
-        Generates a mapping from portclock tuples to sequencer names.
-
-        Returns
-        -------
-        :
-            A dictionary with as key a portclock tuple and as value the name of a
-            sequencer.
-        """
-        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
-            f"real_output_{i}" for i in range(4)
-        ]
-        valid_seq_names = [
-            f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
-        ]
-
-        mapping = {}
-        for io in valid_ios:
-            if io not in self.hw_mapping:
-                continue
-
-            io_cfg = self.hw_mapping[io]
-
-            for seq_name in valid_seq_names:
-                if seq_name not in io_cfg:
-                    continue
-
-                seq_cfg = io_cfg[seq_name]
-                portclock = seq_cfg["port"], seq_cfg["clock"]
-
-                mapping[portclock] = seq_name
-        return mapping
-
     def _construct_sequencers(self) -> Dict[str, Sequencer]:
         """
         Constructs `Sequencer` objects for each port and clock combination
@@ -955,15 +931,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Raises
         ------
         ValueError
-            Raised when multiple definitions for the same sequencer is found, i.e. we
-            are attempting to use the same sequencer multiple times in the compilation.
+            Raised when the same portclock is multiply assigned in the hardware config.
         ValueError
             Attempting to use more sequencers than available.
         """
         valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
-        ]  # TODO this appears to be repeated compared to _generate_portclock_to_seq_map
+        ]
+
         sequencers = {}
+        portclock_to_seq_mapping = {}
+
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
@@ -994,14 +972,25 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         downconverter,
                     )
 
-        # TODO substitute this to check if more than 6 targets are active
-        # TODO verify that each portclock combination is only mentioned once
+                    # Check if the portclock was not multiply specified
+                    if portclock in portclock_to_seq_mapping:
+                        raise ValueError(
+                            f"{portclock} used for multiple targets. "
+                            "Each portclock combination should only be mentioned once"
+                        )
+
+                    portclock_to_seq_mapping[portclock] = seq_name
+
+        # Check if more than 6 targets are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
                 "Number of simultaneous pulse targets exceeds number of sequencers."
                 f"Maximum allowed for {self.__class__.__name__} is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )
+
+        # Save a mapping of the portclocks to sequencers
+        self.portclock_map = portclock_to_seq_mapping
 
         return sequencers
 
