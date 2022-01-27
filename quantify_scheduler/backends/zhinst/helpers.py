@@ -126,6 +126,7 @@ def set_awg_value(
     logger.debug(node)
 
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
+    awgs[awg_index]._awg._module.update(index=awg_index)  # Hotfix #260
     awgs[awg_index]._awg._module.set(node, value)
 
 

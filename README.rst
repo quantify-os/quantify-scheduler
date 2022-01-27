@@ -22,7 +22,7 @@ quantify-scheduler
     :target: https://www.codacy.com/gl/quantify-os/quantify-scheduler/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=quantify-os/quantify-scheduler&amp;utm_campaign=Badge_Coverage
     :alt: Coverage
 
-.. image:: https://readthedocs.com/projects/quantify-quantify-scheduler/badge/?version=main&token=ed6fdbf228e1369eacbeafdbad464f6de927e5dfb3a8e482ad0adcbea76fe74c
+.. image:: https://readthedocs.com/projects/quantify-quantify-scheduler/badge/?version=latest&token=ed6fdbf228e1369eacbeafdbad464f6de927e5dfb3a8e482ad0adcbea76fe74c
     :target: https://quantify-quantify-scheduler.readthedocs-hosted.com
     :alt: Documentation Status
 
