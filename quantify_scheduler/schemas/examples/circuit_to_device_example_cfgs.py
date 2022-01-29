@@ -18,7 +18,7 @@ example_transmon_cfg = {
             },
             "Rxy": {
                 "factory_func": "quantify_scheduler.operations."
-                + "pulse_generators.rxy_drag_pulse",
+                + "pulse_factories.rxy_drag_pulse",
                 "gate_info_factory_kwargs": ["theta", "phi"],
                 "factory_kwargs": {
                     "amp180": 0.32,
@@ -40,7 +40,7 @@ example_transmon_cfg = {
             },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
-                + "measurement_generators.dispersive_measurement",
+                + "measurement_factories.dispersive_measurement",
                 "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
                 "factory_kwargs": {
                     "port": "q0:ro",
@@ -62,7 +62,7 @@ example_transmon_cfg = {
             },
             "Rxy": {
                 "factory_func": "quantify_scheduler.operations."
-                + "pulse_generators.rxy_drag_pulse",
+                + "pulse_factories.rxy_drag_pulse",
                 "gate_info_factory_kwargs": ["theta", "phi"],
                 "factory_kwargs": {
                     "amp180": 0.4,
@@ -74,7 +74,7 @@ example_transmon_cfg = {
             },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
-                + "measurement_generators.dispersive_measurement",
+                + "measurement_factories.dispersive_measurement",
                 "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
                 "factory_kwargs": {
                     "port": "q1:ro",

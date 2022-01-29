@@ -326,7 +326,7 @@ class TransmonElement(Instrument):
                 # example of a pulse with a parametrized mapping, use a constructor class.
                 "Rxy": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
-                    + "pulse_generators.rxy_drag_pulse",
+                    + "pulse_factories.rxy_drag_pulse",
                     factory_kwargs={
                         "amp180": self.mw_amp180(),
                         "motzoi": self.mw_motzoi(),
@@ -337,12 +337,12 @@ class TransmonElement(Instrument):
                     gate_info_factory_kwargs=[
                         "theta",
                         "phi",
-                    ],  # the keys from the gate info to pass to the generator
+                    ],  # the keys from the gate info to pass to the factory function
                 ),
                 # the measurement also has a parametrized mapping, and uses a constructor class.
                 "measure": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
-                    + "measurement_generators.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement",
                     factory_kwargs={
                         "port": self.ro_port(),
                         "clock": self.ro_clock(),
