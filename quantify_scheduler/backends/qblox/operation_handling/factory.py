@@ -11,7 +11,7 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     base,
     pulses,
     acquisitions,
-virtual
+    virtual,
 )
 
 
@@ -37,8 +37,10 @@ def get_operation_strategy(
     :
         The instantiated strategy object.
     """
-    if operation.name == "ShiftClockPhase":
-        return virtual.ClockPhaseShiftStrategy(operation)
+    if operation.data['port'] is None:
+        if operation.name == "ShiftClockPhase":
+            return virtual.ClockPhaseShiftStrategy(operation)
+        return virtual.Idle(operation)
 
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
