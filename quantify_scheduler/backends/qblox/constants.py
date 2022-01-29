@@ -12,6 +12,12 @@ IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
 """Size of offset instruction immediates in Q1ASM programs."""
 REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""
+NCO_PHASE_DEG_STEP_COURSE = 0.9
+NCO_PHASE_NUM_STEP_COURSE = 400
+NCO_PHASE_DEG_STEP_FINE = 2.25e-3
+NCO_PHASE_NUM_STEP_FINE = 400
+NCO_PHASE_DEG_STEP_U_FINE = 3.6e-7
+NCO_PHASE_NUM_STEP_U_FINE = 6250
 
 GRID_TIME = 4  # ns
 """
