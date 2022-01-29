@@ -16,9 +16,7 @@ from quantify_scheduler.compilation import (
 )
 from quantify_scheduler.backends.circuit_to_device import (
     compile_circuit_to_device,
-    QubitKeyError,
-    EdgeKeyError,
-    OperationKeyError,
+    ConfigKeyError,
 )
 
 
@@ -119,7 +117,7 @@ def test_Reset_operations_compile():
 def test_qubit_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(Rxy(90, 0, qubit="q20"))
-    with pytest.raises(QubitKeyError):
+    with pytest.raises(ConfigKeyError):
         new_dev_sched = compile_circuit_to_device(
             sched, device_cfg=example_transmon_cfg
         )
@@ -128,7 +126,7 @@ def test_qubit_not_in_config_raises():
 def test_edge_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(CZ("q0", "q3"))
-    with pytest.raises(EdgeKeyError):
+    with pytest.raises(ConfigKeyError):
         new_dev_sched = compile_circuit_to_device(
             sched, device_cfg=example_transmon_cfg
         )
@@ -137,7 +135,7 @@ def test_edge_not_in_config_raises():
 def test_operation_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(CNOT("q0", "q1"))
-    with pytest.raises(OperationKeyError):
+    with pytest.raises(ConfigKeyError):
         new_dev_sched = compile_circuit_to_device(
             sched, device_cfg=example_transmon_cfg
         )

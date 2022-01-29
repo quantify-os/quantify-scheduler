@@ -114,16 +114,18 @@ def compile_circuit_to_device(
         if len(qubits) == 1:
             qubit = qubits[0]
             if qubit not in device_cfg.elements:
-                raise QubitKeyError(
-                    missing=qubit, allowed=list(device_cfg.elements.keys())
+                raise ConfigKeyError(
+                    kind="element",
+                    missing=qubit,
+                    allowed=list(device_cfg.elements.keys()),
                 )
             element_cfg = device_cfg.elements[qubit]
 
             if operation_type not in element_cfg:
-                raise OperationKeyError(
+                raise ConfigKeyError(
+                    kind="operation",
                     missing=operation_type,
                     allowed=list(element_cfg.keys()),
-                    acting_on=qubit,
                 )
             _add_device_repr_from_cfg(
                 operation=operation,
@@ -134,14 +136,16 @@ def compile_circuit_to_device(
         elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
             edge = f"{qubits[0]}-{qubits[1]}"
             if edge not in device_cfg.edges:
-                raise EdgeKeyError(missing=edge, allowed=list(device_cfg.edges.keys()))
+                raise ConfigKeyError(
+                    kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
+                )
             edge_config = device_cfg.edges[edge]
             if operation_type not in edge_config:
                 # only raise exception if it is also not a single-qubit operation
-                raise OperationKeyError(
+                raise ConfigKeyError(
+                    kind="operation",
                     missing=operation_type,
                     allowed=list(edge_config.keys()),
-                    acting_on=edge,
                 )
             _add_device_repr_from_cfg(operation, edge_config[operation_type])
 
@@ -226,45 +230,15 @@ def _add_device_repr_from_cfg_multiplexed(
     operation.add_device_representation(device_op)
 
 
-class QubitKeyError(KeyError):
+class ConfigKeyError(KeyError):
     """
     Custom exception for when a qubit is missing in a configuration file.
     """
 
-    def __init__(self, missing, allowed):
+    def __init__(self, kind, missing, allowed):
         self.value = (
-            f'Qubit "{missing}" is not present in the configuration file;'
-            + f" qubit must be one of the following: {allowed}"
-        )
-
-    def __str__(self):
-        return repr(self.value)
-
-
-class EdgeKeyError(KeyError):
-    """
-    Custom exception for when an edge is missing in a configuration file.
-    """
-
-    def __init__(self, missing, allowed):
-        self.value = (
-            f'Edge "{missing}" is not present in the configuration file;'
-            + f" edge must be one of the following: {allowed}"
-        )
-
-    def __str__(self):
-        return repr(self.value)
-
-
-class OperationKeyError(KeyError):
-    """
-    Custom exception for when a specific operation is missing in a configuration file.
-    """
-
-    def __init__(self, missing: str, allowed: List[str], acting_on: str):
-        self.value = (
-            f'Operation "{missing}" for "{acting_on}" is not present in the '
-            + f"configuration file; operation must be one of the following: {allowed}"
+            f'{kind} "{missing}" is not present in the configuration file;'
+            + f" {kind} must be one of the following: {allowed}"
         )
 
     def __str__(self):
