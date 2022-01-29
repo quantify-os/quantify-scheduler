@@ -116,9 +116,8 @@ def _assign_pulse_and_acq_info_to_devices(
             )
 
             if port is None:
-                for (map_port, map_clock) in portclock_mapping.items():
+                for (map_port, map_clock), dev in portclock_mapping.items():
                     if map_clock == clock:
-                        dev = portclock_mapping[(map_port, clock)]
                         device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
             else:
                 if (port, clock) not in portclock_mapping:
