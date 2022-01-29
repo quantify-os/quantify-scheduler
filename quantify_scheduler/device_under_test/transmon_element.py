@@ -209,14 +209,14 @@ class TransmonElement(Instrument):
             vals=validators.Numbers(min_value=0, max_value=1),
         )
 
-        pulse_types = validators.Enum("square")
+        pulse_types = validators.Enum("SquarePulse")
         self.add_parameter(
             "ro_pulse_type",
             docstring=(
                 "Envelope function that defines the shape of "
                 "the readout pulse prior to modulation."
             ),
-            initial_value="square",
+            initial_value="SquarePulse",
             parameter_class=ManualParameter,
             vals=pulse_types,
         )
@@ -334,7 +334,7 @@ class TransmonElement(Instrument):
                         "clock": self.mw_01_clock(),
                         "duration": self.mw_pulse_duration(),
                     },
-                    gate_info_generator_kwargs=[
+                    gate_info_factory_kwargs=[
                         "theta",
                         "phi",
                     ],  # the keys from the gate info to pass to the generator
@@ -354,7 +354,7 @@ class TransmonElement(Instrument):
                         "acq_protocol": "SSBIntegrationComplex",
                         "acq_channel": self.ro_acq_channel(),
                     },
-                    gate_info_generator_kwargs=["acq_index", "bin_mode"],
+                    gate_info_factory_kwargs=["acq_index", "bin_mode"],
                 ),
             }
         }
@@ -372,8 +372,8 @@ class TransmonElement(Instrument):
             This config is only valid for single qubit experiments.
         """
         cfg_dict = {
-            "backend": "quantify_scheduler.backends."
-            + "circuit_to_device_backend.compile_circuit_to_device",
+            "backend": "quantify_scheduler.backends"
+            ".circuit_to_device.compile_circuit_to_device",
             "elements": self.generate_config(),
             "clocks": {
                 self.mw_01_clock(): self.freq_01(),

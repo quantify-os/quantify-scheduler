@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import importlib
 import logging
+import warnings
 from copy import deepcopy
-
+from typing import Union
 import numpy as np
 from quantify_core.utilities.general import (
     import_python_object_from_string,
@@ -20,6 +21,8 @@ from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
 )
+
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -169,6 +172,15 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     .. jsonschema:: schemas/transmon_cfg.json
 
     """
+    warnings.warn(
+        "Support for this compilation backend will be be removed in"
+        "quantify-scheduler >= 0.7.0.\n"
+        "Please consider specifying the device config using the "
+        "`DeviceCompilationConfig` DataStructure to make use of the "
+        "`backends.circuits_to_device.compile_circuit_to_device` instead.",
+        DeprecationWarning,
+    )
+
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
     for op in schedule.operations.values():
@@ -191,6 +203,13 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
 
+                if len(op["gate_info"]["qubits"]) != 1:
+                    acq_channel = op["gate_info"]["acq_channel"][idx]
+                    acq_index = op["gate_info"]["acq_index"][idx]
+                else:
+                    acq_channel = op["gate_info"]["acq_channel"]
+                    acq_index = op["gate_info"]["acq_index"]
+
                 # If the user specifies bin-mode use that otherwise use a default
                 # better would be to get it from the config file in the "or"
                 bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE
@@ -209,8 +228,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                         SSBIntegrationComplex(
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
-                            acq_channel=op["gate_info"]["acq_channel"][idx],
-                            acq_index=op["gate_info"]["acq_index"][idx],
+                            acq_channel=acq_channel,
+                            acq_index=acq_index,
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                             bin_mode=bin_mode,
@@ -243,8 +262,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             clock=q_cfg["resources"]["clock_ro"],
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
-                            acq_channel=op["gate_info"]["acq_channel"][idx],
-                            acq_index=op["gate_info"]["acq_index"][idx],
+                            acq_channel=acq_channel,
+                            acq_index=acq_index,
                             port=q_cfg["resources"]["port_ro"],
                         )
                     )
@@ -424,7 +443,9 @@ def qcompile(
     return compiled_schedule
 
 
-def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
+def device_compile(
+    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
+) -> Schedule:
     """
     Add pulse information to operations based on device config file.
 
@@ -441,8 +462,18 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     :
         The updated schedule.
     """
+    if not isinstance(device_cfg, DeviceCompilationConfig):
+        warnings.warn(
+            "Support for using a dictionary to specify a config will be removed in"
+            "quantify-scheduler >= 0.7.0.\n"
+            "Please consider using the `DeviceCompilationConfig` DataStructure instead",
+            DeprecationWarning,
+        )
 
-    device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
+        device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
+
+    else:
+        device_compilation_bck = import_python_object_from_string(device_cfg.backend)
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")

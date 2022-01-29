@@ -91,7 +91,11 @@ def compile_circuit_to_device(
     schedule = deepcopy(schedule)
 
     for name, frequency in device_cfg.clocks.items():
-        schedule.add_resources([ClockResource(name=name, freq=frequency)])
+        if name not in schedule.resources:
+            # some schedules manually add a clock and set it's frequency
+            # (e.g., spectroscopy schedules. In that case, this should not overwrite
+            # the information that was explicitly set in the schedule.
+            schedule.add_resources([ClockResource(name=name, freq=frequency)])
 
     for operation in schedule.operations.values():
         # if operation is a valid pulse or acquisition it will not attempt to add
@@ -106,8 +110,28 @@ def compile_circuit_to_device(
         qubits = operation.data["gate_info"]["qubits"]
         operation_type = operation.data["gate_info"]["operation_type"]
 
-        # assume it is a two-qubit operation if the operation not in the qubit config
-        if len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
+        # single qubit operations
+        if len(qubits) == 1:
+            qubit = qubits[0]
+            if qubit not in device_cfg.elements:
+                raise QubitKeyError(
+                    missing=qubit, allowed=list(device_cfg.elements.keys())
+                )
+            element_cfg = device_cfg.elements[qubit]
+
+            if operation_type not in element_cfg:
+                raise OperationKeyError(
+                    missing=operation_type,
+                    allowed=list(element_cfg.keys()),
+                    acting_on=qubit,
+                )
+            _add_device_repr_from_cfg(
+                operation=operation,
+                operation_cfg=element_cfg[operation_type],
+            )
+
+        # it is a two-qubit operation if the operation not in the qubit config
+        elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
             edge = f"{qubits[0]}-{qubits[1]}"
             if edge not in device_cfg.edges:
                 raise EdgeKeyError(missing=edge, allowed=list(device_cfg.edges.keys()))
@@ -121,24 +145,26 @@ def compile_circuit_to_device(
                 )
             _add_device_repr_from_cfg(operation, edge_config[operation_type])
 
+        # we only support 2-qubit operations and single-qubit operations.
+        # some single-qubit operations (reset, measure) can be expressed as acting
+        # on multiple qubits simultaneously. That is covered through this for-loop.
         else:
-            # we only support 2-qubit operations and single-qubit operations.
-            # some single-qubit operations (reset, measure) can be expressed as acting
-            # on multiple qubits simultaneously. That is covered through this for-loop.
-            for qubit in qubits:
+            for mux_idx, qubit in enumerate(qubits):
                 if qubit not in device_cfg.elements:
                     raise QubitKeyError(
                         missing=qubit, allowed=list(device_cfg.elements.keys())
                     )
-                qubit_cfg = device_cfg.elements[qubit]
+                element_cfg = device_cfg.elements[qubit]
 
-                if operation_type not in qubit_cfg:
+                if operation_type not in element_cfg:
                     raise OperationKeyError(
                         missing=operation_type,
-                        allowed=list(qubit_cfg.keys()),
+                        allowed=list(element_cfg.keys()),
                         acting_on=qubit,
                     )
-                _add_device_repr_from_cfg(operation, qubit_cfg[operation_type])
+                _add_device_repr_from_cfg_multiplexed(
+                    operation, element_cfg[operation_type], mux_idx=mux_idx
+                )
 
     return schedule
 
@@ -177,6 +203,27 @@ def _verify_pulse_clock_present(operation, schedule):
                         str(operation), pulse["clock"]
                     )
                 )
+
+
+def _add_device_repr_from_cfg_multiplexed(
+    operation: Operation, operation_cfg: OperationCompilationConfig, mux_idx: int
+):
+    operation_cfg = deepcopy(operation_cfg)
+    factory_func = operation_cfg.factory_func
+
+    # if specified as an importable string, import the function.
+    if isinstance(factory_func, str):
+        factory_func = import_python_object_from_string(factory_func)
+
+    factory_kwargs: Dict = operation_cfg.factory_kwargs
+
+    # retrieve keyword args for parametrized operations from the gate info
+    if operation_cfg.gate_info_factory_kwargs != None:
+        for key in operation_cfg.gate_info_factory_kwargs:
+            factory_kwargs[key] = operation.data["gate_info"][key][mux_idx]
+
+    device_op = factory_func(**factory_kwargs)
+    operation.add_device_representation(device_op)
 
 
 class QubitKeyError(KeyError):

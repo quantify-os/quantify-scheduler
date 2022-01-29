@@ -137,9 +137,9 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     }
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
-
     sched = allxy_sched("q0", element_select_idx=indices, repetitions=256)
     comp_allxy_sched = qcompile(sched, quantum_device.generate_device_config())
+
     data = (
         np.concatenate(
             (

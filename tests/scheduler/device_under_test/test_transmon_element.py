@@ -41,14 +41,17 @@ def test_qubit_name(q0: TransmonElement):
 def test_generate_config(q0: TransmonElement):
     # test that setting some values updates the correct values in the configuration
     # set some values
-    q0.ro_pulse_type("square")
+    q0.ro_pulse_type("SquarePulse")
     q0.ro_pulse_duration(400e-9)
 
     q_cfg = q0.generate_config()
 
     # assert values in right place in config.
-    assert q_cfg["q0"]["measure"].factory_kwargs["pulse_type"] == "square"
+    assert q_cfg["q0"]["measure"].factory_kwargs["pulse_type"] == "SquarePulse"
     assert q_cfg["q0"]["measure"].factory_kwargs["pulse_duration"] == 400e-9
+
+    assert q_cfg["q0"]["Rxy"].factory_kwargs["clock"] == "q0.01"
+    assert q_cfg["q0"]["Rxy"].gate_info_factory_kwargs == ["theta", "phi"]
 
 
 def test_generate_device_config(q0: TransmonElement):

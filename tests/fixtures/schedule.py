@@ -27,9 +27,7 @@ from quantify_scheduler.schemas.examples import utils
 DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
 # second device config corresponds to the circuit_to_device compilation that should support
 # compilation for different platforms.
-# TRANSMON_DEVICE_CFG = utils.load_json_example_scheme(
-#     "transmon_circuit_to_device_cfg.json"
-# )
+
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
@@ -43,6 +41,8 @@ def load_example_transmon_config() -> Dict[str, Any]:
 
     def _load_example_transmon_config():
         return dict(DEVICE_CONFIG)
+        # return dict(TRANSMON_DEVICE_CFG)
+        # from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import example_transmon_cfg
 
     yield _load_example_transmon_config
 

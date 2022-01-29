@@ -393,6 +393,9 @@ def readout_calibration_sched(
             Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND),
             label=f"Measurement {i}",
         )
+        print("-" * 80)
+        print(schedule.operations[list(schedule.operations.keys())[-1]].data)
+        print("-" * 80)
 
     return schedule
 

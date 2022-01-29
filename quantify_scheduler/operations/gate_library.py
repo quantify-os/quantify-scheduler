@@ -438,7 +438,7 @@ class Measure(Operation):
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
-        bin_mode: Union[BinMode, None] = None,
+        bin_mode: BinMode = None,
         data: Optional[dict] = None,
     ):
         """
@@ -455,6 +455,7 @@ class Measure(Operation):
             Acquisition channel on which the measurement is performed
         acq_index
             Index of the register where the measurement is stored.
+            If None specified, it will default if tw
         bin_mode
             The binning mode that is to be used. If not None, it will overwrite
             the binning mode used for Measurements in the quantum-circuit to
@@ -465,15 +466,40 @@ class Measure(Operation):
             overwritten using the contents of data.
         """
 
-        if isinstance(acq_index, int):
-            acq_index = (acq_index,)
-        elif acq_index is None:
-            acq_index = tuple(i for i in range(len(qubits)))
+        # this if else statement a workaround to support multiplexed measurements (#262)
 
-        if isinstance(acq_channel, int):
-            acq_channel = (acq_channel,)
-        elif acq_channel is None:
-            acq_channel = tuple(i for i in range(len(qubits)))
+        # this snippet has some automatic behaviour that is error prone.
+        # see #262
+        if len(qubits) == 1:
+            if acq_channel == None:
+                acq_channel_info = 0
+            else:
+                acq_channel_info = acq_channel
+            if acq_index == None:
+                acq_index_info = 0
+            else:
+                acq_index_info = acq_index
+            bin_mode_info = bin_mode
+        else:
+            if isinstance(acq_index, int):
+                acq_index_info = [acq_index] * len(qubits)
+            elif acq_index is None:
+                # defaults to writing the result of all qubits to acq_index 0.
+                # note that this will result in averaging data together if multiple
+                # measurements are present in the same schedule (#262)
+                acq_index_info = tuple(0 for i in range(len(qubits)))
+            else:
+                acq_index_info = acq_index
+
+            # defaults to mapping qubits to channels dependent on the order of the
+            # arguments. note that this will result in mislabeling data if not all
+            # measurements in an experiment contain the same order of qubits (#262)
+            if acq_channel is None:
+                acq_channel_info = tuple(i for i in range(len(qubits)))
+            else:
+                acq_channel_info = acq_channel
+
+            bin_mode_info = [bin_mode] * len(qubits)
 
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
@@ -484,9 +510,9 @@ class Measure(Operation):
                     "plot_func": plot_func,
                     "tex": r"$\langle0|$",
                     "qubits": list(qubits),
-                    "acq_channel": acq_channel,
-                    "acq_index": acq_index,
-                    "bin_mode": bin_mode,
+                    "acq_channel": acq_channel_info,
+                    "acq_index": acq_index_info,
+                    "bin_mode": bin_mode_info,
                     "operation_type": "measure",
                 },
             }
