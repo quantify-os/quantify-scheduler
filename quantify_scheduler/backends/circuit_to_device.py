@@ -4,16 +4,70 @@
 Compilation backend for quantum-circuit to quantum-device layer.
 """
 from copy import deepcopy
-from typing import List
-from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.schedules.schedule import Schedule
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_core.utilities.general import import_python_object_from_string
-from quantify_scheduler.resources import ClockResource, BasebandClockResource
+from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
+from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.structure import DataStructure
 
 
-def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
+class OperationCompilationConfig(DataStructure):
+    """
+    A datastructure containing the information required to compile an individual
+    operation to the representation at the device level.
+
+    Parameters
+    ----------
+    factory_func:
+        A callable designating a factory function used to create the representation
+        of the operation at the quantum-device level.
+    factory_kwargs:
+        a dictionary contain the keyword arguments and corresponding values to use
+        when creating the operation by evaluating the factory function.
+    gate_info_factory_kwargs:
+        A list of keyword arguments of the factory function for which the value must
+        be retrieved from the `gate_info` of the operation.
+    """
+
+    factory_func: Union[Callable, str]
+    factory_kwargs: Optional[Dict[str, Any]]
+    gate_info_factory_kwargs: Optional[List[str]]
+
+
+class DeviceCompilationConfig(DataStructure):
+    """
+    A datastructure containing the information required to
+
+    Parameters
+    ----------
+    backend:
+        a . separated string specifying the location of the compilation backend this
+        configuration is intended for e.g.,
+        `"quantify_scheduler.backends.circuit_to_device.compile_circuit_to_device"`.
+    clocks:
+        a dictionary specifying the clock frequencies available on the device e.g.,
+        `{"q0.01": 6.123e9}`.
+    elements:
+        a dictionary specifying the elements on the device, what operations can be
+        applied to them and how to compile them.
+    edges:
+        a dictionary specifying the edges, links between elements on the device to which
+        operations can be applied, the operations tha can be  applied to them and how
+        to compile them.
+    """
+
+    backend: str
+    clocks: Dict[str, float]
+    elements: Dict[str, Dict[str, OperationCompilationConfig]]
+    edges: Dict[str, Dict[str, OperationCompilationConfig]]
+
+
+def compile_circuit_to_device(
+    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
+) -> Schedule:
     """
     Adds the information required to represent operations on the quantum-device
     abstraction layer to operations that contain information on how to be represented
@@ -26,14 +80,17 @@ def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
     device_cfg
         Device specific configuration, defines the compilation step from
         the quantum-circuit layer to the quantum-device layer description.
+        Note, if a dictionary is passed, it will be parsed to a
+        :class`~DeviceCompilationConfig`.
 
     """
+    if not isinstance(device_cfg, DeviceCompilationConfig):
+        device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
+
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
-    # the input schedule is currently not being validated.
-    # validate_config(device_cfg, scheme_fn=new_config_format)
 
-    for name, frequency in device_cfg["clocks"].items():
+    for name, frequency in device_cfg.clocks.items():
         schedule.add_resources([ClockResource(name=name, freq=frequency)])
 
     for operation in schedule.operations.values():
@@ -50,13 +107,11 @@ def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
         operation_type = operation.data["gate_info"]["operation_type"]
 
         # assume it is a two-qubit operation if the operation not in the qubit config
-        if len(qubits) == 2 and operation_type not in device_cfg["qubits"][qubits[0]]:
+        if len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
             edge = f"{qubits[0]}-{qubits[1]}"
-            if edge not in device_cfg["edges"]:
-                raise EdgeKeyError(
-                    missing=edge, allowed=list(device_cfg["edges"].keys())
-                )
-            edge_config = device_cfg["edges"][edge]
+            if edge not in device_cfg.edges:
+                raise EdgeKeyError(missing=edge, allowed=list(device_cfg.edges.keys()))
+            edge_config = device_cfg.edges[edge]
             if operation_type not in edge_config:
                 # only raise exception if it is also not a single-qubit operation
                 raise OperationKeyError(
@@ -71,11 +126,11 @@ def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
             # some single-qubit operations (reset, measure) can be expressed as acting
             # on multiple qubits simultaneously. That is covered through this for-loop.
             for qubit in qubits:
-                if qubit not in device_cfg["qubits"].keys():
+                if qubit not in device_cfg.elements:
                     raise QubitKeyError(
-                        missing=qubit, allowed=list(device_cfg["qubits"].keys())
+                        missing=qubit, allowed=list(device_cfg.elements.keys())
                     )
-                qubit_cfg = device_cfg["qubits"][qubit]
+                qubit_cfg = device_cfg.elements[qubit]
 
                 if operation_type not in qubit_cfg:
                     raise OperationKeyError(
@@ -88,26 +143,27 @@ def compile_circuit_to_device(schedule: Schedule, device_cfg: dict) -> Schedule:
     return schedule
 
 
-def _add_device_repr_from_cfg(operation: Operation, operation_cfg: dict):
+def _add_device_repr_from_cfg(
+    operation: Operation, operation_cfg: OperationCompilationConfig
+):
 
     # deepcopy because operation_type can occur multiple times
     # (e.g., parametrized operations).
     operation_cfg = deepcopy(operation_cfg)
-    generator_func = operation_cfg.pop("generator_func")
+    factory_func = operation_cfg.factory_func
+
     # if specified as an importable string, import the function.
-    if isinstance(generator_func, str):
-        generator_func = import_python_object_from_string(generator_func)
+    if isinstance(factory_func, str):
+        factory_func = import_python_object_from_string(factory_func)
 
-    generator_kwargs = {}
+    factory_kwargs = operation_cfg.factory_kwargs
+
     # retrieve keyword args for parametrized operations from the gate info
-    if "gate_info_generator_kwargs" in operation_cfg:
-        for key in operation_cfg.pop("gate_info_generator_kwargs"):
-            generator_kwargs[key] = operation.data["gate_info"][key]
+    if operation_cfg.gate_info_factory_kwargs != None:
+        for key in operation_cfg.gate_info_factory_kwargs:
+            factory_kwargs[key] = operation.data["gate_info"][key]
 
-    # add all other keyword args from the device configuration file.
-    # the pop of generator_func and _kwargs should ensure the arguments match.
-    generator_kwargs.update(operation_cfg)
-    device_op = generator_func(**generator_kwargs)
+    device_op = factory_func(**factory_kwargs)
     operation.add_device_representation(device_op)
 
 

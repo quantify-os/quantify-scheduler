@@ -14,7 +14,7 @@ from quantify_scheduler.compilation import (
     qcompile,
     validate_config,
 )
-from quantify_scheduler.backends.circuit_to_device_backend import (
+from quantify_scheduler.backends.circuit_to_device import (
     compile_circuit_to_device,
     QubitKeyError,
     EdgeKeyError,
