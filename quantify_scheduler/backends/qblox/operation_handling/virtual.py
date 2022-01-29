@@ -13,7 +13,7 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import helpers, q1asm_instructions
 
 
-class ClockPhaseShiftStrategy(IOperationStrategy):
+class Idle(IOperationStrategy):
     def __init__(self, operation_info: types.OpInfo):
         self._op_info = operation_info
 
@@ -25,6 +25,11 @@ class ClockPhaseShiftStrategy(IOperationStrategy):
         """Returns None as no waveforms are generated in this strategy."""
         return None
 
+    def insert_qasm(self, qasm_program: QASMProgram):
+        pass
+
+
+class ClockPhaseShiftStrategy(Idle):
     def insert_qasm(self, qasm_program: QASMProgram):
         phase = self.operation_info.data["phase"]
         phase_args = helpers.get_nco_phase_arguments(phase)
