@@ -25,6 +25,7 @@ class ShiftClockPhase(Operation):
                         "phase": phase,
                         "clock": clock,
                         "port": None,
+                        "duration": 0.0
                     }
                 ],
             }
