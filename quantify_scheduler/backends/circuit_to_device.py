@@ -25,7 +25,7 @@ class OperationCompilationConfig(DataStructure):
         A callable designating a factory function used to create the representation
         of the operation at the quantum-device level.
     factory_kwargs:
-        a dictionary contain the keyword arguments and corresponding values to use
+        a dictionary containing the keyword arguments and corresponding values to use
         when creating the operation by evaluating the factory function.
     gate_info_factory_kwargs:
         A list of keyword arguments of the factory function for which the value must
@@ -46,10 +46,10 @@ class DeviceCompilationConfig(DataStructure):
     backend:
         a . separated string specifying the location of the compilation backend this
         configuration is intended for e.g.,
-        `"quantify_scheduler.backends.circuit_to_device.compile_circuit_to_device"`.
+        :func:`"~.backends.circuit_to_device.compile_circuit_to_device"`.
     clocks:
         a dictionary specifying the clock frequencies available on the device e.g.,
-        `{"q0.01": 6.123e9}`.
+        :code:`{"q0.01": 6.123e9}`.
     elements:
         a dictionary specifying the elements on the device, what operations can be
         applied to them and how to compile them.
@@ -81,7 +81,7 @@ def compile_circuit_to_device(
         Device specific configuration, defines the compilation step from
         the quantum-circuit layer to the quantum-device layer description.
         Note, if a dictionary is passed, it will be parsed to a
-        :class`~DeviceCompilationConfig`.
+        :class:`~DeviceCompilationConfig`.
 
     """
     if not isinstance(device_cfg, DeviceCompilationConfig):
