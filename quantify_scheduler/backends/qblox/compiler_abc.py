@@ -1039,7 +1039,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         partial_func,
                         pulse_data_list,
                     )
-                    seq.pulses = list(func_map)
+                    if seq.pulses is None:
+                        seq.pulses = []
+
+                    for pulse_strategy in func_map:
+                        seq.pulses.append(pulse_strategy)
 
         for portclock, acq_data_list in self._acquisitions.items():
             for seq in self.sequencers.values():
