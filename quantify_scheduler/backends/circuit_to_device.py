@@ -39,7 +39,8 @@ class OperationCompilationConfig(DataStructure):
 
 class DeviceCompilationConfig(DataStructure):
     """
-    A datastructure containing the information required to
+    A datastructure containing the information required to compile a
+    schedule to the representation at the quantum-device layer.
 
     Parameters
     ----------
@@ -232,7 +233,7 @@ def _add_device_repr_from_cfg_multiplexed(
 
 class ConfigKeyError(KeyError):
     """
-    Custom exception for when a qubit is missing in a configuration file.
+    Custom exception for when a key is missing in a configuration file.
     """
 
     def __init__(self, kind, missing, allowed):

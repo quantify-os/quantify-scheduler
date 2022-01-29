@@ -10,13 +10,13 @@ Breaking changes
 * Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
 * Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
 * Hardware config - Removed the need for a `ic_` prefix from the hardware config (!312).
-* Compilation - Deprecated `add_pulse_information_transmon` in favor of `compilation.backends.circuit_to_device_backend.compile_circuit_to_device`(#64, #67, !xx).
+* Compilation - Deprecated `add_pulse_information_transmon` in favor of `compilation.backends.circuit_to_device.compile_circuit_to_device`(#64, #67, !339).
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Operations - Sudden Net Zero from Negirneac 2021 added to the pulse `pulse_library` (!xx)
-* Compilation - Added a new compilation back end `compilation.backends.circuit_to_device_backend.compile_circuit_to_device` for the quantum-circuit to quantum-device layer (#64, #67, !xx).
+* Operations - Sudden Net Zero from Negirneac 2021 added to the pulse `pulse_library` (!339)
+* Compilation - Added a new compilation back end `compilation.backends.circuit_to_device.compile_circuit_to_device` for the quantum-circuit to quantum-device layer (#64, #67, !339).
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for easier method names, and enable plotly visualization directly from `ScheduleBase` (!313)
