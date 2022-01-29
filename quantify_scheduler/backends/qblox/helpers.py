@@ -362,3 +362,18 @@ def is_multiple_of_grid_time(
     """
     time_ns = int(round(time * 1e9))
     return time_ns % grid_time_ns == 0
+
+
+def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
+    phase_course: int = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COURSE)
+    assert phase_course <= constants.NCO_PHASE_NUM_STEP_COURSE
+
+    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COURSE
+    phase_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
+    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_FINE
+
+    remaining_phase = remaining_phase % constants.NCO_PHASE_DEG_STEP_FINE
+    phase_ultra_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
+    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_U_FINE
+
+    return phase_course, phase_fine, phase_ultra_fine
