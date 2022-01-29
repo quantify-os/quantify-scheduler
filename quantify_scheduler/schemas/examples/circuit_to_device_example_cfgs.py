@@ -2,7 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 
 example_transmon_cfg = {
-    "backend": "quantify_scheduler.backends.circuit_to_device_backend.compile_circuit_to_device",
+    "backend": "quantify_scheduler.backends.circuit_to_device_backend"
+    + ".compile_circuit_to_device",
     "clocks": {
         "q0.01": 6020000000.0,
         "q0.ro": 7040000000.0,
@@ -16,7 +17,8 @@ example_transmon_cfg = {
                 "factory_kwargs": {"duration": 0.0002},
             },
             "Rxy": {
-                "factory_func": "quantify_scheduler.operations.pulse_generators.rxy_drag_pulse",
+                "factory_func": "quantify_scheduler.operations."
+                + "pulse_generators.rxy_drag_pulse",
                 "gate_info_factory_kwargs": ["theta", "phi"],
                 "factory_kwargs": {
                     "amp180": 0.32,
@@ -27,7 +29,8 @@ example_transmon_cfg = {
                 },
             },
             "Z": {
-                "factory_func": "quantify_scheduler.operations.pulse_library.SoftSquarePulse",
+                "factory_func": "quantify_scheduler.operations."
+                + "pulse_library.SoftSquarePulse",
                 "factory_kwargs": {
                     "amp": 0.23,
                     "duration": 4e-09,
@@ -36,7 +39,8 @@ example_transmon_cfg = {
                 },
             },
             "measure": {
-                "factory_func": "quantify_scheduler.operations.measurement_generators.dispersive_measurement",
+                "factory_func": "quantify_scheduler.operations."
+                + "measurement_generators.dispersive_measurement",
                 "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
                 "factory_kwargs": {
                     "port": "q0:ro",
@@ -57,7 +61,8 @@ example_transmon_cfg = {
                 "factory_kwargs": {"duration": 0.0002},
             },
             "Rxy": {
-                "factory_func": "quantify_scheduler.operations.pulse_generators.rxy_drag_pulse",
+                "factory_func": "quantify_scheduler.operations."
+                + "pulse_generators.rxy_drag_pulse",
                 "gate_info_factory_kwargs": ["theta", "phi"],
                 "factory_kwargs": {
                     "amp180": 0.4,
@@ -68,7 +73,8 @@ example_transmon_cfg = {
                 },
             },
             "measure": {
-                "factory_func": "quantify_scheduler.operations.measurement_generators.dispersive_measurement",
+                "factory_func": "quantify_scheduler.operations."
+                + "measurement_generators.dispersive_measurement",
                 "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
                 "factory_kwargs": {
                     "port": "q1:ro",
@@ -87,7 +93,8 @@ example_transmon_cfg = {
     "edges": {
         "q0-q1": {
             "CZ": {
-                "factory_func": "quantify_scheduler.operations.pulse_library.SuddenNetZeroPulse",
+                "factory_func": "quantify_scheduler.operations."
+                + "pulse_library.SuddenNetZeroPulse",
                 "factory_kwargs": {
                     "port": "q0:fl",
                     "clock": "cl0.baseband",

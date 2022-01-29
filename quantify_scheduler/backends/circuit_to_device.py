@@ -33,7 +33,7 @@ class OperationCompilationConfig(DataStructure):
     """
 
     factory_func: Union[Callable, str]
-    factory_kwargs: Optional[Dict[str, Any]]
+    factory_kwargs: Dict[str, Any]
     gate_info_factory_kwargs: Optional[List[str]]
 
 
@@ -156,7 +156,7 @@ def _add_device_repr_from_cfg(
     if isinstance(factory_func, str):
         factory_func = import_python_object_from_string(factory_func)
 
-    factory_kwargs = operation_cfg.factory_kwargs
+    factory_kwargs: Dict = operation_cfg.factory_kwargs
 
     # retrieve keyword args for parametrized operations from the gate info
     if operation_cfg.gate_info_factory_kwargs != None:

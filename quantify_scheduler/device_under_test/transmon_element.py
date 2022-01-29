@@ -3,6 +3,10 @@
 from typing import Any, Dict
 
 from qcodes.instrument.base import Instrument
+from quantify_scheduler.backends.circuit_to_device import (
+    OperationCompilationConfig,
+    DeviceCompilationConfig,
+)
 from qcodes.instrument.parameter import (
     InstrumentRefParameter,
     ManualParameter,
@@ -303,7 +307,7 @@ class TransmonElement(Instrument):
             vals=ro_acq_weight_type_validator,
         )
 
-    def generate_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
+    def generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
         Generates part of the device configuration specific to a single qubit.
 
@@ -312,42 +316,51 @@ class TransmonElement(Instrument):
         """
         qubit_config = {
             f"{self.name}": {
-                "reset": {
-                    "generator_func": "quantify_scheduler.operations.pulse_library.IdlePulse",
-                    "duration": self.init_duration(),
-                },
+                "reset": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_library.IdlePulse",
+                    factory_kwargs={
+                        "duration": self.init_duration(),
+                    },
+                ),
                 # example of a pulse with a parametrized mapping, use a constructor class.
-                "Rxy": {
-                    "generator_func": "quantify_scheduler.operations.pulse_generators.rxy_drag_pulse",
-                    "gate_info_generator_kwargs": [
+                "Rxy": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_generators.rxy_drag_pulse",
+                    factory_kwargs={
+                        "amp180": self.mw_amp180(),
+                        "motzoi": self.mw_motzoi(),
+                        "port": self.mw_port(),
+                        "clock": self.mw_01_clock(),
+                        "duration": self.mw_pulse_duration(),
+                    },
+                    gate_info_generator_kwargs=[
                         "theta",
                         "phi",
                     ],  # the keys from the gate info to pass to the generator
-                    "amp180": self.mw_amp180(),
-                    "motzoi": self.mw_motzoi(),
-                    "port": self.mw_port(),
-                    "clock": self.mw_01_clock(),
-                    "duration": self.mw_pulse_duration(),
-                },
+                ),
                 # the measurement also has a parametrized mapping, and uses a constructor class.
-                "measure": {
-                    "generator_func": "quantify_scheduler.operations.measurement_generators.dispersive_measurement",
-                    "gate_info_generator_kwargs": ["acq_index", "bin_mode"],
-                    "port": self.ro_port(),
-                    "clock": self.ro_clock(),
-                    "pulse_type": "SquarePulse",
-                    "pulse_amp": self.ro_pulse_amp(),
-                    "pulse_duration": self.ro_pulse_duration(),
-                    "acq_delay": self.ro_acq_delay(),
-                    "acq_duration": self.ro_acq_integration_time(),
-                    "acq_protocol": "SSBIntegrationComplex",
-                    "acq_channel": self.ro_acq_channel(),
-                },
+                "measure": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "measurement_generators.dispersive_measurement",
+                    factory_kwargs={
+                        "port": self.ro_port(),
+                        "clock": self.ro_clock(),
+                        "pulse_type": self.ro_pulse_type(),
+                        "pulse_amp": self.ro_pulse_amp(),
+                        "pulse_duration": self.ro_pulse_duration(),
+                        "acq_delay": self.ro_acq_delay(),
+                        "acq_duration": self.ro_acq_integration_time(),
+                        "acq_protocol": "SSBIntegrationComplex",
+                        "acq_channel": self.ro_acq_channel(),
+                    },
+                    gate_info_generator_kwargs=["acq_index", "bin_mode"],
+                ),
             }
         }
         return qubit_config
 
-    def generate_device_config(self) -> Dict[str, Any]:
+    def generate_device_config(self) -> DeviceCompilationConfig:
         """
         Generates a valid device config for the quantify-scheduler making use of the
         :func:`~.circuit_to_device_backend.compile_circuit_to_device` function.
@@ -358,9 +371,10 @@ class TransmonElement(Instrument):
 
             This config is only valid for single qubit experiments.
         """
-        dev_cfg = {
-            "backend": "quantify_scheduler.backends.circuit_to_device_backend.compile_circuit_to_device",
-            "qubits": self.generate_config(),
+        cfg_dict = {
+            "backend": "quantify_scheduler.backends."
+            + "circuit_to_device_backend.compile_circuit_to_device",
+            "elements": self.generate_config(),
             "clocks": {
                 self.mw_01_clock(): self.freq_01(),
                 self.mw_12_clock(): self.freq_12(),
@@ -368,4 +382,6 @@ class TransmonElement(Instrument):
             },
             "edges": {},
         }
+        dev_cfg = DeviceCompilationConfig.parse_obj(cfg_dict)
+
         return dev_cfg
