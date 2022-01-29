@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 example_transmon_cfg = {
-    "backend": "quantify_scheduler.backends.circuit_to_device_backend"
+    "backend": "quantify_scheduler.backends.circuit_to_device"
     + ".compile_circuit_to_device",
     "clocks": {
         "q0.01": 6020000000.0,
@@ -43,7 +43,7 @@ example_transmon_cfg = {
                 + "measurement_factories.dispersive_measurement",
                 "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
                 "factory_kwargs": {
-                    "port": "q0:ro",
+                    "port": "q0:res",
                     "clock": "q0.ro",
                     "pulse_type": "SquarePulse",
                     "pulse_amp": 0.25,
@@ -77,7 +77,7 @@ example_transmon_cfg = {
                 + "measurement_factories.dispersive_measurement",
                 "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
                 "factory_kwargs": {
-                    "port": "q1:ro",
+                    "port": "q1:res",
                     "clock": "q1.ro",
                     "pulse_type": "SquarePulse",
                     "pulse_amp": 0.21,

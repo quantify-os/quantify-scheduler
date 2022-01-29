@@ -13,7 +13,10 @@ from typing import Any, Dict, Optional, Callable
 
 import numpy as np
 import pytest
-
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import (
     add_pulse_information_transmon,
@@ -40,7 +43,7 @@ def load_example_transmon_config() -> Dict[str, Any]:
     """
 
     def _load_example_transmon_config():
-        return dict(DEVICE_CONFIG)
+        return DeviceCompilationConfig.parse_obj(example_transmon_cfg)
         # return dict(TRANSMON_DEVICE_CFG)
         # from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import example_transmon_cfg
 

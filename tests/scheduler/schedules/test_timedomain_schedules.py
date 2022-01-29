@@ -45,7 +45,8 @@ class TestRabiPulse(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.rabi_pulse_sched(**cls.sched_kwargs)
+        cls.uncomp_sched = ts.rabi_pulse_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -68,7 +69,7 @@ class TestRabiPulse(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config())
 
 
 class TestRabiSched(_CompilesAllBackends):
@@ -85,8 +86,8 @@ class TestRabiSched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.rabi_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.rabi_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -211,8 +212,8 @@ class TestT1Sched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.t1_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.t1_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -255,8 +256,8 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.ramsey_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -298,8 +299,8 @@ class TestRamseySched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.ramsey_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -340,8 +341,8 @@ class TestEchoSched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.echo_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.echo_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -379,8 +380,8 @@ class TestAllXYSched(_CompilesAllBackends):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {"qubit": "q0", "repetitions": 10}
 
-        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.allxy_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_repetitions(self):
         assert self.sched.repetitions == self.sched_kwargs["repetitions"]
@@ -407,8 +408,8 @@ class TestAllXYSchedElement(_CompilesAllBackends):
             "element_select_idx": 4,
         }
 
-        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.allxy_sched(**cls.sched_kwargs)
+        cls.sched = qcompile(cls.uncomp_sched, DEVICE_CONFIG)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
