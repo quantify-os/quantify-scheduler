@@ -108,8 +108,6 @@ def _assign_pulse_and_acq_info_to_devices(
 
             port = pulse_data["port"]
             clock = pulse_data["clock"]
-            if port is None:
-                continue  # ignore idle pulses
 
             combined_data = OpInfo(
                 name=op_data.data["name"],
