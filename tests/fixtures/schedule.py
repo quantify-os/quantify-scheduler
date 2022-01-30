@@ -49,18 +49,17 @@ def load_example_transmon_config() -> Dict[str, Any]:
     yield _load_example_transmon_config
 
 
-# should not be needed by just having python based examples with comments.
-# @pytest.fixture
-# def load_example_circuit_to_dev_transmon_cfg() -> Dict[str, Any]:
-#     """
-#     Circuit to device level compilation for the general circuit to device compilation
-#     example for a transmon device.
-#     """
+@pytest.fixture
+def load_legacy_transmon_config() -> Dict[str, Any]:
+    """
+    Loads the configuration for `add_pulse_information_transmon`.
+    To be removed after 0.7.0 when this functionality is phased out.
+    """
 
-#     def _load_example_transmon_device_config():
-#         return dict(TRANSMON_DEVICE_CFG)
+    def _load_example_transmon_config():
+        return dict(DEVICE_CONFIG)
 
-#     yield _load_example_transmon_device_config
+    yield _load_example_transmon_config
 
 
 @pytest.fixture

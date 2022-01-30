@@ -31,13 +31,13 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = sps.heterodyne_spec_sched(**cls.sched_kwargs)
+        cls.uncomp_sched = sps.heterodyne_spec_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
-        sched = determine_absolute_timing(self.sched)
+        sched = determine_absolute_timing(self.uncomp_sched)
         # test that the right operations are added and timing is as expected.
         labels = ["buffer", "spec_pulse", "acquisition"]
         abs_times = [
@@ -52,7 +52,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config())
 
 
 class TestPulsedSpecSchedule(_CompilesAllBackends):
@@ -77,13 +77,13 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = sps.two_tone_spec_sched(**cls.sched_kwargs)
+        cls.uncomp_sched = sps.two_tone_spec_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
-        sched = determine_absolute_timing(self.sched)
+        sched = determine_absolute_timing(self.uncomp_sched)
 
         # test that the right operations are added and timing is as expected.
         labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
@@ -102,4 +102,4 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config())
