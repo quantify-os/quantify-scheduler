@@ -19,8 +19,7 @@ from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import (
-    add_pulse_information_transmon,
-    determine_absolute_timing,
+    device_compile,
     qcompile,
 )
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
@@ -93,8 +92,7 @@ def create_schedule_with_pulse_info(
             if device_config is not None
             else load_example_transmon_config()
         )
-        add_pulse_information_transmon(_schedule, _device_config)
-        determine_absolute_timing(_schedule)
+        _schedule = device_compile(_schedule, _device_config)
         return _schedule
 
     yield _create_schedule_with_pulse_info
