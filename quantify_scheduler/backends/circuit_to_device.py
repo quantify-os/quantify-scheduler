@@ -47,7 +47,7 @@ class DeviceCompilationConfig(DataStructure):
     backend:
         a . separated string specifying the location of the compilation backend this
         configuration is intended for e.g.,
-        :func:`"~.backends.circuit_to_device.compile_circuit_to_device"`.
+        :func:`~.backends.circuit_to_device.compile_circuit_to_device`.
     clocks:
         a dictionary specifying the clock frequencies available on the device e.g.,
         :code:`{"q0.01": 6.123e9}`.

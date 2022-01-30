@@ -363,7 +363,7 @@ class TransmonElement(Instrument):
     def generate_device_config(self) -> DeviceCompilationConfig:
         """
         Generates a valid device config for the quantify-scheduler making use of the
-        :func:`~.circuit_to_device_backend.compile_circuit_to_device` function.
+        :func:`~.circuit_to_device.compile_circuit_to_device` function.
 
         This enables the settings of this qubit to be used in isolation.
 

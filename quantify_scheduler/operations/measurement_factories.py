@@ -1,9 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """
-A module containing generator functions for measurements on the quantum-device layer.
+A module containing factory functions for measurements on the quantum-device layer.
 
-These generators are used to take a parametrized representation of on a operation
+These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 from quantify_scheduler import Operation

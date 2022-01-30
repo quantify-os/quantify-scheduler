@@ -225,6 +225,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
         Parameters
         ----------
+        device_operation
             an operation containing the pulse_info and/or acquisition info describing
             how to represent the current operation at the quantum-device layer.
         """

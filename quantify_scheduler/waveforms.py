@@ -243,7 +243,7 @@ def sudden_net_zero(
         the total duration of the two half square pulses
     t_phi
         the idling duration between the two half pulses
-    t_integral correction
+    t_integral_correction
         the duration in which any non-zero pulse amplitude needs to be corrected.
     """
 
