@@ -632,11 +632,15 @@ class Sequencer:
         loop_label = "start"
 
         qasm = QASMProgram(self.static_hw_properties, self.register_manager)
+        if self.static_hw_properties.marker_configuration.init is not None:
+            qasm.set_marker(self.static_hw_properties.marker_configuration.init)
+            qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.RESET_PHASE)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-        qasm.set_marker(self.static_hw_properties.marker_configuration.start)
+        if self.static_hw_properties.marker_configuration.start is not None:
+            qasm.set_marker(self.static_hw_properties.marker_configuration.start)
 
         pulses = [] if self.pulses is None else self.pulses
         acquisitions = [] if self.acquisitions is None else self.acquisitions
@@ -669,7 +673,8 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        qasm.set_marker(self.static_hw_properties.marker_configuration.end)
+        if self.static_hw_properties.marker_configuration.end is not None:
+            qasm.set_marker(self.static_hw_properties.marker_configuration.end)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.STOP)
 
