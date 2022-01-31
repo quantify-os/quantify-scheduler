@@ -575,13 +575,6 @@ class _QCMRFComponent(_QCMComponent):
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: SequencerSettings
-    ) -> None:
-        super()._configure_sequencer_settings(seq_idx, settings)
-        self._set_parameter(f"sequencer{seq_idx}_marker_ovr_en", True)
-        self._set_parameter(f"sequencer{seq_idx}_marker_ovr_value", 0b1111)
-
     def _configure_global_settings(self, settings: PulsarSettings):
         """
         Configures all settings that are set globally for the whole instrument.
@@ -613,13 +606,6 @@ class _QRMRFComponent(_QRMComponent):
     """
 
     _hardware_properties = _QRM_RF_PROPERTIES
-
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: SequencerSettings
-    ) -> None:
-        super()._configure_sequencer_settings(seq_idx, settings)
-        self._set_parameter(f"sequencer{seq_idx}_marker_ovr_en", True)
-        self._set_parameter(f"sequencer{seq_idx}_marker_ovr_value", 0b1111)
 
     def _configure_global_settings(self, settings: PulsarSettings):
         """
