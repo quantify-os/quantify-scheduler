@@ -290,6 +290,10 @@ import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
 
+# `pydantic` fails to import automatically and leads to broken documentation,
+# if not preloaded.
+import pydantic
+
 # When building the docs we need `typing.TYPE_CHECKING` to be `True` so that the
 # sphinx' kernel loads the modules corresponding to the typehints and is able to
 # auto document types. The modules listed above create issues when loaded with
