@@ -156,8 +156,10 @@ def compile_circuit_to_device(
         else:
             for mux_idx, qubit in enumerate(qubits):
                 if qubit not in device_cfg.elements:
-                    raise QubitKeyError(
-                        missing=qubit, allowed=list(device_cfg.elements.keys())
+                    raise ConfigKeyError(
+                        kind="qubit",
+                        missing=qubit,
+                        allowed=list(device_cfg.elements.keys()),
                     )
                 element_cfg = device_cfg.elements[qubit]
 
