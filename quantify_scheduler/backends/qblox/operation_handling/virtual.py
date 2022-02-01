@@ -13,8 +13,18 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import helpers, q1asm_instructions
 
 
-class Idle(IOperationStrategy):
+class IdleStrategy(IOperationStrategy):
+    """Defines the behavior for an operation that does not produce any output."""
+
     def __init__(self, operation_info: types.OpInfo):
+        """
+        Constructor for the IdleStrategy class.
+
+        Parameters
+        ----------
+        operation_info:
+
+        """
         self._op_info = operation_info
 
     @property
@@ -29,7 +39,7 @@ class Idle(IOperationStrategy):
         pass
 
 
-class ClockPhaseShiftStrategy(Idle):
+class ClockPhaseShiftStrategy(IdleStrategy):
     def insert_qasm(self, qasm_program: QASMProgram):
         phase = self.operation_info.data["phase"]
         phase_args = helpers.get_nco_phase_arguments(phase)
