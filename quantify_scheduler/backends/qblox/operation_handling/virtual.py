@@ -63,6 +63,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         Parameters
         ----------
         qasm_program
+            The QASMProgram to add the assembly instructions to.
         """
         phase = self.operation_info.data["phase"]
         phase_args = helpers.get_nco_phase_arguments(phase)
