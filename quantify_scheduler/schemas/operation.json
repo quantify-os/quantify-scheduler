@@ -20,6 +20,10 @@
                 "unitary": {
                     "description": "A unitary matrix describing the operation."
                 },
+                "operation_type": {
+                    "description": "Defines what class of operations this gate refers to (e.g. Rxy, CZ etc.).",
+                    "type": "string"
+                },
                 "qubits": {
                     "description": "A list of strings indicating the qubits the gate acts on. Valid qubits are strings that appear in the device_config.json file.",
                     "type": "array"
