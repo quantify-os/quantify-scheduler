@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Constants for compilation to Qblox hardware."""
 
 
@@ -44,3 +44,5 @@ NUMBER_OF_REGISTERS: int = 64
 
 DOWNCONVERTER_FREQ: float = 4.4e9
 """LO frequency used by the Qblox downconverter."""
+GENERIC_IC_COMPONENT_NAME: str = "generic"
+"""Default name for the generic instrument coordinator component."""

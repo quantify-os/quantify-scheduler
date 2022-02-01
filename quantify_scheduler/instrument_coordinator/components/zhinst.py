@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Module containing Zurich Instruments InstrumentCoordinator Components."""
 # pylint: disable=useless-super-delegation
 # pylint: disable=too-many-arguments
@@ -98,7 +98,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
             )
             return False
 
-        logger.info(f"Configuring {self.name}.")
+        logger.info(f"Configuring {self.instrument.name}.")
         # if the settings are not identical, update the attributes of the
         # ic component and apply the settings to the hardware.
         self.zi_settings = new_zi_settings
@@ -108,7 +108,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
         self.zi_settings.serialize(
             self._data_path,
             ZISerializeSettings(
-                self.name, self.instrument._serial, self.instrument._type
+                self.instrument.name, self.instrument._serial, self.instrument._type
             ),
         )
 
@@ -247,7 +247,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         # N.B. note this copies waves that were written during compilation, but are not
         # contained in the zi_device_config that is passed as an argument here.
         waves_path: Path = zi_helpers.get_waves_directory(self.instrument.awg)
-        wave_files = list(self._data_path.glob(f"{self.name}*.csv"))
+        wave_files = list(self._data_path.glob(f"{self.instrument.name}*.csv"))
         for file in wave_files:
             shutil.copy2(str(file), str(waves_path))
 

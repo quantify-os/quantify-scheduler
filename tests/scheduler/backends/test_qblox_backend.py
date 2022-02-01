@@ -4,7 +4,7 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
 import copy
 import inspect
@@ -993,7 +993,7 @@ def test_assign_frequencies_baseband():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1032,7 +1032,7 @@ def test_assign_frequencies_baseband_downconverter():
     lo0 = -q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = -q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1137,29 +1137,28 @@ def test_markers():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     program = compiled_schedule["compiled_instructions"]
 
-    def _confirm_correct_markers(device_program, device_compiler):
+    def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
+        mrk_config = device_compiler.static_hw_properties.marker_configuration
+        answers = (
+            mrk_config.init,
+            mrk_config.start,
+            mrk_config.end,
+        )
         with open(device_program["seq0"]["seq_fn"]) as file:
             qasm = json.load(file)["program"]
 
             matches = re.findall(r"set\_mrk +\d+", qasm)
-            assert len(matches) == 2
+            matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
+            if not is_rf:
+                matches = [None, *matches]
 
-            on_marker = int(re.findall(r"\d+", matches[0])[0])
-            off_marker = int(re.findall(r"\d+", matches[1])[0])
-
-            assert (
-                on_marker
-                == device_compiler.static_hw_properties.marker_configuration.start
-            )
-            assert (
-                off_marker
-                == device_compiler.static_hw_properties.marker_configuration.end
-            )
+            for match, answer in zip(matches, answers):
+                assert match == answer
 
     _confirm_correct_markers(program["qcm0"], QcmModule)
     _confirm_correct_markers(program["qrm0"], QrmModule)
-    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
-    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
+    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule, is_rf=True)
+    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule, is_rf=True)
 
 
 def test_pulsar_rf_extract_from_mapping():
