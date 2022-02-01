@@ -39,7 +39,7 @@ def get_operation_strategy(
     """
     if operation.data['port'] is None:
         if operation.name == "ShiftClockPhase":
-            return virtual.ClockPhaseShiftStrategy(operation)
+            return virtual.NcoPhaseShiftStrategy(operation)
         return virtual.IdleStrategy(operation)
 
     if operation.is_acquisition:

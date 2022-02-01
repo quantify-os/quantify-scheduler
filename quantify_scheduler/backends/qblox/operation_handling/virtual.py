@@ -51,7 +51,11 @@ class IdleStrategy(IOperationStrategy):
             The QASMProgram to add the assembly instructions to.
         """
 
-class ClockPhaseShiftStrategy(IdleStrategy):
+
+class NcoPhaseShiftStrategy(IdleStrategy):
+    """Strategy for operation that does not produce any output, but rather applies a
+    phase shift to the NCO."""
+
     def insert_qasm(self, qasm_program: QASMProgram):
         """
         Inserts the instructions needed to shift the nco phase by a specific amount.
