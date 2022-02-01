@@ -14,7 +14,23 @@ from quantify_scheduler.resources import BasebandClockResource
 
 
 class ShiftClockPhase(Operation):
+    """An operation that shifts the phase of a clock by a specified amount."""
+
     def __init__(self, phase: float, clock: str, data: Optional[dict] = None):
+        """
+        Create a new instance of ShiftClockPhase.
+
+        Parameters
+        ----------
+        phase
+            The phase shift in degrees.
+        clock
+            The clock of which to shift the phase.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
         if data is None:
             data = {
                 "name": "ShiftClockPhase",
