@@ -29,10 +29,12 @@ class MarkerConfiguration:
     """Specifies the marker configuration set during the execution of the sequencer
     program."""
 
-    start: int
-    """The setting set in the header at the start of the program. Should set all the
-    marker outputs high and turn on the output switches."""
-    end: int
+    init: Optional[int]
+    """Value to set in the header before the wait sync."""
+    start: Optional[int]
+    """The setting set in the header at the start of the program (after the wait sync).
+    """
+    end: Optional[int]
     """Setting set in the footer at the end of the program."""
 
 

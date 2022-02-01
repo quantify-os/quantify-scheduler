@@ -143,6 +143,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
         t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
         Constructor for a staircase.
@@ -164,23 +165,27 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
         """
-
-        data = {
-            "name": "StaircasePulse",
-            "pulse_info": [
-                {
-                    "wf_func": "quantify_scheduler.waveforms.staircase",
-                    "start_amp": start_amp,
-                    "final_amp": final_amp,
-                    "num_steps": num_steps,
-                    "duration": duration,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                }
-            ],
-        }
+        if data is None:
+            data = {
+                "name": "StaircasePulse",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify_scheduler.waveforms.staircase",
+                        "start_amp": start_amp,
+                        "final_amp": final_amp,
+                        "num_steps": num_steps,
+                        "duration": duration,
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                    }
+                ],
+            }
         super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
