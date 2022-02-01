@@ -143,6 +143,8 @@ def test_set_awg_value(mocker, n_awgs: int, node: str):
     zi_helpers.set_awg_value(instrument, awg_index, node, value)
 
     # Assert
+    update_value_awg_index_dict = {"index": awg_index}
+    awg._awg._module.update.assert_called_with(**update_value_awg_index_dict)
     awg._awg._module.set.assert_called_with(expected_node, value)
 
 

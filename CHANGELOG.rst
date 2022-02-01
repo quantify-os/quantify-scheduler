@@ -9,6 +9,7 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 * Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
 * Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
+* Hardware config - Removed the need for a `ic_` prefix from the hardware config (!312).
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,6 +21,7 @@ Merged branches and closed issues
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
 * Qblox backend - Made max duration of wait instructions (!319).
+* Zhinst backend - Fixed an issue when compiling seqc programs for multiple sequencers end up overwriting the first sequencer. (!340, #260)
 
 
 0.5.2 Fixes to backends, and other incremental fixes  (2021-12-08)

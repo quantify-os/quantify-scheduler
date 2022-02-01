@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Helpers for Zurich Instruments."""
 from __future__ import annotations
 
@@ -126,6 +126,7 @@ def set_awg_value(
     logger.debug(node)
 
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
+    awgs[awg_index]._awg._module.update(index=awg_index)  # Hotfix #260
     awgs[awg_index]._awg._module.set(node, value)
 
 

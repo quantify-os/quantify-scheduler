@@ -61,7 +61,7 @@ Each device in the setup can be individually configured using the entry in the c
 
     test_sched = Schedule("test_sched")
     test_sched.add(
-        pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01")
+        pulse_library.SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01")
     )
     test_sched.add_resource(ClockResource(name="q0.01", freq=7e9))
     test_sched = determine_absolute_timing(test_sched)
@@ -114,6 +114,37 @@ The backend assumes that upconversion happens according to the relation
 This means that in order to generate a certain :math:`f_{RF}`, we need to specify either an IF or an LO frequency. In the
 dictionary, we therefore either set the :code:`lo_freq` or the :code:`interm_freq` and leave the other to be calculated by
 the backend by specifying it as :code:`None`. Specifying both will raise an error if it violates :math:`f_{RF} = f_{IF} + f_{LO}`.
+
+
+Downconverter
+"""""""""""""
+
+Some users may have a custom Qblox downconverter module operating at 4.4 GHz.
+In order to use it with this backend, we should specify a :code:`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below.
+The result is that the downconversion stage will be taken into account when calculating the IF or LO frequency (whichever was undefined) during compilation, such that the signal reaching the target port is at the desired clock frequency.
+
+.. jupyter-execute::
+    :hide-output:
+    :emphasize-lines: 7
+    :linenos:
+
+    mapping_config_rf = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM_RF",
+            "ref": "internal",
+            "complex_output_0": {
+                "downconverter": True,
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50000000.0
+                }
+            }
+        }
+    }
+    hardware_compile(test_sched, mapping_config_rf)
+
 
 Mixer corrections
 ^^^^^^^^^^^^^^^^^

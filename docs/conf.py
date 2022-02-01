@@ -70,7 +70,7 @@ intersphinx_mapping = {
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
     "fastjsonschema": ("https://horejsek.github.io/python-fastjsonschema/", None),
     "quantify-core": (
-        "https://quantify-quantify-core.readthedocs-hosted.com/en/develop/",
+        "https://quantify-quantify-core.readthedocs-hosted.com/en/latest/",
         None,
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
@@ -173,7 +173,7 @@ html_context = {
     "display_gitlab": True,
     "gitlab_user": "quantify-os",
     "gitlab_repo": "quantify-scheduler",
-    "gitlab_version": "develop/docs/",
+    "gitlab_version": "main/docs/",
 }
 
 # -- Options for LaTeX output ------------------------------------------
@@ -289,6 +289,10 @@ if os.environ.get("GITLAB_CI", "false") == "true":
 import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
+
+# `pydantic` fails to import automatically and leads to broken documentation,
+# if not preloaded.
+import pydantic
 
 # When building the docs we need `typing.TYPE_CHECKING` to be `True` so that the
 # sphinx' kernel loads the modules corresponding to the typehints and is able to
