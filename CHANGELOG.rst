@@ -15,9 +15,11 @@ Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
+* Pulse library - Added `ShiftClockPhase` operation that can be used to shift the phase of a clock during execution of a `Schedule` (!346)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for easier method names, and enable plotly visualization directly from `ScheduleBase` (!313)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
+* Qblox backend - Added logic for changing the nco phase during execution of a `Schedule` (!346)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
 * Qblox backend - Made max duration of wait instructions (!319).
