@@ -23,12 +23,13 @@ class IdleStrategy(IOperationStrategy):
         Parameters
         ----------
         operation_info:
-
+            The operation info that corresponds to this operation.
         """
         self._op_info = operation_info
 
     @property
     def operation_info(self) -> types.OpInfo:
+        """Property for retrieving the operation info."""
         return self._op_info
 
     def generate_data(self, wf_dict: Dict[str, Any]):
@@ -36,11 +37,29 @@ class IdleStrategy(IOperationStrategy):
         return None
 
     def insert_qasm(self, qasm_program: QASMProgram):
-        pass
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this operation.
 
+        Not an abstractmethod, since it is allowed to use the IdleStrategy directly
+        (e.g. for IdlePulses), but can be overridden in subclass to add some assembly
+        instructions despite not outputting any data.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
 
 class ClockPhaseShiftStrategy(IdleStrategy):
     def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Inserts the instructions needed to shift the nco phase by a specific amount.
+
+        Parameters
+        ----------
+        qasm_program
+        """
         phase = self.operation_info.data["phase"]
         phase_args = helpers.get_nco_phase_arguments(phase)
         qasm_program.emit(
