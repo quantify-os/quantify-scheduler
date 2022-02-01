@@ -8,8 +8,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for the helpers module."""
 
-from typing import Tuple
-
 import pytest
 
 from quantify_scheduler.backends.qblox import helpers
