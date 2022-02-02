@@ -7,6 +7,7 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 from quantify_scheduler import Operation
+from typing import Union
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
@@ -28,7 +29,7 @@ def dispersive_measurement(
     acq_index: int,
     acq_protocol: str,
     pulse_type: str = "SquarePulse",
-    bin_mode: BinMode = BinMode.AVERAGE,
+    bin_mode: Union[BinMode, None] = BinMode.AVERAGE,
 ) -> Operation:
     """
     Generator function for a standard dispersive measurement.
@@ -39,6 +40,7 @@ def dispersive_measurement(
 
     """
     # ensures default argument is used if not specified at gate level.
+    # ideally, this input would not be accepted, but this is a workaround for #267
     if bin_mode == None:
         bin_mode = BinMode.AVERAGE
 
@@ -74,7 +76,6 @@ def dispersive_measurement(
         )
 
     if acq_protocol == "Trace":
-        # pylint: disable=fixme
         device_op.add_acquisition(
             Trace(
                 clock=clock,

@@ -15,16 +15,6 @@ from qcodes.instrument.parameter import (
 from qcodes.utils import validators
 
 
-class BasicTransmonElement(Instrument):
-    """
-    A device element representing a basic transmon coupled to a resonator.
-    """
-
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name, **kwargs)
-
-
-# TODO: add deprecation class from quantify-core !282
 class TransmonElement(Instrument):
     """
     A device element representing a single transmon coupled to a

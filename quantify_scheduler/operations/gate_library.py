@@ -455,7 +455,7 @@ class Measure(Operation):
             Acquisition channel on which the measurement is performed
         acq_index
             Index of the register where the measurement is stored.
-            If None specified, it will default if tw
+            If None specified, it will default if a tuple(0
         bin_mode
             The binning mode that is to be used. If not None, it will overwrite
             the binning mode used for Measurements in the quantum-circuit to
