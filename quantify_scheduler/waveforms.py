@@ -237,7 +237,7 @@ def sudden_net_zero(
     amp_B
         scaling correction for the final sample of the first square and first sample
         of the second square pulse.
-    net-zero_A_scale
+    net_zero_A_scale
         amplitude scaling correction factor of the negative arm of the net-zero pulse.
     t_pulse
         the total duration of the two half square pulses
