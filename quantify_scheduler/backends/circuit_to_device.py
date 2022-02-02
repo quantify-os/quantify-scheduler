@@ -7,9 +7,8 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from quantify_core.utilities.general import import_python_object_from_string
-from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.resources import BasebandClockResource, ClockResource
+from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure import DataStructure
 
@@ -157,17 +156,17 @@ def compile_circuit_to_device(
             for mux_idx, qubit in enumerate(qubits):
                 if qubit not in device_cfg.elements:
                     raise ConfigKeyError(
-                        kind="qubit",
+                        kind="element",
                         missing=qubit,
                         allowed=list(device_cfg.elements.keys()),
                     )
                 element_cfg = device_cfg.elements[qubit]
 
                 if operation_type not in element_cfg:
-                    raise OperationKeyError(
+                    raise ConfigKeyError(
+                        kind="operation",
                         missing=operation_type,
                         allowed=list(element_cfg.keys()),
-                        acting_on=qubit,
                     )
                 _add_device_repr_from_cfg_multiplexed(
                     operation, element_cfg[operation_type], mux_idx=mux_idx

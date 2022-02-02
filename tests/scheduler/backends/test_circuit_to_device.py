@@ -17,10 +17,13 @@ from quantify_scheduler.compilation import (
 from quantify_scheduler.backends.circuit_to_device import (
     compile_circuit_to_device,
     ConfigKeyError,
+    DeviceCompilationConfig,
+    OperationCompilationConfig,
 )
 
 
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -31,6 +34,7 @@ from quantify_scheduler.operations.gate_library import (
     Y,
     Y90,
 )
+from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 
@@ -111,31 +115,118 @@ def test_Reset_operations_compile():
     sched = Schedule("Test schedule")
     sched.add(Reset("q0"))
     sched.add(Reset("q0", "q1"))
-    new_dev_sched = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+    _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_qubit_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(Rxy(90, 0, qubit="q20"))
     with pytest.raises(ConfigKeyError):
-        new_dev_sched = compile_circuit_to_device(
-            sched, device_cfg=example_transmon_cfg
-        )
+        _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+    sched = Schedule("Test schedule")
+    sched.add(Reset("q2", "q5", "q3"))
+    with pytest.raises(ConfigKeyError):
+        _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+    sched = Schedule("Test schedule")
+    sched.add(Reset("q0", "q5"))
+    with pytest.raises(ConfigKeyError):
+        _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_edge_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(CZ("q0", "q3"))
     with pytest.raises(ConfigKeyError):
-        new_dev_sched = compile_circuit_to_device(
-            sched, device_cfg=example_transmon_cfg
-        )
+        _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_operation_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(CNOT("q0", "q1"))
     with pytest.raises(ConfigKeyError):
-        new_dev_sched = compile_circuit_to_device(
-            sched, device_cfg=example_transmon_cfg
-        )
+        _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+
+def test_compile_schedule_with_manually_added_clock():
+    sched = Schedule("Test schedule")
+    sched.add_resources([ClockResource(name="q0.01", freq=5e9)])
+    sched.add(X("q0"))
+    _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+
+def test_operation_not_in_config_raises_custom():
+
+    simple_config = DeviceCompilationConfig(
+        backend="quantify_scheduler.backends.circuit_to_device"
+        + ".compile_circuit_to_device",
+        clocks={
+            "q0.01": 6020000000.0,
+            "q0.ro": 7040000000.0,
+            "q1.01": 5020000000.0,
+            "q1.ro": 6900000000.0,
+        },
+        elements={"q0": {}, "q1": {}, "q2": {}},
+        edges={},
+    )
+
+    sched = Schedule("Test missing single q op")
+    sched.add(Reset("q0"))
+    with pytest.raises(ConfigKeyError):
+        _ = compile_circuit_to_device(sched, device_cfg=simple_config)
+
+    sched = Schedule("Test schedule mux missing op")
+    sched.add(Reset("q0", "q1", "q2"))
+    with pytest.raises(ConfigKeyError):
+        _ = compile_circuit_to_device(sched, device_cfg=simple_config)
+
+    sched = Schedule("Test missing 2Q op")
+    sched.add(CZ("q0", "q1"))
+    with pytest.raises(ConfigKeyError):
+        _ = compile_circuit_to_device(sched, device_cfg=simple_config)
+
+
+def test_config_with_callables():
+
+    simple_config = DeviceCompilationConfig(
+        backend="quantify_scheduler.backends.circuit_to_device"
+        + ".compile_circuit_to_device",
+        clocks={
+            "q0.01": 6020000000.0,
+            "q0.ro": 7040000000.0,
+            "q1.01": 5020000000.0,
+            "q1.ro": 6900000000.0,
+        },
+        elements={
+            "q0": {
+                "Rxy": OperationCompilationConfig(
+                    factory_func=rxy_drag_pulse,
+                    gate_info_factory_kwargs=["theta", "phi"],
+                    factory_kwargs={
+                        "amp180": 0.32,
+                        "motzoi": 0.45,
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "duration": 2e-08,
+                    },
+                ),
+                "reset": OperationCompilationConfig(
+                    factory_func=IdlePulse,
+                    factory_kwargs={"duration": 0.0002},
+                ),
+            },
+            "q1": {
+                "reset": OperationCompilationConfig(
+                    factory_func=IdlePulse,
+                    factory_kwargs={"duration": 0.0002},
+                ),
+            },
+            "q2": {},
+        },
+        edges={},
+    )
+
+    sched = Schedule("Test callable op")
+    sched.add(Reset("q0", "q1"))
+    _ = compile_circuit_to_device(sched, device_cfg=simple_config)
