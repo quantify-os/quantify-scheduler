@@ -11,6 +11,7 @@ Breaking changes
 * Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
 * Hardware config - Removed the need for a `ic_` prefix from the hardware config (!312).
 * Compilation - Deprecated `add_pulse_information_transmon` in favor of `compilation.backends.circuit_to_device.compile_circuit_to_device`(#64, #67, !339).
+* Compilation - attempting compilation with missing values in the `DeviceCompilationConfig` configuration will now raise validation errors. Be sure to set initial values when generating a config using the `QuantumDevice` object (!339)
 * Compilation - Device compile making use of `.compile_circuit_to_device` no longer modifies the input schedule (#249, !339).
 
 Merged branches and closed issues
