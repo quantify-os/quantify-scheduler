@@ -251,34 +251,42 @@ def sudden_net_zero(
     # start of the waveform.
     t = t - min(t)
 
+    def square(t, start: float, stop: float, start_amp=1, stop_amp=0):
+        """square pulses with a start and stop using a heaviside function."""
+        return np.heaviside(
+            np.around(t - start, decimals=12), start_amp
+        ) - np.heaviside(np.around(t - stop, decimals=12), stop_amp)
+
     # the waveform itself
-    first_arm = amp_A * (
-        np.heaviside(np.around(t, decimals=12), 1)
-        - np.heaviside(np.around(t - t_pulse / 2, decimals=12), amp_B)
-    )
+    first_arm = amp_A * square(t, start=0, stop=t_pulse / 2, stop_amp=amp_B)
     second_arm = (
         -1
         * amp_A
         * net_zero_A_scale
-        * (
-            np.heaviside(np.around(t - t_phi - t_pulse / 2, decimals=12), amp_B)
-            - np.heaviside(np.around(t - t_phi - t_pulse, decimals=12), 0)
+        * square(
+            t,
+            start=t_pulse / 2 + t_phi,
+            stop=t_pulse + t_phi,
+            start_amp=amp_B,
+            stop_amp=0,
         )
     )
-    amps = first_arm + second_arm
+    waveform_amps = first_arm + second_arm
 
     # adding a correction to ensure the integral evaluates to 0
     sampling_rate = t[1] - t[0]
     num_corr_samples = t_integral_correction / sampling_rate
-    corr_amp = -np.sum(amps) / num_corr_samples
-    corr_amps = amps + corr_amp * (
-        np.heaviside(np.around(t - t_phi - t_pulse, decimals=12), 0)
-        - np.heaviside(
-            np.around(t - t_phi - t_pulse - t_integral_correction, decimals=12), 0
-        )
+    corr_amp = -np.sum(waveform_amps) / num_corr_samples
+
+    corr_waveform_amps = waveform_amps + corr_amp * square(
+        t,
+        start=t_pulse + t_phi,
+        stop=t_pulse + t_phi + t_integral_correction,
+        start_amp=0,
+        stop_amp=0,
     )
 
-    return corr_amps
+    return corr_waveform_amps
 
 
 # ----------------------------------
