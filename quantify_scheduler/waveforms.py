@@ -251,19 +251,19 @@ def sudden_net_zero(
     # start of the waveform.
     t = t - min(t)
 
-    def square(t, start: float, stop: float, start_amp=1, stop_amp=0):
+    def _square(t, start: float, stop: float, start_amp=1, stop_amp=0):
         """square pulses with a start and stop using a heaviside function."""
         return np.heaviside(
             np.around(t - start, decimals=12), start_amp
         ) - np.heaviside(np.around(t - stop, decimals=12), stop_amp)
 
     # the waveform itself
-    first_arm = amp_A * square(t, start=0, stop=t_pulse / 2, stop_amp=amp_B)
+    first_arm = amp_A * _square(t, start=0, stop=t_pulse / 2, stop_amp=amp_B)
     second_arm = (
         -1
         * amp_A
         * net_zero_A_scale
-        * square(
+        * _square(
             t,
             start=t_pulse / 2 + t_phi,
             stop=t_pulse + t_phi,
@@ -278,7 +278,7 @@ def sudden_net_zero(
     num_corr_samples = t_integral_correction / sampling_rate
     corr_amp = -np.sum(waveform_amps) / num_corr_samples
 
-    corr_waveform_amps = waveform_amps + corr_amp * square(
+    corr_waveform_amps = waveform_amps + corr_amp * _square(
         t,
         start=t_pulse + t_phi,
         stop=t_pulse + t_phi + t_integral_correction,
