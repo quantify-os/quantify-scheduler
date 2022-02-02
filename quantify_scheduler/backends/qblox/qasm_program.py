@@ -464,7 +464,7 @@ class QASMProgram:
                 instrument_type="QCM",
                 max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
                 max_awg_output_voltage=2.5,
-                marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+                marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
                 mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
             )
             qasm = QASMProgram(static_hardware_properties, register_manager.RegisterManager())
