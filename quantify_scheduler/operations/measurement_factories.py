@@ -41,7 +41,7 @@ def dispersive_measurement(
     """
     # ensures default argument is used if not specified at gate level.
     # ideally, this input would not be accepted, but this is a workaround for #267
-    if bin_mode == None:
+    if bin_mode is None:
         bin_mode = BinMode.AVERAGE
 
     # Note that the funny structure here comes from the fact that the measurement
@@ -59,7 +59,11 @@ def dispersive_measurement(
         )
     else:
         # here we need to add support for SoftSquarePulse
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f'Invalid pulse_type "{pulse_type}" specified as argument to '
+            + f"dispersive_measurement. Currently dispersive_measurement only"
+            + ' allows "SquarePulse". Please correct your device config.'
+        )
 
     if acq_protocol == "SSBIntegrationComplex":
         # readout pulse
