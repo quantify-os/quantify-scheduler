@@ -156,6 +156,43 @@ def test_compile_schedule_with_manually_added_clock():
     _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
+def test_compile_schedule_with_trace_acq_protocol():
+    simple_config = DeviceCompilationConfig(
+        backend="quantify_scheduler.backends.circuit_to_device"
+        + ".compile_circuit_to_device",
+        clocks={
+            "q0.01": 6020000000.0,
+            "q0.ro": 7040000000.0,
+        },
+        elements={
+            "q0": {
+                "measure": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "measurement_factories.dispersive_measurement",
+                    "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                    "factory_kwargs": {
+                        "port": "q0:res",
+                        "clock": "q0.ro",
+                        "pulse_type": "SquarePulse",
+                        "pulse_amp": 0.25,
+                        "pulse_duration": 1.6e-07,
+                        "acq_delay": 1.2e-07,
+                        "acq_duration": 3e-07,
+                        "acq_protocol": "Trace",
+                        "acq_channel": 0,
+                    },
+                },
+            },
+            "q1": {},
+            "q2": {},
+        },
+        edges={},
+    )
+    sched = Schedule("Test schedule")
+    sched.add(Measure("q0"))
+    _ = compile_circuit_to_device(sched, device_cfg=simple_config)
+
+
 def test_operation_not_in_config_raises_custom():
 
     simple_config = DeviceCompilationConfig(
