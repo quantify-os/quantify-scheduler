@@ -4,7 +4,7 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
 import copy
 import inspect
@@ -30,6 +30,7 @@ from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
     q1asm_instructions,
+    register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
@@ -47,23 +48,21 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import (
-    BasebandModuleSettings,
-    QASMRuntimeSettings,
-)
+from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
+
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
     qcompile,
 )
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.acquisition_library import (
+    Trace,
+)
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     RampPulse,
     SquarePulse,
-    StaircasePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
@@ -232,7 +231,7 @@ def pulse_only_schedule():
     sched.add(Reset("q0"))
     sched.add(
         DRAGPulse(
-            G_amp=0.7,
+            G_amp=0.5,
             D_amp=-0.2,
             phase=90,
             port="q0:mw",
@@ -506,6 +505,13 @@ def real_square_pulse_schedule():
     return sched
 
 
+@pytest.fixture(name="empty_qasm_program_qcm")
+def fixture_empty_qasm_program():
+    return QASMProgram(
+        QcmModule.static_hw_properties, register_manager.RegisterManager()
+    )
+
+
 # --------- Test utility functions ---------
 
 
@@ -701,22 +707,37 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     assert iterations == 10
 
 
-def test_compile_with_pulse_stitching(
-    dummy_pulsars, hardware_cfg_baseband, baseband_square_pulse_schedule
-):
-    sched = baseband_square_pulse_schedule
+def _func_for_hook_test(qasm: QASMProgram):
+    qasm.instructions.insert(
+        0, QASMProgram.get_instruction_as_list(q1asm_instructions.NOP)
+    )
+
+
+def test_qasm_hook(pulse_only_schedule):
+    hw_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qrm0": {
+            "instrument_type": "Pulsar_QRM",
+            "ref": "external",
+            "complex_output_0": {
+                "seq0": {
+                    "qasm_hook_func": _func_for_hook_test,
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                }
+            },
+        },
+    }
+    sched = pulse_only_schedule
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     sched.repetitions = 11
-    full_program = qcompile(sched, DEVICE_CFG, hardware_cfg_baseband)
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
-
-    # assert
-    qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
-    waveforms = qcm0.get_waveforms(0)
-    assert waveforms["stitched_square_pulse_I"]["data"] == [1.0] * 1000
-    assert waveforms["stitched_square_pulse_Q"]["data"] == [0.0] * 1000
+    full_program = qcompile(sched, DEVICE_CFG, hw_config)
+    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    with open(qrm0_seq0_json) as file:
+        program = json.load(file)["program"]
+    program_lines = program.splitlines()
+    assert program_lines[1].strip() == q1asm_instructions.NOP
 
 
 def test_qcm_acquisition_error():
@@ -743,22 +764,16 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
 # --------- Test QASMProgram class ---------
 
 
-def test_emit():
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+def test_emit(empty_qasm_program_qcm):
+    qasm = empty_qasm_program_qcm
     qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
     qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
 
     assert len(qasm.instructions) == 2
 
 
-def test_auto_wait():
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+def test_auto_wait(empty_qasm_program_qcm):
+    qasm = empty_qasm_program_qcm
     qasm.auto_wait(120)
     assert len(qasm.instructions) == 1
     qasm.auto_wait(70000)
@@ -771,129 +786,17 @@ def test_auto_wait():
         qasm.auto_wait(-120)
 
 
-def test_wait_till_start_then_play():
-    minimal_pulse_data = {"duration": 20e-9}
-    runtime_settings = QASMRuntimeSettings(1, 1)
-    pulse = qb.OpInfo(
-        name="test_pulse",
-        uuid="test_pulse",
-        data=minimal_pulse_data,
-        timing=4e-9,
-        pulse_settings=runtime_settings,
-    )
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert len(qasm.instructions) == 3
-    assert qasm.instructions[0][1] == q1asm_instructions.WAIT
-    assert qasm.instructions[1][1] == q1asm_instructions.SET_AWG_GAIN
-    assert qasm.instructions[2][1] == q1asm_instructions.PLAY
-
-    pulse = qb.OpInfo(
-        name="test_pulse",
-        uuid="test_pulse",
-        data=minimal_pulse_data,
-        timing=1e-9,
-        pulse_settings=runtime_settings,
-    )
-    with pytest.raises(ValueError):
-        qasm.wait_till_start_then_play(pulse, 0, 1)
-
-
-def test_wait_till_start_then_acquire():
-    minimal_pulse_data = {
-        "duration": 20e-9,
-        "acq_index": 0,
-        "acq_channel": 1,
-        "bin_mode": BinMode.AVERAGE,
-        "protocol": "ssb_integration_complex",
-    }
-    acq = qb.OpInfo(
-        name="SSBIntegrationComplex",
-        uuid="test_acq",
-        data=minimal_pulse_data,
-        timing=4e-9,
-    )
-    qrm = QrmModule(
-        None, "qrm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qrm0"]
-    )
-    qasm = QASMProgram(qrm.sequencers["seq0"])
-    qasm.wait_till_start_then_acquire(acq, None, None)
-    assert len(qasm.instructions) == 2
-    assert qasm.instructions[0][1] == q1asm_instructions.WAIT
-    assert qasm.instructions[1][1] == q1asm_instructions.ACQUIRE
-
-
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(
-        name="test_acq", uuid="test_acq", data=minimal_pulse_data, timing=4e-9
+    acq = qb.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
+    expanded_val = QASMProgram.expand_from_normalised_range(
+        1, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
     )
-    expanded_val = QASMProgram._expand_from_normalised_range(
-        1, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
-    )
-    assert expanded_val == constants.IMMEDIATE_SZ_WAIT // 2
+    assert expanded_val == constants.IMMEDIATE_MAX_WAIT_TIME // 2
     with pytest.raises(ValueError):
-        QASMProgram._expand_from_normalised_range(
-            10, constants.IMMEDIATE_SZ_WAIT, "test_param", acq
+        QASMProgram.expand_from_normalised_range(
+            10, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
         )
-
-
-def test_pulse_stitching_qasm_prog():
-    minimal_pulse_data = {
-        "wf_func": "quantify_scheduler.waveforms.square",
-        "duration": 20.5e-6,
-    }
-    runtime_settings = QASMRuntimeSettings(1, 1)
-    pulse = qb.OpInfo(
-        name="stitched_square_pulse",
-        uuid="stitched_square_pulse",
-        data=minimal_pulse_data,
-        timing=4e-9,
-        pulse_settings=runtime_settings,
-    )
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    qasm.wait_till_start_then_play(pulse, 0, 1)
-    assert qasm.instructions[2][2] == "20,R0"
-
-
-@pytest.mark.parametrize("start_amp, final_amp", [(-1.1, 2.1), (1.23456, -2)])
-def test_staircase_qasm_prog(start_amp, final_amp):
-
-    s_ramp_pulse = StaircasePulse(start_amp, final_amp, 10, 12.4e-6, "q0:mw")
-
-    runtime_settings = QASMRuntimeSettings(1, 1)
-    pulse = qb.OpInfo(
-        name="staircase",
-        uuid="staircase",
-        data=s_ramp_pulse.data["pulse_info"][0],
-        timing=4e-9,
-        pulse_settings=runtime_settings,
-    )
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    qasm.wait_till_start_then_play(pulse, 0, 1)
-
-    amp_step_used = int(qasm.instructions[9][2].split(",")[1])
-    if final_amp < start_amp:
-        amp_step_used = -amp_step_used
-    steps_taken = int(qasm.instructions[5][2].split(",")[0])
-    init_amp = int(qasm.instructions[2][2].split(",")[0])
-    if init_amp > constants.IMMEDIATE_SZ_OFFSET:
-        init_amp = init_amp - constants.REGISTER_SIZE
-
-    final_amp_imm = amp_step_used * (steps_taken - 1) + init_amp
-    awg_output_volt = qcm.static_hw_properties.max_awg_output_voltage
-
-    final_amp_volt = 2 * final_amp_imm / constants.IMMEDIATE_SZ_OFFSET * awg_output_volt
-    assert final_amp_volt == pytest.approx(final_amp, 1e-3)
 
 
 def test_to_grid_time():
@@ -903,13 +806,10 @@ def test_to_grid_time():
         to_grid_time(7e-9)
 
 
-def test_loop():
+def test_loop(empty_qasm_program_qcm):
     num_rep = 10
 
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
+    qasm = empty_qasm_program_qcm
     qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
     with qasm.loop("this_loop", repetitions=num_rep):
         qasm.emit(q1asm_instructions.WAIT, 20)
@@ -920,18 +820,13 @@ def test_loop():
 
 
 @pytest.mark.parametrize("amount", [1, 2, 3, 40])
-def test_temp_register(amount):
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
-    qasm = QASMProgram(qcm.sequencers["seq0"])
-    with qasm.temp_register(amount) as registers:
-        if isinstance(registers, str):
-            registers = [registers]
+def test_temp_register(amount, empty_qasm_program_qcm):
+    qasm = empty_qasm_program_qcm
+    with qasm.temp_registers(amount) as registers:
         for reg in registers:
-            assert reg not in qasm._register_manager.available_registers
+            assert reg not in qasm.register_manager.available_registers
     for reg in registers:
-        assert reg in qasm._register_manager.available_registers
+        assert reg in qasm.register_manager.available_registers
 
 
 # --------- Test compilation functions ---------
@@ -1097,7 +992,7 @@ def test_assign_frequencies_baseband():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    generic_icc = "generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1133,10 +1028,10 @@ def test_assign_frequencies_baseband_downconverter():
     compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    lo0 = q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = -q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    generic_icc = "generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1219,8 +1114,8 @@ def test_assign_frequencies_rf_downconverter():
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
-    lo0 = q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
+    if1 = -q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
@@ -1241,29 +1136,28 @@ def test_markers():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     program = compiled_schedule["compiled_instructions"]
 
-    def _confirm_correct_markers(device_program, device_compiler):
+    def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
+        mrk_config = device_compiler.static_hw_properties.marker_configuration
+        answers = (
+            mrk_config.init,
+            mrk_config.start,
+            mrk_config.end,
+        )
         with open(device_program["seq0"]["seq_fn"]) as file:
             qasm = json.load(file)["program"]
 
             matches = re.findall(r"set\_mrk +\d+", qasm)
-            assert len(matches) == 2
+            matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
+            if not is_rf:
+                matches = [None, *matches]
 
-            on_marker = int(re.findall(r"\d+", matches[0])[0])
-            off_marker = int(re.findall(r"\d+", matches[1])[0])
-
-            assert (
-                on_marker
-                == device_compiler.static_hw_properties.marker_configuration.start
-            )
-            assert (
-                off_marker
-                == device_compiler.static_hw_properties.marker_configuration.end
-            )
+            for match, answer in zip(matches, answers):
+                assert match == answer
 
     _confirm_correct_markers(program["qcm0"], QcmModule)
     _confirm_correct_markers(program["qrm0"], QrmModule)
-    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
-    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
+    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule, is_rf=True)
+    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule, is_rf=True)
 
 
 def test_pulsar_rf_extract_from_mapping():
@@ -1277,7 +1171,7 @@ def test_cluster_settings(pulse_only_schedule):
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
     cluster_compiler.prepare()
-    cl_qcm0 = cluster_compiler.instrument_compilers["cl_qcm0"]
+    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_qcm0"]
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 
 

@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
@@ -133,9 +133,10 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
-        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
     )
 
@@ -148,9 +149,10 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
-        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
     )
 
@@ -162,9 +164,10 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QCM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=0.25,
-        marker_configuration=MarkerConfiguration(start=0b1111, end=0b0000),
+        marker_configuration=MarkerConfiguration(init=0b0011, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
     )
 
@@ -176,10 +179,10 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+        instrument_type="QRM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.25,
-        # N.B one of the output switches works inverted, hence the 1101 instead of 1111.
-        marker_configuration=MarkerConfiguration(start=0b1101, end=0b0010),
+        marker_configuration=MarkerConfiguration(init=0b0011, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
     )
 

@@ -1,12 +1,13 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Constants for compilation to Qblox hardware."""
 
 
 IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
 """Size of gain instruction immediates in Q1ASM programs."""
-IMMEDIATE_SZ_WAIT = pow(2, 16) - 1
-"""Size of wait instruction immediates in Q1ASM programs."""
+IMMEDIATE_MAX_WAIT_TIME = pow(2, 16) - 4
+"""Max size of wait instruction immediates in Q1ASM programs. Max value allowed by
+assembler is 2**16-1, but this is the largest that is a multiple of 4 ns."""
 IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
 """Size of offset instruction immediates in Q1ASM programs."""
 REGISTER_SIZE = pow(2, 32) - 1
@@ -43,3 +44,5 @@ NUMBER_OF_REGISTERS: int = 64
 
 DOWNCONVERTER_FREQ: float = 4.4e9
 """LO frequency used by the Qblox downconverter."""
+GENERIC_IC_COMPONENT_NAME: str = "generic"
+"""Default name for the generic instrument coordinator component."""

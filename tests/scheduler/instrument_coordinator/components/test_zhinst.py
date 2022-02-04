@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -140,7 +140,7 @@ def test_hdawg_prepare(mocker, make_hdawg):
 
     # Assert
     hdawg_serialize_settings = settings.ZISerializeSettings(
-        f"ic_{hdawg.instrument.name}", hdawg.instrument._serial, hdawg.instrument._type
+        f"{hdawg.instrument.name}", hdawg.instrument._serial, hdawg.instrument._type
     )
     serialize.assert_called_with(Path("."), hdawg_serialize_settings)
     apply.assert_called_with(hdawg.instrument)
@@ -241,7 +241,7 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
 
     # Assert
     uhfqa_serialize_settings = settings.ZISerializeSettings(
-        f"ic_{uhfqa.instrument.name}", uhfqa.instrument._serial, uhfqa.instrument._type
+        f"{uhfqa.instrument.name}", uhfqa.instrument._serial, uhfqa.instrument._type
     )
     serialize.assert_called_with(Path("."), uhfqa_serialize_settings)
     apply.assert_called_with(uhfqa.instrument)

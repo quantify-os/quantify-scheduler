@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 from qcodes.instrument.base import Instrument
+from qcodes.instrument.channel import InstrumentChannel
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.instrument_coordinator import utility
@@ -27,9 +28,36 @@ def fixture_mock_instrument() -> Instrument:
         label="Test Parameter",
         parameter_class=ManualParameter,
     )
+
+    class DummyInstrumentChannel(InstrumentChannel):
+        def __init__(self, parent: Instrument, name: str, channel: str) -> None:
+            super().__init__(parent, name)
+            self.add_parameter(
+                "bar", label="Test Child Parameter", parameter_class=ManualParameter
+            )
+
+    ch_name = "ch_foo"
+    channel = DummyInstrumentChannel(parent=instr, name=ch_name, channel=ch_name)
+    instr.add_submodule(ch_name, channel)
+
     yield instr
 
     instr.close()
+
+
+def test_search_settable_param_success(mock_instrument):
+    settable_param = utility.search_settable_param(
+        instrument=mock_instrument, nested_parameter_name="ch_foo.bar"
+    )
+    assert isinstance(settable_param, ManualParameter)
+
+
+@pytest.mark.parametrize("parameter_name", ["ch_foo2.bar", "ch_foo.bar2", "foo"])
+def test_search_settable_param_fail(mock_instrument, parameter_name):
+    with pytest.raises(ValueError):
+        utility.search_settable_param(
+            instrument=mock_instrument, nested_parameter_name=parameter_name
+        )
 
 
 class CallCounter:

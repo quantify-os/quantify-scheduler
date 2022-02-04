@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """
 Module that holds all the string literals that are valid instructions that can be
 executed by the sequencer in Qblox hardware.

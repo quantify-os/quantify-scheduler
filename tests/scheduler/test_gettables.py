@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=too-many-locals
@@ -9,11 +9,12 @@ from collections import namedtuple
 from typing import Any, Dict, Tuple
 
 import numpy as np
+import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.gettables import ScheduleGettableSingleChannel
+from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
@@ -28,6 +29,33 @@ from quantify_scheduler.schedules.trace_schedules import trace_schedule
 # this is taken from the qblox backend and is used to make the tuple indexing of
 # acquisitions more explicit. See also #179 of quantify-scheduler
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
+
+
+@pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
+def test_process_acquired_data(mock_setup, num_channels: int, real_imag: bool):
+    # arrange
+    quantum_device = mock_setup["quantum_device"]
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="ssb_integration_complex",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=complex,
+        acq_indices={i: [0] for i in range(num_channels)},
+    )
+    mock_data = {AcquisitionIndexing(i, 0): (4815, 162342) for i in range(num_channels)}
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=lambda x: x,
+        schedule_kwargs={},
+        real_imag=real_imag,
+    )
+
+    # act
+    processed_data = gettable.process_acquired_data(
+        mock_data, acq_metadata, repetitions=10
+    )
+
+    # assert
+    assert len(processed_data) == 2 * num_channels
 
 
 def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, mocker):
@@ -70,7 +98,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
     )
 
     # Configure the gettable
-    spec_gettable = ScheduleGettableSingleChannel(
+    spec_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=heterodyne_spec_sched,
         schedule_kwargs=schedule_kwargs,
@@ -135,7 +163,7 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
 
     # Configure the gettable
 
-    allxy_gettable = ScheduleGettableSingleChannel(
+    allxy_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=allxy_sched,
         schedule_kwargs=sched_kwargs,
@@ -195,7 +223,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
 
     # Configure the gettable
 
-    ssro_gettable = ScheduleGettableSingleChannel(
+    ssro_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=readout_calibration_sched,
         schedule_kwargs=sched_kwargs,
@@ -238,7 +266,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
         "init_duration": device_element.init_duration,
     }
 
-    sched_gettable = ScheduleGettableSingleChannel(
+    sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=trace_schedule,
         schedule_kwargs=schedule_kwargs,

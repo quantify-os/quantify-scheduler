@@ -50,12 +50,6 @@ instrument_compilers
 .. automodule:: quantify_scheduler.backends.qblox.instrument_compilers
     :members:
 
-non_generic
-~~~~~~~~~~~
-
-.. automodule:: quantify_scheduler.backends.qblox.non_generic
-    :members:
-
 
 q1asm_instructions
 ~~~~~~~~~~~~~~~~~~
@@ -67,6 +61,42 @@ qasm_program
 ~~~~~~~~~~~~
 
 .. automodule:: quantify_scheduler.backends.qblox.qasm_program
+    :members:
+
+register_manager
+~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.backends.qblox.register_manager
+    :members:
+
+operation_handling
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling
+    :members:
+
+base
+""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.base
+    :members:
+
+factory
+"""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.factory
+    :members:
+
+pulses
+""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.pulses
+    :members:
+
+acquisitions
+""""""""""""
+
+.. automodule:: quantify_scheduler.backends.qblox.operation_handling.acquisitions
     :members:
 
 
@@ -145,30 +175,6 @@ transmon_element
 .. automodule:: quantify_scheduler.device_under_test.transmon_element
     :members:
 
-
-
-helpers
-=======
-
-.. automodule:: quantify_scheduler.helpers
-    :members:
-
-inspect
---------
-.. automodule:: quantify_scheduler.helpers.inspect
-    :members:
-
-
-schedule
---------
-.. automodule:: quantify_scheduler.helpers.schedule
-    :members:
-
-
-time
-----
-.. automodule:: quantify_scheduler.helpers.time
-    :members:
 
 
 waveforms
@@ -398,6 +404,38 @@ waveforms
 .. automodule:: quantify_scheduler.waveforms
     :members:
 
+
+Modules for internal usage
+==========================
+
+structure
+---------
+
+.. automodule:: quantify_scheduler.structure
+    :members: DataStructure
+
+helpers
+-------
+
+.. automodule:: quantify_scheduler.helpers
+    :members:
+
+inspect
+~~~~~~~
+.. automodule:: quantify_scheduler.helpers.inspect
+    :members:
+
+
+schedule
+~~~~~~~~
+.. automodule:: quantify_scheduler.helpers.schedule
+    :members:
+
+
+time
+~~~~
+.. automodule:: quantify_scheduler.helpers.time
+    :members:
 
 
 
