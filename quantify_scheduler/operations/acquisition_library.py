@@ -413,6 +413,13 @@ class NumericalWeightedIntegrationComplex(
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
+        if not isinstance(weights_a, np.ndarray):
+            weights_a = np.array(weights_a)
+        if not isinstance(weights_b, np.ndarray):
+            weights_b = np.array(weights_b)
+        if not isinstance(t, np.ndarray):
+            t = np.array(t)
+
         waveforms_a = {
             "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_a,
@@ -467,3 +474,6 @@ class NumericalWeightedIntegrationComplex(
             f"acq_channel={acq_channel}, acq_index={acq_index}, bin_mode='{bin_mode}', "
             f"phase={phase}, t0={t0})"
         )
+
+    def __repr__(self) -> str:
+        return str(self)

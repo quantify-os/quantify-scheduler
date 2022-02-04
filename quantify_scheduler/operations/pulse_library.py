@@ -4,8 +4,7 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union
 
 import numpy as np
 from qcodes import validators

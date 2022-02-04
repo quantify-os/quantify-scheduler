@@ -102,13 +102,6 @@ def test_trace():
             clock="q0.ro",
             duration=100e-9,
         ),
-        NumericalWeightedIntegrationComplex(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            t=np.linspace(0, 3, 1),
-            port="q0.res",
-            clock="q0.ro",
-        ),
     ],
 )
 def test__repr__(operation: Operation):
@@ -209,13 +202,6 @@ def test_deserialize(operation: Operation):
             port="q0:res",
             clock="q0.ro",
             duration=100e-9,
-        ),
-        NumericalWeightedIntegrationComplex(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            t=np.linspace(0, 3, 1),
-            port="q0:res",
-            clock="q0.ro",
         ),
     ],
 )
