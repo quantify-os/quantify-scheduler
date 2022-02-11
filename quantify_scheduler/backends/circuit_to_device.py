@@ -57,6 +57,45 @@ class DeviceCompilationConfig(DataStructure):
         a dictionary specifying the edges, links between elements on the device to which
         operations can be applied, the operations tha can be  applied to them and how
         to compile them.
+
+
+
+    .. admonition:: Examples
+        :class: dropdown
+
+        The DeviceCompilationConfig is structured such that it should allow the
+        specification of the circuit-to-device compilation for many different qubit
+        platforms.
+        Here we show a basic configuration for a two-transmon quantum device.
+        In this example, the DeviceCompilationConfig is created by parsing a dictionary
+        containing the relevant information.
+
+        .. important::
+
+            Although it is possible to manually create a configuration using
+            dictionaries, this is not recommended. The
+            :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`
+            is responsible for managing and generating configuration files.
+
+        .. jupyter-execute::
+
+            from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+            import pprint
+            from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+                example_transmon_cfg,
+            )
+
+            pprint.pprint(example_transmon_cfg)
+
+
+        The dictionary can be parsed using the :code:`parse_obj` method.
+
+        .. jupyter-execute::
+
+            pydantic_config = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+            pydantic_config
+
+
     """
 
     backend: str
