@@ -307,7 +307,7 @@ def test_apply_mixer_skewness_corrections() -> None:
 
     # Assert
     assert isinstance(waveform, np.ndarray)
-    assert pytest.approx(amp_ratio_after, amplitude_ratio)
+    assert amp_ratio_after == pytest.approx(amplitude_ratio, abs=1e-3)
     normalized_real = waveform.real / np.max(np.abs(waveform.real))
     normalized_imag = waveform.imag / np.max(np.abs(waveform.imag))
     assert np.allclose(normalized_real, normalized_imag)
