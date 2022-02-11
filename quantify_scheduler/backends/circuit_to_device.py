@@ -36,6 +36,7 @@ class OperationCompilationConfig(DataStructure):
     gate_info_factory_kwargs: Optional[List[str]]
 
 
+# pylint: disable=line-too-long
 class DeviceCompilationConfig(DataStructure):
     """
     A datastructure containing the information required to compile a
@@ -104,6 +105,7 @@ class DeviceCompilationConfig(DataStructure):
     edges: Dict[str, Dict[str, OperationCompilationConfig]]
 
 
+# pylint: disable=too-many-branches
 def compile_circuit_to_device(
     schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
 ) -> Schedule:
@@ -230,7 +232,7 @@ def _add_device_repr_from_cfg(
     factory_kwargs: Dict = operation_cfg.factory_kwargs
 
     # retrieve keyword args for parametrized operations from the gate info
-    if operation_cfg.gate_info_factory_kwargs != None:
+    if operation_cfg.gate_info_factory_kwargs is not None:
         for key in operation_cfg.gate_info_factory_kwargs:
             factory_kwargs[key] = operation.data["gate_info"][key]
 
@@ -263,7 +265,7 @@ def _add_device_repr_from_cfg_multiplexed(
     factory_kwargs: Dict = operation_cfg.factory_kwargs
 
     # retrieve keyword args for parametrized operations from the gate info
-    if operation_cfg.gate_info_factory_kwargs != None:
+    if operation_cfg.gate_info_factory_kwargs is not None:
         for key in operation_cfg.gate_info_factory_kwargs:
             factory_kwargs[key] = operation.data["gate_info"][key][mux_idx]
 
@@ -271,6 +273,7 @@ def _add_device_repr_from_cfg_multiplexed(
     operation.add_device_representation(device_op)
 
 
+# pylint: disable=super-init-not-called
 class ConfigKeyError(KeyError):
     """
     Custom exception for when a key is missing in a configuration file.
