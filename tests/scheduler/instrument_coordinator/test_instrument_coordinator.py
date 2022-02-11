@@ -137,7 +137,7 @@ def test_is_running(
         instrument_coordinator.add_component(component)
         component.is_running = state
 
-    # force garbage collection to emulate qcodes correcly
+    # force garbage collection to emulate qcodes correctly
     gc.collect()
 
     # Act
