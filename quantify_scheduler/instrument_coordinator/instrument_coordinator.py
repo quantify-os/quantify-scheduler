@@ -11,7 +11,7 @@ from qcodes.instrument import parameter
 from qcodes.utils import validators
 
 from quantify_scheduler import CompiledSchedule
-from quantify_scheduler.instrument_coordinator.components import base
+from quantify_scheduler.instrument_coordinator.components import base, generic
 
 
 class InstrumentCoordinator(qcodes_base.Instrument):
@@ -62,7 +62,18 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     """  # pylint: disable=line-too-long
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, add_default_generic_icc: bool = True) -> None:
+        """
+        Instantiates a new instrument coordinator.
+
+        Parameters
+        ----------
+        name
+            The name for the instrument coordinator instance.
+        add_default_generic_icc
+            If True, automatically adds a GenericInstrumentCoordinatorComponent to this
+            instrument coordinator with the default name.
+        """
         super().__init__(name)
         self.add_parameter(
             "components",
@@ -83,6 +94,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             "when retrieving acquisitions.",
         )
         self._last_schedule = None
+        if add_default_generic_icc:
+            self.add_component(
+                generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME)
+            )
 
     @property
     def last_schedule(self) -> CompiledSchedule:
