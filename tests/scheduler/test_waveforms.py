@@ -1,5 +1,5 @@
 # pylint: disable=missing-function-docstring
-
+# pylint: disable=invalid-name
 
 import numpy as np
 import numpy.testing as npt
@@ -105,7 +105,7 @@ def test_sudden_net_zero() -> None:
     waveform = sudden_net_zero(
         times,
         amp_A=amp_A,
-        amp_B=0.5,
+        amp_B=amp_B,
         net_zero_A_scale=net_zero_A_scale,
         t_pulse=20e-9,
         t_phi=2e-9,

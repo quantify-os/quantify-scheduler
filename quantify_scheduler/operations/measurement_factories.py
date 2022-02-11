@@ -6,18 +6,17 @@ A module containing factory functions for measurements on the quantum-device lay
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
-from quantify_scheduler import Operation
 from typing import Union
+
+from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
 )
-from quantify_scheduler.operations.pulse_library import (
-    SquarePulse,
-)
+from quantify_scheduler.operations.pulse_library import SquarePulse
 
-
+# pylint: disable=too-many-arguments
 def dispersive_measurement(
     pulse_amp: float,
     pulse_duration: float,
@@ -61,7 +60,7 @@ def dispersive_measurement(
         # here we need to add support for SoftSquarePulse
         raise NotImplementedError(
             f'Invalid pulse_type "{pulse_type}" specified as argument to '
-            + f"dispersive_measurement. Currently dispersive_measurement only"
+            + "dispersive_measurement. Currently dispersive_measurement only"
             + ' allows "SquarePulse". Please correct your device config.'
         )
 

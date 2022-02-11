@@ -27,8 +27,6 @@ from quantify_scheduler.schemas.examples import utils
 
 # load here to avoid loading every time a fixture is used
 DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
-# second device config corresponds to the circuit_to_device compilation that should support
-# compilation for different platforms.
 
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
@@ -43,8 +41,6 @@ def load_example_transmon_config() -> Dict[str, Any]:
 
     def _load_example_transmon_config():
         return DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-        # return dict(TRANSMON_DEVICE_CFG)
-        # from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import example_transmon_cfg
 
     yield _load_example_transmon_config
 

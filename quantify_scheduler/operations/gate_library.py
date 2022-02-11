@@ -471,11 +471,11 @@ class Measure(Operation):
         # this snippet has some automatic behaviour that is error prone.
         # see #262
         if len(qubits) == 1:
-            if acq_channel == None:
+            if acq_channel is None:
                 acq_channel_info = 0
             else:
                 acq_channel_info = acq_channel
-            if acq_index == None:
+            if acq_index is None:
                 acq_index_info = 0
             else:
                 acq_index_info = acq_index

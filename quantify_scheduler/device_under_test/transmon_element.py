@@ -313,7 +313,7 @@ class TransmonElement(Instrument):
                         "duration": self.init_duration(),
                     },
                 ),
-                # example of a pulse with a parametrized mapping, use a constructor class.
+                # example of a pulse with a parametrized mapping, using a factory
                 "Rxy": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
                     + "pulse_factories.rxy_drag_pulse",
@@ -329,7 +329,8 @@ class TransmonElement(Instrument):
                         "phi",
                     ],  # the keys from the gate info to pass to the factory function
                 ),
-                # the measurement also has a parametrized mapping, and uses a constructor class.
+                # the measurement also has a parametrized mapping, and uses a
+                # factory function.
                 "measure": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
