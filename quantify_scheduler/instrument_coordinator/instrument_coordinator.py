@@ -320,8 +320,8 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
     during the acquisition of results.
     """
 
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self.add_parameter(
             "timeout_reacquire",
