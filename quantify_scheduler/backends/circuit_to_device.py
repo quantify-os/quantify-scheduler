@@ -92,8 +92,8 @@ class DeviceCompilationConfig(DataStructure):
 
         .. jupyter-execute::
 
-            pydantic_config = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-            pydantic_config
+            device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+            device_cfg
 
 
     """
