@@ -277,14 +277,17 @@ Both compilation steps can be triggered by passing a :class:`.Schedule` and the 
 
     And we employ the term "**hardware**" to refer to the instruments (electronics) that are involved in the pulse generations / signal digitization.
 
-
-
 .. _sec-device-config:
 
-Device configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Device configuration
+~~~~~~~~~~~~~~~~~~~~
 
-The device configuration file is used to compile from the quantum-circuit layer to the quantum-device layer.
+The device configuration is used to compile from the quantum-circuit layer to the quantum-device layer.
+The :class:`DeviceCompilationConfig` data structure contains the information required to add the quantum-device level representation to every operation in a schedule.
+
+.. autoclass:: quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig
+    :noindex:
+
 The main responsibility is to contain the information required to add a pulse-representation to every operation that only has a quantum-circuit layer description.
 The device configuration contains information for all qubits, and all edges.
 Edges are pairs of qubits (separated by a dash :code:`-`) on which gates can act.
