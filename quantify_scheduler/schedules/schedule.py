@@ -441,7 +441,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ]
         )
 
-        timing_table_list = [timing_table] you
+        timing_table_list = [timing_table]
         for schedulable in self.schedulables.values():
             if "abs_time" not in schedulable:
                 # when this exception is encountered
