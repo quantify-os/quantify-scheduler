@@ -441,6 +441,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ]
         )
 
+        timing_table_list = [timing_table] you
         for schedulable in self.schedulables.values():
             if "abs_time" not in schedulable:
                 # when this exception is encountered
@@ -460,7 +461,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                     "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }
-                timing_table = timing_table.append(df_row, ignore_index=True)
+                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
 
             # iterate over acquisition information
             for i, acq_info in enumerate(operation["acquisition_info"]):
@@ -475,8 +476,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                     "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }
-                timing_table = timing_table.append(df_row, ignore_index=True)
-
+                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
+        timing_table = pd.concat(timing_table_list, ignore_index=True)
         # apply a style so that time is easy to read.
         # this works under the assumption that we are using timings on the order of
         # nanoseconds.
