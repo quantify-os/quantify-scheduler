@@ -81,7 +81,7 @@ class TransmonElement(Instrument):
             initial_value=0,
             unit="",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1, max_value=1),
         )
         self.add_parameter(
             "mw_pulse_duration",
