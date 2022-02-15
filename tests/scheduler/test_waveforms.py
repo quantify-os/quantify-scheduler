@@ -63,8 +63,8 @@ def test_drag_ns() -> None:
     times = np.arange(0, duration, 1e-9)  # sampling rate set to 1 GSPs
     mu = times[0] + duration / 2
     sigma = duration / (2 * nr_sigma)
-    gauss_env = G_amp * np.exp(-(0.5 * ((times - mu) ** 2) / sigma ** 2))
-    deriv_gauss_env = D_amp * -1 * (times - mu) / (sigma ** 1) * gauss_env
+    gauss_env = G_amp * np.exp(-(0.5 * ((times - mu) ** 2) / sigma**2))
+    deriv_gauss_env = D_amp * -1 * (times - mu) / (sigma**1) * gauss_env
     exp_waveform = gauss_env + 1j * deriv_gauss_env
 
     # quantify
