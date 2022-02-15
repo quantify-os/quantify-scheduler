@@ -215,7 +215,7 @@ rxy_theta.data
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # The compilation from the gate-level to the pulse-level description is done using the
-# :ref:`device configuration file<Device configuration file>`.
+# :ref:`device configuration file<sec-device-config>`.
 #
 # Here we will use a configuration file for a transmon based system that is part of the
 # quantify-scheduler test suite.
@@ -226,25 +226,23 @@ import inspect
 import json
 import os
 
-import quantify_scheduler.schemas.examples as es
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 
-esp = inspect.getfile(es)
-cfg_f = Path(esp).parent / "transmon_test_config.json"
+transmon_test_config = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
-
-with open(cfg_f, "r") as f:
-    transmon_test_config = json.load(f)
-
-transmon_test_config
 
 # %%
-from quantify_scheduler.compilation import (
-    add_pulse_information_transmon,
-    determine_absolute_timing,
-)
+from quantify_scheduler.compilation import device_compile
 
-add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-determine_absolute_timing(schedule=sched)
+sched = device_compile(sched, device_cfg=transmon_test_config)
+# add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+# determine_absolute_timing(schedule=sched)
+
+# %%
+sched
 
 # %%
 from quantify_scheduler.visualization.pulse_scheme import pulse_diagram_plotly
@@ -279,8 +277,10 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     )
 
 
-add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-determine_absolute_timing(schedule=sched)
+sched = device_compile(sched, device_cfg=transmon_test_config)
+
+# add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+# determine_absolute_timing(schedule=sched)
 
 # %% [raw]
 # The compilation from the pulse-level description for execution on physical hardware is
@@ -293,6 +293,10 @@ determine_absolute_timing(schedule=sched)
 #
 
 # %%
+import quantify_scheduler.schemas.examples as es
+
+esp = inspect.getfile(es)
+
 cfg_f = Path(esp).parent / "qblox_test_mapping.json"
 
 with open(cfg_f, "r") as f:

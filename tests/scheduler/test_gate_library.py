@@ -103,7 +103,7 @@ def is__str__equal(obj: Any) -> None:
         CNOT("q0", "q6"),
         Measure("q0", "q6"),
         Measure("q0"),
-        Measure("q0", "q6", acq_channel=4),
+        Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
     ],
 )
@@ -125,7 +125,7 @@ def test__repr__(operation: Operation) -> None:
         CNOT("q0", "q6"),
         Measure("q0", "q6"),
         Measure("q0"),
-        Measure("q0", "q6", acq_channel=4),
+        Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
     ],
 )

@@ -393,7 +393,6 @@ def readout_calibration_sched(
             Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND),
             label=f"Measurement {i}",
         )
-
     return schedule
 
 

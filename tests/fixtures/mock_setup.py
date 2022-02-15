@@ -56,10 +56,15 @@ def mock_setup(request, tmp_test_data_dir):
     q0.ro_pulse_amp(0.08)
     q0.ro_freq(8.1e9)
     q0.freq_01(5.8e9)
+    q0.freq_12(5.45e9)
     q0.mw_amp180(0.314)
     q0.mw_pulse_duration(20e-9)
     q0.ro_pulse_delay(20e-9)
     q0.ro_acq_delay(20e-9)
+
+    q1.ro_freq(8.64e9)
+    q1.freq_01(6.4e9)
+    q1.freq_12(5.05e9)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_component(q0)
