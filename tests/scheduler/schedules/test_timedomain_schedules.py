@@ -45,13 +45,15 @@ class TestRabiPulse(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.rabi_pulse_sched(**cls.sched_kwargs)
+        cls.uncomp_sched = ts.rabi_pulse_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
-    def test_timing(self):
-        sched = determine_absolute_timing(self.sched)
+    def test_timing(self, load_example_transmon_config):
+        # This will determine the timing
+        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config())
+
         # test that the right operations are added and timing is as expected.
         labels = ["qubit reset", "Rabi_pulse", "readout_pulse", "acquisition"]
         t2 = (
@@ -68,7 +70,7 @@ class TestRabiPulse(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config())
 
 
 class TestRabiSched(_CompilesAllBackends):
@@ -85,29 +87,31 @@ class TestRabiSched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.rabi_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.rabi_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
-    def test_timing(self):
+    def test_timing(self, load_example_transmon_config):
+        # This will determine the timing
+        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config())
+
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
         abs_times = [0, 200e-6, 200e-6 + 20e-9]
 
-        assert len(self.sched.schedulables) == len(labels)
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        assert len(sched.schedulables) == len(labels)
+        for i, schedulable in enumerate(sched.schedulables.values()):
             assert schedulable["label"] == labels[i]
             assert schedulable["abs_time"] == abs_times[i]
 
     def test_rabi_pulse_ops(self):
-        rabi_op_hash = list(self.sched.schedulables.values())[1]["operation_repr"]
-        rabi_pulse = self.sched.operations[rabi_op_hash]["pulse_info"][0]
+        rabi_op_hash = list(self.uncomp_sched.schedulables.values())[1]["operation_repr"]
+        rabi_pulse = self.uncomp_sched.operations[rabi_op_hash]["pulse_info"][0]
         assert rabi_pulse["G_amp"] == 0.2
         assert rabi_pulse["D_amp"] == 0
         assert rabi_pulse["duration"] == 20e-9
-        assert self.sched.resources["q0.01"]["freq"] == 5.442e9
+        assert self.uncomp_sched.resources["q0.01"]["freq"] == 5.442e9
 
     def test_batched_variant_single_val(self, load_example_transmon_config):
         sched = ts.rabi_sched(
@@ -197,8 +201,8 @@ class TestRabiSched(_CompilesAllBackends):
 
     def test_correct_inference_of_port_clock(self):
         # operation 1 is tested in test_timing to be the Rabi pulse
-        op_name = list(self.sched.schedulables.values())[1]["operation_repr"]
-        rabi_op = self.sched.operations[op_name]
+        op_name = list(self.uncomp_sched.schedulables.values())[1]["operation_repr"]
+        rabi_op = self.uncomp_sched.operations[op_name]
         assert rabi_op["pulse_info"][0]["port"] == "q0:mw"
         assert rabi_op["pulse_info"][0]["clock"] == "q0.01"
 
@@ -213,11 +217,10 @@ class TestT1Sched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.t1_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.t1_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
@@ -226,7 +229,7 @@ class TestT1Sched(_CompilesAllBackends):
         for i in range(len(self.sched_kwargs["times"])):
             labels += [l.format(i) for l in label_tmpl]
 
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             assert schedulable["label"] == labels[i]
             if (i - 2) % 3 == 0:  # every measurement operation
                 assert (
@@ -245,7 +248,7 @@ class TestT1Sched(_CompilesAllBackends):
         sched = qcompile(sched, load_example_transmon_config())
 
     def test_operations(self):
-        assert len(self.sched.operations) == 2 + 21  # init, pi and 21*measure
+        assert len(self.uncomp_sched.operations) == 2 + 21  # init, pi and 21*measure
 
 
 class TestRamseySchedDetuning(_CompilesAllBackends):
@@ -260,15 +263,14 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.ramsey_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             if i % 4 == 0:
                 assert schedulable["label"][:5] == "Reset"
             if (i - 2) % 4 == 0:  # every second pi/2 operation
@@ -296,7 +298,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
 
     def test_operations(self):
         # 2 initial pi/2, 20 acquisitions + 6 unique rotation angles for 2nd pi/2
-        assert len(self.sched.operations) == 2 + 20 + 6
+        assert len(self.uncomp_sched.operations) == 2 + 20 + 6
 
 
 class TestRamseySched(_CompilesAllBackends):
@@ -309,15 +311,14 @@ class TestRamseySched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.ramsey_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.ramsey_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             if i % 4 == 0:
                 assert schedulable["label"][:5] == "Reset"
             if (i - 2) % 4 == 0:  # every second pi/2 operation
@@ -340,7 +341,7 @@ class TestRamseySched(_CompilesAllBackends):
 
     def test_operations(self):
         assert (
-            len(self.sched.operations) == 3 + 20
+            len(self.uncomp_sched.operations) == 3 + 20
         )  # init, x90, Rxy(90,0) and 20 * measure
 
 
@@ -354,11 +355,10 @@ class TestEchoSched(_CompilesAllBackends):
             "repetitions": 10,
         }
 
-        cls.sched = ts.echo_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.echo_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     # pylint: disable=no-self-use
     def test_sched_float_times(self, load_example_transmon_config):
@@ -372,7 +372,7 @@ class TestEchoSched(_CompilesAllBackends):
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             if i % 5 == 0:
                 assert schedulable["label"][:5] == "Reset"
             if (i - 2) % 5 == 0:  # every second pi/2 operation
@@ -390,7 +390,7 @@ class TestEchoSched(_CompilesAllBackends):
 
     def test_operations(self):
         # 4 for an echo
-        assert len(self.sched.operations) == 23  # init, x90, X and 20x measure
+        assert len(self.uncomp_sched.operations) == 23  # init, x90, X and 20x measure
 
 
 class TestAllXYSched(_CompilesAllBackends):
@@ -399,15 +399,14 @@ class TestAllXYSched(_CompilesAllBackends):
         set_datadir(tmp_dir.name)
         cls.sched_kwargs = {"qubit": "q0", "repetitions": 10}
 
-        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.allxy_sched(**cls.sched_kwargs)
 
     def test_repetitions(self):
-        assert self.sched.repetitions == self.sched_kwargs["repetitions"]
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             if i % 4 == 0:
                 assert schedulable["label"][:5] == "Reset"
             if (i - 3) % 4 == 0:
@@ -415,7 +414,7 @@ class TestAllXYSched(_CompilesAllBackends):
 
     def test_operations(self):
         # 6 +21 operations (x90, y90, X180, Y180, idle, reset, 21*measurement)
-        assert len(self.sched.operations) == 6 + 21
+        assert len(self.uncomp_sched.operations) == 6 + 21
 
 
 class TestAllXYSchedElement(_CompilesAllBackends):
@@ -427,12 +426,11 @@ class TestAllXYSchedElement(_CompilesAllBackends):
             "element_select_idx": 4,
         }
 
-        cls.sched = ts.allxy_sched(**cls.sched_kwargs)
-        cls.sched = qcompile(cls.sched, DEVICE_CONFIG)
+        cls.uncomp_sched = ts.allxy_sched(**cls.sched_kwargs)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
-        for i, schedulable in enumerate(self.sched.schedulables.values()):
+        for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             if i % 4 == 0:
                 assert schedulable["label"][:5] == "Reset"
             if (i - 3) % 4 == 0:
@@ -440,4 +438,4 @@ class TestAllXYSchedElement(_CompilesAllBackends):
 
     def test_operations(self):
         # 4 operations (X180, Y180, reset, measurement)
-        assert len(self.sched.operations) == 4
+        assert len(self.uncomp_sched.operations) == 4

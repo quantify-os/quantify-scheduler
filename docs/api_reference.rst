@@ -11,6 +11,14 @@ backends
 .. automodule:: quantify_scheduler.backends
     :members:
 
+
+circuit_to_device
+-----------------
+
+.. automodule:: quantify_scheduler.backends.circuit_to_device
+    :members:
+
+
 qblox
 -----
 
@@ -249,11 +257,22 @@ gate_library
 .. automodule:: quantify_scheduler.operations.gate_library
     :members:
 
+measurement_factories
+---------------------
+.. automodule:: quantify_scheduler.operations.measurement_factories
+    :members:
+
 
 operation
 ---------
 .. automodule:: quantify_scheduler.operations.operation
     :members:
+
+pulse_factories
+---------------------
+.. automodule:: quantify_scheduler.operations.pulse_factories
+    :members:
+
 
 pulse_library
 -------------

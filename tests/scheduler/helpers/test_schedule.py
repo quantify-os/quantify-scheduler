@@ -23,6 +23,7 @@ from quantify_scheduler.helpers.schedule import (
     get_schedule_time_offset,
     get_total_duration,
 )
+from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
@@ -55,20 +56,20 @@ def test_get_info_by_uuid(
 
 
 def test_get_info_by_uuid_are_unique(
-    create_schedule_with_pulse_info,
+    load_example_transmon_config,
 ):
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(X90("q0"))
     schedule.add(X90("q0"))
-    create_schedule_with_pulse_info(schedule)
+    schedule_with_pulse_info = device_compile(schedule, load_example_transmon_config())
 
     operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
-    pulse_info_0 = schedule.operations[operation_repr]["pulse_info"][0]
+    pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
 
     # Act
-    pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule)
+    pulseid_pulseinfo_dict = get_pulse_info_by_uuid(schedule_with_pulse_info)
 
     # Assert
     assert len(pulseid_pulseinfo_dict) == 1
@@ -83,9 +84,11 @@ def test_get_acq_info_by_uuid(
 ):
     # Arrange
     device_config = load_example_transmon_config()
-    device_config["qubits"]["q0"]["params"]["acquisition"] = "SSBIntegrationComplex"
-
-    schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
+    assert (
+        device_config.elements["q0"]["measure"].factory_kwargs["acq_protocol"]
+        == "SSBIntegrationComplex"
+    )
+    schedule = device_compile(schedule_with_measurement, device_config)
 
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
     operation = schedule.operations[operation_repr]
@@ -131,7 +134,7 @@ def test_get_port_timeline(
 
 
 def test_get_port_timeline_sorted(
-    create_schedule_with_pulse_info,
+    load_example_transmon_config,
 ):
     # Arrange
     ro_acquisition_delay = -16e-9
@@ -152,7 +155,8 @@ def test_get_port_timeline_sorted(
         ro_integration_time=500e-9,
         init_duration=1e-5,
     )
-    schedule = create_schedule_with_pulse_info(schedule)
+
+    schedule = device_compile(schedule, load_example_transmon_config())
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info = schedule.operations[reset_operation_id]["pulse_info"][0]
@@ -198,18 +202,21 @@ def test_get_port_timeline_empty(empty_schedule: Schedule):
 
 
 def test_get_port_timeline_are_unique(
-    create_schedule_with_pulse_info,
+    load_example_transmon_config,
 ):
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(Reset("q0", "q1"))
     schedule.add(X90("q0"))
     schedule.add(X90("q1"))
-    create_schedule_with_pulse_info(schedule)
+
+    schedule = device_compile(schedule, load_example_transmon_config())
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
-    reset_pulse_info = schedule.operations[reset_operation_id]["pulse_info"][0]
-    reset_pulse_id = get_pulse_uuid(reset_pulse_info)
+    reset_pulse_info_q0 = schedule.operations[reset_operation_id]["pulse_info"][0]
+    reset_pulse_id_q0 = get_pulse_uuid(reset_pulse_info_q0)
+    reset_pulse_info_q1 = schedule.operations[reset_operation_id]["pulse_info"][1]
+    reset_pulse_id_q1 = get_pulse_uuid(reset_pulse_info_q1)
 
     q0_operation_id = list(schedule.schedulables.values())[1]["operation_repr"]
     q0_pulse_info = schedule.operations[q0_operation_id]["pulse_info"][0]
@@ -229,20 +236,21 @@ def test_get_port_timeline_are_unique(
         "q0:mw",
         "q1:mw",
     ] == list(port_timeline_dict.keys())
-    assert port_timeline_dict["None"][0] == [reset_pulse_id]
+    assert port_timeline_dict["None"][0] == [reset_pulse_id_q0, reset_pulse_id_q1]
     assert port_timeline_dict["q0:mw"][1] == [q0_pulse_id]
     assert port_timeline_dict["q1:mw"][2] == [q1_pulse_id]
 
 
 def test_get_port_timeline_with_duplicate_op(
-    create_schedule_with_pulse_info,
+    load_example_transmon_config,
 ):
     # Arrange
     schedule = Schedule("my-schedule")
     X90_q0 = X90("q0")
     schedule.add(X90_q0)
     schedule.add(X90_q0)
-    create_schedule_with_pulse_info(schedule)
+
+    schedule = device_compile(schedule, load_example_transmon_config())
 
     X90_q0_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     X90_q0_pulse_info = schedule.operations[X90_q0_operation_id]["pulse_info"][0]
@@ -267,7 +275,10 @@ def test_get_port_timeline_with_acquisition(
 ):
     # Arrange
     device_config = load_example_transmon_config()
-    device_config["qubits"]["q0"]["params"]["acquisition"] = "SSBIntegrationComplex"
+    assert (
+        device_config.elements["q0"]["measure"].factory_kwargs["acq_protocol"]
+        == "SSBIntegrationComplex"
+    )
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
 

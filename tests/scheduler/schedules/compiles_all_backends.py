@@ -18,7 +18,7 @@ class _CompilesAllBackends:
     ) -> None:
         # assert that files properly compile
         qcompile(
-            self.sched,  # pylint: disable=no-member
+            self.uncomp_sched,  # pylint: disable=no-member
             load_example_transmon_config(),
             load_example_qblox_hardware_config(),
         )
@@ -27,7 +27,7 @@ class _CompilesAllBackends:
         self, load_example_transmon_config, load_example_zhinst_hardware_config
     ) -> None:
         qcompile(
-            self.sched,  # pylint: disable=no-member
+            self.uncomp_sched,  # pylint: disable=no-member
             load_example_transmon_config(),
             load_example_zhinst_hardware_config(),
         )
