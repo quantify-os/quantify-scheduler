@@ -829,7 +829,7 @@ def test__add_wave_nodes_with_vector(
     _data = np.zeros((2, 1024))
     _data[0] = np.real(test_waveform)
     _data[1] = np.imag(test_waveform)
-    expected_data = (_data.reshape((-2,), order="F") * (2**15 - 1)).astype("int16")
+    expected_data = (_data.reshape((-2,), order="F") * (2 ** 15 - 1)).astype("int16")
 
     awg_index: int = 0
     settings_builder = settings.ZISettingsBuilder()

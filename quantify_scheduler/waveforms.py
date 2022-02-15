@@ -184,8 +184,8 @@ def drag(
 
     sigma = duration / (2 * nr_sigma)
 
-    gauss_env = G_amp * np.exp(-(0.5 * ((t - mu) ** 2) / sigma**2))
-    deriv_gauss_env = -D_amp * (t - mu) / (sigma**1) * gauss_env
+    gauss_env = G_amp * np.exp(-(0.5 * ((t - mu) ** 2) / sigma ** 2))
+    deriv_gauss_env = -D_amp * (t - mu) / (sigma ** 1) * gauss_env
 
     # Subtract offsets
     if subtract_offset.lower() == "none" or subtract_offset is None:

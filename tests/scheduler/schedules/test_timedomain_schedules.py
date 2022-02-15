@@ -106,7 +106,9 @@ class TestRabiSched(_CompilesAllBackends):
             assert schedulable["abs_time"] == abs_times[i]
 
     def test_rabi_pulse_ops(self):
-        rabi_op_hash = list(self.uncomp_sched.schedulables.values())[1]["operation_repr"]
+        rabi_op_hash = list(self.uncomp_sched.schedulables.values())[1][
+            "operation_repr"
+        ]
         rabi_pulse = self.uncomp_sched.operations[rabi_op_hash]["pulse_info"][0]
         assert rabi_pulse["G_amp"] == 0.2
         assert rabi_pulse["D_amp"] == 0

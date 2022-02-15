@@ -193,7 +193,7 @@ class ZISettings:
                 # when using the Zhinst-toolkit.helpers.Waveform class.
                 # Hotfix applied to rescale.
                 ############################################################
-                waveform_data = waveform_data / (2**15 - 1)
+                waveform_data = waveform_data / (2 ** 15 - 1)
                 np.savetxt(file_path, waveform_data, delimiter=";")
 
                 setting.value = str(file_path)
