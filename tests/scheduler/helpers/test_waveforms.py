@@ -88,7 +88,9 @@ def test_get_waveform_by_pulseid(
     schedule_with_pulse_info: Schedule,
 ) -> None:
     # Arrange
-    operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
+    operation_repr = list(schedule_with_pulse_info.schedulables.values())[0][
+        "operation_repr"
+    ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
@@ -112,7 +114,7 @@ def test_get_waveform_by_pulseid_are_unique(
 
     schedule = device_compile(schedule, load_example_transmon_config())
 
-    operation_repr = schedule.timing_constraints[0]["operation_repr"]
+    operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
     pulse_info_0 = schedule.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]

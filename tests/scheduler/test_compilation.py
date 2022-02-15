@@ -36,16 +36,17 @@ def test_determine_absolute_timing_ideal_clock():
     sched.add(Measure(q0, q1), label="M0")
 
     assert len(sched.data["operation_dict"]) == 4
-    assert len(sched.data["timing_constraints"]) == 5
+    assert len(sched.data["schedulables"]) == 5
 
-    for constr in sched.data["timing_constraints"]:
-        assert "abs_time" not in constr.keys()
-        assert constr["rel_time"] == 0
+    for schedulable in sched.data["schedulables"].values():
+        assert "abs_time" not in schedulable.keys()
+        assert schedulable["timing_constraints"][0]["rel_time"] == 0
 
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4]
 
@@ -54,7 +55,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1]
 
@@ -62,7 +63,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
@@ -70,7 +72,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
@@ -78,7 +81,8 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["timing_constraints"]
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2, 1.5]
 
@@ -138,7 +142,7 @@ def test_missing_edge(load_legacy_transmon_config):
 
 def test_empty_sched():
     sched = Schedule("empty")
-    with pytest.raises(ValueError, match="schedule 'empty' contains no operations"):
+    with pytest.raises(ValueError, match="schedule 'empty' contains no schedulables"):
         determine_absolute_timing(sched)
 
 
@@ -172,9 +176,9 @@ def test_pulse_and_clock(load_legacy_transmon_config):
     sched = Schedule("pulse_no_clock")
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
-    op_hash = next(op for op in sched.timing_constraints if op["label"] == op_label)[
-        "operation_repr"
-    ]
+    op_hash = next(
+        op for op in sched.schedulables.values() if op["label"] == str(op_label)
+    )["operation_repr"]
     with pytest.raises(ValueError) as execinfo:
         add_pulse_information_transmon(sched, device_cfg=load_legacy_transmon_config())
 
@@ -284,5 +288,5 @@ def test_compile_trace_acquisition(load_legacy_transmon_config):
 
     sched = add_pulse_information_transmon(sched, device_cfg=device_cfg)
 
-    measure_repr = sched.timing_constraints[-1]["operation_repr"]
+    measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"

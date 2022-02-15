@@ -40,7 +40,9 @@ def test_get_info_by_uuid(
     schedule_with_pulse_info: Schedule,
 ):
     # Arrange
-    operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
+    operation_repr = list(schedule_with_pulse_info.schedulables.values())[0][
+        "operation_repr"
+    ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
 
@@ -62,7 +64,7 @@ def test_get_info_by_uuid_are_unique(
     schedule.add(X90("q0"))
     schedule_with_pulse_info = device_compile(schedule, load_example_transmon_config())
 
-    operation_repr = schedule.timing_constraints[0]["operation_repr"]
+    operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
 
@@ -88,7 +90,7 @@ def test_get_acq_info_by_uuid(
     )
     schedule = device_compile(schedule_with_measurement, device_config)
 
-    operation_repr = schedule.timing_constraints[-1]["operation_repr"]
+    operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
     operation = schedule.operations[operation_repr]
     acq_info_0 = operation["acquisition_info"][0]
     acq_pulse_infos = acq_info_0["waveforms"]
@@ -112,7 +114,9 @@ def test_get_port_timeline(
     schedule_with_pulse_info: Schedule,
 ):
     # Arrange
-    operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
+    operation_repr = list(schedule_with_pulse_info.schedulables.values())[0][
+        "operation_repr"
+    ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     port = pulse_info_0["port"]
@@ -154,19 +158,19 @@ def test_get_port_timeline_sorted(
 
     schedule = device_compile(schedule, load_example_transmon_config())
 
-    reset_operation_id = schedule.timing_constraints[0]["operation_repr"]
+    reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info = schedule.operations[reset_operation_id]["pulse_info"][0]
     reset_pulse_id = get_pulse_uuid(reset_pulse_info)
 
-    qubit_operation_id = schedule.timing_constraints[1]["operation_repr"]
+    qubit_operation_id = list(schedule.schedulables.values())[1]["operation_repr"]
     qubit_pulse_info = schedule.operations[qubit_operation_id]["pulse_info"][0]
     qubit_pulse_id = get_pulse_uuid(qubit_pulse_info)
 
-    ro_operation_id = schedule.timing_constraints[2]["operation_repr"]
+    ro_operation_id = list(schedule.schedulables.values())[2]["operation_repr"]
     ro_pulse_info = schedule.operations[ro_operation_id]["pulse_info"][0]
     ro_pulse_id = get_pulse_uuid(ro_pulse_info)
 
-    acq_operation_id = schedule.timing_constraints[3]["operation_repr"]
+    acq_operation_id = list(schedule.schedulables.values())[3]["operation_repr"]
     acq_pulse_info = schedule.operations[acq_operation_id]["acquisition_info"][0]
     acq_id = get_acq_uuid(acq_pulse_info)
 
@@ -208,17 +212,17 @@ def test_get_port_timeline_are_unique(
 
     schedule = device_compile(schedule, load_example_transmon_config())
 
-    reset_operation_id = schedule.timing_constraints[0]["operation_repr"]
+    reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info_q0 = schedule.operations[reset_operation_id]["pulse_info"][0]
     reset_pulse_id_q0 = get_pulse_uuid(reset_pulse_info_q0)
     reset_pulse_info_q1 = schedule.operations[reset_operation_id]["pulse_info"][1]
     reset_pulse_id_q1 = get_pulse_uuid(reset_pulse_info_q1)
 
-    q0_operation_id = schedule.timing_constraints[1]["operation_repr"]
+    q0_operation_id = list(schedule.schedulables.values())[1]["operation_repr"]
     q0_pulse_info = schedule.operations[q0_operation_id]["pulse_info"][0]
     q0_pulse_id = get_pulse_uuid(q0_pulse_info)
 
-    q1_operation_id = schedule.timing_constraints[2]["operation_repr"]
+    q1_operation_id = list(schedule.schedulables.values())[2]["operation_repr"]
     q1_pulse_info = schedule.operations[q1_operation_id]["pulse_info"][0]
     q1_pulse_id = get_pulse_uuid(q1_pulse_info)
 
@@ -248,7 +252,7 @@ def test_get_port_timeline_with_duplicate_op(
 
     schedule = device_compile(schedule, load_example_transmon_config())
 
-    X90_q0_operation_id = schedule.timing_constraints[0]["operation_repr"]
+    X90_q0_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     X90_q0_pulse_info = schedule.operations[X90_q0_operation_id]["pulse_info"][0]
     X90_q0_pulse_id = get_pulse_uuid(X90_q0_pulse_info)
 
@@ -278,17 +282,17 @@ def test_get_port_timeline_with_acquisition(
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
 
-    reset_operation_id = schedule.timing_constraints[0]["operation_repr"]
+    reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_operation = schedule.operations[reset_operation_id]
     reset_pulse_info = reset_operation["pulse_info"][0]
     reset_pulse_id = get_pulse_uuid(reset_pulse_info)
 
-    q0_operation_id = schedule.timing_constraints[1]["operation_repr"]
+    q0_operation_id = list(schedule.schedulables.values())[1]["operation_repr"]
     q0_operation = schedule.operations[q0_operation_id]
     q0_pulse_info = q0_operation["pulse_info"][0]
     q0_pulse_id = get_pulse_uuid(q0_pulse_info)
 
-    acq_operation_id = schedule.timing_constraints[2]["operation_repr"]
+    acq_operation_id = list(schedule.schedulables.values())[2]["operation_repr"]
     acq_operation = schedule.operations[acq_operation_id]
 
     ro_pulse_info = acq_operation["pulse_info"][0]

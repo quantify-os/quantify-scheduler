@@ -8,7 +8,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation, Schedule
+from quantify_scheduler import Operation, Schedule, Schedulable
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -22,16 +22,16 @@ from quantify_scheduler.operations.gate_library import (
 )
 
 
-def test_schedule_add_timing_constraints() -> None:
+def test_schedule_add_schedulables() -> None:
     sched = Schedule("my exp")
     test_lab = "test label"
-    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
+    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
     assert x90_label == test_lab
 
     with pytest.raises(ValueError):
-        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
+        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
 
-    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))
+    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))["label"]
     assert uuid_label != x90_label
 
     # not specifying a label should work
@@ -43,6 +43,10 @@ def test_schedule_add_timing_constraints() -> None:
     # specifying non-existing label should raise an error
     with pytest.raises(ValueError):
         sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op="non-existing-operation")
+
+    # All schedulables should be valid
+    for schedulable in sched.schedulables.values():
+        assert Schedulable.is_valid(schedulable)
 
     assert Schedule.is_valid(sched)
 

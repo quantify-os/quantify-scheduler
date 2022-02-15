@@ -35,24 +35,32 @@ def test_trace_schedule() -> None:
     assert schedule.name == "Raw trace acquisition"
     assert schedule.repetitions == repetitions
     assert schedule.resources["q0.ro"]["freq"] == clock_frequency
-    assert len(schedule.timing_constraints) == 3
+    assert len(schedule.schedulables) == 3
     # IdlePulse
     idle_pulse_op = schedule.operations[
-        schedule.timing_constraints[0]["operation_repr"]
+        list(schedule.schedulables.values())[0]["operation_repr"]
     ]
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # SquarePulse
     square_pulse_op = schedule.operations[
-        schedule.timing_constraints[1]["operation_repr"]
+        list(schedule.schedulables.values())[1]["operation_repr"]
     ]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
-    assert schedule.timing_constraints[1]["rel_time"] == pulse_delay
+    assert (
+        list(schedule.schedulables.values())[1]["timing_constraints"][0]["rel_time"]
+        == pulse_delay
+    )
 
     # Trace
-    trace_acq_op = schedule.operations[schedule.timing_constraints[2]["operation_repr"]]
+    trace_acq_op = schedule.operations[
+        list(schedule.schedulables.values())[2]["operation_repr"]
+    ]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
-    assert schedule.timing_constraints[2]["rel_time"] == acquisition_delay
+    assert (
+        list(schedule.schedulables.values())[2]["timing_constraints"][0]["rel_time"]
+        == acquisition_delay
+    )
 
 
 def test_two_tone_trace_schedule() -> None:
@@ -86,36 +94,36 @@ def test_two_tone_trace_schedule() -> None:
     assert schedule.name == "Two-tone Trace acquisition"
     assert schedule.resources["q0.01"]["freq"] == 6.02e9
     assert schedule.resources["q0:ro"]["freq"] == 6.02e9
-    assert len(schedule.timing_constraints) == 4
+    assert len(schedule.schedulables) == 4
 
     # IdlePulse
-    t_const = schedule.timing_constraints[0]
-    idle_pulse_op = schedule.operations[t_const["operation_repr"]]
-    assert t_const["label"] == "Reset"
+    schedulable = list(schedule.schedulables.values())[0]
+    idle_pulse_op = schedule.operations[schedulable["operation_repr"]]
+    assert schedulable["label"] == "Reset"
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # Qubit pulse
-    t_const = schedule.timing_constraints[1]
-    square_pulse_op = schedule.operations[t_const["operation_repr"]]
+    schedulable = list(schedule.schedulables.values())[1]
+    square_pulse_op = schedule.operations[schedulable["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
-    assert t_const["label"] == "qubit_pulse"
+    assert schedulable["label"] == "qubit_pulse"
     assert pulse_info["port"] == "q0:mw"
     assert pulse_info["duration"] == 16e-9
 
     # Readout pulse
-    t_const = schedule.timing_constraints[2]
-    square_pulse_op = schedule.operations[t_const["operation_repr"]]
+    schedulable = list(schedule.schedulables.values())[2]
+    square_pulse_op = schedule.operations[schedulable["operation_repr"]]
     pulse_info = square_pulse_op["pulse_info"][0]
-    assert t_const["label"] == "readout_pulse"
-    assert t_const["rel_time"] == 2e-9
+    assert schedulable["label"] == "readout_pulse"
+    assert schedulable["timing_constraints"][0]["rel_time"] == 2e-9
     assert pulse_info["duration"] == 500e-9
     assert pulse_info["port"] == "q0:res"
 
     # Trace Acquisition
-    t_const = schedule.timing_constraints[3]
-    trace_op = schedule.operations[t_const["operation_repr"]]
+    schedulable = list(schedule.schedulables.values())[3]
+    trace_op = schedule.operations[schedulable["operation_repr"]]
     acq_info = trace_op["acquisition_info"][0]
-    assert t_const["label"] == "acquisition"
-    assert t_const["rel_time"] == -20e-9
+    assert schedulable["label"] == "acquisition"
+    assert schedulable["timing_constraints"][0]["rel_time"] == -20e-9
     assert acq_info["duration"] == integration_time
     assert acq_info["port"] == "q0:res"

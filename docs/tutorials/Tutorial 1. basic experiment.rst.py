@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.9.1
+#       jupytext_version: 1.13.4
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -193,11 +193,13 @@ from itertools import islice
 dict(islice(sched.data["operation_dict"].items(), 5))
 
 # %% [raw]
-# The timing constraints are stored as a list of pulses.
+# The schedulables are stored as a dictionary, each entry containing a scheduled item.
+# Here we inspect the first 6 entries in `sched.data["schedulables"]` representing the
+# first 6 scheduled items in the schedule.
 #
 
 # %%
-sched.data["timing_constraints"][:6]
+list(sched.data["schedulables"].values())[:6]
 
 # %% [raw]
 #

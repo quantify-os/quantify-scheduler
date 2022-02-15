@@ -46,9 +46,9 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
             self.sched_kwargs["init_duration"] + self.sched_kwargs["acquisition_delay"],
         ]
 
-        for i, constr in enumerate(sched.timing_constraints):
-            assert constr["label"] == labels[i]
-            assert constr["abs_time"] == abs_times[i]
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
+            assert schedulable["abs_time"] == abs_times[i]
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
@@ -96,9 +96,9 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
         t3 = t2 + self.sched_kwargs["ro_acquisition_delay"]
         abs_times = [0, self.sched_kwargs["init_duration"], t2, t3]
 
-        for i, constr in enumerate(sched.timing_constraints):
-            assert constr["label"] == labels[i]
-            assert constr["abs_time"] == abs_times[i]
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["label"] == labels[i]
+            assert schedulable["abs_time"] == abs_times[i]
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
