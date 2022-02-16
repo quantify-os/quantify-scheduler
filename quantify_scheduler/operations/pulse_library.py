@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from qcodes import validators
 
 from quantify_scheduler import Operation
@@ -819,12 +820,14 @@ class NumericalPulse(Operation):
             overwritten using the contents of data.
         """
 
-        def make_list_from_array(val: np.ndarray) -> list:
+        def make_list_from_array(
+            val: Union[NDArray[float], List[float]]
+        ) -> List[float]:
             """Needed since numpy arrays break the (de)serialization code (#146)."""
-            new_val = []
             if isinstance(val, np.ndarray):
-                new_val: list = val.tolist()
-            return new_val
+                new_val: List[float] = val.tolist()
+                return new_val
+            return val
 
         duration = t_samples[-1] - t_samples[0]
         samples, t_samples = map(make_list_from_array, [samples, t_samples])
