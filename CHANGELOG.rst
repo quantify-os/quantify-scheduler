@@ -23,9 +23,12 @@ Merged branches and closed issues
 * Operations - Sudden Net Zero from Negirneac 2021 added to the `pulse_library` (!339)
 * Compilation - Added a new compilation backend `compilation.backends.circuit_to_device.compile_circuit_to_device` for the quantum-circuit to quantum-device layer (#64, #67, !339).
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
+* Pulse library - Added `ShiftClockPhase` operation that can be used to shift the phase of a clock during execution of a `Schedule` (!346)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for easier method names, and enable plotly visualization directly from `ScheduleBase` (!313)
+* Instrument Coordinator - IC now adds a GenericInstrumentCoordinator to itself on instantiation by default.
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
+* Qblox backend - Added logic for changing the nco phase during execution of a `Schedule` (!346)
 * Qblox ICCs - Fixed bug where QRM scope mode sequencer does not get set correctly (!342)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).

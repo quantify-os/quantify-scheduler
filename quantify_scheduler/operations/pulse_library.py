@@ -13,6 +13,45 @@ from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
 
+class ShiftClockPhase(Operation):
+    """An operation that shifts the phase of a clock by a specified amount."""
+
+    def __init__(self, phase: float, clock: str, data: Optional[dict] = None):
+        """
+        Create a new instance of ShiftClockPhase.
+
+        Parameters
+        ----------
+        phase
+            The phase shift in degrees.
+        clock
+            The clock of which to shift the phase.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            data = {
+                "name": "ShiftClockPhase",
+                "pulse_info": [
+                    {
+                        "wf_func": None,
+                        "t0": 0,
+                        "phase": phase,
+                        "clock": clock,
+                        "port": None,
+                        "duration": 0.0,
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 class IdlePulse(Operation):
     """
     The IdlePulse Operation is a placeholder for a specified duration of time.
