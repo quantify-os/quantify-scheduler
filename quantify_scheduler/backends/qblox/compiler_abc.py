@@ -311,8 +311,9 @@ class Sequencer:
         )
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
+
         self.latency_correction_ns: int = self._get_latency_correction_ns(seq_settings)
-        """Latency correction to apply to start of the program."""
+        """Latency correction accounted for by delaying the start of the program."""
 
     def _get_latency_correction_ns(self, seq_settings: Dict[str, Any]) -> int:
         latency_correction_ns = int(
