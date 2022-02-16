@@ -1233,7 +1233,6 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     compiled_ssro_sched = qcompile(
         ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
     )
-
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
         qcm0=dummy_pulsars[0],
@@ -1244,7 +1243,6 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
         compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
     ) as file:
         qrm0_seq_instructions = json.load(file)
-
     baseline_assembly = os.path.join(
         quantify_scheduler.__path__[0],
         "..",
