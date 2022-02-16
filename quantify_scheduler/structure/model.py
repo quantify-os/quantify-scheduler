@@ -5,7 +5,7 @@
 from typing import Any, Callable
 
 import orjson
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
 
 def orjson_dumps(obj: Any, *, default: Callable[[Any], Any]) -> str:
@@ -57,3 +57,7 @@ class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
     class Config:  # pylint: disable=too-few-public-methods,missing-class-docstring
         json_loads = orjson.loads
         json_dumps = orjson_dumps
+
+        # ensures exceptions are raised when passing extra argument that are not
+        # part of a model when initializing.
+        extra = Extra.forbid

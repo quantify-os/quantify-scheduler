@@ -71,7 +71,7 @@ def test_schedule_bell():
     assert Schedule.is_valid(sched)
 
     assert len(sched.data["operation_dict"]) == 0
-    assert len(sched.data["timing_constraints"]) == 0
+    assert len(sched.data["schedulables"]) == 0
 
     # define the resources
     # q0, q1 = Qubits(n=2) # assumes all to all connectivity
@@ -90,7 +90,7 @@ def test_schedule_bell():
         sched.add(Measure(q0, q1), label="M {:.2f} deg".format(theta))
 
     assert len(sched.operations) == 24 - 1  # angle theta == 360 will evaluate to 0
-    assert len(sched.timing_constraints) == 105
+    assert len(sched.schedulables) == 105
 
     assert Schedule.is_valid(sched)
 
@@ -98,13 +98,13 @@ def test_schedule_bell():
 def test_schedule_add_timing_constraints():
     sched = Schedule("my exp")
     test_lab = "test label"
-    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
+    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
     assert x90_label == test_lab
 
     with pytest.raises(ValueError):
-        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
+        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
 
-    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))
+    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))["label"]
     assert uuid_label != x90_label
 
     # not specifying a label should work
