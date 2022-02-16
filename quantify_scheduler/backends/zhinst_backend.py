@@ -473,6 +473,7 @@ def _add_waveform_ids(timing_table: pd.DataFrame) -> pd.DataFrame:
         # waveform_id as it doesn't affect the waveform itself.
         waveform_op_id = re.sub(r"acq_index=\(.*\)", "acq_index=(*)", waveform_op_id)
         waveform_op_id = re.sub(r"acq_index=.*,", "acq_index=*,", waveform_op_id)
+        waveform_op_id = re.sub(r"acq_index=.*\)", "acq_index=*,", waveform_op_id)
 
         # samples should always be positive, the abs is here to catch a rare bug
         # where a very small negative number (e.g., -0.00000000000000013) is printed
@@ -562,14 +563,12 @@ def _validate_schedule(schedule: Schedule) -> None:
     ValueError
         The validation error.
     """
-    if len(schedule.timing_constraints) == 0:
-        raise ValueError(
-            f"Undefined timing constraints for schedule '{schedule.name}'!"
-        )
+    if len(schedule.schedulables) == 0:
+        raise ValueError(f"Undefined schedulables for schedule '{schedule.name}'!")
 
-    for t_constr in schedule.timing_constraints:
+    for schedulable in schedule.schedulables.values():
 
-        if "abs_time" not in t_constr:
+        if "abs_time" not in schedulable.keys():
             raise ValueError(
                 "Absolute timing has not been determined "
                 + f"for the schedule '{schedule.name}'!"
