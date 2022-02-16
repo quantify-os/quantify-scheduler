@@ -29,6 +29,7 @@ Merged branches and closed issues
 * Instrument Coordinator - IC now adds a GenericInstrumentCoordinator to itself on instantiation by default.
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
 * Qblox backend - Added logic for changing the nco phase during execution of a `Schedule` (!346)
+* Qblox backend - Added ability to correct for latency by delaying program execution on a per sequencer basis (!325)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
 * Qblox backend - Made max duration of wait instructions (!319).

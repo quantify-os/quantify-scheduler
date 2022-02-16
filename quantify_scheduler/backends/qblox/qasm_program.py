@@ -138,7 +138,12 @@ class QASMProgram:
             comment=f"set markers to {marker_setting}",
         )
 
-    def auto_wait(self, wait_time: int) -> None:
+    def auto_wait(
+        self,
+        wait_time: int,
+        count_as_elapsed_time: bool = True,
+        comment: Optional[str] = None,
+    ) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
         allowed by the sequencer it correctly breaks it up into multiple wait
@@ -149,6 +154,12 @@ class QASMProgram:
         ----------
         wait_time
             Time to wait in ns.
+        count_as_elapsed_time
+            If true, this wait time is taken into account when keeping track of timing.
+            Otherwise, the wait instructions are added but this wait time is ignored in
+            the timing calculations in the rest of the program.
+        comment
+            Allows to override the default comment.
 
         Raises
         ------
@@ -164,8 +175,11 @@ class QASMProgram:
                 f" ns."
             )
 
+        comment = comment if comment else f"auto generated wait ({wait_time} ns)"
         if wait_time > constants.IMMEDIATE_MAX_WAIT_TIME:
             repetitions = wait_time // constants.IMMEDIATE_MAX_WAIT_TIME
+
+            # number of instructions where it becomes worthwhile to use a loop.
             instr_number_using_loop = 4
             if repetitions > instr_number_using_loop:
                 loop_label = f"wait{len(self.instructions)}"
@@ -173,23 +187,28 @@ class QASMProgram:
                     self.emit(
                         q1asm_instructions.WAIT,
                         constants.IMMEDIATE_MAX_WAIT_TIME,
-                        comment="auto generated wait",
+                        comment=comment,
                     )
             else:
                 for _ in range(repetitions):
                     self.emit(
                         q1asm_instructions.WAIT,
                         constants.IMMEDIATE_MAX_WAIT_TIME,
-                        comment="auto generated wait",
+                        comment=comment,
                     )
             time_left = wait_time % constants.IMMEDIATE_MAX_WAIT_TIME
         else:
             time_left = int(wait_time)
 
         if time_left > 0:
-            self.emit(q1asm_instructions.WAIT, time_left)
+            self.emit(
+                q1asm_instructions.WAIT,
+                time_left,
+                comment=comment,
+            )
 
-        self.elapsed_time += wait_time
+        if count_as_elapsed_time:
+            self.elapsed_time += wait_time
 
     def wait_till_start_operation(self, operation: OpInfo) -> None:
         """
