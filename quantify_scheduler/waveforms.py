@@ -12,7 +12,6 @@ from typing import List, Union
 
 import numpy as np
 from scipy import signal, interpolate
-from typing import Union, List
 
 
 def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
