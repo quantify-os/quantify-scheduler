@@ -144,12 +144,12 @@ def fixture_mock_acquisition_data():
             "acquisition": {
                 "scope": {
                     "path0": {
-                        "data": [0.0] * 2 ** 14,
+                        "data": [0.0] * 2**14,
                         "out-of-range": False,
                         "avg_count": avg_count,
                     },
                     "path1": {
-                        "data": [0.0] * 2 ** 14,
+                        "data": [0.0] * 2**14,
                         "out-of-range": False,
                         "avg_count": avg_count,
                     },

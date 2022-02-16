@@ -185,8 +185,8 @@ def drag(
 
     sigma = duration / (2 * nr_sigma)
 
-    gauss_env = G_amp * np.exp(-(0.5 * ((t - mu) ** 2) / sigma ** 2))
-    deriv_gauss_env = -D_amp * (t - mu) / (sigma ** 1) * gauss_env
+    gauss_env = G_amp * np.exp(-(0.5 * ((t - mu) ** 2) / sigma**2))
+    deriv_gauss_env = -D_amp * (t - mu) / (sigma**1) * gauss_env
 
     # Subtract offsets
     if subtract_offset.lower() == "none" or subtract_offset is None:
@@ -215,6 +215,79 @@ def drag(
     rot_drag_wave = rotate_wave(drag_wave, phase=phase)
 
     return rot_drag_wave
+
+
+def sudden_net_zero(
+    t: np.ndarray,
+    amp_A: float,
+    amp_B: float,
+    net_zero_A_scale: float,
+    t_pulse: float,
+    t_phi: float,
+    t_integral_correction: float,
+):
+    """
+    Generates the sudden net zero waveform from :cite:t:`negirneac_high_fidelity_2021`.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    amp_A
+        amplitude of the main square pulse
+    amp_B
+        scaling correction for the final sample of the first square and first sample
+        of the second square pulse.
+    net_zero_A_scale
+        amplitude scaling correction factor of the negative arm of the net-zero pulse.
+    t_pulse
+        the total duration of the two half square pulses
+    t_phi
+        the idling duration between the two half pulses
+    t_integral_correction
+        the duration in which any non-zero pulse amplitude needs to be corrected.
+    """
+
+    # this transform is because all step functions are defined with respect to the
+    # start of the waveform.
+    t = t - min(t)
+
+    def _square(t, start: float, stop: float, start_amp=1, stop_amp=0):
+        """square pulses with a start and stop using a heaviside function."""
+        return np.heaviside(
+            np.around(t - start, decimals=12), start_amp
+        ) - np.heaviside(np.around(t - stop, decimals=12), stop_amp)
+
+    # the waveform itself
+    first_arm = amp_A * _square(t, start=0, stop=t_pulse / 2, stop_amp=amp_B)
+    second_arm = (
+        -1
+        * amp_A
+        * net_zero_A_scale
+        * _square(
+            t,
+            start=t_pulse / 2 + t_phi,
+            stop=t_pulse + t_phi,
+            start_amp=amp_B,
+            stop_amp=0,
+        )
+    )
+    waveform_amps = first_arm + second_arm
+
+    # adding a correction to ensure the integral evaluates to 0
+    sampling_rate = t[1] - t[0]
+    num_corr_samples = t_integral_correction / sampling_rate
+    corr_amp = -np.sum(waveform_amps) / num_corr_samples
+
+    corr_waveform_amps = waveform_amps + corr_amp * _square(
+        t,
+        start=t_pulse + t_phi,
+        stop=t_pulse + t_phi + t_integral_correction,
+        start_amp=0,
+        stop_amp=0,
+    )
+
+    return corr_waveform_amps
 
 
 def interpolated_complex_waveform(
