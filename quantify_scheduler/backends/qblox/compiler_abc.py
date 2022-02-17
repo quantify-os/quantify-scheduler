@@ -11,6 +11,7 @@ from os import makedirs, path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from functools import partial
+import logging
 
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
@@ -46,6 +47,9 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class InstrumentCompiler(ABC):
@@ -307,6 +311,23 @@ class Sequencer:
         )
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
+
+        self.latency_correction_ns: int = self._get_latency_correction_ns(seq_settings)
+        """Latency correction accounted for by delaying the start of the program."""
+
+    def _get_latency_correction_ns(self, seq_settings: Dict[str, Any]) -> int:
+        latency_correction_ns = int(
+            round(seq_settings.get("latency_correction", 0) * 1e9)
+        )
+        if latency_correction_ns % 4 != 0:
+            logger.warning(
+                f"Latency correction of {latency_correction_ns} ns specified"
+                f" for {self.name} of {self.parent.name}, which is not a"
+                f" multiple of {constants.GRID_TIME} ns. This feature should"
+                f" be considered experimental and stable results are not guaranteed at "
+                f"this stage."
+            )
+        return latency_correction_ns
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -655,7 +676,15 @@ class Sequencer:
             key=lambda p: (p.operation_info.timing, p.operation_info.is_acquisition),
         )
 
+        # Adds the latency correction, this needs to be a minimum of 4 ns,
+        # so all sequencers get delayed by at least that.
+        qasm.auto_wait(
+            constants.GRID_TIME + self.latency_correction_ns,
+            count_as_elapsed_time=False,
+            comment=f"Latency correction of {self.latency_correction_ns} ns.",
+        )
         with qasm.loop(label=loop_label, repetitions=repetitions):
+
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
