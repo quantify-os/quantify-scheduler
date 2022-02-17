@@ -50,13 +50,17 @@ class Numbers(validators.Numbers):
         """
         Validate if number else raises error.
 
-        Args:
-            value: A number.
-            context: Context for validation.
+        Parameters
+        ----------
+        value:
+            A number.
+        context:
+            Context for validation.
 
-        Raises:
-            TypeError: If not int or float.
-            ValueError: If number is not between the min and the max value.
+        Raises
+        ------
+        TypeError: If not int or float.
+        ValueError: If number is not between the min and the max value.
         """
 
         if not isinstance(value, self.validtypes):
