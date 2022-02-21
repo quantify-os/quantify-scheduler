@@ -157,43 +157,43 @@ ax.set_xlim(-0.5, 9.5)
 plt.show()
 
 # %% [raw]
-# In previous tutorials, we visualized the `schedules` on the pulse level using
-# `sched.plot_pulse_diagram_mpl`.
+# In previous tutorials, we visualized the `schedules` on the pulse level using :func:`~quantify_scheduler.schedule.plot_pulse_diagram`.
 # Up until now, however, all gates have been defined on the
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` without defining the
-# corresponding pulseshapes.
-# Therefore, trying to run `sched.plot_pulse_diagram_mpl()` will raise an error which
+# corresponding pulse shapes.
+# Therefore, trying to run :func:`~quantify_scheduler.schedule.plot_pulse_diagram` will raise an error which
 # signifies no `pulse_info` is present in the schedule:
 #
 
 # %%
-try:
-    sched.plot_pulse_diagram()
-except RuntimeError as e:
-    print(e)
+# .. jupyter-execute::
+#     :raises:
+sched.plot_pulse_diagram()
+
 
 # %% [raw]
 # And similarly for the `timing_table`:
 
 # %%
-try:
-    sched.timing_table
-except ValueError as e:
-    print(e)
+# .. jupyter-execute::
+#     :raises:
+sched.timing_table
 
 # %% [raw]
 # Device configuration and compilation
 # ------------------------------------
 #
-# The aim of this section is to add pulse information to the schedule.
-# In order to generate this information, some device properties must be specified which
+# The aim of this section is to add device specific information to the schedule.
+# Before adding this, the schedule is not specific to any qubit implementation.
+# In this section, we compile the schedule to the quantum-device layer to enable running it on a specific qubit implementation.
+# In order to generate the necessary information, some device properties must be specified which
 # is done using the :ref:`device configuration file<Device configuration file>`.
 #
-# Using the configuration file, the schedule can be compiled, appending pulse
+# Using the device configuration file, the schedule can be compiled to the quantum-device layer, appending pulse
 # information to every gate in the schedule. Before continuing to the compilation step,
 # however, we will first unpack the configuration file.
 #
-# Here we will use a configuration file for a transmon based system that is part of the
+# Here we will use a configuration file for a transmon based system that is used in the
 # quantify-scheduler test suite.
 
 # %%
@@ -255,9 +255,6 @@ pprint(list(transmon_test_config["qubits"].keys()))
 # For every qubit we can investigate the contained parameters
 pprint(transmon_test_config["qubits"]["q0"])
 
-# %%
-pprint(transmon_test_config["edges"])
-
 # %% [raw]
 # Now that we went through the different components of the configuration file, let's use
 # it to compile our previously defined schedule.
@@ -285,8 +282,8 @@ f, ax = pulse_sched.plot_pulse_diagram()
 ax.set_xlim(0.4005e-3, 0.4006e-3)
 
 # %% [raw]
-# Quantum Backends
-# ----------------
+# Quantum Devices and Elements
+# ----------------------------
 # The :ref:`device configuration file<Device configuration file>` contains all knowledge
 # of the physical device under test (DUT). Together with the
 # :ref:`hardware configuration file<Hardware configuration file>` which contains the
@@ -297,7 +294,7 @@ ax.set_xlim(0.4005e-3, 0.4006e-3)
 # These classes contain the information necessary to generate the config files and allow
 # changing their parameters on-the-fly.
 # The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class
-# represents the DUT containing different :code:`DeviceElement`s.
+# represents the DUT containing different :code:`DeviceElement` s.
 # Currently, `quantify_scheduler` contains the
 # :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` class
 # to represent a qubit connected to a feedline. We show their interaction below:
@@ -336,7 +333,7 @@ pprint(dut.generate_device_config())
 # Mixing pulse and circuit layer operations
 # -----------------------------------------
 #
-# As well as defining our schedules in terms of Gates, we can also mix the circuit layer
+# As well as defining our schedules in terms of gates, we can also mix the circuit layer
 # representation with pulse level operations.
 # This can be useful for experiments involving pulses not easily represented by Gates,
 # such as the Chevron experiment.
