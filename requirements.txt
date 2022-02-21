@@ -21,7 +21,6 @@ qblox-instruments==0.5.4
 rich[jupyter]
 
 # tmp fixes
-
 funcparserlib==1.0.0a0 # https://github.com/vlasovskikh/funcparserlib/issues/69
 
 # See https://gitlab.com/quantify-os/quantify-core/-/merge_requests/242

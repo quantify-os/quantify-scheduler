@@ -76,10 +76,13 @@ def fixture_dummy_components(
 
 @pytest.fixture(scope="function", name="instrument_coordinator")
 def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
-    instrument_coordinator = InstrumentCoordinator("ic_0000")
+    instrument_coordinator = InstrumentCoordinator(
+        "ic_0000", add_default_generic_icc=False
+    )
 
     def cleanup_tmp():
-        # This should prevent the garbage collector from colleting the qcodes instrument
+        # This should prevent the garbage collector from collecting the qcodes
+        # instrument
         instrument_coordinator.close()
 
     request.addfinalizer(cleanup_tmp)
@@ -89,10 +92,13 @@ def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
 
 @pytest.fixture(scope="function", name="zi_instrument_coordinator")
 def fixture_zi_instrument_coordinator(request) -> ZIInstrumentCoordinator:
-    zi_instrument_coordinator = ZIInstrumentCoordinator("ic_zi_0000")
+    zi_instrument_coordinator = ZIInstrumentCoordinator(
+        "ic_zi_0000", add_default_generic_icc=False
+    )
 
     def cleanup_tmp():
-        # This should prevent the garbage collector from colleting the qcodes instrument
+        # This should prevent the garbage collector from collecting the qcodes
+        # instrument
         zi_instrument_coordinator.close()
 
     request.addfinalizer(cleanup_tmp)
@@ -131,7 +137,7 @@ def test_is_running(
         instrument_coordinator.add_component(component)
         component.is_running = state
 
-    # force garbage collection to emulate qcodes correcly
+    # force garbage collection to emulate qcodes correctly
     gc.collect()
 
     # Act
