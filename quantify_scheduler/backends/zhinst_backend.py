@@ -1423,7 +1423,7 @@ def _compile_for_uhfqa(
         n_acquisitions = n_unique_acquisitions * repetitions
         repetitions = 1
     else:
-        raise NotImplementedError(f" mode {bin_mode} is not supported.")
+        raise NotImplementedError(f"BinMode {bin_mode} is not supported.")
 
     # These variables have to be identical for all acquisitions.
     # initialized to None here and overwritten while iterating over the acquisitions.

@@ -256,13 +256,8 @@ class ScheduleGettable:
                 )
                 acq_stride = len(acq_indices)
                 for acq_idx in acq_indices:
-                    print(f"{acq_idx=}")
                     vals = acquired_data[(acq_channel, acq_idx)]
-                    print(f"{vals=}")
                     dataset[acq_channel][acq_idx::acq_stride] = vals[0] + 1j * vals[1]
-
-                    print(f"{acq_idx=}, {acq_stride}")
-                    print("*" * 80)
 
         else:
             raise NotImplementedError(

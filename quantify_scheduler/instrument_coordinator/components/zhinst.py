@@ -54,18 +54,13 @@ def convert_to_instrument_coordinator_format(
                 for i, complex_value in enumerate(results_array):
                     separated_value = (np.real(complex_value), np.imag(complex_value))
                     reformatted_results[(acq_channel, i)] = separated_value
-
         elif bin_mode == enums.BinMode.APPEND:
-            print("Append")
             for acq_idx in range(n_acquisitions):
                 acq_results = results_array[acq_idx::n_acquisitions]
                 separated_value = (np.real(acq_results), np.imag(acq_results))
                 reformatted_results[(acq_channel, acq_idx)] = separated_value
-                print(f"{reformatted_results=}")
-            print(f"{results_array=}")
-
         else:
-            raise NotImplementedError(f" mode {bin_mode} is not supported.")
+            raise NotImplementedError(f"BinMode {bin_mode} is not supported.")
     return reformatted_results
 
 
