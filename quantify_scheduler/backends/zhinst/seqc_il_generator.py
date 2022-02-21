@@ -42,7 +42,7 @@ SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
         SeqcInstructions.PLAY_WAVE: 0,
         SeqcInstructions.SET_TRIGGER: 1,
         SeqcInstructions.ARM_INTEGRATION: 3,
-        SeqcInstructions.START_QA: 6,
+        SeqcInstructions.START_QA: 8,
     },
 }
 
@@ -556,8 +556,7 @@ def add_wait(
         )
 
     seqc_gen.emit_wait(
-        cycles_to_wait,
-        comment=f"\t\t// {comment} n_instr={n_assembly_instructions}",
+        cycles_to_wait, comment=f"\t\t// {comment} n_instr={n_assembly_instructions}",
     )
     elapsed_clocks = delay
 
@@ -591,16 +590,13 @@ def add_play_wave(
 
     n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.PLAY_WAVE]
     seqc_gen.emit_play_wave(
-        *variable,
-        comment=f"\t// {comment} n_instr={n_assembly_instructions}",
+        *variable, comment=f"\t// {comment} n_instr={n_assembly_instructions}",
     )
     return n_assembly_instructions
 
 
 def add_start_qa(
-    seqc_gen: SeqcILGenerator,
-    device_type: zhinst.DeviceType,
-    comment: str = "",
+    seqc_gen: SeqcILGenerator, device_type: zhinst.DeviceType, comment: str = "",
 ) -> int:
     """
     Adds a startQA instruction to the
@@ -621,9 +617,7 @@ def add_start_qa(
     """
     n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.START_QA]
 
-    seqc_gen.emit_start_qa(
-        comment=f"{comment} n_instr={n_assembly_instructions}",
-    )
+    seqc_gen.emit_start_qa(comment=f"{comment} n_instr={n_assembly_instructions}",)
     return n_assembly_instructions
 
 
