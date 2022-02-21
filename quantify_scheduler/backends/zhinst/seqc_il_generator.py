@@ -42,7 +42,7 @@ SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
         SeqcInstructions.PLAY_WAVE: 0,
         SeqcInstructions.SET_TRIGGER: 1,
         SeqcInstructions.ARM_INTEGRATION: 3,
-        SeqcInstructions.START_QA: 8,
+        SeqcInstructions.START_QA: 6,
     },
 }
 
