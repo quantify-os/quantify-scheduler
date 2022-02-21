@@ -187,7 +187,9 @@ def _extract_channel_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]
 
 
 def _determine_clock_sample_start(
-    hardware_channel: str, abs_time: float, operation_name: str = "",
+    hardware_channel: str,
+    abs_time: float,
+    operation_name: str = "",
 ) -> Tuple[int, float]:
     """
     depending on the output channel, select the right clock cycle time and sample rate
@@ -1054,7 +1056,10 @@ def _compile_for_hdawg(
 
     n_awgs: int = int(device.n_channels / 2)
     settings_builder.with_defaults(
-        [("sigouts/*/on", 0), ("awgs/*/single", 1),]
+        [
+            ("sigouts/*/on", 0),
+            ("awgs/*/single", 1),
+        ]
     ).with_system_channelgrouping(device.channelgrouping)
 
     # Set the clock-rate of an AWG
@@ -1598,7 +1603,8 @@ def _assemble_uhfqa_sequence(
 
     # FIXME: ensure that the documentation mentions explicitly that it will use input 2.
     seqc_gen.emit_wait_dig_trigger(
-        index=2, comment=f"\t// clock={current_clock}",
+        index=2,
+        comment=f"\t// clock={current_clock}",
     )
     # this is where a longer wait statement is added to allow for latency corrections.
     for instruction in instructions:
