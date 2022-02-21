@@ -33,13 +33,11 @@
 # Gates, measurements and qubits
 # ------------------------------
 #
-# In the previous tutorials, experiments were created on the pulse level. On this level,
-# operations are defined by their waveforms which have to be set explicitly and are not
-# linked directly to a qubit operation. To allow working at a greater level of
-# abstraction, `quantify_scheduler` allows creating operations on the
+# In the previous tutorials, experiments were created on the quantum-device level. On this level,
+# operations are defined in terms of explicit signals and locations on chip, rather than the qubit and the intended operation. 
+# To allow working at a greater level of abstraction, `quantify_scheduler` allows creating operations on the
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
-# Instead of specifying waveforms, operations are defined by the intended qubit
-# operation.
+# Instead of signals, clocks, and ports, operations are defined by the the effect they have on specific qubits.
 #
 # Many of the gates used in the circuit layer description are defined in
 # :class:`quantify_scheduler.operations.gate_library` such as `Reset`, `X90` and
@@ -70,8 +68,14 @@ pprint(rxy45.data)
 # %% [raw]
 # As we can see, the structure of a circuit level operation is similar to a pulse level
 # operation. However, the information is contained inside the `gate_info` entry rather
-# than the `pulse_info` entry of the data dictionary. The schema for the `gate_info`
-# entry can be obtained as:
+# than the `pulse_info` entry of the data dictionary. 
+# Importantly, there is no device-specific information coupled to the operation such that
+# it represents the abstract notion of this qubit rotation, rather than how to perform it
+# on any physical qubit implementation.
+#
+# The entries present above are documented in the `operation` schema.
+# Generally, these schemas are only important when defining custom operations, which is
+# not part of this tutorial. This schema can be inspected via:
 
 # %%
 import importlib.resources
@@ -79,20 +83,7 @@ from quantify_scheduler import schemas
 import json
 
 operation_schema = json.loads(importlib.resources.read_text(schemas, "operation.json"))
-
-# %% [raw]
-# The required properties for `gate_info` are found inside the schema together with a
-# brief description of them
-
-# %%
 pprint(operation_schema["properties"]["gate_info"]["properties"])
-
-# %% [raw]
-# Additionaly, for the `rxy45` operation we see the additional fields `operation_type`,
-# `phi` and `theta`. These extra fields assist the compiler in order to determine the
-# pulses corresponding to this operation. The additional fields needed for the
-# compilation step depend on which compiler is used and what `operation_type` is
-# specified.
 
 # %% [raw]
 # Schedule creation from the circuit layer
@@ -104,15 +95,11 @@ pprint(operation_schema["properties"]["gate_info"]["properties"])
 # We exemplify this extra layer of abstraction by creating a `schedule` for measuring
 # `Bell violations`.
 #
-# Within a single `schedule`, high-level circuit layer operations can be mixed with
-# pulse level operations.
-# This mixed representation is useful for experiments where some pulses cannot easily be
-# represented as qubit gates. An example of this is given by the `Chevron` experiment
-# given in sec. 1.6.
+# .. note:: Within a single `schedule`, high-level circuit layer operations can be mixed with pulse level operations. This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in :ref:`Mixing pulse and circuit layer operations <Mixing pulse and circuit layer operations>`.
 
 # %% [raw]
 # As the first example, we want to create a schedule for performing the
-# `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`.
+# `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_.
 # The goal of the Bell experiment is to create a Bell state
 # :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` followed by a measurement.
 # By rotating the measurement basis, or equivalently one of the qubits, it is possible
@@ -147,6 +134,10 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
 
 sched
 
+# %% [markdown]
+# By scheduling 7 operations for 21 different values for `theta` we indeed get a schedule containing 7\*21=147 operations. To minimize the size of the schedule, identical operations are stored only once. For example, all 21 `CZ` operations are stored only once, which leaves only 66 unique operations in the schedule.
+# .. note :: The acquisitions are different for every iteration due to their different `acq_index`. The `Rxy` rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since $R^{360}=R^0$). Hence the number of unique operations is 3\*21-1+4=66.
+
 # %% [raw]
 # Visualizing the quantum circuit
 # -------------------------------
@@ -159,7 +150,7 @@ sched
 # %matplotlib inline
 import matplotlib.pyplot as plt
 
-f, ax = sched.plot_circuit_diagram()
+_, ax = sched.plot_circuit_diagram()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure.
 # Therefore we use `set_xlim` to limit the number of gates shown.
 ax.set_xlim(-0.5, 9.5)
@@ -280,10 +271,10 @@ from quantify_scheduler.compilation import device_compile
 pulse_sched = device_compile(sched, transmon_test_config)
 
 # %% [markdown]
-# Now that the timings have been determined, we can show the `timing_table`:
+# Now that the timings have been determined, we can show the first few rows of the `timing_table`:
 
 # %%
-pulse_sched.timing_table
+pulse_sched.timing_table.hide_index(slice(11, None)).hide_columns('waveform_op_id')
 
 # %% [raw]
 # And since all pulse information has been determined, we can show the pulse diagram as
