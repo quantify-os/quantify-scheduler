@@ -20,6 +20,8 @@ from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst.settings import ZISerializeSettings
 from quantify_scheduler.instrument_coordinator.components import base
 
+from quantify_scheduler import enums
+
 if TYPE_CHECKING:
     from zhinst.qcodes.base import ZIBaseInstrument
 
@@ -30,7 +32,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def convert_to_instrument_coordinator_format(acquisition_results, n_acquisitions: int):
+def convert_to_instrument_coordinator_format(
+    acquisition_results, n_acquisitions: int, bin_mode: enums.BinMode
+):
     """
     Converts the acquisition results format of the UHFQA component to
     the format required by InstrumentCoordinator.
@@ -40,15 +44,28 @@ def convert_to_instrument_coordinator_format(acquisition_results, n_acquisitions
     for acq_channel in acquisition_results:
         results_array = acquisition_results.get(acq_channel)
         # this case corresponds to a trace acquisition
-        if n_acquisitions == 1 and len(results_array) > 1:
-            reformatted_results[(acq_channel, 0)] = (
-                np.real(results_array),
-                np.imag(results_array),
-            )
+        if bin_mode == enums.BinMode.AVERAGE:
+            if n_acquisitions == 1 and len(results_array) > 1:
+                reformatted_results[(acq_channel, 0)] = (
+                    np.real(results_array),
+                    np.imag(results_array),
+                )
+            else:
+                for i, complex_value in enumerate(results_array):
+                    separated_value = (np.real(complex_value), np.imag(complex_value))
+                    reformatted_results[(acq_channel, i)] = separated_value
+
+        elif bin_mode == enums.BinMode.APPEND:
+            print("Append")
+            for acq_idx in range(n_acquisitions):
+                acq_results = results_array[acq_idx::n_acquisitions]
+                separated_value = (np.real(acq_results), np.imag(acq_results))
+                reformatted_results[(acq_channel, acq_idx)] = separated_value
+                print(f"{reformatted_results=}")
+            print(f"{results_array=}")
+
         else:
-            for i, complex_value in enumerate(results_array):
-                separated_value = (np.real(complex_value), np.imag(complex_value))
-                reformatted_results[(acq_channel, i)] = separated_value
+            raise NotImplementedError(f" mode {bin_mode} is not supported.")
     return reformatted_results
 
 
@@ -272,7 +289,9 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             acq_channel_results[acq_channel] = resolve(uhfqa=self.instrument)
 
         reformatted_results = convert_to_instrument_coordinator_format(
-            acq_channel_results, n_acquisitions=acq_config.n_acquisitions
+            acq_channel_results,
+            n_acquisitions=acq_config.n_acquisitions,
+            bin_mode=acq_config.bin_mode,
         )
 
         return reformatted_results
