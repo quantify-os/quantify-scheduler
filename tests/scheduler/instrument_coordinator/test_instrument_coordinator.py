@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -76,10 +76,13 @@ def fixture_dummy_components(
 
 @pytest.fixture(scope="function", name="instrument_coordinator")
 def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
-    instrument_coordinator = InstrumentCoordinator("ic_0000")
+    instrument_coordinator = InstrumentCoordinator(
+        "ic_0000", add_default_generic_icc=False
+    )
 
     def cleanup_tmp():
-        # This should prevent the garbage collector from colleting the qcodes instrument
+        # This should prevent the garbage collector from collecting the qcodes
+        # instrument
         instrument_coordinator.close()
 
     request.addfinalizer(cleanup_tmp)
@@ -89,10 +92,13 @@ def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
 
 @pytest.fixture(scope="function", name="zi_instrument_coordinator")
 def fixture_zi_instrument_coordinator(request) -> ZIInstrumentCoordinator:
-    zi_instrument_coordinator = ZIInstrumentCoordinator("ic_zi_0000")
+    zi_instrument_coordinator = ZIInstrumentCoordinator(
+        "ic_zi_0000", add_default_generic_icc=False
+    )
 
     def cleanup_tmp():
-        # This should prevent the garbage collector from colleting the qcodes instrument
+        # This should prevent the garbage collector from collecting the qcodes
+        # instrument
         zi_instrument_coordinator.close()
 
     request.addfinalizer(cleanup_tmp)
@@ -131,7 +137,7 @@ def test_is_running(
         instrument_coordinator.add_component(component)
         component.is_running = state
 
-    # force garbage collection to emulate qcodes correcly
+    # force garbage collection to emulate qcodes correctly
     gc.collect()
 
     # Act
@@ -233,7 +239,7 @@ def test_prepare(
 
     # Act
     test_sched = Schedule(name="test_schedule")
-    args = {"ic_dev0": {"foo": 0}, "ic_dev1": {"foo": 1}}
+    args = {"dev0": {"foo": 0}, "dev1": {"foo": 1}}
     test_sched["compiled_instructions"] = args
     compiled_sched = CompiledSchedule(test_sched)
 
@@ -242,8 +248,8 @@ def test_prepare(
     # Assert
     assert get_component_spy.call_args_list == [call("ic_dev0"), call("ic_dev1")]
 
-    component1.prepare.assert_called_with(args["ic_dev0"])
-    component2.prepare.assert_called_with(args["ic_dev1"])
+    component1.prepare.assert_called_with(args["dev0"])
+    component2.prepare.assert_called_with(args["dev1"])
 
 
 def test_start(close_all_instruments, instrument_coordinator, dummy_components):

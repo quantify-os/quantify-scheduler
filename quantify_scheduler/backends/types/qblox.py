@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Python dataclasses for compilation to Qblox hardware."""
 
 from __future__ import annotations
@@ -29,10 +29,12 @@ class MarkerConfiguration:
     """Specifies the marker configuration set during the execution of the sequencer
     program."""
 
-    start: int
-    """The setting set in the header at the start of the program. Should set all the
-    marker outputs high and turn on the output switches."""
-    end: int
+    init: Optional[int]
+    """Value to set in the header before the wait sync."""
+    start: Optional[int]
+    """The setting set in the header at the start of the program (after the wait sync).
+    """
+    end: Optional[int]
     """Setting set in the footer at the end of the program."""
 
 
@@ -149,12 +151,12 @@ class LOSettings(DataClassJsonMixin):
             )
         if "generic_icc_name" in mapping:
             generic_icc_name = mapping["generic_icc_name"]
-            default_generic_icc_name = "ic_generic"
-            if generic_icc_name != default_generic_icc_name:
+            if generic_icc_name != constants.GENERIC_IC_COMPONENT_NAME:
                 raise NotImplementedError(
                     f"Specified name '{generic_icc_name}' as a generic instrument "
                     f"coordinator component, but the Qblox backend currently only "
-                    f"supports using the default name '{default_generic_icc_name}'"
+                    f"supports using the default name "
+                    f"'{constants.GENERIC_IC_COMPONENT_NAME}'"
                 )
 
         power_entry: Union[float, Dict[str, float]] = mapping["power"]

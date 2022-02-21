@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Tests for factory module."""
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
@@ -22,13 +22,31 @@ from quantify_scheduler.backends.qblox.operation_handling import (
 
 TEST_OP_INFO_MAPPING = {
     "other": OpInfo(
-        name="", data={"wf_func": "quantify_scheduler.waveforms.doesnotexist"}, timing=0
+        name="",
+        data={
+            "wf_func": "quantify_scheduler.waveforms.doesnotexist",
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
     ),
     "square": OpInfo(
-        name="", data={"wf_func": "quantify_scheduler.waveforms.square"}, timing=0
+        name="",
+        data={
+            "wf_func": "quantify_scheduler.waveforms.square",
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
     ),
     "staircase": OpInfo(
-        name="", data={"wf_func": "quantify_scheduler.waveforms.staircase"}, timing=0
+        name="",
+        data={
+            "wf_func": "quantify_scheduler.waveforms.staircase",
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
     ),
     "ssb": OpInfo(
         name="",
@@ -37,6 +55,8 @@ TEST_OP_INFO_MAPPING = {
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
+            "port": "some_port",
+            "clock": "some_clock",
         },
         timing=0,
     ),
@@ -47,6 +67,8 @@ TEST_OP_INFO_MAPPING = {
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
+            "port": "some_port",
+            "clock": "some_clock",
         },
         timing=0,
     ),
@@ -57,6 +79,8 @@ TEST_OP_INFO_MAPPING = {
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
+            "port": "some_port",
+            "clock": "some_clock",
         },
         timing=0,
     ),
@@ -127,6 +151,8 @@ def test_invalid_protocol_exception():
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
+            "port": "some_port",
+            "clock": "some_clock",
         },
         timing=0,
     )
@@ -143,7 +169,8 @@ def test_invalid_protocol_exception():
         == 'Unknown acquisition protocol "nonsense" encountered in Qblox backend when'
         " processing acquisition Acquisition  (t=0 to 1.2e-08)\ndata={'duration':"
         " 1.2e-08, 'protocol': 'nonsense', 'acq_channel': 0, 'acq_index': 0,"
-        " 'bin_mode': <BinMode.AVERAGE: 'average'>}."
+        " 'bin_mode': <BinMode.AVERAGE: 'average'>, 'port': 'some_port', 'clock': "
+        "'some_clock'}."
     )
 
 
@@ -159,6 +186,8 @@ def test_trace_append_exception():
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.APPEND,
+            "port": "some_port",
+            "clock": "some_clock",
         },
         timing=0,
     )
@@ -175,5 +204,6 @@ def test_trace_append_exception():
         == "Trace acquisition does not support APPEND bin mode.\n\nAcquisition  "
         "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'trace', "
         "'acq_channel': 0, 'acq_index': 0, 'bin_mode': <BinMode.APPEND: "
-        "'append'>} caused this exception to occur."
+        "'append'>, 'port': 'some_port', 'clock': 'some_clock'} caused this exception "
+        "to occur."
     )

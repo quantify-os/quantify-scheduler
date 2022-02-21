@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Functions for drawing pulse diagrams"""
 from __future__ import annotations
 
@@ -33,8 +33,8 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
     """
     offset_idx: int = 0
 
-    for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
         for operation_info in operation["pulse_info"] + operation["acquisition_info"]:
             if offset_idx == ports_length:
                 return
@@ -48,7 +48,7 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
                 offset_idx += 1
 
 
-def validate_operation_data(operation_data, port_map, t_constr, operation):
+def validate_operation_data(operation_data, port_map, schedulable, operation):
     """Validates if the pulse/acquisition information is valid for visualization."""
     if operation_data["port"] not in port_map:
         # Do not draw pulses for this port
@@ -58,7 +58,7 @@ def validate_operation_data(operation_data, port_map, t_constr, operation):
         logger.warning(
             "Unable to sample waveform for operation_data due to missing 'port' for "
             f"operation name={operation['name']} "
-            f"id={t_constr['operation_repr']} operation_data={operation_data}"
+            f"id={schedulable['operation_repr']} operation_data={operation_data}"
         )
         return False
 
@@ -67,7 +67,7 @@ def validate_operation_data(operation_data, port_map, t_constr, operation):
             logger.warning(
                 "Unable to sample pulse for pulse_info due to missing 'wf_func' for "
                 f"operation name={operation['name']} "
-                f"id={t_constr['operation_repr']} operation_data={operation_data}"
+                f"id={schedulable['operation_repr']} operation_data={operation_data}"
             )
             return False
     return True
@@ -135,11 +135,13 @@ def pulse_diagram_plotly(
     colors = px.colors.qualitative.Plotly
     col_idx: int = 0
 
-    for pulse_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for pulse_idx, schedulable in enumerate(schedule.schedulables.values()):
+        operation = schedule.operations[schedulable["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(pulse_info, port_map, t_constr, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, schedulable, operation
+            ):
                 continue
 
             # port to map the waveform to
@@ -152,7 +154,7 @@ def pulse_diagram_plotly(
             col_idx = (col_idx + 1) % len(colors)
 
             # times at which to evaluate waveform
-            t0 = t_constr["abs_time"] + pulse_info["t0"]
+            t0 = schedulable["abs_time"] + pulse_info["t0"]
             t = np.arange(t0, t0 + pulse_info["duration"], 1 / sampling_rate)
             # select the arguments for the waveform function
             # that are present in pulse info
@@ -230,13 +232,13 @@ def pulse_diagram_plotly(
             )
 
         for acq_info in operation["acquisition_info"]:
-            if not validate_operation_data(acq_info, port_map, t_constr, operation):
+            if not validate_operation_data(acq_info, port_map, schedulable, operation):
                 continue
             acq_port: str = acq_info["port"]
             label = operation["name"]
 
             row = port_map[acq_port] + 1
-            t = t_constr["abs_time"] + acq_info["t0"]
+            t = schedulable["abs_time"] + acq_info["t0"]
             yref: str = f"y{row} domain" if row != 1 else "y domain"
             fig.add_trace(
                 go.Scatter(
@@ -348,15 +350,17 @@ def sample_schedule(
         ports_length = len(port_map)
 
     time_window: list = None
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
+        operation = schedule.operations[schedulable["operation_repr"]]
 
         for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(pulse_info, port_map, t_constr, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, schedulable, operation
+            ):
                 logging.info(f"Operation {operation} is not valid for plotting.")
 
             # times at which to evaluate waveform
-            t0 = t_constr["abs_time"] + pulse_info["t0"]
+            t0 = schedulable["abs_time"] + pulse_info["t0"]
             if time_window is None:
                 time_window = [t0, t0 + pulse_info["duration"]]
             else:
@@ -378,13 +382,15 @@ def sample_schedule(
     timestamps = np.arange(time_window[0], time_window[1], 1 / sampling_rate)
     waveforms = {key: np.zeros_like(timestamps) for key in port_map}
 
-    for pls_idx, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
+        operation = schedule.operations[schedulable["operation_repr"]]
         logger.debug(f"{pls_idx}: {operation}")
 
         for pulse_info in operation["pulse_info"]:
 
-            if not validate_operation_data(pulse_info, port_map, t_constr, operation):
+            if not validate_operation_data(
+                pulse_info, port_map, schedulable, operation
+            ):
                 continue
 
             # port to map the waveform too
@@ -394,7 +400,7 @@ def sample_schedule(
             wf_func: Callable = import_func_from_string(pulse_info["wf_func"])
 
             # times at which to evaluate waveform
-            t0 = t_constr["abs_time"] + pulse_info["t0"]
+            t0 = schedulable["abs_time"] + pulse_info["t0"]
             t1 = t0 + pulse_info["duration"]
 
             time_indices = np.where(np.logical_and(timestamps >= t0, timestamps < t1))
@@ -501,12 +507,12 @@ def get_window_operations(
         List of all window operations in the schedule.
     """
     window_operations = []
-    for _, t_constr in enumerate(schedule.timing_constraints):
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for _, schedulable in enumerate(schedule.schedulables.values()):
+        operation = schedule.operations[schedulable["operation_repr"]]
         if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
 
-                t0 = t_constr["abs_time"] + pulse_info["t0"]
+                t0 = schedulable["abs_time"] + pulse_info["t0"]
                 t1 = t0 + pulse_info["duration"]
 
             window_operations.append((t0, t1, operation))
@@ -584,14 +590,11 @@ def plot_acquisition_operations(
         ax = plt.gca()
 
     handles_list = []
-    for idx, timing_constraint in enumerate(schedule.timing_constraints):
+    for idx, schedulable in enumerate(schedule.schedulables.values()):
         _ = idx  # unused variable
-        operation = schedule.operations[timing_constraint["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_repr"]]
         if isinstance(operation, AcquisitionOperation):
-            t0 = (
-                timing_constraint["abs_time"]
-                + operation.data["acquisition_info"][0]["t0"]
-            )
+            t0 = schedulable["abs_time"] + operation.data["acquisition_info"][0]["t0"]
             t1 = t0 + operation.duration
             handle = ax.axvspan(t0, t1, **kwargs)
             handles_list.append(handle)

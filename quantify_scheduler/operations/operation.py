@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
@@ -217,6 +217,20 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
             an operation containing gate_info.
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
+
+    def add_device_representation(self, device_operation: Operation) -> None:
+        """
+        Takes the information that specifies how to represent an operation at the
+        quantum-device abstraction layer and adds it to the current operation.
+
+        Parameters
+        ----------
+        device_operation
+            an operation containing the pulse_info and/or acquisition info describing
+            how to represent the current operation at the quantum-device layer.
+        """
+        self.add_pulse(device_operation)
+        self.add_acquisition(device_operation)
 
     def add_pulse(self, pulse_operation: Operation) -> None:
         """

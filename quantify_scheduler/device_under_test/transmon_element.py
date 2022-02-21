@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
-from typing import Any, Dict
+# Licensed according to the LICENCE file on the main branch
+from typing import Dict
 
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import (
@@ -9,6 +9,11 @@ from qcodes.instrument.parameter import (
     Parameter,
 )
 from qcodes.utils import validators
+from quantify_scheduler.backends.circuit_to_device import (
+    DeviceCompilationConfig,
+    OperationCompilationConfig,
+)
+from quantify_scheduler.helpers.validators import Numbers
 
 
 class TransmonElement(Instrument):
@@ -70,9 +75,10 @@ class TransmonElement(Instrument):
             docstring=r"""Amplitude of the $\pi$ pulse
             (considering a pulse duration of `mw_pulse_duration`).""",
             label=r"$\pi-pulse amplitude$",
+            initial_value=float("nan"),
             unit="V",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=-10, max_value=10),
+            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
         self.add_parameter(
             "mw_motzoi",
@@ -81,7 +87,7 @@ class TransmonElement(Instrument):
             initial_value=0,
             unit="",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1, max_value=1),
         )
         self.add_parameter(
             "mw_pulse_duration",
@@ -100,8 +106,9 @@ class TransmonElement(Instrument):
                 "transition (considering a pulse duration of `mw_pulse_duration`)."
             ),
             unit="V",
+            initial_value=float("nan"),
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=-10, max_value=10),
+            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
 
         self.add_parameter(
@@ -160,14 +167,16 @@ class TransmonElement(Instrument):
             label="Qubit frequency",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            initial_value=float("nan"),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
             "freq_12",
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
+            initial_value=float("nan"),
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
 
         self.add_parameter(
@@ -176,7 +185,8 @@ class TransmonElement(Instrument):
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            initial_value=float("nan"),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
             "ro_pulse_amp",
@@ -195,14 +205,14 @@ class TransmonElement(Instrument):
             vals=validators.Numbers(min_value=0, max_value=1),
         )
 
-        pulse_types = validators.Enum("square")
+        pulse_types = validators.Enum("SquarePulse")
         self.add_parameter(
             "ro_pulse_type",
             docstring=(
                 "Envelope function that defines the shape of "
                 "the readout pulse prior to modulation."
             ),
-            initial_value="square",
+            initial_value="SquarePulse",
             parameter_class=ManualParameter,
             vals=pulse_types,
         )
@@ -215,6 +225,15 @@ class TransmonElement(Instrument):
             unit="s",
             parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=0, max_value=1),
+        )
+
+        self.add_parameter(
+            "ro_acq_channel",
+            docstring="Channel corresponding to this qubit.",
+            initial_value=0,
+            unit="#",
+            parameter_class=ManualParameter,
+            vals=validators.Ints(min_value=0),
         )
 
         self.add_parameter(
@@ -244,10 +263,10 @@ class TransmonElement(Instrument):
         self.add_parameter(
             "spec_pulse_frequency",
             docstring="Frequency of the qubit spectroscopy pulse.",
-            initial_value=4.715e9,
+            initial_value=float("nan"),
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
             "spec_pulse_amp",
@@ -283,23 +302,8 @@ class TransmonElement(Instrument):
             parameter_class=ManualParameter,
             vals=ro_acq_weight_type_validator,
         )
-        device_cfg_backend_validator = validators.Enum(
-            "quantify_scheduler.compilation.add_pulse_information_transmon"
-        )
-        self.add_parameter(
-            "device_cfg_backend",
-            docstring=(
-                "Quantify-scheduler backend module responsible for the device"
-                " compilation."
-            ),
-            initial_value=(
-                "quantify_scheduler.compilation.add_pulse_information_transmon"
-            ),
-            parameter_class=ManualParameter,
-            vals=device_cfg_backend_validator,
-        )
 
-    def generate_config(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
+    def generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
         Generates part of the device configuration specific to a single qubit.
 
@@ -308,37 +312,55 @@ class TransmonElement(Instrument):
         """
         qubit_config = {
             f"{self.name}": {
-                "resources": {
-                    "port_mw": self.mw_port(),
-                    "port_ro": self.ro_port(),
-                    "port_flux": self.fl_port(),
-                    "clock_01": self.mw_01_clock(),
-                    "clock_ro": self.ro_clock(),
-                },
-                "params": {
-                    "acquisition": self.acquisition(),
-                    "mw_freq": self.freq_01(),
-                    "mw_amp180": self.mw_amp180(),
-                    "mw_motzoi": self.mw_motzoi(),
-                    "mw_duration": self.mw_pulse_duration(),
-                    "mw_ef_amp180": self.mw_ef_amp180(),
-                    "ro_freq": self.ro_freq(),
-                    "ro_pulse_amp": self.ro_pulse_amp(),
-                    "ro_pulse_type": self.ro_pulse_type(),
-                    "ro_pulse_duration": self.ro_pulse_duration(),
-                    "ro_acq_delay": self.ro_acq_delay(),
-                    "ro_acq_integration_time": self.ro_acq_integration_time(),
-                    "ro_acq_weight_type": self.ro_acq_weight_type(),
-                    "init_duration": self.init_duration(),
-                },
+                "reset": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_library.IdlePulse",
+                    factory_kwargs={
+                        "duration": self.init_duration(),
+                    },
+                ),
+                # example of a pulse with a parametrized mapping, using a factory
+                "Rxy": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_factories.rxy_drag_pulse",
+                    factory_kwargs={
+                        "amp180": self.mw_amp180(),
+                        "motzoi": self.mw_motzoi(),
+                        "port": self.mw_port(),
+                        "clock": self.mw_01_clock(),
+                        "duration": self.mw_pulse_duration(),
+                    },
+                    gate_info_factory_kwargs=[
+                        "theta",
+                        "phi",
+                    ],  # the keys from the gate info to pass to the factory function
+                ),
+                # the measurement also has a parametrized mapping, and uses a
+                # factory function.
+                "measure": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "measurement_factories.dispersive_measurement",
+                    factory_kwargs={
+                        "port": self.ro_port(),
+                        "clock": self.ro_clock(),
+                        "pulse_type": self.ro_pulse_type(),
+                        "pulse_amp": self.ro_pulse_amp(),
+                        "pulse_duration": self.ro_pulse_duration(),
+                        "acq_delay": self.ro_acq_delay(),
+                        "acq_duration": self.ro_acq_integration_time(),
+                        "acq_protocol": "SSBIntegrationComplex",
+                        "acq_channel": self.ro_acq_channel(),
+                    },
+                    gate_info_factory_kwargs=["acq_index", "bin_mode"],
+                ),
             }
         }
         return qubit_config
 
-    def generate_device_config(self) -> Dict[str, Any]:
+    def generate_device_config(self) -> DeviceCompilationConfig:
         """
         Generates a valid device config for the quantify-scheduler making use of the
-        :func:`quantify_scheduler.compilation.add_pulse_information_transmon` function.
+        :func:`~.circuit_to_device.compile_circuit_to_device` function.
 
         This enables the settings of this qubit to be used in isolation.
 
@@ -346,9 +368,17 @@ class TransmonElement(Instrument):
 
             This config is only valid for single qubit experiments.
         """
-        dev_cfg = {
-            "backend": self.device_cfg_backend(),
-            "qubits": self.generate_config(),
+        cfg_dict = {
+            "backend": "quantify_scheduler.backends"
+            ".circuit_to_device.compile_circuit_to_device",
+            "elements": self.generate_config(),
+            "clocks": {
+                self.mw_01_clock(): self.freq_01(),
+                self.mw_12_clock(): self.freq_12(),
+                self.ro_clock(): self.ro_freq(),
+            },
             "edges": {},
         }
+        dev_cfg = DeviceCompilationConfig.parse_obj(cfg_dict)
+
         return dev_cfg

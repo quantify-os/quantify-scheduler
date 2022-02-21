@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from qcodes.instrument import parameter
 from qcodes.utils import validators
 
 from quantify_scheduler import CompiledSchedule
-from quantify_scheduler.instrument_coordinator.components import base
+from quantify_scheduler.instrument_coordinator.components import base, generic
 
 
 class InstrumentCoordinator(qcodes_base.Instrument):
@@ -62,7 +62,18 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     """  # pylint: disable=line-too-long
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, add_default_generic_icc: bool = True) -> None:
+        """
+        Instantiates a new instrument coordinator.
+
+        Parameters
+        ----------
+        name
+            The name for the instrument coordinator instance.
+        add_default_generic_icc
+            If True, automatically adds a GenericInstrumentCoordinatorComponent to this
+            instrument coordinator with the default name.
+        """
         super().__init__(name)
         self.add_parameter(
             "components",
@@ -83,6 +94,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             "when retrieving acquisitions.",
         )
         self._last_schedule = None
+        if add_default_generic_icc:
+            self.add_component(
+                generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME)
+            )
 
     @property
     def last_schedule(self) -> CompiledSchedule:
@@ -219,7 +234,9 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         # and values containing instructions in the format specific to that type
         # of hardware. See also the specification in the CompiledSchedule class.
         for instrument_name, args in compiled_instructions.items():
-            self.get_component(instrument_name).prepare(args)
+            self.get_component(
+                base.instrument_to_component_name(instrument_name)
+            ).prepare(args)
 
     def start(self) -> None:
         """
@@ -303,8 +320,8 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
     during the acquisition of results.
     """
 
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self.add_parameter(
             "timeout_reacquire",

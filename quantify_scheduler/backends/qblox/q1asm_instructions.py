@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """
 Module that holds all the string literals that are valid instructions that can be
 executed by the sequencer in Qblox hardware.
@@ -42,5 +42,5 @@ SET_ACQ_GAIN = "set_acq_gain"
 SET_AWG_OFFSET = "set_awg_offs"
 SET_ACQ_OFFSET = "set_acq_offs"
 RESET_PHASE = "reset_ph"
-SET_NCO_PHASE = "set_ph"
-SET_NCO_PHASE_OFFSET = "set_ph_delta"
+SET_NCO_PHASE_OFFSET = "set_ph"
+INCR_NCO_PHASE_OFFSET = "set_ph_delta"

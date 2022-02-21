@@ -4,11 +4,12 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
 import copy
 import inspect
 import json
+import logging
 import os
 import re
 import shutil
@@ -92,6 +93,26 @@ except ImportError:
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
 # --------- Test fixtures ---------
+@pytest.fixture(name="hardware_cfg_latency_correction")
+def make_hardware_cfg_latency_correction():
+    def _make_hardware_cfg_latency_correction(correction: float, port: str, clock: str):
+        return {
+            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "qcm0": {
+                "instrument_type": "Pulsar_QCM",
+                "ref": "internal",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "seq0": {
+                        "port": port,
+                        "clock": clock,
+                        "latency_correction": correction,
+                    },
+                },
+            },
+        }
+
+    return _make_hardware_cfg_latency_correction
 
 
 @pytest.fixture
@@ -700,7 +721,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     with open(qcm0_seq0_json) as file:
         wf_and_prog = json.load(file)
     program_from_json = wf_and_prog["program"]
-    move_line = program_from_json.split("\n")[5]
+    move_line = program_from_json.split("\n")[6]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
     iterations = int(args.split(",")[0])
@@ -992,7 +1013,7 @@ def test_assign_frequencies_baseband():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1031,7 +1052,7 @@ def test_assign_frequencies_baseband_downconverter():
     lo0 = -q0_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
     if1 = -q1_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
 
-    generic_icc = "ic_generic"
+    generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
@@ -1136,29 +1157,28 @@ def test_markers():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
     program = compiled_schedule["compiled_instructions"]
 
-    def _confirm_correct_markers(device_program, device_compiler):
+    def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
+        mrk_config = device_compiler.static_hw_properties.marker_configuration
+        answers = (
+            mrk_config.init,
+            mrk_config.start,
+            mrk_config.end,
+        )
         with open(device_program["seq0"]["seq_fn"]) as file:
             qasm = json.load(file)["program"]
 
             matches = re.findall(r"set\_mrk +\d+", qasm)
-            assert len(matches) == 2
+            matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
+            if not is_rf:
+                matches = [None, *matches]
 
-            on_marker = int(re.findall(r"\d+", matches[0])[0])
-            off_marker = int(re.findall(r"\d+", matches[1])[0])
-
-            assert (
-                on_marker
-                == device_compiler.static_hw_properties.marker_configuration.start
-            )
-            assert (
-                off_marker
-                == device_compiler.static_hw_properties.marker_configuration.end
-            )
+            for match, answer in zip(matches, answers):
+                assert match == answer
 
     _confirm_correct_markers(program["qcm0"], QcmModule)
     _confirm_correct_markers(program["qrm0"], QrmModule)
-    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule)
-    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule)
+    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule, is_rf=True)
+    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule, is_rf=True)
 
 
 def test_pulsar_rf_extract_from_mapping():
@@ -1172,7 +1192,7 @@ def test_cluster_settings(pulse_only_schedule):
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
     cluster_compiler.prepare()
-    cl_qcm0 = cluster_compiler.instrument_compilers["cl_qcm0"]
+    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_qcm0"]
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 
 
@@ -1213,7 +1233,6 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     compiled_ssro_sched = qcompile(
         ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
     )
-
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
         qcm0=dummy_pulsars[0],
@@ -1224,7 +1243,6 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
         compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
     ) as file:
         qrm0_seq_instructions = json.load(file)
-
     baseline_assembly = os.path.join(
         quantify_scheduler.__path__[0],
         "..",
@@ -1332,6 +1350,63 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+class TestLatencyCorrection:
+    """Class to group all the tests related to latency correction in backend."""
+
+    # pylint: disable=no-self-use
+    def test_compilation_valid(
+        self,
+        hardware_cfg_latency_correction,
+        load_example_transmon_config,
+        dummy_pulsars,
+    ):
+        # Arrange
+        tmp_dir = tempfile.TemporaryDirectory()
+        set_datadir(tmp_dir.name)
+
+        sched = Schedule("single_gate_experiment")
+        sched.add(X("q0"))
+
+        hw_cfg = hardware_cfg_latency_correction(
+            correction=4e-9, port="q0:mw", clock="q0.01"
+        )
+        # Act
+        compiled_sched = qcompile(sched, load_example_transmon_config(), hw_cfg)
+        compiled_instr = compiled_sched.compiled_instructions
+
+        # Assert
+        dummy_pulsars[0].sequencer0_waveforms_and_program(
+            compiled_instr["qcm0"]["seq0"]["seq_fn"]
+        )
+
+    def test_warning(
+        self, hardware_cfg_latency_correction, load_example_transmon_config, caplog
+    ):
+        tmp_dir = tempfile.TemporaryDirectory()
+        set_datadir(tmp_dir.name)
+
+        sched = Schedule("single_gate_experiment")
+        sched.add(X("q0"))
+
+        hw_cfg = hardware_cfg_latency_correction(
+            correction=2e-9, port="q0:mw", clock="q0.01"
+        )
+
+        # Act
+        with caplog.at_level(
+            logging.WARNING, logger="quantify_scheduler.backends.qblox.compiler_abc"
+        ):
+            qcompile(sched, load_example_transmon_config(), hw_cfg)
+
+        # Assert
+        answer = (
+            "Latency correction of 2 ns specified for seq0 of qcm0, which is "
+            "not a multiple of 4 ns. This feature should be considered "
+            "experimental and stable results are not guaranteed at this stage."
+        )
+        assert answer in caplog.messages
 
 
 def _strip_comments(program: str):
