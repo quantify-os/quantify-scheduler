@@ -716,10 +716,13 @@ class ZIAcquisitionConfig:
     resolvers:
         resolvers used to retrieve the results from the right UHFQA nodes.
         See also :mod:`~quantify_scheduler.backends.zhinst.resolvers`
+    bin_mode:
+        the bin mode (average or append)
     """
 
     n_acquisitions: int
     resolvers: Dict[int, Callable]
+    bin_mode: enums.BinMode
 
 
 @dataclass(frozen=True)
@@ -873,13 +876,20 @@ def compile_backend(
             acq_config: Optional[ZIAcquisitionConfig] = None
 
         elif device.device_type == zhinst.DeviceType.UHFQA:
+            acq_metadata = schedule_helpers.extract_acquisition_metadata_from_schedule(
+                schedule
+            )
+            bin_mode = acq_metadata.bin_mode
+
             builder, acq_config = _compile_for_uhfqa(
                 device=device,
                 timing_table=timing_table,
                 numerical_wf_dict=numerical_wf_dict,
                 repetitions=schedule.repetitions,
                 operations=schedule.operations,
+                bin_mode=bin_mode,
             )
+
         else:
             raise NotImplementedError(f"{device.device_type} not supported.")
 
@@ -1280,6 +1290,7 @@ def _compile_for_uhfqa(
     numerical_wf_dict: Dict[str, np.ndarray],
     repetitions: int,
     operations: Dict[str, Operation],
+    bin_mode: enums.BinMode,
 ) -> Tuple[zi_settings.ZISettingsBuilder, ZIAcquisitionConfig]:
     """
     Initialize programming the UHFQA ZI Instrument.
@@ -1401,10 +1412,18 @@ def _compile_for_uhfqa(
 
     # select only the acquisition operations relevant for the output channel.
     timing_table_acquisitions = output_timing_table[output_timing_table.is_acquisition]
-    n_acquisitions = len(timing_table_acquisitions)
     timing_table_unique_acquisitions = timing_table_acquisitions.drop_duplicates(
         subset="waveform_id"
     )
+
+    n_unique_acquisitions = len(timing_table_acquisitions)
+    if bin_mode == enums.BinMode.AVERAGE:
+        n_acquisitions = n_unique_acquisitions
+    elif bin_mode == enums.BinMode.APPEND:
+        n_acquisitions = n_unique_acquisitions * repetitions
+        repetitions = 1
+    else:
+        raise NotImplementedError(f"BinMode {bin_mode} is not supported.")
 
     # These variables have to be identical for all acquisitions.
     # initialized to None here and overwritten while iterating over the acquisitions.
@@ -1538,7 +1557,11 @@ def _compile_for_uhfqa(
 
     return (
         settings_builder,
-        ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map),
+        ZIAcquisitionConfig(
+            n_unique_acquisitions,
+            resolvers=acq_channel_resolvers_map,
+            bin_mode=bin_mode,
+        ),
     )
 
 
