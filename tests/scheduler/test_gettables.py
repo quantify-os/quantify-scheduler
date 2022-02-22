@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=too-many-locals
@@ -137,19 +137,15 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     }
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
-
     sched = allxy_sched("q0", element_select_idx=indices, repetitions=256)
     comp_allxy_sched = qcompile(sched, quantum_device.generate_device_config())
-    data = (
-        np.concatenate(
-            (
-                0 * np.ones(5 * 2),
-                0.5 * np.ones(12 * 2),
-                np.ones(4 * 2),
-            )
+    data = np.concatenate(
+        (
+            0 * np.ones(5 * 2),
+            0.5 * np.ones(12 * 2),
+            np.ones(4 * 2),
         )
-        * np.exp(1j * np.deg2rad(45))
-    )
+    ) * np.exp(1j * np.deg2rad(45))
 
     acq_indices_data = _reshape_array_into_acq_return_type(
         data, extract_acquisition_metadata_from_schedule(comp_allxy_sched)

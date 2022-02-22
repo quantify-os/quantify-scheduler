@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -144,12 +144,12 @@ def fixture_mock_acquisition_data():
             "acquisition": {
                 "scope": {
                     "path0": {
-                        "data": [0.0] * 2 ** 14,
+                        "data": [0.0] * 2**14,
                         "out-of-range": False,
                         "avg_count": avg_count,
                     },
                     "path1": {
-                        "data": [0.0] * 2 ** 14,
+                        "data": [0.0] * 2**14,
                         "out-of-range": False,
                         "avg_count": avg_count,
                     },

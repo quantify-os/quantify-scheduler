@@ -18,9 +18,9 @@
 __version__ = "0.5.2"
 
 
+from . import structure
 from .operations.operation import Operation
 from .resources import Resource
-from .schedules.schedule import CompiledSchedule, Schedule
+from .schedules.schedule import CompiledSchedule, Schedule, Schedulable
 
-# Commented out because it messes up Sphinx and sphinx extensions
-# __all__ = ["Schedule", "CompiledSchedule", "Operation", "Resource"]
+__all__ = ["Schedule", "CompiledSchedule", "Operation", "Resource", "structure"]

@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "description": "JSON schema for a quantify schedulable.",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "operation_repr",
+    "timing_constraints"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "A unique name of this schedulable."
+    },
+    "label": {
+      "type": "string",
+      "description": "Alias for name."
+    },
+    "operation_repr": {
+      "type": "string",
+      "description": "string representation of the operation in the operation dict."
+    },
+    "timing_constraints": {
+      "type": "array",
+      "description": "A list containing timing constraints.",
+      "properties": {
+        "rel_time": {
+          "type": "number",
+          "description": "relative time between the the reference operation and this operation."
+        },
+        "ref_schedulable": {
+          "type": "string",
+          "description": "The label of the reference schedulable."
+        },
+        "ref_pt": {
+          "type": "string",
+          "description": "reference point in reference operation must be one of ('start', 'center', 'end')."
+        },
+        "ref_pt_new": {
+          "type": "string",
+          "description": "reference point in added operation must be one of ('start', 'center', 'end')."
+        }
+      }
+    }
+  }
+}

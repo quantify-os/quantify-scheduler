@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
@@ -393,7 +393,6 @@ def readout_calibration_sched(
             Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND),
             label=f"Measurement {i}",
         )
-
     return schedule
 
 

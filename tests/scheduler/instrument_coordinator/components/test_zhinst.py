@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 from zhinst import qcodes
 
+from quantify_scheduler import enums
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
@@ -140,7 +141,7 @@ def test_hdawg_prepare(mocker, make_hdawg):
 
     # Assert
     hdawg_serialize_settings = settings.ZISerializeSettings(
-        f"ic_{hdawg.instrument.name}", hdawg.instrument._serial, hdawg.instrument._type
+        f"{hdawg.instrument.name}", hdawg.instrument._serial, hdawg.instrument._type
     )
     serialize.assert_called_with(Path("."), hdawg_serialize_settings)
     apply.assert_called_with(hdawg.instrument)
@@ -241,14 +242,15 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
 
     # Assert
     uhfqa_serialize_settings = settings.ZISerializeSettings(
-        f"ic_{uhfqa.instrument.name}", uhfqa.instrument._serial, uhfqa.instrument._type
+        f"{uhfqa.instrument.name}", uhfqa.instrument._serial, uhfqa.instrument._type
     )
     serialize.assert_called_with(Path("."), uhfqa_serialize_settings)
     apply.assert_called_with(uhfqa.instrument)
     copy2.assert_called_with("uhfqa0_awg0.csv", "waves")
 
 
-def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
+@pytest.mark.parametrize("bin_mode", [enums.BinMode.AVERAGE, enums.BinMode.APPEND])
+def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa, bin_mode):
     # Arrange
     uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     expected_data = np.ones(64)
@@ -259,7 +261,9 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     config = ZIDeviceConfig(
         "hdawg0",
         settings.ZISettingsBuilder(),
-        ZIAcquisitionConfig(1, {0: resolver}),
+        ZIAcquisitionConfig(
+            n_acquisitions=1, resolvers={0: resolver}, bin_mode=bin_mode
+        ),
     )
     mocker.patch.object(settings.ZISettings, "serialize")
     mocker.patch.object(settings.ZISettings, "apply")

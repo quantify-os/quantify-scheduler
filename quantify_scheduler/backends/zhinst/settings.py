@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Settings builder for Zurich Instruments."""
 from __future__ import annotations
 
@@ -193,7 +193,7 @@ class ZISettings:
                 # when using the Zhinst-toolkit.helpers.Waveform class.
                 # Hotfix applied to rescale.
                 ############################################################
-                waveform_data = waveform_data / (2 ** 15 - 1)
+                waveform_data = waveform_data / (2**15 - 1)
                 np.savetxt(file_path, waveform_data, delimiter=";")
 
                 setting.value = str(file_path)

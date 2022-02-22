@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Constants for compilation to Qblox hardware."""
 
 
@@ -12,6 +12,21 @@ IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
 """Size of offset instruction immediates in Q1ASM programs."""
 REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""
+NCO_PHASE_DEG_STEP_COURSE = 0.9
+"""The phase (in deg) corresponding to an increase of 1 in the course argument of the
+q1asm instructions related to the NCO phases."""
+NCO_PHASE_NUM_STEP_COURSE = 400
+"""The maximum value of the course argument of the nco phase instructions."""
+NCO_PHASE_DEG_STEP_FINE = 2.25e-3
+"""The phase (in deg) corresponding to an increase of 1 in the fine argument of the
+q1asm instructions related to the NCO phases."""
+NCO_PHASE_NUM_STEP_FINE = 400
+"""The maximum value of the fine argument of the nco phase instructions."""
+NCO_PHASE_DEG_STEP_U_FINE = 3.6e-7
+"""The phase (in deg) corresponding to an increase of 1 in the ultra-fine argument of
+the q1asm instructions related to the NCO phases."""
+NCO_PHASE_NUM_STEP_U_FINE = 6250
+"""The maximum value of the ultra-fine argument of the nco phase instructions."""
 
 GRID_TIME = 4  # ns
 """
@@ -44,3 +59,5 @@ NUMBER_OF_REGISTERS: int = 64
 
 DOWNCONVERTER_FREQ: float = 4.4e9
 """LO frequency used by the Qblox downconverter."""
+GENERIC_IC_COMPONENT_NAME: str = "generic"
+"""Default name for the generic instrument coordinator component."""

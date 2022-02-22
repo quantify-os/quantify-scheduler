@@ -4,7 +4,7 @@
 # pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
@@ -13,11 +13,13 @@ from typing import Any, Dict, Optional, Callable, List
 
 import numpy as np
 import pytest
-
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import (
-    add_pulse_information_transmon,
-    determine_absolute_timing,
+    device_compile,
     qcompile,
 )
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
@@ -25,12 +27,31 @@ from quantify_scheduler.schemas.examples import utils
 
 # load here to avoid loading every time a fixture is used
 DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
+
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 @pytest.fixture
 def load_example_transmon_config() -> Dict[str, Any]:
+    """
+    Circuit to device level compilation for the add_pulse_info_transmon compilation
+    backend.
+    """
+
+    def _load_example_transmon_config():
+        return DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+
+    yield _load_example_transmon_config
+
+
+@pytest.fixture
+def load_legacy_transmon_config() -> Dict[str, Any]:
+    """
+    Loads the configuration for `add_pulse_information_transmon`.
+    To be removed after 0.7.0 when this functionality is phased out.
+    """
+
     def _load_example_transmon_config():
         return dict(DEVICE_CONFIG)
 
@@ -66,8 +87,7 @@ def create_schedule_with_pulse_info(
             if device_config is not None
             else load_example_transmon_config()
         )
-        add_pulse_information_transmon(_schedule, _device_config)
-        determine_absolute_timing(_schedule)
+        _schedule = device_compile(_schedule, _device_config)
         return _schedule
 
     yield _create_schedule_with_pulse_info

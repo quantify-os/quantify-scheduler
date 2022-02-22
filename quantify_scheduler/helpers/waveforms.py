@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 from __future__ import annotations
 
 import inspect
@@ -196,8 +196,8 @@ def get_waveform_by_pulseid(
         The schedule.
     """
     pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = dict()
-    for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)
             if pulse_id in pulseid_waveformfn_dict:
