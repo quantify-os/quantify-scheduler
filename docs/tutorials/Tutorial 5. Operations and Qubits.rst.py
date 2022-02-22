@@ -34,7 +34,7 @@
 # ------------------------------
 #
 # In the previous tutorials, experiments were created on the quantum-device level. On this level,
-# operations are defined in terms of explicit signals and locations on chip, rather than the qubit and the intended operation. 
+# operations are defined in terms of explicit signals and locations on chip, rather than the qubit and the intended operation.
 # To allow working at a greater level of abstraction, `quantify_scheduler` allows creating operations on the
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 # Instead of signals, clocks, and ports, operations are defined by the the effect they have on specific qubits.
@@ -68,7 +68,7 @@ pprint(rxy45.data)
 # %% [raw]
 # As we can see, the structure of a circuit level operation is similar to a pulse level
 # operation. However, the information is contained inside the `gate_info` entry rather
-# than the `pulse_info` entry of the data dictionary. 
+# than the `pulse_info` entry of the data dictionary.
 # Importantly, there is no device-specific information coupled to the operation such that
 # it represents the abstract notion of this qubit rotation, rather than how to perform it
 # on any physical qubit implementation.
@@ -269,7 +269,7 @@ pulse_sched = device_compile(sched, transmon_test_config)
 # Now that the timings have been determined, we can show the first few rows of the `timing_table`:
 
 # %%
-pulse_sched.timing_table.hide_index(slice(11, None)).hide_columns('waveform_op_id')
+pulse_sched.timing_table.hide_index(slice(11, None)).hide_columns("waveform_op_id")
 
 # %% [raw]
 # And since all pulse information has been determined, we can show the pulse diagram as
@@ -406,7 +406,7 @@ compiled_sched = qcompile(
 # its pulse diagram:
 
 # %%
-compiled_sched.timing_table.hide_index(slice(11, None)).hide_columns('waveform_op_id')
+compiled_sched.timing_table.hide_index(slice(11, None)).hide_columns("waveform_op_id")
 
 # %%
 f, ax = compiled_sched.plot_pulse_diagram()
