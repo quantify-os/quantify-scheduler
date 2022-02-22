@@ -197,6 +197,7 @@ def test_compile_hardware_hdawg4_successfully(
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
+    schedule.add(Measure(q0))
     schedule = create_schedule_with_pulse_info(schedule)
 
     modulate_wave_spy = mocker.patch.object(
@@ -429,8 +430,7 @@ def test_validate_schedule(
         zhinst_backend._validate_schedule(empty_schedule)
 
     assert (
-        str(execinfo.value)
-        == "Undefined timing constraints for schedule 'Empty Experiment'!"
+        str(execinfo.value) == "Undefined schedulables for schedule 'Empty Experiment'!"
     )
 
     with pytest.raises(ValueError) as execinfo:
@@ -830,7 +830,7 @@ def test__add_wave_nodes_with_vector(
     _data = np.zeros((2, 1024))
     _data[0] = np.real(test_waveform)
     _data[1] = np.imag(test_waveform)
-    expected_data = (_data.reshape((-2,), order="F") * (2 ** 15 - 1)).astype("int16")
+    expected_data = (_data.reshape((-2,), order="F") * (2**15 - 1)).astype("int16")
 
     awg_index: int = 0
     settings_builder = settings.ZISettingsBuilder()

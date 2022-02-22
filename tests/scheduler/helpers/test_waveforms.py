@@ -13,6 +13,7 @@ from pytest_mock.plugin import MockerFixture
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.helpers.schedule import get_pulse_uuid
+from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.helpers.waveforms import (
     apply_mixer_skewness_corrections,
     area_pulse,
@@ -87,7 +88,9 @@ def test_get_waveform_by_pulseid(
     schedule_with_pulse_info: Schedule,
 ) -> None:
     # Arrange
-    operation_repr = schedule_with_pulse_info.timing_constraints[0]["operation_repr"]
+    operation_repr = list(schedule_with_pulse_info.schedulables.values())[0][
+        "operation_repr"
+    ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
@@ -102,15 +105,16 @@ def test_get_waveform_by_pulseid(
 
 
 def test_get_waveform_by_pulseid_are_unique(
-    create_schedule_with_pulse_info: Callable,
+    load_example_transmon_config: Callable,
 ) -> None:
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(X90("q0"))
     schedule.add(X90("q0"))
-    create_schedule_with_pulse_info(schedule)
 
-    operation_repr = schedule.timing_constraints[0]["operation_repr"]
+    schedule = device_compile(schedule, load_example_transmon_config())
+
+    operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
     pulse_info_0 = schedule.operations[operation_repr]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: List[int] = [pulse_id]
@@ -307,7 +311,7 @@ def test_apply_mixer_skewness_corrections() -> None:
 
     # Assert
     assert isinstance(waveform, np.ndarray)
-    assert pytest.approx(amp_ratio_after, amplitude_ratio)
+    assert amp_ratio_after == pytest.approx(amplitude_ratio, 1e-4)
     normalized_real = waveform.real / np.max(np.abs(waveform.real))
     normalized_imag = waveform.imag / np.max(np.abs(waveform.imag))
     assert np.allclose(normalized_real, normalized_imag)

@@ -46,7 +46,7 @@ def test_acquisition_staircase_ops(gen_acquisition_staircase_sched):
 
     sched, sched_kwargs = gen_acquisition_staircase_sched
     # total number of operations
-    assert len(sched.timing_constraints) == 3 * len(sched_kwargs["readout_pulse_amps"])
+    assert len(sched.schedulables) == 3 * len(sched_kwargs["readout_pulse_amps"])
     # number of unique operations
     assert len(sched.operations) == 2 * len(sched_kwargs["readout_pulse_amps"]) + 1
 
@@ -117,7 +117,7 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
     sched, sched_kwargs = gen_awg_staircase_sched
     assert sched.repetitions == sched_kwargs["repetitions"]
 
-    assert len(sched.timing_constraints) == 3 * len(sched_kwargs["pulse_amps"])
+    assert len(sched.schedulables) == 3 * len(sched_kwargs["pulse_amps"])
     # number of unique operations
     assert len(sched.operations) == 2 * len(sched_kwargs["pulse_amps"]) + 1
 

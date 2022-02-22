@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 from zhinst import qcodes
 
+from quantify_scheduler import enums
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
@@ -248,7 +249,8 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
     copy2.assert_called_with("uhfqa0_awg0.csv", "waves")
 
 
-def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
+@pytest.mark.parametrize("bin_mode", [enums.BinMode.AVERAGE, enums.BinMode.APPEND])
+def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa, bin_mode):
     # Arrange
     uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
     expected_data = np.ones(64)
@@ -259,7 +261,9 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa):
     config = ZIDeviceConfig(
         "hdawg0",
         settings.ZISettingsBuilder(),
-        ZIAcquisitionConfig(1, {0: resolver}),
+        ZIAcquisitionConfig(
+            n_acquisitions=1, resolvers={0: resolver}, bin_mode=bin_mode
+        ),
     )
     mocker.patch.object(settings.ZISettings, "serialize")
     mocker.patch.object(settings.ZISettings, "apply")
