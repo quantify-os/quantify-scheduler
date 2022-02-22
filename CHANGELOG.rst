@@ -28,7 +28,9 @@ Merged branches and closed issues
 * QuantumDevice - Unknown values are initialized as `float('nan')` (#274, !356)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for easier method names, and enable plotly visualization directly from `ScheduleBase` (!313)
+* Gettables - `ScheduleGettable` now first stops all instruments in IC during initialization (!324)
 * Instrument Coordinator - IC now adds a GenericInstrumentCoordinator to itself on instantiation by default.
+* Qblox ICCs - Stop now disables sync on all sequencers to prevent hanging during next run, where it gets re-enabled if needed (!324)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
 * Qblox backend - Added logic for changing the nco phase during execution of a `Schedule` (!346)
 * Qblox backend - Added ability to correct for latency by delaying program execution on a per sequencer basis (!325)
