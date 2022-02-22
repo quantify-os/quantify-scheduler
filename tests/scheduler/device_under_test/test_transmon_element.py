@@ -23,10 +23,6 @@ def q0() -> TransmonElement:
     q0 = TransmonElement("q0")
     q0.instrument_coordinator(coordinator.name)
 
-    q0.freq_01(6e9)
-    q0.freq_12(5.7e9)
-    q0.ro_freq(8e9)
-
     # Transmon element is returned
     yield q0
     # after the test, teardown...
