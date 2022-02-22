@@ -185,7 +185,7 @@ plt.show()
 # Before adding this, the schedule is not specific to any qubit implementation.
 # In this section, we compile the schedule to the quantum-device layer to enable running it on a specific qubit implementation.
 # In order to generate the necessary information, some device properties must be specified which
-# is done using the :ref:`device configuration file<Device configuration file>`.
+# is done using the :ref:`device configuration file<sec-device-config>`.
 #
 # Using the device configuration file, the schedule can be compiled to the quantum-device layer, appending pulse
 # information to every gate in the schedule. Before continuing to the compilation step,
@@ -243,7 +243,7 @@ pprint(transmon_schema["properties"])
 
 # %% [raw]
 # As can be seen form the JSON schema, the
-# :ref:`device configuration file<Device configuration file>` also contains the
+# :ref:`device configuration file<sec-device-config>` also contains the
 # parameters required by the `device_compilation_backend` for all qubits and edges.
 
 # %%
@@ -282,7 +282,7 @@ ax.set_xlim(0.4005e-3, 0.4006e-3)
 # %% [raw]
 # Quantum Devices and Elements
 # ----------------------------
-# The :ref:`device configuration file<Device configuration file>` contains all knowledge
+# The :ref:`device configuration file<sec-device-config>` contains all knowledge
 # of the physical device under test (DUT). Together with the
 # :ref:`hardware configuration file<Hardware configuration file>` which contains the
 # different hardware connections, all information is represented.
