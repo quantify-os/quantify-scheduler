@@ -134,7 +134,7 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
 
 sched
 
-# %% [markdown]
+# %% [raw]
 # By scheduling 7 operations for 21 different values for `theta` we indeed get a schedule containing 7\*21=147 operations. To minimize the size of the schedule, identical operations are stored only once. For example, all 21 `CZ` operations are stored only once, which leaves only 66 unique operations in the schedule.
 # .. note :: The acquisitions are different for every iteration due to their different `acq_index`. The `Rxy` rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since $R^{360}=R^0$). Hence the number of unique operations is 3\*21-1+4=66.
 
@@ -157,27 +157,25 @@ ax.set_xlim(-0.5, 9.5)
 plt.show()
 
 # %% [raw]
-# In previous tutorials, we visualized the `schedules` on the pulse level using :func:`~quantify_scheduler.schedule.plot_pulse_diagram`.
+# In previous tutorials, we visualized the `schedules` on the pulse level using :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` .
 # Up until now, however, all gates have been defined on the
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` without defining the
 # corresponding pulse shapes.
-# Therefore, trying to run :func:`~quantify_scheduler.schedule.plot_pulse_diagram` will raise an error which
+# Therefore, trying to run :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` will raise an error which
 # signifies no `pulse_info` is present in the schedule:
 #
-
-# %%
 # .. jupyter-execute::
 #     :raises:
-sched.plot_pulse_diagram()
-
+#
+#     sched.plot_pulse_diagram()
 
 # %% [raw]
 # And similarly for the `timing_table`:
-
-# %%
+#
 # .. jupyter-execute::
 #     :raises:
-sched.timing_table
+#
+#     sched.timing_table
 
 # %% [raw]
 # Device configuration and compilation
@@ -243,7 +241,7 @@ transmon_schema = json.loads(
 )
 pprint(transmon_schema["properties"])
 
-# %% [markdown]
+# %% [raw]
 # As can be seen form the JSON schema, the
 # :ref:`device configuration file<Device configuration file>` also contains the
 # parameters required by the `device_compilation_backend` for all qubits and edges.
@@ -267,7 +265,7 @@ from quantify_scheduler.compilation import device_compile
 
 pulse_sched = device_compile(sched, transmon_test_config)
 
-# %% [markdown]
+# %% [raw]
 # Now that the timings have been determined, we can show the first few rows of the `timing_table`:
 
 # %%
@@ -408,7 +406,7 @@ compiled_sched = qcompile(
 # its pulse diagram:
 
 # %%
-compiled_sched.timing_table
+compiled_sched.timing_table.hide_index(slice(11, None)).hide_columns('waveform_op_id')
 
 # %%
 f, ax = compiled_sched.plot_pulse_diagram()
