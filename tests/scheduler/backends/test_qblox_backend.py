@@ -106,11 +106,13 @@ def make_hardware_cfg_latency_correction():
                 "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "seq0": {
-                        "port": port,
-                        "clock": clock,
-                        "latency_correction": correction,
-                    },
+                    "targets": [
+                        {
+                            "port": port,
+                            "clock": clock,
+                            "latency_correction": correction,
+                        },
+                    ],
                 },
             },
         }

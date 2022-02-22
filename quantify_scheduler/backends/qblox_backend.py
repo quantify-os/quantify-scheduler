@@ -49,7 +49,7 @@ def hardware_compile(
         device_compilers=container.instrument_compilers,
     )
 
-    compiled_instructions = container.prepare()
+    container.prepare()
     compiled_instructions = container.compile(repetitions=schedule.repetitions)
     # add the compiled instructions to the schedule data structure
     schedule["compiled_instructions"] = compiled_instructions
