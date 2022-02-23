@@ -611,20 +611,12 @@ def test_generate_port_clock_to_device_map():
 
 # --------- Test classes and member methods ---------
 def test_contruct_sequencers(make_basic_multi_qubit_schedule):
-    class TestModule(QcmModule):
-        def __init__(self):
-            super().__init__(
-                parent=None,
-                name="tester",
-                total_play_time=1,
-                hw_mapping=HARDWARE_MAPPING["qcm0"],
-            )
-
-        def compile(self, repetitions: int = 1) -> Dict[str, Any]:
-            return dict()
-
-    test_module = TestModule()
-
+    test_module = QcmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=HARDWARE_MAPPING["qcm0"],
+    )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
