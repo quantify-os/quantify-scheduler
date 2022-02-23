@@ -641,15 +641,11 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
             "port": "q0:mw",
             "clock": "q0.01",
             "interm_freq": 50e6,
-            "mixer_amp_ratio": 0.9998,
-            "mixer_phase_error_deg": -4.1,
         },
         {
             "port": "q0:mw",
             "clock": "q0.01",
             "interm_freq": 100e6,
-            "mixer_amp_ratio": 0.9998,
-            "mixer_phase_error_deg": -4.1,
         },
     ]
 
