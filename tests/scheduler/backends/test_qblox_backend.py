@@ -59,6 +59,10 @@ from quantify_scheduler.compilation import (
     device_compile,
     qcompile,
 )
+
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+
 from quantify_scheduler.operations.acquisition_library import (
     Trace,
 )
@@ -661,6 +665,47 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=mapping,
+        device_compilers={"qcm0": test_module},
+    )
+
+    with pytest.raises(ValueError):
+        test_module.sequencers = test_module._construct_sequencers()
+
+
+def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
+    hw_mapping = HARDWARE_MAPPING.copy()
+
+    hw_mapping = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM_RF",
+            "ref": "internal",
+            "complex_output_0": {"targets": []},
+        },
+    }
+
+    hw_mapping["qcm0"]["complex_output_0"]["targets"] = [
+        {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
+    ]
+
+    device = QuantumDevice("device")
+    elements = [TransmonElement(f"q{i}") for i in range(7)]
+    for element in elements:
+        device.add_component(element)
+
+    test_module = QcmRfModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=hw_mapping["qcm0"],
+    )
+
+    sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
+    sched = device_compile(sched, device.generate_device_config())
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        mapping=hw_mapping,
         device_compilers={"qcm0": test_module},
     )
 
