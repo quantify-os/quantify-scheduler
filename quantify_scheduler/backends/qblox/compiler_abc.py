@@ -990,7 +990,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             lo_name = io_cfg.get("lo_name", None)
             downconverter = io_cfg.get("downconverter", False)
 
-            targets: list = io_cfg.get("targets", [])
+            targets: List[Dict[str, Any]] = io_cfg.get("targets", [])
             for target in targets:
                 portclock = target["port"], target["clock"]
 
