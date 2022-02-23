@@ -1010,18 +1010,23 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_to_seq_mapping:
+                        previous_sequencer = sequencers[
+                            portclock_to_seq_mapping[portclock]
+                        ]
+                        previous_output = previous_sequencer._settings.connected_outputs
                         raise ValueError(
-                            f"{portclock} used for multiple targets. "
-                            "Each portclock combination should only be mentioned once"
+                            f"Portclock {portclock} was assigned to multiple targets of {self.name}. "
+                            f"This portclock was assigned to output '{io}' despite being already"
+                            f"previously referred in output(s) '{previous_output}' "
                         )
 
                     portclock_to_seq_mapping[portclock] = seq_name
 
-        # Check if more than 6 targets are active
+        # Check if more targets than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
                 "Number of simultaneous pulse targets exceeds number of sequencers."
-                f"Maximum allowed for {self.__class__.__name__} is "
+                f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )
 
