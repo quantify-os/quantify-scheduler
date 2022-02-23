@@ -668,8 +668,8 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
         device_compilers={"qcm0": test_module},
     )
 
-    # with pytest.raises(ValueError):
-    test_module.sequencers = test_module._construct_sequencers()
+    with pytest.raises(ValueError):
+        test_module.sequencers = test_module._construct_sequencers()
 
 
 def test_simple_compile(pulse_only_schedule):
