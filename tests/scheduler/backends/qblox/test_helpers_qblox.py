@@ -25,4 +25,4 @@ def test_get_nco_phase_arguments(phase: float):
     )
 
     # approx due to floating point rounding errors
-    assert pytest.approx(phase, phase_shift_returned)
+    assert phase_shift_returned == pytest.approx(phase)

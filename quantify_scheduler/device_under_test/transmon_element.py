@@ -1,18 +1,19 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-from typing import Any, Dict
+from typing import Dict
 
 from qcodes.instrument.base import Instrument
-from quantify_scheduler.backends.circuit_to_device import (
-    OperationCompilationConfig,
-    DeviceCompilationConfig,
-)
 from qcodes.instrument.parameter import (
     InstrumentRefParameter,
     ManualParameter,
     Parameter,
 )
 from qcodes.utils import validators
+from quantify_scheduler.backends.circuit_to_device import (
+    DeviceCompilationConfig,
+    OperationCompilationConfig,
+)
+from quantify_scheduler.helpers.validators import Numbers
 
 
 class TransmonElement(Instrument):
@@ -74,9 +75,10 @@ class TransmonElement(Instrument):
             docstring=r"""Amplitude of the $\pi$ pulse
             (considering a pulse duration of `mw_pulse_duration`).""",
             label=r"$\pi-pulse amplitude$",
+            initial_value=float("nan"),
             unit="V",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=-10, max_value=10),
+            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
         self.add_parameter(
             "mw_motzoi",
@@ -104,8 +106,9 @@ class TransmonElement(Instrument):
                 "transition (considering a pulse duration of `mw_pulse_duration`)."
             ),
             unit="V",
+            initial_value=float("nan"),
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=-10, max_value=10),
+            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
 
         self.add_parameter(
@@ -164,14 +167,16 @@ class TransmonElement(Instrument):
             label="Qubit frequency",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            initial_value=float("nan"),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
             "freq_12",
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
+            initial_value=float("nan"),
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
 
         self.add_parameter(
@@ -180,7 +185,8 @@ class TransmonElement(Instrument):
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            initial_value=float("nan"),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
             "ro_pulse_amp",
@@ -257,10 +263,10 @@ class TransmonElement(Instrument):
         self.add_parameter(
             "spec_pulse_frequency",
             docstring="Frequency of the qubit spectroscopy pulse.",
-            initial_value=4.715e9,
+            initial_value=float("nan"),
             unit="Hz",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1e12),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
             "spec_pulse_amp",

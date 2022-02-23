@@ -197,6 +197,7 @@ def test_compile_hardware_hdawg4_successfully(
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
+    schedule.add(Measure(q0))
     schedule = create_schedule_with_pulse_info(schedule)
 
     modulate_wave_spy = mocker.patch.object(
