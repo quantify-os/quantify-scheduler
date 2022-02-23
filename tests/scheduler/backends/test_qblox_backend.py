@@ -610,7 +610,7 @@ def test_generate_port_clock_to_device_map():
 
 
 # --------- Test classes and member methods ---------
-def test_contruct_sequencer(make_basic_multi_qubit_schedule):
+def test_contruct_sequencers(make_basic_multi_qubit_schedule):
     class TestModule(QcmModule):
         def __init__(self):
             super().__init__(
