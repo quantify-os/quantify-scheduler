@@ -163,19 +163,17 @@ plt.show()
 # corresponding pulse shapes.
 # Therefore, trying to run :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` will raise an error which
 # signifies no `pulse_info` is present in the schedule:
-#
-# .. jupyter-execute::
-#     :raises:
-#
-#     sched.plot_pulse_diagram()
+
+# %%
+rst_conf = {"indent": "    ", "jupyter_execute_options": [":raises:"]}
+sched.plot_pulse_diagram()
 
 # %% [raw]
 # And similarly for the `timing_table`:
-#
-# .. jupyter-execute::
-#     :raises:
-#
-#     sched.timing_table
+
+# %%
+rst_conf = {"indent": "    ", "jupyter_execute_options": [":raises:"]}
+sched.timing_table
 
 # %% [raw]
 # Device configuration and compilation
@@ -373,8 +371,8 @@ for t in ax.texts:
         t.set_visible(False)
 
 # %% [raw]
-# Note that we add Pulses using the same interface as Gates. Pulses are Operations, and
-# as such support the same timing and reference operators as Gates.
+# This example shows that we add gates using the same interface as pulses. Gates are Operations, and
+# as such support the same timing and reference operators as Pulses.
 #
 # .. warning::
 #
