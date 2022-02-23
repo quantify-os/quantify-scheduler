@@ -382,9 +382,9 @@ for t in ax.texts:
 #     resources of the schedule. It may be necessary to add this clock manually, as in
 #     the final line of the above example
 #
-# Rather than first using :func:`!device_compile` and subsequently
-# :func:`!hardware_compile`, the two function calls can be combined using
-# :func:`!qcompile`.
+# Rather than first using :func:`~quantify_scheduler.compilation.device_compile` and subsequently
+# :func:`~quantify_scheduler.compilation.hardware_compile`, the two function calls can be combined using
+# :func:`~quantify_scheduler.compilation.qcompile`.
 
 # %%
 from quantify_scheduler.compilation import qcompile
