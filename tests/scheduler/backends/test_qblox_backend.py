@@ -633,6 +633,45 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
     assert isinstance(test_module.sequencers[seq_keys[0]], Sequencer)
 
 
+def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_schedule):
+    mapping = HARDWARE_MAPPING.copy()
+
+    mapping["qcm0"]["complex_output_0"]["targets"] = [
+        {
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "interm_freq": 50e6,
+            "mixer_amp_ratio": 0.9998,
+            "mixer_phase_error_deg": -4.1,
+        },
+        {
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "interm_freq": 100e6,
+            "mixer_amp_ratio": 0.9998,
+            "mixer_phase_error_deg": -4.1,
+        },
+    ]
+
+    test_module = QcmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=mapping["qcm0"],
+    )
+    sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
+    sched = device_compile(sched, DEVICE_CFG)
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        mapping=mapping,
+        device_compilers={"qcm0": test_module},
+    )
+
+    # with pytest.raises(ValueError):
+    test_module.sequencers = test_module._construct_sequencers()
+
+
 def test_simple_compile(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
