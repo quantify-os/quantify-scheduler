@@ -15,6 +15,7 @@ pathvalidate
 pydantic
 typing_extensions
 quantify_core>=0.5.0
+qcodes>=0.28.0,<0.32.0 # 0.28.0: document Parameter attributes; <0.32.0: API reference on RTD broken, quantify-core#296
 qblox-instruments==0.5.4
 
 # We are using rich in our tutorials
