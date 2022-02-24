@@ -659,7 +659,6 @@ class Sequencer:
             qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
-        qasm.emit(q1asm_instructions.RESET_PHASE)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         if marker_config.start is not None:
             qasm.set_marker(marker_config.start)
@@ -684,7 +683,8 @@ class Sequencer:
             comment=f"Latency correction of {self.latency_correction_ns} ns.",
         )
         with qasm.loop(label=loop_label, repetitions=repetitions):
-
+            qasm.emit(q1asm_instructions.RESET_PHASE)
+            qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
