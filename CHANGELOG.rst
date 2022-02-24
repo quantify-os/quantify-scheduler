@@ -34,6 +34,7 @@ Merged branches and closed issues
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
 * Qblox backend - NCO phase now gets reset every averaging loop (!337)
 * Qblox backend - Added logic for changing the NCO phase during execution of a `Schedule` (!346)
+* Qblox ICCs - Fixed bug where QRM scope mode sequencer does not get set correctly (!342)
 * Qblox backend - Added ability to correct for latency by delaying program execution on a per sequencer basis (!325)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
