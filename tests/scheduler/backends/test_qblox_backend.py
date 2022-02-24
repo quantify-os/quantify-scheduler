@@ -63,9 +63,7 @@ from quantify_scheduler.compilation import (
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 
-from quantify_scheduler.operations.acquisition_library import (
-    Trace,
-)
+from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
@@ -206,31 +204,11 @@ def hardware_cfg_multiplexing():
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq2": {
-                    "port": "q1:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq3": {
-                    "port": "q2:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq4": {
-                    "port": "q3:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq5": {
-                    "port": "q4:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6,},
+                "seq2": {"port": "q1:mw", "clock": "q0.01", "interm_freq": 50e6,},
+                "seq3": {"port": "q2:mw", "clock": "q0.01", "interm_freq": 50e6,},
+                "seq4": {"port": "q3:mw", "clock": "q0.01", "interm_freq": 50e6,},
+                "seq5": {"port": "q4:mw", "clock": "q0.01", "interm_freq": 50e6,},
             },
             "complex_output_1": {
                 "line_gain_db": 0,
@@ -362,12 +340,7 @@ def pulse_only_schedule_no_lo():
     sched.add(Reset("q1"))
     sched.add(
         SquarePulse(
-            amp=0.5,
-            phase=0,
-            port="q1:res",
-            duration=20e-9,
-            clock="q1.ro",
-            t0=4e-9,
+            amp=0.5, phase=0, port="q1:res", duration=20e-9, clock="q1.ro", t0=4e-9,
         )
     )
     # Clocks need to be manually added at this stage.
@@ -638,34 +611,21 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
 
 
 def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_schedule):
-    mapping = HARDWARE_MAPPING.copy()
+    mapping = copy.deepcopy(HARDWARE_MAPPING)
 
     mapping["qcm0"]["complex_output_0"]["targets"] = [
-        {
-            "port": "q0:mw",
-            "clock": "q0.01",
-            "interm_freq": 50e6,
-        },
-        {
-            "port": "q0:mw",
-            "clock": "q0.01",
-            "interm_freq": 100e6,
-        },
+        {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6,},
+        {"port": "q0:mw", "clock": "q0.01", "interm_freq": 100e6,},
     ]
 
     test_module = QcmModule(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        hw_mapping=mapping["qcm0"],
+        parent=None, name="tester", total_play_time=1, hw_mapping=mapping["qcm0"],
     )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
     assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        mapping=mapping,
-        device_compilers={"qcm0": test_module},
+        schedule=sched, mapping=mapping, device_compilers={"qcm0": test_module},
     )
 
     with pytest.raises(ValueError):
@@ -694,19 +654,14 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         device.add_component(element)
 
     test_module = QcmRfModule(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        hw_mapping=hw_mapping["qcm0"],
+        parent=None, name="tester", total_play_time=1, hw_mapping=hw_mapping["qcm0"],
     )
 
     sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
     sched = device_compile(sched, device.generate_device_config())
 
     assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        mapping=hw_mapping,
-        device_compilers={"qcm0": test_module},
+        schedule=sched, mapping=hw_mapping, device_compilers={"qcm0": test_module},
     )
 
     with pytest.raises(ValueError):
