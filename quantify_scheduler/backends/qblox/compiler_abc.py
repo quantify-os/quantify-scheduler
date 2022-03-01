@@ -522,9 +522,7 @@ class Sequencer:
         return wf_dict
 
     def _generate_acq_declaration_dict(
-        self,
-        acquisitions: List[IOperationStrategy],
-        repetitions: int,
+        self, acquisitions: List[IOperationStrategy], repetitions: int,
     ) -> Dict[str, Any]:
         """
         Generates the "acquisitions" entry of the program json. It contains declaration
@@ -611,9 +609,7 @@ class Sequencer:
 
     # pylint: disable=too-many-locals
     def generate_qasm_program(
-        self,
-        total_sequence_time: float,
-        repetitions: Optional[int] = 1,
+        self, total_sequence_time: float, repetitions: Optional[int] = 1,
     ) -> str:
         """
         Generates a QASM program for a sequencer. Requires the awg and acq dicts to
@@ -857,8 +853,7 @@ class Sequencer:
             )
 
         qasm_program = self.generate_qasm_program(
-            self.parent.total_play_time,
-            repetitions=repetitions,
+            self.parent.total_play_time, repetitions=repetitions,
         )
 
         wf_and_pr_dict = self._generate_waveforms_and_program_dict(
@@ -976,7 +971,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ]
 
         sequencers = {}
-        portclock_output_map = {}
+        portclock_output_map: Dict[Tuple, str] = {}
 
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
@@ -1011,9 +1006,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_output_map:
                         raise ValueError(
-                            f"Portclock {portclock} was assigned to multiple targets of {self.name}. "
-                            f"This portclock was used in output '{io}' despite being already "
-                            f"previously used in output '{portclock_output_map[portclock]}'."
+                            f"Portclock {portclock} was assigned to multiple targets "
+                            f"of {self.name}. This portclock was used in "
+                            f"output '{io}' despite being already previously used "
+                            f"in output '{portclock_output_map[portclock]}'."
                         )
 
                     portclock_output_map[portclock] = io
@@ -1052,10 +1048,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         instruction_generated_pulses_enabled=instr_gen_pulses,
                         output_mode=seq.output_mode,
                     )
-                    func_map = map(
-                        partial_func,
-                        pulse_data_list,
-                    )
+                    func_map = map(partial_func, pulse_data_list,)
                     if seq.pulses is None:
                         seq.pulses = []
 
@@ -1071,10 +1064,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         instruction_generated_pulses_enabled=instr_gen_pulses,
                         output_mode=seq.output_mode,
                     )
-                    func_map = map(
-                        partial_func,
-                        acq_data_list,
-                    )
+                    func_map = map(partial_func, acq_data_list,)
                     seq.acquisitions = list(func_map)
 
     @abstractmethod
@@ -1296,10 +1286,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
             return (
-                (
-                    acquisition.data["acq_channel"],
-                    acquisition.data["acq_index"],
-                ),
+                (acquisition.data["acq_channel"], acquisition.data["acq_index"],),
                 acquisition.data["protocol"],
             )
 

@@ -50,6 +50,10 @@ class CompilerContainer:
         """Set of generic instruments in the setup."""
 
     def prepare(self):
+        """
+        Prepares all the instrument compilers contained in the class,
+        by running their respective :code:`prepare` methods.
+        """
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
