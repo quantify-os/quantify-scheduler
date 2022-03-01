@@ -37,20 +37,24 @@ We start by looking at an example config for a single cluster:
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "lo_name": "lo0",
-                    "seq0": {
+                    "targets": [
+                        {
                         "clock": "q4.01",
                         "interm_freq": 200000000.0,
                         "mixer_amp_ratio": 0.9999,
                         "mixer_phase_error_deg": -4.2,
                         "port": "q4:mw",
-                    },
+                        },
+                    ]
                 },
                 "instrument_type": "QCM",
             },
             "cl_qcm_rf0": {
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "seq0": {"clock": "q5.01", "interm_freq": 50000000.0, "port": "q5:mw"},
+                    "targets": [
+                        {"clock": "q5.01", "interm_freq": 50000000.0, "port": "q5:mw"},
+                    ]
                 },
                 "instrument_type": "QCM_RF",
             },

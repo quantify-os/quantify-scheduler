@@ -35,20 +35,24 @@ Each device in the setup can be individually configured using the entry in the c
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {
+                "targets": [
+                    {
                     "port": "q0:mw",
                     "clock": "q0.01",
                     "interm_freq": 50e6
-                }
+                    }
+                ]
             },
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
-                "seq1": {
+                "targets": [
+                    {
                     "port": "q1:mw",
                     "clock": "q1.01",
                     "interm_freq": None
-                }
+                    }
+                ]
             }
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
@@ -87,11 +91,13 @@ Most notably under the :code:`complex_output_0`, we specify the sequencer settin
 .. code-block:: python
     :linenos:
 
-    "seq0": {
+    "targets": [
+        {
         "port": "q0:mw",
         "clock": "q0.01",
         "interm_freq": 50e6
-    }
+        }
+    ]
 
 Here we describe which port and clock the sequencer is associated with (see the :ref:`User guide <sec-user-guide>`
 for more information on the role of ports and clocks within the Quantify-Scheduler). The other entry, :code:`interm_freq`,
@@ -135,11 +141,13 @@ The result is that the downconversion stage will be taken into account when calc
             "ref": "internal",
             "complex_output_0": {
                 "downconverter": True,
-                "seq0": {
+                "targets": [
+                    {
                     "port": "q0:mw",
                     "clock": "q0.01",
                     "interm_freq": 50000000.0
-                }
+                    }
+                ]
             }
         }
     }
@@ -186,17 +194,21 @@ mixer correction parameters as well as the frequencies.
             "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
-                "seq0": {
+                "targets": [
+                    {
                     "port": "q0:mw",
                     "clock": "q0.01",
-                }
+                    }
+                ]
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq1": {
+                "targets": [
+                    {
                     "port": "q1:mw",
                     "clock": "q1.01",
-                }
+                    }
+                ]
             }
         },
     }
@@ -223,21 +235,25 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
             "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
-                "seq0": {
+                "targets": [
+                    {
                     "port": "q0:mw",
                     "clock": "q0.01",
-                },
-                "seq1": {
+                    },
+                    {
                     "port": "q0:mw",
                     "clock": "some_other_clock",
-                }
+                    }
+                ]
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq2": {
+                "targets": [
+                    {
                     "port": "q1:mw",
                     "clock": "q1.01",
-                }
+                    }
+                ]
             }
         },
     }
@@ -283,24 +299,29 @@ The resulting config looks like:
             "ref": "internal",
             "real_output_0": {
                 "line_gain_db": 0,
-                "seq0": {
+                "targets": [
+                {
                     "port": "q0:mw",
                     "clock": "q0.01",
                 }
             },
             "real_output_1": {
                 "line_gain_db": 0,
-                "seq1": {
+                "targets": [
+                    {
                     "port": "q1:mw",
                     "clock": "q1.01",
-                }
+                    }
+                ]
             },
             "real_output_2": {
                 "line_gain_db": 0,
-                "seq2": {
+                "targets": [
+                    {
                     "port": "q2:mw",
                     "clock": "q2.01",
-                }
+                    }
+                ]
             }
         },
     }
@@ -363,11 +384,13 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
             "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
-                "seq0": {
+                "targets": [
+                    {
                     "port": "q0:mw",
                     "clock": "q0.01",
                     "instruction_generated_pulses_enabled": True
-                }
+                    }
+                ]
             },
         },
     }
