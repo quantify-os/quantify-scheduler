@@ -116,7 +116,7 @@ def make_basic_schedule() -> Callable[[str], Schedule]:
 
 
 @pytest.fixture
-def make_basic_multi_qubit_schedule() -> Callable[[str], Schedule]:
+def make_basic_multi_qubit_schedule() -> Callable[[List[str]], Schedule]:
     def _make_basic_schedule(qubits: List[str]) -> Schedule:
         schedule = Schedule(f"Basic schedule {qubits}")
         for qubit in qubits:

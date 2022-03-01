@@ -914,6 +914,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings: Union[
             BaseModuleSettings, None
         ] = None  # set in the prepare method.
+        self.sequencers: Dict[str, Sequencer] = {}
 
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
@@ -928,8 +929,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
-            targets = self.hw_mapping[io].get("targets", [])
-            portclocks += [(target["port"], target["clock"]) for target in targets]
+            targets = self.hw_mapping[io].get("targets", None)
+            if targets:
+                portclocks += [(target["port"], target["clock"]) for target in targets]
 
         return portclocks
 
