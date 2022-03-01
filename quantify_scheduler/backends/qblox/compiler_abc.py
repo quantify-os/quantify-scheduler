@@ -1132,8 +1132,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
-            if seq.has_data:
-                self.assign_frequencies(seq)
+            self.assign_frequencies(seq)
 
     def _configure_mixer_offsets(
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
