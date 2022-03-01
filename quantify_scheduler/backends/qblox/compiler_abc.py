@@ -68,7 +68,7 @@ class InstrumentCompiler(ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        hw_mapping: Optional[Dict[str, Any]] = None,
+        hw_mapping: Dict[str, Any],
     ):
         # pylint: disable=line-too-long
         """
