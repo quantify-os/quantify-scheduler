@@ -126,6 +126,14 @@ def compile_circuit_to_device(
     """
 
     def _add_clock_info(clock_to_add: str):
+        """
+        Adds a specific clock as a resource to the schedule using the device config.
+
+        Parameters
+        ----------
+        clock_to_add
+            The clock to add as a resource to the schedule.
+        """
         if clock_to_add not in schedule.resources:
             frequency = device_cfg.clocks[clock_to_add]
             clock_resource = ClockResource(name=clock_to_add, freq=frequency)
@@ -289,6 +297,19 @@ def _add_device_repr_from_cfg_multiplexed(
 
 
 def _extract_clocks_from_operation(operation: Operation) -> Set[str]:
+    """
+    Extracts all the clock mentioned in an operation.
+
+    Parameters
+    ----------
+    operation
+        The operation to extract the clocks from.
+
+    Returns
+    -------
+    :
+        All the clocks that are used.
+    """
     def _extract_clock(d: Dict[str, Any]) -> str:
         return d["clock"]
 
