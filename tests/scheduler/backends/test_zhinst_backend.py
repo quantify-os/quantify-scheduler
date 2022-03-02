@@ -623,7 +623,7 @@ def test_uhfqa_sequence1(
           wait(45006);\t\t// clock=0\t n_instr=45006
           playWave(w0);\t// \t// clock=45006\t n_instr=0
           wait(27);\t\t// clock=45006\t n_instr=27
-          startQA(QA_INT_ALL, true);\t// clock=45033 n_instr=6
+          startQA(QA_INT_ALL, true);\t// clock=45033 n_instr=7
         }
         """
     ).lstrip("\n")
@@ -681,7 +681,7 @@ def test_uhfqa_sequence2_trace_acquisition(
           wait(2250);\t\t// clock=0\t n_instr=2250
           playWave(w0);\t// \t// clock=2250\t n_instr=0
           wait(0);\t\t// clock=2250\t n_instr=0
-          startQA(QA_INT_ALL, true);\t// clock=2250 n_instr=6
+          startQA(QA_INT_ALL, true);\t// clock=2250 n_instr=7
         }
         """
     ).lstrip("\n")
@@ -745,8 +745,8 @@ def test_uhfqa_sequence3_spectroscopy(
         {
           waitDigTrigger(2, 1);\t// \t// clock=0
           wait(2292);\t\t// clock=0\t n_instr=2292
-          startQA(QA_INT_ALL, true);\t// clock=2292 n_instr=6
-          wait(3);\t\t// clock=2298\t n_instr=3
+          startQA(QA_INT_ALL, true);\t// clock=2292 n_instr=7
+          wait(2);\t\t// clock=2299\t n_instr=2
           playWave(w1);\t// \t// clock=2301\t n_instr=0
         }
         """
