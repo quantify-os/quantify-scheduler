@@ -86,7 +86,7 @@ def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_conf
 
         # the timing of all pulses and acquisitions is corrected
         # based on the latency corr.
-        latency_dict = zhinst_backend._extract_channel_latencies(hardware_config)
+        latency_dict = zhinst_backend._extract_latencies(hardware_config)
         timing_table = zhinst_backend._apply_latency_corrections(
             timing_table=timing_table, latency_dict=latency_dict
         )
@@ -355,10 +355,10 @@ def test_hdawg4_sequence(
         repeat(__repetitions__)
         {
           setTrigger(AWG_MARKER1 + AWG_MARKER2);\t//  n_instr=2
-          wait(60000);\t\t// clock=2\t n_instr=3
-          executeTableEntry(0);\t// clock=60005 pulse=0 n_instr=0
-          setTrigger(0);\t// clock=60005 n_instr=1
-          wait(124);\t\t// clock=60006, dead time to ensure total schedule duration\t n_instr=3
+          wait(60054);\t\t// clock=2\t n_instr=3
+          executeTableEntry(0);\t// clock=60059 pulse=0 n_instr=0
+          setTrigger(0);\t// clock=60059 n_instr=1
+          wait(70);\t\t// clock=60060, dead time to ensure total schedule duration\t n_instr=3
         }
         """
     ).lstrip("\n")
@@ -785,26 +785,17 @@ def test__extract_port_clock_channelmapping_hdawg(
     assert generated_dict == expected_dict
 
 
-def test__extract_channel_latencies_line_trigger_delay(
+def test__extract_latencies(
     load_example_zhinst_hardware_config,
 ) -> None:
     hardware_config = load_example_zhinst_hardware_config()
 
     expected_latency_dict = {
-        "ic_hdawg0.awg0": 10e-9,
-        "ic_hdawg0.awg0.trigger": hardware_config.get("devices")[0]
-        .get("channel_0")
-        .get("line_trigger_delay"),
-        "ic_hdawg0.awg1": 10e-9,
-        "ic_hdawg0.awg1.trigger": hardware_config.get("devices")[0]
-        .get("channel_1")
-        .get("line_trigger_delay"),
-        "ic_uhfqa0.awg0": 0,
-        "ic_uhfqa0.awg0.acquisition": 0,
+        "q0:mw-q0.01": 190e-9,
+        "q0:res-q0.ro": 0,
+        "q1:mw-q1.01": 190e-9,
     }
-    generated_dict = zhinst_backend._extract_channel_latencies(
-        hardware_cfg=hardware_config
-    )
+    generated_dict = zhinst_backend._extract_latencies(hardware_cfg=hardware_config)
 
     assert generated_dict == expected_latency_dict
 
