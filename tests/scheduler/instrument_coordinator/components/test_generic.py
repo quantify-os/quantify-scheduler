@@ -61,7 +61,7 @@ def make_generic_qcodes_instruments(request):
     lo_ro_q0 = MockLocalOscillator(name="lo_ro_q0")
     lo_spec_q0 = MockLocalOscillator(name="lo_spec_q0")
 
-    generic_icc = GenericInstrumentCoordinatorComponent()
+    generic_icc = GenericInstrumentCoordinatorComponent(name="test_generic_icc")
 
     def cleanup_instruments():
         lo_mw_q0.close()
@@ -82,7 +82,7 @@ def make_generic_qcodes_instruments(request):
 def test_initialize(make_generic_qcodes_instruments):
     test_instruments = make_generic_qcodes_instruments
     generic_icc = test_instruments["generic_icc"]
-    assert generic_icc.name == "ic_generic"
+    assert generic_icc.name == "ic_test_generic_icc"
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
