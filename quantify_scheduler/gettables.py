@@ -197,7 +197,9 @@ class ScheduleGettable:
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
 
         # ensure the instruments are not running and we are starting from a clean state
-        instr_coordinator.stop()
+        # We switch on allow_failure so that some instruments which require the prepare
+        # before the stop can fail.
+        instr_coordinator.stop(allow_failure=True)
 
         if self.always_initialize:
             self.initialize()
