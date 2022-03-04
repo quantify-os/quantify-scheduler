@@ -1,11 +1,17 @@
 {
     "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
     "mode": "calibration",
+    "latency_corrections":
+        {
+            "q0:mw-q0.01": 95e-9,
+            "q1:mw-q1.01": 95e-9,
+            "q0:res-q0.ro": -95e-9,
+            "q1:res-q1.ro": -95e-9
+        },
     "local_oscillators": [
         {
             "unique_name": "mw_qubit_ch1",
             "instrument_name": "mw_qubit",
-            "generic_icc_name": "ic_generic",
             "frequency":
                 {
                     "ch_1.frequency": null
@@ -57,8 +63,6 @@
                 },
                 "local_oscillator": "mw_qubit_ch1",
                 "clock_frequency": 6000000000.0,
-                "line_trigger_delay": 1.91e-07,
-                "latency": 1e-08,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -82,8 +86,6 @@
                 },
                 "local_oscillator": "mw_qubit_ch2",
                 "clock_frequency": 6000000000.0,
-                "line_trigger_delay": 1.91e-07,
-                "latency": 1e-08,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"

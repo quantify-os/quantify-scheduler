@@ -550,6 +550,11 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         settings
             The settings to configure it to.
         """
+        if settings.scope_mode_sequencer is not None:
+            self._set_parameter(
+                "scope_acq_sequencer_select", settings.scope_mode_sequencer
+            )
+
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter("out0_offset", settings.offset_ch0_path0)
