@@ -146,42 +146,31 @@ def _extract_port_clock_channelmapping(hardware_cfg: Dict[str, Any]) -> Dict[str
     return port_clock_dict
 
 
-def _extract_channel_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
+def _extract_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
     """
-    The latency is/can be specified on a per channel basis in the hardware
-    configuration file.
+    The latency is specified on a port-clock combination basis in the hardware
+    configuration file. Relative latencies calculated here are added to the absolute
+    times of the operations having the specific port-clock combination specified in the
+    latency_dict.
     """
 
     port_clock_dict = _extract_port_clock_channelmapping(hardware_cfg=hardware_cfg)
-
-    list_of_hardware_channels = [
-        channel.split(".") for channel in port_clock_dict.values()
-    ]
+    raw_latency_dict = hardware_cfg.get("latency_corrections")
 
     latency_dict = {}
 
-    for device in hardware_cfg["devices"]:
-        instr_name = device["name"]
-        instr_type = device["type"]
-        for hw_channels in list_of_hardware_channels:
-            if instr_name in hw_channels:
-                channel_idx = hw_channels[1].strip("awg")
-                # Access the channel
-                channel_dict = device.get(f"channel_{channel_idx}")
-                latency_dict[f"{instr_name}.awg{channel_idx}"] = channel_dict.get(
-                    "latency", 0
-                )
+    if raw_latency_dict:
 
-                if "uhfqa" in instr_type.lower():
-                    latency_dict[
-                        f"{instr_name}.awg{channel_idx}.acquisition"
-                    ] = channel_dict.get("acquisition_latency", 0)
+        for port_clock in port_clock_dict:
+            latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
 
-                line_trigger_delay = channel_dict.get("line_trigger_delay")
-                if line_trigger_delay:
-                    latency_dict[
-                        f"{instr_name}.awg{channel_idx}.trigger"
-                    ] = line_trigger_delay
+        # Subtract lowest value to ensure minimal latency is used.
+        # note that this also supports negative delays (which is useful for
+        # calibrating)
+        minimum_of_latencies = min(latency_dict.values())
+        # Offset the latencies to be relative to the minimum
+        for port_clock, latency_at_port_clock in latency_dict.items():
+            latency_dict[port_clock] = latency_at_port_clock - minimum_of_latencies
 
     return latency_dict
 
@@ -297,35 +286,18 @@ def _apply_latency_corrections(
 ) -> pd.DataFrame:
     """
     Changes the "abs_time" of a timing table depending on the specified latencies
-    for each channel.
+    for each port-clock combination as specified in the latency dict. The latencies are
+    added to the abs_time elements fulfilling the specific port-clock combination.
     """
 
-    def latency_corrections(
-        hardware_channel: str, is_acquisition: bool, abs_time: float
-    ) -> float:
-        if hardware_channel is None:
-            return abs_time
-        # We determine if the channel is used for pulsing or acquiring as both
-        # can have a different acquisition delay.
-        if is_acquisition:
-            hardware_channel += ".acquisition"
+    for port_clock_combination_key in latency_dict:
+        port, clock = port_clock_combination_key.split("-")
+        port_mask = timing_table["port"] == port
+        clock_mask = timing_table["clock"] == clock
+        full_mask_combination = port_mask * clock_mask
+        latency_corr = latency_dict[port_clock_combination_key]
+        timing_table.loc[full_mask_combination, "abs_time"] += latency_corr
 
-        # if no correction is specified for a specific step then nothing is done.
-        if hardware_channel in latency_dict.keys():
-            latency_corr = latency_dict[hardware_channel]
-            abs_time += latency_corr
-
-        return abs_time
-
-    # ! we are modifying the abs_time field here
-    timing_table["abs_time"] = timing_table.apply(
-        lambda row: latency_corrections(
-            hardware_channel=row["hardware_channel"],
-            is_acquisition=row["is_acquisition"],
-            abs_time=row["abs_time"],
-        ),
-        axis=1,
-    )
     return timing_table
 
 
@@ -799,7 +771,7 @@ def compile_backend(
     )
 
     # the timing of all pulses and acquisitions is corrected based on the latency corr.
-    latency_dict = _extract_channel_latencies(hardware_cfg)
+    latency_dict = _extract_latencies(hardware_cfg)
     timing_table = _apply_latency_corrections(
         timing_table=timing_table, latency_dict=latency_dict
     )
@@ -931,11 +903,12 @@ def _add_lo_config(
 
     local_oscillator = local_oscillators[unique_name]
 
-    # Get the power of the local oscillator
-    ((power_key, power_val),) = local_oscillator.power.items()
-
     # the frequencies from the config file
     ((lo_freq_key, lo_freq_val),) = local_oscillator.frequency.items()
+
+    # Get the power of the local oscillator
+    if local_oscillator.power:
+        ((power_key, power_val),) = local_oscillator.power.items()
 
     # Get the phase of the local oscillator
     if local_oscillator.phase:
