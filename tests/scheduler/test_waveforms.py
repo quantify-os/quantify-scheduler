@@ -7,6 +7,8 @@ import pytest
 
 from quantify_scheduler.waveforms import (
     drag,
+    staircase,
+    interpolated_complex_waveform,
     modulate_wave,
     rotate_wave,
     square,
@@ -115,6 +117,35 @@ def test_sudden_net_zero() -> None:
     assert np.sum(waveform) == 0
     assert np.max(waveform) == amp_A
     assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
+
+
+@pytest.mark.parametrize(
+    "test_wf, test_time, answer",
+    [
+        (
+            square(np.linspace(0, 50e-6, 1000), 2.44),
+            np.linspace(0, 50e-6, 1000),
+            np.array([2.44] * 2000),
+        ),
+        (
+            square(np.linspace(0, 50e-6, 1000), 2.44)
+            + 1.0j * square(np.linspace(0, 50e-6, 1000), 1),
+            np.linspace(0, 50e-6, 1000),
+            np.array([2.44 + 1.0j] * 2000),
+        ),
+        (
+            square(np.linspace(0, 50e-6, 1000), -2.1j),
+            np.linspace(0, 50e-6, 1000),
+            np.array([-2.1j] * 2000),
+        ),
+    ],
+)
+def test_interpolated_complex_waveform(test_wf, test_time, answer):
+    t_answer = np.linspace(0, 50e-6, 2000)
+    result = interpolated_complex_waveform(
+        t=t_answer, samples=test_wf, t_samples=test_time
+    )
+    npt.assert_array_equal(answer, result)
 
 
 def test_rotate_wave() -> None:
