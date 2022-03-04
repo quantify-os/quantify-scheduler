@@ -832,7 +832,7 @@ class NumericalPulse(Operation):
         duration = t_samples[-1] - t_samples[0]
         samples, t_samples = map(make_list_from_array, [samples, t_samples])
         if data is None:
-            data: Dict[str, Any] = {
+            data = {
                 "name": "NumericalPulse",
                 "pulse_info": [
                     {  # pylint: disable=line-too-long
