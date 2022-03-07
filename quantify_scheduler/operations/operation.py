@@ -13,9 +13,9 @@ from pydoc import locate
 from typing import Any, Dict
 
 import numpy as np
-from quantify_core.utilities import general
 
 from quantify_scheduler import enums
+from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 
 cached_locate = lru_cache(locate)
@@ -159,7 +159,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         """
         A hash based on the contents of the Operation.
         """
-        return general.make_hash(self.data)
+        return make_hash(self.data)
 
     @classmethod
     def _get_signature(cls, parameters: dict) -> str:

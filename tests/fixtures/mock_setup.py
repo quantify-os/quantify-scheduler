@@ -1,10 +1,10 @@
 import os
+import shutil
 import pathlib
 
 import pytest
 from quantify_core.data.handling import get_datadir, set_datadir
 from quantify_core.measurement.control import MeasurementControl
-from quantify_core.utilities._tests_helpers import rmdir_recursive
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import TransmonElement
@@ -12,7 +12,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
 @pytest.fixture(scope="session", autouse=True)
-def tmp_test_data_dir(request, tmp_path_factory):
+def tmp_test_data_dir(tmp_path_factory):
     """
     This is a fixture which uses the pytest tmp_path_factory fixture
     and extends it by copying the entire contents of the test_data
@@ -24,17 +24,12 @@ def tmp_test_data_dir(request, tmp_path_factory):
     use_temp_dir = True
     if use_temp_dir:
         temp_data_dir = tmp_path_factory.mktemp("temp_data")
-
-        def cleanup_tmp():
-            rmdir_recursive(root_path=temp_data_dir)
-
-        request.addfinalizer(cleanup_tmp)
+        yield temp_data_dir
+        shutil.rmtree(temp_data_dir, ignore_errors=True)
     else:
         set_datadir(os.path.join(pathlib.Path.home(), "quantify_schedule_test"))
         print(f"Data directory set to: {get_datadir()}")
-        temp_data_dir = get_datadir()
-
-    return temp_data_dir
+        yield get_datadir()
 
 
 # pylint: disable=redefined-outer-name

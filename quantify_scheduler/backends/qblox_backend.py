@@ -5,12 +5,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
-# pylint: disable=no-name-in-module
-from quantify_core.utilities.general import make_hash, without
-
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.helpers.collections import without
 from quantify_scheduler.operations.pulse_library import WindowOperation
 
 

@@ -6,7 +6,7 @@ Compilation backend for quantum-circuit to quantum-device layer.
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from quantify_core.utilities.general import import_python_object_from_string
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule

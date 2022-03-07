@@ -218,7 +218,10 @@ def test_exec_custom_waveform_function(mocker: MockerFixture) -> None:
     mock = mocker.Mock()
     mock.__signature__ = inspect.signature(custom_function)
     mocker.patch(
-        "quantify_core.utilities.general.import_func_from_string",
+        # We need to patch function that is available in the module, which is not
+        #   "quantify_scheduler.helpers.importers.import_python_object_from_string",
+        # but ...
+        "quantify_scheduler.helpers.waveforms.import_python_object_from_string",
         return_value=mock,
     )
 
