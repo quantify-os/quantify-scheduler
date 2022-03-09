@@ -5,6 +5,10 @@ Changelog
 Unreleased changes
 ------------------
 
+
+0.6.0 Full support for multiplexed readout, transmon element update, fixes to backends (2022-03-10)
+---------------------------------------------------------------------------------------------------
+
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
@@ -35,9 +39,9 @@ Merged branches and closed issues
 * Gettables - `ScheduleGettable` now first stops all instruments in IC during initialization (!324)
 * Qblox ICCs - Stop now disables sync on all sequencers to prevent hanging during next run, where it gets re-enabled if needed (!324)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
+* Qblox ICCs - Fixed bug where QRM scope mode sequencer does not get set correctly (!342)
 * Qblox backend - NCO phase now gets reset every averaging loop (!337)
 * Qblox backend - Added logic for changing the NCO phase during execution of a `Schedule` (!346)
-* Qblox ICCs - Fixed bug where QRM scope mode sequencer does not get set correctly (!342)
 * Qblox backend - Added ability to correct for latency by delaying program execution on a per sequencer basis (!325)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
