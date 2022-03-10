@@ -5,13 +5,10 @@ from __future__ import annotations
 
 import warnings
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 import numpy as np
-from quantify_core.utilities import general
-
-from quantify_scheduler import Operation
-from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.helpers.collections import make_hash, without
 from quantify_scheduler.schedules.schedule import (
     AcquisitionMetadata,
     CompiledSchedule,
@@ -19,6 +16,7 @@ from quantify_scheduler.schedules.schedule import (
 )
 
 if TYPE_CHECKING:
+    from quantify_scheduler import Operation
     from quantify_scheduler.backends.types import qblox
 
 
@@ -45,7 +43,7 @@ def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> in
     if excludes is None:
         excludes = ["t0"]
 
-    return general.make_hash(general.without(pulse_info, excludes))
+    return make_hash(without(pulse_info, excludes))
 
 
 def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
@@ -68,7 +66,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
         "It is currently being replaced by the timing_table property of a `Schedule`",
         DeprecationWarning,
     )
-    return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
+    return make_hash(without(acq_info, ["t0", "waveforms"]))
 
 
 def get_total_duration(schedule: CompiledSchedule) -> float:
