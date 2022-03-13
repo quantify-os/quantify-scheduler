@@ -11,7 +11,7 @@ the flux sensitivity and interaction strengths and qubit frequencies.
 from typing import List, Union
 
 import numpy as np
-from scipy import signal
+from scipy import signal, interpolate
 
 
 def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
@@ -287,6 +287,46 @@ def sudden_net_zero(
     )
 
     return corr_waveform_amps
+
+
+def interpolated_complex_waveform(
+    t: np.ndarray,
+    samples: np.ndarray,
+    t_samples: np.ndarray,
+    interpolation: str = "linear",
+    **kwargs
+) -> np.ndarray:
+    """
+    Wrapper function around `scipy.interpolate.interp1d`, which takes the array of
+    (complex) samples, interpolates the real and imaginary parts separately and returns
+    the interpolated values at the specified times.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluated the to be returned waveform.
+    samples
+        An array of (possibly complex) values specifying the shape of the waveform.
+    t_samples
+        An array of values specifying the corresponding times at which the `samples`
+        are evaluated.
+    kwargs
+        Optional keyword arguments to pass to `scipy.interpolate.interp1d`.
+
+    Returns
+    -------
+    :
+        An array containing the interpolated values.
+    """
+    if isinstance(samples, list):
+        samples = np.array(samples)
+    real_interpolator = interpolate.interp1d(
+        t_samples, samples.real, kind=interpolation, **kwargs
+    )
+    imag_interpolator = interpolate.interp1d(
+        t_samples, samples.imag, kind=interpolation, **kwargs
+    )
+    return real_interpolator(t) + 1.0j * imag_interpolator(t)
 
 
 # ----------------------------------
