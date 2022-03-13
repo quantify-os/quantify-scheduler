@@ -52,9 +52,10 @@ class Ports(InstrumentChannel):
         )
 
 
+# FIXME : rename to clock_frequencies
 class Clocks(InstrumentChannel):
     """
-    Submodule containing the clocks specifying what transitions to address.
+    Submodule containing the clock frequencies specifying the transitions to address.
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -65,6 +66,7 @@ class Clocks(InstrumentChannel):
             label="Qubit frequency",
             unit="Hz",
             parameter_class=ManualParameter,
+            docstring=f"Frequency of the {parent.name}.01 clock",
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
@@ -73,16 +75,17 @@ class Clocks(InstrumentChannel):
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
             initial_value=float("nan"),
+            docstring=f"Frequency of the {parent.name}.12 clock",
             parameter_class=ManualParameter,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
 
         self.add_parameter(
             "freq_ro",
-            docstring="Frequency of the pulse sent to the readout resonator.",
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
+            docstring=f"Frequency of the {parent.name}.ro clock. ",
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
@@ -255,7 +258,7 @@ class BasicTransmonElement(DeviceElement):
                         "amp180": self.rxy.amp180(),
                         "motzoi": self.rxy.motzoi(),
                         "port": self.ports.microwave(),
-                        "clock": self.ports.freq_01(),
+                        "clock": self.clocks.freq_01(),
                         "duration": self.rxy.duration(),
                     },
                     gate_info_factory_kwargs=[
@@ -301,9 +304,9 @@ class BasicTransmonElement(DeviceElement):
             ".circuit_to_device.compile_circuit_to_device",
             "elements": self._generate_config(),
             "clocks": {
-                self.mw_01_clock(): self.freq_01(),
-                self.mw_12_clock(): self.freq_12(),
-                self.ro_clock(): self.ro_freq(),
+                f"{self.name}.01": self.clocks.freq_01(),
+                f"{self.name}.12": self.clocks.freq_12(),
+                f"{self.name}.ro": self.clocks.freq_ro(),
             },
             "edges": {},
         }
