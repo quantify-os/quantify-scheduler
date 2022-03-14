@@ -50,4 +50,3 @@
 - [ ] Post the new release in Slack (`#software-for-users` and `#software-for-developers`).
     - PS Rockets are a must! 🚀🚀🚀
 - [ ] Inform the Quantify Marketing Team.
-rom above before submitting a merge request!**
