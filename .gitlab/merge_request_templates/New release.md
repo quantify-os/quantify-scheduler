@@ -23,7 +23,7 @@ git push --follow-tags
 ```bash
 NEW_TAG=$(git describe --tags --abbrev=0)
 echo $NEW_TAG
-mv frozen-requirements.txt frozen-requirements-$NEW_TAG.txt
+mv ./frozen_requirements/frozen-requirements.txt ./frozen_requirements/frozen-requirements-$NEW_TAG.txt
 git add ./frozen_requirements/frozen-requirements-$NEW_TAG.txt
 git commit -m "Add pip frozen requirements for $NEW_TAG"
 ```
