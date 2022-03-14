@@ -13,20 +13,22 @@
 - [ ] Bump version and push new tag:
     - Future TODO: finish automation of this step in `.gitlab-ci.yml`.
 
-```bash
-# Version bump
-VERSION_PART=patch # or minor, or major
-bump2version $VERSION_PART --config-file setup.cfg
-git push --follow-tags
-```
+    ```bash
+    # Version bump
+    VERSION_PART=patch # or minor, or major
+    bump2version $VERSION_PART --config-file setup.cfg
+    ```
 
-```bash
-NEW_TAG=$(git describe --tags --abbrev=0)
-echo $NEW_TAG
-mv ./frozen_requirements/frozen-requirements.txt ./frozen_requirements/frozen-requirements-$NEW_TAG.txt
-git add ./frozen_requirements/frozen-requirements-$NEW_TAG.txt
-git commit -m "Add pip frozen requirements for $NEW_TAG"
-```
+    ```bash
+    NEW_TAG=#Switch to the latest bumped version
+    echo $NEW_TAG
+    mv ./frozen_requirements/frozen-requirements.txt ./frozen_requirements/frozen-requirements-$NEW_TAG.txt
+    git add ./frozen_requirements/frozen-requirements-$NEW_TAG.txt
+    git commit -m "Add pip frozen requirements for $NEW_TAG"
+    ```
+
+    - [ ] Create a new tag based on the version number in gitlab (https://gitlab.com/quantify-os/quantify-scheduler/-/tags/new).
+
 <!-- - [ ] Run **one** of the major/minor/patch version bump (manual) jobs in the CI pipeline of the MR. -->
 <!--     - NB this can only be done after unix and windows test & docs jobs pass. -->
 
