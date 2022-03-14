@@ -38,7 +38,7 @@
         - `Active`=True
         - `Hidden`=False
         - `Privacy Level`=Public
-- [ ] Change the "Default version" of the docs to the tag that was released [over here](https://readthedocs.com/dashboard/quantify-quantify-scheduler/advanced/).
+- [ ] Change both the "Default version" and "Default branch" of the docs to the tag that was released [over here](https://readthedocs.com/dashboard/quantify-quantify-scheduler/advanced/).
 - [ ] Make sure the docs build.
 - [ ] Create [new release on GitLab](https://gitlab.com/quantify-os/quantify-scheduler/-/releases).
     - [ ] Meaningful title
