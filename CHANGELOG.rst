@@ -42,6 +42,7 @@ Merged branches and closed issues
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
 * Qblox backend - Made max duration of wait instructions (!319).
+* Qblox backend - Temporary fix for a floating point rounding error when calculating the length of pulses. (#284, !365)
 * Zhinst backend - Fixed an issue when compiling seqc programs for multiple sequencers end up overwriting the first sequencer. (!340, #260)
 
 
