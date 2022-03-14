@@ -1,4 +1,4 @@
-**Please select a template f ## Checklist for a new release
+## Checklist for a new release
 
 - [ ] Review `CHANGELOG.rst` and `AUTHORS.rst` have been updated.
 - [ ] Review deprecation warnings that can be cleaned up now.
