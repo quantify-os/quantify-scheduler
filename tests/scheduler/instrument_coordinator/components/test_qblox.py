@@ -14,9 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from cluster import cluster
-from pulsar_qcm import pulsar_qcm
-from pulsar_qrm import pulsar_qrm
+from qblox_instruments import Cluster, Pulsar
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler.schemas.examples as es
@@ -39,16 +37,16 @@ with open(map_f, "r") as f:
 @pytest.fixture(name="make_cluster")
 def fixture_make_cluster(mocker):
     def _make_cluster(name: str = "cluster0") -> qblox.ClusterComponent:
-        cluster0 = cluster.cluster_dummy(name)
+        cluster0 = Cluster.cluster_dummy(name)
         component = qblox.ClusterComponent(cluster0)
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
         mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
 
-        qcm0 = cluster.cluster_qcm_dummy(f"{name}_qcm0")
+        qcm0 = Cluster.cluster_qcm_dummy(f"{name}_qcm0")
         mocker.patch.object(qcm0, "reference_source", wraps=qcm0.reference_source)
 
-        qcm1 = cluster.cluster_qcm_dummy(f"{name}_qcm1")
+        qcm1 = Cluster.cluster_qcm_dummy(f"{name}_qcm1")
         mocker.patch.object(qcm1, "reference_source", wraps=qcm1.reference_source)
 
         component.add_modules(qcm0, qcm1)
@@ -94,15 +92,15 @@ def fixture_make_qrm(mocker):
         name: str = "qrm0", serial: str = "dummy"
     ) -> qblox.PulsarQRMComponent:
         mocker.patch(
-            "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
+            "Pulsar.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
             return_value=False,
         )
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc._set_reference_source")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc._set_reference_source")
 
-        qrm = pulsar_qrm.pulsar_qrm_dummy(name)
+        qrm = Pulsar.pulsar_qrm_dummy(name)
         qrm._serial = serial
 
         component = qblox.PulsarQRMComponent(qrm)
@@ -203,14 +201,14 @@ def make_qrm_rf(mocker):
         name: str = "qrm_rf0", serial: str = "dummy"
     ) -> qblox._QRMRFComponent:
         mocker.patch(
-            "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
+            "Pulsar.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
             return_value=True,
         )
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
+        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
 
-        qrm_rf = pulsar_qrm.pulsar_qrm_dummy(name)
+        qrm_rf = Pulsar.pulsar_qrm_dummy(name)
         qrm_rf._serial = serial
 
         component = qblox._QRMRFComponent(qrm_rf)
@@ -321,8 +319,8 @@ def test_prepare_ref_source_cluster(
     close_all_instruments, make_basic_schedule, make_cluster
 ):
     # Arrange
-    cluster: qblox.ClusterComponent = make_cluster("cluster0")
-    qcm_module = cluster._cluster_modules["cluster0_qcm0"]
+    Cluster: qblox.ClusterComponent = make_cluster("cluster0")
+    qcm_module = Cluster._cluster_modules["cluster0_qcm0"]
     qcm_module.instrument.reference_source("internal")  # put it in a known state
     sched = make_basic_schedule("q4")
 
@@ -333,7 +331,7 @@ def test_prepare_ref_source_cluster(
         compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
         prog = compiled_schedule["compiled_instructions"]
 
-        cluster.prepare(prog["cluster0"])
+        Cluster.prepare(prog["cluster0"])
 
     # Assert
     # Assert it's only set in initialization
