@@ -4,8 +4,10 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional, Dict, Any, Union
 
+import numpy as np
+from numpy.typing import NDArray
 from qcodes import validators
 
 from quantify_scheduler import Operation
@@ -769,5 +771,86 @@ class WindowOperation(Operation):
         return self.data["pulse_info"][0]["window_name"]
 
     def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
+class NumericalPulse(Operation):
+    """
+    Defines a pulse where the shape is determined by specifying an array of (complex)
+    points. If points are required between the specified samples (such as could be
+    required by the sampling rate of the hardware), meaning :math:`t[n] < t' < t[n+1]`,
+    `scipy.interpolate.interp1d` will be used to interpolate between the two points and
+    determine the value.
+    """
+
+    def __init__(
+        self,
+        samples: Union[np.ndarray, list],
+        t_samples: Union[np.ndarray, list],
+        port: str,
+        clock: str,
+        t0: float = 0,
+        interpolation: str = "linear",
+        data: Optional[dict] = None,
+    ):
+        """
+        Creates an instance of the `NumericalPulse`.
+
+        Parameters
+        ----------
+        samples
+            An array of (possibly complex) values specifying the shape of the pulse.
+        t_samples
+            An array of values specifying the corresponding times at which the
+            `samples` are evaluated.
+        port
+            The port that the pulse should be played on.
+        clock
+            Clock used to (de)modulate the pulse.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        interpolation
+            Specifies the type of interpolation used. This is passed as the "kind"
+            argument to `scipy.interpolate.interp1d`.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+
+        def make_list_from_array(
+            val: Union[NDArray[float], List[float]]
+        ) -> List[float]:
+            """Needed since numpy arrays break the (de)serialization code (#146)."""
+            if isinstance(val, np.ndarray):
+                new_val: List[float] = val.tolist()
+                return new_val
+            return val
+
+        duration = t_samples[-1] - t_samples[0]
+        samples, t_samples = map(make_list_from_array, [samples, t_samples])
+        if data is None:
+            data = {
+                "name": "NumericalPulse",
+                "pulse_info": [
+                    {  # pylint: disable=line-too-long
+                        "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
+                        "samples": samples,
+                        "t_samples": t_samples,
+                        "duration": duration,
+                        "interpolation": interpolation,
+                        "clock": clock,
+                        "port": port,
+                        "t0": t0,
+                    }
+                ],
+            }
+
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        """Provides a string representation of the Pulse."""
         pulse_info = self.data["pulse_info"][0]
         return self._get_signature(pulse_info)

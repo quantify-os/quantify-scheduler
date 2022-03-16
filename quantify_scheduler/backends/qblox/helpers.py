@@ -103,7 +103,7 @@ def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
         The (possibly complex) values of the generated waveform.
     """
     time_duration = data_dict["duration"]
-    t = np.linspace(0, time_duration, int(time_duration * sampling_rate))
+    t = np.linspace(0, time_duration, int(np.round(time_duration * sampling_rate)))
 
     wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
 

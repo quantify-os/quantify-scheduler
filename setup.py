@@ -22,7 +22,7 @@ with open("requirements_setup.txt") as setup_requirements_file:
 with open("requirements_dev.txt") as test_requirements_file:
     test_requirements = test_requirements_file.read().splitlines()
 
-version = "0.5.2"
+version = "0.6.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",

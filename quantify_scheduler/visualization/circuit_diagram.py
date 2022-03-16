@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from quantify_core.utilities.general import import_func_from_string
 
 import quantify_scheduler.visualization.pulse_scheme as ps
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.visualization import constants
 
 if TYPE_CHECKING:
@@ -296,7 +296,9 @@ def circuit_diagram_matplotlib(
         total_duration = total_duration if total_duration > time else time
 
         if operation.valid_gate:
-            plot_func = import_func_from_string(operation["gate_info"]["plot_func"])
+            plot_func = import_python_object_from_string(
+                operation["gate_info"]["plot_func"]
+            )
             idxs = [qubit_map[qubit] for qubit in operation["gate_info"]["qubits"]]
             plot_func(
                 ax, time=time, qubit_idxs=idxs, text=operation["gate_info"]["tex"]
