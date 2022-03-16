@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
-from qblox_instruments import Pulsar, SequencerStatusFlags
+from qblox_instruments import Cluster, Pulsar, SequencerStatusFlags
 from qcodes.instrument.base import Instrument
 
 from quantify_scheduler.backends.qblox import constants
@@ -120,6 +120,7 @@ class _StaticHardwareProperties:
     """The number of output paths that can be used."""
 
 
+# TODO (remove before merge): get these from qblox_instruments?
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=PulsarSettings,
     has_internal_lo=False,
@@ -957,9 +958,9 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     Class that represents an instrument coordinator component for a Qblox cluster.
     """
 
-    def __init__(self, instrument: Instrument, **kwargs) -> None:
+    def __init__(self, instrument: Cluster, **kwargs) -> None:
         """
-        Create a new instance of the ClusterComponent.
+        Create a new instance of the ClusterComponent. Automatically adds installed modules using name `"module<slot>"`.
 
         Parameters
         ----------
@@ -971,19 +972,12 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
 
-    def add_modules(self, *modules: Instrument) -> None:
-        """
-        Add modules to the cluster.
-
-        Parameters
-        ----------
-        *modules
-            The QCoDeS drivers of the modules to add.
-        """
-        for mod in modules:
+        slot: str
+        for slot in instrument._mod_handles:
+            module_name = f"module{slot}"
             self._cluster_modules[
-                mod.name
-            ] = _construct_component_from_instrument_driver(mod)
+                module_name
+            ] = _construct_component_from_instrument_driver(instrument[module_name])
 
     @property
     def is_running(self) -> bool:
@@ -1066,6 +1060,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             comp.wait_done(timeout_sec=timeout_sec)
 
 
+# TODO (remove before merge): move inside ClusterComponent?
 def _construct_component_from_instrument_driver(
     driver: Instrument,
 ) -> ClusterModule:
@@ -1083,19 +1078,11 @@ def _construct_component_from_instrument_driver(
     :
         The corresponding IC component.
     """
-    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
-    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
-        raise TypeError(
-            f"Invalid driver type for '{driver.name}'. Cannot construct an instrument "
-            f"coordinator component for driver of type '{type(driver)}'. "
-            f"Expected types: {type(pulsar_qcm.pulsar_qcm_qcodes)} or "
-            f"{type(pulsar_qrm.pulsar_qrm_qcodes)}."
-        )
-    is_rf: bool = driver._get_lo_hw_present()
+
     icc_class: type = {
         (True, False): _QCMComponent,
         (True, True): _QCMRFComponent,
         (False, False): _QRMComponent,
         (False, True): _QRMRFComponent,
-    }[(is_qcm, is_rf)]
+    }[(driver.is_qcm_type(), driver.is_rf_type())]
     return icc_class(driver)
