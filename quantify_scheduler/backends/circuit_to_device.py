@@ -310,6 +310,7 @@ def _extract_clocks_from_operation(operation: Operation) -> Set[str]:
     :
         All the clocks that are used.
     """
+
     def _extract_clock(d: Dict[str, Any]) -> str:
         return d["clock"]
 
