@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
-from qblox_instruments import Cluster, Pulsar, SequencerStatusFlags
+from qblox_instruments import Cluster, Pulsar, SequencerStatus, SequencerStatusFlags
 from qcodes.instrument.base import Instrument
 
 from quantify_scheduler.backends.qblox import constants
@@ -27,10 +27,10 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-_SequencerStateType = Dict[str, Union[str, List[str]]]
+_SequencerStateType = Dict[SequencerStatus, Union[SequencerStatusFlags, List[SequencerStatusFlags]]]
 """
 Type of the return value of get_sequencer_state. Returned value format is always a dict
-with a str state under 'status' and a list of str flags under 'flags'.
+with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags under 'flags'.
 """
 
 
@@ -198,7 +198,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             seq_state = self.instrument.get_sequencer_state(seq_idx)
-            if seq_state["status"] == "RUNNING":
+            if seq_state["status"] == SequencerStatus.RUNNING:
                 return True
         return False
 
@@ -240,7 +240,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_state(idx)
-            if state["status"] == "ARMED":
+            if state["status"] == SequencerStatus.ARMED:
                 self.instrument.start_sequencer(idx)
 
     def stop(self) -> None:
