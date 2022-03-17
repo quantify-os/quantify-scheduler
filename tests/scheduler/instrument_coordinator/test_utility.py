@@ -30,24 +30,30 @@ def fixture_mock_instrument() -> Instrument:
     )
 
     class DummyInstrumentChannel(InstrumentChannel):
-        def __init__(self, parent: Instrument, name: str, channel: str) -> None:
+        def __init__(self, parent: Instrument, name: str) -> None:
             super().__init__(parent, name)
             self.add_parameter(
                 "bar", label="Test Child Parameter", parameter_class=ManualParameter
             )
 
-    ch_name = "ch_foo"
-    channel = DummyInstrumentChannel(parent=instr, name=ch_name, channel=ch_name)
-    instr.add_submodule(ch_name, channel)
+    channel_name = "ch_foo"
+    channel = DummyInstrumentChannel(parent=instr, name=channel_name)
+    instr.add_submodule(channel_name, channel)
 
     yield instr
 
     instr.close()
 
 
-def test_search_settable_param_success(mock_instrument):
+@pytest.mark.parametrize(
+    "channel_name, parameter_name",
+    [("", "test_param"), ("", "ch_foo.bar"), ("ch_foo", "bar")],
+)
+def test_search_settable_param_success(mock_instrument, channel_name, parameter_name):
+    instrument = mock_instrument.submodules[channel_name] if channel_name else mock_instrument
+
     settable_param = utility.search_settable_param(
-        instrument=mock_instrument, nested_parameter_name="ch_foo.bar"
+        instrument=instrument, nested_parameter_name=parameter_name
     )
     assert isinstance(settable_param, ManualParameter)
 

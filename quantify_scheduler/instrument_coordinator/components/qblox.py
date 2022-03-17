@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 import numpy as np
 from qblox_instruments import Cluster, Pulsar, SequencerStatus, SequencerStatusFlags
 from qcodes.instrument.base import Instrument
+from qcodes.instrument.channel import InstrumentChannel
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
@@ -27,7 +28,9 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-_SequencerStateType = Dict[SequencerStatus, Union[SequencerStatusFlags, List[SequencerStatusFlags]]]
+_SequencerStateType = Dict[
+    SequencerStatus, Union[SequencerStatusFlags, List[SequencerStatusFlags]]
+]
 """
 Type of the return value of get_sequencer_state. Returned value format is always a dict
 with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags under 'flags'.
@@ -169,22 +172,30 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             for idx in range(self._hardware_properties.number_of_sequencers)
         }
 
-    def _set_parameter(self, parameter_name: str, val: Any) -> None:
+    def _set_parameter(
+        self,
+        instrument: Union[Instrument, InstrumentChannel],
+        parameter_name: str,
+        val: Any,
+    ) -> None:
         """
         Sets the parameter directly or using the lazy set, depending on the value of
         `force_set_parameters`.
 
         Parameters
         ----------
+        instrument
+            The instrument or instrument channel that holds the parameter to set,
+            e.g. `self.instrument` or `self.instrument[f"sequencer{idx}"]`.
         parameter_name
             The name of the parameter to set.
         val
             The new value of the parameter.
         """
         if self.force_set_parameters():
-            self.instrument.set(parameter_name, val)
+            instrument.set(parameter_name, val)
         else:
-            lazy_set(self.instrument, parameter_name, val)
+            lazy_set(instrument, parameter_name, val)
 
     @property
     def is_running(self) -> bool:
@@ -249,7 +260,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for idx in range(self._hardware_properties.number_of_sequencers):
             # disable sync to prevent hanging on next run if instrument is not used.
-            self._set_parameter(f"sequencer{idx}_sync_en", False)
+            self._set_parameter(self.instrument[f"sequencer{idx}"], "sync_en", False)
         self.instrument.stop_sequencer()
 
     @abstractmethod
@@ -276,7 +287,9 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         settings
             The settings to configure it to.
         """
-        self._set_parameter(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "sync_en", settings.sync_en
+        )
 
         nco_en: bool = settings.nco_en
         self._set_parameter(f"sequencer{seq_idx}_mod_en_awg", nco_en)
