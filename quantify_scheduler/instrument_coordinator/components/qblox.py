@@ -11,14 +11,14 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
-from qblox_instruments import Cluster, Pulsar, SequencerStatus, SequencerStatusFlags
+from qblox_instruments import Cluster, SequencerStatus, SequencerStatusFlags
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.channel import InstrumentChannel
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
-    PulsarRFSettings,
-    PulsarSettings,
+    BaseModuleSettings,
+    RFModuleSettings,
     SequencerSettings,
 )
 from quantify_scheduler.instrument_coordinator.components import base
@@ -113,7 +113,7 @@ class _StaticHardwareProperties:
     """Dataclass that holds all the static differences between the different Qblox
     devices that are relevant for configuring them correctly."""
 
-    settings_type: Type[PulsarSettings]
+    settings_type: Type[BaseModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
     has_internal_lo: bool
     """Specifies if an internal lo source is available."""
@@ -125,25 +125,25 @@ class _StaticHardwareProperties:
 
 # TODO (remove before merge): get these from qblox_instruments?
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarSettings,
+    settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
 _QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarSettings,
+    settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
 )
 _QCM_RF_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarRFSettings,
+    settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
 _QRM_RF_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarRFSettings,
+    settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
@@ -264,7 +264,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         self.instrument.stop_sequencer()
 
     @abstractmethod
-    def _configure_global_settings(self, settings: PulsarSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -316,9 +316,14 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             connected: bool = output_idx in settings.connected_outputs
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
-                _get_channel_map_parameter_name(output_index=output_idx),
+                self._get_channel_map_parameter_name(output_index=output_idx),
                 connected,
             )
+
+    @staticmethod
+    def _get_channel_map_parameter_name(output_index: int) -> str:
+        path_idx = output_index % 2  # even or odd output
+        return f"channel_map_path{path_idx}_out{output_index}_en"
 
     def _arm_all_sequencers_in_program(self, program: Dict[str, Any]):
         """Arms all the sequencers that are part of the program."""
@@ -341,23 +346,22 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
 
 # pylint: disable=too-many-ancestors  # TODO (remove before merge): still required?
-class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
+class _QCMComponent(
+    QbloxInstrumentCoordinatorComponentBase
+):  # TODO (remove before merge): move to unified _QcmQrmComponent?
     """
-    Pulsar QCM specific InstrumentCoordinator component.
+    QCM specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: Pulsar, **kwargs) -> None:
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
         """Create a new instance of _QCMComponent."""
-        assert (
-            instrument.is_qcm_type
-        )  # TODO (remove before merge): assert in prod code, replace by raise or remove
+        if not instrument.is_qcm_type:
+            raise TypeError(
+                f'Trying to create _QCMComponent from non-QCM instrument of type "{type(instrument)}"'
+            )
         super().__init__(instrument, **kwargs)
-
-    @property
-    def instrument(self) -> Pulsar:
-        return super().instrument
 
     def retrieve_acquisition(self) -> None:
         """
@@ -402,8 +406,7 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
                 raise KeyError(
-                    f"Invalid program. Attempting to access non-existing sequencer with"
-                    f' name "{seq_name}".'
+                    f'Invalid program. Attempting to access non-existing sequencer with name "{seq_name}".'
                 )
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
@@ -419,7 +422,7 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
         self._arm_all_sequencers_in_program(program)
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: BaseModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -450,21 +453,21 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 # pylint: disable=too-many-ancestors
 class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
-    Pulsar QRM specific InstrumentCoordinator component.
+    QRM specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: Pulsar, **kwargs) -> None:
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
         """Create a new instance of _QRMComponent."""
-        assert instrument.is_qrm_type  # TODO (remove before merge): replace by raise
-        self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
-        """Holds all the acquisition related logic."""
+        if not instrument.is_qrm_type:
+            raise TypeError(
+                f'Trying to create _QRMComponent from non-QRM instrument of type "{type(instrument)}"'
+            )
         super().__init__(instrument, **kwargs)
 
-    @property
-    def instrument(self) -> Pulsar:
-        return super().instrument
+        self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
+        """Holds all the acquisition related logic."""
 
     def retrieve_acquisition(self) -> Union[Dict[Tuple[int, int], Any], None]:
         """
@@ -556,7 +559,7 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
         self._arm_all_sequencers_in_program(program)
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: BaseModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -602,12 +605,12 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
 class _QCMRFComponent(_QCMComponent):
     """
-    Pulsar QCM-RF specific InstrumentCoordinator component.
+    QCM-RF specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: BaseModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -642,12 +645,12 @@ class _QCMRFComponent(_QCMComponent):
 
 class _QRMRFComponent(_QRMComponent):
     """
-    Pulsar QRM-RF specific InstrumentCoordinator component.
+    QRM-RF specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QRM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: BaseModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -686,12 +689,6 @@ class PulsarQRMComponent(_QRMComponent):
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
         self._set_parameter(self.instrument, "reference_source", reference_source)
-
-
-# TODO (remove before merge): move inside QbloxInstrumentCoordinatorComponentBase?
-def _get_channel_map_parameter_name(output_index: int) -> str:
-    path_idx = output_index % 2  # even or odd output
-    return f"channel_map_path{path_idx}_out{output_index}_en"
 
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
@@ -1033,12 +1030,17 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
 
-        slot: str
-        for slot in instrument._mod_handles:
-            module_name = f"module{slot}"
-            self._cluster_modules[
-                module_name
-            ] = _construct_component_from_instrument_driver(instrument[module_name])
+        for instrument_channel in instrument.modules:
+            icc_class: type = {
+                (True, False): _QCMComponent,
+                (True, True): _QCMRFComponent,
+                (False, False): _QRMComponent,
+                (False, True): _QRMRFComponent,
+            }[(instrument_channel.is_qcm_type, instrument_channel.is_rf_type)]
+
+            self._cluster_modules[instrument_channel.name] = icc_class(
+                instrument_channel
+            )
 
     @property
     def is_running(self) -> bool:
@@ -1119,31 +1121,3 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
-
-
-# TODO (remove before merge): move inside ClusterComponent?
-def _construct_component_from_instrument_driver(
-    driver: Instrument,
-) -> ClusterModule:
-    """
-    Determines the corresponding ClusterModule type and constructs an IC component from
-    the :doc:`qblox_instruments <qblox-instruments:index>` driver.
-
-    Parameters
-    ----------
-    driver
-        The ``qblox_instruments`` instrument driver.
-
-    Returns
-    -------
-    :
-        The corresponding IC component.
-    """
-
-    icc_class: type = {
-        (True, False): _QCMComponent,
-        (True, True): _QCMRFComponent,
-        (False, False): _QRMComponent,
-        (False, True): _QRMRFComponent,
-    }[(driver.is_qcm_type(), driver.is_rf_type())]
-    return icc_class(driver)

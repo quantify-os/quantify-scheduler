@@ -1378,9 +1378,7 @@ class TestLatencyCorrection:
         compiled_instr = compiled_sched.compiled_instructions
 
         # Assert
-        dummy_pulsars[0].sequencer0.sequence(
-            compiled_instr["qcm0"]["seq0"]["seq_fn"]
-        )
+        dummy_pulsars[0].sequencer0.sequence(compiled_instr["qcm0"]["seq0"]["seq_fn"])
 
     def test_warning(
         self, hardware_cfg_latency_correction, load_example_transmon_config, caplog
