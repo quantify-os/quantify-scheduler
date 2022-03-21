@@ -348,13 +348,15 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
+    def __init__(self, instrument: Pulsar, **kwargs) -> None:
         """Create a new instance of _QCMComponent."""
-        assert isinstance(instrument, pulsar_qcm.pulsar_qcm_qcodes)
+        assert (
+            instrument.is_qcm_type
+        )  # TODO (remove before merge): assert in prod code, replace by raise or remove
         super().__init__(instrument, **kwargs)
 
     @property
-    def instrument(self) -> pulsar_qcm.pulsar_qcm_qcodes:
+    def instrument(self) -> Pulsar:
         return super().instrument
 
     def retrieve_acquisition(self) -> None:
@@ -453,15 +455,15 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
+    def __init__(self, instrument: Pulsar, **kwargs) -> None:
         """Create a new instance of _QRMComponent."""
-        assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
+        assert instrument.is_qrm_type  # TODO (remove before merge): replace by raise
         self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
         """Holds all the acquisition related logic."""
         super().__init__(instrument, **kwargs)
 
     @property
-    def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
+    def instrument(self) -> Pulsar:
         return super().instrument
 
     def retrieve_acquisition(self) -> Union[Dict[Tuple[int, int], Any], None]:
@@ -525,7 +527,7 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         for path in [
             0,
             1,
-        ]:  # TODO (remove before merge): correct syntax / param ref still?
+        ]:
             self._set_parameter(
                 self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer"
             )
@@ -538,8 +540,7 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
                 raise KeyError(
-                    f"Invalid program. Attempting to access non-existing sequencer with"
-                    f' name "{seq_name}".'
+                    f'Invalid program. Attempting to access non-existing sequencer with name "{seq_name}".'
                 )
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
@@ -658,7 +659,7 @@ class _QRMRFComponent(_QRMComponent):
         if settings.lo0_freq is not None:
             self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
-        # configure mixer ccorrection offsets
+        # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter(
                 self.instrument, "out0_offset_path0", settings.offset_ch0_path0
@@ -687,6 +688,7 @@ class PulsarQRMComponent(_QRMComponent):
         self._set_parameter(self.instrument, "reference_source", reference_source)
 
 
+# TODO (remove before merge): move inside QbloxInstrumentCoordinatorComponentBase?
 def _get_channel_map_parameter_name(output_index: int) -> str:
     path_idx = output_index % 2  # even or odd output
     return f"channel_map_path{path_idx}_out{output_index}_en"
