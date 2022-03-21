@@ -413,7 +413,7 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
-                "waveforms_and_program",
+                "sequence",
                 seq_cfg["seq_fn"],
             )
 
@@ -550,7 +550,7 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
-                "waveforms_and_program",
+                "sequence",
                 seq_cfg["seq_fn"],
             )
 

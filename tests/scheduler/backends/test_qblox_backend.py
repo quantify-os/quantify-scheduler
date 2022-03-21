@@ -676,7 +676,7 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
@@ -707,7 +707,7 @@ def test_compile_with_rel_time(
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
 
 
 def test_compile_with_repetitions(mixed_schedule_with_acquisition):
@@ -1209,7 +1209,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
         "seq_fn"
     ]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
@@ -1218,7 +1218,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
         "seq_fn"
     ]
-    qrm0.sequencer0_waveforms_and_program(qrm0_seq0_json)
+    qrm0.sequencer0.sequence(qrm0_seq0_json)
     qrm0.arm_sequencer(0)
     uploaded_waveforms = qrm0.get_waveforms(0)
     assert uploaded_waveforms is not None
@@ -1378,7 +1378,7 @@ class TestLatencyCorrection:
         compiled_instr = compiled_sched.compiled_instructions
 
         # Assert
-        dummy_pulsars[0].sequencer0_waveforms_and_program(
+        dummy_pulsars[0].sequencer0.sequence(
             compiled_instr["qcm0"]["seq0"]["seq_fn"]
         )
 

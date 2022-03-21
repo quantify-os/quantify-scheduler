@@ -50,7 +50,9 @@ def fixture_mock_instrument() -> Instrument:
     [("", "test_param"), ("", "ch_foo.bar"), ("ch_foo", "bar")],
 )
 def test_search_settable_param_success(mock_instrument, channel_name, parameter_name):
-    instrument = mock_instrument.submodules[channel_name] if channel_name else mock_instrument
+    instrument = (
+        mock_instrument.submodules[channel_name] if channel_name else mock_instrument
+    )
 
     settable_param = utility.search_settable_param(
         instrument=instrument, nested_parameter_name=parameter_name
