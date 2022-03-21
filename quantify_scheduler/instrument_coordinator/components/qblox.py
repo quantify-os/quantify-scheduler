@@ -292,27 +292,31 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         )
 
         nco_en: bool = settings.nco_en
-        self._set_parameter(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", nco_en
+        )
         if nco_en:
             self._set_parameter(
-                f"sequencer{seq_idx}_nco_freq",
+                self.instrument[f"sequencer{seq_idx}"],
+                "nco_freq",
                 settings.modulation_freq,
             )
         self._set_parameter(
-            f"sequencer{seq_idx}_mixer_corr_phase_offset_degree",
+            self.instrument[f"sequencer{seq_idx}"],
+            "mixer_corr_phase_offset_degree",
             settings.mixer_corr_phase_offset_degree,
         )
         self._set_parameter(
-            f"sequencer{seq_idx}_mixer_corr_gain_ratio",
+            self.instrument[f"sequencer{seq_idx}"],
+            "mixer_corr_gain_ratio",
             settings.mixer_corr_gain_ratio,
         )
 
         for output_idx in range(self._hardware_properties.number_of_output_paths):
             connected: bool = output_idx in settings.connected_outputs
             self._set_parameter(
-                _get_channel_map_parameter_name(
-                    sequencer_index=seq_idx, output_index=output_idx
-                ),
+                self.instrument[f"sequencer{seq_idx}"],
+                _get_channel_map_parameter_name(output_index=output_idx),
                 connected,
             )
 
@@ -336,7 +340,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
 
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors  # TODO (remove before merge): still required?
 class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     Pulsar QCM specific InstrumentCoordinator component.
@@ -387,7 +391,9 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
             )
             self._configure_global_settings(pulsar_settings)
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(f"sequencer{seq_idx}_sync_en", False)
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
+            )
 
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
@@ -404,7 +410,8 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
 
             self._set_parameter(
-                f"sequencer{seq_idx}_waveforms_and_program",
+                self.instrument[f"sequencer{seq_idx}"],
+                "waveforms_and_program",
                 seq_cfg["seq_fn"],
             )
 
@@ -421,13 +428,21 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out1_offset", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out1_offset", settings.offset_ch0_path1
+            )
         if settings.offset_ch1_path0 is not None:
-            self._set_parameter("out2_offset", settings.offset_ch1_path0)
+            self._set_parameter(
+                self.instrument, "out2_offset", settings.offset_ch1_path0
+            )
         if settings.offset_ch1_path1 is not None:
-            self._set_parameter("out3_offset", settings.offset_ch1_path1)
+            self._set_parameter(
+                self.instrument, "out3_offset", settings.offset_ch1_path1
+            )
 
 
 # pylint: disable=too-many-ancestors
@@ -492,7 +507,9 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._acquisition_manager = None
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(f"sequencer{seq_idx}_sync_en", False)
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
+            )
 
         if "settings" in program:
             settings_entry = program.pop("settings")
@@ -505,9 +522,16 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
             self._configure_global_settings(pulsar_settings)
 
-        for path in [0, 1]:
-            self._set_parameter(f"scope_acq_trigger_mode_path{path}", "sequencer")
-            self._set_parameter(f"scope_acq_avg_mode_en_path{path}", True)
+        for path in [
+            0,
+            1,
+        ]:  # TODO (remove before merge): correct syntax / param ref still?
+            self._set_parameter(
+                self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer"
+            )
+            self._set_parameter(
+                self.instrument, f"scope_acq_avg_mode_en_path{path}", True
+            )
 
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
@@ -524,7 +548,8 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
 
             self._set_parameter(
-                f"sequencer{seq_idx}_waveforms_and_program",
+                self.instrument[f"sequencer{seq_idx}"],
+                "waveforms_and_program",
                 seq_cfg["seq_fn"],
             )
 
@@ -541,14 +566,20 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         """
         if settings.scope_mode_sequencer is not None:
             self._set_parameter(
-                "scope_acq_sequencer_select", settings.scope_mode_sequencer
+                self.instrument,
+                "scope_acq_sequencer_select",
+                settings.scope_mode_sequencer,
             )
 
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out1_offset", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out1_offset", settings.offset_ch0_path1
+            )
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -556,13 +587,16 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         super()._configure_sequencer_settings(seq_idx, settings)
         if settings.integration_length_acq is not None:
             self._set_parameter(
-                f"sequencer{seq_idx}_integration_length_acq",
+                self.instrument[f"sequencer{seq_idx}"],
+                "integration_length_acq",
                 settings.integration_length_acq,
             )
             self._acquisition_manager.integration_length_acq = (
                 settings.integration_length_acq
             )
-        self._set_parameter(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "demod_en_acq", settings.nco_en
+        )
 
 
 class _QCMRFComponent(_QCMComponent):
@@ -582,19 +616,27 @@ class _QCMRFComponent(_QCMComponent):
             The settings to configure it to.
         """
         if settings.lo0_freq is not None:
-            self._set_parameter("out0_lo_freq", settings.lo0_freq)
+            self._set_parameter(self.instrument, "out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
-            self._set_parameter("out1_lo_freq", settings.lo1_freq)
+            self._set_parameter(self.instrument, "out1_lo_freq", settings.lo1_freq)
 
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset_path0", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset_path0", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out0_offset_path1", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out0_offset_path1", settings.offset_ch0_path1
+            )
         if settings.offset_ch1_path0 is not None:
-            self._set_parameter("out1_offset_path0", settings.offset_ch1_path0)
+            self._set_parameter(
+                self.instrument, "out1_offset_path0", settings.offset_ch1_path0
+            )
         if settings.offset_ch1_path1 is not None:
-            self._set_parameter("out1_offset_path1", settings.offset_ch1_path1)
+            self._set_parameter(
+                self.instrument, "out1_offset_path1", settings.offset_ch1_path1
+            )
 
 
 class _QRMRFComponent(_QRMComponent):
@@ -614,13 +656,17 @@ class _QRMRFComponent(_QRMComponent):
             The settings to configure it to.
         """
         if settings.lo0_freq is not None:
-            self._set_parameter("out0_in0_lo_freq", settings.lo0_freq)
+            self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
         # configure mixer ccorrection offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset_path0", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset_path0", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out0_offset_path1", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out0_offset_path1", settings.offset_ch0_path1
+            )
 
 
 class PulsarQCMComponent(_QCMComponent):
@@ -629,7 +675,7 @@ class PulsarQCMComponent(_QCMComponent):
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
-        self._set_parameter("reference_source", reference_source)
+        self._set_parameter(self.instrument, "reference_source", reference_source)
 
 
 class PulsarQRMComponent(_QRMComponent):
@@ -638,12 +684,12 @@ class PulsarQRMComponent(_QRMComponent):
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
-        self._set_parameter("reference_source", reference_source)
+        self._set_parameter(self.instrument, "reference_source", reference_source)
 
 
-def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
+def _get_channel_map_parameter_name(output_index: int) -> str:
     path_idx = output_index % 2  # even or odd output
-    return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"
+    return f"channel_map_path{path_idx}_out{output_index}_en"
 
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
