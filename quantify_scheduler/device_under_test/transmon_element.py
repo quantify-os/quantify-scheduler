@@ -5,6 +5,7 @@ from typing import Dict, Any
 from qcodes.instrument.base import Instrument
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
+from quantify_core.utilities import deprecated
 from qcodes.instrument.parameter import (
     InstrumentRefParameter,
     ManualParameter,
@@ -52,8 +53,7 @@ class Ports(InstrumentChannel):
         )
 
 
-# FIXME : rename to clock_frequencies
-class Clocks(InstrumentChannel):
+class ClocksFrequencies(InstrumentChannel):
     """
     Submodule containing the clock frequencies specifying the transitions to address.
     """
@@ -62,7 +62,7 @@ class Clocks(InstrumentChannel):
         super().__init__(parent=parent, name=name)
 
         self.add_parameter(
-            "freq_01",
+            "f01",
             label="Qubit frequency",
             unit="Hz",
             parameter_class=ManualParameter,
@@ -71,7 +71,7 @@ class Clocks(InstrumentChannel):
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
-            "freq_12",
+            "f12",
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
             initial_value=float("nan"),
@@ -81,7 +81,7 @@ class Clocks(InstrumentChannel):
         )
 
         self.add_parameter(
-            "freq_ro",
+            "readout",
             label="Readout frequency",
             unit="Hz",
             parameter_class=ManualParameter,
@@ -232,7 +232,7 @@ class BasicTransmonElement(DeviceElement):
         self.add_submodule("rxy", RxyDRAG(self, "rxy"))
         self.add_submodule("measure", DispersiveMeasurement(self, "measure"))
         self.add_submodule("ports", Ports(self, "ports"))
-        self.add_submodule("clocks", Clocks(self, "clocks"))
+        self.add_submodule("clock_freqs", ClocksFrequencies(self, "clock_freqs"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
@@ -258,7 +258,7 @@ class BasicTransmonElement(DeviceElement):
                         "amp180": self.rxy.amp180(),
                         "motzoi": self.rxy.motzoi(),
                         "port": self.ports.microwave(),
-                        "clock": self.clocks.freq_01(),
+                        "clock": self.clock_freqs.f01(),
                         "duration": self.rxy.duration(),
                     },
                     gate_info_factory_kwargs=[
@@ -273,7 +273,7 @@ class BasicTransmonElement(DeviceElement):
                     + "measurement_factories.dispersive_measurement",
                     factory_kwargs={
                         "port": self.ports.readout(),
-                        "clock": self.clocks.freq_ro(),
+                        "clock": self.clock_freqs.readout(),
                         "pulse_type": self.measure.pulse_type(),
                         "pulse_amp": self.measure.pulse_amp(),
                         "pulse_duration": self.measure.pulse_duration(),
@@ -304,9 +304,9 @@ class BasicTransmonElement(DeviceElement):
             ".circuit_to_device.compile_circuit_to_device",
             "elements": self._generate_config(),
             "clocks": {
-                f"{self.name}.01": self.clocks.freq_01(),
-                f"{self.name}.12": self.clocks.freq_12(),
-                f"{self.name}.ro": self.clocks.freq_ro(),
+                f"{self.name}.01": self.clock_freqs.f01(),
+                f"{self.name}.12": self.clock_freqs.f12(),
+                f"{self.name}.ro": self.clock_freqs.readout(),
             },
             "edges": {},
         }
@@ -315,7 +315,11 @@ class BasicTransmonElement(DeviceElement):
         return dev_cfg
 
 
-class TransmonElement(Instrument):
+@deprecated(
+    "0.8",
+    "Consider replacing with BasicTransmonElement or implementing a custom device element.",
+)
+class TransmonElement(DeviceElement):
     """
     A device element representing a single transmon coupled to a
     readout resonator.
