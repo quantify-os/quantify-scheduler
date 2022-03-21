@@ -11,7 +11,10 @@ set SOURCEDIR=.
 set BUILDDIR=_build
 set SPHINXPROJ=quantify
 REM -vv can be appended below to activate sphinx verbose mode
-set SPHINXOPTS=-W --keep-going -n -w build_errors.log
+
+REM For a reference of the different sphinxopts flags,
+REM see https://www.sphinx-doc.org/en/master/man/sphinx-build.html
+set SPHINXOPTS=--keep-going -n -w build_errors.log
 
 if "%1" == "" goto help
 
