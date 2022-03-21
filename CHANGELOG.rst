@@ -4,6 +4,8 @@ Changelog
 
 Unreleased changes
 ------------------
+* QuantumDevice - The DeviceElement has been added as an abstract base class for elements to be added to a device.
+* QuantumDevice - The BasicTransmonElement has been added that generates a device config in a more structured manner.
 
 
 0.6.0 Full support for multiplexed readout, transmon element update, fixes to backends (2022-03-10)

@@ -1,3 +1,6 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 
