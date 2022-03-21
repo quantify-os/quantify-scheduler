@@ -18,7 +18,7 @@ from typing import Any, Dict
 
 import numpy as np
 import pytest
-from qcodes.instrument.base import Instrument
+from qblox_instruments import Pulsar, PulsarType
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
@@ -82,15 +82,8 @@ with open(map_f, "r", encoding="utf-8") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-try:
-    from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-    from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
-
-    PULSAR_ASSEMBLER = True
-except ImportError:
-    PULSAR_ASSEMBLER = False
-
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
+
 
 # --------- Test fixtures ---------
 @pytest.fixture(name="hardware_cfg_latency_correction")
@@ -226,24 +219,17 @@ def hardware_cfg_multiplexing():
 
 @pytest.fixture
 def dummy_pulsars():
-    if PULSAR_ASSEMBLER:
-        _pulsars = []
-        for qcm in ["qcm0", "qcm1"]:
-            _pulsars.append(pulsar_qcm_dummy(qcm))
-        for qrm in ["qrm0", "qrm1"]:
-            _pulsars.append(pulsar_qrm_dummy(qrm))
-    else:
-        _pulsars = []
+    _pulsars = []
+    for qcm_name in ["qcm0", "qcm1"]:
+        _pulsars.append(Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM))
+    for qrm_name in ["qrm0", "qrm1"]:
+        _pulsars.append(Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM))
 
     yield _pulsars
 
     # teardown
-    for instr_name in list(Instrument._all_instruments):
-        try:
-            inst = Instrument.find_instrument(instr_name)
-            inst.close()
-        except KeyError:
-            pass
+    for instrument in Pulsar.instances():
+        instrument.close()
 
 
 @pytest.fixture
@@ -534,8 +520,6 @@ def fixture_empty_qasm_program():
 
 
 # --------- Test utility functions ---------
-
-
 def function_for_test_generate_waveform_data(t, x, y):
     return x * t + y
 

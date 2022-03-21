@@ -45,67 +45,41 @@ class _SequencerStateInfo:
     """The logger level to use."""
 
 
-_SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {
-    flag: _SequencerStateInfo(message=flag.value, logging_level=logging.DEBUG)
-    for flag in SequencerStatusFlags
-}
+_SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {}
 """Used to link all the messages for the logger and levels to specific flags given by
 the hardware."""
 
-_SEQUENCER_STATE_FLAG_INFO[  # fmt: off
-    SequencerStatusFlags.DISARMED
-].logging_level = logging.INFO  # fmt: on
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.FORCED_STOP
-].logging_level = logging.INFO
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_1
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_0
-].logging_level = logging.WARNING
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
-].logging_level = logging.INFO
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_1
-].logging_level = logging.WARNING
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_1
-].logging_level = logging.INFO
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_BINNING_FIFO_ERROR
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_BINNING_COMM_ERROR
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_BINNING_OUT_OF_RANGE
-].logging_level = logging.WARNING
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_INDEX_INVALID
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
-].logging_level = logging.ERROR
-_SEQUENCER_STATE_FLAG_INFO[
-    SequencerStatusFlags.CLOCK_INSTABILITY
-].logging_level = logging.ERROR
+for flag in SequencerStatusFlags:
+    logging_level = logging.DEBUG
+    if (
+        flag is SequencerStatusFlags.DISARMED
+        or flag is SequencerStatusFlags.FORCED_STOP
+        or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
+        or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_1
+    ):
+        logging_level = logging.INFO
+    elif (
+        flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_0
+        or flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_1
+        or flag is SequencerStatusFlags.ACQ_BINNING_OUT_OF_RANGE
+    ):
+        logging_level = logging.WARNING
+    elif (
+        flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
+        or flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
+        or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
+        or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
+        or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
+        or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_1
+        or flag is SequencerStatusFlags.ACQ_BINNING_FIFO_ERROR
+        or flag is SequencerStatusFlags.ACQ_BINNING_COMM_ERROR
+        or flag is SequencerStatusFlags.ACQ_INDEX_INVALID
+        or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
+        or flag is SequencerStatusFlags.CLOCK_INSTABILITY
+    ):
+        logging_level = logging.ERROR
+
+    _SequencerStateInfo(message=flag.value, logging_level=logging_level)
 
 
 @dataclass(frozen=True)
@@ -209,7 +183,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             seq_state = self.instrument.get_sequencer_state(seq_idx)
-            if seq_state["status"] == SequencerStatus.RUNNING:
+            if seq_state["status"] is SequencerStatus.RUNNING:
                 return True
         return False
 
@@ -251,7 +225,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_state(idx)
-            if state["status"] == SequencerStatus.ARMED:
+            if state["status"] is SequencerStatus.ARMED:
                 self.instrument.start_sequencer(idx)
 
     def stop(self) -> None:
