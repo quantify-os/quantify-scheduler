@@ -11,6 +11,7 @@ from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
 class QuantumDevice(Instrument):
@@ -153,7 +154,7 @@ class QuantumDevice(Instrument):
 
     def add_component(
         self,
-        component: Instrument,
+        component: DeviceElement,
     ) -> None:
         """
         Adds a component to the components collection.
@@ -173,11 +174,8 @@ class QuantumDevice(Instrument):
         if component.name in self.components():
             raise ValueError(f"'{component.name}' has already been added.")
 
-        if not isinstance(component, Instrument):
-            # FIXME: check if it is also a valid device element. # pylint: disable=fixme
-            # This requires a base class for device elements that does not exist yet.
-            # See also `InstrumentCoordinatorComponentBase`.
-            raise TypeError(f"{repr(component)} is not a QCoDeS instrument.")
+        if not isinstance(component, DeviceElement):
+            raise TypeError(f"{repr(component)} is not a DeviceElement.")
 
         self.components().append(component.name)  # list gets updated in place
 
