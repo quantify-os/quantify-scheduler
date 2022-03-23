@@ -127,24 +127,36 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponentBase):
     """Qblox InstrumentCoordinator component base class."""
 
-    def __init__(self, instrument: Instrument, **kwargs) -> None:
+    def __init__(
+        self, instrument: Union[Instrument, InstrumentChannel], **kwargs
+    ) -> None:
         """
         Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
         """
         super().__init__(instrument, **kwargs)
-        if (
-            instrument._get_lo_hw_present()
-            is not self._hardware_properties.has_internal_lo
-        ):
+
+        self.instrument_channel = (
+            instrument if isinstance(instrument, InstrumentChannel) else None
+        )
+
+        if instrument.is_rf_type is not self._hardware_properties.has_internal_lo:
             raise RuntimeError(
                 "QbloxInstrumentCoordinatorComponentBase not compatible with the "
                 "provided instrument. Please confirm whether your device "
-                "is a RF module (has an internal LO)."
+                "is an RF module (has an internal LO)."
             )
+
         self._seq_name_to_idx_map = {
             f"seq{idx}": idx
             for idx in range(self._hardware_properties.number_of_sequencers)
         }
+
+    @property
+    def instrument(self) -> Union[Instrument, InstrumentChannel]:
+        if self.instrument_channel is not None:
+            return self.instrument_channel
+
+        return super().instrument
 
     def _set_parameter(
         self,
@@ -992,7 +1004,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def __init__(self, instrument: Cluster, **kwargs) -> None:
         """
-        Create a new instance of the ClusterComponent. Automatically adds installed modules using name `"module<slot>"`.
+        Create a new instance of the ClusterComponent. Automatically adds installed modules using name `"<cluster_name>_module<slot>"`.
 
         Parameters
         ----------
@@ -1005,12 +1017,15 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         self._cluster_modules: Dict[str, ClusterModule] = {}
 
         for instrument_channel in instrument.modules:
-            icc_class: type = {
-                (True, False): _QCMComponent,
-                (True, True): _QCMRFComponent,
-                (False, False): _QRMComponent,
-                (False, True): _QRMRFComponent,
-            }[(instrument_channel.is_qcm_type, instrument_channel.is_rf_type)]
+            try:
+                icc_class: type = {
+                    (True, False): _QCMComponent,
+                    (True, True): _QCMRFComponent,
+                    (False, False): _QRMComponent,
+                    (False, True): _QRMRFComponent,
+                }[(instrument_channel.is_qcm_type, instrument_channel.is_rf_type)]
+            except KeyError:
+                continue
 
             self._cluster_modules[instrument_channel.name] = icc_class(
                 instrument_channel
