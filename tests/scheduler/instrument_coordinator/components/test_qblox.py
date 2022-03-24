@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from qblox_instruments import Cluster, ClusterType, Pulsar
+from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType, SequencerStatus
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler.schemas.examples as es
@@ -59,16 +59,12 @@ def fixture_make_qcm(mocker):
     def _make_qcm(
         name: str = "qcm0", serial: str = "dummy"
     ) -> qblox.PulsarQCMComponent:
-        mocker.patch(
-            "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
-            return_value=False,
-        )
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc._set_reference_source")
 
-        qcm = pulsar_qcm.pulsar_qcm_dummy(name)
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+
+        qcm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QCM)
         qcm._serial = serial
 
         component = qblox.PulsarQCMComponent(qcm)
@@ -76,7 +72,7 @@ def fixture_make_qcm(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value={"status": SequencerStatus.ARMED},
         )
 
         return component
@@ -106,7 +102,7 @@ def fixture_make_qrm(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value={"status": SequencerStatus.ARMED},
         )
         mocker.patch.object(
             component.instrument,
@@ -469,14 +465,9 @@ def test_wait_done(make_qrm):
 
 
 def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm):
-    # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
 
-    # Act
-    acq = qcm.retrieve_acquisition()
-
-    # Assert
-    assert acq is None
+    assert qcm.retrieve_acquisition() is None
 
 
 def test_retrieve_acquisition_qrm(
