@@ -331,7 +331,6 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
 
 
-# pylint: disable=too-many-ancestors  # TODO (remove before merge): still required?
 class _QCMComponent(
     QbloxInstrumentCoordinatorComponentBase
 ):  # TODO (remove before merge): move to unified _QcmQrmComponent?
@@ -436,7 +435,6 @@ class _QCMComponent(
             )
 
 
-# pylint: disable=too-many-ancestors
 class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     QRM specific InstrumentCoordinator component.
