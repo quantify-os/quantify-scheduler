@@ -30,9 +30,9 @@
 #     :jupyter-download:script:`Tutorial 3. Compilation and hardware execution`
 
 # %% [raw]
-# Compilation allows converting the schedules introduced in Tutorial 1 into a set of instructions that the control hardware needs to execute.
+# Compilation allows converting the schedules introduced in Tutorial 1 into a set of instructions that can be executed on the control hardware.
 #
-# In this notebook we will define an example schedule, demonstrate how to compile it and run it with our hardware setup.
+# In this notebook we will define an example schedule, demonstrate how to compile it, and run it on a virtual hardware setup.
 
 # %% [raw]
 # Schedule definition
@@ -71,7 +71,7 @@ sched
 # %%
 hw_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "ic_qcm": {
+    "qcm": {
         "instrument_type": "Pulsar_QCM",
         "ref": "internal",
         "complex_output_0": {
@@ -97,7 +97,7 @@ hw_config = {
 #
 # In our example setup, we will use a Qblox Pulsar QCM baseband module and an external Local Oscillator (LO).
 #
-# In the presented configuration, `interm_freq` (which stands for Intermediate Frequency or IF) the frequency with which the device modulates the pulses.
+# In the presented configuration, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
 # Since the Pulsar QCM baseband module is not capable of outputting signals at the qubit frequency, a Local Oscillator is used in order to upconvert the signals to the desired frequency.
 # In this case, the LO frequency is not specified but gets automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
 #
@@ -154,8 +154,6 @@ compilation_output.data["compiled_instructions"]
 #
 # We start by connecting to the control instruments below.
 #
-# *Note*: Currently, every instrument aside from Local Oscillators needs to be referred in the hardware configuration with an additional `ic_` prefix!
-# This will be addressed in a future merge request.
 
 # %%
 from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
