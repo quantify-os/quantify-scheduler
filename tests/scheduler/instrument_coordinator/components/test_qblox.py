@@ -63,6 +63,9 @@ def fixture_make_qcm(mocker):
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+        mocker.patch(
+            "qblox_instruments.scpi.pulsar_qcm.PulsarQcm._set_reference_source"
+        )
 
         qcm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QCM)
         qcm._serial = serial
@@ -85,16 +88,15 @@ def fixture_make_qrm(mocker):
     def _make_qrm(
         name: str = "qrm0", serial: str = "dummy"
     ) -> qblox.PulsarQRMComponent:
-        mocker.patch(
-            "Pulsar.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
-            return_value=False,
-        )
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc._set_reference_source")
 
-        qrm = Pulsar.pulsar_qrm_dummy(name)
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+        mocker.patch(
+            "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
+        )
+
+        qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
         qrm._serial = serial
 
         component = qblox.PulsarQRMComponent(qrm)
