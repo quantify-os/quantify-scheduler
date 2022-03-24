@@ -162,7 +162,6 @@ def fixture_mock_acquisition_data():
     yield data
 
 
-
 @pytest.fixture
 def make_qcm_rf(mocker):
     def _make_qcm_rf(
