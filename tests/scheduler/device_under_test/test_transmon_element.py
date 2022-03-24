@@ -5,7 +5,11 @@
 import pytest
 
 from quantify_scheduler.compilation import validate_config
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+from quantify_scheduler.device_under_test.transmon_element import (
+    TransmonElement,
+    BasicTransmonElement,
+)
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
@@ -59,3 +63,26 @@ def test_generate_device_config(q0: TransmonElement):
 def test_find_coordinator(q0: TransmonElement):
     coordinator = q0.instrument_coordinator.get_instr()
     assert coordinator.name == "ic"
+
+
+@pytest.fixture
+def dev() -> QuantumDevice:
+    dev = QuantumDevice("dev")
+    yield dev
+    dev.close()
+
+
+@pytest.fixture
+def qb0() -> BasicTransmonElement:
+    qb0 = BasicTransmonElement("qb0")
+    yield qb0
+    qb0.close()
+
+
+def test_generate_device_config(qb0):
+    _ = qb0.generate_device_config()
+
+
+def test_generate_device_config_part_of_device(qb0, dev):
+    dev.add_component(qb0)
+    _ = dev.generate_device_config()
