@@ -1177,7 +1177,7 @@ def test_cluster_settings(pulse_only_schedule):
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
     cluster_compiler.prepare()
-    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_qcm0"]
+    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_module1"]
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 
 

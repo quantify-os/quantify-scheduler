@@ -3,7 +3,6 @@
 
 import pytest
 from quantify_scheduler.compilation import validate_config
-from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
