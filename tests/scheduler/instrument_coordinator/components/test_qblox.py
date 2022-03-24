@@ -162,20 +162,17 @@ def fixture_mock_acquisition_data():
     yield data
 
 
+
 @pytest.fixture
 def make_qcm_rf(mocker):
     def _make_qcm_rf(
         name: str = "qcm_rf0", serial: str = "dummy"
     ) -> qblox._QCMRFComponent:
-        mocker.patch(
-            "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
-            return_value=True,
-        )
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
 
-        qcm_rf = pulsar_qcm.pulsar_qcm_dummy(name)
+        qcm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QCM_RF)
         qcm_rf._serial = serial
 
         component = qblox._QCMRFComponent(qcm_rf)
@@ -183,7 +180,7 @@ def make_qcm_rf(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value={"status": SequencerStatus.ARMED},
         )
 
         return component
@@ -196,15 +193,11 @@ def make_qrm_rf(mocker):
     def _make_qrm_rf(
         name: str = "qrm_rf0", serial: str = "dummy"
     ) -> qblox._QRMRFComponent:
-        mocker.patch(
-            "Pulsar.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
-            return_value=True,
-        )
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
-        mocker.patch("Pulsar.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
 
-        qrm_rf = Pulsar.pulsar_qrm_dummy(name)
+        qrm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QRM_RF)
         qrm_rf._serial = serial
 
         component = qblox._QRMRFComponent(qrm_rf)
@@ -212,7 +205,7 @@ def make_qrm_rf(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value={"status": SequencerStatus.ARMED},
         )
         mocker.patch.object(
             component.instrument,
@@ -496,14 +489,9 @@ def test_retrieve_acquisition_qrm(
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
-    # Arrange
     qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
-    # Act
-    acq = qcm_rf.retrieve_acquisition()
-
-    # Assert
-    assert acq is None
+    assert qcm_rf.retrieve_acquisition() is None
 
 
 def test_retrieve_acquisition_qrm_rf(
