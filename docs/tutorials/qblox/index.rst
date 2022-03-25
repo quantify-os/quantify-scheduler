@@ -51,7 +51,6 @@ Supported Instruments
 - ✅ QRM-RF
 - ✅ Cluster
 - ⬜️ SPI
-- ✅ Downconverter
 
 
 How to use

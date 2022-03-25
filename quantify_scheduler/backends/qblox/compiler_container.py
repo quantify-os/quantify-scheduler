@@ -1,15 +1,15 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Contains the compiler container class."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Union, Set
-
-from quantify_core.utilities import general
+from typing import Any, Dict, Set, Union
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.schedule import get_total_duration
 
 
@@ -66,16 +66,15 @@ class CompilerContainer:
             compiler.prepare()
 
         # for now name is hardcoded, but should be read from config.
-        generic_icc_name = "ic_generic"
         compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
             compiled_instrument_program = compiler.compile(repetitions=repetitions)
 
             if compiled_instrument_program is not None:
                 if name in self.generics:
-                    if generic_icc_name not in compiled_schedule:
-                        compiled_schedule[generic_icc_name] = {}
-                    compiled_schedule[generic_icc_name].update(
+                    if constants.GENERIC_IC_COMPONENT_NAME not in compiled_schedule:
+                        compiled_schedule[constants.GENERIC_IC_COMPONENT_NAME] = {}
+                    compiled_schedule[constants.GENERIC_IC_COMPONENT_NAME].update(
                         compiled_instrument_program
                     )
                 else:
@@ -146,7 +145,7 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        compiler: type = general.import_python_object_from_string(instrument)
+        compiler: type = import_python_object_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(

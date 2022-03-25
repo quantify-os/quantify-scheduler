@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Common resources for use with the quantify_scheduler."""
 
 from __future__ import annotations
@@ -7,9 +7,7 @@ from __future__ import annotations
 from collections import UserDict
 from typing import Optional
 
-from quantify_core.utilities.general import load_json_schema
-
-from quantify_scheduler.json_utils import validate_json
+from quantify_scheduler.json_utils import load_json_schema, validate_json
 
 
 class Resource(UserDict):

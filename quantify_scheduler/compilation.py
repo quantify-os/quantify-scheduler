@@ -1,21 +1,19 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
 from __future__ import annotations
 
-import importlib
 import logging
+import warnings
 from copy import deepcopy
+from typing import Union
 
-import numpy as np
-from quantify_core.utilities.general import (
-    import_python_object_from_string,
-    load_json_schema,
-)
 from typing_extensions import Literal
 
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.json_utils import validate_json
+from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -39,10 +37,10 @@ def determine_absolute_timing(
     Determines the absolute timing of a schedule based on the timing constraints.
 
     This function determines absolute timings for every operation in the
-    :attr:`~.ScheduleBase.timing_constraints`. It does this by:
+    :attr:`~.ScheduleBase.schedulables`. It does this by:
 
         1. iterating over all and elements in the
-            :attr:`~.ScheduleBase.timing_constraints`.
+            :attr:`~.ScheduleBase.schedulables`.
         2. determining the absolute time of the reference operation.
         3. determining the start of the operation based on the `rel_time` and `duration` of operations.
 
@@ -62,8 +60,8 @@ def determine_absolute_timing(
         a new schedule object where the absolute time for each operation has been
         determined.
     """  # pylint: disable=line-too-long
-    if len(schedule.timing_constraints) == 0:
-        raise ValueError("schedule '{}' contains no operations".format(schedule.name))
+    if len(schedule.schedulables) == 0:
+        raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
 
     valid_time_units = ("physical", "ideal")
     if time_unit not in valid_time_units:
@@ -72,52 +70,55 @@ def determine_absolute_timing(
         )
 
     # iterate over the objects in the schedule.
-    last_constr = schedule.timing_constraints[0]
-    last_op = schedule.operations[last_constr["operation_repr"]]
+    last_schedulable = next(iter(schedule.schedulables.values()))
+    last_op = schedule.operations[last_schedulable["operation_repr"]]
 
-    last_constr["abs_time"] = 0
+    last_schedulable["abs_time"] = 0
 
-    timing_constraints_labels = [tc["label"] for tc in schedule.timing_constraints]
-    sort_idx = np.argsort(timing_constraints_labels)
-    timing_constraints_labels_sorted = np.asarray(sorted(timing_constraints_labels))
+    for schedulable in list(schedule.data["schedulables"].values())[1:]:
+        curr_op = schedule.operations[schedulable["operation_repr"]]
+        if len(schedulable.data["timing_constraints"]) == 0:
+            schedulable.add_timing_constraint(ref_schedulable=last_schedulable)
+        for t_constr in schedulable.data["timing_constraints"]:
+            if t_constr["ref_schedulable"] is None:
+                ref_schedulable = last_schedulable
+                ref_op = last_op
+            else:
+                # this assumes the reference op exists. This is ensured in schedule.add
+                ref_schedulable = schedule.schedulables[
+                    str(t_constr["ref_schedulable"])
+                ]
+                ref_op = schedule.operations[ref_schedulable["operation_repr"]]
 
-    for t_constr in schedule.data["timing_constraints"][1:]:
-        curr_op = schedule.operations[t_constr["operation_repr"]]
-        if t_constr["ref_op"] is None:
-            ref_constr = last_constr
-            ref_op = last_op
-        else:
-            # this assumes the reference op exists. This is ensured in schedule.add
-            sidx = np.searchsorted(timing_constraints_labels_sorted, t_constr["ref_op"])
-            ref_constr_idx = sort_idx[sidx]
-            ref_constr = schedule.timing_constraints[ref_constr_idx]
-            ref_op = schedule.operations[ref_constr["operation_repr"]]
+            # duration = 1 is useful when e.g., drawing a circuit diagram.
+            duration_ref_op = ref_op.duration if time_unit == "physical" else 1
 
-        # duration = 1 is useful when e.g., drawing a circuit diagram.
-        duration_ref_op = ref_op.duration if time_unit == "physical" else 1
+            if t_constr["ref_pt"] == "start":
+                t0 = ref_schedulable["abs_time"]
+            elif t_constr["ref_pt"] == "center":
+                t0 = ref_schedulable["abs_time"] + duration_ref_op / 2
+            elif t_constr["ref_pt"] == "end":
+                t0 = ref_schedulable["abs_time"] + duration_ref_op
+            else:
+                raise NotImplementedError(
+                    'Timing "{}" not supported by backend'.format(
+                        ref_schedulable["abs_time"]
+                    )
+                )
 
-        if t_constr["ref_pt"] == "start":
-            t0 = ref_constr["abs_time"]
-        elif t_constr["ref_pt"] == "center":
-            t0 = ref_constr["abs_time"] + duration_ref_op / 2
-        elif t_constr["ref_pt"] == "end":
-            t0 = ref_constr["abs_time"] + duration_ref_op
-        else:
-            raise NotImplementedError(
-                'Timing "{}" not supported by backend'.format(ref_constr["abs_time"])
-            )
+            duration_new_op = curr_op.duration if time_unit == "physical" else 1
 
-        duration_new_op = curr_op.duration if time_unit == "physical" else 1
-
-        if t_constr["ref_pt_new"] == "start":
-            t_constr["abs_time"] = t0 + t_constr["rel_time"]
-        elif t_constr["ref_pt_new"] == "center":
-            t_constr["abs_time"] = t0 + t_constr["rel_time"] - duration_new_op / 2
-        elif t_constr["ref_pt_new"] == "end":
-            t_constr["abs_time"] = t0 + t_constr["rel_time"] - duration_new_op
+            if t_constr["ref_pt_new"] == "start":
+                abs_time = t0 + t_constr["rel_time"]
+            elif t_constr["ref_pt_new"] == "center":
+                abs_time = t0 + t_constr["rel_time"] - duration_new_op / 2
+            elif t_constr["ref_pt_new"] == "end":
+                abs_time = t0 + t_constr["rel_time"] - duration_new_op
+            if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:
+                schedulable["abs_time"] = abs_time
 
         # update last_constraint and operation for next iteration of the loop
-        last_constr = t_constr
+        last_schedulable = schedulable
         last_op = curr_op
 
     return schedule
@@ -169,6 +170,15 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     .. jsonschema:: schemas/transmon_cfg.json
 
     """
+    warnings.warn(
+        "Support for this compilation backend will be be removed in"
+        "quantify-scheduler >= 0.7.0.\n"
+        "Please consider specifying the device config using the "
+        "`DeviceCompilationConfig` DataStructure to make use of the "
+        "`backends.circuits_to_device.compile_circuit_to_device` instead.",
+        DeprecationWarning,
+    )
+
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
     for op in schedule.operations.values():
@@ -191,6 +201,13 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             for idx, q in enumerate(op["gate_info"]["qubits"]):
                 q_cfg = device_cfg["qubits"][q]
 
+                if len(op["gate_info"]["qubits"]) != 1:
+                    acq_channel = op["gate_info"]["acq_channel"][idx]
+                    acq_index = op["gate_info"]["acq_index"][idx]
+                else:
+                    acq_channel = op["gate_info"]["acq_channel"]
+                    acq_index = op["gate_info"]["acq_index"]
+
                 # If the user specifies bin-mode use that otherwise use a default
                 # better would be to get it from the config file in the "or"
                 bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE
@@ -209,8 +226,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                         SSBIntegrationComplex(
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
-                            acq_channel=op["gate_info"]["acq_channel"][idx],
-                            acq_index=op["gate_info"]["acq_index"][idx],
+                            acq_channel=acq_channel,
+                            acq_index=acq_index,
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
                             bin_mode=bin_mode,
@@ -243,8 +260,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             clock=q_cfg["resources"]["clock_ro"],
                             duration=q_cfg["params"]["ro_acq_integration_time"],
                             t0=q_cfg["params"]["ro_acq_delay"],
-                            acq_channel=op["gate_info"]["acq_channel"][idx],
-                            acq_index=op["gate_info"]["acq_index"][idx],
+                            acq_channel=acq_channel,
+                            acq_index=acq_index,
                             port=q_cfg["resources"]["port_ro"],
                         )
                     )
@@ -391,10 +408,10 @@ def qcompile(
         The schedule to be compiled.
     device_cfg
         Device specific configuration, defines the compilation step from
-        the gate-level to the pulse level description.
+        the quantum-circuit layer to the quantum-device layer description.
     hardware_cfg
         Hardware configuration, defines the compilation step from
-        the pulse-level to a hardware backend.
+        the quantum-device to a hardware layer.
 
     Returns
     -------
@@ -434,7 +451,9 @@ def qcompile(
     return compiled_schedule
 
 
-def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
+def device_compile(
+    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
+) -> Schedule:
     """
     Add pulse information to operations based on device config file.
 
@@ -451,8 +470,18 @@ def device_compile(schedule: Schedule, device_cfg: dict) -> Schedule:
     :
         The updated schedule.
     """
+    if not isinstance(device_cfg, DeviceCompilationConfig):
+        warnings.warn(
+            "Support for using a dictionary to specify a config will be removed in"
+            "quantify-scheduler >= 0.7.0.\n"
+            "Please consider using the `DeviceCompilationConfig` DataStructure instead",
+            DeprecationWarning,
+        )
 
-    device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
+        device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
+
+    else:
+        device_compilation_bck = import_python_object_from_string(device_cfg.backend)
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")

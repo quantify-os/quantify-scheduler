@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 r"""
 Module containing :class:`~quantify_core.measurement.types.Gettable`\s for use with
 quantify-scheduler.
@@ -194,13 +194,18 @@ class ScheduleGettable:
             split into a tuple of floats: either real/imaginary parts or
             magnitude/phase, depending on whether :code:`real_imag` is :code:`True`.
         """
+        instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
+
+        # ensure the instruments are not running and we are starting from a clean state
+        # We switch on allow_failure so that some instruments which require the prepare
+        # before the stop can fail.
+        instr_coordinator.stop(allow_failure=True)
+
         if self.always_initialize:
             self.initialize()
         else:
             if not self.is_initialized:
                 self.initialize()
-
-        instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
 
         instr_coordinator.start()
         acquired_data = instr_coordinator.retrieve_acquisition()

@@ -1,5 +1,5 @@
 # pylint: disable=missing-function-docstring
-
+# pylint: disable=invalid-name
 
 import numpy as np
 import numpy.testing as npt
@@ -7,10 +7,13 @@ import pytest
 
 from quantify_scheduler.waveforms import (
     drag,
+    staircase,
+    interpolated_complex_waveform,
     modulate_wave,
     rotate_wave,
     square,
     staircase,
+    sudden_net_zero,
 )
 
 
@@ -62,8 +65,8 @@ def test_drag_ns() -> None:
     times = np.arange(0, duration, 1e-9)  # sampling rate set to 1 GSPs
     mu = times[0] + duration / 2
     sigma = duration / (2 * nr_sigma)
-    gauss_env = G_amp * np.exp(-(0.5 * ((times - mu) ** 2) / sigma ** 2))
-    deriv_gauss_env = D_amp * -1 * (times - mu) / (sigma ** 1) * gauss_env
+    gauss_env = G_amp * np.exp(-(0.5 * ((times - mu) ** 2) / sigma**2))
+    deriv_gauss_env = D_amp * -1 * (times - mu) / (sigma**1) * gauss_env
     exp_waveform = gauss_env + 1j * deriv_gauss_env
 
     # quantify
@@ -77,7 +80,7 @@ def test_drag_ns() -> None:
     )
 
     np.testing.assert_array_almost_equal(waveform, exp_waveform, decimal=3)
-    assert pytest.approx(np.max(waveform), 0.5)
+    assert np.max(waveform) == pytest.approx(0.5)
 
     with pytest.raises(ValueError):
         drag(times, 0.5, D_amp, duration, subtract_offset="bad!")
@@ -93,6 +96,56 @@ def test_drag_ns() -> None:
     exp_waveform.real -= np.mean([exp_waveform.real[0], exp_waveform.real[-1]])
     exp_waveform.imag -= np.mean([exp_waveform.imag[0], exp_waveform.imag[-1]])
     np.testing.assert_array_almost_equal(waveform, exp_waveform, decimal=3)
+
+
+def test_sudden_net_zero() -> None:
+    times = np.arange(0, 40e-9, 1e-9)
+    amp_A = 0.4
+    amp_B = 0.5
+    net_zero_A_scale = 0.95
+
+    waveform = sudden_net_zero(
+        times,
+        amp_A=amp_A,
+        amp_B=amp_B,
+        net_zero_A_scale=net_zero_A_scale,
+        t_pulse=20e-9,
+        t_phi=2e-9,
+        t_integral_correction=10e-9,
+    )
+
+    assert np.sum(waveform) == 0
+    assert np.max(waveform) == amp_A
+    assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
+
+
+@pytest.mark.parametrize(
+    "test_wf, test_time, answer",
+    [
+        (
+            square(np.linspace(0, 50e-6, 1000), 2.44),
+            np.linspace(0, 50e-6, 1000),
+            np.array([2.44] * 2000),
+        ),
+        (
+            square(np.linspace(0, 50e-6, 1000), 2.44)
+            + 1.0j * square(np.linspace(0, 50e-6, 1000), 1),
+            np.linspace(0, 50e-6, 1000),
+            np.array([2.44 + 1.0j] * 2000),
+        ),
+        (
+            square(np.linspace(0, 50e-6, 1000), -2.1j),
+            np.linspace(0, 50e-6, 1000),
+            np.array([-2.1j] * 2000),
+        ),
+    ],
+)
+def test_interpolated_complex_waveform(test_wf, test_time, answer):
+    t_answer = np.linspace(0, 50e-6, 2000)
+    result = interpolated_complex_waveform(
+        t=t_answer, samples=test_wf, t_samples=test_time
+    )
+    npt.assert_array_equal(answer, result)
 
 
 def test_rotate_wave() -> None:

@@ -11,6 +11,14 @@ backends
 .. automodule:: quantify_scheduler.backends
     :members:
 
+
+circuit_to_device
+-----------------
+
+.. automodule:: quantify_scheduler.backends.circuit_to_device
+    :members:
+
+
 qblox
 -----
 
@@ -177,30 +185,6 @@ transmon_element
 
 
 
-helpers
-=======
-
-.. automodule:: quantify_scheduler.helpers
-    :members:
-
-inspect
---------
-.. automodule:: quantify_scheduler.helpers.inspect
-    :members:
-
-
-schedule
---------
-.. automodule:: quantify_scheduler.helpers.schedule
-    :members:
-
-
-time
-----
-.. automodule:: quantify_scheduler.helpers.time
-    :members:
-
-
 waveforms
 ---------
 .. automodule:: quantify_scheduler.helpers.waveforms
@@ -273,11 +257,22 @@ gate_library
 .. automodule:: quantify_scheduler.operations.gate_library
     :members:
 
+measurement_factories
+---------------------
+.. automodule:: quantify_scheduler.operations.measurement_factories
+    :members:
+
 
 operation
 ---------
 .. automodule:: quantify_scheduler.operations.operation
     :members:
+
+pulse_factories
+---------------------
+.. automodule:: quantify_scheduler.operations.pulse_factories
+    :members:
+
 
 pulse_library
 -------------
@@ -429,7 +424,42 @@ waveforms
     :members:
 
 
+Modules for internal usage
+==========================
 
+structure
+---------
+
+.. automodule:: quantify_scheduler.structure
+    :members: DataStructure
+
+helpers
+-------
+
+.. automodule:: quantify_scheduler.helpers
+    :members:
+
+inspect
+~~~~~~~
+.. automodule:: quantify_scheduler.helpers.inspect
+    :members:
+
+
+schedule
+~~~~~~~~
+.. automodule:: quantify_scheduler.helpers.schedule
+    :members:
+
+
+time
+~~~~
+.. automodule:: quantify_scheduler.helpers.time
+    :members:
+
+validators
+~~~~~~~~~~
+.. automodule:: quantify_scheduler.helpers.validators
+    :members:
 
 
 ============

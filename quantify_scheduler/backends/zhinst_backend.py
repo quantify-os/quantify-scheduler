@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Backend for Zurich Instruments."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, 
 
 import numpy as np
 import pandas as pd
-from quantify_core.utilities.general import make_hash
 from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums
@@ -20,14 +19,15 @@ from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
-from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.resources import Resource
-from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as generic_icc_default_name,
 )
+from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.resources import Resource
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -146,42 +146,31 @@ def _extract_port_clock_channelmapping(hardware_cfg: Dict[str, Any]) -> Dict[str
     return port_clock_dict
 
 
-def _extract_channel_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
+def _extract_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
     """
-    The latency is/can be specified on a per channel basis in the hardware
-    configuration file.
+    The latency is specified on a port-clock combination basis in the hardware
+    configuration file. Relative latencies calculated here are added to the absolute
+    times of the operations having the specific port-clock combination specified in the
+    latency_dict.
     """
 
     port_clock_dict = _extract_port_clock_channelmapping(hardware_cfg=hardware_cfg)
-
-    list_of_hardware_channels = [
-        channel.split(".") for channel in port_clock_dict.values()
-    ]
+    raw_latency_dict = hardware_cfg.get("latency_corrections")
 
     latency_dict = {}
 
-    for device in hardware_cfg["devices"]:
-        instr_name = device["name"]
-        instr_type = device["type"]
-        for hw_channels in list_of_hardware_channels:
-            if instr_name in hw_channels:
-                channel_idx = hw_channels[1].strip("awg")
-                # Access the channel
-                channel_dict = device.get(f"channel_{channel_idx}")
-                latency_dict[f"{instr_name}.awg{channel_idx}"] = channel_dict.get(
-                    "latency", 0
-                )
+    if raw_latency_dict:
 
-                if "uhfqa" in instr_type.lower():
-                    latency_dict[
-                        f"{instr_name}.awg{channel_idx}.acquisition"
-                    ] = channel_dict.get("acquisition_latency", 0)
+        for port_clock in port_clock_dict:
+            latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
 
-                line_trigger_delay = channel_dict.get("line_trigger_delay")
-                if line_trigger_delay:
-                    latency_dict[
-                        f"{instr_name}.awg{channel_idx}.trigger"
-                    ] = line_trigger_delay
+        # Subtract lowest value to ensure minimal latency is used.
+        # note that this also supports negative delays (which is useful for
+        # calibrating)
+        minimum_of_latencies = min(latency_dict.values())
+        # Offset the latencies to be relative to the minimum
+        for port_clock, latency_at_port_clock in latency_dict.items():
+            latency_dict[port_clock] = latency_at_port_clock - minimum_of_latencies
 
     return latency_dict
 
@@ -297,35 +286,18 @@ def _apply_latency_corrections(
 ) -> pd.DataFrame:
     """
     Changes the "abs_time" of a timing table depending on the specified latencies
-    for each channel.
+    for each port-clock combination as specified in the latency dict. The latencies are
+    added to the abs_time elements fulfilling the specific port-clock combination.
     """
 
-    def latency_corrections(
-        hardware_channel: str, is_acquisition: bool, abs_time: float
-    ) -> float:
-        if hardware_channel is None:
-            return abs_time
-        # We determine if the channel is used for pulsing or acquiring as both
-        # can have a different acquisition delay.
-        if is_acquisition:
-            hardware_channel += ".acquisition"
+    for port_clock_combination_key in latency_dict:
+        port, clock = port_clock_combination_key.split("-")
+        port_mask = timing_table["port"] == port
+        clock_mask = timing_table["clock"] == clock
+        full_mask_combination = port_mask * clock_mask
+        latency_corr = latency_dict[port_clock_combination_key]
+        timing_table.loc[full_mask_combination, "abs_time"] += latency_corr
 
-        # if no correction is specified for a specific step then nothing is done.
-        if hardware_channel in latency_dict.keys():
-            latency_corr = latency_dict[hardware_channel]
-            abs_time += latency_corr
-
-        return abs_time
-
-    # ! we are modifying the abs_time field here
-    timing_table["abs_time"] = timing_table.apply(
-        lambda row: latency_corrections(
-            hardware_channel=row["hardware_channel"],
-            is_acquisition=row["is_acquisition"],
-            abs_time=row["abs_time"],
-        ),
-        axis=1,
-    )
     return timing_table
 
 
@@ -473,6 +445,7 @@ def _add_waveform_ids(timing_table: pd.DataFrame) -> pd.DataFrame:
         # waveform_id as it doesn't affect the waveform itself.
         waveform_op_id = re.sub(r"acq_index=\(.*\)", "acq_index=(*)", waveform_op_id)
         waveform_op_id = re.sub(r"acq_index=.*,", "acq_index=*,", waveform_op_id)
+        waveform_op_id = re.sub(r"acq_index=.*\)", "acq_index=*,", waveform_op_id)
 
         # samples should always be positive, the abs is here to catch a rare bug
         # where a very small negative number (e.g., -0.00000000000000013) is printed
@@ -562,14 +535,12 @@ def _validate_schedule(schedule: Schedule) -> None:
     ValueError
         The validation error.
     """
-    if len(schedule.timing_constraints) == 0:
-        raise ValueError(
-            f"Undefined timing constraints for schedule '{schedule.name}'!"
-        )
+    if len(schedule.schedulables) == 0:
+        raise ValueError(f"Undefined schedulables for schedule '{schedule.name}'!")
 
-    for t_constr in schedule.timing_constraints:
+    for schedulable in schedule.schedulables.values():
 
-        if "abs_time" not in t_constr:
+        if "abs_time" not in schedulable.keys():
             raise ValueError(
                 "Absolute timing has not been determined "
                 + f"for the schedule '{schedule.name}'!"
@@ -717,10 +688,13 @@ class ZIAcquisitionConfig:
     resolvers:
         resolvers used to retrieve the results from the right UHFQA nodes.
         See also :mod:`~quantify_scheduler.backends.zhinst.resolvers`
+    bin_mode:
+        the bin mode (average or append)
     """
 
     n_acquisitions: int
     resolvers: Dict[int, Callable]
+    bin_mode: enums.BinMode
 
 
 @dataclass(frozen=True)
@@ -797,7 +771,7 @@ def compile_backend(
     )
 
     # the timing of all pulses and acquisitions is corrected based on the latency corr.
-    latency_dict = _extract_channel_latencies(hardware_cfg)
+    latency_dict = _extract_latencies(hardware_cfg)
     timing_table = _apply_latency_corrections(
         timing_table=timing_table, latency_dict=latency_dict
     )
@@ -874,13 +848,20 @@ def compile_backend(
             acq_config: Optional[ZIAcquisitionConfig] = None
 
         elif device.device_type == zhinst.DeviceType.UHFQA:
+            acq_metadata = schedule_helpers.extract_acquisition_metadata_from_schedule(
+                schedule
+            )
+            bin_mode = acq_metadata.bin_mode
+
             builder, acq_config = _compile_for_uhfqa(
                 device=device,
                 timing_table=timing_table,
                 numerical_wf_dict=numerical_wf_dict,
                 repetitions=schedule.repetitions,
                 operations=schedule.operations,
+                bin_mode=bin_mode,
             )
+
         else:
             raise NotImplementedError(f"{device.device_type} not supported.")
 
@@ -922,11 +903,16 @@ def _add_lo_config(
 
     local_oscillator = local_oscillators[unique_name]
 
-    # Get the power of the local oscillator
-    ((power_key, power_val),) = local_oscillator.power.items()
-
     # the frequencies from the config file
     ((lo_freq_key, lo_freq_val),) = local_oscillator.frequency.items()
+
+    # Get the power of the local oscillator
+    if local_oscillator.power:
+        ((power_key, power_val),) = local_oscillator.power.items()
+
+    # Get the phase of the local oscillator
+    if local_oscillator.phase:
+        ((phase_key, phase_val),) = local_oscillator.phase.items()
 
     interm_freq = channel.modulation.interm_freq
 
@@ -953,7 +939,7 @@ def _add_lo_config(
     elif interm_freq is None and lo_freq_val is None:
         raise ValueError(
             "Either local oscillator frequency or channel intermediate frequency "
-            f'must be set for LocalOscillator "{name}"'
+            f'must be set for LocalOscillator "{unique_name}"'
         )
 
     if local_oscillator.unique_name in device_configs:
@@ -965,13 +951,21 @@ def _add_lo_config(
 
     lo_config = {
         f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
-        f"{local_oscillator.instrument_name}.{power_key}": power_val,
     }
 
+    if power_val:
+        lo_config[f"{local_oscillator.instrument_name}.{power_key}"] = power_val
+
+    if local_oscillator.phase:
+        lo_config[f"{local_oscillator.instrument_name}.{phase_key}"] = phase_val
+
+    # This line detects if the generic_icc_name exists in the local_oscillator entry of
+    # the hardware_config. If it exists, then, it takes the entry value, if not, the
+    # generic_icc_name takes the default value from the generic icc base module.
     if local_oscillator.generic_icc_name:
         generic_icc_name = local_oscillator.generic_icc_name
     else:
-        generic_icc_name = f"ic_{generic_icc_default_name}"
+        generic_icc_name = generic_icc_default_name
 
     if generic_icc_name in device_configs:
         device_configs[generic_icc_name].update(lo_config)
@@ -1269,6 +1263,7 @@ def _compile_for_uhfqa(
     numerical_wf_dict: Dict[str, np.ndarray],
     repetitions: int,
     operations: Dict[str, Operation],
+    bin_mode: enums.BinMode,
 ) -> Tuple[zi_settings.ZISettingsBuilder, ZIAcquisitionConfig]:
     """
     Initialize programming the UHFQA ZI Instrument.
@@ -1390,10 +1385,18 @@ def _compile_for_uhfqa(
 
     # select only the acquisition operations relevant for the output channel.
     timing_table_acquisitions = output_timing_table[output_timing_table.is_acquisition]
-    n_acquisitions = len(timing_table_acquisitions)
     timing_table_unique_acquisitions = timing_table_acquisitions.drop_duplicates(
         subset="waveform_id"
     )
+
+    n_unique_acquisitions = len(timing_table_acquisitions)
+    if bin_mode == enums.BinMode.AVERAGE:
+        n_acquisitions = n_unique_acquisitions
+    elif bin_mode == enums.BinMode.APPEND:
+        n_acquisitions = n_unique_acquisitions * repetitions
+        repetitions = 1
+    else:
+        raise NotImplementedError(f"BinMode {bin_mode} is not supported.")
 
     # These variables have to be identical for all acquisitions.
     # initialized to None here and overwritten while iterating over the acquisitions.
@@ -1527,7 +1530,11 @@ def _compile_for_uhfqa(
 
     return (
         settings_builder,
-        ZIAcquisitionConfig(n_acquisitions, acq_channel_resolvers_map),
+        ZIAcquisitionConfig(
+            n_unique_acquisitions,
+            resolvers=acq_channel_resolvers_map,
+            bin_mode=bin_mode,
+        ),
     )
 
 

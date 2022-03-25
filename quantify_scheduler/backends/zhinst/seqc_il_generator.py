@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 from __future__ import annotations
 
 import logging
@@ -42,7 +42,7 @@ SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
         SeqcInstructions.PLAY_WAVE: 0,
         SeqcInstructions.SET_TRIGGER: 1,
         SeqcInstructions.ARM_INTEGRATION: 3,
-        SeqcInstructions.START_QA: 6,
+        SeqcInstructions.START_QA: 7,
     },
 }
 

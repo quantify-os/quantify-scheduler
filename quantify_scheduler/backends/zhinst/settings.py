@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Settings builder for Zurich Instruments."""
 from __future__ import annotations
 
@@ -12,11 +12,12 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union, cast
 
 import numpy as np
-from quantify_core.utilities.general import make_hash
 from zhinst.qcodes import base
 
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.helpers.collections import make_hash
+
 
 # same as backends.zhinst_backend.NUM_UHFQA_READOUT_CHANNELS
 # copied here to avoid a circular import
@@ -193,7 +194,7 @@ class ZISettings:
                 # when using the Zhinst-toolkit.helpers.Waveform class.
                 # Hotfix applied to rescale.
                 ############################################################
-                waveform_data = waveform_data / (2 ** 15 - 1)
+                waveform_data = waveform_data / (2**15 - 1)
                 np.savetxt(file_path, waveform_data, delimiter=";")
 
                 setting.value = str(file_path)

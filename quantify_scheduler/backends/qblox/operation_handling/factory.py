@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Functions for producing operation handling strategies."""
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     base,
     pulses,
     acquisitions,
+    virtual,
 )
 
 
@@ -36,6 +37,11 @@ def get_operation_strategy(
     :
         The instantiated strategy object.
     """
+    if operation.data["port"] is None:
+        if operation.name == "ShiftClockPhase":
+            return virtual.NcoPhaseShiftStrategy(operation)
+        return virtual.IdleStrategy(operation)
+
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
     return _get_pulse_strategy(

@@ -3,7 +3,7 @@
     "cluster0": {
         "ref": "internal",
         "instrument_type": "Cluster",
-        "cl_qcm0": {
+        "cluster0_qcm0": {
             "instrument_type": "QCM",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -17,7 +17,7 @@
                 }
             }
         },
-        "cl_qcm_rf0": {
+        "cluster0_qcm_rf0": {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -68,6 +68,13 @@
                 "mixer_phase_error_deg": -4.0,
                 "port": "q0:res",
                 "clock": "q0.ro",
+                "interm_freq": null
+            },
+            "seq1": {
+                "mixer_amp_ratio": 0.9997,
+                "mixer_phase_error_deg": -4.0,
+                "port": "q0:res",
+                "clock": "q0.multiplex",
                 "interm_freq": null
             }
         }

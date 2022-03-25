@@ -1,16 +1,22 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-name
 
+import pytest
 from quantify_scheduler.compilation import validate_config
+from quantify_core.measurement.control import MeasurementControl
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
 
     quantum_device = mock_setup["quantum_device"]
-    dev_cfg = quantum_device.generate_device_config()
-    validate_config(dev_cfg, scheme_fn="transmon_cfg.json")
 
-    assert {"q0", "q1"} <= set(dev_cfg["qubits"].keys())
+    # N.B. the validation of the generated config is happening inside the
+    # device object itself using the pydantic dataclass. Invoking the function
+    # tests this directly.
+    dev_cfg = quantum_device.generate_device_config()
+
+    assert {"q0", "q1"} <= set(dev_cfg.elements.keys())
 
 
 def test_QuantumDevice_generate_hardware_config(mock_setup: dict) -> None:
@@ -59,3 +65,23 @@ def test_QuantumDevice_generate_hardware_config(mock_setup: dict) -> None:
 
     # cannot validate as there is no schema exists see quantify-scheduler #181
     # validate_config(dev_cfg, scheme_fn="qblox_cfg.json")
+
+
+@pytest.fixture
+def dev() -> QuantumDevice:
+    dev = QuantumDevice("dev")
+    yield dev
+    dev.close()
+
+
+@pytest.fixture
+def test_mc() -> QuantumDevice:
+    test_mc = QuantumDevice("test_mc")
+    yield test_mc
+    test_mc.close()
+
+
+def test_adding_non_component_raises(dev, test_mc):
+
+    with pytest.raises(TypeError):
+        dev.add_component(test_mc)

@@ -5,7 +5,7 @@
     "required": [
         "name",
         "repetitions",
-        "timing_constraints",
+        "schedulables",
         "operation_dict",
         "resource_dict"
     ],
@@ -19,35 +19,9 @@
             "description": "The amount of times the schedule will be repeated.",
             "default": 1
         },
-        "timing_constraints": {
-            "type": "array",
-            "description": "A list containing timing constraints.",
-            "properties": {
-                "label": {
-                    "type": "string",
-                    "description": "A unique label of this instance of the operation."
-                },
-                "rel_time": {
-                    "type": "number",
-                    "description": "relative time between the the reference operation and this operation."
-                },
-                "ref_op": {
-                    "type": "string",
-                    "description": "The label of the reference operation."
-                },
-                "ref_pt": {
-                    "type": "string",
-                    "description": "reference point in reference operation must be one of ('start', 'center', 'end')."
-                },
-                "ref_pt_new": {
-                    "type": "string",
-                    "description": "reference point in added operation must be one of ('start', 'center', 'end')."
-                },
-                "operation_repr": {
-                    "type": "string",
-                    "description": "string representation of the operation in the operation dict."
-                }
-            }
+        "schedulables": {
+            "type": "object",
+            "description": "A dictionary containing schedulables."
         },
         "operation_dict": {
             "type": "object",

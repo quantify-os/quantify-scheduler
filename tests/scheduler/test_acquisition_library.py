@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Unit tests acquisition protocols for use with the quantify_scheduler."""
 
 # pylint: disable=missing-class-docstring
@@ -102,13 +102,6 @@ def test_trace():
             clock="q0.ro",
             duration=100e-9,
         ),
-        NumericalWeightedIntegrationComplex(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            t=np.linspace(0, 3, 1),
-            port="q0.res",
-            clock="q0.ro",
-        ),
     ],
 )
 def test__repr__(operation: Operation):
@@ -174,25 +167,25 @@ def test_deserialize(operation: Operation):
     if isinstance(operation, NumericalWeightedIntegrationComplex):
         waveforms = operation.data["acquisition_info"][0]["waveforms"]
         for i, waveform in enumerate(waveforms):
-            assert isinstance(waveform["t"], (np.generic, np.ndarray))
-            assert isinstance(waveform["weights"], (np.generic, np.ndarray))
+            assert isinstance(waveform["t_samples"], (np.generic, np.ndarray))
+            assert isinstance(waveform["samples"], (np.generic, np.ndarray))
             np.testing.assert_array_almost_equal(
-                obj.data["acquisition_info"][0]["waveforms"][i]["t"],
-                waveform["t"],
+                obj.data["acquisition_info"][0]["waveforms"][i]["t_samples"],
+                waveform["t_samples"],
                 decimal=9,
             )
             np.testing.assert_array_almost_equal(
-                obj.data["acquisition_info"][0]["waveforms"][i]["weights"],
-                waveform["weights"],
+                obj.data["acquisition_info"][0]["waveforms"][i]["samples"],
+                waveform["samples"],
                 decimal=9,
             )
 
             # TestCase().assertDictEqual cannot compare numpy arrays for equality
             # therefore "unitary" is removed
-            del obj.data["acquisition_info"][0]["waveforms"][i]["t"]
-            del waveform["t"]
-            del obj.data["acquisition_info"][0]["waveforms"][i]["weights"]
-            del waveform["weights"]
+            del obj.data["acquisition_info"][0]["waveforms"][i]["t_samples"]
+            del waveform["t_samples"]
+            del obj.data["acquisition_info"][0]["waveforms"][i]["samples"]
+            del waveform["samples"]
 
     TestCase().assertDictEqual(obj.data, operation.data)
 
@@ -209,13 +202,6 @@ def test_deserialize(operation: Operation):
             port="q0:res",
             clock="q0.ro",
             duration=100e-9,
-        ),
-        NumericalWeightedIntegrationComplex(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            t=np.linspace(0, 3, 1),
-            port="q0:res",
-            clock="q0.ro",
         ),
     ],
 )

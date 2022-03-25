@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the master branch
+# Licensed according to the LICENCE file on the main branch
 """Module containing quantify JSON utilities."""
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from types import ModuleType
 from typing import Any, Callable, Dict, List, Type, Union
 
 import fastjsonschema
-from quantify_core.utilities.general import load_json_schema
 
 from quantify_scheduler.helpers import inspect as inspect_helpers
 
@@ -25,6 +24,32 @@ lru_cache = functools.lru_cache(maxsize=200)
 def validate_json(data, schema):
     """Validate schema using jsonschema-rs"""
     return fastjsonschema.validate(schema, data)
+
+
+def load_json_schema(relative_to: Union[str, pathlib.Path], filename: str):
+    """
+    Load a JSON schema from file. Expects a 'schemas' directory in the same directory
+    as `relative_to`.
+
+    .. tip::
+
+        Typical usage of the form
+        `schema = load_json_schema(__file__, 'definition.json')`
+
+    Parameters
+    ----------
+    relative_to
+        the file to begin searching from
+    filename
+        the JSON file to load
+    Returns
+    -------
+    dict
+        the schema
+    """
+    path = pathlib.Path(relative_to).resolve().parent.joinpath("schemas", filename)
+    with path.open(mode="r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 @lru_cache
@@ -121,7 +146,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         # Use local import to void Error('Operation' from partially initialized module
         # 'quantify_scheduler')
         # pylint: disable=import-outside-toplevel
-        from quantify_scheduler import resources
+        from quantify_scheduler import Schedulable, resources
         from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
             acquisition_library,
             gate_library,
@@ -135,6 +160,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
+        self.classes.update({"Schedulable": Schedulable})
 
     def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -233,10 +259,11 @@ class ScheduleJSONEncoder(json.JSONEncoder):
         # 'quantify_scheduler')
         from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
             Operation,
+            Schedulable,
             resources,
         )
 
-        if isinstance(o, (Operation, resources.Resource)):
+        if isinstance(o, (Operation, resources.Resource, Schedulable)):
             return repr(o)
         if hasattr(o, "__dict__"):
             return o.__dict__
