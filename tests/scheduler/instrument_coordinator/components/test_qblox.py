@@ -238,7 +238,7 @@ def make_qrm_rf(mocker):
     yield _make_qrm_rf
 
 
-def test_SEQUENCER_STATE_FLAG_INFO():
+def test_sequencer_state_flag_info():
     assert len(SequencerStatusFlags) == len(
         qblox._SEQUENCER_STATE_FLAG_INFO
     ), "Verify all flags are represented"
@@ -435,7 +435,7 @@ def test_prepare_exception_qrm(close_all_instruments, make_qrm):
 
 def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
     # Arrange
-    qcm: qblox._QCMRFComponentComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 

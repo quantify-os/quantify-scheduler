@@ -33,19 +33,21 @@ _SequencerStateType = Dict[
 ]
 """
 Type of the return value of get_sequencer_state. Returned value format is always a dict
-with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags under 'flags'.
+with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags 
+under 'flags'.
 """
 
 
 @dataclass(frozen=True)
 class _SequencerStateInfo:
     message: str
-    """The text to pass as the logger message."""
+    """The text to pass as the logging message."""
     logging_level: int
-    """The logger level to use."""
+    """The logging level to use."""
 
     @staticmethod
     def get_logging_level(flag: SequencerStatusFlags) -> int:
+        """Define the logging level per SequencerStatusFlags flag."""
         if (
             flag is SequencerStatusFlags.DISARMED
             or flag is SequencerStatusFlags.FORCED_STOP
@@ -86,8 +88,8 @@ _SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {
     )
     for flag in SequencerStatusFlags
 }
-"""Used to link all the messages for the logger and levels to specific flags given by
-the hardware."""
+"""Used to link all flags returned by the hardware to logging message and 
+logging level."""
 
 
 @dataclass(frozen=True)
@@ -199,7 +201,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         Returns
         -------
         :
-            True if any of the sequencers reports the "RUNNING" status.
+            True if any of the sequencers reports the `SequencerStatus.RUNNING` status.
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             seq_state = self.instrument.get_sequencer_state(seq_idx)
@@ -352,7 +354,8 @@ class _QCMComponent(
         """Create a new instance of _QCMComponent."""
         if not instrument.is_qcm_type:
             raise TypeError(
-                f'Trying to create _QCMComponent from non-QCM instrument of type "{type(instrument)}"'
+                f"Trying to create _QCMComponent from non-QCM instrument "
+                f'of type "{type(instrument)}"'
             )
         super().__init__(instrument, **kwargs)
 
@@ -399,7 +402,8 @@ class _QCMComponent(
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
                 raise KeyError(
-                    f'Invalid program. Attempting to access non-existing sequencer with name "{seq_name}".'
+                    f"Invalid program. Attempting to access non-existing sequencer "
+                    f'with name "{seq_name}".'
                 )
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
@@ -454,7 +458,8 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         """Create a new instance of _QRMComponent."""
         if not instrument.is_qrm_type:
             raise TypeError(
-                f'Trying to create _QRMComponent from non-QRM instrument of type "{type(instrument)}"'
+                f"Trying to create _QRMComponent from non-QRM instrument "
+                f'of type "{type(instrument)}"'
             )
         super().__init__(instrument, **kwargs)
 
@@ -535,7 +540,8 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
                 raise KeyError(
-                    f'Invalid program. Attempting to access non-existing sequencer with name "{seq_name}".'
+                    f"Invalid program. Attempting to access non-existing sequencer "
+                    f'with name "{seq_name}".'
                 )
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
@@ -740,7 +746,7 @@ class _QRMAcquisitionManager:
         """Returns the QRM driver from the parent IC component."""
         return self.parent.instrument
 
-    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
+    def retrieve_acquisition(self) -> Dict[AcquisitionIndexing, Any]:
         """
         Retrieves all the acquisition data in the correct format.
 
@@ -821,7 +827,7 @@ class _QRMAcquisitionManager:
         """
         return self.acquisition_mapping[(acq_channel, acq_index)][1]
 
-    def _get_sequencer_index(self, acq_channel, acq_index) -> str:
+    def _get_sequencer_index(self, acq_channel, acq_index) -> int:
         """
         Returns the seq idx corresponding to acq_channel with
         acq_index.
@@ -847,7 +853,7 @@ class _QRMAcquisitionManager:
                         f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
                         f"trace acquisition is allowed per QRM."
                     )
-                ch_and_idx: AcquisitionIndexing = key
+                ch_and_idx = key
         return ch_and_idx
 
     def _get_scope_data(
@@ -1010,7 +1016,8 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def __init__(self, instrument: Cluster, **kwargs) -> None:
         """
-        Create a new instance of the ClusterComponent. Automatically adds installed modules using name `"<cluster_name>_module<slot>"`.
+        Create a new instance of the ClusterComponent. Automatically adds installed
+        modules using name `"<cluster_name>_module<slot>"`.
 
         Parameters
         ----------
