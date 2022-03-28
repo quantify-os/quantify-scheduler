@@ -33,7 +33,7 @@ _SequencerStateType = Dict[
 ]
 """
 Type of the return value of get_sequencer_state. Returned value format is always a dict
-with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags 
+with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags
 under 'flags'.
 """
 
@@ -88,7 +88,7 @@ _SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {
     )
     for flag in SequencerStatusFlags
 }
-"""Used to link all flags returned by the hardware to logging message and 
+"""Used to link all flags returned by the hardware to logging message and
 logging level."""
 
 
@@ -466,7 +466,7 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
         """Holds all the acquisition related logic."""
 
-    def retrieve_acquisition(self) -> Union[Dict[Tuple[int, int], Any], None]:
+    def retrieve_acquisition(self) -> Optional[Dict[AcquisitionIndexing, Any]]:
         """
         Retrieves the latest acquisition results.
 
@@ -853,7 +853,7 @@ class _QRMAcquisitionManager:
                         f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
                         f"trace acquisition is allowed per QRM."
                     )
-                ch_and_idx = key
+                ch_and_idx = AcquisitionIndexing(acq_channel=key[0], acq_index=key[1])
         return ch_and_idx
 
     def _get_scope_data(
