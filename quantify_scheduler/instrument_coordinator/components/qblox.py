@@ -44,42 +44,50 @@ class _SequencerStateInfo:
     logging_level: int
     """The logger level to use."""
 
+    @staticmethod
+    def get_logging_level(flag: SequencerStatusFlags) -> int:
+        if (
+            flag is SequencerStatusFlags.DISARMED
+            or flag is SequencerStatusFlags.FORCED_STOP
+            or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
+            or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_1
+        ):
+            return logging.INFO
 
-_SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {}
+        if (
+            flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_0
+            or flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_1
+            or flag is SequencerStatusFlags.ACQ_BINNING_OUT_OF_RANGE
+        ):
+            return logging.WARNING
+
+        if (
+            flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
+            or flag
+            is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
+            or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
+            or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
+            or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
+            or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_1
+            or flag is SequencerStatusFlags.ACQ_BINNING_FIFO_ERROR
+            or flag is SequencerStatusFlags.ACQ_BINNING_COMM_ERROR
+            or flag is SequencerStatusFlags.ACQ_INDEX_INVALID
+            or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
+            or flag is SequencerStatusFlags.CLOCK_INSTABILITY
+        ):
+            return logging.ERROR
+
+        return logging.DEBUG
+
+
+_SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {
+    flag: _SequencerStateInfo(
+        message=flag.value, logging_level=_SequencerStateInfo.get_logging_level(flag)
+    )
+    for flag in SequencerStatusFlags
+}
 """Used to link all the messages for the logger and levels to specific flags given by
 the hardware."""
-
-for flag in SequencerStatusFlags:
-    logging_level = logging.DEBUG
-    if (
-        flag is SequencerStatusFlags.DISARMED
-        or flag is SequencerStatusFlags.FORCED_STOP
-        or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
-        or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_1
-    ):
-        logging_level = logging.INFO
-    elif (
-        flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_0
-        or flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_1
-        or flag is SequencerStatusFlags.ACQ_BINNING_OUT_OF_RANGE
-    ):
-        logging_level = logging.WARNING
-    elif (
-        flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
-        or flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
-        or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
-        or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
-        or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
-        or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_1
-        or flag is SequencerStatusFlags.ACQ_BINNING_FIFO_ERROR
-        or flag is SequencerStatusFlags.ACQ_BINNING_COMM_ERROR
-        or flag is SequencerStatusFlags.ACQ_INDEX_INVALID
-        or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
-        or flag is SequencerStatusFlags.CLOCK_INSTABILITY
-    ):
-        logging_level = logging.ERROR
-
-    _SequencerStateInfo(message=flag.value, logging_level=logging_level)
 
 
 @dataclass(frozen=True)

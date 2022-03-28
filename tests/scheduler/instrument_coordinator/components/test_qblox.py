@@ -9,12 +9,22 @@ from __future__ import annotations
 
 import inspect
 import json
+import logging
 import tempfile
+from operator import countOf
 from pathlib import Path
+
 
 import numpy as np
 import pytest
-from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType, SequencerStatus
+from qblox_instruments import (
+    Cluster,
+    ClusterType,
+    Pulsar,
+    PulsarType,
+    SequencerStatus,
+    SequencerStatusFlags,
+)
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler.schemas.examples as es
@@ -226,6 +236,15 @@ def make_qrm_rf(mocker):
         return component
 
     yield _make_qrm_rf
+
+
+def test_SEQUENCER_STATE_FLAG_INFO():
+    assert len(SequencerStatusFlags) == len(
+        qblox._SEQUENCER_STATE_FLAG_INFO
+    ), "Verify all flags are represented"
+    assert (
+        countOf(qblox._SEQUENCER_STATE_FLAG_INFO.values(), logging.DEBUG) == 0
+    ), "Verify no new flags were implicitly added (possibly update count)"
 
 
 def test_initialize_pulsar_qcm_component(make_qcm):
