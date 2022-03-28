@@ -43,7 +43,9 @@ def mock_setup(request, tmp_test_data_dir):
     # importing from init_mock will execute all the code in the module which
     # will instantiate all the instruments in the mock setup.
     meas_ctrl = MeasurementControl("meas_ctrl")
-    instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
+    instrument_coordinator = InstrumentCoordinator(
+        name="instrument_coordinator", add_default_generic_icc=False
+    )
 
     q0 = TransmonElement("q0")  # pylint: disable=invalid-name
     q1 = TransmonElement("q1")  # pylint: disable=invalid-name
