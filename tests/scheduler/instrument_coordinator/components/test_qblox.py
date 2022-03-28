@@ -379,8 +379,8 @@ def test_prepare_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
     # Arrange
-    qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -435,7 +435,7 @@ def test_prepare_exception_qrm(close_all_instruments, make_qrm):
 
 def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
     # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm: qblox._QCMRFComponentComponent = make_qcm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 
@@ -452,7 +452,7 @@ def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
 
 def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     # Arrange
-    qrm: qblox.PulsarQRMComponent = make_qrm_rf("qcm_rf0", "1234")
+    qrm: qblox._QRMRFComponent = make_qrm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 
@@ -507,7 +507,7 @@ def test_retrieve_acquisition_qrm(
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
-    qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm_rf: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
     assert qcm_rf.retrieve_acquisition() is None
 
@@ -516,7 +516,7 @@ def test_retrieve_acquisition_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qrm_rf
 ):
     # Arrange
-    qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qrm_rf0", "1234")
+    qrm_rf: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -566,8 +566,8 @@ def test_start_qcm_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
     # Arrange
-    qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm_rf: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm_rf: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -603,10 +603,10 @@ def test_stop_qcm_qrm(close_all_instruments, make_qcm, make_qrm):
     qrm.instrument.stop_sequencer.assert_called()
 
 
-def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
+def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm_rf, make_qrm_rf):
     # Arrange
-    qcm_rf: qblox.PulsarQCMRFComponent = make_qcm("qcm_rf0", "1234")
-    qrm_rf: qblox.PulsarQRMRFComponent = make_qrm("qrm_rf0", "1234")
+    qcm_rf: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     qcm_rf.stop()
