@@ -347,36 +347,6 @@ def test_prepare_ref_source_cluster(
     cluster.instrument.reference_source.assert_called_once()
 
 
-def test_prepare_lazy(
-    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
-):
-    # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
-    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-
-    qcm.instrument.reference_source("internal")
-    qcm.instrument._set_reference_source.reset_mock()
-
-    qrm.instrument.reference_source("external")
-    qrm.instrument._set_reference_source.reset_mock()
-
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-
-        compiled_schedule = qcompile(
-            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qcm.prepare(prog["qcm0"])
-        qrm.prepare(prog["qrm0"])
-
-    # Assert
-    qcm.instrument._set_reference_source.assert_not_called()
-    qrm.instrument._set_reference_source.assert_not_called()
-
-
 def test_prepare_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
