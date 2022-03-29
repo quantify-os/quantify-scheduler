@@ -79,7 +79,7 @@ intersphinx_mapping = {
         None,
     ),
     "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
-    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
+    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/v0.1/", None),
 }
 
 bibtex_bibfiles = ["refs.bib"]
