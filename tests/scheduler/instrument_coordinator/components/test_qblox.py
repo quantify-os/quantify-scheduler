@@ -14,7 +14,6 @@ import tempfile
 from operator import countOf
 from pathlib import Path
 
-
 import numpy as np
 import pytest
 from qblox_instruments import (
@@ -322,12 +321,15 @@ def test_prepare_force_set(
     qrm.instrument._set_reference_source.assert_called()
 
 
+@pytest.mark.parametrize("force_set_parameters", [False, True])
 def test_prepare_ref_source_cluster(
-    close_all_instruments, make_basic_schedule, make_cluster
+    close_all_instruments, make_basic_schedule, make_cluster, force_set_parameters
 ):
     # Arrange
     cluster_name = "cluster0"
     cluster: qblox.ClusterComponent = make_cluster(cluster_name)
+
+    cluster.force_set_parameters(force_set_parameters)
 
     cluster.instrument.reference_source("internal")  # Put it in a known state
     sched = make_basic_schedule("q4")
