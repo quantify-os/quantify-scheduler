@@ -1110,6 +1110,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             comp_acq = comp.retrieve_acquisition()
             if comp_acq is not None:
                 acquisitions.update(comp_acq)
+
         return acquisitions if len(acquisitions) > 0 else None
 
     def wait_done(self, timeout_sec: int = 10) -> None:

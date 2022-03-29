@@ -48,7 +48,11 @@ def fixture_make_cluster(mocker):
     def _make_cluster(name: str = "cluster0") -> qblox.ClusterComponent:
         cluster = Cluster(
             name=name,
-            dummy_cfg={"1": ClusterType.CLUSTER_QCM, "2": ClusterType.CLUSTER_QCM},
+            dummy_cfg={
+                "1": ClusterType.CLUSTER_QCM,
+                "2": ClusterType.CLUSTER_QCM,
+                "3": ClusterType.CLUSTER_QRM,
+            },
         )
         component = qblox.ClusterComponent(cluster)
 
@@ -266,44 +270,32 @@ def test_initialize_cluster_component(make_cluster):
     make_cluster("cluster0")
 
 
-def test_prepare(close_all_instruments, schedule_with_measurement, make_qcm, make_qrm):
-    # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
-    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-
-        compiled_schedule = qcompile(
-            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qcm.prepare(prog["qcm0"])
-        qrm.prepare(prog["qrm0"])
-
-    # Assert
-    qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-    qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-
-
-def test_prepare_force_set(
-    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
+@pytest.mark.parametrize(
+    "set_reference_source, force_set_parameters",
+    [(False, False), (False, True), (True, False), (True, True)],
+)
+def test_prepare(
+    close_all_instruments,
+    schedule_with_measurement,
+    make_qcm,
+    make_qrm,
+    set_reference_source,
+    force_set_parameters,
 ):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
 
-    qcm.instrument.reference_source("internal")
-    qcm.instrument._set_reference_source.reset_mock()
+    if set_reference_source:
+        qcm.instrument.reference_source("internal")
+        qcm.instrument._set_reference_source.reset_mock()
 
-    qrm.instrument.reference_source("external")
-    qrm.instrument._set_reference_source.reset_mock()
+        qrm.instrument.reference_source("external")
+        qrm.instrument._set_reference_source.reset_mock()
 
     # Act
-    qcm.force_set_parameters(True)
-    qrm.force_set_parameters(True)
+    qcm.force_set_parameters(force_set_parameters)
+    qrm.force_set_parameters(force_set_parameters)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
@@ -317,8 +309,16 @@ def test_prepare_force_set(
         qrm.prepare(prog["qrm0"])
 
     # Assert
-    qcm.instrument._set_reference_source.assert_called()
-    qrm.instrument._set_reference_source.assert_called()
+    if not set_reference_source:
+        qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+        qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+    else:
+        if force_set_parameters:
+            qcm.instrument._set_reference_source.assert_called()
+            qrm.instrument._set_reference_source.assert_called()
+        else:
+            qcm.instrument._set_reference_source.assert_not_called()
+            qrm.instrument._set_reference_source.assert_not_called()
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
