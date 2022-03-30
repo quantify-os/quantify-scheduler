@@ -105,7 +105,6 @@ class _StaticHardwareProperties:
     """The number of output paths that can be used."""
 
 
-# TODO (remove before merge): get these from qblox_instruments?
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=BaseModuleSettings,
     has_internal_lo=False,
@@ -339,9 +338,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
 
 
-class _QCMComponent(
-    QbloxInstrumentCoordinatorComponentBase
-):  # TODO (remove before merge): move to unified _QcmQrmComponent?
+class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
     QCM specific InstrumentCoordinator component.
     """
