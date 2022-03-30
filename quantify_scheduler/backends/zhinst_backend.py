@@ -953,7 +953,7 @@ def _add_lo_config(
         f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
     }
 
-    if power_val:
+    if local_oscillator.power:
         lo_config[f"{local_oscillator.instrument_name}.{power_key}"] = power_val
 
     if local_oscillator.phase:
@@ -1110,6 +1110,8 @@ def _compile_for_hdawg(
             numerical_wf_dict=numerical_wf_dict,
             repetitions=repetitions,
             schedule_duration=schedule_duration,
+            markers=device.channels[awg_index].markers,
+            trigger=device.channels[awg_index].trigger,
         )
 
         logger.debug(seqc)
@@ -1140,6 +1142,8 @@ def _assemble_hdawg_sequence(
     numerical_wf_dict: Dict[str, np.ndarray],
     repetitions: int,
     schedule_duration: float,
+    markers: Union[str, int, None] = None,
+    trigger: int = None,
 ) -> Tuple[str, str]:
     """ """
     seqc_instructions = ""
@@ -1178,7 +1182,7 @@ def _assemble_hdawg_sequence(
     # Add the loop that executes the program.
     ###############################################################
 
-    # N.B. All HDAWG markers can be used to trigger a UHFQA.
+    # N.B. All HDAWG markers can be used to trigger a UHFQA or other HDAWGs.
     # marker output is set to 0 before the loop is started
     seqc_il_generator.add_set_trigger(
         seqc_gen, value=0, device_type=zhinst.DeviceType.HDAWG
@@ -1188,17 +1192,29 @@ def _assemble_hdawg_sequence(
 
     current_clock: int = 0
 
-    # this assumes the HDAWG is the master device triggering other devices.
-    # to support multiple HDAWGs, we need to turn this into an if statement where
-    # it sends a trigger/marker if it is the master device or waits for a digital
-    # trigger if it is a slave device.
-
-    # set both markers to high at the start of the repeition
-    current_clock += seqc_il_generator.add_set_trigger(
-        seqc_gen,
-        value=["AWG_MARKER1", "AWG_MARKER2"],
-        device_type=zhinst.DeviceType.HDAWG,
-    )
+    # set markers to high at the start of the repeition if this is the primary
+    # channel or wait for an external trigger if this is a secondary channel
+    if markers is not None and len(markers) > 0:
+        current_clock += seqc_il_generator.add_set_trigger(
+            seqc_gen,
+            value=markers,
+            device_type=zhinst.DeviceType.HDAWG,
+        )
+    elif trigger is not None:
+        assert trigger in [1, 2]
+        seqc_gen.emit_wait_dig_trigger(
+            index=trigger,
+            comment=f"\t// clock={current_clock}",
+            device_type=zhinst.DeviceType.HDAWG,
+        )
+    else:
+        # If the hardware config does not provide any settings assume this is a
+        # primary HDAWG channel and send triggers on all channels
+        current_clock += seqc_il_generator.add_set_trigger(
+            seqc_gen,
+            value=["AWG_MARKER1", "AWG_MARKER2"],
+            device_type=zhinst.DeviceType.HDAWG,
+        )
 
     # this is where a longer wait statement is added to allow for latency corrections.
     for instruction in instructions:
@@ -1239,15 +1255,13 @@ def _assemble_hdawg_sequence(
     total_duration_in_clocks = int(schedule_duration * clock_rate)
     clock_cycles_to_wait = total_duration_in_clocks - current_clock
 
-    current_clock += seqc_il_generator.add_wait(
-        seqc_gen=seqc_gen,
-        delay=int(clock_cycles_to_wait),
-        device_type=zhinst.DeviceType.HDAWG,
-        comment=f"clock={current_clock}, dead time to ensure total schedule duration",
-    )
-
-    # FIXME: add extra wait time here to ensure total duration of schedule fits a
-    # certain length.
+    if trigger is None:
+        current_clock += seqc_il_generator.add_wait(
+            seqc_gen=seqc_gen,
+            delay=int(clock_cycles_to_wait),
+            device_type=zhinst.DeviceType.HDAWG,
+            comment=f"clock={current_clock}, dead time to ensure total schedule duration",
+        )
 
     seqc_gen.emit_end_repeat()
 
@@ -1358,6 +1372,7 @@ def _compile_for_uhfqa(
         wf_id_mapping=wf_id_mapping,
         repetitions=repetitions,
         device_name=device.name,
+        trigger=device.channels[awg_index].trigger,
     )
 
     settings_builder.with_compiler_sourcestring(awg_index, seqc)
@@ -1543,6 +1558,7 @@ def _assemble_uhfqa_sequence(
     wf_id_mapping: Dict[str, int],
     repetitions: int,
     device_name: str,
+    trigger: int = 2,
 ) -> str:
     """ """
     seqc_instructions = ""
@@ -1571,12 +1587,19 @@ def _assemble_uhfqa_sequence(
     seqc_gen.emit_begin_repeat("__repetitions__")
 
     # N.B.! The UHFQA will always need to be triggered by an external device such as
-    # an HDAWG or a trigger box. It will wait for a trigger on trigger input 2.
+    # an HDAWG or a trigger box. It will wait for a trigger.
+    # Triggers must be a list but we may only wait for one so lets choose the
+    # first one in the list, I guess.
 
-    # FIXME: ensure that the documentation mentions explicitly that it will use input 2.
+    # This does not account for dio ports. Which are not implemented in the current
+    # version.
+    assert trigger < 5 and trigger > 0
+    assert trigger is not None
+
     seqc_gen.emit_wait_dig_trigger(
-        index=2,
+        index=trigger,
         comment=f"\t// clock={current_clock}",
+        device_type=zhinst.DeviceType.UHFQA,
     )
     # this is where a longer wait statement is added to allow for latency corrections.
     for instruction in instructions:
