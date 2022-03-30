@@ -350,7 +350,7 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
         if not instrument.is_qcm_type:
             raise TypeError(
                 f"Trying to create _QCMComponent from non-QCM instrument "
-                f'of type "{type(instrument)}"'
+                f'of type "{type(instrument)}".'
             )
         super().__init__(instrument, **kwargs)
 
@@ -455,7 +455,7 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         if not instrument.is_qrm_type:
             raise TypeError(
                 f"Trying to create _QRMComponent from non-QRM instrument "
-                f'of type "{type(instrument)}"'
+                f'of type "{type(instrument)}".'
             )
         super().__init__(instrument, **kwargs)
 
