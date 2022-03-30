@@ -46,21 +46,29 @@ with open(map_f, "r") as f:
 @pytest.fixture(name="make_cluster")
 def fixture_make_cluster(mocker):
     def _make_cluster(name: str = "cluster0") -> qblox.ClusterComponent:
-        cluster = Cluster(
-            name=name,
-            dummy_cfg={
-                "1": ClusterType.CLUSTER_QCM,
-                "2": ClusterType.CLUSTER_QCM,
-                "3": ClusterType.CLUSTER_QRM,
-            },
-        )
-        component = qblox.ClusterComponent(cluster)
 
         mocker.patch("qblox_instruments.native.cluster.Cluster.arm_sequencer")
         mocker.patch("qblox_instruments.native.cluster.Cluster.start_sequencer")
         mocker.patch("qblox_instruments.native.cluster.Cluster.stop_sequencer")
 
+        cluster = Cluster(
+            name=name,
+            dummy_cfg={
+                "1": ClusterType.CLUSTER_QCM,
+                "2": ClusterType.CLUSTER_QCM_RF,
+                "3": ClusterType.CLUSTER_QRM,
+            },
+        )
+        component = qblox.ClusterComponent(cluster)
+
         mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
+
+        for i in range(3):
+            mocker.patch.object(
+                component._cluster_modules[f"{name}_module{i+1}"].instrument_channel,
+                "get_sequencer_state",
+                return_value={"status": SequencerStatus.ARMED},
+            )
 
         return component
 
@@ -507,6 +515,30 @@ def test_retrieve_acquisition_qrm_rf(
     assert len(acq[(0, 0)]) == 2
 
 
+def test_retrieve_acquisition_cluster(
+    close_all_instruments, make_schedule_with_measurement, make_cluster
+):
+    # Arrange
+    cluster_name = "cluster0"
+    cluster: qblox.ClusterComponent = make_cluster(cluster_name)
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+        compiled_schedule = qcompile(
+            make_schedule_with_measurement("q4"), DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
+        prog = dict(prog)
+
+        cluster.prepare(prog[cluster_name])
+        cluster.start()
+        acq = cluster.retrieve_acquisition()
+
+        # Assert
+        assert acq is not None
+
+
 def test_start_qcm_qrm(
     close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
 ):
@@ -590,8 +622,6 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm_rf, make_qrm_rf):
 
 
 # ------------------- _QRMAcquisitionManager -------------------
-
-
 def test_qrm_acquisition_manager__init__(make_qrm):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     qblox._QRMAcquisitionManager(
