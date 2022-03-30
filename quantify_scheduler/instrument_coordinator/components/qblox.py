@@ -28,9 +28,7 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-_SequencerStateType = Dict[
-    SequencerStatus, Union[SequencerStatusFlags, List[SequencerStatusFlags]]
-]
+_SequencerStateType = Dict[str, Union[SequencerStatus, List[SequencerStatusFlags]]]
 """
 Type of the return value of get_sequencer_state. Returned value format is always a dict
 with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags
@@ -224,7 +222,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             timeout_min = 1
         for idx in range(self._hardware_properties.number_of_sequencers):
             state: _SequencerStateType = self.instrument.get_sequencer_state(
-                idx, timeout_min
+                sequencer=idx, timeout=timeout_min
             )
             flags = state.get("flags", None)
             if flags:
@@ -405,6 +403,7 @@ class _QCMComponent(
                     f"Invalid program. Attempting to access non-existing sequencer "
                     f'with name "{seq_name}".'
                 )
+
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
                 self._configure_sequencer_settings(
@@ -805,6 +804,7 @@ class _QRMAcquisitionManager:
 
     def _store_scope_acquisition(self):
         sequencer_index = self.seq_name_to_idx_map.get(self.scope_mode_sequencer)
+        print(sequencer_index)
         if sequencer_index is None:
             return
 
