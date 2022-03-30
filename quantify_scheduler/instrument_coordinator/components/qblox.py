@@ -11,7 +11,12 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
-from qblox_instruments import Cluster, SequencerStatus, SequencerStatusFlags
+from qblox_instruments import (
+    Cluster,
+    SequencerState,
+    SequencerStatus,
+    SequencerStatusFlags,
+)
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.channel import InstrumentChannel
 
@@ -27,14 +32,6 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
-
-_SequencerStateType = Dict[str, Union[SequencerStatus, List[SequencerStatusFlags]]]
-"""
-Type of the return value of get_sequencer_state. Returned value format is always a dict
-with a SequencerStatus state under 'status' and a list of SequencerStatusFlags flags
-under 'flags'.
-"""
-
 
 @dataclass(frozen=True)
 class _SequencerStateInfo:
@@ -202,7 +199,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             seq_state = self.instrument.get_sequencer_state(seq_idx)
-            if seq_state["status"] is SequencerStatus.RUNNING:
+            if seq_state.status is SequencerStatus.RUNNING:
                 return True
         return False
 
@@ -220,12 +217,11 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         if timeout_min == 0:
             timeout_min = 1
         for idx in range(self._hardware_properties.number_of_sequencers):
-            state: _SequencerStateType = self.instrument.get_sequencer_state(
+            state: SequencerState = self.instrument.get_sequencer_state(
                 sequencer=idx, timeout=timeout_min
             )
-            flags = state.get("flags", None)
-            if flags:
-                for flag in flags:
+            if state.flags:
+                for flag in state.flags:
                     if flag not in _SEQUENCER_STATE_FLAG_INFO:
                         logger.error(
                             f"[{self.name}|seq{idx}] Encountered flag {flag} in "
@@ -244,7 +240,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_state(idx)
-            if state["status"] is SequencerStatus.ARMED:
+            if state.status is SequencerStatus.ARMED:
                 self.instrument.start_sequencer(idx)
 
     def stop(self) -> None:
