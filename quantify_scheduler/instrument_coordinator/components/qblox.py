@@ -33,6 +33,7 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
+
 @dataclass(frozen=True)
 class _SequencerStateInfo:
     message: str
