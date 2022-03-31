@@ -50,7 +50,7 @@ def fixture_make_cluster(mocker):
     def _make_cluster(
         name: str = "cluster0",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: List[SequencerStatusFlags] = (),
+        sequencer_flags: List[SequencerStatusFlags] = [],
     ) -> qblox.ClusterComponent:
 
         mocker.patch("qblox_instruments.native.cluster.Cluster.arm_sequencer")
