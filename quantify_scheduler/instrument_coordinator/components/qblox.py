@@ -45,6 +45,13 @@ class _SequencerStateInfo:
     def get_logging_level(flag: SequencerStatusFlags) -> int:
         """Define the logging level per SequencerStatusFlags flag."""
         if (
+            flag is SequencerStatusFlags.ACQ_SCOPE_DONE_PATH_0
+            or flag is SequencerStatusFlags.ACQ_SCOPE_DONE_PATH_0
+            or flag is SequencerStatusFlags.ACQ_BINNING_DONE
+        ):
+            return logging.DEBUG
+
+        if (
             flag is SequencerStatusFlags.DISARMED
             or flag is SequencerStatusFlags.FORCED_STOP
             or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
@@ -63,6 +70,7 @@ class _SequencerStateInfo:
             flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
             or flag
             is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
+            or flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_COMMAND_UNDERFLOW
             or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
             or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
             or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
@@ -72,6 +80,7 @@ class _SequencerStateInfo:
             or flag is SequencerStatusFlags.ACQ_INDEX_INVALID
             or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
             or flag is SequencerStatusFlags.CLOCK_INSTABILITY
+            or flag is SequencerStatusFlags.OUTPUT_OVERFLOW
         ):
             return logging.ERROR
 

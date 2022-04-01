@@ -272,8 +272,13 @@ def test_sequencer_state_flag_info():
     assert len(SequencerStatusFlags) == len(
         qblox._SEQUENCER_STATE_FLAG_INFO
     ), "Verify all flags are represented"
+
     assert (
-        countOf(qblox._SEQUENCER_STATE_FLAG_INFO.values(), logging.DEBUG) == 0
+        countOf(
+            [info.logging_level for info in qblox._SEQUENCER_STATE_FLAG_INFO.values()],
+            logging.DEBUG,
+        )
+        == 3
     ), "Verify no new flags were implicitly added (possibly update count)"
 
 
