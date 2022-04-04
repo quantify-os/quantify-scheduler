@@ -13,7 +13,7 @@ import logging
 import tempfile
 from operator import countOf
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pytest
@@ -50,7 +50,7 @@ def fixture_make_cluster(mocker):
     def _make_cluster(
         name: str = "cluster0",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: List[SequencerStatusFlags] = (),
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.ClusterComponent:
 
         mocker.patch("qblox_instruments.native.cluster.Cluster.arm_sequencer")
@@ -73,7 +73,9 @@ def fixture_make_cluster(mocker):
             mocker.patch.object(
                 component._cluster_modules[f"{name}_module{i+1}"].instrument_channel,
                 "get_sequencer_state",
-                return_value=SequencerState(sequencer_status, sequencer_flags),
+                return_value=SequencerState(
+                    sequencer_status, sequencer_flags if sequencer_flags else []
+                ),
             )
 
         return component
@@ -87,7 +89,7 @@ def fixture_make_qcm(mocker):
         name: str = "qcm0",
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: List[SequencerStatusFlags] = (),
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQCMComponent:
 
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
@@ -105,7 +107,9 @@ def fixture_make_qcm(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value=SequencerState(sequencer_status, sequencer_flags),
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
 
         return component
@@ -119,7 +123,7 @@ def fixture_make_qrm(mocker):
         name: str = "qrm0",
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: List[SequencerStatusFlags] = (),
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQRMComponent:
 
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
@@ -138,7 +142,9 @@ def fixture_make_qrm(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value=SequencerState(sequencer_status, sequencer_flags),
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
         mocker.patch.object(
             component.instrument,
@@ -202,7 +208,7 @@ def make_qcm_rf(mocker):
         name: str = "qcm_rf0",
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: List[SequencerStatusFlags] = (),
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox._QCMRFComponent:
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
@@ -216,7 +222,9 @@ def make_qcm_rf(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value=SequencerState(sequencer_status, sequencer_flags),
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
 
         return component
@@ -230,7 +238,7 @@ def make_qrm_rf(mocker):
         name: str = "qrm_rf0",
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: List[SequencerStatusFlags] = (),
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox._QRMRFComponent:
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
@@ -244,7 +252,9 @@ def make_qrm_rf(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value=SequencerState(sequencer_status, sequencer_flags),
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
         mocker.patch.object(
             component.instrument,
