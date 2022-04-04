@@ -30,7 +30,7 @@
 #     :jupyter-download:script:`Tutorial 3. Compilation and hardware execution`
 
 # %% [raw]
-# Compilation allows converting the schedules introduced in Tutorial 1 into a set of instructions that can be executed on the control hardware.
+# Compilation allows converting the schedules introduced in :ref:`Tutorial 1 <sec-tutorial1>` into a set of instructions that can be executed on the control hardware.
 #
 # In this notebook we will define an example schedule, demonstrate how to compile it, and run it on a virtual hardware setup.
 
@@ -167,20 +167,16 @@ lo0 = MockLocalOscillator("lo0")
 # %% [raw]
 # And we attach these instruments to the `InstrumentCoordinator` via the appropriate `InstrumentCoordinatorComponent` wrapper class.
 #
-# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via the GenericInstrumentCoordinatorComponent
+# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via an instance of the `GenericInstrumentCoordinatorComponent` class, which is automatically added to the `InstrumentCoordinator` during instantiation.
 
 # %%
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     PulsarQCMComponent,
 )
-from quantify_scheduler.instrument_coordinator.components.generic import (
-    GenericInstrumentCoordinatorComponent,
-)
 
 ic = InstrumentCoordinator("ic")
 ic.add_component(PulsarQCMComponent(qcm))
-ic.add_component(GenericInstrumentCoordinatorComponent())
 
 # %% [raw]
 # We prepare the instruments with the appropriate settings and upload the schedule program by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.prepare` and passing the compilation output as argument.
