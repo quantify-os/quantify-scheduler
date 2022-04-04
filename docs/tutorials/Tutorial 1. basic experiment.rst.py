@@ -313,14 +313,13 @@ qblox_test_mapping
 #
 
 # %%
-from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
+from qblox_instruments import Pulsar, PulsarType
 
-qcm0 = pulsar_qcm_dummy("qcm0")
-qrm0 = pulsar_qrm_dummy("qrm0")
+qcm0 = Pulsar("qcm0", dummy_type=PulsarType.PULSAR_QCM)
+qrm0 = Pulsar("qrm0", dummy_type=PulsarType.PULSAR_QRM)
 
 # %%
-from pulsar_qcm.pulsar_qcm import pulsar_qcm
+from qblox_instruments import Pulsar
 from qcodes import Instrument
 
 from quantify_scheduler.backends.qblox_backend import hardware_compile
@@ -332,7 +331,7 @@ config = hardware_compile(sched, qblox_test_mapping)["compiled_instructions"]
 
 # %%
 seq_fn = config["qrm0"]["seq0"]["seq_fn"]
-qrm0.sequencer0_waveforms_and_program(seq_fn)
+qrm0.sequencer0.sequence(seq_fn)
 
 # %% [raw]
 # At this point, the assembler on the device will load the waveforms into memory and
