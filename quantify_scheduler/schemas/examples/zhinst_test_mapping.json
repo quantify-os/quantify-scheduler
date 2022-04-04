@@ -114,9 +114,7 @@
                 },
                 "local_oscillator": "mw_readout",
                 "clock_frequency": 6000000000.0,
-                "triggers": [
-                    2
-                ]
+                "trigger": 2
             }
         }
     ]
