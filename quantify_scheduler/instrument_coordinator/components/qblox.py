@@ -157,7 +157,8 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             raise RuntimeError(
                 "QbloxInstrumentCoordinatorComponentBase not compatible with the "
                 "provided instrument. Please confirm whether your device "
-                "is an RF module (has an internal LO)."
+                "is an RF module or a baseband module (having or not having an "
+                "internal LO)."
             )
 
         self._seq_name_to_idx_map = {
@@ -167,6 +168,10 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
     @property
     def instrument(self) -> Union[Instrument, InstrumentChannel]:
+        """
+        For Cluster modules we return a reference to its `InstrumentChannel` in the
+        Cluster instrument; for Pulsar modules we return the `instrument` reference
+        """
         if self.instrument_channel is not None:
             return self.instrument_channel
 
