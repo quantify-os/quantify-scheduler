@@ -394,10 +394,10 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = self._hardware_properties.settings_type.from_dict(
+            module_settings = self._hardware_properties.settings_type.from_dict(
                 settings_entry
             )
-            self._configure_global_settings(pulsar_settings)
+            self._configure_global_settings(module_settings)
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"], "sync_en", False
@@ -522,14 +522,14 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = self._hardware_properties.settings_type.from_dict(
+            module_settings = self._hardware_properties.settings_type.from_dict(
                 settings_entry
             )
             if self._acquisition_manager is not None:
                 self._acquisition_manager.scope_mode_sequencer = (
-                    pulsar_settings.scope_mode_sequencer
+                    module_settings.scope_mode_sequencer
                 )
-            self._configure_global_settings(pulsar_settings)
+            self._configure_global_settings(module_settings)
 
         for path in [
             0,
@@ -615,7 +615,7 @@ class _QCMRFComponent(_QCMComponent):
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: BaseModuleSettings):
+    def _configure_global_settings(self, settings: RFModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -655,7 +655,7 @@ class _QRMRFComponent(_QRMComponent):
 
     _hardware_properties = _QRM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: BaseModuleSettings):
+    def _configure_global_settings(self, settings: RFModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
