@@ -154,7 +154,7 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
 # %%
 # %matplotlib inline
 
-f, ax = sched.plot_circuit_diagram_mpl()
+f, ax = sched.plot_circuit_diagram()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure
 ax.set_xlim(-0.5, 9.5)
 
@@ -226,7 +226,6 @@ rxy_theta.data
 # %%
 import inspect
 import json
-import os
 
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
@@ -319,7 +318,6 @@ qcm0 = Pulsar("qcm0", dummy_type=PulsarType.PULSAR_QCM)
 qrm0 = Pulsar("qrm0", dummy_type=PulsarType.PULSAR_QRM)
 
 # %%
-from qblox_instruments import Pulsar
 from qcodes import Instrument
 
 from quantify_scheduler.backends.qblox_backend import hardware_compile
