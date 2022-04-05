@@ -527,7 +527,7 @@ class TransmonElement(DeviceElement):
             initial_value=300e-9,
             unit="s",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1, max_value=1),
         )
 
         self.add_parameter(
@@ -545,7 +545,7 @@ class TransmonElement(DeviceElement):
             initial_value=0,
             unit="s",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1, max_value=1),
         )
         self.add_parameter(
             "ro_acq_integration_time",

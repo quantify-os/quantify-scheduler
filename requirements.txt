@@ -23,6 +23,7 @@ rich[jupyter]
 
 # tmp fixes
 funcparserlib==1.0.0a0 # https://github.com/vlasovskikh/funcparserlib/issues/69
+Jinja2==3.0.3 # due to old sphinx incompatibility with newer API of Jinja2. See #304 of quantify-core
 
 # See https://gitlab.com/quantify-os/quantify-core/-/merge_requests/242
 # A requirement for quantify-core but won't work on RTD because it uses the released
