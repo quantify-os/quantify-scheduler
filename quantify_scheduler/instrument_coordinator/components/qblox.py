@@ -812,7 +812,7 @@ class _QRMAcquisitionManager:
 
     def _store_scope_acquisition(self):
         sequencer_index = self.seq_name_to_idx_map.get(self.scope_mode_sequencer)
-        print(sequencer_index)
+
         if sequencer_index is None:
             return
 
