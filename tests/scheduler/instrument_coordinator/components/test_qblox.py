@@ -209,7 +209,7 @@ def make_qcm_rf(mocker):
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
-    ) -> qblox._QCMRFComponent:
+    ) -> qblox.QCMRFComponent:
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -217,7 +217,7 @@ def make_qcm_rf(mocker):
         qcm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QCM_RF)
         qcm_rf._serial = serial
 
-        component = qblox._QCMRFComponent(qcm_rf)
+        component = qblox.QCMRFComponent(qcm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm_rf)
         mocker.patch.object(
             component.instrument,
@@ -239,7 +239,7 @@ def make_qrm_rf(mocker):
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
-    ) -> qblox._QRMRFComponent:
+    ) -> qblox.QRMRFComponent:
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -247,7 +247,7 @@ def make_qrm_rf(mocker):
         qrm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QRM_RF)
         qrm_rf._serial = serial
 
-        component = qblox._QRMRFComponent(qrm_rf)
+        component = qblox.QRMRFComponent(qrm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm_rf)
         mocker.patch.object(
             component.instrument,
@@ -393,8 +393,8 @@ def test_prepare_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
     # Arrange
-    qcm: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -449,7 +449,7 @@ def test_prepare_exception_qrm(close_all_instruments, make_qrm):
 
 def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
     # Arrange
-    qcm: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 
@@ -466,7 +466,7 @@ def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
 
 def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     # Arrange
-    qrm: qblox._QRMRFComponent = make_qrm_rf("qcm_rf0", "1234")
+    qrm: qblox.QRMRFComponent = make_qrm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 
@@ -545,7 +545,7 @@ def test_retrieve_acquisition_qrm(
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
-    qcm_rf: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
     assert qcm_rf.retrieve_acquisition() is None
 
@@ -554,7 +554,7 @@ def test_retrieve_acquisition_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qrm_rf
 ):
     # Arrange
-    qrm_rf: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -628,8 +628,8 @@ def test_start_qcm_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
     # Arrange
-    qcm_rf: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm_rf: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -667,8 +667,8 @@ def test_stop_qcm_qrm(close_all_instruments, make_qcm, make_qrm):
 
 def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm_rf, make_qrm_rf):
     # Arrange
-    qcm_rf: qblox._QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm_rf: qblox._QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     qcm_rf.stop()
