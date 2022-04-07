@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Qblox ICCs - Updated Qblox components for using the new unified-style qblox driver (!377)
+* Qblox backend - Strictly requires v0.6.0 of the qblox-instruments package (!377)
+
 Unreleased changes
 ------------------
 * QuantumDevice - The DeviceElement has been added as an abstract base class for elements to be added to a device (#148, !374).
