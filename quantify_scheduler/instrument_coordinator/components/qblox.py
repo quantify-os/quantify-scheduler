@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import copy
-import dataclasses
 import logging
 from abc import abstractmethod
 from collections import namedtuple
@@ -12,14 +11,19 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
-from pulsar_qcm import pulsar_qcm
-from pulsar_qrm import pulsar_qrm
+from qblox_instruments import (
+    Cluster,
+    SequencerState,
+    SequencerStatus,
+    SequencerStatusFlags,
+)
 from qcodes.instrument.base import Instrument
+from qcodes.instrument.channel import InstrumentChannel
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
-    PulsarRFSettings,
-    PulsarSettings,
+    BaseModuleSettings,
+    RFModuleSettings,
     SequencerSettings,
 )
 from quantify_scheduler.instrument_coordinator.components import base
@@ -29,105 +33,68 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-_SequencerStateType = Dict[str, Union[str, List[str]]]
-"""
-Type of the return value of get_sequencer_state. Returned value format is always a dict
-with a str state under 'status' and a list of str flags under 'flags'.
-"""
 
-
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class _SequencerStateInfo:
     message: str
-    """The text to pass as the logger message."""
+    """The text to pass as the logging message."""
     logging_level: int
-    """The logger level to use."""
+    """The logging level to use."""
+
+    @staticmethod
+    def get_logging_level(flag: SequencerStatusFlags) -> int:
+        """Define the logging level per SequencerStatusFlags flag."""
+        if (
+            flag is SequencerStatusFlags.ACQ_SCOPE_DONE_PATH_0
+            or flag is SequencerStatusFlags.ACQ_SCOPE_DONE_PATH_0
+            or flag is SequencerStatusFlags.ACQ_BINNING_DONE
+        ):
+            return logging.DEBUG
+
+        if (
+            flag is SequencerStatusFlags.DISARMED
+            or flag is SequencerStatusFlags.FORCED_STOP
+            or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
+            or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_1
+        ):
+            return logging.INFO
+
+        if (
+            flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_0
+            or flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_1
+            or flag is SequencerStatusFlags.ACQ_BINNING_OUT_OF_RANGE
+        ):
+            return logging.WARNING
+
+        if (
+            flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
+            or flag
+            is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
+            or flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_COMMAND_UNDERFLOW
+            or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
+            or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
+            or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
+            or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_1
+            or flag is SequencerStatusFlags.ACQ_BINNING_FIFO_ERROR
+            or flag is SequencerStatusFlags.ACQ_BINNING_COMM_ERROR
+            or flag is SequencerStatusFlags.ACQ_INDEX_INVALID
+            or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
+            or flag is SequencerStatusFlags.CLOCK_INSTABILITY
+            or flag is SequencerStatusFlags.OUTPUT_OVERFLOW
+        ):
+            return logging.ERROR
+
+        return logging.DEBUG
 
 
-_SEQUENCER_STATE_FLAG_INFO: Dict[str, _SequencerStateInfo] = {
-    "DISARMED": _SequencerStateInfo(
-        message="Sequencer was disarmed.", logging_level=logging.INFO
-    ),
-    "FORCED STOP": _SequencerStateInfo(
-        message="Sequencer was stopped while still running.",
-        logging_level=logging.INFO,
-    ),
-    "SEQUENCE PROCESSOR Q1 ILLEGAL INSTRUCTION": _SequencerStateInfo(
-        message="Classical sequencer part executed an unknown instruction.",
-        logging_level=logging.ERROR,
-    ),
-    "SEQUENCE PROCESSOR RT EXEC ILLEGAL INSTRUCTION": _SequencerStateInfo(
-        message="Real-time sequencer part executed an unknown instruction.",
-        logging_level=logging.ERROR,
-    ),
-    "AWG WAVE PLAYBACK INDEX INVALID PATH 0": _SequencerStateInfo(
-        message="AWG path 0 tried to play an unknown waveform.",
-        logging_level=logging.ERROR,
-    ),
-    "AWG WAVE PLAYBACK INDEX INVALID PATH 1": _SequencerStateInfo(
-        message="AWG path 1 tried to play an unknown waveform.",
-        logging_level=logging.ERROR,
-    ),
-    "ACQ WEIGHT PLAYBACK INDEX INVALID PATH 0": _SequencerStateInfo(
-        message="Acquisition path 0 tried to play an unknown weight.",
-        logging_level=logging.ERROR,
-    ),
-    "ACQ WEIGHT PLAYBACK INDEX INVALID PATH 1": _SequencerStateInfo(
-        message="Acquisition path 1 tried to play an unknown weight.",
-        logging_level=logging.ERROR,
-    ),
-    "ACQ SCOPE DONE PATH 0": _SequencerStateInfo(
-        message="Scope acquisition for path 0 has finished.",
-        logging_level=logging.DEBUG,
-    ),
-    "ACQ SCOPE OUT-OF-RANGE PATH 0": _SequencerStateInfo(
-        message="Scope acquisition data for path 0 was out-of-range.",
-        logging_level=logging.WARNING,
-    ),
-    "ACQ SCOPE OVERWRITTEN PATH 0": _SequencerStateInfo(
-        message="Scope acquisition data for path 0 was overwritten.",
-        logging_level=logging.INFO,
-    ),
-    "ACQ SCOPE DONE PATH 1": _SequencerStateInfo(
-        message="Scope acquisition for path 1 has finished.",
-        logging_level=logging.DEBUG,
-    ),
-    "ACQ SCOPE OUT-OF-RANGE PATH 1": _SequencerStateInfo(
-        message="Scope acquisition data for path 1 was out-of-range.",
-        logging_level=logging.WARNING,
-    ),
-    "ACQ SCOPE OVERWRITTEN PATH 1": _SequencerStateInfo(
-        message="Scope acquisition data for path 1 was overwritten.",
-        logging_level=logging.INFO,
-    ),
-    "ACQ BINNING DONE": _SequencerStateInfo(
-        message="Acquisition binning completed.", logging_level=logging.DEBUG
-    ),
-    "ACQ BINNING FIFO ERROR": _SequencerStateInfo(
-        message="Acquisition binning encountered internal FIFO error.",
-        logging_level=logging.ERROR,
-    ),
-    "ACQ BINNING COMM ERROR": _SequencerStateInfo(
-        message="Acquisition binning encountered internal communication error.",
-        logging_level=logging.ERROR,
-    ),
-    "ACQ BINNING OUT-OF-RANGE": _SequencerStateInfo(
-        message="Acquisition binning data out-of-range.", logging_level=logging.WARNING
-    ),
-    "ACQ INDEX INVALID": _SequencerStateInfo(
-        message="Acquisition tried to process an invalid acquisition.",
-        logging_level=logging.ERROR,
-    ),
-    "ACQ BIN INDEX INVALID": _SequencerStateInfo(
-        message="Acquisition tried to process an invalid bin.",
-        logging_level=logging.ERROR,
-    ),
-    "CLOCK INSTABILITY": _SequencerStateInfo(
-        message="Clock source instability occurred.", logging_level=logging.ERROR
-    ),
+_SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {
+    flag: _SequencerStateInfo(
+        message=flag.value, logging_level=_SequencerStateInfo.get_logging_level(flag)
+    )
+    for flag in SequencerStatusFlags
 }
-"""Used to link all the messages for the logger and levels to specific flags given by
-the hardware."""
+"""Used to link all flags returned by the hardware to logging message and
+logging level."""
 
 
 @dataclass(frozen=True)
@@ -135,7 +102,7 @@ class _StaticHardwareProperties:
     """Dataclass that holds all the static differences between the different Qblox
     devices that are relevant for configuring them correctly."""
 
-    settings_type: Type[PulsarSettings]
+    settings_type: Type[BaseModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
     has_internal_lo: bool
     """Specifies if an internal lo source is available."""
@@ -146,25 +113,25 @@ class _StaticHardwareProperties:
 
 
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarSettings,
+    settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
 _QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarSettings,
+    settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
 )
 _QCM_RF_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarRFSettings,
+    settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
 )
 _QRM_RF_PROPERTIES = _StaticHardwareProperties(
-    settings_type=PulsarRFSettings,
+    settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
@@ -174,41 +141,66 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponentBase):
     """Qblox InstrumentCoordinator component base class."""
 
-    def __init__(self, instrument: Instrument, **kwargs) -> None:
+    def __init__(
+        self, instrument: Union[Instrument, InstrumentChannel], **kwargs
+    ) -> None:
         """
         Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
         """
         super().__init__(instrument, **kwargs)
-        if (
-            instrument._get_lo_hw_present()
-            is not self._hardware_properties.has_internal_lo
-        ):
+
+        self.instrument_channel = (
+            instrument if isinstance(instrument, InstrumentChannel) else None
+        )
+
+        if instrument.is_rf_type is not self._hardware_properties.has_internal_lo:
             raise RuntimeError(
                 "QbloxInstrumentCoordinatorComponentBase not compatible with the "
                 "provided instrument. Please confirm whether your device "
-                "is a RF module (has an internal LO)."
+                "is an RF module or a baseband module (having or not having an "
+                "internal LO)."
             )
+
         self._seq_name_to_idx_map = {
             f"seq{idx}": idx
             for idx in range(self._hardware_properties.number_of_sequencers)
         }
 
-    def _set_parameter(self, parameter_name: str, val: Any) -> None:
+    @property
+    def instrument(self) -> Union[Instrument, InstrumentChannel]:
+        """
+        For Cluster modules we return a reference to its `InstrumentChannel` in the
+        Cluster instrument; for Pulsar modules we return the `instrument` reference
+        """
+        if self.instrument_channel is not None:
+            return self.instrument_channel
+
+        return super().instrument
+
+    def _set_parameter(
+        self,
+        instrument: Union[Instrument, InstrumentChannel],
+        parameter_name: str,
+        val: Any,
+    ) -> None:
         """
         Sets the parameter directly or using the lazy set, depending on the value of
         `force_set_parameters`.
 
         Parameters
         ----------
+        instrument
+            The instrument or instrument channel that holds the parameter to set,
+            e.g. `self.instrument` or `self.instrument[f"sequencer{idx}"]`.
         parameter_name
             The name of the parameter to set.
         val
             The new value of the parameter.
         """
         if self.force_set_parameters():
-            self.instrument.set(parameter_name, val)
+            instrument.set(parameter_name, val)
         else:
-            lazy_set(self.instrument, parameter_name, val)
+            lazy_set(instrument, parameter_name, val)
 
     @property
     def is_running(self) -> bool:
@@ -218,11 +210,11 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         Returns
         -------
         :
-            True if any of the sequencers reports the "RUNNING" status.
+            True if any of the sequencers reports the `SequencerStatus.RUNNING` status.
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             seq_state = self.instrument.get_sequencer_state(seq_idx)
-            if seq_state["status"] == "RUNNING":
+            if seq_state.status is SequencerStatus.RUNNING:
                 return True
         return False
 
@@ -240,12 +232,11 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         if timeout_min == 0:
             timeout_min = 1
         for idx in range(self._hardware_properties.number_of_sequencers):
-            state: _SequencerStateType = self.instrument.get_sequencer_state(
-                idx, timeout_min
+            state: SequencerState = self.instrument.get_sequencer_state(
+                sequencer=idx, timeout=timeout_min
             )
-            flags = state.get("flags", None)
-            if flags:
-                for flag in flags:
+            if state.flags:
+                for flag in state.flags:
                     if flag not in _SEQUENCER_STATE_FLAG_INFO:
                         logger.error(
                             f"[{self.name}|seq{idx}] Encountered flag {flag} in "
@@ -264,7 +255,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_state(idx)
-            if state["status"] == "ARMED":
+            if state.status is SequencerStatus.ARMED:
                 self.instrument.start_sequencer(idx)
 
     def stop(self) -> None:
@@ -273,11 +264,11 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         for idx in range(self._hardware_properties.number_of_sequencers):
             # disable sync to prevent hanging on next run if instrument is not used.
-            self._set_parameter(f"sequencer{idx}_sync_en", False)
+            self._set_parameter(self.instrument[f"sequencer{idx}"], "sync_en", False)
         self.instrument.stop_sequencer()
 
     @abstractmethod
-    def _configure_global_settings(self, settings: PulsarSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -300,32 +291,43 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         settings
             The settings to configure it to.
         """
-        self._set_parameter(f"sequencer{seq_idx}_sync_en", settings.sync_en)
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "sync_en", settings.sync_en
+        )
 
         nco_en: bool = settings.nco_en
-        self._set_parameter(f"sequencer{seq_idx}_mod_en_awg", nco_en)
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", nco_en
+        )
         if nco_en:
             self._set_parameter(
-                f"sequencer{seq_idx}_nco_freq",
+                self.instrument[f"sequencer{seq_idx}"],
+                "nco_freq",
                 settings.modulation_freq,
             )
         self._set_parameter(
-            f"sequencer{seq_idx}_mixer_corr_phase_offset_degree",
+            self.instrument[f"sequencer{seq_idx}"],
+            "mixer_corr_phase_offset_degree",
             settings.mixer_corr_phase_offset_degree,
         )
         self._set_parameter(
-            f"sequencer{seq_idx}_mixer_corr_gain_ratio",
+            self.instrument[f"sequencer{seq_idx}"],
+            "mixer_corr_gain_ratio",
             settings.mixer_corr_gain_ratio,
         )
 
         for output_idx in range(self._hardware_properties.number_of_output_paths):
             connected: bool = output_idx in settings.connected_outputs
             self._set_parameter(
-                _get_channel_map_parameter_name(
-                    sequencer_index=seq_idx, output_index=output_idx
-                ),
+                self.instrument[f"sequencer{seq_idx}"],
+                self._get_channel_map_parameter_name(output_index=output_idx),
                 connected,
             )
+
+    @staticmethod
+    def _get_channel_map_parameter_name(output_index: int) -> str:
+        path_idx = output_index % 2  # even or odd output
+        return f"channel_map_path{path_idx}_out{output_index}_en"
 
     def _arm_all_sequencers_in_program(self, program: Dict[str, Any]):
         """Arms all the sequencers that are part of the program."""
@@ -347,22 +349,21 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
 
 
-# pylint: disable=too-many-ancestors
-class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
+class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
-    Pulsar QCM specific InstrumentCoordinator component.
+    QCM specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: pulsar_qcm.pulsar_qcm_qcodes, **kwargs) -> None:
-        """Create a new instance of _QCMComponent."""
-        assert isinstance(instrument, pulsar_qcm.pulsar_qcm_qcodes)
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
+        """Create a new instance of QCMComponent."""
+        if not instrument.is_qcm_type:
+            raise TypeError(
+                f"Trying to create QCMComponent from non-QCM instrument "
+                f'of type "{type(instrument)}".'
+            )
         super().__init__(instrument, **kwargs)
-
-    @property
-    def instrument(self) -> pulsar_qcm.pulsar_qcm_qcodes:
-        return super().instrument
 
     def retrieve_acquisition(self) -> None:
         """
@@ -393,21 +394,24 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = self._hardware_properties.settings_type.from_dict(
+            module_settings = self._hardware_properties.settings_type.from_dict(
                 settings_entry
             )
-            self._configure_global_settings(pulsar_settings)
+            self._configure_global_settings(module_settings)
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(f"sequencer{seq_idx}_sync_en", False)
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
+            )
 
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
                 raise KeyError(
-                    f"Invalid program. Attempting to access non-existing sequencer with"
-                    f' name "{seq_name}".'
+                    f"Invalid program. Attempting to access non-existing sequencer "
+                    f'with name "{seq_name}".'
                 )
+
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
                 self._configure_sequencer_settings(
@@ -415,13 +419,14 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
 
             self._set_parameter(
-                f"sequencer{seq_idx}_waveforms_and_program",
+                self.instrument[f"sequencer{seq_idx}"],
+                "sequence",
                 seq_cfg["seq_fn"],
             )
 
         self._arm_all_sequencers_in_program(program)
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: BaseModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -432,35 +437,43 @@ class _QCMComponent(QbloxInstrumentCoordinatorComponentBase):
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out1_offset", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out1_offset", settings.offset_ch0_path1
+            )
         if settings.offset_ch1_path0 is not None:
-            self._set_parameter("out2_offset", settings.offset_ch1_path0)
+            self._set_parameter(
+                self.instrument, "out2_offset", settings.offset_ch1_path0
+            )
         if settings.offset_ch1_path1 is not None:
-            self._set_parameter("out3_offset", settings.offset_ch1_path1)
+            self._set_parameter(
+                self.instrument, "out3_offset", settings.offset_ch1_path1
+            )
 
 
-# pylint: disable=too-many-ancestors
-class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
+class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
     """
-    Pulsar QRM specific InstrumentCoordinator component.
+    QRM specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: pulsar_qrm.pulsar_qrm_qcodes, **kwargs) -> None:
-        """Create a new instance of _QRMComponent."""
-        assert isinstance(instrument, pulsar_qrm.pulsar_qrm_qcodes)
-        self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
-        """Holds all the acquisition related logic."""
+    def __init__(self, instrument: Instrument, **kwargs) -> None:
+        """Create a new instance of QRMComponent."""
+        if not instrument.is_qrm_type:
+            raise TypeError(
+                f"Trying to create QRMComponent from non-QRM instrument "
+                f'of type "{type(instrument)}".'
+            )
         super().__init__(instrument, **kwargs)
 
-    @property
-    def instrument(self) -> pulsar_qrm.pulsar_qrm_qcodes:
-        return super().instrument
+        self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
+        """Holds all the acquisition related logic."""
 
-    def retrieve_acquisition(self) -> Union[Dict[Tuple[int, int], Any], None]:
+    def retrieve_acquisition(self) -> Optional[Dict[AcquisitionIndexing, Any]]:
         """
         Retrieves the latest acquisition results.
 
@@ -503,30 +516,39 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._acquisition_manager = None
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(f"sequencer{seq_idx}_sync_en", False)
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
+            )
 
         if "settings" in program:
             settings_entry = program.pop("settings")
-            pulsar_settings = self._hardware_properties.settings_type.from_dict(
+            module_settings = self._hardware_properties.settings_type.from_dict(
                 settings_entry
             )
             if self._acquisition_manager is not None:
                 self._acquisition_manager.scope_mode_sequencer = (
-                    pulsar_settings.scope_mode_sequencer
+                    module_settings.scope_mode_sequencer
                 )
-            self._configure_global_settings(pulsar_settings)
+            self._configure_global_settings(module_settings)
 
-        for path in [0, 1]:
-            self._set_parameter(f"scope_acq_trigger_mode_path{path}", "sequencer")
-            self._set_parameter(f"scope_acq_avg_mode_en_path{path}", True)
+        for path in [
+            0,
+            1,
+        ]:
+            self._set_parameter(
+                self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer"
+            )
+            self._set_parameter(
+                self.instrument, f"scope_acq_avg_mode_en_path{path}", True
+            )
 
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
                 raise KeyError(
-                    f"Invalid program. Attempting to access non-existing sequencer with"
-                    f' name "{seq_name}".'
+                    f"Invalid program. Attempting to access non-existing sequencer "
+                    f'with name "{seq_name}".'
                 )
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
@@ -535,13 +557,14 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
 
             self._set_parameter(
-                f"sequencer{seq_idx}_waveforms_and_program",
+                self.instrument[f"sequencer{seq_idx}"],
+                "sequence",
                 seq_cfg["seq_fn"],
             )
 
         self._arm_all_sequencers_in_program(program)
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: BaseModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -552,14 +575,20 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         """
         if settings.scope_mode_sequencer is not None:
             self._set_parameter(
-                "scope_acq_sequencer_select", settings.scope_mode_sequencer
+                self.instrument,
+                "scope_acq_sequencer_select",
+                settings.scope_mode_sequencer,
             )
 
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out1_offset", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out1_offset", settings.offset_ch0_path1
+            )
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -567,23 +596,26 @@ class _QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         super()._configure_sequencer_settings(seq_idx, settings)
         if settings.integration_length_acq is not None:
             self._set_parameter(
-                f"sequencer{seq_idx}_integration_length_acq",
+                self.instrument[f"sequencer{seq_idx}"],
+                "integration_length_acq",
                 settings.integration_length_acq,
             )
             self._acquisition_manager.integration_length_acq = (
                 settings.integration_length_acq
             )
-        self._set_parameter(f"sequencer{seq_idx}_demod_en_acq", settings.nco_en)
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "demod_en_acq", settings.nco_en
+        )
 
 
-class _QCMRFComponent(_QCMComponent):
+class QCMRFComponent(QCMComponent):
     """
-    Pulsar QCM-RF specific InstrumentCoordinator component.
+    QCM-RF specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: RFModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -593,29 +625,37 @@ class _QCMRFComponent(_QCMComponent):
             The settings to configure it to.
         """
         if settings.lo0_freq is not None:
-            self._set_parameter("out0_lo_freq", settings.lo0_freq)
+            self._set_parameter(self.instrument, "out0_lo_freq", settings.lo0_freq)
         if settings.lo1_freq is not None:
-            self._set_parameter("out1_lo_freq", settings.lo1_freq)
+            self._set_parameter(self.instrument, "out1_lo_freq", settings.lo1_freq)
 
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset_path0", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset_path0", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out0_offset_path1", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out0_offset_path1", settings.offset_ch0_path1
+            )
         if settings.offset_ch1_path0 is not None:
-            self._set_parameter("out1_offset_path0", settings.offset_ch1_path0)
+            self._set_parameter(
+                self.instrument, "out1_offset_path0", settings.offset_ch1_path0
+            )
         if settings.offset_ch1_path1 is not None:
-            self._set_parameter("out1_offset_path1", settings.offset_ch1_path1)
+            self._set_parameter(
+                self.instrument, "out1_offset_path1", settings.offset_ch1_path1
+            )
 
 
-class _QRMRFComponent(_QRMComponent):
+class QRMRFComponent(QRMComponent):
     """
-    Pulsar QRM-RF specific InstrumentCoordinator component.
+    QRM-RF specific InstrumentCoordinator component.
     """
 
     _hardware_properties = _QRM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: PulsarSettings):
+    def _configure_global_settings(self, settings: RFModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -625,36 +665,35 @@ class _QRMRFComponent(_QRMComponent):
             The settings to configure it to.
         """
         if settings.lo0_freq is not None:
-            self._set_parameter("out0_in0_lo_freq", settings.lo0_freq)
+            self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
-        # configure mixer ccorrection offsets
+        # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
-            self._set_parameter("out0_offset_path0", settings.offset_ch0_path0)
+            self._set_parameter(
+                self.instrument, "out0_offset_path0", settings.offset_ch0_path0
+            )
         if settings.offset_ch0_path1 is not None:
-            self._set_parameter("out0_offset_path1", settings.offset_ch0_path1)
+            self._set_parameter(
+                self.instrument, "out0_offset_path1", settings.offset_ch0_path1
+            )
 
 
-class PulsarQCMComponent(_QCMComponent):
+class PulsarQCMComponent(QCMComponent):
     """A component for a baseband Pulsar QCM."""
 
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
-        self._set_parameter("reference_source", reference_source)
+        self._set_parameter(self.instrument, "reference_source", reference_source)
 
 
-class PulsarQRMComponent(_QRMComponent):
+class PulsarQRMComponent(QRMComponent):
     """A component for a baseband Pulsar QRM."""
 
     def prepare(self, options: Dict[str, dict]) -> None:
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
-        self._set_parameter("reference_source", reference_source)
-
-
-def _get_channel_map_parameter_name(sequencer_index: int, output_index: int):
-    path_idx = output_index % 2  # even or odd output
-    return f"sequencer{sequencer_index}_channel_map_path{path_idx}_out{output_index}_en"
+        self._set_parameter(self.instrument, "reference_source", reference_source)
 
 
 AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
@@ -674,7 +713,7 @@ class _QRMAcquisitionManager:
 
     def __init__(
         self,
-        parent: _QRMComponent,
+        parent: QRMComponent,
         number_of_sequencers: int,
         acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
         acquisition_metadata: AcquisitionMetadata,
@@ -696,7 +735,7 @@ class _QRMAcquisitionManager:
         acquisition_metadata
             Provides a summary of the used channels bins and acquisition protocols.
         """
-        self.parent: _QRMComponent = parent
+        self.parent: QRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
         self.acquisition_mapping: Dict[
             Tuple[int, int], Tuple[str, str]
@@ -714,7 +753,7 @@ class _QRMAcquisitionManager:
         """Returns the QRM driver from the parent IC component."""
         return self.parent.instrument
 
-    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
+    def retrieve_acquisition(self) -> Dict[AcquisitionIndexing, Any]:
         """
         Retrieves all the acquisition data in the correct format.
 
@@ -773,6 +812,7 @@ class _QRMAcquisitionManager:
 
     def _store_scope_acquisition(self):
         sequencer_index = self.seq_name_to_idx_map.get(self.scope_mode_sequencer)
+
         if sequencer_index is None:
             return
 
@@ -795,7 +835,7 @@ class _QRMAcquisitionManager:
         """
         return self.acquisition_mapping[(acq_channel, acq_index)][1]
 
-    def _get_sequencer_index(self, acq_channel, acq_index) -> str:
+    def _get_sequencer_index(self, acq_channel, acq_index) -> int:
         """
         Returns the seq idx corresponding to acq_channel with
         acq_index.
@@ -821,7 +861,7 @@ class _QRMAcquisitionManager:
                         f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
                         f"trace acquisition is allowed per QRM."
                     )
-                ch_and_idx: AcquisitionIndexing = key
+                ch_and_idx = AcquisitionIndexing(acq_channel=key[0], acq_index=key[1])
         return ch_and_idx
 
     def _get_scope_data(
@@ -973,7 +1013,7 @@ class _QRMAcquisitionManager:
         return channel_data["acquisition"]["bins"]
 
 
-ClusterModule = Union[_QCMComponent, _QRMComponent, _QRMRFComponent, _QCMRFComponent]
+ClusterModule = Union[QCMComponent, QRMComponent, QCMRFComponent, QRMRFComponent]
 """Type that combines all the possible modules for a cluster."""
 
 
@@ -982,9 +1022,10 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     Class that represents an instrument coordinator component for a Qblox cluster.
     """
 
-    def __init__(self, instrument: Instrument, **kwargs) -> None:
+    def __init__(self, instrument: Cluster, **kwargs) -> None:
         """
-        Create a new instance of the ClusterComponent.
+        Create a new instance of the ClusterComponent. Automatically adds installed
+        modules using name `"<cluster_name>_module<slot>"`.
 
         Parameters
         ----------
@@ -996,19 +1037,20 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
 
-    def add_modules(self, *modules: Instrument) -> None:
-        """
-        Add modules to the cluster.
+        for instrument_channel in instrument.modules:
+            try:
+                icc_class: type = {
+                    (True, False): QCMComponent,
+                    (True, True): QCMRFComponent,
+                    (False, False): QRMComponent,
+                    (False, True): QRMRFComponent,
+                }[(instrument_channel.is_qcm_type, instrument_channel.is_rf_type)]
+            except KeyError:
+                continue
 
-        Parameters
-        ----------
-        *modules
-            The QCoDeS drivers of the modules to add.
-        """
-        for mod in modules:
-            self._cluster_modules[
-                mod.name
-            ] = _construct_component_from_instrument_driver(mod)
+            self._cluster_modules[instrument_channel.name] = icc_class(
+                instrument_channel
+            )
 
     @property
     def is_running(self) -> bool:
@@ -1076,6 +1118,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             comp_acq = comp.retrieve_acquisition()
             if comp_acq is not None:
                 acquisitions.update(comp_acq)
+
         return acquisitions if len(acquisitions) > 0 else None
 
     def wait_done(self, timeout_sec: int = 10) -> None:
@@ -1089,38 +1132,3 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
-
-
-def _construct_component_from_instrument_driver(
-    driver: Instrument,
-) -> ClusterModule:
-    """
-    Determines the corresponding ClusterModule type and constructs an IC component from
-    the :doc:`qblox_instruments <qblox-instruments:index>` driver.
-
-    Parameters
-    ----------
-    driver
-        The ``qblox_instruments`` instrument driver.
-
-    Returns
-    -------
-    :
-        The corresponding IC component.
-    """
-    is_qcm: bool = isinstance(driver, pulsar_qcm.pulsar_qcm_qcodes)
-    if not is_qcm and not isinstance(driver, pulsar_qrm.pulsar_qrm_qcodes):
-        raise TypeError(
-            f"Invalid driver type for '{driver.name}'. Cannot construct an instrument "
-            f"coordinator component for driver of type '{type(driver)}'. "
-            f"Expected types: {type(pulsar_qcm.pulsar_qcm_qcodes)} or "
-            f"{type(pulsar_qrm.pulsar_qrm_qcodes)}."
-        )
-    is_rf: bool = driver._get_lo_hw_present()
-    icc_class: type = {
-        (True, False): _QCMComponent,
-        (True, True): _QCMRFComponent,
-        (False, False): _QRMComponent,
-        (False, True): _QRMRFComponent,
-    }[(is_qcm, is_rf)]
-    return icc_class(driver)

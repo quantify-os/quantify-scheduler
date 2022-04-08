@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Qblox ICCs - Updated Qblox components for using the new unified-style qblox driver (!377)
+* Qblox backend - Strictly requires v0.6.0 of the qblox-instruments package (!377)
+
 Unreleased changes
 ------------------
 * QuantumDevice - Fixed a bug in the BasicTransmonElement where operations had clock-frequencies (float) specified instead of clocks (str).
