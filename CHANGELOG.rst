@@ -8,6 +8,8 @@ Unreleased changes
 * QuantumDevice - The DeviceElement has been added as an abstract base class for elements to be added to a device (#148, !374).
 * QuantumDevice - The BasicTransmonElement has been added that generates a device config in a more structured manner (#246, !374).
 * QuantumDevice - The TransmonElement will be deprecated after version 0.8 (!374).
+* Helpers - Added a mock LO at `helpers.mock_instruments.MockLocalOscillator` (!336).
+
 
 
 0.6.0 Full support for multiplexed readout, transmon element update, fixes to backends (2022-03-10)
