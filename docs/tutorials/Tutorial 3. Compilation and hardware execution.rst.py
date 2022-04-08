@@ -137,10 +137,10 @@ from quantify_scheduler.compilation import qcompile
 compilation_output = qcompile(sched, device_cfg=None, hardware_cfg=hw_config)
 
 # %% [raw]
-# We can now inspect the output of the compilation procedure.
+# The cell above compiles the schedule, returning a :class:`quantify_scheduler.schedules.schedule.CompiledSchedule` object. This class differs from :class:`quantify_scheduler.schedules.schedule.Schedule` in that it is immutable and contains the :attr:`quantify_scheduler.schedules.schedule.CompiledSchedule.compiled_instructions` attribute.  We inspect these instructions below.
 
 # %%
-compilation_output.data["compiled_instructions"]
+compilation_output.compiled_instructions
 
 # %% [raw]
 # Execution on the hardware
@@ -202,3 +202,5 @@ ic.start()
 
 # Wait for the experiment to finish or for a timeout
 ic.wait_done(timeout_sec=10)
+
+# %%
