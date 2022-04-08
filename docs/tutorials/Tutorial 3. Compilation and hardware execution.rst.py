@@ -13,13 +13,13 @@
 # ---
 
 # %% [raw]
-#  .. _sec-tutorial3:
+# .. _sec-tutorial3:
 #
 # Tutorial 3. Compilation and hardware execution
 # ==============================================
 #
-#  .. jupyter-kernel::
-#    :id: Tutorial 3. Compilation and hardware execution
+# .. jupyter-kernel::
+#   :id: Tutorial 3. Compilation and hardware execution
 #
 # .. seealso::
 #
