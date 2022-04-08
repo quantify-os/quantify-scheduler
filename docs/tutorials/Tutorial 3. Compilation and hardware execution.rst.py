@@ -60,13 +60,22 @@ sched
 # Hardware configuration
 # ----------------------
 #
-# To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware configuration.
+# In our example setup, we will use a Qblox Pulsar QCM baseband module and an external Local Oscillator (LO). To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware configuration.
 #
 # Please check the documentation on how to properly create such a configuration for the supported backends:
 # - :ref:`sec-backend-qblox`
 # - :ref:`sec-backend-zhinst`
 #
 # Below we create an example hardware configuration dictionary, for the Qblox backend.
+# In this configuration, we include:
+
+# - The backend that we want to use (the Qblox backend, in this case).
+# - The Pulsar QCM.
+# - A Local Oscillator.
+
+# In the QCM output's settings, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
+# Since the Pulsar QCM baseband module is not capable of outputting signals at the qubit's frequency, a Local Oscillator is used in order to upconvert the signals to the desired frequency.
+# In this case, the LO frequency is not specified but gets automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
 
 # %%
 hw_config = {
@@ -92,14 +101,11 @@ hw_config = {
 }
 
 # %% [raw]
+# Note that, for any experiment, all the required instruments need to be present in the hardware config.
+
+# %% [raw]
 # Compilation
 # -----------
-#
-# In our example setup, we will use a Qblox Pulsar QCM baseband module and an external Local Oscillator (LO).
-#
-# In the presented configuration, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
-# Since the Pulsar QCM baseband module is not capable of outputting signals at the qubit frequency, a Local Oscillator is used in order to upconvert the signals to the desired frequency.
-# In this case, the LO frequency is not specified but gets automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
 #
 # Now we are ready to proceed to the compilation stage. The compilation procedure is constituted by two main steps:
 #
