@@ -107,20 +107,18 @@ hw_config = {
 # Compilation
 # -----------
 #
-# Now we are ready to proceed to the compilation stage. The compilation procedure is constituted by two main steps:
+# Now we are ready to proceed to the compilation stage. This will be done in two steps:
 #
-# 1. Device compilation
-#    - The device compilation step transforms the provided schedule (consisting of pulses and/or gates) into a schedule executable by the quantum device (/quantum chip). This involves, for example, converting the schedule's operations into operations that the quantum chip can perform, as well as timing the operations according to the chip's characteristics.
+# 1. **Determine the schedule's absolute timing**
+#    - During the schedule's definition, we didn't assign absolute times to the operations. Instead, only the duration was defined. In order for the instruments to know how to execute the schedule, the absolute timing of the operations has to be calculated.
 #
-# 2. Hardware compilation
+# 2. **Hardware compilation**
 #    - This step generates:
 #
 #   * A set of parameters for each of the control stack's instruments in order to configure them properly for the execution of the schedule at hand. These parameters typically don't change during the whole execution of the schedule.
-#   * A compiled program for each instrument (compilation target) containing instructions that dictates what the quantum device must do in order for the schedule to be executed.
+#   * A compiled program (for the instruments that require it) containing instructions that dictate what the instrument must do in order for the schedule to be executed.
 #
-# We can perform each of these steps independently (via :func:`~quantify_scheduler.compilation.device_compile` and :func:`~quantify_scheduler.compilation.hardware_compile` functions), or perform them directly together via :func:`~quantify_scheduler.compilation.qcompile`.
-#
-# Since the :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` concept will be introduced in a subsequent tutorial, for now we will pass `None` to the `device_config` argument of `qcompile`. This procedure works, since only pulses (and no gates) have been defined in the schedule.
+# We can perform each of these steps via :func:`~quantify_scheduler.compilation.determine_absolute_timing` and :func:`~quantify_scheduler.compilation.hardware_compile`, respectively.
 #
 # We start by setting the directory where the compilation output files will be stored, via `set_datadir <https://quantify-quantify-core.readthedocs-hosted.com/en/develop/usage.py.html#data-directory)>`.
 #
@@ -132,9 +130,10 @@ from quantify_core.data.handling import set_datadir
 set_datadir(Path.home() / "quantify-data")
 
 # %%
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.compilation import determine_absolute_timing, hardware_compile
 
-compilation_output = qcompile(sched, device_cfg=None, hardware_cfg=hw_config)
+sched = determine_absolute_timing(sched)
+compilation_output = hardware_compile(sched, hardware_cfg=hw_config)
 
 # %% [raw]
 # The cell above compiles the schedule, returning a :class:`quantify_scheduler.schedules.schedule.CompiledSchedule` object. This class differs from :class:`quantify_scheduler.schedules.schedule.Schedule` in that it is immutable and contains the :attr:`quantify_scheduler.schedules.schedule.CompiledSchedule.compiled_instructions` attribute.  We inspect these instructions below.
