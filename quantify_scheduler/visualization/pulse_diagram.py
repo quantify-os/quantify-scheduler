@@ -13,16 +13,16 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from quantify_core.utilities.general import import_func_from_string
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
-    from quantify_scheduler import Operation, Schedule, CompiledSchedule
+    from quantify_scheduler import CompiledSchedule, Operation, Schedule
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ def pulse_diagram_plotly(
             port: str = pulse_info["port"]
 
             # function to generate waveform
-            wf_func: Callable = import_func_from_string(pulse_info["wf_func"])
+            wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
 
             # iterate through the colors in the color map
             col_idx = (col_idx + 1) % len(colors)
@@ -397,7 +397,7 @@ def sample_schedule(
             port: str = pulse_info["port"]
 
             # function to generate waveform
-            wf_func: Callable = import_func_from_string(pulse_info["wf_func"])
+            wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
 
             # times at which to evaluate waveform
             t0 = schedulable["abs_time"] + pulse_info["t0"]

@@ -53,12 +53,9 @@ class Output(DataClassJsonMixin):
     gain2 :
         The output2 IQ modulation gain.
         Accepted value between -1 and + 1. (default = 1.0)
-    line_trigger_delay :
-        The ZI Instrument output triggers. (default = -1.0)
-    latency :
-        The specified channel latency in seconds. (default = 0.)
-    triggers :
-        The ZI Instrument input triggers. (default = [])
+    trigger :
+        The ZI Instrument input trigger. (default = None)
+        Setting this will declare the device secondary
     markers :
         The ZI Instrument output triggers. (default = [])
     mixer_corrections :
@@ -73,9 +70,7 @@ class Output(DataClassJsonMixin):
     clock_frequency: Optional[float] = None
     gain1: int = 0
     gain2: int = 0
-    line_trigger_delay: float = -1
-    latency: float = 0.0
-    triggers: List[int] = field(default_factory=lambda: [])
+    trigger: Optional[int] = None
     markers: List[Union[str, int]] = field(default_factory=lambda: [])
     mixer_corrections: Optional[common.MixerCorrections] = None
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
+import warnings
+
 import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
@@ -248,15 +250,31 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             instrument.start()
 
-    def stop(self) -> None:
+    def stop(self, allow_failure=False) -> None:
         """
         Stops all components.
 
         The components are stopped in the order in which they were added.
+
+        Parameters
+        ----------
+        allow_failure
+            By default it is set to `False`. When set to `True`, the AttributeErrors
+            raised by a component are demoted to warnings to allow other
+            components to stop.
         """
         for instr_name in self.components():
-            instrument = self.find_instrument(instr_name)
-            instrument.stop()
+            if allow_failure:
+                try:
+                    instrument = self.find_instrument(instr_name)
+                    instrument.stop()
+                except AttributeError as e:
+                    warnings.warn(
+                        f"When stopping instrument {instr_name}: Error \n {e}."
+                    )
+            else:
+                instrument = self.find_instrument(instr_name)
+                instrument.stop()
 
     def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
         """

@@ -578,6 +578,7 @@ def test_find_all_port_clock_combinations():
         ("q1:mw", "q1.01"),
         ("q0:mw", "q0.01"),
         ("q0:res", "q0.ro"),
+        ("q0:res", "q0.multiplex"),
         ("q1:res", "q1.ro"),
         ("q3:mw", "q3.01"),
         ("q2:mw", "q2.01"),
@@ -593,7 +594,7 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 10
+    assert len(portclock_map.keys()) == 11
 
 
 # --------- Test classes and member methods ---------
@@ -721,7 +722,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     with open(qcm0_seq0_json) as file:
         wf_and_prog = json.load(file)
     program_from_json = wf_and_prog["program"]
-    move_line = program_from_json.split("\n")[6]
+    move_line = program_from_json.split("\n")[5]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
     iterations = int(args.split(",")[0])
