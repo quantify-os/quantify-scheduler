@@ -173,7 +173,8 @@ lo0 = MockLocalOscillator("lo0")
 # %% [raw]
 # And we attach these instruments to the `InstrumentCoordinator` via the appropriate `InstrumentCoordinatorComponent` wrapper class.
 #
-# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via an instance of the `GenericInstrumentCoordinatorComponent` class, which is automatically added to the `InstrumentCoordinator` during instantiation.
+# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via an instance of the :class:`[py:method]: quantify_scheduler.instrument_coordinator.components.generic.GenericInstrumentCoordinatorComponent` class, which is automatically added to the `InstrumentCoordinator` during instantiation.
+# This component is meant to serve as an interface for simple access to instruments which needs to only set parameters, such as local oscillators or current sources.
 
 # %%
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
