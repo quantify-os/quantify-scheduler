@@ -54,7 +54,7 @@ q0, q1 = ("q0", "q1")
 X90(q0)
 Measure(q1)
 CZ(q0, q1)
-Reset(q0);
+Reset(q0)
 
 # %% [raw]
 # Let's investigate the different components present in the circuit level description of
