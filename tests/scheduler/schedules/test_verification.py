@@ -12,6 +12,7 @@ from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,
     awg_staircase_sched,
+    multiplexing_staircase_sched,
 )
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
@@ -45,7 +46,7 @@ def test_acquisition_staircase_ops(gen_acquisition_staircase_sched):
 
     sched, sched_kwargs = gen_acquisition_staircase_sched
     # total number of operations
-    assert len(sched.timing_constraints) == 3 * len(sched_kwargs["readout_pulse_amps"])
+    assert len(sched.schedulables) == 3 * len(sched_kwargs["readout_pulse_amps"])
     # number of unique operations
     assert len(sched.operations) == 2 * len(sched_kwargs["readout_pulse_amps"]) + 1
 
@@ -116,7 +117,7 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
     sched, sched_kwargs = gen_awg_staircase_sched
     assert sched.repetitions == sched_kwargs["repetitions"]
 
-    assert len(sched.timing_constraints) == 3 * len(sched_kwargs["pulse_amps"])
+    assert len(sched.schedulables) == 3 * len(sched_kwargs["pulse_amps"])
     # number of unique operations
     assert len(sched.operations) == 2 * len(sched_kwargs["pulse_amps"]) + 1
 
@@ -147,3 +148,40 @@ def test_awg_staircase_comp_zhinst(gen_awg_staircase_sched):
     device_cfg = load_json_example_scheme("transmon_test_config.json")
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
     _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
+
+
+@pytest.fixture(scope="module", autouse=False)
+def gen_multiplexing_staircase_sched(tmp_test_data_dir):
+    set_datadir(tmp_test_data_dir)
+
+    sched_kwargs = {
+        "pulse_amps": np.linspace(0, 0.5, 11),
+        "pulse_duration": 1e-6,
+        "acquisition_delay": 4e-9,
+        "integration_time": 2e-6,
+        "ro_port": "q0:res",
+        "ro_clock0": "q0.ro",
+        "ro_clock1": "q0.multiplex",
+        "readout_frequency0": 5e9,
+        "readout_frequency1": 5.2e9,
+        "init_duration": 10e-6,
+        "repetitions": 10,
+    }
+    sched = multiplexing_staircase_sched(**sched_kwargs)
+
+    return sched, sched_kwargs
+
+
+def test_multiplex_staircase_comp_transmon(gen_multiplexing_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    _ = qcompile(gen_multiplexing_staircase_sched[0], device_cfg=device_cfg)
+
+
+def test_multiplex_staircase_comp_qblox(gen_multiplexing_staircase_sched):
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("qblox_test_mapping.json")
+    _ = qcompile(
+        gen_multiplexing_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg
+    )

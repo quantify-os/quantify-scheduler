@@ -1,10 +1,10 @@
 import os
+import shutil
 import pathlib
 
 import pytest
 from quantify_core.data.handling import get_datadir, set_datadir
 from quantify_core.measurement.control import MeasurementControl
-from quantify_core.utilities._tests_helpers import rmdir_recursive
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import TransmonElement
@@ -12,7 +12,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
 @pytest.fixture(scope="session", autouse=True)
-def tmp_test_data_dir(request, tmp_path_factory):
+def tmp_test_data_dir(tmp_path_factory):
     """
     This is a fixture which uses the pytest tmp_path_factory fixture
     and extends it by copying the entire contents of the test_data
@@ -24,17 +24,12 @@ def tmp_test_data_dir(request, tmp_path_factory):
     use_temp_dir = True
     if use_temp_dir:
         temp_data_dir = tmp_path_factory.mktemp("temp_data")
-
-        def cleanup_tmp():
-            rmdir_recursive(root_path=temp_data_dir)
-
-        request.addfinalizer(cleanup_tmp)
+        yield temp_data_dir
+        shutil.rmtree(temp_data_dir, ignore_errors=True)
     else:
         set_datadir(os.path.join(pathlib.Path.home(), "quantify_schedule_test"))
         print(f"Data directory set to: {get_datadir()}")
-        temp_data_dir = get_datadir()
-
-    return temp_data_dir
+        yield get_datadir()
 
 
 # pylint: disable=redefined-outer-name
@@ -56,10 +51,15 @@ def mock_setup(request, tmp_test_data_dir):
     q0.ro_pulse_amp(0.08)
     q0.ro_freq(8.1e9)
     q0.freq_01(5.8e9)
+    q0.freq_12(5.45e9)
     q0.mw_amp180(0.314)
     q0.mw_pulse_duration(20e-9)
     q0.ro_pulse_delay(20e-9)
     q0.ro_acq_delay(20e-9)
+
+    q1.ro_freq(8.64e9)
+    q1.freq_01(6.4e9)
+    q1.freq_12(5.05e9)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_component(q0)

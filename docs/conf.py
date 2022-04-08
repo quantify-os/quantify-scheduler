@@ -79,7 +79,7 @@ intersphinx_mapping = {
         None,
     ),
     "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
-    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/latest/", None),
+    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/v0.1/", None),
 }
 
 bibtex_bibfiles = ["refs.bib"]
@@ -289,6 +289,10 @@ if os.environ.get("GITLAB_CI", "false") == "true":
 import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
+
+# `pydantic` fails to import automatically and leads to broken documentation,
+# if not preloaded.
+import pydantic
 
 # When building the docs we need `typing.TYPE_CHECKING` to be `True` so that the
 # sphinx' kernel loads the modules corresponding to the typehints and is able to

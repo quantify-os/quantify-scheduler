@@ -13,9 +13,9 @@ from pydoc import locate
 from typing import Any, Dict
 
 import numpy as np
-from quantify_core.utilities import general
 
 from quantify_scheduler import enums
+from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 
 cached_locate = lru_cache(locate)
@@ -159,7 +159,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         """
         A hash based on the contents of the Operation.
         """
-        return general.make_hash(self.data)
+        return make_hash(self.data)
 
     @classmethod
     def _get_signature(cls, parameters: dict) -> str:
@@ -217,6 +217,20 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
             an operation containing gate_info.
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
+
+    def add_device_representation(self, device_operation: Operation) -> None:
+        """
+        Takes the information that specifies how to represent an operation at the
+        quantum-device abstraction layer and adds it to the current operation.
+
+        Parameters
+        ----------
+        device_operation
+            an operation containing the pulse_info and/or acquisition info describing
+            how to represent the current operation at the quantum-device layer.
+        """
+        self.add_pulse(device_operation)
+        self.add_acquisition(device_operation)
 
     def add_pulse(self, pulse_operation: Operation) -> None:
         """

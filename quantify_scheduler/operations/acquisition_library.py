@@ -413,16 +413,23 @@ class NumericalWeightedIntegrationComplex(
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
+        if not isinstance(weights_a, np.ndarray):
+            weights_a = np.array(weights_a)
+        if not isinstance(weights_b, np.ndarray):
+            weights_b = np.array(weights_b)
+        if not isinstance(t, np.ndarray):
+            t = np.array(t)
+
         waveforms_a = {
-            "wf_func": "scipy.interpolate.interp1d",
-            "weights": weights_a,
-            "t": t,
+            "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
+            "samples": weights_a,
+            "t_samples": t,
             "interpolation": interpolation,
         }
         waveforms_b = {
-            "wf_func": "scipy.interpolate.interp1d",
-            "weights": weights_b,
-            "t": t,
+            "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
+            "samples": weights_b,
+            "t_samples": t,
             "interpolation": interpolation,
         }
         duration = t[-1] - t[0]
@@ -444,12 +451,14 @@ class NumericalWeightedIntegrationComplex(
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
         weights_a = np.array2string(
-            acq_info["waveforms"][0]["weights"], separator=", ", precision=9
+            acq_info["waveforms"][0]["samples"], separator=", ", precision=9
         )
         weights_b = np.array2string(
-            acq_info["waveforms"][1]["weights"], separator=", ", precision=9
+            acq_info["waveforms"][1]["samples"], separator=", ", precision=9
         )
-        t = np.array2string(acq_info["waveforms"][0]["t"], separator=", ", precision=9)
+        t = np.array2string(
+            acq_info["waveforms"][0]["t_samples"], separator=", ", precision=9
+        )
         port = acq_info["port"]
         clock = acq_info["clock"]
         interpolation = acq_info["waveforms"][0]["interpolation"]
@@ -465,3 +474,6 @@ class NumericalWeightedIntegrationComplex(
             f"acq_channel={acq_channel}, acq_index={acq_index}, bin_mode='{bin_mode}', "
             f"phase={phase}, t0={t0})"
         )
+
+    def __repr__(self) -> str:
+        return str(self)

@@ -10,6 +10,9 @@ from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.device_under_test.device_element import DeviceElement
+
 
 class QuantumDevice(Instrument):
     """
@@ -36,14 +39,6 @@ class QuantumDevice(Instrument):
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all elements that"
             " are located on this QuantumDevice.",
-        )
-
-        default_cfg = "quantify_scheduler.compilation.add_pulse_information_transmon"
-        self.add_parameter(
-            "device_cfg_backend",
-            initial_value=default_cfg,
-            parameter_class=ManualParameter,
-            vals=validators.Strings(),
         )
 
         self.add_parameter(
@@ -100,30 +95,39 @@ class QuantumDevice(Instrument):
         """
         return self.hardware_config()
 
-    def generate_device_config(self) -> Dict[str, Any]:
+    def generate_device_config(self) -> DeviceCompilationConfig:
         """
-        Generates a valid device config for the quantify-scheduler making use of the
-        :func:`quantify_scheduler.compilation.add_pulse_information_transmon` function.
+        Generates a device config to compile from the quantum-circuit to the
+        quantum-device layer.
 
         .. note:
 
             The config currently does not support two-qubit gates.
-
         """
 
-        # initialize a dictionary with the right structure
-        device_configuration = {
-            "backend": self.device_cfg_backend(),
-            "qubits": {},
-            "edges": {},
-        }
+        clocks = {}
+        elements_cfg = {}
 
-        # iterate over all components. For now, all are assumed to be qubits.
-        for comp_name in self.components():
-            comp = self.get_component(comp_name)
-            device_configuration["qubits"].update(comp.generate_config())
+        # iterate over the elements on the device
+        for element_name in self.components():
+            element = self.get_component(element_name)
+            element_cfg = element.generate_device_config()
+            clocks.update(element_cfg.clocks)
+            elements_cfg.update(element_cfg.elements)
 
-        return device_configuration
+        # iterate over the edges on the device
+        edges_cfg: dict = {}
+        # FIXME: add support for operations acting on edges.
+
+        device_config = DeviceCompilationConfig(
+            backend="quantify_scheduler.backends"
+            ".circuit_to_device.compile_circuit_to_device",
+            elements=elements_cfg,
+            clocks=clocks,
+            edges=edges_cfg,
+        )
+
+        return device_config
 
     def get_component(self, name: str) -> Instrument:
         """
@@ -150,7 +154,7 @@ class QuantumDevice(Instrument):
 
     def add_component(
         self,
-        component: Instrument,
+        component: DeviceElement,
     ) -> None:
         """
         Adds a component to the components collection.
@@ -170,11 +174,8 @@ class QuantumDevice(Instrument):
         if component.name in self.components():
             raise ValueError(f"'{component.name}' has already been added.")
 
-        if not isinstance(component, Instrument):
-            # FIXME: check if it is also a valid device element. # pylint: disable=fixme
-            # This requires a base class for device elements that does not exist yet.
-            # See also `InstrumentCoordinatorComponentBase`.
-            raise TypeError(f"{repr(component)} is not a QCoDeS instrument.")
+        if not isinstance(component, DeviceElement):
+            raise TypeError(f"{repr(component)} is not a DeviceElement.")
 
         self.components().append(component.name)  # list gets updated in place
 

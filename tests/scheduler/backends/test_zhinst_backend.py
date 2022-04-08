@@ -86,7 +86,7 @@ def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_conf
 
         # the timing of all pulses and acquisitions is corrected
         # based on the latency corr.
-        latency_dict = zhinst_backend._extract_channel_latencies(hardware_config)
+        latency_dict = zhinst_backend._extract_latencies(hardware_config)
         timing_table = zhinst_backend._apply_latency_corrections(
             timing_table=timing_table, latency_dict=latency_dict
         )
@@ -197,6 +197,7 @@ def test_compile_hardware_hdawg4_successfully(
     schedule.add(Reset(q0, q1))
     schedule.add(X90(q0))
     schedule.add(X90(q1))
+    schedule.add(Measure(q0))
     schedule = create_schedule_with_pulse_info(schedule)
 
     modulate_wave_spy = mocker.patch.object(
@@ -354,10 +355,10 @@ def test_hdawg4_sequence(
         repeat(__repetitions__)
         {
           setTrigger(AWG_MARKER1 + AWG_MARKER2);\t//  n_instr=2
-          wait(60000);\t\t// clock=2\t n_instr=3
-          executeTableEntry(0);\t// clock=60005 pulse=0 n_instr=0
-          setTrigger(0);\t// clock=60005 n_instr=1
-          wait(124);\t\t// clock=60006, dead time to ensure total schedule duration\t n_instr=3
+          wait(60054);\t\t// clock=2\t n_instr=3
+          executeTableEntry(0);\t// clock=60059 pulse=0 n_instr=0
+          setTrigger(0);\t// clock=60059 n_instr=1
+          wait(70);\t\t// clock=60060, dead time to ensure total schedule duration\t n_instr=3
         }
         """
     ).lstrip("\n")
@@ -429,8 +430,7 @@ def test_validate_schedule(
         zhinst_backend._validate_schedule(empty_schedule)
 
     assert (
-        str(execinfo.value)
-        == "Undefined timing constraints for schedule 'Empty Experiment'!"
+        str(execinfo.value) == "Undefined schedulables for schedule 'Empty Experiment'!"
     )
 
     with pytest.raises(ValueError) as execinfo:
@@ -623,7 +623,7 @@ def test_uhfqa_sequence1(
           wait(45006);\t\t// clock=0\t n_instr=45006
           playWave(w0);\t// \t// clock=45006\t n_instr=0
           wait(27);\t\t// clock=45006\t n_instr=27
-          startQA(QA_INT_ALL, true);\t// clock=45033 n_instr=6
+          startQA(QA_INT_ALL, true);\t// clock=45033 n_instr=7
         }
         """
     ).lstrip("\n")
@@ -681,7 +681,7 @@ def test_uhfqa_sequence2_trace_acquisition(
           wait(2250);\t\t// clock=0\t n_instr=2250
           playWave(w0);\t// \t// clock=2250\t n_instr=0
           wait(0);\t\t// clock=2250\t n_instr=0
-          startQA(QA_INT_ALL, true);\t// clock=2250 n_instr=6
+          startQA(QA_INT_ALL, true);\t// clock=2250 n_instr=7
         }
         """
     ).lstrip("\n")
@@ -745,8 +745,8 @@ def test_uhfqa_sequence3_spectroscopy(
         {
           waitDigTrigger(2, 1);\t// \t// clock=0
           wait(2292);\t\t// clock=0\t n_instr=2292
-          startQA(QA_INT_ALL, true);\t// clock=2292 n_instr=6
-          wait(3);\t\t// clock=2298\t n_instr=3
+          startQA(QA_INT_ALL, true);\t// clock=2292 n_instr=7
+          wait(2);\t\t// clock=2299\t n_instr=2
           playWave(w1);\t// \t// clock=2301\t n_instr=0
         }
         """
@@ -785,26 +785,17 @@ def test__extract_port_clock_channelmapping_hdawg(
     assert generated_dict == expected_dict
 
 
-def test__extract_channel_latencies_line_trigger_delay(
+def test__extract_latencies(
     load_example_zhinst_hardware_config,
 ) -> None:
     hardware_config = load_example_zhinst_hardware_config()
 
     expected_latency_dict = {
-        "ic_hdawg0.awg0": 10e-9,
-        "ic_hdawg0.awg0.trigger": hardware_config.get("devices")[0]
-        .get("channel_0")
-        .get("line_trigger_delay"),
-        "ic_hdawg0.awg1": 10e-9,
-        "ic_hdawg0.awg1.trigger": hardware_config.get("devices")[0]
-        .get("channel_1")
-        .get("line_trigger_delay"),
-        "ic_uhfqa0.awg0": 0,
-        "ic_uhfqa0.awg0.acquisition": 0,
+        "q0:mw-q0.01": 190e-9,
+        "q0:res-q0.ro": 0,
+        "q1:mw-q1.01": 190e-9,
     }
-    generated_dict = zhinst_backend._extract_channel_latencies(
-        hardware_cfg=hardware_config
-    )
+    generated_dict = zhinst_backend._extract_latencies(hardware_cfg=hardware_config)
 
     assert generated_dict == expected_latency_dict
 
@@ -830,7 +821,7 @@ def test__add_wave_nodes_with_vector(
     _data = np.zeros((2, 1024))
     _data[0] = np.real(test_waveform)
     _data[1] = np.imag(test_waveform)
-    expected_data = (_data.reshape((-2,), order="F") * (2 ** 15 - 1)).astype("int16")
+    expected_data = (_data.reshape((-2,), order="F") * (2**15 - 1)).astype("int16")
 
     awg_index: int = 0
     settings_builder = settings.ZISettingsBuilder()

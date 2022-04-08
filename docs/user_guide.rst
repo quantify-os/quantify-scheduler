@@ -26,7 +26,7 @@ The :class:`.Schedule` contains information on *when* operations should be perfo
 When adding operations to a schedule, one does not need to specify how to represent this :class:`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during :ref:`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`.ScheduleBase.timing_constraints`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using :attr:`.ScheduleBase.schedulables`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 
 Creating a schedule
@@ -275,42 +275,17 @@ Both compilation steps can be triggered by passing a :class:`.Schedule` and the 
 
     And we employ the term "**hardware**" to refer to the instruments (electronics) that are involved in the pulse generations / signal digitization.
 
-
-
 .. _sec-device-config:
 
-Device configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Device configuration
+~~~~~~~~~~~~~~~~~~~~
 
-The device configuration file is used to compile from the quantum-circuit layer to the quantum-device layer.
-The main responsibility is to contain the information required to add a pulse-representation to every operation that only has a quantum-circuit layer description.
-The device configuration contains information for all qubits, and all edges.
-Edges are pairs of qubits (separated by a dash :code:`-`) on which gates can act.
-A configuration file can be written down manually as a JSON file or be code generated.
+The device configuration is used to compile from the quantum-circuit layer to the quantum-device layer.
+The :class:`~.backends.circuit_to_device.DeviceCompilationConfig` data structure contains the information required to add the quantum-device level representation to every operation in a schedule.
 
+.. autoclass:: quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig
+    :noindex:
 
-.. admonition:: Device configuration JSON schema for the transmon backend
-    :class: dropdown
-
-    A valid device configuration is described by the schema shown here:
-
-    .. jsonschema:: ../quantify_scheduler/schemas/transmon_cfg.json
-
-
-
-.. admonition:: Example device configuration file
-    :class: dropdown
-
-    .. jupyter-execute::
-        :hide-code:
-
-        from pathlib import Path
-        import json
-        import quantify_scheduler.schemas.examples as examples
-
-        path = Path(examples.__file__).parent / "transmon_test_config.json"
-        json_data = json.loads(path.read_text())
-        json_data
 
 .. _sec-hardware-config:
 

@@ -7,18 +7,18 @@ from abc import ABC
 from functools import partial
 from typing import Any, Dict, List, Tuple
 
+import numpy as np
+
+from quantify_scheduler import Schedule, math, waveforms
+from quantify_scheduler.helpers import schedule as schedule_helpers
+from quantify_scheduler.helpers.importers import import_python_object_from_string
+
 try:
     from typing import Protocol as _Protocol
 except ImportError:
     Protocol = ABC
 else:
     Protocol = _Protocol
-
-import numpy as np
-from quantify_core.utilities import general
-
-from quantify_scheduler import Schedule, math, waveforms
-from quantify_scheduler.helpers import schedule as schedule_helpers
 
 
 # pylint: disable=too-few-public-methods
@@ -195,9 +195,9 @@ def get_waveform_by_pulseid(
     schedule
         The schedule.
     """
-    pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = dict()
-    for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_repr"]]
+    pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = {}
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)
             if pulse_id in pulseid_waveformfn_dict:
@@ -328,15 +328,15 @@ def exec_custom_waveform_function(
         Returns the computed waveform.
     """
     # Load the waveform function from string
-    function = general.import_func_from_string(wf_func)
+    function = import_python_object_from_string(wf_func)
 
     # select the arguments for the waveform function that are present
     # in pulse info
     par_map = inspect.signature(function).parameters
     wf_kwargs = {}
-    for kw in par_map.keys():
-        if kw in pulse_info:
-            wf_kwargs[kw] = pulse_info[kw]
+    for key in par_map.keys():
+        if key in pulse_info:
+            wf_kwargs[key] = pulse_info[key]
 
     # Calculate the numerical waveform using the wf_func
     return function(t=t, **wf_kwargs)

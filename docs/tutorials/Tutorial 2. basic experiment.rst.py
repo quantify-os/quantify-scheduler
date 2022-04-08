@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.9.1
+#       jupytext_version: 1.13.4
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -193,11 +193,13 @@ from itertools import islice
 dict(islice(sched.data["operation_dict"].items(), 5))
 
 # %% [raw]
-# The timing constraints are stored as a list of pulses.
+# The schedulables are stored as a dictionary, each entry containing a scheduled item.
+# Here we inspect the first 6 entries in `sched.data["schedulables"]` representing the
+# first 6 scheduled items in the schedule.
 #
 
 # %%
-sched.data["timing_constraints"][:6]
+list(sched.data["schedulables"].values())[:6]
 
 # %% [raw]
 #
@@ -215,7 +217,7 @@ rxy_theta.data
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # The compilation from the gate-level to the pulse-level description is done using the
-# :ref:`device configuration file<Device configuration file>`.
+# :ref:`device configuration file<sec-device-config>`.
 #
 # Here we will use a configuration file for a transmon based system that is part of the
 # quantify-scheduler test suite.
@@ -226,25 +228,23 @@ import inspect
 import json
 import os
 
-import quantify_scheduler.schemas.examples as es
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 
-esp = inspect.getfile(es)
-cfg_f = Path(esp).parent / "transmon_test_config.json"
+transmon_test_config = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
-
-with open(cfg_f, "r") as f:
-    transmon_test_config = json.load(f)
-
-transmon_test_config
 
 # %%
-from quantify_scheduler.compilation import (
-    add_pulse_information_transmon,
-    determine_absolute_timing,
-)
+from quantify_scheduler.compilation import device_compile
 
-add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-determine_absolute_timing(schedule=sched)
+sched = device_compile(sched, device_cfg=transmon_test_config)
+# add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+# determine_absolute_timing(schedule=sched)
+
+# %%
+sched
 
 # %%
 from quantify_scheduler.visualization.pulse_scheme import pulse_diagram_plotly
@@ -279,8 +279,10 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     )
 
 
-add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
-determine_absolute_timing(schedule=sched)
+sched = device_compile(sched, device_cfg=transmon_test_config)
+
+# add_pulse_information_transmon(sched, device_cfg=transmon_test_config)
+# determine_absolute_timing(schedule=sched)
 
 # %% [raw]
 # The compilation from the pulse-level description for execution on physical hardware is
@@ -293,6 +295,10 @@ determine_absolute_timing(schedule=sched)
 #
 
 # %%
+import quantify_scheduler.schemas.examples as es
+
+esp = inspect.getfile(es)
+
 cfg_f = Path(esp).parent / "qblox_test_mapping.json"
 
 with open(cfg_f, "r") as f:

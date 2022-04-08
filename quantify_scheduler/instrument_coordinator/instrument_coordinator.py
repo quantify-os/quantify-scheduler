@@ -5,13 +5,15 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
+import warnings
+
 import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
 from qcodes.utils import validators
 
 from quantify_scheduler import CompiledSchedule
-from quantify_scheduler.instrument_coordinator.components import base
+from quantify_scheduler.instrument_coordinator.components import base, generic
 
 
 class InstrumentCoordinator(qcodes_base.Instrument):
@@ -62,7 +64,18 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     """  # pylint: disable=line-too-long
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, add_default_generic_icc: bool = True) -> None:
+        """
+        Instantiates a new instrument coordinator.
+
+        Parameters
+        ----------
+        name
+            The name for the instrument coordinator instance.
+        add_default_generic_icc
+            If True, automatically adds a GenericInstrumentCoordinatorComponent to this
+            instrument coordinator with the default name.
+        """
         super().__init__(name)
         self.add_parameter(
             "components",
@@ -83,6 +96,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             "when retrieving acquisitions.",
         )
         self._last_schedule = None
+        if add_default_generic_icc:
+            self.add_component(
+                generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME)
+            )
 
     @property
     def last_schedule(self) -> CompiledSchedule:
@@ -233,15 +250,31 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             instrument.start()
 
-    def stop(self) -> None:
+    def stop(self, allow_failure=False) -> None:
         """
         Stops all components.
 
         The components are stopped in the order in which they were added.
+
+        Parameters
+        ----------
+        allow_failure
+            By default it is set to `False`. When set to `True`, the AttributeErrors
+            raised by a component are demoted to warnings to allow other
+            components to stop.
         """
         for instr_name in self.components():
-            instrument = self.find_instrument(instr_name)
-            instrument.stop()
+            if allow_failure:
+                try:
+                    instrument = self.find_instrument(instr_name)
+                    instrument.stop()
+                except AttributeError as e:
+                    warnings.warn(
+                        f"When stopping instrument {instr_name}: Error \n {e}."
+                    )
+            else:
+                instrument = self.find_instrument(instr_name)
+                instrument.stop()
 
     def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
         """
@@ -305,8 +338,8 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
     during the acquisition of results.
     """
 
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self.add_parameter(
             "timeout_reacquire",

@@ -100,12 +100,72 @@ to map :class:`quantify_scheduler.operations.operation.Operation`\s, which act o
 qubits, onto physical properties of the instrument.
 
 
-The Zurich Instruments hardware configuration file is divided in two main sections.
+The Zurich Instruments hardware configuration file is divided in four main sections.
 
 1. The `backend` property defines the python method which will be executed by
 :func:`~quantify_scheduler.compilation.qcompile` in order to compile the backend.
 
-2. The `devices` property is an array of :class:`~quantify_scheduler.backends.types.zhinst.Device`.
+2. The `local_oscillators` property is a list of dicts which describe the available local oscillators in the hardware setup. An example entry are as follows:
+
+
+.. code-block:: json
+    :linenos:
+
+    {
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
+      "local_oscillators": [
+        {
+          "unique_name": "mw_qubit_ch1",
+          "instrument_name": "mw_qubit",
+          "frequency":
+              {
+                  "ch_1.frequency": null
+              },
+          "power":
+              {
+                  "power": 13
+              },
+          "phase":
+              {
+                  "ch_1.phase": 90
+              }
+        }
+      ]
+    }
+
+
+* In the example, the particular local_oscillator is given a `unique_name` which is then used in the `devices` to couple the channel of the device to that local oscillator.
+
+* The `instrument_name` is the QCoDes Instrument name for the local oscillator object.
+
+* The `frequency` property maps the frequency parameter which is used to set the frequency of the local oscillator. If set to `null`, then the local oscillator frequency is automatically calculated from the relation, LO frequency = RF frequency - Intermodulation frequency.
+
+* The `power` property is an optional key which maps the power parameter used to set the power of the local oscillator. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the power in dbm, then the power value should be in dbm).
+
+* The `phase` property is an optional key that maps the phase parameter used to set the phase of the local oscillator signal. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the phase in radians, then the phase value should be in radians).
+
+3. The `latency_corrections` property specifies a delay on a port-clock combination which is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination. The delay is used to manually adjust the timing to correct for e.g., delays due to different cable lengths.
+
+
+.. code-block:: json
+    :linenos:
+
+    {
+      "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
+      "latency_corrections":
+          {
+              "q0:mw-q0.01": 95e-9,
+              "q1:mw-q1.01": 95e-9
+              "q0:res-q0.ro": -95e-9,
+              "q0:res-q1.ro": -95e-9,
+
+          }
+    }
+
+
+In this example, the user has specified latencies at each port-clock combination in the hardware config. The relative latencies to the minimum of the latencies are then calculated and applied to the signals for the specific port-clock combination. For this case, pulses with `port=q0:res`, and `clock=q0.r0` i.e. "q0:res-q0.ro" will have no corrections, whilst, pulses with `port=q0:mw`, and `clock=q0.01` i.e. "q0:mw-q0.01" will have a corrected delay of 190e-9 s added to the pulses.
+
+4. The `devices` property is an array of :class:`~quantify_scheduler.backends.types.zhinst.Device`.
 A Device describes the type of Zurich Instruments and the physical setup.
 
 
@@ -191,10 +251,6 @@ according to the :class:`~quantify_scheduler.backends.types.zhinst.Device` and
     * No modulation "none"
 
 * The `interm_freq` property specifies the inter-modulation frequency.
-
-* The `line_trigger_delay` property specifies a delay which is added to the
-  sequencer program in the form of a `wait(n)`. The delay is used manually adjust
-  the sequencer start offset in time due to the cabling delays.
 
 * The `markers` property specifies which markers to trigger on each sequencer iteration.
   The values are used as input for the `setTrigger` sequencer instruction.

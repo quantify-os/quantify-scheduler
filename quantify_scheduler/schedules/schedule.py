@@ -7,6 +7,7 @@ import json
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
+import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import uuid4
@@ -44,7 +45,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     - operation_dict - a hash table containing the unique
         :class:`quantify_scheduler.operations.operation.Operation` s added to the
         schedule.
-    - timing_constraints - a list of all timing constraints added between operations.
+    - schedulables - a dictionary of all timing constraints added
+        between operations.
 
     The :class:`~.Schedule` provides an API to create schedules.
     The :class:`~.CompiledSchedule` represents a schedule after
@@ -53,12 +55,12 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     The :class:`~.Schedule` contains information on the
     :attr:`~.ScheduleBase.operations` and
-    :attr:`~.ScheduleBase.timing_constraints`.
+    :attr:`~.ScheduleBase.schedulables`.
     The :attr:`~.ScheduleBase.operations` is a dictionary of all
     unique operations used in the schedule and contain the information on *what*
     operation to apply *where*.
-    The :attr:`~.ScheduleBase.timing_constraints` is a list of
-    dictionaries describing timing constraints between operations, i.e. when to apply
+    The :attr:`~.ScheduleBase.schedulables` is a dictionary of
+    Schedulables describing timing constraints between operations, i.e. when to apply
     an operation.
 
 
@@ -102,15 +104,15 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self.data["operation_dict"]
 
     @property
-    def timing_constraints(self) -> List[Dict[str, Any]]:
+    def schedulables(self) -> Dict[str, Any]:
         """
-        A list of dictionaries describing timing constraints between operations.
+        A list of schedulables describing the timing of operations.
 
-        A timing constraint constrains the operation in time by specifying the time
-        (:code:`"rel_time"`) between a reference operation and the added operation.
-        The time can be specified with respect to a reference point (:code:`"ref_pt"')
-        on the reference operation (:code:`"ref_op"`) and a reference point on the next
-        added operation (:code:`"ref_pt_new"').
+        A schedulable uses timing constraints to constrain the operation in time by
+        specifying the time (:code:`"rel_time"`) between a reference operation and the
+        added operation. The time can be specified with respect to a reference point
+        (:code:`"ref_pt"') on the reference operation (:code:`"ref_op"`) and a reference
+        point on the next added operation (:code:`"ref_pt_new"').
         A reference point can be either the "start", "center", or "end" of an
         operation. The reference operation (:code:`"ref_op"`) is specified using its
         label property.
@@ -132,7 +134,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             Instead use the :meth:`~.Schedule.add`
 
         """
-        return self.data["timing_constraints"]
+        return self.data["schedulables"]
 
     @property
     def resources(self) -> Dict[str, Resource]:
@@ -146,7 +148,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return (
             f'{self.__class__.__name__} "{self.data["name"]}" containing '
             f'({len(self.data["operation_dict"])}) '
-            f'{len(self.data["timing_constraints"])}  (unique) operations.'
+            f'{len(self.data["schedulables"])}  (unique) operations.'
         )
 
     def to_json(self) -> str:
@@ -177,8 +179,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
         name = schedule_data["name"]
+        sched = Schedule.__new__(Schedule)
+        sched.__setstate__(schedule_data)
 
-        return Schedule(name, data=schedule_data)
+        return sched
 
     def plot_circuit_diagram_mpl(
         self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None
@@ -401,7 +405,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         acquisitions in a schedule.
 
         This table is constructed based on the abs_time key in the
-        :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.timing_constraints`.
+        :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.schedulables`.
         This requires the timing to have been determined.
 
         Parameters
@@ -437,42 +441,43 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ]
         )
 
-        for t_constr in self.timing_constraints:
-            if "abs_time" not in t_constr:
+        timing_table_list = [timing_table]
+        for schedulable in self.schedulables.values():
+            if "abs_time" not in schedulable:
                 # when this exception is encountered
                 raise ValueError("Absolute time has not been determined yet.")
-            operation = self.operations[t_constr["operation_repr"]]
+            operation = self.operations[schedulable["operation_repr"]]
 
             # iterate over pulse information
             for i, pulse_info in enumerate(operation["pulse_info"]):
-                abs_time = pulse_info["t0"] + t_constr["abs_time"]
+                abs_time = pulse_info["t0"] + schedulable["abs_time"]
                 df_row = {
-                    "waveform_op_id": t_constr["operation_repr"] + f"_p_{i}",
+                    "waveform_op_id": schedulable["operation_repr"] + f"_p_{i}",
                     "port": pulse_info["port"],
                     "clock": pulse_info["clock"],
                     "abs_time": abs_time,
                     "duration": pulse_info["duration"],
                     "is_acquisition": False,
-                    "operation": t_constr["operation_repr"],
+                    "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }
-                timing_table = timing_table.append(df_row, ignore_index=True)
+                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
 
             # iterate over acquisition information
             for i, acq_info in enumerate(operation["acquisition_info"]):
-                abs_time = acq_info["t0"] + t_constr["abs_time"]
+                abs_time = acq_info["t0"] + schedulable["abs_time"]
                 df_row = {
-                    "waveform_op_id": t_constr["operation_repr"] + f"_acq_{i}",
+                    "waveform_op_id": schedulable["operation_repr"] + f"_acq_{i}",
                     "port": acq_info["port"],
                     "clock": acq_info["clock"],
                     "abs_time": abs_time,
                     "duration": acq_info["duration"],
                     "is_acquisition": True,
-                    "operation": t_constr["operation_repr"],
+                    "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }
-                timing_table = timing_table.append(df_row, ignore_index=True)
-
+                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
+        timing_table = pd.concat(timing_table_list, ignore_index=True)
         # apply a style so that time is easy to read.
         # this works under the assumption that we are using timings on the order of
         # nanoseconds.
@@ -523,7 +528,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         # ensure keys exist
         self.data["operation_dict"] = {}
-        self.data["timing_constraints"] = []
+        self.data["schedulables"] = {}
         self.data["resource_dict"] = {}
         self.data["name"] = "nameless"
         self.data["repetitions"] = repetitions
@@ -560,22 +565,14 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self,
         operation: Operation,
         rel_time: float = 0,
-        ref_op: str = None,
+        ref_op: Schedulable = None,
         ref_pt: Literal["start", "center", "end"] = "end",
         ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
-    ) -> str:
+    ) -> Schedulable:
         """
         Add an :class:`quantify_scheduler.operations.operation.Operation` to the
-        schedule and specify timing constraints.
-
-        A timing constraint constrains the operation in time by specifying the time
-        (:code:`"rel_time"`) between a reference operation and the added operation.
-        The time can be specified with respect to the "start", "center", or "end" of
-        the operations.
-        The reference operation (:code:`"ref_op"`) is specified using its label
-        property.
-        See also :attr:`~.ScheduleBase.timing_constraints`.
+        schedule.
 
         Parameters
         ----------
@@ -586,7 +583,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             the time is the time between the "ref_pt" in the reference operation and
             "ref_pt_new" of the operation that is added.
         ref_op
-            label of the reference operation. If set to :code:`None`, will default
+            reference schedulable. If set to :code:`None`, will default
             to the last added operation.
         ref_pt
             reference point in reference operation must be one of
@@ -600,56 +597,162 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         Returns
         -------
         :
-            returns the (unique) label of the last added operation.
+            returns the schedulable created on the schedule
         """
         assert isinstance(operation, Operation)
 
         if label is None:
             label = str(uuid4())
-        else:
-            # assert that the label of the operation does not exists in the
-            # timing constraints.
-            label_is_unique = (
-                len(
-                    [
-                        item
-                        for item in self.data["timing_constraints"]
-                        if item["label"] == label
-                    ]
-                )
-                == 0
-            )
-            if not label_is_unique:
-                raise ValueError(f'Label "{label}" must be unique.')
-
-        # assert that the reference operation exists
-        if ref_op is not None:
-            ref_exists = (
-                len(
-                    [
-                        item
-                        for item in self.data["timing_constraints"]
-                        if item["label"] == ref_op
-                    ]
-                )
-                == 1
-            )
-            if not ref_exists:
-                raise ValueError(f'Reference "{ref_op}" does not exist in schedule.')
 
         operation_id = str(operation)
         self.data["operation_dict"][operation_id] = operation
+        element = Schedulable(name=label, operation_repr=operation_id, schedule=self)
+        element.add_timing_constraint(rel_time, ref_op, ref_pt, ref_pt_new)
+        self.data["schedulables"].update({label: element})
+
+        return element
+
+    def __getstate__(self):
+        return self.data
+
+    def __setstate__(self, state):
+        self.data = state
+        for schedulable in self.schedulables.values():
+            schedulable.schedule = weakref.proxy(self)
+
+
+class Schedulable(JSONSchemaValMixin, UserDict):
+    """
+    This class represents an element on a schedule. All elements on a schedule are
+    schedulables. A schedulable contains all information regarding the timing of this
+    element as well as the operation being executing by this element.
+    This operation is currently represented by an operation ID.
+
+    Schedulables can contain an arbitrary number of timing constraints to determine the
+    timing. Multiple different contraints are currently resolved by delaying the element
+    until after all timing constraints have been met, to aid compatibility.
+    To specify an exact timing between two schedulables, please ensure to only specify
+    exactly one timing constraint.
+    """
+
+    schema_filename = "schedulable.json"
+
+    def __init__(self, name, operation_repr, schedule, data: dict = None):
+        """
+
+        Parameters
+        ----------
+        name
+            The name of this schedulable, by which it can be referenced by other
+            schedulables. Separate schedulables cannot share the same name
+        operation_repr
+            The operation which is to be executed by this schedulable
+        schedule
+            The schedule to which the schedulable is added. This allows to scheduable to
+            find other elements on the schedule
+        """
+        super().__init__()
+        if data is not None:
+            self.data = data
+            return
+
+        # assert the name is unique
+        name_is_unique = (
+            len([item for item in schedule["schedulables"].keys() if item == name]) == 0
+        )
+        if not name_is_unique:
+            raise ValueError(f'Name "{name}" must be unique.')
+
+        self.data["name"] = name
+        self.data["operation_repr"] = operation_repr
+        self.data["timing_constraints"] = []
+
+        # the next lines are to prevent breaking the existing API
+        self.data["label"] = name
+
+        self.schedule = weakref.proxy(schedule)
+        # self.schedule = schedule
+
+    def add_timing_constraint(
+        self,
+        rel_time: float = 0,
+        ref_schedulable: Schedulable = None,
+        ref_pt: Literal["start", "center", "end"] = "end",
+        ref_pt_new: Literal["start", "center", "end"] = "start",
+    ):
+        """
+        A timing constraint constrains the operation in time by specifying the time
+        (:code:`"rel_time"`) between a reference schedulable and the added schedulable.
+        The time can be specified with respect to the "start", "center", or "end" of
+        the operations.
+        The reference schedulable (:code:`"ref_schedulable"`) is specified using its
+        name property.
+        See also :attr:`~.ScheduleBase.schedulables`.
+
+        Parameters
+        ----------
+        rel_time
+            relative time between the reference schedulable and the added schedulable.
+            the time is the time between the "ref_pt" in the reference operation and
+            "ref_pt_new" of the operation that is added.
+        ref_schedulable
+            name of the reference schedulable. If set to :code:`None`, will default
+            to the last added operation.
+        ref_pt
+            reference point in reference schedulable must be one of
+            ('start', 'center', 'end').
+        ref_pt_new
+            reference point in added schedulable must be one of
+            ('start', 'center', 'end').
+        """
+
+        # assert that the reference operation exists
+        if (
+            ref_schedulable is not None
+            and str(ref_schedulable) not in self.schedule.data["schedulables"].keys()
+        ):
+            raise ValueError(
+                f'Reference "{ref_schedulable}" does not exist in schedule.'
+            )
+
         timing_constr = {
-            "label": label,
             "rel_time": rel_time,
-            "ref_op": ref_op,
+            "ref_schedulable": ref_schedulable,
             "ref_pt_new": ref_pt_new,
             "ref_pt": ref_pt,
-            "operation_repr": operation_id,
         }
         self.data["timing_constraints"].append(timing_constr)
 
-        return label
+    def __str__(self):
+        return str(self.data["name"])
+
+    def __repr__(self) -> str:
+        """
+        Returns the string representation  of this instance.
+
+        This represenation can always be evalued to create a new instance.
+
+        .. code-block::
+
+            eval(repr(operation))
+
+        Returns
+        -------
+        :
+        """
+        cls = f"{self.__class__.__name__}"
+        return (
+            f"{cls}(name='{self.data['name']}', "
+            f"operation_repr='', "
+            f"schedule='', "
+            f"data={self.data})"
+        )
+
+    def __getstate__(self):
+        return self.data
+
+    def __setstate__(self, state):
+        self.data = state
 
 
 # pylint: disable=too-many-ancestors

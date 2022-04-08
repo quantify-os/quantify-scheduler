@@ -5,13 +5,10 @@ from __future__ import annotations
 
 import warnings
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 import numpy as np
-from quantify_core.utilities import general
-
-from quantify_scheduler import Operation
-from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.helpers.collections import make_hash, without
 from quantify_scheduler.schedules.schedule import (
     AcquisitionMetadata,
     CompiledSchedule,
@@ -19,6 +16,7 @@ from quantify_scheduler.schedules.schedule import (
 )
 
 if TYPE_CHECKING:
+    from quantify_scheduler import Operation
     from quantify_scheduler.backends.types import qblox
 
 
@@ -45,7 +43,7 @@ def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> in
     if excludes is None:
         excludes = ["t0"]
 
-    return general.make_hash(general.without(pulse_info, excludes))
+    return make_hash(without(pulse_info, excludes))
 
 
 def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
@@ -68,7 +66,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
         "It is currently being replaced by the timing_table property of a `Schedule`",
         DeprecationWarning,
     )
-    return general.make_hash(general.without(acq_info, ["t0", "waveforms"]))
+    return make_hash(without(acq_info, ["t0", "waveforms"]))
 
 
 def get_total_duration(schedule: CompiledSchedule) -> float:
@@ -91,7 +89,7 @@ def get_total_duration(schedule: CompiledSchedule) -> float:
         "It is currently being replaced by the timing_table property of a `Schedule`",
         DeprecationWarning,
     )
-    if len(schedule.timing_constraints) == 0:
+    if len(schedule.schedulables) == 0:
         return 0.0
 
     def _get_operation_end(pair: Tuple[int, dict]) -> float:
@@ -104,7 +102,7 @@ def get_total_duration(schedule: CompiledSchedule) -> float:
 
     operations_ends = map(
         _get_operation_end,
-        enumerate(schedule.timing_constraints),
+        enumerate(schedule.schedulables.values()),
     )
 
     return max(
@@ -136,13 +134,13 @@ def get_operation_start(
         "It is currently being replaced by the timing_table property of a `Schedule`",
         DeprecationWarning,
     )
-    if len(schedule.timing_constraints) == 0:
+    if len(schedule.schedulables) == 0:
         return 0.0
 
-    t_constr = schedule.timing_constraints[timeslot_index]
-    operation = schedule.operations[t_constr["operation_repr"]]
+    schedulable = list(schedule.schedulables.values())[timeslot_index]
+    operation = schedule.operations[schedulable["operation_repr"]]
 
-    t0: float = t_constr["abs_time"]
+    t0: float = schedulable["abs_time"]
 
     pulse_info: dict = (
         operation["pulse_info"][0]
@@ -186,12 +184,12 @@ def get_operation_end(
         "It is currently being replaced by the timing_table property of a `Schedule`",
         DeprecationWarning,
     )
-    if len(schedule.timing_constraints) == 0:
+    if len(schedule.schedulables) == 0:
         return 0.0
 
-    t_constr = schedule.timing_constraints[timeslot_index]
-    operation: Operation = schedule.operations[t_constr["operation_repr"]]
-    t0: float = t_constr["abs_time"]
+    schedulable = list(schedule.schedulables.values())[timeslot_index]
+    operation: Operation = schedule.operations[schedulable["operation_repr"]]
+    t0: float = schedulable["abs_time"]
 
     return t0 + operation.duration
 
@@ -228,18 +226,19 @@ def get_port_timeline(
     port_timeline_dict: Dict[str, Dict[int, List[int]]] = {}
 
     # Sort timing constraints based on abs_time and keep the original index.
-    timing_constraints_map = dict(
+    schedulables_map = dict(
         sorted(
             map(
-                lambda pair: (pair[0], pair[1]), enumerate(schedule.timing_constraints)
+                lambda pair: (pair[0], pair[1]),
+                enumerate(schedule.schedulables.values()),
             ),
             key=lambda pair: pair[1]["abs_time"],
         )
     )
 
-    for timeslot_index, t_constr in timing_constraints_map.items():
-        operation = schedule.operations[t_constr["operation_repr"]]
-        abs_time = t_constr["abs_time"]
+    for timeslot_index, schedulable in schedulables_map.items():
+        operation = schedule.operations[schedulable["operation_repr"]]
+        abs_time = schedulable["abs_time"]
 
         pulse_info_iter = map(
             lambda pulse_info: (get_pulse_uuid(pulse_info), pulse_info),
@@ -326,8 +325,8 @@ def get_pulse_info_by_uuid(
         DeprecationWarning,
     )
     pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
-    for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = get_pulse_uuid(pulse_info)
             if pulse_id in pulseid_pulseinfo_dict:
@@ -365,8 +364,8 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> Dict[int, Dict[str, Any]
         DeprecationWarning,
     )
     acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
-    for t_constr in schedule.timing_constraints:
-        operation = schedule.operations[t_constr["operation_repr"]]
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_repr"]]
 
         for acq_info in operation["acquisition_info"]:
             acq_id = get_acq_uuid(acq_info)
