@@ -33,7 +33,7 @@
 # The Schedule
 # ------------
 #
-# The main data structure that describes an experiment in the `quantify_scheduler` is the schedule. We will show how the Schedule works through an example.
+# The main data structure that describes an experiment in the `quantify_scheduler` is the Schedule. We will show how the Schedule works through an example.
 
 # %%
 from quantify_scheduler import Schedule
@@ -43,7 +43,7 @@ sched = Schedule("Hello quantum world!")
 sched
 
 # %% [raw]
-# As we can see, our newly created schedule is still empty. We need to manually add operations to it. In the `quantify_scheduler` there are three types of operations: pulses, acquisitions and gates and all of these have explicit timing control. In this tutorial we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
+# As we can see, our newly created schedule is still empty. We need to manually add operations to it. In `quantify_scheduler` there are three types of operations: pulses, acquisitions and gates. All of these have explicit timing control. In this tutorial we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
 #
 # While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify_scheduler`. These pulses are described in the `pulse_library`. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
 #
@@ -59,7 +59,7 @@ square_pulse = sched.add(
 sched
 
 # %% [raw]
-# You may have noticed that we passed a port and a clock to the pulse. These parameters specify where on our quantum device we are sending these pulses. The port marks the physical location on the chip, whilst the clock tracks the frequency of the signal. This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
+# You may have noticed that we passed a port and a clock to the pulse. The port specifies the physical location on the quantum chip to which we are sending the pulses, whilst the clock tracks the frequency of the signal. This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
 
 # %%
 from quantify_scheduler.resources import ClockResource
@@ -70,7 +70,7 @@ sched.add_resource(readout_clock)
 sched
 
 # %% [raw]
-# The `quantify_scheduler` provides several visualisation tools to show the schedule that you made, but in order to show these we first need to instruct the scheduler to calculate the pulse timings.
+# `quantify_scheduler` provides several visualization tools to show a visual representation of the schedule we made. First, however, we need to instruct the scheduler to calculate the pulse timings. We can accomplish this using the `determine_absolute_timing` function. In the cell below we call this function and draw the schedule.
 #
 # Note that these plots are interactive and modulation is not shown by default.
 
@@ -100,7 +100,7 @@ pulse_diagram_plotly(sched)
 # %% [raw]
 # We can see that `rel_time=500e-9` schedules the pulse 500 ns shifted relative to the end of the `ref_op`. If no additional arguments are passed, operations are added directly after the operation that was added last.
 #
-# Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can chose to instead specify it relative to the beginning. This is done by passing `ref_pt='start'`.
+# Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can choose to instead specify it relative to the beginning. This is done by passing `ref_pt='start'`.
 
 # %%
 sched.add(
@@ -118,15 +118,15 @@ pulse_diagram_plotly(sched)
 # %% [raw]
 # We see that we added a DRAG pulse to the schedule. Two things stand out:
 #
-# 1. The DRAG pulse is plotted seperately from the square pulse, this is because the we specified a different port for this pulse than we did for the square pulse.
-# 2. The DRAG pulse shows two lines instead of one. This is because a DRAG pulse is specified as a complex valued pulse, so we have to plot both the I and Q components of the signal. The real part of the waveform is shown in color, whereas the imaginary component is shown in greyscale.
+# 1. The DRAG pulse is plotted seperately from the square pulse, this is because we specified a different port for this pulse than we did for the square pulse.
+# 2. The DRAG pulse shows two lines instead of one. This is because a DRAG pulse is specified as a complex-valued pulse, so we have to plot both the I and Q components of the signal. The real part of the waveform is shown in color, whereas the imaginary component is shown in greyscale.
 
 # %% [raw]
 #
 # Parameterized schedules
 # -----------------------
 #
-# In an experiment, often the need arises to vary one of the parameters of a schedule programatically. Currently, the canonical way of achieving this is by defining a function that returns a generated schedule. We will use this to generate a pulse train, where we can specify the timing parameters seperately.
+# In an experiment, often the need arises to vary one of the parameters of a schedule programmatically. Currently, the canonical way of achieving this is by defining a function that returns a generated schedule. We will use this to generate a pulse train, where we can specify the timing parameters separately.
 
 # %%
 from quantify_scheduler.resources import BasebandClockResource
@@ -163,4 +163,4 @@ compilation.determine_absolute_timing(sched)
 pulse_diagram_plotly(sched)
 
 # %% [raw]
-# Note that we used the `BasebandClockResource` as clock, which is always at 0 Hz and added automatically to the schedule for convienence. We can see that the pulses start every 500 ns and are 200 ns long.
+# Note that we used the `BasebandClockResource` as clock, which is always at 0 Hz and added automatically to the schedule for convenience. We can see that the pulses start every 500 ns and are 200 ns long.
