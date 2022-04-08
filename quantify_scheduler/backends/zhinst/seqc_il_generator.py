@@ -367,7 +367,12 @@ class SeqcILGenerator(object):
         """
         self._emit(f"setTrigger({index});{comment}")
 
-    def emit_wait_dig_trigger(self, index: int = 0, comment: str = "") -> None:
+    def emit_wait_dig_trigger(
+        self,
+        index: int = 0,
+        comment: str = "",
+        device_type: Optional[zhinst.DeviceType] = None,
+    ) -> None:
         """
         Emit waitDigTrigger to the program.
 
@@ -382,6 +387,8 @@ class SeqcILGenerator(object):
 
         if index == 0:
             trigger = f"waitDigTrigger(1);{comment}"
+        elif device_type == zhinst.DeviceType.HDAWG:
+            trigger = f"waitDigTrigger({index});{comment}"
         else:
             trigger = f"waitDigTrigger({index}, 1);{comment}"
         self._emit(trigger)

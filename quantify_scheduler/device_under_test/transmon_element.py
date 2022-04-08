@@ -258,7 +258,7 @@ class BasicTransmonElement(DeviceElement):
                         "amp180": self.rxy.amp180(),
                         "motzoi": self.rxy.motzoi(),
                         "port": self.ports.microwave(),
-                        "clock": self.clock_freqs.f01(),
+                        "clock": f"{self.name}.01",
                         "duration": self.rxy.duration(),
                     },
                     gate_info_factory_kwargs=[
@@ -273,7 +273,7 @@ class BasicTransmonElement(DeviceElement):
                     + "measurement_factories.dispersive_measurement",
                     factory_kwargs={
                         "port": self.ports.readout(),
-                        "clock": self.clock_freqs.readout(),
+                        "clock": f"{self.name}.ro",
                         "pulse_type": self.measure.pulse_type(),
                         "pulse_amp": self.measure.pulse_amp(),
                         "pulse_duration": self.measure.pulse_duration(),
@@ -527,7 +527,7 @@ class TransmonElement(DeviceElement):
             initial_value=300e-9,
             unit="s",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1, max_value=1),
         )
 
         self.add_parameter(
@@ -545,7 +545,7 @@ class TransmonElement(DeviceElement):
             initial_value=0,
             unit="s",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1, max_value=1),
         )
         self.add_parameter(
             "ro_acq_integration_time",

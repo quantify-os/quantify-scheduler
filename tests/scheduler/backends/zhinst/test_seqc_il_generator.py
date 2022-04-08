@@ -104,18 +104,22 @@ def test_declare_wave_and_assign() -> None:
 
 
 @pytest.mark.parametrize(
-    "index,expected",
+    "index,device_type,expected",
     [
-        (0, "waitDigTrigger(1);"),
-        (1, "waitDigTrigger(1, 1);"),
+        (0, None, "waitDigTrigger(1);"),
+        (1, None, "waitDigTrigger(1, 1);"),
+        (1, DeviceType.UHFQA, "waitDigTrigger(1, 1);"),
+        (1, DeviceType.HDAWG, "waitDigTrigger(1);"),
     ],
 )
-def test_emit_wait_dig_trigger(index: int, expected: str) -> None:
+def test_emit_wait_dig_trigger(
+    index: int, device_type: DeviceType, expected: str
+) -> None:
     # Arrange
     gen = SeqcILGenerator()
 
     # Act
-    gen.emit_wait_dig_trigger(index)
+    gen.emit_wait_dig_trigger(index, device_type=device_type)
 
     # Assert
     assert gen._program[-1] == (0, expected)

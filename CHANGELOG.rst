@@ -4,6 +4,7 @@ Changelog
 
 Unreleased changes
 ------------------
+* QuantumDevice - Fixed a bug in the BasicTransmonElement where operations had clock-frequencies (float) specified instead of clocks (str).
 * QuantumDevice - The DeviceElement has been added as an abstract base class for elements to be added to a device (#148, !374).
 * QuantumDevice - The BasicTransmonElement has been added that generates a device config in a more structured manner (#246, !374).
 * QuantumDevice - The TransmonElement will be deprecated after version 0.8 (!374).
