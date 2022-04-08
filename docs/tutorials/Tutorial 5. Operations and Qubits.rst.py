@@ -180,16 +180,12 @@ sched.timing_table
 # Device configuration and compilation
 # ------------------------------------
 #
+# Up until now the schedule is not specific to any qubit implementation.
 # The aim of this section is to add device specific information to the schedule.
-# Before adding this, the schedule is not specific to any qubit implementation.
-# In this section, we compile the schedule to the quantum-device layer to enable running it on a specific qubit implementation.
-# In order to generate the necessary information, some device properties must be specified which
-# is done using the :ref:`device configuration file<sec-device-config>`.
+# This knowledge is contained in the :ref:`device configuration file<sec-device-config>`, which we introduce in this section.
+# By compiling the schedule to the quantum-device layer, we incorporate the device configuration into the schedule (for example by adding pulse information to every gate) and thereby enable it to run on a specific qubit implementation.
 #
-# Using the device configuration file, the schedule can be compiled to the quantum-device layer, appending pulse
-# information to every gate in the schedule. Before continuing to the compilation step,
-# however, we will first unpack the configuration file.
-#
+# To start this section, we will unpack the structure of the configuration file.
 # Here we will use a configuration file for a transmon based system that is used in the
 # quantify-scheduler test suite.
 
