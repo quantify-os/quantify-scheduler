@@ -157,7 +157,7 @@ compilation_output.data["compiled_instructions"]
 
 # %%
 from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-from quantify_scheduler.instrument_coordinator.components.generic import (
+from quantify_scheduler.helpers.mock_instruments import (
     MockLocalOscillator,
 )
 

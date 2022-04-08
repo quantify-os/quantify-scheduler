@@ -11,6 +11,9 @@ from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
+)
+
+from quantify_scheduler.helpers.mock_instruments import (
     MockLocalOscillator,
 )
 
