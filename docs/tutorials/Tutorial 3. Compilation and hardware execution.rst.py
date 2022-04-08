@@ -172,7 +172,7 @@ lo0 = MockLocalOscillator("lo0")
 # %% [raw]
 # And we attach these instruments to the `InstrumentCoordinator` via the appropriate `InstrumentCoordinatorComponent` wrapper class.
 #
-# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via an instance of the :class:`[py:method]: quantify_scheduler.instrument_coordinator.components.generic.GenericInstrumentCoordinatorComponent` class, which is automatically added to the `InstrumentCoordinator` during instantiation.
+# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via an instance of the :class:`quantify_scheduler.instrument_coordinator.components.generic.GenericInstrumentCoordinatorComponent` class, which is automatically added to the `InstrumentCoordinator` during instantiation.
 # This component is meant to serve as an interface for simple access to instruments which needs to only set parameters, such as local oscillators or current sources.
 
 # %%
@@ -185,11 +185,12 @@ ic = InstrumentCoordinator("ic")
 ic.add_component(PulsarQCMComponent(qcm))
 
 # %% [raw]
-# We prepare the instruments with the appropriate settings and upload the schedule program by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.prepare` and passing the compilation output as argument.
+# The experiment can now be conducted using the methods of `InstrumentCoordinator`:
 #
-# Finally, the experiment can be executed by calling :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.start`.
+# 1. We prepare the instruments with the appropriate settings and upload the schedule program by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.prepare` method and passing the compilation output as argument.
+# 2. We start the experiment can be executed by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.start` method.
 #
-# The :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.wait_done` method is useful to wait for the experiment to finish and assure the synchronicity of the python script.
+# Additionally, the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.wait_done` method is useful to wait for the experiment to finish and assure the synchronicity of the python script.
 #
 #
 
@@ -203,4 +204,10 @@ ic.start()
 # Wait for the experiment to finish or for a timeout
 ic.wait_done(timeout_sec=10)
 
-# %%
+# %% [raw]
+# The `InstrumentCoordinator` has two more functions which were not covered in this experiment:
+#
+# - :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition`
+#   - In case the schedule contained acquisitions, this method retrieves the acquired data.
+# - :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.stop`
+#   - Stops all running instruments.
