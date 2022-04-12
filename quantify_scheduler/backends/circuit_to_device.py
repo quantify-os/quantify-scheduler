@@ -4,7 +4,7 @@
 Compilation backend for quantum-circuit to quantum-device layer.
 """
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Union, Set, Iterator
+from typing import Any, Callable, Dict, List, Optional, Union, Set
 
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.operation import Operation
@@ -173,7 +173,8 @@ def compile_circuit_to_device(
             _compile_multiplexed(operation, qubits, operation_type, device_cfg)
 
         clocks_used = _extract_clocks_from_operation(operation)
-        map(_add_clock_info, clocks_used)
+        for clock in clocks_used:
+            _add_clock_info(clock)
 
     return schedule
 
