@@ -37,7 +37,7 @@ We start by looking at an example config for a single cluster:
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "lo_name": "lo0",
-                    "targets": [
+                    "portclock_configs": [
                         {
                         "clock": "q4.01",
                         "interm_freq": 200000000.0,
@@ -52,7 +52,7 @@ We start by looking at an example config for a single cluster:
             "cl_qcm_rf0": {
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "targets": [
+                    "portclock_configs": [
                         {"clock": "q5.01", "interm_freq": 50000000.0, "port": "q5:mw"},
                     ]
                 },

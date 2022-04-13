@@ -108,7 +108,7 @@ def make_hardware_cfg_latency_correction():
                 "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "targets": [
+                    "portclock_configs": [
                         {
                             "port": port,
                             "clock": clock,
@@ -133,7 +133,7 @@ def hardware_cfg_baseband():
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "targets": [
+                "portclock_configs": [
                     {
                         "port": "q0:mw",
                         "clock": "cl0.baseband",
@@ -144,7 +144,7 @@ def hardware_cfg_baseband():
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "targets": [{"port": "q1:mw", "clock": "q1.01"}],
+                "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
@@ -161,7 +161,7 @@ def hardware_cfg_real_mode():
             "ref": "internal",
             "real_output_0": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                         "port": "LP",
                         "clock": "cl0.baseband",
@@ -171,7 +171,7 @@ def hardware_cfg_real_mode():
             },
             "real_output_1": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                         "port": "RP",
                         "clock": "cl0.baseband",
@@ -181,7 +181,7 @@ def hardware_cfg_real_mode():
             },
             "real_output_2": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                         "port": "TB",
                         "clock": "cl0.baseband",
@@ -638,7 +638,7 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
 def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_schedule):
     mapping = copy.deepcopy(HARDWARE_MAPPING)
 
-    mapping["qcm0"]["complex_output_0"]["targets"] = [
+    mapping["qcm0"]["complex_output_0"]["portclock_configs"] = [
         {
             "port": "q0:mw",
             "clock": "q0.01",
@@ -678,11 +678,11 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         "qcm0": {
             "instrument_type": "Pulsar_QCM_RF",
             "ref": "internal",
-            "complex_output_0": {"targets": []},
+            "complex_output_0": {"portclock_configs": []},
         },
     }
 
-    hw_mapping["qcm0"]["complex_output_0"]["targets"] = [
+    hw_mapping["qcm0"]["complex_output_0"]["portclock_configs"] = [
         {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
     ]
 
@@ -835,7 +835,7 @@ def test_qasm_hook(pulse_only_schedule):
             "instrument_type": "Pulsar_QRM",
             "ref": "external",
             "complex_output_0": {
-                "targets": [
+                "portclock_configs": [
                     {
                         "qasm_hook_func": _func_for_hook_test,
                         "port": "q0:mw",
@@ -1121,8 +1121,12 @@ def test_assign_frequencies_baseband():
     q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
     q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["targets"][0].get("interm_freq")
-    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["targets"][0].get("interm_freq")
+    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
     io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
     io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
     lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
@@ -1156,8 +1160,12 @@ def test_assign_frequencies_baseband_downconverter():
     q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
     q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["targets"][0].get("interm_freq")
-    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["targets"][0].get("interm_freq")
+    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
     io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
     io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
     lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
@@ -1192,10 +1200,10 @@ def test_assign_frequencies_rf():
     sched.add(X("q2"))
     sched.add(X("q3"))
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["targets"][0].get(
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
         "interm_freq"
     )
-    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["targets"][0].get(
+    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["portclock_configs"][0].get(
         "interm_freq"
     )
     lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
@@ -1209,7 +1217,9 @@ def test_assign_frequencies_rf():
     q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
     q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["targets"][0]["interm_freq"]
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
+        "interm_freq"
+    ]
     lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
 
     lo0 = q2_clock_freq - if0
@@ -1231,10 +1241,10 @@ def test_assign_frequencies_rf_downconverter():
     sched.add(X("q2"))
     sched.add(X("q3"))
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["targets"][0].get(
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
         "interm_freq"
     )
-    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["targets"][0].get(
+    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["portclock_configs"][0].get(
         "interm_freq"
     )
     lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
@@ -1248,7 +1258,9 @@ def test_assign_frequencies_rf_downconverter():
     q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
     q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["targets"][0]["interm_freq"]
+    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
+        "interm_freq"
+    ]
     lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
 
     lo0 = q2_clock_freq - if0

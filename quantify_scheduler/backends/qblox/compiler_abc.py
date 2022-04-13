@@ -934,9 +934,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
-            targets = self.hw_mapping[io].get("targets", None)
-            if targets:
-                portclocks += [(target["port"], target["clock"]) for target in targets]
+            portclock_configs = self.hw_mapping[io].get("portclock_configs", None)
+            if portclock_configs:
+                portclocks += [
+                    (target["port"], target["clock"]) for target in portclock_configs
+                ]
 
         return portclocks
 
@@ -992,8 +994,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             lo_name = io_cfg.get("lo_name", None)
             downconverter = io_cfg.get("downconverter", False)
 
-            targets: List[Dict[str, Any]] = io_cfg.get("targets", [])
-            for target in targets:
+            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
+                "portclock_configs", []
+            )
+            for target in portclock_configs:
                 portclock = target["port"], target["clock"]
 
                 if portclock in self.portclocks_with_data:
@@ -1013,7 +1017,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_output_map:
                         raise ValueError(
-                            f"Portclock {portclock} was assigned to multiple targets "
+                            f"Portclock {portclock} was assigned to multiple portclock_configs "
                             f"of {self.name}. This portclock was used in "
                             f"output '{io}' despite being already previously used "
                             f"in output '{portclock_output_map[portclock]}'."
@@ -1021,10 +1025,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                     portclock_output_map[portclock] = io
 
-        # Check if more targets than sequencers are active
+        # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
-                "Number of simultaneous pulse targets exceeds number of sequencers."
+                "Number of simultaneous active portclocks exceeds "
+                "number of sequencers."
                 f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )

@@ -35,7 +35,7 @@ Each device in the setup can be individually configured using the entry in the c
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -46,7 +46,7 @@ Each device in the setup can be individually configured using the entry in the c
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q1:mw",
                     "clock": "q1.01",
@@ -91,7 +91,7 @@ Most notably under the :code:`complex_output_0`, we specify the sequencer settin
 .. code-block:: python
     :linenos:
 
-    "targets": [
+    "portclock_configs": [
         {
         "port": "q0:mw",
         "clock": "q0.01",
@@ -141,7 +141,7 @@ The result is that the downconversion stage will be taken into account when calc
             "ref": "internal",
             "complex_output_0": {
                 "downconverter": True,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -194,7 +194,7 @@ mixer correction parameters as well as the frequencies.
             "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -203,7 +203,7 @@ mixer correction parameters as well as the frequencies.
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q1:mw",
                     "clock": "q1.01",
@@ -235,7 +235,7 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
             "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -248,7 +248,7 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q1:mw",
                     "clock": "q1.01",
@@ -299,7 +299,7 @@ The resulting config looks like:
             "ref": "internal",
             "real_output_0": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                 {
                     "port": "q0:mw",
                     "clock": "q0.01",
@@ -307,7 +307,7 @@ The resulting config looks like:
             },
             "real_output_1": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q1:mw",
                     "clock": "q1.01",
@@ -316,7 +316,7 @@ The resulting config looks like:
             },
             "real_output_2": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q2:mw",
                     "clock": "q2.01",
@@ -384,7 +384,7 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
             "ref": "internal",
             "complex_output_0": {
                 "line_gain_db": 0,
-                "targets": [
+                "portclock_configs": [
                     {
                     "port": "q0:mw",
                     "clock": "q0.01",
