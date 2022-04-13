@@ -86,7 +86,8 @@ respectively. Multiple devices can be added to the config, similar to how we add
 Output settings
 ^^^^^^^^^^^^^^^
 
-Most notably under the :code:`complex_output_0`, we specify the sequencer settings.
+Most notably under the :code:`complex_output_0`, we specify the portclocks the output may target (see the :ref:`User guide <sec-user-guide>`
+for more information on the role of ports and clocks within the Quantify-Scheduler).
 
 .. code-block:: python
     :linenos:
@@ -99,9 +100,7 @@ Most notably under the :code:`complex_output_0`, we specify the sequencer settin
         }
     ]
 
-Here we describe which port and clock the sequencer is associated with (see the :ref:`User guide <sec-user-guide>`
-for more information on the role of ports and clocks within the Quantify-Scheduler). The other entry, :code:`interm_freq`,
-specifies the intermediate frequency to use for I/Q modulation (in Hz).
+Additionally, the entry :code:`interm_freq` specifies the intermediate frequency to use for I/Q modulation (in Hz) when targetting this portclock.
 
 I/Q modulation
 ^^^^^^^^^^^^^^
@@ -175,7 +174,7 @@ to :code:`complex_output_0` (or :code:`complex_output_1`) in order to add a DC o
     "mixer_amp_ratio": 0.9997,
     "mixer_phase_error_deg": -4.0,
 
-To the sequencer configuration in order to correct to set the amplitude and phase correction to correct for imperfect rejection of the unwanted sideband.
+to the portclock configuration in order to set the amplitude and phase correction to correct for imperfect rejection of the unwanted sideband.
 
 Usage without an LO
 ^^^^^^^^^^^^^^^^^^^
@@ -222,7 +221,7 @@ mixer correction parameters as well as the frequencies.
 Frequency multiplexing
 ^^^^^^^^^^^^^^^^^^^^^^
 
-It is possible to do frequency multiplexing of the signals by adding multiple sequencers to the same output.
+It is possible to do frequency multiplexing of the signals by adding multiple portclocks to the same output.
 
 .. jupyter-execute::
     :hide-output:
@@ -273,7 +272,7 @@ It is possible to do frequency multiplexing of the signals by adding multiple se
 
     hardware_compile(test_sched, mapping_config)
 
-In the given example, we added a second sequencer to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
+In the given example, we added a second portclock configuration to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
 
 .. note::
 
@@ -371,7 +370,7 @@ Experimental features
 
 The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using a more complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 
-In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the sequencer configuration.
+In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the portclock configuration.
 
 .. jupyter-execute::
     :hide-output:
@@ -410,7 +409,7 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
 
     hardware_compile(test_sched, mapping_config)
 
-Currently this has the following effects:
+Currently, this has the following effects:
 
 - Long square pulses get broken up into separate pulses with durations <= 1 us, which allows the modules to play square pulses longer than the waveform memory normally allows.
 - Staircase pulses are generated using offset instructions instead of using waveform memory
