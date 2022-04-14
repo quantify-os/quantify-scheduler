@@ -125,9 +125,7 @@ def compile_circuit_to_device(
 
     """
     if not isinstance(device_cfg, DeviceCompilationConfig):
-        device_cfg: DeviceCompilationConfig = DeviceCompilationConfig.parse_obj(
-            device_cfg
-        )
+        device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
