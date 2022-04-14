@@ -172,10 +172,10 @@ def compile_circuit_to_device(
                 device_cfg=device_cfg,
             )
 
-        pulses = operation["pulse_info"] + operation["acquisition_info"]
+        pulse_acq_info = operation["pulse_info"] + operation["acquisition_info"]
         clocks_used = []
-        for pulse in pulses:
-            clocks_used.append(pulse["clock"])
+        for info in pulse_acq_info:
+            clocks_used.append(info["clock"])
 
         clocks_used = set(clocks_used)
         for clock in clocks_used:
