@@ -124,21 +124,6 @@ def compile_circuit_to_device(
         :class:`~DeviceCompilationConfig`.
 
     """
-
-    def _add_clock_info(clock_to_add: str):
-        """
-        Adds a specific clock as a resource to the schedule using the device config.
-
-        Parameters
-        ----------
-        clock_to_add
-            The clock to add as a resource to the schedule.
-        """
-        if clock_to_add not in schedule.resources:
-            frequency = device_cfg.clocks[clock_to_add]
-            clock_resource = ClockResource(name=clock_to_add, freq=frequency)
-            schedule.add_resource(clock_resource)
-
     if not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
@@ -160,21 +145,44 @@ def compile_circuit_to_device(
 
         # single qubit operations
         if len(qubits) == 1:
-            _compile_single_qubit(operation, qubits, operation_type, device_cfg)
+            _compile_single_qubit(
+                operation=operation,
+                qubit=qubits[0],
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
 
         # it is a two-qubit operation if the operation not in the qubit config
         elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
-            _compile_two_qubits(operation, qubits, operation_type, device_cfg)
+            _compile_two_qubits(
+                operation=operation,
+                qubits=qubits,
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
 
         # we only support 2-qubit operations and single-qubit operations.
         # some single-qubit operations (reset, measure) can be expressed as acting
         # on multiple qubits simultaneously. That is covered through this for-loop.
         else:
-            _compile_multiplexed(operation, qubits, operation_type, device_cfg)
+            _compile_multiplexed(
+                operation=operation,
+                qubits=qubits,
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
 
-        clocks_used = _extract_clocks_from_operation(operation)
+        pulses = operation["pulse_info"] + operation["acquisition_info"]
+        clocks_used = []
+        for pulse in pulses:
+            clocks_used.append(pulse["clock"])
+
+        clocks_used = set(clocks_used)
         for clock in clocks_used:
-            _add_clock_info(clock)
+            if clock not in schedule.resources:
+                frequency = device_cfg.clocks[clock]
+                clock_resource = ClockResource(name=clock, freq=frequency)
+                schedule.add_resource(clock_resource)
 
     return schedule
 
@@ -187,6 +195,7 @@ def _compile_multiplexed(operation, qubits, operation_type, device_cfg):
                 missing=qubit,
                 allowed=list(device_cfg.elements.keys()),
             )
+
         element_cfg = device_cfg.elements[qubit]
 
         if operation_type not in element_cfg:
@@ -195,27 +204,28 @@ def _compile_multiplexed(operation, qubits, operation_type, device_cfg):
                 missing=operation_type,
                 allowed=list(element_cfg.keys()),
             )
+
         _add_device_repr_from_cfg_multiplexed(
             operation, element_cfg[operation_type], mux_idx=mux_idx
         )
 
 
-def _compile_single_qubit(operation, qubits, operation_type, device_cfg):
-    qubit = qubits[0]
+def _compile_single_qubit(operation, qubit, operation_type, device_cfg):
     if qubit not in device_cfg.elements:
         raise ConfigKeyError(
             kind="element",
             missing=qubit,
             allowed=list(device_cfg.elements.keys()),
         )
-    element_cfg = device_cfg.elements[qubit]
 
+    element_cfg = device_cfg.elements[qubit]
     if operation_type not in element_cfg:
         raise ConfigKeyError(
             kind="operation",
             missing=operation_type,
             allowed=list(element_cfg.keys()),
         )
+
     _add_device_repr_from_cfg(
         operation=operation,
         operation_cfg=element_cfg[operation_type],
@@ -228,6 +238,7 @@ def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
         raise ConfigKeyError(
             kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
         )
+
     edge_config = device_cfg.edges[edge]
     if operation_type not in edge_config:
         # only raise exception if it is also not a single-qubit operation
@@ -236,13 +247,13 @@ def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
             missing=operation_type,
             allowed=list(edge_config.keys()),
         )
+
     _add_device_repr_from_cfg(operation, edge_config[operation_type])
 
 
 def _add_device_repr_from_cfg(
     operation: Operation, operation_cfg: OperationCompilationConfig
 ):
-
     # deepcopy because operation_type can occur multiple times
     # (e.g., parametrized operations).
     operation_cfg = deepcopy(operation_cfg)
@@ -295,28 +306,6 @@ def _add_device_repr_from_cfg_multiplexed(
     device_op = factory_func(**factory_kwargs)
     operation.add_device_representation(device_op)
     return operation
-
-
-def _extract_clocks_from_operation(operation: Operation) -> Set[str]:
-    """
-    Extracts all the clock mentioned in an operation.
-
-    Parameters
-    ----------
-    operation
-        The operation to extract the clocks from.
-
-    Returns
-    -------
-    :
-        All the clocks that are used.
-    """
-
-    def _extract_clock(d: Dict[str, Any]) -> str:
-        return d["clock"]
-
-    info_dicts = operation["pulse_info"] + operation["acquisition_info"]
-    return set(map(_extract_clock, info_dicts))
 
 
 # pylint: disable=super-init-not-called
