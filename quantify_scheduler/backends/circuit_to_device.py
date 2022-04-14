@@ -4,7 +4,7 @@
 Compilation backend for quantum-circuit to quantum-device layer.
 """
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Union, Set
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.operation import Operation
@@ -177,8 +177,7 @@ def compile_circuit_to_device(
         for info in pulse_acq_info:
             clocks_used.append(info["clock"])
 
-        clocks_used = set(clocks_used)
-        for clock in clocks_used:
+        for clock in set(clocks_used):
             if clock not in schedule.resources:
                 frequency = device_cfg.clocks[clock]
                 clock_resource = ClockResource(name=clock, freq=frequency)
