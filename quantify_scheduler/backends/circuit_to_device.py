@@ -305,7 +305,6 @@ def _add_device_repr_from_cfg_multiplexed(
 
     device_op = factory_func(**factory_kwargs)
     operation.add_device_representation(device_op)
-    return operation
 
 
 # pylint: disable=super-init-not-called
