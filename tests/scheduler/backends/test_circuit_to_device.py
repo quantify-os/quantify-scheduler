@@ -1,9 +1,11 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-
+from typing import List
 
 import pytest
+
+from quantify_scheduler import Operation
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.circuit_to_device import (
@@ -12,7 +14,6 @@ from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-
 
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.operations.gate_library import (
@@ -99,6 +100,27 @@ def test_measurement_compile():
     assert m3_acq[1]["acq_channel"] == 1
     assert m3_acq[0]["acq_index"] == 2
     assert m3_acq[1]["acq_index"] == 2
+
+
+@pytest.mark.parametrize(
+    "operations, clocks_used",
+    [
+        ([], ["cl0.baseband"]),
+        ([X(qubit="q0")], ["cl0.baseband", "q0.01"]),
+        ([Measure("q0", "q1")], ["cl0.baseband", "q0.ro", "q1.ro"]),
+        (
+            [X(qubit="q0"), X(qubit="q1"), Measure("q0", "q1")],
+            ["cl0.baseband", "q0.01", "q1.01", "q0.ro", "q1.ro"],
+        ),
+    ],
+)
+def test_only_add_clocks_used(operations: List[Operation], clocks_used: List[str]):
+    sched = Schedule("Test schedule")
+    for operation in operations:
+        sched.add(operation)
+    dev_sched = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+    assert set(dev_sched.resources.keys()) == set(clocks_used)
 
 
 def test_reset_operations_compile():
