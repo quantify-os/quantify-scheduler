@@ -527,18 +527,41 @@ def function_for_test_generate_waveform_data(t, x, y):
 def test_generate_waveform_data():
     x = 10
     y = np.pi
-    sampling_rate = 1e9
     duration = 1e-8
-    t_verification = np.arange(0, 0 + duration, 1 / sampling_rate)
+    sampling_rate = 1e9
+
+    t_verification = np.arange(start=0, stop=0 + duration, step=1 / sampling_rate)
     verification_data = function_for_test_generate_waveform_data(t_verification, x, y)
+
     data_dict = {
         "wf_func": __name__ + ".function_for_test_generate_waveform_data",
         "x": x,
         "y": y,
-        "duration": 1e-8,
+        "duration": duration,
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
+
     assert np.allclose(gen_data, verification_data)
+
+
+@pytest.mark.parametrize(
+    "sampling_rate, duration, sample_size",
+    [
+        (6.3e-08, 1e9, 63),
+        (6.25e-08, 1e9, 63),
+        (6.31e-08, 1e9, 64),
+    ],
+)
+def test_generate_waveform_data_sample_size(duration, sampling_rate, sample_size):
+    data_dict = {
+        "wf_func": __name__ + ".function_for_test_generate_waveform_data",
+        "x": 10,
+        "y": np.pi,
+        "duration": duration,
+    }
+    gen_data = generate_waveform_data(data_dict, sampling_rate)
+
+    assert len(gen_data) == sample_size
 
 
 def test_find_inner_dicts_containing_key():
