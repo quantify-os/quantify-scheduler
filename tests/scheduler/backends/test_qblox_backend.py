@@ -547,9 +547,12 @@ def test_generate_waveform_data():
 @pytest.mark.parametrize(
     "sampling_rate, duration, sample_size",
     [
-        (6.3e-08, 1e9, 63),
-        (6.25e-08, 1e9, 63),
-        (6.31e-08, 1e9, 64),
+        (6.1e-08, 1e9, 61),
+        (6.1999e-08, 1e9, 62),
+        (6.2001e-08, 1e9, 62),
+        (6.249e-08, 1e9, 62),
+        (6.25e-08, 1e9, 62),
+        (6.31e-08, 1e9, 63),
     ],
 )
 def test_generate_waveform_data_sample_size(duration, sampling_rate, sample_size):
@@ -560,8 +563,11 @@ def test_generate_waveform_data_sample_size(duration, sampling_rate, sample_size
         "duration": duration,
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
+    print(duration * sampling_rate)
 
-    assert len(gen_data) == sample_size
+    assert (
+        len(gen_data) == sample_size
+    ), f"Sample size {sample_size} is integer nearest to {duration * sampling_rate}"
 
 
 def test_find_inner_dicts_containing_key():
