@@ -563,7 +563,6 @@ def test_generate_waveform_data_sample_size(duration, sampling_rate, sample_size
         "duration": duration,
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
-    print(duration * sampling_rate)
 
     assert (
         len(gen_data) == sample_size
