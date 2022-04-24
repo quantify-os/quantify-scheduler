@@ -7,7 +7,6 @@ T1 measurement.
 from typing import List, Union
 
 import numpy as np
-from typing_extensions import Literal
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
