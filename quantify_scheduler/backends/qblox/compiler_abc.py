@@ -923,7 +923,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
-        """Returns all the port and clocks available to this device."""
+        """Returns all the portclocks that this device can target."""
 
         portclocks = []
 
