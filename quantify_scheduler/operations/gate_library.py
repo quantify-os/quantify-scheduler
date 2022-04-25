@@ -5,9 +5,9 @@
 from typing import Optional, Tuple, Union
 
 import numpy as np
+from typing_extensions import Literal
 
-from quantify_scheduler.enums import BinMode
-
+from ..enums import BinMode
 from .operation import Operation
 
 
@@ -438,6 +438,11 @@ class Measure(Operation):
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
+        acq_protocol: Literal[
+            "SSBIntegrationComplex",
+            "Trace",
+            None,
+        ] = None,
         bin_mode: BinMode = None,
         data: Optional[dict] = None,
     ):
@@ -456,6 +461,10 @@ class Measure(Operation):
         acq_index
             Index of the register where the measurement is stored.
             If None specified, it will default if a tuple(0
+        acq_protocol
+            Acquisition protocol (currently ``"SSBIntegrationComplex"`` and ``"Trace"``)
+            are supported. If ``None`` is specified, the default protocol is chosen
+            based on the device and backend configuration.
         bin_mode
             The binning mode that is to be used. If not None, it will overwrite
             the binning mode used for Measurements in the quantum-circuit to
@@ -472,34 +481,23 @@ class Measure(Operation):
         # see #262
         if len(qubits) == 1:
             if acq_channel is None:
-                acq_channel_info = 0
-            else:
-                acq_channel_info = acq_channel
+                acq_channel = 0
             if acq_index is None:
-                acq_index_info = 0
-            else:
-                acq_index_info = acq_index
-            bin_mode_info = bin_mode
+                acq_index = 0
         else:
             if isinstance(acq_index, int):
-                acq_index_info = [acq_index] * len(qubits)
+                acq_index = (acq_index,) * len(qubits)
             elif acq_index is None:
                 # defaults to writing the result of all qubits to acq_index 0.
                 # note that this will result in averaging data together if multiple
                 # measurements are present in the same schedule (#262)
-                acq_index_info = tuple(0 for i in range(len(qubits)))
-            else:
-                acq_index_info = acq_index
+                acq_index = tuple(0 for i in range(len(qubits)))
 
             # defaults to mapping qubits to channels dependent on the order of the
             # arguments. note that this will result in mislabeling data if not all
             # measurements in an experiment contain the same order of qubits (#262)
             if acq_channel is None:
-                acq_channel_info = tuple(i for i in range(len(qubits)))
-            else:
-                acq_channel_info = acq_channel
-
-            bin_mode_info = [bin_mode] * len(qubits)
+                acq_channel = tuple(i for i in range(len(qubits)))
 
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
@@ -510,19 +508,25 @@ class Measure(Operation):
                     "plot_func": plot_func,
                     "tex": r"$\langle0|$",
                     "qubits": list(qubits),
-                    "acq_channel": acq_channel_info,
-                    "acq_index": acq_index_info,
-                    "bin_mode": bin_mode_info,
+                    "acq_channel": acq_channel,
+                    "acq_index": acq_index,
+                    "acq_protocol": acq_protocol,
+                    "bin_mode": bin_mode,
                     "operation_type": "measure",
                 },
             }
         super().__init__(data["name"], data=data)
 
     def __str__(self) -> str:
-        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
-        acq_channel = self.data["gate_info"]["acq_channel"]
-        acq_index = self.data["gate_info"]["acq_index"]
+        gate_info = self.data["gate_info"]
+        qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
+        acq_channel = gate_info["acq_channel"]
+        acq_index = gate_info["acq_index"]
+        acq_protocol = gate_info["acq_protocol"]
+        bin_mode = gate_info["bin_mode"]
+
         return (
-            f'{self.__class__.__name__}({",".join(qubits)},'
-            + f"acq_channel={acq_channel},acq_index={acq_index})"
+            f'{self.__class__.__name__}({",".join(qubits)}, '
+            f"acq_channel={acq_channel}, acq_index={acq_index}, "
+            f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)})'
         )

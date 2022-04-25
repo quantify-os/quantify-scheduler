@@ -160,7 +160,6 @@ def compile_circuit_to_device(
                 operation_type=operation_type,
                 device_cfg=device_cfg,
             )
-
         # we only support 2-qubit operations and single-qubit operations.
         # some single-qubit operations (reset, measure) can be expressed as acting
         # on multiple qubits simultaneously. That is covered through this for-loop.
@@ -300,7 +299,18 @@ def _add_device_repr_from_cfg_multiplexed(
     # retrieve keyword args for parametrized operations from the gate info
     if operation_cfg.gate_info_factory_kwargs is not None:
         for key in operation_cfg.gate_info_factory_kwargs:
-            factory_kwargs[key] = operation.data["gate_info"][key][mux_idx]
+            gate_info = operation.data["gate_info"][key]
+            # Hack alert: not all parameters in multiplexed operation are
+            # necessary passed for each element separately. We assume that if they do
+            # (say, acquisition index and channel for measurement), they are passed as
+            # a list or tuple. If they don't (say, it is hard to imagine different
+            # acquisition protocols for qubits during multiplexed readout), they are
+            # assumed to NOT be a list or tuple. If this spoils the correct behaviour of
+            # your program in future: sorry :(
+            if isinstance(gate_info, (tuple, list)):
+                factory_kwargs[key] = gate_info[mux_idx]
+            else:
+                factory_kwargs[key] = gate_info
 
     device_op = factory_func(**factory_kwargs)
     operation.add_device_representation(device_op)

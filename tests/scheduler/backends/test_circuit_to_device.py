@@ -181,7 +181,11 @@ def test_compile_schedule_with_trace_acq_protocol():
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                     "factory_kwargs": {
                         "port": "q0:res",
                         "clock": "q0.ro",
@@ -190,7 +194,6 @@ def test_compile_schedule_with_trace_acq_protocol():
                         "pulse_duration": 1.6e-07,
                         "acq_delay": 1.2e-07,
                         "acq_duration": 3e-07,
-                        "acq_protocol": "Trace",
                         "acq_channel": 0,
                     },
                 },
@@ -201,7 +204,7 @@ def test_compile_schedule_with_trace_acq_protocol():
         edges={},
     )
     sched = Schedule("Test schedule")
-    sched.add(Measure("q0"))
+    sched.add(Measure("q0", acq_protocol="Trace"))
     _ = compile_circuit_to_device(sched, device_cfg=simple_config)
 
 
@@ -218,7 +221,11 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                     "factory_kwargs": {
                         "port": "q0:res",
                         "clock": "q0.ro",
@@ -227,7 +234,6 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
                         "pulse_duration": 1.6e-07,
                         "acq_delay": 1.2e-07,
                         "acq_duration": 3e-07,
-                        "acq_protocol": "Trace",
                         "acq_channel": 0,
                     },
                 },
@@ -238,7 +244,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
         edges={},
     )
     sched = Schedule("Test schedule")
-    sched.add(Measure("q0"))
+    sched.add(Measure("q0", acq_protocol="Trace"))
     with pytest.raises(NotImplementedError):
         _ = compile_circuit_to_device(sched, device_cfg=simple_config)
 

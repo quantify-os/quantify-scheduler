@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Unreleased
+----------
+* Compilation - Added `acq_protocol` optional parameter to the `Measure` gate.
+
 0.7.0 Support for qblox-instruments v0.6.0, new BasicTransmonElement, change for triggers in Zhinst backend (2022-04-11)
 ------------------------------------------------------------------------------------------------------------------------
 
