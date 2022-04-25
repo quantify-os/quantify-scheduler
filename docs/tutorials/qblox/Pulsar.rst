@@ -299,10 +299,11 @@ The resulting config looks like:
             "real_output_0": {
                 "line_gain_db": 0,
                 "portclock_configs": [
-                {
+                    {
                     "port": "q0:mw",
                     "clock": "q0.01",
-                }
+                    }
+                ]
             },
             "real_output_1": {
                 "line_gain_db": 0,
