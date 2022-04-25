@@ -221,7 +221,7 @@ mixer correction parameters as well as the frequencies.
 Frequency multiplexing
 ^^^^^^^^^^^^^^^^^^^^^^
 
-It is possible to do frequency multiplexing of the signals by adding multiple portclocks to the same output.
+It is possible to do frequency multiplexing of the signals by adding multiple portclock configurations to the same output.
 
 .. jupyter-execute::
     :hide-output:
