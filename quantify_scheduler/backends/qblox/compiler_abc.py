@@ -1016,10 +1016,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_output_map:
                         raise ValueError(
-                            f"Portclock {portclock} was assigned to multiple portclock_configs "
-                            f"of {self.name}. This portclock was used in "
-                            f"output '{io}' despite being already previously used "
-                            f"in output '{portclock_output_map[portclock]}'."
+                            f"Portclock {portclock} was assigned to multiple "
+                            f"portclock_configs of {self.name}. This portclock was "
+                            f"used in output '{io}' despite being already previously "
+                            f"used in output '{portclock_output_map[portclock]}'."
                         )
 
                     portclock_output_map[portclock] = io
