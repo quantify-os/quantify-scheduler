@@ -934,11 +934,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
-            portclock_configs = self.hw_mapping[io].get("portclock_configs", None)
-            if portclock_configs:
-                portclocks += [
-                    (target["port"], target["clock"]) for target in portclock_configs
-                ]
+            portclock_configs = self.hw_mapping[io]["portclock_configs"]
+            portclocks += [
+                (target["port"], target["clock"]) for target in portclock_configs
+            ]
 
         return portclocks
 
