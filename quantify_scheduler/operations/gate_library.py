@@ -438,6 +438,7 @@ class Measure(Operation):
         *qubits: str,
         acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
+        # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
             "SSBIntegrationComplex",
             "Trace",
