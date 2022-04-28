@@ -3,7 +3,7 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
