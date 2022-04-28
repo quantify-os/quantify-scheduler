@@ -45,6 +45,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
+    Cluster,
     QcmModule,
     QcmRfModule,
     QrmModule,
@@ -612,6 +613,78 @@ def test_generate_port_clock_to_device_map():
 
 
 # --------- Test classes and member methods ---------
+def test_portclocks(make_basic_multi_qubit_schedule):
+
+    device_config = {
+        "backend": "quantify_scheduler.compilation.add_pulse_information_transmon",
+        "edges": {},
+        "qubits": {
+            "q4": {
+                "params": {
+                    "acquisition": "SSBIntegrationComplex",
+                    "init_duration": 0.0002,
+                    "mw_amp180": 0.25,
+                    "mw_duration": 1.6e-08,
+                    "mw_ef_amp180": 0.87,
+                    "mw_freq": 6020000000.0,
+                    "mw_motzoi": 0.45,
+                },
+                "resources": {
+                    "clock_01": "q4.01",
+                    "clock_12": "q4.12",
+                    "clock_ro": "q4.ro",
+                    "port_flux": "q4:fl",
+                    "port_mw": "q4:mw",
+                    "port_ro": "q4:res",
+                },
+            },
+            "q5": {
+                "params": {
+                    "acquisition": "SSBIntegrationComplex",
+                    "init_duration": 0.0002,
+                    "mw_amp180": 0.25,
+                    "mw_duration": 2e-08,
+                    "mw_ef_amp180": 0.67,
+                    "mw_freq": 5020000000.0,
+                    "mw_motzoi": 0.45,
+                },
+                "resources": {
+                    "clock_01": "q5.01",
+                    "clock_12": "q5.12",
+                    "clock_ro": "q5.ro",
+                    "port_flux": "q5:fl",
+                    "port_mw": "q5:mw",
+                    "port_ro": "q5:res",
+                },
+            },
+        },
+    }
+
+    sched = make_basic_multi_qubit_schedule(["q4", "q5"])
+    sched = device_compile(sched, device_config)
+
+    test_cluster = Cluster(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=HARDWARE_MAPPING["cluster0"],
+    )
+
+    container = compiler_container.CompilerContainer.from_mapping(
+        sched, HARDWARE_MAPPING
+    )
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        mapping=HARDWARE_MAPPING,
+        device_compilers=container.instrument_compilers,
+    )
+
+    compilers = container.instrument_compilers["cluster0"].instrument_compilers
+    assert compilers["cluster0_qcm0"].portclocks == [("q4:mw", "q4.01")]
+    assert compilers["cluster0_qcm_rf0"].portclocks == [("q5:mw", "q5.01")]
+
+
 def test_contruct_sequencers(make_basic_multi_qubit_schedule):
     test_module = QcmModule(
         parent=None,
