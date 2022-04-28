@@ -7,9 +7,7 @@ from __future__ import annotations
 from collections import UserDict
 from typing import Optional
 
-from quantify_core.utilities.general import load_json_schema
-
-from quantify_scheduler.json_utils import validate_json
+from quantify_scheduler.json_utils import load_json_schema, validate_json
 
 
 class Resource(UserDict):

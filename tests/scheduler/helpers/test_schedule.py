@@ -23,9 +23,37 @@ from quantify_scheduler.helpers.schedule import (
     get_schedule_time_offset,
     get_total_duration,
 )
+from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
+
+
+def test_make_hash() -> None:
+
+    my_test_dict = {"a": 5, "nested_dict": {"a": 2, "c": 4, "B": "str"}, "b": 24}
+
+    same_test_dict_diff_order = {
+        "a": 5,
+        "b": 24,
+        "nested_dict": {"a": 2, "c": 4, "B": "str"},
+    }
+
+    diff_test_dict = {"nested_dict": {"a": 2, "c": 4, "B": "str"}, "b": 24}
+
+    test_hash = make_hash(my_test_dict)
+    same_test_hash = make_hash(same_test_dict_diff_order)
+
+    assert test_hash == same_test_hash
+
+    diff_hash = make_hash(diff_test_dict)
+
+    assert test_hash != diff_hash
+
+    # modify dict in place, the object id won't change
+    my_test_dict["efg"] = 15
+    new_hash = make_hash(my_test_dict)
+    assert test_hash != new_hash
 
 
 def test_get_info_by_uuid_empty(empty_schedule: Schedule):
@@ -84,10 +112,6 @@ def test_get_acq_info_by_uuid(
 ):
     # Arrange
     device_config = load_example_transmon_config()
-    assert (
-        device_config.elements["q0"]["measure"].factory_kwargs["acq_protocol"]
-        == "SSBIntegrationComplex"
-    )
     schedule = device_compile(schedule_with_measurement, device_config)
 
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
@@ -275,10 +299,6 @@ def test_get_port_timeline_with_acquisition(
 ):
     # Arrange
     device_config = load_example_transmon_config()
-    assert (
-        device_config.elements["q0"]["measure"].factory_kwargs["acq_protocol"]
-        == "SSBIntegrationComplex"
-    )
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
 

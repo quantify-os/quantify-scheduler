@@ -1,9 +1,11 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-
+from typing import List
 
 import pytest
+
+from quantify_scheduler import Operation
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.circuit_to_device import (
@@ -12,7 +14,6 @@ from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-
 
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.operations.gate_library import (
@@ -101,6 +102,27 @@ def test_measurement_compile():
     assert m3_acq[1]["acq_index"] == 2
 
 
+@pytest.mark.parametrize(
+    "operations, clocks_used",
+    [
+        ([], ["cl0.baseband"]),
+        ([X(qubit="q0")], ["cl0.baseband", "q0.01"]),
+        ([Measure("q0", "q1")], ["cl0.baseband", "q0.ro", "q1.ro"]),
+        (
+            [X(qubit="q0"), X(qubit="q1"), Measure("q0", "q1")],
+            ["cl0.baseband", "q0.01", "q1.01", "q0.ro", "q1.ro"],
+        ),
+    ],
+)
+def test_only_add_clocks_used(operations: List[Operation], clocks_used: List[str]):
+    sched = Schedule("Test schedule")
+    for operation in operations:
+        sched.add(operation)
+    dev_sched = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+    assert set(dev_sched.resources.keys()) == set(clocks_used)
+
+
 def test_reset_operations_compile():
     sched = Schedule("Test schedule")
     sched.add(Reset("q0"))
@@ -159,7 +181,11 @@ def test_compile_schedule_with_trace_acq_protocol():
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                     "factory_kwargs": {
                         "port": "q0:res",
                         "clock": "q0.ro",
@@ -168,7 +194,6 @@ def test_compile_schedule_with_trace_acq_protocol():
                         "pulse_duration": 1.6e-07,
                         "acq_delay": 1.2e-07,
                         "acq_duration": 3e-07,
-                        "acq_protocol": "Trace",
                         "acq_channel": 0,
                     },
                 },
@@ -179,7 +204,7 @@ def test_compile_schedule_with_trace_acq_protocol():
         edges={},
     )
     sched = Schedule("Test schedule")
-    sched.add(Measure("q0"))
+    sched.add(Measure("q0", acq_protocol="Trace"))
     _ = compile_circuit_to_device(sched, device_cfg=simple_config)
 
 
@@ -196,7 +221,11 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                     "factory_kwargs": {
                         "port": "q0:res",
                         "clock": "q0.ro",
@@ -205,7 +234,6 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
                         "pulse_duration": 1.6e-07,
                         "acq_delay": 1.2e-07,
                         "acq_duration": 3e-07,
-                        "acq_protocol": "Trace",
                         "acq_channel": 0,
                     },
                 },
@@ -216,7 +244,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
         edges={},
     )
     sched = Schedule("Test schedule")
-    sched.add(Measure("q0"))
+    sched.add(Measure("q0", acq_protocol="Trace"))
     with pytest.raises(NotImplementedError):
         _ = compile_circuit_to_device(sched, device_cfg=simple_config)
 

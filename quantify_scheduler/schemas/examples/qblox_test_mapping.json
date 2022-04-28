@@ -3,7 +3,7 @@
     "cluster0": {
         "ref": "internal",
         "instrument_type": "Cluster",
-        "cluster0_qcm0": {
+        "cluster0_module1": {
             "instrument_type": "QCM",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -19,7 +19,7 @@
                 ]
             }
         },
-        "cluster0_qcm_rf0": {
+        "cluster0_module2": {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
                 "line_gain_db": 0,
@@ -28,6 +28,25 @@
                         "port": "q5:mw",
                         "clock": "q5.01",
                         "interm_freq": 50e6
+                    }
+                ]
+            }
+        },
+        "cluster0_module3": {
+            "instrument_type": "QRM",
+            "ref": "external",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo1",
+                "dc_mixer_offset_I": -0.054,
+                "dc_mixer_offset_Q": -0.034,
+                "portclock_configs":[
+                    {
+                    "mixer_amp_ratio": 0.9997,
+                    "mixer_phase_error_deg": -4.0,
+                    "port": "q4:res",
+                    "clock": "q4.ro",
+                    "interm_freq": null
                     }
                 ]
             }
@@ -71,12 +90,19 @@
             "lo_name": "lo1",
             "dc_mixer_offset_I": -0.054,
             "dc_mixer_offset_Q": -0.034,
-            "portclock_configs": [
+            "portclock_configs":[
                 {
                     "mixer_amp_ratio": 0.9997,
                     "mixer_phase_error_deg": -4.0,
                     "port": "q0:res",
                     "clock": "q0.ro",
+                    "interm_freq": null
+                },
+                {
+                    "mixer_amp_ratio": 0.9997,
+                    "mixer_phase_error_deg": -4.0,
+                    "port": "q0:res",
+                    "clock": "q0.multiplex",
                     "interm_freq": null
                 }
             ]

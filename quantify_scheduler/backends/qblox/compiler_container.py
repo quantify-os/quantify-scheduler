@@ -4,13 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Union, Set
-
-from quantify_core.utilities import general
+from typing import Any, Dict, Set, Union
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.schedule import get_total_duration
 
 
@@ -153,7 +152,7 @@ class CompilerContainer:
         mapping
             Hardware mapping for this instrument.
         """
-        compiler: type = general.import_python_object_from_string(instrument)
+        compiler: type = import_python_object_from_string(instrument)
         self.add_instrument_compiler(name, compiler, mapping)
 
     def _add_from_type(

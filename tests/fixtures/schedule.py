@@ -99,16 +99,14 @@ def empty_schedule() -> Schedule:
 
 
 @pytest.fixture
-def basic_schedule() -> Schedule:
-    schedule = Schedule("Basic schedule")
-    schedule.add(X90("q0"))
-    return schedule
+def basic_schedule(make_basic_schedule) -> Schedule:
+    return make_basic_schedule("q0")
 
 
 @pytest.fixture
 def make_basic_schedule() -> Callable[[str], Schedule]:
     def _make_basic_schedule(qubit: str) -> Schedule:
-        schedule = Schedule(f"Basic schedule {qubit}")
+        schedule = Schedule(f'Basic schedule{" "+qubit if qubit != "q0" else ""}')
         schedule.add(X90(qubit))
         return schedule
 
@@ -127,27 +125,35 @@ def make_basic_multi_qubit_schedule() -> Callable[[List[str]], Schedule]:
 
 
 @pytest.fixture
-def schedule_with_measurement() -> Schedule:
+def schedule_with_measurement(make_schedule_with_measurement) -> Schedule:
     """
-    Simple schedule with gate an measurement on qubit 0.
+    Simple schedule with gate and measurement on qubit 0.
     """
-    schedule = Schedule("Basic schedule")
-    schedule.add(Reset("q0"))
-    schedule.add(X90("q0"))
-    schedule.add(Measure("q0"))
-    return schedule
+    return make_schedule_with_measurement("q0")
 
 
 @pytest.fixture
-def schedule_with_measurement_q2() -> Schedule:
+def schedule_with_measurement_q2(make_schedule_with_measurement) -> Schedule:
     """
-    Simple schedule with gate an measurement on qubit 2.
+    Simple schedule with gate and measurement on qubit 2.
     """
-    schedule = Schedule("Basic schedule")
-    schedule.add(Reset("q2"))
-    schedule.add(X90("q2"))
-    schedule.add(Measure("q2"))
-    return schedule
+    return make_schedule_with_measurement("q2")
+
+
+@pytest.fixture
+def make_schedule_with_measurement() -> Callable[[str], Schedule]:
+    """
+    Simple schedule with gate and measurement on single qubit.
+    """
+
+    def _make_schedule_with_measurement(qubit: str):
+        schedule = Schedule(f"Schedule with measurement {qubit}")
+        schedule.add(Reset(qubit))
+        schedule.add(X90(qubit))
+        schedule.add(Measure(qubit))
+        return schedule
+
+    return _make_schedule_with_measurement
 
 
 @pytest.fixture

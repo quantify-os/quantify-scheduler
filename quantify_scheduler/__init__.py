@@ -15,7 +15,7 @@
       - :class:`.Resource`
 """
 
-__version__ = "0.5.2"
+__version__ = "0.7.0"
 
 
 from . import structure

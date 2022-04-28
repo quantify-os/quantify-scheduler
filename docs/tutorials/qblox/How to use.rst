@@ -13,7 +13,6 @@ that describes your experimental setup. An example of such a config:
     import json
     import os, inspect
     from pathlib import Path
-    from pprint import pprint
     import quantify_scheduler.schemas.examples as es
 
     esp = inspect.getfile(es)
@@ -23,7 +22,7 @@ that describes your experimental setup. An example of such a config:
     with open(cfg_f, 'r') as f:
       qblox_test_mapping = json.load(f)
 
-    pprint(qblox_test_mapping)
+    print(json.dumps(qblox_test_mapping, indent=4, sort_keys=True))
 
 Here the entry :code:`"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
 that we are using the Qblox backend (specifically the :func:`~quantify_scheduler.backends.qblox_backend.hardware_compile` function).

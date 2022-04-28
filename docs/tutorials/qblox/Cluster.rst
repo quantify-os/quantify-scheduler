@@ -33,7 +33,7 @@ We start by looking at an example config for a single cluster:
     mapping_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
-            "cl_qcm0": {
+            "cluster0_module1": {
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "lo_name": "lo0",
@@ -49,7 +49,7 @@ We start by looking at an example config for a single cluster:
                 },
                 "instrument_type": "QCM",
             },
-            "cl_qcm_rf0": {
+            "cluster0_module2": {
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "portclock_configs": [
@@ -67,6 +67,8 @@ We start by looking at an example config for a single cluster:
 .. jupyter-execute::
     :hide-code:
     :hide-output:
+
+    # Validate mapping_config
 
     test_sched = Schedule("test_sched")
     test_sched.add(

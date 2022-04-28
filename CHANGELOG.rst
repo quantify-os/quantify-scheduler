@@ -2,44 +2,86 @@
 Changelog
 =========
 
-Unreleased changes
-------------------
+Unreleased
+----------
+* Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
+
+0.7.0 Support for qblox-instruments v0.6.0, new BasicTransmonElement, change for triggers in Zhinst backend (2022-04-11)
+------------------------------------------------------------------------------------------------------------------------
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-* Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
-* Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
-* Hardware config - Removed the need for a `ic_` prefix from the hardware config (!312).
-* Compilation - Deprecated `add_pulse_information_transmon` in favor of `compilation.backends.circuit_to_device.compile_circuit_to_device` (#64, #67, !339).
-* Compilation - attempting compilation with missing values in the `DeviceCompilationConfig` configuration will now raise validation errors. Be sure to set initial values when generating a config using the `QuantumDevice` object (!339)
-* Compilation - Device compile making use of `.compile_circuit_to_device` no longer modifies the input schedule (#249, !339).
-* Operations - The  internal behavior of how acquisition channels and acquisition indices are configured in the `Measure` operation has changed slightly. See #262 for details. (!339).
-* Structure - `Schedule.timing_constraints` has been renamed to `Schedule.schedulables`. It now points to a dictionary of schedulables rather than a list of dicts. (!309)
-* Compilation - When specifying multiple timing constraints for a schedulable, the constraint specifying the latest time determines the absolute time of the shedulable (!309)
-* Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
-* Zhinst backend - Fixes bug when doing SSRO experiments. No more duplicated shots. Adds support for BinMode.APPEND during compilation. (#276, !358)
-* Instrument Coordinator - IC now adds a `GenericInstrumentCoordinatorComponent` to itself on instantiation by default (!350)
+* Qblox ICCs - Updated Qblox components for using the new unified-style qblox driver (see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-ICCs:-Interface-changes-in-using-qblox-instruments-v0.6.0) (!377).
+* Qblox backend - Strictly requires v0.6.0 of the qblox-instruments package (!377).
+* Zhinst backend - Hardware config for the devices. Replaced keyword "triggers" to "trigger", and the value type from `List[int]` to `int`. E.g. old style, `"triggers": [2]`, new style, `"trigger": 2` (#264, !372).
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* QuantumDevice - The `DeviceElement` has been added as an abstract base class for elements to be added to a device (#148, !374).
+* QuantumDevice - The `BasicTransmonElement` has been added that generates a device config in a more structured manner (#246, !374).
+* QuantumDevice - Fixed a bug in the `BasicTransmonElement` where operations had clock-frequencies (`float`) specified instead of clocks (`str`) (!379).
+* QuantumDevice - The `TransmonElement` will be deprecated after version 0.8 (!374).
 
-* Operations - Sudden Net Zero from Negirneac 2021 added to the `pulse_library` (!339)
+
+0.6.0 Full support for multiplexed readout, transmon element update, fixes to backends (2022-03-10)
+---------------------------------------------------------------------------------------------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Compilation - Deprecated `add_pulse_information_transmon` in favor of `compilation.backends.circuit_to_device.compile_circuit_to_device` (#64, #67, !339).
+* Compilation - attempting compilation with missing values in the `DeviceCompilationConfig` configuration will now raise validation errors. Be sure to set initial values when generating a config using the `QuantumDevice` object (!339)
+* Compilation - Device compile making use of `.compile_circuit_to_device` no longer modifies the input schedule (#249, !339).
+* Compilation - When specifying multiple timing constraints for a schedulable, the constraint specifying the latest time determines the absolute time of the shedulable (!309)
+* Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
+* Zhinst backend - Fixes bug when doing SSRO experiments. No more duplicated shots. Adds support for BinMode.APPEND during compilation. (#276, !358)
+* Gettables - `ScheduleGettableSingleChannel` renamed to `ScheduleGettable` as it now supports multiple acquisition channels (!299).
+* Hardware config - Removed the need for a `ic_` prefix from the hardware config (!312).
+* Instrument Coordinator - IC now adds a `GenericInstrumentCoordinatorComponent` to itself on instantiation by default (!350)
+* Instrument Coordinator - IC stop function has an `allow_failure` parameter which allows IC components attached to it to fail to stop with warning instead of raising errors. Allows for situations when some components cannot have a stop instruction sent before the prepare stage. (!359)
+* Operations - The internal behavior of how acquisition channels and acquisition indices are configured in the `Measure` operation has changed slightly. See #262 for details. (!339).
+* Operations - Added "operation_type" key to the schema. (!345)
+* Structure - `Schedule.timing_constraints` has been renamed to `Schedule.schedulables`. It now points to a dictionary of schedulables rather than a list of dicts. (!309)
+* Structure - Pydantic-based model is now used for the data structures. (!341)
+* Visualization - Deprecated `plot_circuit_diagram_mpl` and `plot_pulse_diagram_mpl` in `ScheduleBase` in favour of `plot_circuit_diagram` and `plot_pulse_diagram` (!313)
+* Qblox backend - Strictly requires v0.5.4 of the qblox-instruments package (!314)
+* Zhinst backend - Due to !312, the csv files used to upload the waveforms to the UHFQA no longer use the `ic_` prefix in their filenames. (!334)
+* Zhinst backend - Fixes bug when doing SSRO experiments. No more duplicated shots. Adds support for BinMode.APPEND during compilation. (#276, !358)
+* Zhinst backend - Removed `latency` and `line_trigger_delay` keys in the channels of the devices for the Zhinst hardware config. (!363)
+* Zhinst backend - Added `latency_corrections` main entry in the Zhinst hardware config for latency corrections on a port-clock combination basis. (!363)
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Compilation - Added a new compilation backend `compilation.backends.circuit_to_device.compile_circuit_to_device` for the quantum-circuit to quantum-device layer (#64, #67, !339).
 * Compilation - Fixed `add_pulse_information_transmon` when using "Trace" acquisition mode (!300)
+* Compilation - Fixed the deprecation warnings from pandas `DataFrame.append`. (!347)
+* Docs - Pinning qcodes package to <0.32.0 due to Read the Docs API reference failure (!361)
+* Gettables - `ScheduleGettable` now first stops all instruments in IC during initialization (!324)
+* Schedules - Adds a multiplexing verification schedule. (!329)
+* Operations - Sudden Net Zero from Negirneac 2021 added to the `pulse_library` (!339)
+* Operations - Docstrings for the X90, X, Y90, Y, and Rxy gate unitary have been aligned with literature. (#261, !305)
+* Operations - Adds an optional "data" argument to staircase pulse. (!335)
 * Pulse library - Added `ShiftClockPhase` operation that can be used to shift the phase of a clock during execution of a `Schedule` (!346)
+* Pulse library - Added a numerically defined pulse. (!157)
 * QuantumDevice - Unknown values are initialized as `float('nan')` (#274, !356)
+* TransmonElement - Corrected the motzoi parameter range validator. (!351)
 * Visualization - Adds visualisation of acquisitions to plotly pulse diagrams (!304)
 * Visualization - Add `plot_pulse_diagram` and `plot_circuit_diagram` to schedule for easier method names, and enable plotly visualization directly from `ScheduleBase` (!313)
-* Gettables - `ScheduleGettable` now first stops all instruments in IC during initialization (!324)
+* Utilities - Migrates the utilities from quantify-core. (!357)
+* Generic ICC - Adds support for nested parameters. (!330)
 * Qblox ICCs - Stop now disables sync on all sequencers to prevent hanging during next run, where it gets re-enabled if needed (!324)
 * Qblox ICCs - `_QRMAcquisitionManager._get_scope_data` now has correct return type (#232, !300)
-* Qblox backend - NCO phase now gets reset every averaging loop (!337)
-* Qblox backend - Added logic for changing the NCO phase during execution of a `Schedule` (!346)
 * Qblox ICCs - Fixed bug where QRM scope mode sequencer does not get set correctly (!342)
+* Qblox ICCs - Fixed reference source cluster issue when it is not being set correctly. (!323)
+* Qblox backend - NCO phase now gets reset every averaging loop (!337)
+* Qblox backend - Enables RF output switch at the start of a program. (!344)
+* Qblox backend - Added logic for changing the NCO phase during execution of a `Schedule` (!346)
 * Qblox backend - Added ability to correct for latency by delaying program execution on a per sequencer basis (!325)
 * Qblox backend - Compilation with local oscillators changed to work with generic instrument coordinator components (!306)
 * Qblox backend - Refactored operation handling and greatly increased test coverage (!301).
 * Qblox backend - Made max duration of wait instructions (!319).
+* Qblox backend - Fixed an issue with the downconverter frequency correction. (!318)
+* Qblox backend - Temporary fix for a floating point rounding error when calculating the length of pulses. (#284, !365)
+* Zhinst backend - Fixed the ZI resolver return typehint. (!307)
 * Zhinst backend - Fixed an issue when compiling seqc programs for multiple sequencers end up overwriting the first sequencer. (!340, #260)
 
 

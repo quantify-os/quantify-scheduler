@@ -12,11 +12,12 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union, cast
 
 import numpy as np
-from quantify_core.utilities.general import make_hash
 from zhinst.qcodes import base
 
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+from quantify_scheduler.helpers.collections import make_hash
+
 
 # same as backends.zhinst_backend.NUM_UHFQA_READOUT_CHANNELS
 # copied here to avoid a circular import

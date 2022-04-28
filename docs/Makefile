@@ -2,7 +2,11 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -W --keep-going -n -w build_errors.log -v -P
+# For a reference of the different sphinxopts flags,
+# see https://www.sphinx-doc.org/en/master/man/sphinx-build.html
+#
+# We can't supply -W due to https://github.com/jupyter/jupyter-sphinx/issues/182
+SPHINXOPTS    = --keep-going -n -w build_errors.log -v -P
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = quantify
 SOURCEDIR     = .
