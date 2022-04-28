@@ -41,7 +41,7 @@ example_transmon_cfg = {
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
                 + "measurement_factories.dispersive_measurement",
-                "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                "gate_info_factory_kwargs": ["acq_index", "bin_mode", "acq_protocol"],
                 "factory_kwargs": {
                     "port": "q0:res",
                     "clock": "q0.ro",
@@ -50,7 +50,6 @@ example_transmon_cfg = {
                     "pulse_duration": 1.6e-07,
                     "acq_delay": 1.2e-07,
                     "acq_duration": 3e-07,
-                    "acq_protocol": "SSBIntegrationComplex",
                     "acq_channel": 0,
                 },
             },
@@ -75,7 +74,7 @@ example_transmon_cfg = {
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
                 + "measurement_factories.dispersive_measurement",
-                "gate_info_factory_kwargs": ["acq_index", "bin_mode"],
+                "gate_info_factory_kwargs": ["acq_index", "bin_mode", "acq_protocol"],
                 "factory_kwargs": {
                     "port": "q1:res",
                     "clock": "q1.ro",
@@ -84,7 +83,6 @@ example_transmon_cfg = {
                     "pulse_duration": 1.6e-07,
                     "acq_delay": 1.2e-07,
                     "acq_duration": 3e-07,
-                    "acq_protocol": "SSBIntegrationComplex",
                     "acq_channel": 1,
                 },
             },
