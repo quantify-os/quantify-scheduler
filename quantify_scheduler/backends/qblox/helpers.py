@@ -3,17 +3,16 @@
 """Helper functions for Qblox backend."""
 
 from collections import UserDict
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Literal, Tuple, Union
 
 import numpy as np
-from typing_extensions import Literal
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 
 
 # pylint: disable=invalid-name
-def find_inner_dicts_containing_key(d: Union[dict], key: Any) -> List[dict]:
+def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
     in a complicated dictionary with nested dictionaries or Iterables.

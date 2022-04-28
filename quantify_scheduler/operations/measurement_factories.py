@@ -6,9 +6,7 @@ A module containing factory functions for measurements on the quantum-device lay
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
-from typing import Union
-
-from typing_extensions import Literal
+from typing import Literal, Union
 
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
