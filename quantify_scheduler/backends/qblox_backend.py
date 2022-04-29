@@ -12,43 +12,6 @@ from quantify_scheduler.helpers.collections import without
 from quantify_scheduler.operations.pulse_library import WindowOperation
 
 
-def generate_port_clock_to_device_map(
-    mapping: Dict[str, Any]
-) -> Dict[Tuple[str, str], str]:
-    """
-    Generates a mapping which specifies which port-clock combinations belong to which
-    device.
-
-    .. note::
-        The same device may contain multiple port-clock combinations, but each
-        port-clock combination may only occur once.
-
-    Parameters
-    ----------
-    mapping:
-        The hardware mapping config.
-
-    Returns
-    -------
-    :
-        A dictionary with as key a tuple representing a port-clock combination, and
-        as value the name of the device. Note that multiple port-clocks may point to
-        the same device.
-    """
-
-    portclock_map = dict()
-    for device_name, device_info in mapping.items():
-        if not isinstance(device_info, dict):
-            continue
-
-        portclocks = helpers.find_all_port_clock_combinations(device_info)
-
-        for portclock in portclocks:
-            portclock_map[portclock] = device_name
-
-    return portclock_map
-
-
 def hardware_compile(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> CompiledSchedule:
