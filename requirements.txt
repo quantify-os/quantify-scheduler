@@ -8,6 +8,7 @@ plotly
 fastjsonschema
 dataclasses-json
 # zhinst versions pinned, see #187
+zhinst==21.8.20515
 zhinst-qcodes==0.1.4
 zhinst-toolkit==0.1.5
 orjson
