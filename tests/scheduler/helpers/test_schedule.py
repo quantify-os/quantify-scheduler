@@ -112,10 +112,6 @@ def test_get_acq_info_by_uuid(
 ):
     # Arrange
     device_config = load_example_transmon_config()
-    assert (
-        device_config.elements["q0"]["measure"].factory_kwargs["acq_protocol"]
-        == "SSBIntegrationComplex"
-    )
     schedule = device_compile(schedule_with_measurement, device_config)
 
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
@@ -303,10 +299,6 @@ def test_get_port_timeline_with_acquisition(
 ):
     # Arrange
     device_config = load_example_transmon_config()
-    assert (
-        device_config.elements["q0"]["measure"].factory_kwargs["acq_protocol"]
-        == "SSBIntegrationComplex"
-    )
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
 

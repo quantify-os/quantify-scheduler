@@ -6,7 +6,7 @@ A module containing factory functions for measurements on the quantum-device lay
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
-from typing import Union
+from typing import Literal, Union
 
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
@@ -15,6 +15,7 @@ from quantify_scheduler.operations.acquisition_library import (
     Trace,
 )
 from quantify_scheduler.operations.pulse_library import SquarePulse
+
 
 # pylint: disable=too-many-arguments
 def dispersive_measurement(
@@ -26,9 +27,12 @@ def dispersive_measurement(
     acq_delay: float,
     acq_channel: int,
     acq_index: int,
-    acq_protocol: str,
-    pulse_type: str = "SquarePulse",
+    acq_protocol: Literal["SSBIntegrationComplex", "Trace", None],
+    pulse_type: Literal["SquarePulse"] = "SquarePulse",
     bin_mode: Union[BinMode, None] = BinMode.AVERAGE,
+    acq_protocol_default: Literal[
+        "SSBIntegrationComplex", "Trace"
+    ] = "SSBIntegrationComplex",
 ) -> Operation:
     """
     Generator function for a standard dispersive measurement.
@@ -36,7 +40,6 @@ def dispersive_measurement(
     A dispersive measurement (typically) exists of a pulse being applied to the device
     followed by an acquisition protocol to interpret the signal coming back from the
     device.
-
     """
     # ensures default argument is used if not specified at gate level.
     # ideally, this input would not be accepted, but this is a workaround for #267
@@ -64,6 +67,9 @@ def dispersive_measurement(
             + ' allows "SquarePulse". Please correct your device config.'
         )
 
+    if acq_protocol is None:
+        acq_protocol = acq_protocol_default
+
     if acq_protocol == "SSBIntegrationComplex":
         # readout pulse
         device_op.add_acquisition(
@@ -77,8 +83,7 @@ def dispersive_measurement(
                 bin_mode=bin_mode,
             )
         )
-
-    if acq_protocol == "Trace":
+    elif acq_protocol == "Trace":
         device_op.add_acquisition(
             Trace(
                 clock=clock,
@@ -89,4 +94,7 @@ def dispersive_measurement(
                 port=port,
             )
         )
+    else:
+        raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
+
     return device_op
