@@ -677,13 +677,6 @@ def test_portclocks(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule(["q4", "q5"])
     sched = device_compile(sched, device_config)
 
-    test_cluster = Cluster(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        hw_mapping=HARDWARE_MAPPING["cluster0"],
-    )
-
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
