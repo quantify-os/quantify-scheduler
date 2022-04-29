@@ -25,7 +25,9 @@ from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
+
 from quantify_scheduler import Schedule
+
 from quantify_scheduler.backends import qblox_backend as qb
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -62,9 +64,11 @@ from quantify_scheduler.operations.acquisition_library import (
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
+    NumericalPulse,
     RampPulse,
     SquarePulse,
 )
+
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -773,6 +777,79 @@ def test_qasm_hook(pulse_only_schedule):
         program = json.load(file)["program"]
     program_lines = program.splitlines()
     assert program_lines[1].strip() == q1asm_instructions.NOP
+
+
+def test_hardware_compile_distortion_corrections():
+
+    # You can find an example in PycQED in the file
+    # instrument_drivers.meta_instrument.lfilt_kernel_object
+    fir_filter_coeffs = np.linspace(0, 1, 10)
+
+    hw_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile_distortion_corrections",
+        "distortion_corrections": {
+            "q0:fl-cl0.baseband": {
+                "filter_func": "scipy.signal.lfilter",
+                "input_var_name": "x",
+                "kwargs": {"b": fir_filter_coeffs, "a": 1},
+            },
+        },
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "external",
+            "complex_output_0": {
+                "seq0": {
+                    "port": "q0:fl",
+                    "clock": "cl0.baseband",
+                }
+            },
+        },
+    }
+
+    sched = Schedule("pulse_only_experiment")
+    sched.add(Reset("q0"))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.5,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:fl",
+            duration=20e-9,
+            clock="cl0.baseband",
+            t0=4e-9,
+        )
+    )
+    sched.add(
+        DRAGPulse(
+            G_amp=0.5,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:fl",
+            duration=20e-9,
+            clock="cl0.baseband",
+            t0=4e-9,
+        )
+    )
+    sched.add(
+        RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:fl", clock="cl0.baseband")
+    )
+    sched.add_resources(
+        [ClockResource("q0:fl", freq=5e9)]
+    )  # Clocks need to be manually added at this stage
+
+    determine_absolute_timing(sched)
+
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    full_program = qcompile(sched, DEVICE_CFG, hw_config)  # "transmon_test_config.json"
+
+    # for operation_repr, operation in full_program.operations.items():
+    #     print(f"{operation_repr}\n{repr(operation)}\n{type(operation)}")
+
+    assert [Reset, NumericalPulse, NumericalPulse] == [
+        type(op) for op in full_program.operations.values()
+    ]
 
 
 def test_qcm_acquisition_error():
