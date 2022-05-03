@@ -198,35 +198,37 @@ def hardware_cfg_multiplexing():
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq2": {
-                    "port": "q1:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq3": {
-                    "port": "q2:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq4": {
-                    "port": "q3:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq5": {
-                    "port": "q4:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
+                "portclock_configs": [
+                    {
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q1:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q2:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q3:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q4:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                ],
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq1": {"port": "q1:mw", "clock": "q1.01"},
+                "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
