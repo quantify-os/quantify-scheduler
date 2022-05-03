@@ -572,7 +572,7 @@ def assign_pulse_and_acq_info_to_devices(
     Raises
     ------
     RuntimeError
-        This exception is raised then the function encountered an operation that has no
+        This exception is raised if the function encountered an operation that has no
         pulse or acquisition info assigned to it.
     KeyError
         This exception is raised when attempting to assign a pulse with a port-clock
