@@ -24,6 +24,7 @@ from qblox_instruments import Pulsar, PulsarType
 from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
+from quantify_scheduler.backends.qblox import helpers
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import qblox_backend as qb
@@ -1578,6 +1579,59 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+def test_migrate_hw_config_to_MR328_spec():
+
+    old_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+                "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "lo_name": "lo1",
+                "seq2": {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20},
+    }
+
+    expected_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "portclock_configs": [
+                    {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+                    {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
+                ],
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "lo_name": "lo1",
+                "portclock_configs": [
+                    {"port": "q2:mw", "clock": "q2.01", "interm_freq": None}
+                ],
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20},
+    }
+
+    migrated_config = helpers.migrate_hw_config_to_MR328_spec(old_config)
+
+    assert migrated_config == expected_config
 
 
 class TestLatencyCorrection:
