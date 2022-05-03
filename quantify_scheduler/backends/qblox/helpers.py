@@ -19,7 +19,7 @@ from quantify_scheduler.operations.pulse_library import WindowOperation
 
 
 # pylint: disable=invalid-name
-def find_inner_dicts_containing_key(d: Union[dict], key: Any) -> List[dict]:
+def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
     in a complicated dictionary with nested dictionaries or Iterables.
