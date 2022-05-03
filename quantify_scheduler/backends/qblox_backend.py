@@ -40,6 +40,12 @@ def hardware_compile(
         The compiled schedule.
     """
 
+    migrated_hw_config = helpers.migrate_hw_config_to_MR328_spec(hardware_cfg)
+    old_hw_config_spec = hardware_cfg != migrated_hw_config
+
+    if old_hw_config_spec:
+        ValueError(helpers._pre_MR328_error_message())
+
     container = compiler_container.CompilerContainer.from_mapping(
         schedule, hardware_cfg
     )
