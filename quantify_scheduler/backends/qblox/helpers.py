@@ -2,6 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
 
+import re
+from copy import deepcopy
 from collections import UserDict
 from typing import Any, Dict, Iterable, List, Tuple, Union
 
@@ -584,3 +586,49 @@ def assign_pulse_and_acq_info_to_devices(
 
     portclock_mapping = generate_port_clock_to_device_map(mapping)
     _assign_pulse_and_acq_info_to_devices(schedule, device_compilers, portclock_mapping)
+
+
+def migrate_hw_config_to_MR328_spec(  # pylint: disable=invalid-name
+    hw_config: Dict[str, Any],
+):
+    """
+    Converts possibly old hardware configs to the new format introduced by
+    MR !328 (MR introducing dynamic sequencer allocation). I.e. manual
+    assignment between sequencers and portclocks under each output is removed, and
+    instead only a list of portclocks configurations is specified,
+    under the new `portclock_configs` key.
+
+    Parameters
+    ----------
+    hw_config
+        The hardware config to be upgraded to the new specification.
+
+    Returns
+    -------
+    :
+        A hardware config compatible with the new specification.
+
+    """
+
+    hw_config = deepcopy(hw_config)
+
+    for device_info in hw_config.values():
+        if not isinstance(device_info, dict):
+            continue
+
+        for io, io_cfg in device_info.items():
+            if not isinstance(io_cfg, dict):
+                continue
+
+            new_io_cfg = {}
+            new_io_cfg["portclock_configs"] = io_cfg.get("portclock_configs", [])
+
+            for entry, value in io_cfg.items():
+                if not re.match("^seq\d+$", entry):
+                    new_io_cfg[entry] = value
+                    continue
+                new_io_cfg["portclock_configs"].append(io_cfg[entry])
+
+            device_info[io] = new_io_cfg
+
+    return hw_config
