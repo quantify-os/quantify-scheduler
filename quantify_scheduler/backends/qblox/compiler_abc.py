@@ -970,13 +970,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Raises
         ------
         ValueError
-            Raised when the same portclock is multiply assigned in the hardware config.
-        ValueError
-            Attempting to use more sequencers than available.
-        ValueError
             When the output names do not conform to the
             `complex_output_X`/`real_output_X` norm,
             where X is the index of the output.
+        KeyError
+            Raised if no 'portclock_configs' entry is found in the specific outputs of
+            the hardware config.
+        ValueError
+            Raised when the same portclock is multiply assigned in the hardware config.
+        ValueError
+            Attempting to use more sequencers than available.
+
         """
         valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
@@ -1000,6 +1004,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
                 "portclock_configs", []
             )
+
+            if not portclock_configs:
+                raise KeyError(
+                    f"No 'portclock_configs' entry found in '{io}' of {self.name}. "
+                    + "\n"
+                    + helpers._pre_MR328_error_message()
+                )
+
             for target in portclock_configs:
                 portclock = target["port"], target["clock"]
 
