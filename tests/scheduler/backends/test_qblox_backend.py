@@ -1581,7 +1581,7 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
 
 
-def test_migrate_hw_config_to_MR328_spec():
+def test_migrate_hw_config_to_MR328_spec():  # pylint: disable=invalid-name
 
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
