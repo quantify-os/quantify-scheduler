@@ -973,6 +973,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Raised when the same portclock is multiply assigned in the hardware config.
         ValueError
             Attempting to use more sequencers than available.
+        ValueError
+            When the output names do not conform to the
+            `complex_output_X`/`real_output_X` norm,
+            where X is the index of the output.
         """
         valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
             f"real_output_{i}" for i in range(4)
