@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, Tuple
 
 from quantify_scheduler import CompiledSchedule, Schedule
-from quantify_scheduler.backends.qblox import compiler_container, helpers
+from quantify_scheduler.backends.qblox import helpers, compiler_container, constants
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.helpers.collections import without
 from quantify_scheduler.operations.pulse_library import WindowOperation
@@ -208,90 +208,108 @@ def hardware_compile(
     return CompiledSchedule(schedule)
 
 
-from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
-from quantify_scheduler.operations.pulse_library import NumericalPulse
-
-
 def hardware_compile_distortion_corrections(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> CompiledSchedule:
+    """
+    TODO: add general description of functionality
+
+    For waveform components in need of correcting (indicated via their port & clock) we
+    are *only* replacing the `pulse_info` dict associated to the waveform component
+
+    This means that we can have a combination of corrected (i.e., pre-sampled) and
+    uncorrected waveform components in the same operation
+
+    Also, we are not updating the `operation_repr` key, used to reference the operation
+    from the schedulable
+
+    Parameters
+    ----------
+    schedule
+    hardware_cfg
+
+    Returns
+    -------
+
+    """
 
     distortion_corrections_key = "distortion_corrections"
     if distortion_corrections_key not in hardware_cfg:
         return hardware_compile(schedule, hardware_cfg)
 
-    for portclock in hardware_cfg[distortion_corrections_key]:
-        correction_cfg = hardware_cfg[distortion_corrections_key][portclock]
+    for operation_repr in schedule.operations.keys():
+        substitute_operation = None
 
-        pruned_table = query_timing_table(
-            timing_table=schedule.timing_table.data, portclock_key=portclock
-        )
-        operation_reprs = pruned_table["operation"].unique()
+        for pulse_info_idx, pulse_info in enumerate(
+            schedule.operations[operation_repr].data["pulse_info"]
+        ):
+            portclock_key = f"{pulse_info['port']}-{pulse_info['clock']}"
 
-        for operation_repr in operation_reprs:
-            operation = schedule.operations[operation_repr]
+            if portclock_key in hardware_cfg[distortion_corrections_key]:
+                correction_cfg = hardware_cfg[distortion_corrections_key][portclock_key]
 
-            pulse_info = operation.data["pulse_info"][
-                0
-            ]  # TODO: account for composite waveforms?  # TODO: Also account for acquisitions?
+                substitute_pulse = correct_waveform(
+                    pulse_info=pulse_info,
+                    sampling_rate=constants.SAMPLING_RATE,
+                    correction_cfg=correction_cfg,
+                )
 
-            waveform_data = generate_waveform_data(
-                data_dict=pulse_info,
-                sampling_rate=constants.SAMPLING_RATE,
-            )
+                schedule.operations[operation_repr].data["pulse_info"][
+                    pulse_info_idx
+                ] = substitute_pulse.data["pulse_info"][0]
 
-            corrected_waveform_data = correct_waveform(waveform_data, correction_cfg)
+                if pulse_info_idx == 0:
+                    substitute_operation = substitute_pulse
 
-            substitute_pulse = NumericalPulse(
-                samples=corrected_waveform_data,
-                t_samples=np.linspace(
-                    start=0,
-                    stop=pulse_info["duration"],
-                    num=corrected_waveform_data.size,
-                ),
-                port=pulse_info["port"],
-                clock=pulse_info["clock"],
-                t0=pulse_info["t0"],
-            )
-
-            schedule.operations[operation_repr] = substitute_pulse
+        # Convert to operation type of first entry in pulse_info,
+        # required as first entry in pulse_info is used to generate signature in __str__
+        if substitute_operation is not None:
+            substitute_operation.data["pulse_info"] = schedule.operations[
+                operation_repr
+            ].data["pulse_info"]
+            schedule.operations[operation_repr] = substitute_operation
 
     pruned_hardware_cfg = {
-        key: val
-        for key, val in hardware_cfg.items()
-        if key != distortion_corrections_key
+        k: v for k, v in hardware_cfg.items() if k != distortion_corrections_key
     }
     return hardware_compile(schedule, pruned_hardware_cfg)
 
 
-import pandas as pd
-
-
-def query_timing_table(timing_table: pd.DataFrame, portclock_key: str) -> pd.DataFrame:
-    port, clock = portclock_key.split("-")
-
-    port_mask = timing_table["port"] == port
-    clock_mask = timing_table["clock"] == clock
-    full_mask = port_mask * clock_mask
-
-    return timing_table.loc[full_mask]
-
-
 import numpy as np
+
+from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.operations.pulse_library import NumericalPulse
 
 
-def correct_waveform(
-    waveform_data: np.ndarray, correction_cfg: Dict[str, Any]
-) -> np.ndarray:
+def correct_waveform(  # TODO: move to helpers, e.g. helpers.waveforms?
+    pulse_info: Dict[str, Any], sampling_rate: int, correction_cfg: Dict[str, Any]
+) -> NumericalPulse:
+
+    waveform_data = generate_waveform_data(
+        data_dict=pulse_info,
+        sampling_rate=sampling_rate,
+    )
+
     # TODO: check for keys explicitly and raise KeyError?
-    function = import_python_object_from_string(correction_cfg["filter_func"])
+    filter_func = import_python_object_from_string(correction_cfg["filter_func"])
 
     kwargs = {
-        **correction_cfg["kwargs"],
         correction_cfg["input_var_name"]: waveform_data,
+        **correction_cfg["kwargs"],
     }
-    corrected_waveform_data = function(**kwargs)
+    corrected_waveform_data = filter_func(**kwargs)
 
-    return corrected_waveform_data
+    substitute_pulse = NumericalPulse(
+        samples=corrected_waveform_data,
+        t_samples=np.linspace(
+            start=0,
+            stop=pulse_info["duration"],
+            num=corrected_waveform_data.size,
+        ),
+        port=pulse_info["port"],
+        clock=pulse_info["clock"],
+        t0=pulse_info["t0"],
+    )
+
+    return substitute_pulse

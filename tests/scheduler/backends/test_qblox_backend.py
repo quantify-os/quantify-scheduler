@@ -781,8 +781,8 @@ def test_qasm_hook(pulse_only_schedule):
 
 def test_hardware_compile_distortion_corrections():
 
-    # You can find an example in PycQED in the file
-    # instrument_drivers.meta_instrument.lfilt_kernel_object
+    # TODO: For better example, see PycQED:
+    # https://github.com/DiCarloLab-Delft/PycQED_py3/blob/develop/pycqed/instrument_drivers/meta_instrument/lfilt_kernel_object.py
     fir_filter_coeffs = np.linspace(0, 1, 10)
 
     hw_config = {
@@ -803,38 +803,41 @@ def test_hardware_compile_distortion_corrections():
                     "clock": "cl0.baseband",
                 }
             },
+            "complex_output_1": {
+                "seq1": {
+                    "port": "q0:mw",
+                    "clock": "cl0.baseband",
+                }
+            },
         },
     }
 
+    composite_drag_pulse = DRAGPulse(
+        G_amp=0.5,
+        D_amp=-0.2,
+        phase=90,
+        port="q0:fl",
+        duration=20e-9,
+        clock="cl0.baseband",
+        t0=4e-9,
+    )
+    composite_drag_pulse.data["pulse_info"].append(
+        {**composite_drag_pulse.data["pulse_info"][0], "port": "q0:mw"}
+    )
+
+    composite_ramp_pulse = RampPulse(
+        t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="cl0.baseband"
+    )
+    composite_ramp_pulse.data["pulse_info"].append(
+        {**composite_drag_pulse.data["pulse_info"][0], "port": "q0:fl"}
+    )
+
     sched = Schedule("pulse_only_experiment")
     sched.add(Reset("q0"))
-    sched.add(
-        DRAGPulse(
-            G_amp=0.5,
-            D_amp=-0.2,
-            phase=90,
-            port="q0:fl",
-            duration=20e-9,
-            clock="cl0.baseband",
-            t0=4e-9,
-        )
-    )
-    sched.add(
-        DRAGPulse(
-            G_amp=0.5,
-            D_amp=-0.2,
-            phase=90,
-            port="q0:fl",
-            duration=20e-9,
-            clock="cl0.baseband",
-            t0=4e-9,
-        )
-    )
-    sched.add(
-        RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:fl", clock="cl0.baseband")
-    )
+    sched.add(composite_drag_pulse)
+    sched.add(composite_ramp_pulse)
     sched.add_resources(
-        [ClockResource("q0:fl", freq=5e9)]
+        [ClockResource("q0:fl", freq=5e9), ClockResource("q0:mw", freq=50e6)]
     )  # Clocks need to be manually added at this stage
 
     determine_absolute_timing(sched)
@@ -844,12 +847,43 @@ def test_hardware_compile_distortion_corrections():
 
     full_program = qcompile(sched, DEVICE_CFG, hw_config)  # "transmon_test_config.json"
 
-    # for operation_repr, operation in full_program.operations.items():
-    #     print(f"{operation_repr}\n{repr(operation)}\n{type(operation)}")
+    operations_pretty_repr = "".join(
+        f"\nkey:  {operation_repr}\nrepr: {repr(operation)}\n"
+        for operation_repr, operation in full_program.operations.items()
+    )
 
-    assert [Reset, NumericalPulse, NumericalPulse] == [
-        type(op) for op in full_program.operations.values()
-    ]
+    assert [
+        [None],
+        [
+            "quantify_scheduler.waveforms.interpolated_complex_waveform",
+            "quantify_scheduler.waveforms.drag",
+        ],
+        [
+            "quantify_scheduler.waveforms.ramp",
+            "quantify_scheduler.waveforms.interpolated_complex_waveform",
+        ],
+    ] == [
+        [pulse_info["wf_func"] for pulse_info in operation.data["pulse_info"]]
+        for operation in full_program.operations.values()
+    ], (
+        "Only replace waveform components in need of correcting by numerical pulse;"
+        f" operations: {operations_pretty_repr}"
+    )
+
+    assert [Reset, NumericalPulse, RampPulse] == [
+        type(operation) for operation in full_program.operations.values()
+    ], (
+        "Distortion correction converts to operation type of first entry in pulse_info;"
+        f" operations: {operations_pretty_repr}"
+    )
+
+    assert [True, False, True] == [
+        operation_repr == str(operation)
+        for operation_repr, operation in full_program.operations.items()
+    ], (
+        "Key no longer matches str(operation) if first pulse_info entry was corrected;"
+        f" operations: {operations_pretty_repr}"
+    )
 
 
 def test_qcm_acquisition_error():
