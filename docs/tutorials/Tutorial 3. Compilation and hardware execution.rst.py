@@ -75,7 +75,7 @@ sched
 
 # In the QCM output's settings, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
 # Since the Pulsar QCM baseband module is not capable of outputting signals at the qubit's frequency, a Local Oscillator is used in order to upconvert the signals to the desired frequency.
-# In this case, the LO frequency is not specified but gets automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
+# In this case, the LO frequency is not specified but is automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
 
 # %%
 hw_config = {
@@ -188,7 +188,7 @@ ic.add_component(PulsarQCMComponent(qcm))
 # The experiment can now be conducted using the methods of `InstrumentCoordinator`:
 #
 # 1. We prepare the instruments with the appropriate settings and upload the schedule program by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.prepare` method and passing the compilation output as argument.
-# 2. We start the experiment can be executed by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.start` method.
+# 2. We start the hardware execution by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.start` method.
 #
 # Additionally, the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.wait_done` method is useful to wait for the experiment to finish and assure the synchronicity of the python script.
 #
@@ -198,7 +198,7 @@ ic.add_component(PulsarQCMComponent(qcm))
 # Set the qcodes parameters and upload the schedule program
 ic.prepare(compilation_output)
 
-# Start the experiment
+# Start the hardware execution
 ic.start()
 
 # Wait for the experiment to finish or for a timeout
