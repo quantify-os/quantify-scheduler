@@ -923,7 +923,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
-        """Returns all the portclocks that this device can target."""
+        """Returns all the port-clock combinations that this device can target."""
 
         portclocks = []
 
@@ -934,8 +934,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
-            portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
 
+            portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
             if not portclock_configs:
                 raise KeyError(
                     f"No 'portclock_configs' entry found in '{io}' of {self.name}. "
@@ -1021,20 +1021,20 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             for target in portclock_configs:
-                portclock = target["port"], target["clock"]
+                portclock = (target["port"], target["clock"])
 
                 if portclock in self.portclocks_with_data:
                     connected_outputs = helpers.output_name_to_outputs(io)
                     seq_name = f"seq{len(sequencers)}"
                     sequencers[seq_name] = Sequencer(
-                        self,
-                        seq_name,
-                        portclock,
-                        self.static_hw_properties,
-                        connected_outputs,
-                        target,
-                        lo_name,
-                        downconverter,
+                        parent=self,
+                        name=seq_name,
+                        portclock=portclock,
+                        static_hw_properties=self.static_hw_properties,
+                        connected_outputs=connected_outputs,
+                        seq_settings=target,
+                        lo_name=lo_name,
+                        downconverter=downconverter,
                     )
 
                     # Check if the portclock was not multiply specified
@@ -1051,7 +1051,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
-                "Number of simultaneous active portclocks exceeds "
+                "Number of simultaneously active port-clock combinations exceeds "
                 "number of sequencers."
                 f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
                 f"{self.static_hw_properties.max_sequencers}!"

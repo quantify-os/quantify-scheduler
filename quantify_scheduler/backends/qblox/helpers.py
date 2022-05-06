@@ -409,7 +409,7 @@ def generate_port_clock_to_device_map(
     mapping: Dict[str, Any]
 ) -> Dict[Tuple[str, str], str]:
     """
-    Generates a mapping which specifies which port-clock combinations belong to which
+    Generates a mapping that specifies which port-clock combinations belong to which
     device.
 
     .. note::
