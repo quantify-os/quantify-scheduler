@@ -934,8 +934,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for io in valid_ios:
             if io not in self.hw_mapping:
                 continue
-            portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
 
+            portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
             if not portclock_configs:
                 raise KeyError(
                     f"No 'portclock_configs' entry found in '{io}' of {self.name}. "
