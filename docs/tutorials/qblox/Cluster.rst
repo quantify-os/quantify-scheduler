@@ -39,11 +39,11 @@ We start by looking at an example config for a single cluster:
                     "lo_name": "lo0",
                     "portclock_configs": [
                         {
-                        "clock": "q4.01",
-                        "interm_freq": 200000000.0,
-                        "mixer_amp_ratio": 0.9999,
-                        "mixer_phase_error_deg": -4.2,
-                        "port": "q4:mw",
+                            "clock": "q4.01",
+                            "interm_freq": 200000000.0,
+                            "mixer_amp_ratio": 0.9999,
+                            "mixer_phase_error_deg": -4.2,
+                            "port": "q4:mw",
                         },
                     ]
                 },
@@ -53,7 +53,11 @@ We start by looking at an example config for a single cluster:
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "portclock_configs": [
-                        {"clock": "q5.01", "interm_freq": 50000000.0, "port": "q5:mw"},
+                        {
+                            "clock": "q5.01",
+                            "interm_freq": 50000000.0,
+                            "port": "q5:mw"
+                        }
                     ]
                 },
                 "instrument_type": "QCM_RF",

@@ -37,9 +37,9 @@ Each device in the setup can be individually configured using the entry in the c
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6
                     }
                 ]
             },
@@ -48,9 +48,9 @@ Each device in the setup can be individually configured using the entry in the c
                 "lo_name": "lo1",
                 "portclock_configs": [
                     {
-                    "port": "q1:mw",
-                    "clock": "q1.01",
-                    "interm_freq": None
+                        "port": "q1:mw",
+                        "clock": "q1.01",
+                        "interm_freq": None
                     }
                 ]
             }
@@ -94,9 +94,9 @@ for more information on the role of ports and clocks within the Quantify-Schedul
 
     "portclock_configs": [
         {
-        "port": "q0:mw",
-        "clock": "q0.01",
-        "interm_freq": 50e6
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "interm_freq": 50e6
         }
     ]
 
@@ -142,9 +142,9 @@ The result is that the downconversion stage will be taken into account when calc
                 "downconverter": True,
                 "portclock_configs": [
                     {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50000000.0
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50000000.0
                     }
                 ]
             }
@@ -195,8 +195,8 @@ mixer correction parameters as well as the frequencies.
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
+                        "port": "q0:mw",
+                        "clock": "q0.01",
                     }
                 ]
             },
@@ -204,8 +204,8 @@ mixer correction parameters as well as the frequencies.
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q1:mw",
-                    "clock": "q1.01",
+                        "port": "q1:mw",
+                        "clock": "q1.01",
                     }
                 ]
             }
@@ -236,12 +236,12 @@ It is possible to do frequency multiplexing of the signals by adding multiple po
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
+                        "port": "q0:mw",
+                        "clock": "q0.01",
                     },
                     {
-                    "port": "q0:mw",
-                    "clock": "some_other_clock",
+                        "port": "q0:mw",
+                        "clock": "some_other_clock",
                     }
                 ]
             },
@@ -249,8 +249,8 @@ It is possible to do frequency multiplexing of the signals by adding multiple po
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q1:mw",
-                    "clock": "q1.01",
+                        "port": "q1:mw",
+                        "clock": "q1.01",
                     }
                 ]
             }
@@ -300,8 +300,8 @@ The resulting config looks like:
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
+                        "port": "q0:mw",
+                        "clock": "q0.01",
                     }
                 ]
             },
@@ -309,8 +309,8 @@ The resulting config looks like:
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q1:mw",
-                    "clock": "q1.01",
+                        "port": "q1:mw",
+                        "clock": "q1.01",
                     }
                 ]
             },
@@ -318,8 +318,8 @@ The resulting config looks like:
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q2:mw",
-                    "clock": "q2.01",
+                        "port": "q2:mw",
+                        "clock": "q2.01",
                     }
                 ]
             }
@@ -386,9 +386,9 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "instruction_generated_pulses_enabled": True
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "instruction_generated_pulses_enabled": True
                     }
                 ]
             },

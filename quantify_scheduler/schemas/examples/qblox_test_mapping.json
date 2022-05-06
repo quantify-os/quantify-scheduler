@@ -40,13 +40,13 @@
                 "lo_name": "lo1",
                 "dc_mixer_offset_I": -0.054,
                 "dc_mixer_offset_Q": -0.034,
-                "portclock_configs":[
+                "portclock_configs": [
                     {
-                    "mixer_amp_ratio": 0.9997,
-                    "mixer_phase_error_deg": -4.0,
-                    "port": "q4:res",
-                    "clock": "q4.ro",
-                    "interm_freq": null
+                        "mixer_amp_ratio": 0.9997,
+                        "mixer_phase_error_deg": -4.0,
+                        "port": "q4:res",
+                        "clock": "q4.ro",
+                        "interm_freq": null
                     }
                 ]
             }
@@ -90,7 +90,7 @@
             "lo_name": "lo1",
             "dc_mixer_offset_I": -0.054,
             "dc_mixer_offset_Q": -0.034,
-            "portclock_configs":[
+            "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9997,
                     "mixer_phase_error_deg": -4.0,
