@@ -8,7 +8,7 @@ import logging
 from abc import abstractmethod
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import numpy as np
 from qblox_instruments import (

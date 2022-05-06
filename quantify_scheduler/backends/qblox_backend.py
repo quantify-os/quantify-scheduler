@@ -3,13 +3,10 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
-from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.helpers.collections import without
-from quantify_scheduler.operations.pulse_library import WindowOperation
 
 
 def hardware_compile(

@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import tempfile
-from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -46,7 +45,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
-    Cluster,
     QcmModule,
     QcmRfModule,
     QrmModule,
