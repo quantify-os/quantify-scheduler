@@ -641,7 +641,7 @@ def test_portclocks(make_basic_multi_qubit_schedule):
                     "mw_amp180": 0.25,
                     "mw_duration": 1.6e-08,
                     "mw_ef_amp180": 0.87,
-                    "mw_freq": 6020000000.0,
+                    "mw_freq": 6.02e9,
                     "mw_motzoi": 0.45,
                 },
                 "resources": {
