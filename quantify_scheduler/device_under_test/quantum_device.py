@@ -10,8 +10,10 @@ from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
+from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.device_under_test.edge import Edge
 
 
 class QuantumDevice(Instrument):
@@ -33,12 +35,21 @@ class QuantumDevice(Instrument):
         super().__init__(name=name)
 
         self.add_parameter(
-            "components",
+            "elements",
             initial_value=list(),
             parameter_class=ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all elements that"
             " are located on this QuantumDevice.",
+        )
+
+        self.add_parameter(
+            "edges",
+            initial_value=list(),
+            parameter_class=ManualParameter,
+            vals=validators.Lists(validators.Strings()),
+            docstring="A list containing the names of all the edges which connect the"
+            " DeviceElements within this QuantumDevice",
         )
 
         self.add_parameter(
@@ -107,17 +118,20 @@ class QuantumDevice(Instrument):
 
         clocks = {}
         elements_cfg = {}
+        edges_cfg = {}
 
         # iterate over the elements on the device
-        for element_name in self.components():
-            element = self.get_component(element_name)
+        for element_name in self.elements():
+            element = self.get_element(element_name)
             element_cfg = element.generate_device_config()
             clocks.update(element_cfg.clocks)
             elements_cfg.update(element_cfg.elements)
 
         # iterate over the edges on the device
-        edges_cfg: dict = {}
-        # FIXME: add support for operations acting on edges.
+        for edge_name in self.edges():
+            edge = self.get_edge(edge_name)
+            edge_cfg = edge.generate_edge_config()
+            edges_cfg.update(edge_cfg)
 
         device_config = DeviceCompilationConfig(
             backend="quantify_scheduler.backends"
@@ -129,64 +143,136 @@ class QuantumDevice(Instrument):
 
         return device_config
 
-    def get_component(self, name: str) -> Instrument:
+    def get_element(self, name: str) -> DeviceElement:
         """
-        Returns a component by name.
+        Returns a
+        :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement`
+        by name.
 
         Parameters
         ----------
         name
-            The component name.
+            The element name.
 
         Returns
         -------
         :
-            The component.
+            The element.
 
         Raises
         ------
         KeyError
-            If key `name` is not present in `self.components`.
+            If key `name` is not present in `self.elements`.
         """
-        if name in self.components():
+        if name in self.elements():
             return self.find_instrument(name)
-        raise KeyError(f"'{name}' is not a component of {self.name}.")
+        raise KeyError(f"'{name}' is not a element of {self.name}.")
 
-    def add_component(
+    def add_element(
         self,
-        component: DeviceElement,
+        element: DeviceElement,
     ) -> None:
         """
-        Adds a component to the components collection.
+        Adds an element to the elements collection.
 
         Parameters
         ----------
-        component
-            The component to add.
+        element
+            The element to add.
 
         Raises
         ------
         ValueError
-            If a component with a duplicated name is added to the collection.
+            If a element with a duplicated name is added to the collection.
         TypeError
-            If :code:`component` is not an instance of the base component.
+            If :code:`element` is not an instance of the base element.
         """
-        if component.name in self.components():
-            raise ValueError(f"'{component.name}' has already been added.")
+        if element.name in self.elements():
+            raise ValueError(f"'{element.name}' has already been added.")
 
-        if not isinstance(component, DeviceElement):
-            raise TypeError(f"{repr(component)} is not a DeviceElement.")
+        if not isinstance(element, DeviceElement):
+            raise TypeError(f"{repr(element)} is not a DeviceElement.")
 
-        self.components().append(component.name)  # list gets updated in place
+        self.elements().append(element.name)  # list gets updated in place
 
-    def remove_component(self, name: str) -> None:
+    def remove_element(self, name: str) -> None:
         """
-        Removes a component by name.
+        Removes a element by name.
 
         Parameters
         ----------
         name
-            The component name.
+            The element name.
         """
 
-        self.components().remove(name)  # list gets updated in place
+        self.elements().remove(name)  # list gets updated in place
+
+    def get_edge(self, name: str) -> Instrument:
+        """
+        Returns a edge by name.
+
+        Parameters
+        ----------
+        name
+            The edge name.
+
+        Returns
+        -------
+        :
+            The edge.
+
+        Raises
+        ------
+        KeyError
+            If key `name` is not present in `self.edges`.
+        """
+        if name in self.edges():
+            return self.find_instrument(name)
+        raise KeyError(f"'{name}' is not a edge of {self.name}.")
+
+    def add_edge(self, edge: Edge) -> None:
+        """
+        Adds the edges.
+
+        Parameters
+        ----------
+        edge
+            The edge name connecting the elements. Has to follow the convention
+            'element_0'-'element_1'
+        """
+        if edge.name in self.edges():
+            raise ValueError(f"'{edge.name}' has already been added.")
+
+        if not isinstance(edge, Edge):
+            raise TypeError(f"{repr(edge)} is not a Edge.")
+
+        self.edges().append(edge.name)
+
+    def remove_edge(self, edge_name: str) -> None:
+        """
+        Removes an edge by name.
+
+        Parameters
+        ----------
+        edge_name
+            The edge name.
+        """
+
+        self.edges().remove(edge_name)  # list gets updated in place
+
+    @property
+    @deprecated("0.8", "Consider replacing with elements")
+    def components(self):
+        return self.elements
+
+    @deprecated("0.8", "Consider replacing with get_element.")
+    def get_component(self, name: str) -> Instrument:
+        return self.get_element(name=name)
+
+    @deprecated("0.8", "Consider replacing with add_element.")
+    def add_component(self, component: DeviceElement) -> None:
+        self.add_element(element=component)
+
+    @deprecated("0.8", "Consider replacing with remove_element.")
+    def remove_component(self, name: str) -> None:
+        self.remove_element(name=name)
