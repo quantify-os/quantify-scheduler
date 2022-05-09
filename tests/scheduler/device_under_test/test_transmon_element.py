@@ -57,7 +57,6 @@ def test_generate_config(q0: TransmonElement):
 def test_generate_device_config(q0: TransmonElement):
     dev_cfg = q0.generate_device_config()
     assert isinstance(dev_cfg, DeviceCompilationConfig)
-    # assert validate_config(dev_cfg, scheme_fn="transmon_cfg.json")
 
 
 def test_find_coordinator(q0: TransmonElement):
