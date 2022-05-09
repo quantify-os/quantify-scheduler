@@ -215,12 +215,12 @@ def hardware_compile_distortion_corrections(
     TODO: add general description of functionality
 
     For waveform components in need of correcting (indicated via their port & clock) we
-    are *only* replacing the `pulse_info` dict associated to the waveform component
+    are *only* replacing the dict in "pulse_info" associated to the waveform component
 
     This means that we can have a combination of corrected (i.e., pre-sampled) and
     uncorrected waveform components in the same operation
 
-    Also, we are not updating the `operation_repr` key, used to reference the operation
+    Also, we are not updating the "operation_repr" key, used to reference the operation
     from the schedulable
 
     Parameters
@@ -240,16 +240,16 @@ def hardware_compile_distortion_corrections(
     for operation_repr in schedule.operations.keys():
         substitute_operation = None
 
-        for pulse_info_idx, pulse_info in enumerate(
+        for pulse_info_idx, pulse_data in enumerate(
             schedule.operations[operation_repr].data["pulse_info"]
         ):
-            portclock_key = f"{pulse_info['port']}-{pulse_info['clock']}"
+            portclock_key = f"{pulse_data['port']}-{pulse_data['clock']}"
 
             if portclock_key in hardware_cfg[distortion_corrections_key]:
                 correction_cfg = hardware_cfg[distortion_corrections_key][portclock_key]
 
                 substitute_pulse = correct_waveform(
-                    pulse_info=pulse_info,
+                    pulse_data=pulse_data,
                     sampling_rate=constants.SAMPLING_RATE,
                     correction_cfg=correction_cfg,
                 )
@@ -283,11 +283,11 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse
 
 
 def correct_waveform(  # TODO: move to helpers, e.g. helpers.waveforms?
-    pulse_info: Dict[str, Any], sampling_rate: int, correction_cfg: Dict[str, Any]
+    pulse_data: Dict[str, Any], sampling_rate: int, correction_cfg: Dict[str, Any]
 ) -> NumericalPulse:
 
     waveform_data = generate_waveform_data(
-        data_dict=pulse_info,
+        data_dict=pulse_data,
         sampling_rate=sampling_rate,
     )
 
@@ -304,12 +304,12 @@ def correct_waveform(  # TODO: move to helpers, e.g. helpers.waveforms?
         samples=corrected_waveform_data,
         t_samples=np.linspace(
             start=0,
-            stop=pulse_info["duration"],
+            stop=pulse_data["duration"],
             num=corrected_waveform_data.size,
         ),
-        port=pulse_info["port"],
-        clock=pulse_info["clock"],
-        t0=pulse_info["t0"],
+        port=pulse_data["port"],
+        clock=pulse_data["clock"],
+        t0=pulse_data["t0"],
     )
 
     return substitute_pulse
