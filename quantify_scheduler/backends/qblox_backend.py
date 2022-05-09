@@ -3,6 +3,7 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Tuple
 
 from quantify_scheduler import CompiledSchedule, Schedule
@@ -235,6 +236,10 @@ def hardware_compile_distortion_corrections(
 
     distortion_corrections_key = "distortion_corrections"
     if distortion_corrections_key not in hardware_cfg:
+        logging.info(
+            f'Backend "{hardware_compile_distortion_corrections.__name__}"'
+            f'invoked but no "distortion_corrections" supplied in hardware config'
+        )
         return hardware_compile(schedule, hardware_cfg)
 
     for operation_repr in schedule.operations.keys():
@@ -269,10 +274,7 @@ def hardware_compile_distortion_corrections(
             ].data["pulse_info"]
             schedule.operations[operation_repr] = substitute_operation
 
-    pruned_hardware_cfg = {
-        k: v for k, v in hardware_cfg.items() if k != distortion_corrections_key
-    }
-    return hardware_compile(schedule, pruned_hardware_cfg)
+    return hardware_compile(schedule, hardware_cfg)
 
 
 import numpy as np

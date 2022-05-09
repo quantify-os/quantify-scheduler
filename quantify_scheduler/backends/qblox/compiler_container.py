@@ -183,7 +183,7 @@ class CompilerContainer:
         """
         composite = cls(schedule)
         for instr_name, instr_cfg in mapping.items():
-            if not isinstance(instr_cfg, dict):
+            if not isinstance(instr_cfg, dict) or "instrument_type" not in instr_cfg:
                 continue
 
             device_type = instr_cfg["instrument_type"]
