@@ -7,10 +7,14 @@ import logging
 from typing import Any, Dict, Tuple
 
 from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler.backends.distortions import correct_waveform
 from quantify_scheduler.backends.qblox import helpers, compiler_container, constants
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.helpers.collections import without
 from quantify_scheduler.operations.pulse_library import WindowOperation
+
+
+logger = logging.getLogger(__name__)
 
 
 def generate_port_clock_to_device_map(
@@ -275,43 +279,3 @@ def hardware_compile_distortion_corrections(
             schedule.operations[operation_repr] = substitute_operation
 
     return hardware_compile(schedule, hardware_cfg)
-
-
-import numpy as np
-
-from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
-from quantify_scheduler.helpers.importers import import_python_object_from_string
-from quantify_scheduler.operations.pulse_library import NumericalPulse
-
-
-def correct_waveform(  # TODO: move to helpers, e.g. helpers.waveforms?
-    pulse_data: Dict[str, Any], sampling_rate: int, correction_cfg: Dict[str, Any]
-) -> NumericalPulse:
-
-    waveform_data = generate_waveform_data(
-        data_dict=pulse_data,
-        sampling_rate=sampling_rate,
-    )
-
-    # TODO: check for keys explicitly and raise KeyError?
-    filter_func = import_python_object_from_string(correction_cfg["filter_func"])
-
-    kwargs = {
-        correction_cfg["input_var_name"]: waveform_data,
-        **correction_cfg["kwargs"],
-    }
-    corrected_waveform_data = filter_func(**kwargs)
-
-    substitute_pulse = NumericalPulse(
-        samples=corrected_waveform_data,
-        t_samples=np.linspace(
-            start=0,
-            stop=pulse_data["duration"],
-            num=corrected_waveform_data.size,
-        ),
-        port=pulse_data["port"],
-        clock=pulse_data["clock"],
-        t0=pulse_data["t0"],
-    )
-
-    return substitute_pulse
