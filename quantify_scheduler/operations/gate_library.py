@@ -288,6 +288,7 @@ class CNOT(Operation):
                     "tex": r"CNOT",
                     "plot_func": plot_func,
                     "qubits": [qC, qT],
+                    "symmetric": False,
                     "operation_type": "CNOT",
                 },
             }
@@ -348,6 +349,7 @@ class CZ(Operation):
                     "tex": r"CZ",
                     "plot_func": plot_func,
                     "qubits": [qC, qT],
+                    "symmetric": True,
                     "operation_type": "CZ",
                 },
             }

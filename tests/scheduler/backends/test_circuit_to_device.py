@@ -54,10 +54,66 @@ def test_compile_transmon_example_program():
     sched.add(Y90(qubit=q0))
     sched.add(operation=CZ(qC=q0, qT=q1))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
-    sched.add(Measure(q0, q1), label="M0")
+    sched.add(Measure(q0, q1), label="M_q0_q1")
 
     # test that all these operations compile correctly.
     _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+
+
+def test_compile_basic_transmon_example_program(mock_setup):
+    """
+    Test if compilation using the BasicTransmonElement reproduces old behaviour.
+    """
+
+    sched = Schedule("Test schedule")
+
+    # define the resources
+    q2, q3 = ("q2", "q3")
+    sched.add(Reset(q2, q3))
+    sched.add(Rxy(90, 0, qubit=q2))
+    sched.add(Rxy(45, 0, qubit=q2))
+    sched.add(Rxy(12, 0, qubit=q2))
+    sched.add(Rxy(12, 0, qubit=q2))
+    sched.add(X(qubit=q2))
+    sched.add(Y(qubit=q2))
+    sched.add(Y90(qubit=q2))
+    sched.add(operation=CZ(qC=q2, qT=q3))
+    sched.add(Rxy(theta=90, phi=0, qubit=q2))
+    sched.add(Measure(q2, q3), label="M_q2_q3")
+
+    # test that all these operations compile correctly.
+    quantum_device = mock_setup["quantum_device"]
+    _ = compile_circuit_to_device(
+        sched, device_cfg=quantum_device.generate_device_config()
+    )
+
+
+def test_compile_asymmetric_gate(mock_setup):
+    """
+    Test if compilation fails when performing an asymmetric operation and the
+    correct edge defining the parent-child device element connection is missing from
+    the device config.
+    """
+    sched = Schedule("Test schedule")
+
+    # define the resources
+    q2, q3 = ("q2", "q3")
+
+    # Deliberately define an asymmetric CZ
+    asymmetric_cz = CZ(qC=q3, qT=q2)
+    asymmetric_cz.data["gate_info"]["symmetric"] = False
+
+    sched.add(Reset(q2, q3))
+    sched.add(operation=asymmetric_cz)
+    sched.add(Measure(q2, q3), label="M_q2_q3")
+
+    # test that all these operations compile correctly.
+    quantum_device = mock_setup["quantum_device"]
+
+    with pytest.raises(ConfigKeyError):
+        _ = compile_circuit_to_device(
+            sched, device_cfg=quantum_device.generate_device_config()
+        )
 
 
 def test_rxy_operations_compile():
