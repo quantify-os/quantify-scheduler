@@ -3,18 +3,14 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
-import logging
 from typing import Any, Dict, Tuple
 
 from quantify_scheduler import CompiledSchedule, Schedule
-from quantify_scheduler.backends.distortions import correct_waveform
-from quantify_scheduler.backends.qblox import helpers, compiler_container, constants
+from quantify_scheduler.backends.corrections import apply_distortion_corrections
+from quantify_scheduler.backends.qblox import helpers, compiler_container
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.helpers.collections import without
 from quantify_scheduler.operations.pulse_library import WindowOperation
-
-
-logger = logging.getLogger(__name__)
 
 
 def generate_port_clock_to_device_map(
@@ -195,6 +191,8 @@ def hardware_compile(
     :
         The compiled schedule.
     """
+    schedule = apply_distortion_corrections(schedule, hardware_cfg)
+
     portclock_map = generate_port_clock_to_device_map(hardware_cfg)
 
     container = compiler_container.CompilerContainer.from_mapping(
@@ -211,71 +209,3 @@ def hardware_compile(
     schedule["compiled_instructions"] = compiled_instructions
     # Mark the schedule as a compiled schedule
     return CompiledSchedule(schedule)
-
-
-def hardware_compile_distortion_corrections(
-    schedule: Schedule, hardware_cfg: Dict[str, Any]
-) -> CompiledSchedule:
-    """
-    TODO: add general description of functionality
-
-    For waveform components in need of correcting (indicated via their port & clock) we
-    are *only* replacing the dict in "pulse_info" associated to the waveform component
-
-    This means that we can have a combination of corrected (i.e., pre-sampled) and
-    uncorrected waveform components in the same operation
-
-    Also, we are not updating the "operation_repr" key, used to reference the operation
-    from the schedulable
-
-    Parameters
-    ----------
-    schedule
-    hardware_cfg
-
-    Returns
-    -------
-
-    """
-
-    distortion_corrections_key = "distortion_corrections"
-    if distortion_corrections_key not in hardware_cfg:
-        logging.info(
-            f'Backend "{hardware_compile_distortion_corrections.__name__}"'
-            f'invoked but no "distortion_corrections" supplied in hardware config'
-        )
-        return hardware_compile(schedule, hardware_cfg)
-
-    for operation_repr in schedule.operations.keys():
-        substitute_operation = None
-
-        for pulse_info_idx, pulse_data in enumerate(
-            schedule.operations[operation_repr].data["pulse_info"]
-        ):
-            portclock_key = f"{pulse_data['port']}-{pulse_data['clock']}"
-
-            if portclock_key in hardware_cfg[distortion_corrections_key]:
-                correction_cfg = hardware_cfg[distortion_corrections_key][portclock_key]
-
-                substitute_pulse = correct_waveform(
-                    pulse_data=pulse_data,
-                    sampling_rate=constants.SAMPLING_RATE,
-                    correction_cfg=correction_cfg,
-                )
-
-                schedule.operations[operation_repr].data["pulse_info"][
-                    pulse_info_idx
-                ] = substitute_pulse.data["pulse_info"][0]
-
-                if pulse_info_idx == 0:
-                    substitute_operation = substitute_pulse
-
-        # Convert to operation type of first entry in pulse_info,
-        # required as first entry in pulse_info is used to generate signature in __str__
-        if substitute_operation is not None:
-            substitute_operation.data["pulse_info"] = schedule.operations[
-                operation_repr
-            ].data["pulse_info"]
-            schedule.operations[operation_repr] = substitute_operation
-
-    return hardware_compile(schedule, hardware_cfg)

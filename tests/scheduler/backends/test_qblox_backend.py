@@ -779,14 +779,14 @@ def test_qasm_hook(pulse_only_schedule):
     assert program_lines[1].strip() == q1asm_instructions.NOP
 
 
-def test_hardware_compile_distortion_corrections():
+def test_apply_distortion_corrections():
 
     # TODO: For better example, see PycQED:
     # https://github.com/DiCarloLab-Delft/PycQED_py3/blob/develop/pycqed/instrument_drivers/meta_instrument/lfilt_kernel_object.py
     fir_filter_coeffs = np.linspace(0, 1, 10)
 
     hw_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile_distortion_corrections",
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "distortion_corrections": {
             "q0:fl-cl0.baseband": {
                 "filter_func": "scipy.signal.lfilter",
