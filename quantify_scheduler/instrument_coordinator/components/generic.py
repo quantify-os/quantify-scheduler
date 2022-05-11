@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
+from qcodes.instrument.base import InstrumentBase
 import quantify_scheduler.instrument_coordinator.utility as util
 from quantify_scheduler.instrument_coordinator.components import base
 
