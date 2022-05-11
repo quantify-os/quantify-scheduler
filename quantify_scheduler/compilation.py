@@ -6,9 +6,7 @@ from __future__ import annotations
 import logging
 import warnings
 from copy import deepcopy
-from typing import Union
-
-from typing_extensions import Literal
+from typing import Literal, Union
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.enums import BinMode
@@ -197,11 +195,13 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
         if op.valid_acquisition:
             continue
 
-        if op["gate_info"]["operation_type"] == "measure":
-            for idx, q in enumerate(op["gate_info"]["qubits"]):
-                q_cfg = device_cfg["qubits"][q]
+        op_type = op["gate_info"]["operation_type"]
+        if op_type == "measure":
+            qubits = op["gate_info"]["qubits"]
+            for idx, qubit in enumerate(qubits):
+                q_cfg = device_cfg["qubits"][qubit]
 
-                if len(op["gate_info"]["qubits"]) != 1:
+                if len(qubits) != 1:
                     acq_channel = op["gate_info"]["acq_channel"][idx]
                     acq_index = op["gate_info"]["acq_index"][idx]
                 else:
@@ -211,8 +211,11 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                 # If the user specifies bin-mode use that otherwise use a default
                 # better would be to get it from the config file in the "or"
                 bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE
+                acq_protocol = (
+                    op["gate_info"]["acq_protocol"] or q_cfg["params"]["acquisition"]
+                )
 
-                if q_cfg["params"]["acquisition"] == "SSBIntegrationComplex":
+                if acq_protocol == "SSBIntegrationComplex":
                     # readout pulse
                     op.add_pulse(
                         SquarePulse(
@@ -243,8 +246,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                                 )
                             ]
                         )
-
-                if q_cfg["params"]["acquisition"] == "Trace":
+                elif acq_protocol == "Trace":
                     # readout pulse
                     op.add_pulse(
                         SquarePulse(
@@ -275,11 +277,15 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                                 )
                             ]
                         )
+                else:
+                    raise ValueError(
+                        f'Acquisition protocol "{acq_protocol}" is not supported.'
+                    )
 
-        elif op["gate_info"]["operation_type"] == "Rxy":
-            q = op["gate_info"]["qubits"][0]
+        elif op_type == "Rxy":
+            qubit = op["gate_info"]["qubits"][0]
             # read info from config
-            q_cfg = device_cfg["qubits"][q]
+            q_cfg = device_cfg["qubits"][qubit]
 
             # G_amp is the gaussian amplitude introduced in
             # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
@@ -310,7 +316,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                     ]
                 )
 
-        elif op["gate_info"]["operation_type"] == "CNOT":
+        elif op_type == "CNOT":
             # These methods don't raise exceptions as they will be implemented shortly
             logger.warning("Not Implemented yet")
             logger.warning(
@@ -319,7 +325,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                 )
             )
 
-        elif op["gate_info"]["operation_type"] == "CZ":
+        elif op_type == "CZ":
             # pylint: disable=fixme
             # todo mock implementation, needs a proper version before release
             q0 = op["gate_info"]["qubits"][0]
@@ -355,12 +361,14 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             )
 
             op.add_pulse(pulse)
-        elif op["gate_info"]["operation_type"] == "reset":
+        elif op_type == "reset":
             # Initialization through relaxation
             qubits = op["gate_info"]["qubits"]
             init_times = []
-            for q in qubits:
-                init_times.append(device_cfg["qubits"][q]["params"]["init_duration"])
+            for qubit in qubits:
+                init_times.append(
+                    device_cfg["qubits"][qubit]["params"]["init_duration"]
+                )
             op.add_pulse(IdlePulse(max(init_times)))
 
         else:

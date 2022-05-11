@@ -3,6 +3,7 @@
 """
 Compilation backend for quantum-circuit to quantum-device layer.
 """
+from itertools import permutations
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -105,7 +106,6 @@ class DeviceCompilationConfig(DataStructure):
     edges: Dict[str, Dict[str, OperationCompilationConfig]]
 
 
-# pylint: disable=too-many-branches
 def compile_circuit_to_device(
     schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
 ) -> Schedule:
@@ -131,13 +131,6 @@ def compile_circuit_to_device(
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    for name, frequency in device_cfg.clocks.items():
-        if name not in schedule.resources:
-            # some schedules manually add a clock and set it's frequency
-            # (e.g., spectroscopy schedules. In that case, this should not overwrite
-            # the information that was explicitly set in the schedule.
-            schedule.add_resources([ClockResource(name=name, freq=frequency)])
-
     for operation in schedule.operations.values():
         # if operation is a valid pulse or acquisition it will not attempt to add
         # pulse/acquisition info in the lines below.
@@ -153,73 +146,133 @@ def compile_circuit_to_device(
 
         # single qubit operations
         if len(qubits) == 1:
-            qubit = qubits[0]
-            if qubit not in device_cfg.elements:
-                raise ConfigKeyError(
-                    kind="element",
-                    missing=qubit,
-                    allowed=list(device_cfg.elements.keys()),
-                )
-            element_cfg = device_cfg.elements[qubit]
-
-            if operation_type not in element_cfg:
-                raise ConfigKeyError(
-                    kind="operation",
-                    missing=operation_type,
-                    allowed=list(element_cfg.keys()),
-                )
-            _add_device_repr_from_cfg(
+            _compile_single_qubit(
                 operation=operation,
-                operation_cfg=element_cfg[operation_type],
+                qubit=qubits[0],
+                operation_type=operation_type,
+                device_cfg=device_cfg,
             )
 
         # it is a two-qubit operation if the operation not in the qubit config
         elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
-            edge = f"{qubits[0]}-{qubits[1]}"
-            if edge not in device_cfg.edges:
-                raise ConfigKeyError(
-                    kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
-                )
-            edge_config = device_cfg.edges[edge]
-            if operation_type not in edge_config:
-                # only raise exception if it is also not a single-qubit operation
-                raise ConfigKeyError(
-                    kind="operation",
-                    missing=operation_type,
-                    allowed=list(edge_config.keys()),
-                )
-            _add_device_repr_from_cfg(operation, edge_config[operation_type])
-
+            _compile_two_qubits(
+                operation=operation,
+                qubits=qubits,
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
         # we only support 2-qubit operations and single-qubit operations.
         # some single-qubit operations (reset, measure) can be expressed as acting
         # on multiple qubits simultaneously. That is covered through this for-loop.
         else:
-            for mux_idx, qubit in enumerate(qubits):
-                if qubit not in device_cfg.elements:
-                    raise ConfigKeyError(
-                        kind="element",
-                        missing=qubit,
-                        allowed=list(device_cfg.elements.keys()),
-                    )
-                element_cfg = device_cfg.elements[qubit]
+            _compile_multiplexed(
+                operation=operation,
+                qubits=qubits,
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
 
-                if operation_type not in element_cfg:
-                    raise ConfigKeyError(
-                        kind="operation",
-                        missing=operation_type,
-                        allowed=list(element_cfg.keys()),
-                    )
-                _add_device_repr_from_cfg_multiplexed(
-                    operation, element_cfg[operation_type], mux_idx=mux_idx
-                )
+        pulse_acq_info = operation["pulse_info"] + operation["acquisition_info"]
+        clocks_used = []
+        for info in pulse_acq_info:
+            clocks_used.append(info["clock"])
+
+        for clock in set(clocks_used):
+            if clock not in schedule.resources:
+                frequency = device_cfg.clocks[clock]
+                clock_resource = ClockResource(name=clock, freq=frequency)
+                schedule.add_resource(clock_resource)
 
     return schedule
+
+
+def _compile_multiplexed(operation, qubits, operation_type, device_cfg):
+    for mux_idx, qubit in enumerate(qubits):
+        if qubit not in device_cfg.elements:
+            raise ConfigKeyError(
+                kind="element",
+                missing=qubit,
+                allowed=list(device_cfg.elements.keys()),
+            )
+
+        element_cfg = device_cfg.elements[qubit]
+
+        if operation_type not in element_cfg:
+            raise ConfigKeyError(
+                kind="operation",
+                missing=operation_type,
+                allowed=list(element_cfg.keys()),
+            )
+
+        _add_device_repr_from_cfg_multiplexed(
+            operation, element_cfg[operation_type], mux_idx=mux_idx
+        )
+
+
+def _compile_single_qubit(operation, qubit, operation_type, device_cfg):
+    if qubit not in device_cfg.elements:
+        raise ConfigKeyError(
+            kind="element",
+            missing=qubit,
+            allowed=list(device_cfg.elements.keys()),
+        )
+
+    element_cfg = device_cfg.elements[qubit]
+    if operation_type not in element_cfg:
+        raise ConfigKeyError(
+            kind="operation",
+            missing=operation_type,
+            allowed=list(element_cfg.keys()),
+        )
+
+    _add_device_repr_from_cfg(
+        operation=operation,
+        operation_cfg=element_cfg[operation_type],
+    )
+
+
+def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
+    parent_qubit, child_qubit = qubits
+    edge = f"{parent_qubit}-{child_qubit}"
+
+    symmetric_operation = operation.get("gate_info", {}).get("symmetric", False)
+
+    if symmetric_operation:
+        possible_permutations = permutations(qubits, 2)
+        operable_edges = {
+            f"{permutation[0]}-{permutation[1]}"
+            for permutation in possible_permutations
+        }
+        valid_edge_list = list(operable_edges.intersection(device_cfg.edges))
+        if len(valid_edge_list) == 1:
+            edge = valid_edge_list[0]
+        elif len(valid_edge_list) < 1:
+            raise ConfigKeyError(
+                kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
+            )
+        elif len(valid_edge_list) > 1:
+            raise MultipleKeysError(operation=operation_type, matches=valid_edge_list)
+
+    if edge not in device_cfg.edges:
+        raise ConfigKeyError(
+            kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
+        )
+
+    edge_config = device_cfg.edges[edge]
+    if operation_type not in edge_config:
+        # only raise exception if it is also not a single-qubit operation
+        raise ConfigKeyError(
+            kind="operation",
+            missing=operation_type,
+            allowed=list(edge_config.keys()),
+        )
+
+    _add_device_repr_from_cfg(operation, edge_config[operation_type])
 
 
 def _add_device_repr_from_cfg(
     operation: Operation, operation_cfg: OperationCompilationConfig
 ):
-
     # deepcopy because operation_type can occur multiple times
     # (e.g., parametrized operations).
     operation_cfg = deepcopy(operation_cfg)
@@ -267,7 +320,18 @@ def _add_device_repr_from_cfg_multiplexed(
     # retrieve keyword args for parametrized operations from the gate info
     if operation_cfg.gate_info_factory_kwargs is not None:
         for key in operation_cfg.gate_info_factory_kwargs:
-            factory_kwargs[key] = operation.data["gate_info"][key][mux_idx]
+            gate_info = operation.data["gate_info"][key]
+            # Hack alert: not all parameters in multiplexed operation are
+            # necessary passed for each element separately. We assume that if they do
+            # (say, acquisition index and channel for measurement), they are passed as
+            # a list or tuple. If they don't (say, it is hard to imagine different
+            # acquisition protocols for qubits during multiplexed readout), they are
+            # assumed to NOT be a list or tuple. If this spoils the correct behaviour of
+            # your program in future: sorry :(
+            if isinstance(gate_info, (tuple, list)):
+                factory_kwargs[key] = gate_info[mux_idx]
+            else:
+                factory_kwargs[key] = gate_info
 
     device_op = factory_func(**factory_kwargs)
     operation.add_device_representation(device_op)
@@ -283,6 +347,23 @@ class ConfigKeyError(KeyError):
         self.value = (
             f'{kind} "{missing}" is not present in the configuration file;'
             + f" {kind} must be one of the following: {allowed}"
+        )
+
+    def __str__(self):
+        return repr(self.value)
+
+
+# pylint: disable=super-init-not-called
+class MultipleKeysError(KeyError):
+    """
+    Custom exception for when symmetric keys are found in a configuration file.
+    """
+
+    def __init__(self, operation, matches):
+        self.value = (
+            f"Symmetric Operation {operation} matches the following edges {matches}"
+            f" in the QuantumDevice. You can only specify a single edge for a symmetric"
+            " operation."
         )
 
     def __str__(self):

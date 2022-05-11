@@ -28,6 +28,10 @@
                     "description": "A list of strings indicating the qubits the gate acts on. Valid qubits are strings that appear in the device_config.json file.",
                     "type": "array"
                 },
+                "symmetric": {
+                    "description": "A boolean to indicate whether a two qubit gate is symmetric. This is used in the device config compilation stage. By default, it is set as False",
+                    "type": "boolean"
+                },
                 "tex": {
                     "type": "string",
                     "description": "latex snippet for plotting"

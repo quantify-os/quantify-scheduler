@@ -3,17 +3,16 @@
 """Helper functions for Qblox backend."""
 
 from collections import UserDict
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Literal, Tuple, Union
 
 import numpy as np
-from typing_extensions import Literal
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 
 
 # pylint: disable=invalid-name
-def find_inner_dicts_containing_key(d: Union[dict], key: Any) -> List[dict]:
+def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     """
     Generates a list of the first dictionaries encountered that contain a certain key,
     in a complicated dictionary with nested dictionaries or Iterables.
@@ -100,12 +99,17 @@ def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
     Returns
     -------
     :
-        The (possibly complex) values of the generated waveform.
+        The (possibly complex) values of the generated waveform. The number of values is
+        determined by rounding to the nearest integer.
     """
     time_duration = data_dict["duration"]
-    t = np.linspace(0, time_duration, int(np.round(time_duration * sampling_rate)))
+    t = np.linspace(
+        start=0, stop=time_duration, num=int(np.round(time_duration * sampling_rate))
+    )
 
-    wf_data = exec_waveform_function(data_dict["wf_func"], t, data_dict)
+    wf_data = exec_waveform_function(
+        wf_func=data_dict["wf_func"], t=t, pulse_info=data_dict
+    )
 
     return wf_data
 

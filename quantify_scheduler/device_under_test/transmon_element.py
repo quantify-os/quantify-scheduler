@@ -279,10 +279,10 @@ class BasicTransmonElement(DeviceElement):
                         "pulse_duration": self.measure.pulse_duration(),
                         "acq_delay": self.measure.acq_delay(),
                         "acq_duration": self.measure.integration_time(),
-                        "acq_protocol": "SSBIntegrationComplex",
                         "acq_channel": self.measure.acq_channel(),
+                        "acq_protocol_default": "SSBIntegrationComplex",
                     },
-                    gate_info_factory_kwargs=["acq_index", "bin_mode"],
+                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),
             }
         }
@@ -651,10 +651,10 @@ class TransmonElement(DeviceElement):
                         "pulse_duration": self.ro_pulse_duration(),
                         "acq_delay": self.ro_acq_delay(),
                         "acq_duration": self.ro_acq_integration_time(),
-                        "acq_protocol": "SSBIntegrationComplex",
                         "acq_channel": self.ro_acq_channel(),
+                        "acq_protocol_default": "SSBIntegrationComplex",
                     },
-                    gate_info_factory_kwargs=["acq_index", "bin_mode"],
+                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),
             }
         }

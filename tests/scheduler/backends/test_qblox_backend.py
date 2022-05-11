@@ -18,7 +18,7 @@ from typing import Any, Dict
 
 import numpy as np
 import pytest
-from qcodes.instrument.base import Instrument
+from qblox_instruments import Pulsar, PulsarType
 
 # pylint: disable=no-name-in-module
 from quantify_core.data.handling import set_datadir
@@ -82,15 +82,8 @@ with open(map_f, "r", encoding="utf-8") as f:
     HARDWARE_MAPPING = json.load(f)
 
 
-try:
-    from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-    from pulsar_qrm.pulsar_qrm import pulsar_qrm_dummy
-
-    PULSAR_ASSEMBLER = True
-except ImportError:
-    PULSAR_ASSEMBLER = False
-
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
+
 
 # --------- Test fixtures ---------
 @pytest.fixture(name="hardware_cfg_latency_correction")
@@ -226,24 +219,17 @@ def hardware_cfg_multiplexing():
 
 @pytest.fixture
 def dummy_pulsars():
-    if PULSAR_ASSEMBLER:
-        _pulsars = []
-        for qcm in ["qcm0", "qcm1"]:
-            _pulsars.append(pulsar_qcm_dummy(qcm))
-        for qrm in ["qrm0", "qrm1"]:
-            _pulsars.append(pulsar_qrm_dummy(qrm))
-    else:
-        _pulsars = []
+    _pulsars = []
+    for qcm_name in ["qcm0", "qcm1"]:
+        _pulsars.append(Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM))
+    for qrm_name in ["qrm0", "qrm1"]:
+        _pulsars.append(Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM))
 
     yield _pulsars
 
     # teardown
-    for instr_name in list(Instrument._all_instruments):
-        try:
-            inst = Instrument.find_instrument(instr_name)
-            inst.close()
-        except KeyError:
-            pass
+    for instrument in Pulsar.instances():
+        instrument.close()
 
 
 @pytest.fixture
@@ -534,8 +520,6 @@ def fixture_empty_qasm_program():
 
 
 # --------- Test utility functions ---------
-
-
 def function_for_test_generate_waveform_data(t, x, y):
     return x * t + y
 
@@ -543,18 +527,46 @@ def function_for_test_generate_waveform_data(t, x, y):
 def test_generate_waveform_data():
     x = 10
     y = np.pi
-    sampling_rate = 1e9
     duration = 1e-8
-    t_verification = np.arange(0, 0 + duration, 1 / sampling_rate)
+    sampling_rate = 1e9
+
+    t_verification = np.arange(start=0, stop=0 + duration, step=1 / sampling_rate)
     verification_data = function_for_test_generate_waveform_data(t_verification, x, y)
+
     data_dict = {
         "wf_func": __name__ + ".function_for_test_generate_waveform_data",
         "x": x,
         "y": y,
-        "duration": 1e-8,
+        "duration": duration,
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
+
     assert np.allclose(gen_data, verification_data)
+
+
+@pytest.mark.parametrize(
+    "sampling_rate, duration, sample_size",
+    [
+        (6.1e-08, 1e9, 61),
+        (6.1999e-08, 1e9, 62),
+        (6.2001e-08, 1e9, 62),
+        (6.249e-08, 1e9, 62),
+        (6.25e-08, 1e9, 62),
+        (6.31e-08, 1e9, 63),
+    ],
+)
+def test_generate_waveform_data_sample_size(duration, sampling_rate, sample_size):
+    data_dict = {
+        "wf_func": __name__ + ".function_for_test_generate_waveform_data",
+        "x": 10,
+        "y": np.pi,
+        "duration": duration,
+    }
+    gen_data = generate_waveform_data(data_dict, sampling_rate)
+
+    assert (
+        len(gen_data) == sample_size
+    ), f"Sample size {sample_size} is integer nearest to {duration * sampling_rate}"
 
 
 def test_find_inner_dicts_containing_key():
@@ -587,6 +599,7 @@ def test_find_all_port_clock_combinations():
         ("q3:mw", "q3.01"),
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
+        ("q4:res", "q4.ro"),
     }
     assert portclocks == answer
 
@@ -594,7 +607,7 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 11
+    assert len(portclock_map.keys()) == 12
 
 
 # --------- Test classes and member methods ---------
@@ -676,7 +689,7 @@ def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
@@ -707,7 +720,7 @@ def test_compile_with_rel_time(
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     qcm0 = dummy_pulsars[0]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
 
 
 def test_compile_with_repetitions(mixed_schedule_with_acquisition):
@@ -1193,7 +1206,7 @@ def test_cluster_settings(pulse_only_schedule):
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
     cluster_compiler.prepare()
-    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_qcm0"]
+    cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_module1"]
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 
 
@@ -1209,7 +1222,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
         "seq_fn"
     ]
-    qcm0.sequencer0_waveforms_and_program(qcm0_seq0_json)
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
@@ -1218,7 +1231,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
         "seq_fn"
     ]
-    qrm0.sequencer0_waveforms_and_program(qrm0_seq0_json)
+    qrm0.sequencer0.sequence(qrm0_seq0_json)
     qrm0.arm_sequencer(0)
     uploaded_waveforms = qrm0.get_waveforms(0)
     assert uploaded_waveforms is not None
@@ -1378,9 +1391,7 @@ class TestLatencyCorrection:
         compiled_instr = compiled_sched.compiled_instructions
 
         # Assert
-        dummy_pulsars[0].sequencer0_waveforms_and_program(
-            compiled_instr["qcm0"]["seq0"]["seq_fn"]
-        )
+        dummy_pulsars[0].sequencer0.sequence(compiled_instr["qcm0"]["seq0"]["seq_fn"])
 
     def test_warning(
         self, hardware_cfg_latency_correction, load_example_transmon_config, caplog

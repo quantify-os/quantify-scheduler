@@ -2,14 +2,29 @@
 Changelog
 =========
 
-Unreleased changes
-------------------
-* QuantumDevice - Fixed a bug in the BasicTransmonElement where operations had clock-frequencies (float) specified instead of clocks (str).
-* QuantumDevice - The DeviceElement has been added as an abstract base class for elements to be added to a device (#148, !374).
-* QuantumDevice - The BasicTransmonElement has been added that generates a device config in a more structured manner (#246, !374).
-* QuantumDevice - The TransmonElement will be deprecated after version 0.8 (!374).
+Unreleased
+----------
+* Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
+* QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
+* Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!336).
 
+
+0.7.0 Support for qblox-instruments v0.6.0, new BasicTransmonElement, change for triggers in Zhinst backend (2022-04-11)
+------------------------------------------------------------------------------------------------------------------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Qblox ICCs - Updated Qblox components for using the new unified-style qblox driver (see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-ICCs:-Interface-changes-in-using-qblox-instruments-v0.6.0) (!377).
+* Qblox backend - Strictly requires v0.6.0 of the qblox-instruments package (!377).
+* Zhinst backend - Hardware config for the devices. Replaced keyword "triggers" to "trigger", and the value type from `List[int]` to `int`. E.g. old style, `"triggers": [2]`, new style, `"trigger": 2` (#264, !372).
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* QuantumDevice - The `DeviceElement` has been added as an abstract base class for elements to be added to a device (#148, !374).
+* QuantumDevice - The `BasicTransmonElement` has been added that generates a device config in a more structured manner (#246, !374).
+* QuantumDevice - Fixed a bug in the `BasicTransmonElement` where operations had clock-frequencies (`float`) specified instead of clocks (`str`) (!379).
+* QuantumDevice - The `TransmonElement` will be deprecated after version 0.8 (!374).
 
 
 0.6.0 Full support for multiplexed readout, transmon element update, fixes to backends (2022-03-10)
