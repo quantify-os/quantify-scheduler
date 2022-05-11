@@ -138,6 +138,8 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
         max_awg_output_voltage=2.5,
         marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
+        valid_ios=[f"complex_output_{i}" for i in [0, 1]]
+        + [f"real_output_{i}" for i in range(4)],
     )
 
 
@@ -154,6 +156,8 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
         max_awg_output_voltage=0.5,
         marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
+        valid_ios=[f"complex_output_{i}" for i in [0]]
+        + [f"real_output_{i}" for i in range(2)],
     )
 
 
@@ -169,6 +173,8 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
         max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(init=0b0011, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+        valid_ios=[f"complex_output_{i}" for i in [0, 1]]
+        + [f"real_output_{i}" for i in range(4)],
     )
 
 
@@ -184,6 +190,8 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
         max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(init=0b0011, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+        valid_ios=[f"complex_output_{i}" for i in [0]]
+        + [f"real_output_{i}" for i in range(2)],
     )
 
 

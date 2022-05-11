@@ -927,11 +927,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         portclocks = []
 
-        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
-            f"real_output_{i}" for i in range(4)
-        ]
-
-        for io in valid_ios:
+        for io in self.static_hw_properties.valid_ios:
             if io not in self.hw_mapping:
                 continue
 
@@ -988,9 +984,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
-        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
-            f"real_output_{i}" for i in range(4)
-        ]
 
         sequencers = {}
         portclock_output_map: Dict[Tuple, str] = {}
@@ -998,10 +991,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
-            if io not in valid_ios:
+            if io not in self.static_hw_properties.valid_ios:
                 raise ValueError(
                     f"Invalid hardware config. '{io}' of {self.name} is not a "
-                    f"valid name of an input/output.\n\nSupported names:\n{valid_ios}."
+                    f"valid name of an input/output.\n\nSupported names:\n"
+                    f"{self.static_hw_properties.valid_ios}"
                 )
 
             lo_name = io_cfg.get("lo_name", None)
