@@ -597,22 +597,3 @@ def convert_hw_config_to_portclock_configs_spec(  # pylint: disable=invalid-name
             device_info[io] = new_io_cfg
 
     return hw_config
-
-
-def _pre_portclock_configs_err():  # pylint: disable=invalid-name
-    """
-    Returns an error string, to be presented if the hardware config
-    provided by the user does not conform to the new format introduced
-    by MR !328.
-    """
-
-    message = (
-        "Please make sure that the hardware config respects the new "
-        "specification introduced by MR !328. "
-        "(please check https://gitlab.com/quantify-os/quantify-scheduler/-"
-        "/merge_requests/328 ).\n"
-        "You may upgrade an old config to the new specification using the "
-        "'quantify_scheduler.backends.qblox.helpers."
-        "migrate_hw_config_to_MR328_spec' function."
-    )
-    return message

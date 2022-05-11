@@ -3,6 +3,7 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
+import warnings
 from typing import Any, Dict
 
 from quantify_scheduler import CompiledSchedule, Schedule
@@ -43,7 +44,17 @@ def hardware_compile(
     old_hw_config_spec = hardware_cfg != converted_hw_config
 
     if old_hw_config_spec:
-        ValueError(helpers._pre_portclock_configs_err())
+        warnings.warn(
+            "The provided hardware config adheres to a specification "
+            "that is now deprecated. Please learn about the new "
+            "Qblox hardware config specification at:\n"
+            "https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/"
+            "Qblox-backend:-Dynamic-Sequencer-Allocation \n"
+            "You may upgrade an old config to the new specification using the "
+            "'quantify_scheduler.backends.qblox.helpers."
+            "convert_hw_config_to_portclock_configs_spec' function.",
+            DeprecationWarning,
+        )
 
     container = compiler_container.CompilerContainer.from_mapping(
         schedule, hardware_cfg
