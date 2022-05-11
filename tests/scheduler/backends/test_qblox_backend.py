@@ -36,7 +36,7 @@ from quantify_scheduler.backends.qblox import (
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
     _assign_pulse_and_acq_info_to_devices,
-    assign_pulse_and_acq_info_to_devices,
+    _assign_pulse_and_acq_info_to_devices,
     generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -682,7 +682,7 @@ def test_portclocks(make_basic_multi_qubit_schedule):
         sched, HARDWARE_MAPPING
     )
 
-    assign_pulse_and_acq_info_to_devices(
+    _assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=HARDWARE_MAPPING,
         device_compilers=container.instrument_compilers,
@@ -703,7 +703,7 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
-    assign_pulse_and_acq_info_to_devices(
+    _assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=HARDWARE_MAPPING,
         device_compilers={"qcm0": test_module},
@@ -741,7 +741,7 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
-    assign_pulse_and_acq_info_to_devices(
+    _assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=mapping,
         device_compilers={"qcm0": test_module},
@@ -782,7 +782,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
     sched = device_compile(sched, device.generate_device_config())
 
-    assign_pulse_and_acq_info_to_devices(
+    _assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=hw_mapping,
         device_compilers={"qcm0": test_module},
@@ -1030,26 +1030,12 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 # --------- Test compilation functions ---------
 def test__assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    portclock_map = generate_port_clock_to_device_map(HARDWARE_MAPPING)
 
     container = compiler_container.CompilerContainer.from_mapping(
         sched_with_pulse_info, HARDWARE_MAPPING
     )
     _assign_pulse_and_acq_info_to_devices(
-        sched_with_pulse_info, container.instrument_compilers, portclock_map
-    )
-    qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
-
-
-def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
-    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_mapping(
-        sched_with_pulse_info, HARDWARE_MAPPING
-    )
-    assign_pulse_and_acq_info_to_devices(
-        sched_with_pulse_info, HARDWARE_MAPPING, container.instrument_compilers
+        sched_with_pulse_info, container.instrument_compilers, HARDWARE_MAPPING
     )
     qrm = container.instrument_compilers["qrm0"]
     assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
@@ -1061,8 +1047,8 @@ def test_container_prepare(pulse_only_schedule):
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    assign_pulse_and_acq_info_to_devices(
-        sched, HARDWARE_MAPPING, container.instrument_compilers
+    _assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, HARDWARE_MAPPING
     )
     container.prepare()
 
@@ -1082,7 +1068,7 @@ def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisit
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    assign_pulse_and_acq_info_to_devices(
+    _assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=HARDWARE_MAPPING,
         device_compilers=container.instrument_compilers,
@@ -1104,8 +1090,8 @@ def test_container_prepare_baseband(
     container = compiler_container.CompilerContainer.from_mapping(
         sched, hardware_cfg_baseband
     )
-    assign_pulse_and_acq_info_to_devices(
-        sched, hardware_cfg_baseband, container.instrument_compilers
+    _assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, hardware_cfg_baseband
     )
     container.prepare()
 
@@ -1120,8 +1106,8 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    assign_pulse_and_acq_info_to_devices(
-        sched, HARDWARE_MAPPING, container.instrument_compilers
+    _assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, HARDWARE_MAPPING
     )
     container.prepare()
 
@@ -1181,8 +1167,8 @@ def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode)
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
     sched = device_compile(real_square_pulse_schedule, DEVICE_CFG)
-    assign_pulse_and_acq_info_to_devices(
-        sched, hardware_cfg_real_mode, container.instrument_compilers
+    _assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, hardware_cfg_real_mode
     )
     container.prepare()
     qcm0 = container.instrument_compilers["qcm0"]
@@ -1579,7 +1565,7 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
 
 
-def test_migrate_hw_config_to_MR328_spec():  # pylint: disable=invalid-name
+def test__pre_portclock_configs_err():  # pylint: disable=invalid-name
 
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -1627,7 +1613,7 @@ def test_migrate_hw_config_to_MR328_spec():  # pylint: disable=invalid-name
         "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20},
     }
 
-    migrated_config = helpers.migrate_hw_config_to_MR328_spec(old_config)
+    migrated_config = helpers.convert_hw_config_to_portclock_configs_spec(old_config)
 
     assert migrated_config == expected_config
 

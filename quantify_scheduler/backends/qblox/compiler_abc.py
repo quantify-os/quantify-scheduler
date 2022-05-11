@@ -938,9 +938,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
             if not portclock_configs:
                 raise KeyError(
-                    f"No 'portclock_configs' entry found in '{io}' of {self.name}. "
-                    + "\n"
-                    + helpers._pre_MR328_error_message()
+                    f"No 'portclock_configs' entry found in '{io}' of {self.name}."
                 )
 
             portclocks += [
@@ -1015,9 +1013,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             if not portclock_configs:
                 raise KeyError(
-                    f"No 'portclock_configs' entry found in '{io}' of {self.name}. "
-                    + "\n"
-                    + helpers._pre_MR328_error_message()
+                    f"No 'portclock_configs' entry found in '{io}' of {self.name}."
                 )
 
             for target in portclock_configs:

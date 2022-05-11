@@ -37,17 +37,19 @@ def hardware_compile(
         The compiled schedule.
     """
 
-    migrated_hw_config = helpers.migrate_hw_config_to_MR328_spec(hardware_cfg)
-    old_hw_config_spec = hardware_cfg != migrated_hw_config
+    converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
+        hardware_cfg
+    )
+    old_hw_config_spec = hardware_cfg != converted_hw_config
 
     if old_hw_config_spec:
-        ValueError(helpers._pre_MR328_error_message())
+        ValueError(helpers._pre_portclock_configs_err())
 
     container = compiler_container.CompilerContainer.from_mapping(
         schedule, hardware_cfg
     )
 
-    helpers.assign_pulse_and_acq_info_to_devices(
+    helpers._assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
         mapping=hardware_cfg,
         device_compilers=container.instrument_compilers,

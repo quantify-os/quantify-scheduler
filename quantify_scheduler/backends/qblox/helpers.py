@@ -447,7 +447,7 @@ def generate_port_clock_to_device_map(
 def _assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],
-    portclock_mapping: Dict[Tuple[str, str], str],
+    mapping: Dict[str, Any],
 ):
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
@@ -459,10 +459,8 @@ def _assign_pulse_and_acq_info_to_devices(
         The schedule to extract the pulse and acquisition info from.
     device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    portclock_mapping
-        A dictionary that maps tuples containing a port and a clock to names of
-        instruments. The port and clock combinations are unique, but multiple portclocks
-        can point to the same instrument.
+    mapping
+        The hardware config dictionary.
 
     Raises
     ------
@@ -476,6 +474,8 @@ def _assign_pulse_and_acq_info_to_devices(
         This exception is raised when attempting to assign an acquisition with a
         port-clock combination that is not defined in the hardware configuration.
     """
+
+    portclock_mapping = generate_port_clock_to_device_map(mapping)
 
     for op_timing_constraint in schedule.schedulables.values():
         op_hash = op_timing_constraint["operation_repr"]
@@ -552,48 +552,12 @@ def _assign_pulse_and_acq_info_to_devices(
             device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
 
 
-def assign_pulse_and_acq_info_to_devices(
-    schedule: Schedule,
-    mapping: Dict[str, Any],
-    device_compilers: Dict[str, Any],
-):
-    """
-    Traverses the schedule and generates `OpInfo` objects for every pulse and
-    acquisition, and assigns it to the correct `InstrumentCompiler`.
-
-    Parameters
-    ----------
-    schedule
-        The schedule to extract the pulse and acquisition info from.
-    mapping
-        The hardware mapping config.
-    device_compilers
-        Dictionary containing InstrumentCompilers as values and their names as keys.
-
-
-    Raises
-    ------
-    RuntimeError
-        This exception is raised if the function encountered an operation that has no
-        pulse or acquisition info assigned to it.
-    KeyError
-        This exception is raised when attempting to assign a pulse with a port-clock
-        combination that is not defined in the hardware configuration.
-    KeyError
-        This exception is raised when attempting to assign an acquisition with a
-        port-clock combination that is not defined in the hardware configuration.
-    """
-
-    portclock_mapping = generate_port_clock_to_device_map(mapping)
-    _assign_pulse_and_acq_info_to_devices(schedule, device_compilers, portclock_mapping)
-
-
-def migrate_hw_config_to_MR328_spec(  # pylint: disable=invalid-name
+def convert_hw_config_to_portclock_configs_spec(  # pylint: disable=invalid-name
     hw_config: Dict[str, Any],
 ):
     """
     Converts possibly old hardware configs to the new format introduced by
-    MR !328 (MR introducing dynamic sequencer allocation). I.e. manual
+    the new dynamic sequencer allocation feature. I.e. manual
     assignment between sequencers and portclocks under each output is removed, and
     instead only a list of portclocks configurations is specified,
     under the new `portclock_configs` key.
@@ -606,7 +570,8 @@ def migrate_hw_config_to_MR328_spec(  # pylint: disable=invalid-name
     Returns
     -------
     :
-        A hardware config compatible with the new specification.
+        A hardware config compatible with the specification required by the new
+        dynamic sequencer allocation feature.
 
     """
 
@@ -634,7 +599,7 @@ def migrate_hw_config_to_MR328_spec(  # pylint: disable=invalid-name
     return hw_config
 
 
-def _pre_MR328_error_message():  # pylint: disable=invalid-name
+def _pre_portclock_configs_err():  # pylint: disable=invalid-name
     """
     Returns an error string, to be presented if the hardware config
     provided by the user does not conform to the new format introduced
