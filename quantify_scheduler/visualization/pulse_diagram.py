@@ -5,7 +5,17 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -14,7 +24,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
-from typing_extensions import Literal
 
 import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.helpers.importers import import_python_object_from_string

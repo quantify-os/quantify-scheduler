@@ -2,13 +2,12 @@
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
-from typing import Optional, Tuple, Union
+from typing import Literal, Optional, Tuple, Union
 
 import numpy as np
-from typing_extensions import Literal
 
-from ..enums import BinMode
 from .operation import Operation
+from ..enums import BinMode
 
 
 # pylint: disable=too-many-ancestors
@@ -289,6 +288,7 @@ class CNOT(Operation):
                     "tex": r"CNOT",
                     "plot_func": plot_func,
                     "qubits": [qC, qT],
+                    "symmetric": False,
                     "operation_type": "CNOT",
                 },
             }
@@ -349,6 +349,7 @@ class CZ(Operation):
                     "tex": r"CZ",
                     "plot_func": plot_func,
                     "qubits": [qC, qT],
+                    "symmetric": True,
                     "operation_type": "CZ",
                 },
             }

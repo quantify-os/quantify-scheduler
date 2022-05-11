@@ -5,18 +5,16 @@
 from __future__ import annotations
 
 import json
+import logging
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
-from os import makedirs, path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
-
 from functools import partial
-import logging
+from os import makedirs, path
+from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
 
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
-from typing_extensions import Literal
 
 from quantify_scheduler.backends.qblox import (
     constants,
@@ -25,14 +23,14 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
 )
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
     BaseModuleSettings,

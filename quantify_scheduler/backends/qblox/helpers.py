@@ -5,10 +5,9 @@
 import re
 from copy import deepcopy
 from collections import UserDict
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Literal, Tuple, Union
 
 import numpy as np
-from typing_extensions import Literal
 
 from quantify_core.utilities.general import without
 

@@ -5,6 +5,9 @@ Changelog
 Unreleased
 ----------
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
+* QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
+* Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
+
 
 Breaking changes
 ~~~~~~~~~~~~~~~~

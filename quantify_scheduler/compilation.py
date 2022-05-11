@@ -6,9 +6,7 @@ from __future__ import annotations
 import logging
 import warnings
 from copy import deepcopy
-from typing import Union
-
-from typing_extensions import Literal
+from typing import Literal, Union
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.enums import BinMode

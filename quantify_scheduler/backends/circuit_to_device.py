@@ -3,6 +3,7 @@
 """
 Compilation backend for quantum-circuit to quantum-device layer.
 """
+from itertools import permutations
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -231,7 +232,27 @@ def _compile_single_qubit(operation, qubit, operation_type, device_cfg):
 
 
 def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
-    edge = f"{qubits[0]}-{qubits[1]}"
+    parent_qubit, child_qubit = qubits
+    edge = f"{parent_qubit}-{child_qubit}"
+
+    symmetric_operation = operation.get("gate_info", {}).get("symmetric", False)
+
+    if symmetric_operation:
+        possible_permutations = permutations(qubits, 2)
+        operable_edges = {
+            f"{permutation[0]}-{permutation[1]}"
+            for permutation in possible_permutations
+        }
+        valid_edge_list = list(operable_edges.intersection(device_cfg.edges))
+        if len(valid_edge_list) == 1:
+            edge = valid_edge_list[0]
+        elif len(valid_edge_list) < 1:
+            raise ConfigKeyError(
+                kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
+            )
+        elif len(valid_edge_list) > 1:
+            raise MultipleKeysError(operation=operation_type, matches=valid_edge_list)
+
     if edge not in device_cfg.edges:
         raise ConfigKeyError(
             kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
@@ -326,6 +347,23 @@ class ConfigKeyError(KeyError):
         self.value = (
             f'{kind} "{missing}" is not present in the configuration file;'
             + f" {kind} must be one of the following: {allowed}"
+        )
+
+    def __str__(self):
+        return repr(self.value)
+
+
+# pylint: disable=super-init-not-called
+class MultipleKeysError(KeyError):
+    """
+    Custom exception for when symmetric keys are found in a configuration file.
+    """
+
+    def __init__(self, operation, matches):
+        self.value = (
+            f"Symmetric Operation {operation} matches the following edges {matches}"
+            f" in the QuantumDevice. You can only specify a single edge for a symmetric"
+            " operation."
         )
 
     def __str__(self):

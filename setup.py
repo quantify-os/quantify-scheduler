@@ -26,15 +26,17 @@ version = "0.7.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",
-    python_requires=">=3.7",
+    author_email="maintainers@quantify-os.org",
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     description="Quantify-scheduler is a python package for writing quantum programs "
     "featuring a hybrid gate-pulse control model with explicit timing control.",

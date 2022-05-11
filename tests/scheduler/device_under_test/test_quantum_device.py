@@ -15,7 +15,9 @@ def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
     # tests this directly.
     dev_cfg = quantum_device.generate_device_config()
 
-    assert {"q0", "q1"} <= set(dev_cfg.elements.keys())
+    assert {"q0", "q1", "q2", "q3"} <= set(dev_cfg.elements.keys())
+    # Ensure that we also check that the edges are being configured
+    assert "q2-q3" in dev_cfg.edges
 
 
 def test_QuantumDevice_generate_hardware_config(mock_setup: dict) -> None:
