@@ -48,7 +48,7 @@ from quantify_scheduler.resources import ClockResource
 
 sched = Schedule("Simple schedule")
 square_pulse = sched.add(
-    SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro")
+    SquarePulse(amp=0.2, duration=1e-6, port="q0:res", clock="q0.ro")
 )
 
 readout_clock = ClockResource(name="q0.ro", freq=7e9)
@@ -60,7 +60,7 @@ sched
 # Hardware configuration
 # ----------------------
 #
-# In our example setup, we will use a Qblox Pulsar QCM baseband module and an external Local Oscillator (LO). To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware configuration.
+# In our example setup, we will use a Qblox Cluster containing a QCM-RF module. To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware configuration.
 #
 # Please check the documentation on how to properly create such a configuration for the supported backends:
 # - :ref:`sec-backend-qblox`
@@ -70,34 +70,34 @@ sched
 # In this configuration, we include:
 
 # - The backend that we want to use (the Qblox backend, in this case).
-# - The Pulsar QCM.
+# - A Cluster containing a QCM-RF module (in the 2nd slot).
 # - A Local Oscillator.
 
-# In the QCM output's settings, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
-# Since the Pulsar QCM baseband module is not capable of outputting signals at the qubit's frequency, a Local Oscillator is used in order to upconvert the signals to the desired frequency.
-# In this case, the LO frequency is not specified but is automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
+# In the QCM-RF output's settings, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
+# In this case, the internal LO frequency is not specified but is automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
 
 # %%
 hw_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "qcm": {
-        "instrument_type": "Pulsar_QCM",
+    "cluster0": {
         "ref": "internal",
-        "complex_output_0": {
-            "line_gain_db": 0,
-            "lo_name": "lo0",
-            "dc_mixer_offset_I": 0.1234,
-            "dc_mixer_offset_Q": 0.0546,
-            "seq0": {
-                "mixer_amp_ratio": 0.9998,
-                "mixer_phase_error_deg": -4.1,
-                "port": "q0:res",
-                "clock": "q0.ro",
-                "interm_freq": 50e6,
+        "instrument_type": "Cluster",
+        "cluster0_module2": {
+            "instrument_type": "QCM_RF",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "dc_mixer_offset_I": -0.00552,
+                "dc_mixer_offset_Q": -0.00556,
+                "seq0": {
+                    "mixer_amp_ratio": 0.9998,
+                    "mixer_phase_error_deg": -4.1,
+                    "port": "q0:res",
+                    "clock": "q0.ro",
+                    "interm_freq": 50e6,
+                },
             },
         },
     },
-    "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 17},
 }
 
 # %% [raw]
@@ -147,7 +147,7 @@ compilation_output.compiled_instructions
 #
 # In the compilation output, we have all the information necessary to execute the schedule.
 #
-# In this specific case, only `seq0` of the QCM is necessary. The compilation output contains the filepath where the sequencer's program is stored, as well as the Qcodes parameters that need to be set in the device.
+# In this specific case, only `seq0` of the QCM-RF is necessary. The compilation output contains the filepath where the sequencer's program is stored, as well as the Qcodes parameters that need to be set in the device.
 #
 # Now that we have the output of the compilation, we are almost ready to execute it with our control setup.
 #
@@ -161,28 +161,21 @@ compilation_output.compiled_instructions
 #
 
 # %%
-from pulsar_qcm.pulsar_qcm import pulsar_qcm_dummy
-from quantify_scheduler.helpers.mock_instruments import (
-    MockLocalOscillator,
-)
+from qblox_instruments import Cluster, ClusterType
 
-qcm = pulsar_qcm_dummy("qcm")
-lo0 = MockLocalOscillator("lo0")
+cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF})
 
 # %% [raw]
 # And we attach these instruments to the `InstrumentCoordinator` via the appropriate `InstrumentCoordinatorComponent` wrapper class.
 #
-# In the case of the Local Oscillator, it interfaces with the `InstrumentCoordinator` via an instance of the :class:`quantify_scheduler.instrument_coordinator.components.generic.GenericInstrumentCoordinatorComponent` class, which is automatically added to the `InstrumentCoordinator` during instantiation.
-# This component is meant to serve as an interface for simple access to instruments which needs to only set parameters, such as local oscillators or current sources.
-
 # %%
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import (
-    PulsarQCMComponent,
+    ClusterComponent,
 )
 
 ic = InstrumentCoordinator("ic")
-ic.add_component(PulsarQCMComponent(qcm))
+ic.add_component(ClusterComponent(cluster0))
 
 # %% [raw]
 # The experiment can now be conducted using the methods of `InstrumentCoordinator`:
