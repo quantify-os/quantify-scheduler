@@ -41,9 +41,7 @@ def hardware_compile(
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
     )
-    old_hw_config_spec = hardware_cfg != converted_hw_config
-
-    if old_hw_config_spec:
+    if hardware_cfg != converted_hw_config:
         warnings.warn(
             "The provided hardware config adheres to a specification "
             "that is now deprecated. Please learn about the new "
