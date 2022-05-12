@@ -25,7 +25,7 @@ from quantify_core.data.handling import set_datadir
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -865,7 +865,7 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
 
     sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
     with pytest.raises(ValueError):
-        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
+        hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
 
 
 def test_compile_with_rel_time(
