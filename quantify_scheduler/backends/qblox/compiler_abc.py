@@ -977,7 +977,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Raised if no 'portclock_configs' entry is found in the specific outputs of
             the hardware config.
         ValueError
-            Raised when the same portclock is multiply assigned in the hardware config.
+            Raised when the same port-clock is multiply assigned in the hardware config.
         ValueError
             Attempting to use more sequencers than available.
 

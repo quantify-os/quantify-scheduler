@@ -174,7 +174,7 @@ to :code:`complex_output_0` (or :code:`complex_output_1`) in order to add a DC o
     "mixer_amp_ratio": 0.9997,
     "mixer_phase_error_deg": -4.0,
 
-to the portclock configuration in order to set the amplitude and phase correction to correct for imperfect rejection of the unwanted sideband.
+to the port-clock configuration in order to set the amplitude and phase correction to correct for imperfect rejection of the unwanted sideband.
 
 Usage without an LO
 ^^^^^^^^^^^^^^^^^^^
@@ -221,7 +221,7 @@ mixer correction parameters as well as the frequencies.
 Frequency multiplexing
 ^^^^^^^^^^^^^^^^^^^^^^
 
-It is possible to do frequency multiplexing of the signals by adding multiple portclock configurations to the same output.
+It is possible to do frequency multiplexing of the signals by adding multiple port-clock configurations to the same output.
 
 .. jupyter-execute::
     :hide-output:
@@ -272,7 +272,7 @@ It is possible to do frequency multiplexing of the signals by adding multiple po
 
     hardware_compile(test_sched, mapping_config)
 
-In the given example, we added a second portclock configuration to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
+In the given example, we added a second port-clock configuration to output 0. Now any signal on port :code:`"q0:mw"` with clock :code:`"some_other_clock"` will be added digitally to the signal with the same port but clock :code:`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
 
 .. note::
 
@@ -371,7 +371,7 @@ Experimental features
 
 The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using a more complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 
-In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the portclock configuration.
+In order to enable the advanced capabilities we need to add line :code:`"instruction_generated_pulses_enabled": True` to the port-clock configuration.
 
 .. jupyter-execute::
     :hide-output:
