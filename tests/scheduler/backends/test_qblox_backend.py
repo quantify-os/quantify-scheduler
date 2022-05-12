@@ -784,8 +784,13 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         device_compilers={"qcm0": test_module},
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc:
         test_module.sequencers = test_module._construct_sequencers()
+    assert (
+        "Number of simultaneously active port-clock combinations exceeds "
+        + "number of sequencers."
+        in str(exc.value)
+    )
 
 
 def test_simple_compile(pulse_only_schedule):
