@@ -1028,7 +1028,7 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 
 
 # --------- Test compilation functions ---------
-def test__assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
+def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
 
     container = compiler_container.CompilerContainer.from_mapping(
