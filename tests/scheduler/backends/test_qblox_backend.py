@@ -35,8 +35,8 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
-    _assign_pulse_and_acq_info_to_devices,
-    _assign_pulse_and_acq_info_to_devices,
+    assign_pulse_and_acq_info_to_devices,
+    assign_pulse_and_acq_info_to_devices,
     generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -682,7 +682,7 @@ def test_portclocks(make_basic_multi_qubit_schedule):
         sched, HARDWARE_MAPPING
     )
 
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=HARDWARE_MAPPING,
         device_compilers=container.instrument_compilers,
@@ -703,7 +703,7 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=HARDWARE_MAPPING,
         device_compilers={"qcm0": test_module},
@@ -741,7 +741,7 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=mapping,
         device_compilers={"qcm0": test_module},
@@ -782,7 +782,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
     sched = device_compile(sched, device.generate_device_config())
 
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=hw_mapping,
         device_compilers={"qcm0": test_module},
@@ -1034,7 +1034,7 @@ def test__assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     container = compiler_container.CompilerContainer.from_mapping(
         sched_with_pulse_info, HARDWARE_MAPPING
     )
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         sched_with_pulse_info, container.instrument_compilers, HARDWARE_MAPPING
     )
     qrm = container.instrument_compilers["qrm0"]
@@ -1047,7 +1047,7 @@ def test_container_prepare(pulse_only_schedule):
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, HARDWARE_MAPPING
     )
     container.prepare()
@@ -1068,7 +1068,7 @@ def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisit
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         mapping=HARDWARE_MAPPING,
         device_compilers=container.instrument_compilers,
@@ -1090,7 +1090,7 @@ def test_container_prepare_baseband(
     container = compiler_container.CompilerContainer.from_mapping(
         sched, hardware_cfg_baseband
     )
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, hardware_cfg_baseband
     )
     container.prepare()
@@ -1106,7 +1106,7 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
     container = compiler_container.CompilerContainer.from_mapping(
         sched, HARDWARE_MAPPING
     )
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, HARDWARE_MAPPING
     )
     container.prepare()
@@ -1167,7 +1167,7 @@ def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode)
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
     sched = device_compile(real_square_pulse_schedule, DEVICE_CFG)
-    _assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, hardware_cfg_real_mode
     )
     container.prepare()

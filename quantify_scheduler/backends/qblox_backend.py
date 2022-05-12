@@ -60,7 +60,7 @@ def hardware_compile(
         schedule, hardware_cfg
     )
 
-    helpers._assign_pulse_and_acq_info_to_devices(
+    helpers.assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
         mapping=hardware_cfg,
         device_compilers=container.instrument_compilers,
