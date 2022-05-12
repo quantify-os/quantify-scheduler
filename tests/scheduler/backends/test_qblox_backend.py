@@ -700,7 +700,7 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
         total_play_time=1,
         hw_mapping=HARDWARE_MAPPING["qcm0"],
     )
-    sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
+    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
     sched = device_compile(sched, DEVICE_CFG)
 
     assign_pulse_and_acq_info_to_devices(
