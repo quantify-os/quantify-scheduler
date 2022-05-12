@@ -405,7 +405,7 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
 
 
 def generate_port_clock_to_device_map(
-    mapping: Dict[str, Any]
+    hardware_cfg: Dict[str, Any]
 ) -> Dict[Tuple[str, str], str]:
     """
     Generates a mapping that specifies which port-clock combinations belong to which
@@ -417,8 +417,8 @@ def generate_port_clock_to_device_map(
 
     Parameters
     ----------
-    mapping:
-        The hardware mapping config.
+    hardware_cfg:
+        The hardware config dictionary.
 
     Returns
     -------
@@ -429,7 +429,7 @@ def generate_port_clock_to_device_map(
     """
 
     portclock_map = dict()
-    for device_name, device_info in mapping.items():
+    for device_name, device_info in hardware_cfg.items():
         if not isinstance(device_info, dict):
             continue
 
@@ -444,7 +444,7 @@ def generate_port_clock_to_device_map(
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],
-    mapping: Dict[str, Any],
+    hardware_cfg: Dict[str, Any],
 ):
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
@@ -456,7 +456,7 @@ def assign_pulse_and_acq_info_to_devices(
         The schedule to extract the pulse and acquisition info from.
     device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    mapping
+    hardware_cfg
         The hardware config dictionary.
 
     Raises
@@ -472,7 +472,7 @@ def assign_pulse_and_acq_info_to_devices(
         port-clock combination that is not defined in the hardware configuration.
     """
 
-    portclock_mapping = generate_port_clock_to_device_map(mapping)
+    portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
 
     for op_timing_constraint in schedule.schedulables.values():
         op_hash = op_timing_constraint["operation_repr"]
