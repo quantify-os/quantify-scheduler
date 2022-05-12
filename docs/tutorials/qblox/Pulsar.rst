@@ -86,7 +86,7 @@ respectively. Multiple devices can be added to the config, similar to how we add
 Output settings
 ^^^^^^^^^^^^^^^
 
-Most notably under the :code:`complex_output_0`, we specify the portclocks the output may target (see the :ref:`User guide <sec-user-guide>`
+Most notably under the :code:`complex_output_0`, we specify the port-clock combinations the output may target (see the :ref:`User guide <sec-user-guide>`
 for more information on the role of ports and clocks within the Quantify-Scheduler).
 
 .. code-block:: python
