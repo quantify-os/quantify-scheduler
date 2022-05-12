@@ -4,28 +4,27 @@
 from __future__ import annotations
 
 import json
+import warnings
+import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-import weakref
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from uuid import uuid4
-import warnings
 
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from typing_extensions import Literal
 
 from quantify_scheduler import enums, json_utils, resources
 from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
-    from quantify_scheduler.resources import Resource
     import plotly.graph_objects as go
+    from quantify_scheduler.resources import Resource
 
 
 # pylint: disable=too-many-ancestors

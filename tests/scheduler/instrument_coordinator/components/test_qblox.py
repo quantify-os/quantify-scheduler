@@ -9,14 +9,23 @@ from __future__ import annotations
 
 import inspect
 import json
+import logging
 import tempfile
+from operator import countOf
 from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 import pytest
-from cluster import cluster
-from pulsar_qcm import pulsar_qcm
-from pulsar_qrm import pulsar_qrm
+from qblox_instruments import (
+    Cluster,
+    ClusterType,
+    Pulsar,
+    PulsarType,
+    SequencerState,
+    SequencerStatus,
+    SequencerStatusFlags,
+)
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler.schemas.examples as es
@@ -38,20 +47,36 @@ with open(map_f, "r") as f:
 
 @pytest.fixture(name="make_cluster")
 def fixture_make_cluster(mocker):
-    def _make_cluster(name: str = "cluster0") -> qblox.ClusterComponent:
-        cluster0 = cluster.cluster_dummy(name)
-        component = qblox.ClusterComponent(cluster0)
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
+    def _make_cluster(
+        name: str = "cluster0",
+        sequencer_status: SequencerStatus = SequencerStatus.ARMED,
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
+    ) -> qblox.ClusterComponent:
 
-        qcm0 = cluster.cluster_qcm_dummy(f"{name}_qcm0")
-        mocker.patch.object(qcm0, "reference_source", wraps=qcm0.reference_source)
+        mocker.patch("qblox_instruments.native.cluster.Cluster.arm_sequencer")
+        mocker.patch("qblox_instruments.native.cluster.Cluster.start_sequencer")
+        mocker.patch("qblox_instruments.native.cluster.Cluster.stop_sequencer")
 
-        qcm1 = cluster.cluster_qcm_dummy(f"{name}_qcm1")
-        mocker.patch.object(qcm1, "reference_source", wraps=qcm1.reference_source)
+        cluster = Cluster(
+            name=name,
+            dummy_cfg={
+                "1": ClusterType.CLUSTER_QCM,
+                "2": ClusterType.CLUSTER_QCM_RF,
+                "3": ClusterType.CLUSTER_QRM,
+            },
+        )
+        component = qblox.ClusterComponent(cluster)
 
-        component.add_modules(qcm0, qcm1)
+        mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
+
+        for i in range(3):
+            mocker.patch.object(
+                component._cluster_modules[f"{name}_module{i+1}"].instrument_channel,
+                "get_sequencer_state",
+                return_value=SequencerState(
+                    sequencer_status, sequencer_flags if sequencer_flags else []
+                ),
+            )
 
         return component
 
@@ -61,18 +86,20 @@ def fixture_make_cluster(mocker):
 @pytest.fixture(name="make_qcm")
 def fixture_make_qcm(mocker):
     def _make_qcm(
-        name: str = "qcm0", serial: str = "dummy"
+        name: str = "qcm0",
+        serial: str = "dummy",
+        sequencer_status: SequencerStatus = SequencerStatus.ARMED,
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQCMComponent:
-        mocker.patch(
-            "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
-            return_value=False,
-        )
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc._set_reference_source")
 
-        qcm = pulsar_qcm.pulsar_qcm_dummy(name)
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+        mocker.patch(
+            "qblox_instruments.scpi.pulsar_qcm.PulsarQcm._set_reference_source"
+        )
+
+        qcm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QCM)
         qcm._serial = serial
 
         component = qblox.PulsarQCMComponent(qcm)
@@ -80,7 +107,9 @@ def fixture_make_qcm(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
 
         return component
@@ -91,18 +120,21 @@ def fixture_make_qcm(mocker):
 @pytest.fixture(name="make_qrm")
 def fixture_make_qrm(mocker):
     def _make_qrm(
-        name: str = "qrm0", serial: str = "dummy"
+        name: str = "qrm0",
+        serial: str = "dummy",
+        sequencer_status: SequencerStatus = SequencerStatus.ARMED,
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQRMComponent:
-        mocker.patch(
-            "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
-            return_value=False,
-        )
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc._set_reference_source")
 
-        qrm = pulsar_qrm.pulsar_qrm_dummy(name)
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition")
+        mocker.patch(
+            "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
+        )
+
+        qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
         qrm._serial = serial
 
         component = qblox.PulsarQRMComponent(qrm)
@@ -110,7 +142,9 @@ def fixture_make_qrm(mocker):
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
         mocker.patch.object(
             component.instrument,
@@ -171,25 +205,26 @@ def fixture_mock_acquisition_data():
 @pytest.fixture
 def make_qcm_rf(mocker):
     def _make_qcm_rf(
-        name: str = "qcm_rf0", serial: str = "dummy"
-    ) -> qblox._QCMRFComponent:
-        mocker.patch(
-            "pulsar_qcm.pulsar_qcm_scpi_ifc.pulsar_qcm_scpi_ifc._get_lo_hw_present",
-            return_value=True,
-        )
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.start_sequencer")
-        mocker.patch("pulsar_qcm.pulsar_qcm_ifc.pulsar_qcm_ifc.stop_sequencer")
+        name: str = "qcm_rf0",
+        serial: str = "dummy",
+        sequencer_status: SequencerStatus = SequencerStatus.ARMED,
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
+    ) -> qblox.QCMRFComponent:
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
 
-        qcm_rf = pulsar_qcm.pulsar_qcm_dummy(name)
+        qcm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QCM_RF)
         qcm_rf._serial = serial
 
-        component = qblox._QCMRFComponent(qcm_rf)
+        component = qblox.QCMRFComponent(qcm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm_rf)
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
 
         return component
@@ -200,25 +235,26 @@ def make_qcm_rf(mocker):
 @pytest.fixture
 def make_qrm_rf(mocker):
     def _make_qrm_rf(
-        name: str = "qrm_rf0", serial: str = "dummy"
-    ) -> qblox._QRMRFComponent:
-        mocker.patch(
-            "pulsar_qrm.pulsar_qrm_scpi_ifc.pulsar_qrm_scpi_ifc._get_lo_hw_present",
-            return_value=True,
-        )
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.arm_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.start_sequencer")
-        mocker.patch("pulsar_qrm.pulsar_qrm_ifc.pulsar_qrm_ifc.stop_sequencer")
+        name: str = "qrm_rf0",
+        serial: str = "dummy",
+        sequencer_status: SequencerStatus = SequencerStatus.ARMED,
+        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
+    ) -> qblox.QRMRFComponent:
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
+        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
 
-        qrm_rf = pulsar_qrm.pulsar_qrm_dummy(name)
+        qrm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QRM_RF)
         qrm_rf._serial = serial
 
-        component = qblox._QRMRFComponent(qrm_rf)
+        component = qblox.QRMRFComponent(qrm_rf)
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm_rf)
         mocker.patch.object(
             component.instrument,
             "get_sequencer_state",
-            return_value={"status": "ARMED"},
+            return_value=SequencerState(
+                sequencer_status, sequencer_flags if sequencer_flags else []
+            ),
         )
         mocker.patch.object(
             component.instrument,
@@ -242,6 +278,20 @@ def make_qrm_rf(mocker):
     yield _make_qrm_rf
 
 
+def test_sequencer_state_flag_info():
+    assert len(SequencerStatusFlags) == len(
+        qblox._SEQUENCER_STATE_FLAG_INFO
+    ), "Verify all flags are represented"
+
+    assert (
+        countOf(
+            [info.logging_level for info in qblox._SEQUENCER_STATE_FLAG_INFO.values()],
+            logging.DEBUG,
+        )
+        == 3
+    ), "Verify no new flags were implicitly added (possibly update count)"
+
+
 def test_initialize_pulsar_qcm_component(make_qcm):
     make_qcm("qblox_qcm0", "1234")
 
@@ -262,44 +312,32 @@ def test_initialize_cluster_component(make_cluster):
     make_cluster("cluster0")
 
 
-def test_prepare(close_all_instruments, schedule_with_measurement, make_qcm, make_qrm):
-    # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
-    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-
-        compiled_schedule = qcompile(
-            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qcm.prepare(prog["qcm0"])
-        qrm.prepare(prog["qrm0"])
-
-    # Assert
-    qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-    qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-
-
-def test_prepare_force_set(
-    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
+@pytest.mark.parametrize(
+    "set_reference_source, force_set_parameters",
+    [(False, False), (False, True), (True, False), (True, True)],
+)
+def test_prepare(
+    close_all_instruments,
+    schedule_with_measurement,
+    make_qcm,
+    make_qrm,
+    set_reference_source,
+    force_set_parameters,
 ):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
 
-    qcm.instrument.reference_source("internal")
-    qcm.instrument._set_reference_source.reset_mock()
+    if set_reference_source:
+        qcm.instrument.reference_source("internal")
+        qcm.instrument._set_reference_source.reset_mock()
 
-    qrm.instrument.reference_source("external")
-    qrm.instrument._set_reference_source.reset_mock()
+        qrm.instrument.reference_source("external")
+        qrm.instrument._set_reference_source.reset_mock()
 
     # Act
-    qcm.force_set_parameters(True)
-    qrm.force_set_parameters(True)
+    qcm.force_set_parameters(force_set_parameters)
+    qrm.force_set_parameters(force_set_parameters)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
@@ -313,17 +351,29 @@ def test_prepare_force_set(
         qrm.prepare(prog["qrm0"])
 
     # Assert
-    qcm.instrument._set_reference_source.assert_called()
-    qrm.instrument._set_reference_source.assert_called()
+    if not set_reference_source:
+        qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+        qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+    else:
+        if force_set_parameters:
+            qcm.instrument._set_reference_source.assert_called()
+            qrm.instrument._set_reference_source.assert_called()
+        else:
+            qcm.instrument._set_reference_source.assert_not_called()
+            qrm.instrument._set_reference_source.assert_not_called()
 
 
+@pytest.mark.parametrize("force_set_parameters", [False, True])
 def test_prepare_ref_source_cluster(
-    close_all_instruments, make_basic_schedule, make_cluster
+    close_all_instruments, make_basic_schedule, make_cluster, force_set_parameters
 ):
     # Arrange
-    cluster: qblox.ClusterComponent = make_cluster("cluster0")
-    qcm_module = cluster._cluster_modules["cluster0_qcm0"]
-    qcm_module.instrument.reference_source("internal")  # put it in a known state
+    cluster_name = "cluster0"
+    cluster: qblox.ClusterComponent = make_cluster(cluster_name)
+
+    cluster.force_set_parameters(force_set_parameters)
+
+    cluster.instrument.reference_source("internal")  # Put it in a known state
     sched = make_basic_schedule("q4")
 
     # Act
@@ -333,49 +383,18 @@ def test_prepare_ref_source_cluster(
         compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
         prog = compiled_schedule["compiled_instructions"]
 
-        cluster.prepare(prog["cluster0"])
+        cluster.prepare(prog[cluster_name])
 
-    # Assert
     # Assert it's only set in initialization
-    qcm_module.instrument.reference_source.assert_called_once()
-
-
-def test_prepare_lazy(
-    close_all_instruments, schedule_with_measurement, make_qcm, make_qrm
-):
-    # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
-    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-
-    qcm.instrument.reference_source("internal")
-    qcm.instrument._set_reference_source.reset_mock()
-
-    qrm.instrument.reference_source("external")
-    qrm.instrument._set_reference_source.reset_mock()
-
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-
-        compiled_schedule = qcompile(
-            schedule_with_measurement, DEVICE_CFG, HARDWARE_MAPPING
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qcm.prepare(prog["qcm0"])
-        qrm.prepare(prog["qrm0"])
-
-    # Assert
-    qcm.instrument._set_reference_source.assert_not_called()
-    qrm.instrument._set_reference_source.assert_not_called()
+    cluster.instrument.reference_source.assert_called_once()
 
 
 def test_prepare_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
     # Arrange
-    qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -430,7 +449,7 @@ def test_prepare_exception_qrm(close_all_instruments, make_qrm):
 
 def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
     # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 
@@ -447,7 +466,7 @@ def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
 
 def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     # Arrange
-    qrm: qblox.PulsarQRMComponent = make_qrm_rf("qcm_rf0", "1234")
+    qrm: qblox.QRMRFComponent = make_qrm_rf("qcm_rf0", "1234")
 
     invalid_config = {"idontexist": "this is not used"}
 
@@ -462,25 +481,44 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     )
 
 
-def test_is_running(make_qrm):
-    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
-    assert not qrm.is_running
+@pytest.mark.parametrize(
+    "sequencer_status",
+    [SequencerStatus.ARMED, SequencerStatus.RUNNING, SequencerStatus.STOPPED],
+)
+def test_is_running(make_qrm, sequencer_status):
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234", sequencer_status)
+    assert qrm.is_running is (sequencer_status is SequencerStatus.RUNNING)
 
 
-def test_wait_done(make_qrm):
-    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+@pytest.mark.parametrize(
+    "sequencer_status",
+    [SequencerStatus.ARMED, SequencerStatus.RUNNING, SequencerStatus.STOPPED],
+)
+def test_is_running_cluster(make_cluster, sequencer_status):
+    cluster: qblox.ClusterComponent = make_cluster("cluster0", sequencer_status)
+    assert cluster.is_running is (sequencer_status is SequencerStatus.RUNNING)
+
+
+@pytest.mark.parametrize(
+    "sequencer_flags",
+    [[], [SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0]],
+)
+def test_wait_done(make_qrm, sequencer_flags):
+    qrm: qblox.PulsarQRMComponent = make_qrm(
+        "qrm0", "1234", SequencerStatus.ARMED, sequencer_flags
+    )
     qrm.wait_done()
 
 
+def test_wait_done_cluster(make_cluster):
+    cluster: qblox.ClusterComponent = make_cluster("cluster0")
+    cluster.wait_done()
+
+
 def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm):
-    # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm("qcm0", "1234")
 
-    # Act
-    acq = qcm.retrieve_acquisition()
-
-    # Assert
-    assert acq is None
+    assert qcm.retrieve_acquisition() is None
 
 
 def test_retrieve_acquisition_qrm(
@@ -502,26 +540,21 @@ def test_retrieve_acquisition_qrm(
         qrm.start()
         acq = qrm.retrieve_acquisition()
 
-        # Assert
-        assert len(acq[(0, 0)]) == 2
+    # Assert
+    assert len(acq[(0, 0)]) == 2
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
-    # Arrange
-    qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
-    # Act
-    acq = qcm_rf.retrieve_acquisition()
-
-    # Assert
-    assert acq is None
+    assert qcm_rf.retrieve_acquisition() is None
 
 
 def test_retrieve_acquisition_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qrm_rf
 ):
     # Arrange
-    qrm_rf: qblox.PulsarQRMComponent = make_qrm_rf("qrm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -538,6 +571,30 @@ def test_retrieve_acquisition_qrm_rf(
 
     # Assert
     assert len(acq[(0, 0)]) == 2
+
+
+def test_retrieve_acquisition_cluster(
+    close_all_instruments, make_schedule_with_measurement, make_cluster
+):
+    # Arrange
+    cluster_name = "cluster0"
+    cluster: qblox.ClusterComponent = make_cluster(cluster_name)
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+        compiled_schedule = qcompile(
+            make_schedule_with_measurement("q4"), DEVICE_CFG, HARDWARE_MAPPING
+        )
+        prog = compiled_schedule["compiled_instructions"]
+        prog = dict(prog)
+
+        cluster.prepare(prog[cluster_name])
+        cluster.start()
+        acq = cluster.retrieve_acquisition()
+
+    # Assert
+    assert acq is not None
 
 
 def test_start_qcm_qrm(
@@ -571,8 +628,8 @@ def test_start_qcm_qrm_rf(
     close_all_instruments, schedule_with_measurement_q2, make_qcm_rf, make_qrm_rf
 ):
     # Arrange
-    qcm_rf: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm_rf: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -608,10 +665,10 @@ def test_stop_qcm_qrm(close_all_instruments, make_qcm, make_qrm):
     qrm.instrument.stop_sequencer.assert_called()
 
 
-def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
+def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm_rf, make_qrm_rf):
     # Arrange
-    qcm_rf: qblox.PulsarQCMRFComponent = make_qcm("qcm_rf0", "1234")
-    qrm_rf: qblox.PulsarQRMRFComponent = make_qrm("qrm_rf0", "1234")
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     # Act
     qcm_rf.stop()
@@ -622,9 +679,18 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm, make_qrm):
     qrm_rf.instrument.stop_sequencer.assert_called()
 
 
+def test_stop_cluster(close_all_instruments, make_cluster):
+    # Arrange
+    cluster: qblox.ClusterComponent = make_cluster("cluster0")
+
+    # Act
+    cluster.stop()
+
+    # Assert
+    cluster.instrument.stop_sequencer.assert_called()
+
+
 # ------------------- _QRMAcquisitionManager -------------------
-
-
 def test_qrm_acquisition_manager__init__(make_qrm):
     qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
     qblox._QRMAcquisitionManager(
@@ -649,6 +715,24 @@ def test_get_integration_data(make_qrm, mock_acquisition_data):
     data = acq_manager._get_integration_data(mock_acquisition_data, acq_channel=0)
     np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
     np.testing.assert_array_equal(data[1], np.array([0.0] * 10))
+
+
+def test_store_scope_acquisition(make_qrm):
+    # Arrange
+    acq_mapping = {
+        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
+    }
+    qrm: qblox.PulsarQRMComponent = make_qrm("qrm0", "1234")
+    acq_manager = qblox._QRMAcquisitionManager(
+        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
+    )
+    acq_manager.scope_mode_sequencer = "seq0"
+
+    # Act
+    acq_manager._store_scope_acquisition()
+
+    # Assert
+    qrm.instrument.store_scope_acquisition.assert_called_once()
 
 
 def test_get_scope_channel_and_index(make_qrm):
