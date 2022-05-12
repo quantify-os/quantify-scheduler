@@ -749,7 +749,6 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
 
 
 def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
-    hw_mapping = HARDWARE_CFG.copy()
 
     hw_mapping = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
