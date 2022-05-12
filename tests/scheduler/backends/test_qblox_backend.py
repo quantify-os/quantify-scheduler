@@ -23,7 +23,6 @@ from qblox_instruments import Pulsar, PulsarType
 from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
-from quantify_scheduler.backends.qblox import helpers
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import qblox_backend as qb
@@ -35,6 +34,7 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
+    convert_hw_config_to_portclock_configs_spec,
     assign_pulse_and_acq_info_to_devices,
     assign_pulse_and_acq_info_to_devices,
     generate_port_clock_to_device_map,
@@ -1613,7 +1613,7 @@ def test__pre_portclock_configs_err():  # pylint: disable=invalid-name
         "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20},
     }
 
-    migrated_config = helpers.convert_hw_config_to_portclock_configs_spec(old_config)
+    migrated_config = convert_hw_config_to_portclock_configs_spec(old_config)
 
     assert migrated_config == expected_config
 
