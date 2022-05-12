@@ -551,14 +551,14 @@ def _assign_pulse_and_acq_info_to_devices(
             device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
 
 
-def convert_hw_config_to_portclock_configs_spec(  # pylint: disable=invalid-name
+def convert_hw_config_to_portclock_configs_spec(
     hw_config: Dict[str, Any],
 ):
     """
     Converts possibly old hardware configs to the new format introduced by
     the new dynamic sequencer allocation feature. I.e. manual
     assignment between sequencers and portclocks under each output is removed, and
-    instead only a list of portclocks configurations is specified,
+    instead only a list of port-clock configurations is specified,
     under the new `portclock_configs` key.
 
     Parameters
