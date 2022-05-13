@@ -983,7 +983,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         """
 
-        sequencers = {}
+        sequencers: Dict[str, Sequencer] = {}
         portclock_output_map: Dict[Tuple, str] = {}
 
         for io, io_cfg in self.hw_mapping.items():
