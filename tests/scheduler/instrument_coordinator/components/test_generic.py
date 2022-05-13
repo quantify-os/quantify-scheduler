@@ -13,49 +13,13 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
 
+from quantify_scheduler.helpers.mock_instruments import (
+    MockLocalOscillator,
+)
+
 
 @pytest.fixture
 def make_generic_qcodes_instruments(request):
-    class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
-        def __init__(self, name: str):
-            """
-            Create an instance of the Generic instrument.
-
-            Args:
-                name: QCoDeS'name
-            """
-            super().__init__(name)
-            self._add_qcodes_parameters_dummy()
-
-        def _add_qcodes_parameters_dummy(self):
-            """
-            Used for faking communications
-            """
-            self.add_parameter(
-                name="status",
-                initial_value=False,
-                vals=validators.Bool(),
-                docstring="turns the output on/off",
-                parameter_class=ManualParameter,
-            )
-            self.add_parameter(
-                name="frequency",
-                label="Frequency",
-                unit="Hz",
-                initial_value=7e9,
-                docstring="The RF Frequency in Hz",
-                vals=validators.Numbers(min_value=250e3, max_value=20e9),
-                parameter_class=ManualParameter,
-            )
-            self.add_parameter(
-                name="power",
-                label="Power",
-                unit="dBm",
-                initial_value=15.0,
-                vals=validators.Numbers(min_value=-60.0, max_value=20.0),
-                docstring="Signal power in dBm",
-                parameter_class=ManualParameter,
-            )
 
     lo_mw_q0 = MockLocalOscillator(name="lo_mw_q0")
     lo_ro_q0 = MockLocalOscillator(name="lo_ro_q0")

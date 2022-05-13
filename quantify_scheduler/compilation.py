@@ -438,6 +438,16 @@ def qcompile(
     """
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
+    schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
+
+    # determine_absolute_timing both here and in device_compile redundantly.
+    # The reason for this is twofold:
+    # 1) Since hardware_compile requires the timings to be calculated,
+    # the redundancy allows hardware_compile to succeed even if
+    # no device_config is passed to qcompile.
+    # 1) To allow the user not to call the qcompile function
+    # and instead call device_compile and hardware_compile directly without
+    # needing to call determine_absolute timing.
 
     if device_cfg is not None:
         schedule = device_compile(schedule=schedule, device_cfg=device_cfg)

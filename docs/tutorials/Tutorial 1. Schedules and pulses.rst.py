@@ -13,13 +13,13 @@
 # ---
 
 # %% [raw]
-#  .. _sec-tutorial1:
+# .. _sec-tutorial1:
 #
 # Tutorial 1. Schedules and pulses
 # ================================
 #
-#  .. jupyter-kernel::
-#    :id: Tutorial 1. Schedules and pulses
+# .. jupyter-kernel::
+#   :id: Tutorial 1. Schedules and pulses
 #
 # .. seealso::
 #
