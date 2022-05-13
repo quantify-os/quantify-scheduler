@@ -86,6 +86,7 @@ hw_config = {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
                 "line_gain_db": 0,
+                "lo_freq": None,
                 "dc_mixer_offset_I": -0.00552,
                 "dc_mixer_offset_Q": -0.00556,
                 "seq0": {
