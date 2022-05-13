@@ -714,9 +714,9 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
 
 
 def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_schedule):
-    mapping = copy.deepcopy(HARDWARE_CFG)
+    hardware_cfg = copy.deepcopy(HARDWARE_CFG)
 
-    mapping["qcm0"]["complex_output_0"]["portclock_configs"] = [
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
         {
             "port": "q0:mw",
             "clock": "q0.01",
@@ -733,14 +733,14 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
         parent=None,
         name="tester",
         total_play_time=1,
-        hw_mapping=mapping["qcm0"],
+        hw_mapping=hardware_cfg["qcm0"],
     )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
     sched = device_compile(sched, DEVICE_CFG)
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
-        hardware_cfg=mapping,
+        hardware_cfg=hardware_cfg,
         device_compilers={"qcm0": test_module},
     )
 
@@ -750,7 +750,7 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
 
 def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
 
-    hw_mapping = {
+    hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "instrument_type": "Pulsar_QCM_RF",
@@ -759,7 +759,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         },
     }
 
-    hw_mapping["qcm0"]["complex_output_0"]["portclock_configs"] = [
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
         {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
     ]
 
@@ -772,7 +772,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         parent=None,
         name="tester",
         total_play_time=1,
-        hw_mapping=hw_mapping["qcm0"],
+        hw_mapping=hardware_cfg["qcm0"],
     )
 
     sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
@@ -780,7 +780,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
-        hardware_cfg=hw_mapping,
+        hardware_cfg=hardware_cfg,
         device_compilers={"qcm0": test_module},
     )
 
