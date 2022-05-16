@@ -16,13 +16,17 @@ from quantify_scheduler.backends.qblox import constants
 
 @pytest.mark.parametrize("phase", [0.0, 360.0, 10.0, 11.11, 123.123, 90.0, -90.0])
 def test_get_nco_phase_arguments(phase: float):
-    coarse, fine, ufine = helpers.get_nco_phase_arguments(phase)
+    phase_coarse, phase_fine, phase_ultra_fine = helpers.get_nco_phase_arguments(phase)
 
     phase_shift_returned = (
-        coarse * constants.NCO_PHASE_DEG_STEP_COARSE
-        + fine * constants.NCO_PHASE_DEG_STEP_FINE
-        + ufine * constants.NCO_PHASE_DEG_STEP_U_FINE
+        phase_coarse * constants.NCO_PHASE_DEG_STEP_COARSE
+        + phase_fine * constants.NCO_PHASE_DEG_STEP_FINE
+        + phase_ultra_fine * constants.NCO_PHASE_DEG_STEP_U_FINE
     )
+
+    assert phase_coarse <= constants.NCO_PHASE_NUM_STEP_COARSE
+    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_FINE
+    assert phase_ultra_fine <= constants.NCO_PHASE_NUM_STEP_U_FINE
 
     expected_phase = phase + 360 if phase < 0 else phase
 

@@ -382,20 +382,17 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     Returns
     -------
     :
-        The three ints corresponding to the phase arguments (course, fine, ultra-fine).
+        The three ints corresponding to the phase arguments (coarse, fine, ultra-fine).
     """
     if phase_deg < 0:
         phase_deg += 360
 
-    phase_course: int = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
-    assert phase_course <= constants.NCO_PHASE_NUM_STEP_COARSE
+    phase_coarse = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
 
     remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COARSE
-    phase_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
-    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_FINE
+    phase_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
 
     remaining_phase = remaining_phase % constants.NCO_PHASE_DEG_STEP_FINE
-    phase_ultra_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
-    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_U_FINE
+    phase_ultra_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
 
-    return phase_course, phase_fine, phase_ultra_fine
+    return phase_coarse, phase_fine, phase_ultra_fine
