@@ -53,9 +53,10 @@ def hardware_compile(
             "convert_hw_config_to_portclock_configs_spec' function.",
             DeprecationWarning,
         )
+        hardware_cfg = converted_hw_config
 
     container = compiler_container.CompilerContainer.from_mapping(
-        schedule, converted_hw_config
+        schedule, hardware_cfg
     )
 
     helpers.assign_pulse_and_acq_info_to_devices(
