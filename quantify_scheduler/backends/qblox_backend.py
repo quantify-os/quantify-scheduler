@@ -55,7 +55,7 @@ def hardware_compile(
         )
 
     container = compiler_container.CompilerContainer.from_mapping(
-        schedule, hardware_cfg
+        schedule, converted_hw_config
     )
 
     helpers.assign_pulse_and_acq_info_to_devices(
