@@ -101,8 +101,12 @@ class TestNcoPhaseShiftStrategy:
         "phase, answer",
         [
             (0.0, ("set_ph_delta", "0,0,0")),
-            (360, ("set_ph_delta", "399,399,6249")),
+            (360, ("set_ph_delta", "0,0,0")),
+            (360.0, ("set_ph_delta", "0,0,0")),
+            (359.99999999999999, ("set_ph_delta", "0,0,0")),
+            (359.999, ("set_ph_delta", "399,399,3472")),
             (123.123, ("set_ph_delta", "136,321,2083")),
+            (483.123, ("set_ph_delta", "136,321,2083")),
         ],
     )
     def test_generate_qasm_program(
