@@ -379,6 +379,8 @@ def is_multiple_of_grid_time(
 def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.
+    We take `phase_deg` modulo 360 to account for negative phase and phase larger than
+    360.
 
     Parameters
     ----------
@@ -388,20 +390,19 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     Returns
     -------
     :
-        The three ints corresponding to the phase arguments (course, fine, ultra-fine).
+        The three ints corresponding to the phase arguments (coarse, fine, ultra-fine).
     """
-    phase_course: int = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COURSE)
-    assert phase_course <= constants.NCO_PHASE_NUM_STEP_COURSE
+    phase_deg %= 360
 
-    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COURSE
-    phase_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
-    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_FINE
+    phase_coarse = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
+
+    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COARSE
+    phase_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
 
     remaining_phase = remaining_phase % constants.NCO_PHASE_DEG_STEP_FINE
-    phase_ultra_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
-    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_U_FINE
+    phase_ultra_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
 
-    return phase_course, phase_fine, phase_ultra_fine
+    return phase_coarse, phase_fine, phase_ultra_fine
 
 
 def generate_port_clock_to_device_map(
