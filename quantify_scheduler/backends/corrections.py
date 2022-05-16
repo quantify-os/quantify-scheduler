@@ -34,12 +34,15 @@ def correct_pulse(
     }
     corrected_waveform_data = filter_func(**kwargs)
 
+    if corrected_waveform_data.size == 1:  # Interpolation requires two sample points
+        corrected_waveform_data = np.append(
+            corrected_waveform_data, corrected_waveform_data[-1]
+        )
+
     corrected_pulse = NumericalPulse(
         samples=corrected_waveform_data,
         t_samples=np.linspace(
-            start=0,
-            stop=pulse_data["duration"],
-            num=corrected_waveform_data.size,
+            start=0, stop=pulse_data["duration"], num=corrected_waveform_data.size
         ),
         port=pulse_data["port"],
         clock=pulse_data["clock"],

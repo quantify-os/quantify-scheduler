@@ -36,6 +36,7 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.corrections import correct_pulse
 from quantify_scheduler.backends.qblox.helpers import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -779,7 +780,7 @@ def test_qasm_hook(pulse_only_schedule):
     assert program_lines[1].strip() == q1asm_instructions.NOP
 
 
-def test_apply_distortion_corrections():
+def test_apply_distortion_corrections():  # TODO: move to tests/scheduler/backends/corrections.py
 
     # TODO: For better example, see PycQED:
     # https://github.com/DiCarloLab-Delft/PycQED_py3/blob/develop/pycqed/instrument_drivers/meta_instrument/lfilt_kernel_object.py
@@ -884,6 +885,64 @@ def test_apply_distortion_corrections():
         "Key no longer matches str(operation) if first pulse_info entry was corrected;"
         f" operations: {operations_pretty_repr}"
     )
+
+
+@pytest.mark.parametrize("duration", list(np.arange(start=1e-9, stop=16e-9, step=1e-9)))
+def test_correct_pulse(
+    duration,
+):  # TODO: move to tests/scheduler/backends/corrections.py
+    filter_coefficients = np.array(
+        [
+            1.95857073e00,
+            -1.86377203e-01,
+            -1.68242537e-01,
+            -1.52224167e-01,
+            -1.37802128e-01,
+            -1.21882898e-01,
+            -8.43375734e-02,
+            -5.96895462e-02,
+            -3.96596464e-02,
+            -1.76637397e-02,
+            3.30717805e-03,
+            8.42734090e-03,
+            6.07696990e-03,
+            -5.36042501e-03,
+            -1.29125589e-02,
+            -4.28917964e-03,
+            1.33989347e-02,
+            1.62354458e-02,
+            9.54868788e-03,
+            1.17526984e-02,
+            -1.89290954e-03,
+            -9.12214872e-03,
+            -1.36650277e-02,
+            -1.90334368e-02,
+            -1.01304462e-02,
+            1.06730684e-03,
+            1.09447182e-02,
+            1.00001337e-02,
+            3.11361952e-03,
+            -1.38470050e-02,
+        ]
+    )
+
+    correction_cfg = {
+        "filter_func": "scipy.signal.lfilter",
+        "input_var_name": "x",
+        "kwargs": {"b": filter_coefficients, "a": 1},
+    }
+
+    pulse = SquarePulse(
+        amp=220e-3, duration=duration, port="q0:fl", clock="cl0.baseband"
+    )
+
+    corrected_pulse = correct_pulse(
+        pulse_data=pulse.data["pulse_info"][0],
+        sampling_rate=constants.SAMPLING_RATE,
+        correction_cfg=correction_cfg,
+    )
+
+    assert len(corrected_pulse.data["pulse_info"][0]["samples"]) >= 1
 
 
 def test_qcm_acquisition_error():
