@@ -24,5 +24,7 @@ def test_get_nco_phase_arguments(phase: float):
         + ufine * constants.NCO_PHASE_DEG_STEP_U_FINE
     )
 
+    expected_phase = phase + 360 if phase < 0 else phase
+
     # approx due to floating point rounding errors
-    assert phase_shift_returned == pytest.approx(phase)
+    assert phase_shift_returned == pytest.approx(expected_phase)

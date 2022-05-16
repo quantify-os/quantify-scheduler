@@ -371,6 +371,8 @@ def is_multiple_of_grid_time(
 def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.
+    In case `phase_deg` is negative we add 360 as negative phase is not supported in the
+    instructions.
 
     Parameters
     ----------
@@ -382,6 +384,9 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     :
         The three ints corresponding to the phase arguments (course, fine, ultra-fine).
     """
+    if phase_deg < 0:
+        phase_deg += 360
+
     phase_course: int = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
     assert phase_course <= constants.NCO_PHASE_NUM_STEP_COARSE
 
