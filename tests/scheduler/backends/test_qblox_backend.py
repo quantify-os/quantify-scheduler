@@ -784,7 +784,9 @@ def test_apply_distortion_corrections():  # TODO: move to tests/scheduler/backen
 
     # TODO: For better example, see PycQED:
     # https://github.com/DiCarloLab-Delft/PycQED_py3/blob/develop/pycqed/instrument_drivers/meta_instrument/lfilt_kernel_object.py
-    fir_filter_coeffs = np.linspace(0, 1, 10)  # TODO: Also test list(np.linspace(0, 1, 10))
+    fir_filter_coeffs = np.linspace(
+        0, 1, 10
+    )  # TODO: Also test list(np.linspace(0, 1, 10))
 
     hw_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -888,43 +890,41 @@ def test_apply_distortion_corrections():  # TODO: move to tests/scheduler/backen
 
 
 @pytest.mark.parametrize("duration", list(np.arange(start=1e-9, stop=16e-9, step=1e-9)))
-def test_correct_pulse(
+def test__correct_pulse(
     duration,
 ):  # TODO: move to tests/scheduler/backends/corrections.py
-    filter_coefficients = np.array(
-        [
-            1.95857073e00,
-            -1.86377203e-01,
-            -1.68242537e-01,
-            -1.52224167e-01,
-            -1.37802128e-01,
-            -1.21882898e-01,
-            -8.43375734e-02,
-            -5.96895462e-02,
-            -3.96596464e-02,
-            -1.76637397e-02,
-            3.30717805e-03,
-            8.42734090e-03,
-            6.07696990e-03,
-            -5.36042501e-03,
-            -1.29125589e-02,
-            -4.28917964e-03,
-            1.33989347e-02,
-            1.62354458e-02,
-            9.54868788e-03,
-            1.17526984e-02,
-            -1.89290954e-03,
-            -9.12214872e-03,
-            -1.36650277e-02,
-            -1.90334368e-02,
-            -1.01304462e-02,
-            1.06730684e-03,
-            1.09447182e-02,
-            1.00001337e-02,
-            3.11361952e-03,
-            -1.38470050e-02,
-        ]
-    )
+    filter_coefficients = [
+        1.95857073e00,
+        -1.86377203e-01,
+        -1.68242537e-01,
+        -1.52224167e-01,
+        -1.37802128e-01,
+        -1.21882898e-01,
+        -8.43375734e-02,
+        -5.96895462e-02,
+        -3.96596464e-02,
+        -1.76637397e-02,
+        3.30717805e-03,
+        8.42734090e-03,
+        6.07696990e-03,
+        -5.36042501e-03,
+        -1.29125589e-02,
+        -4.28917964e-03,
+        1.33989347e-02,
+        1.62354458e-02,
+        9.54868788e-03,
+        1.17526984e-02,
+        -1.89290954e-03,
+        -9.12214872e-03,
+        -1.36650277e-02,
+        -1.90334368e-02,
+        -1.01304462e-02,
+        1.06730684e-03,
+        1.09447182e-02,
+        1.00001337e-02,
+        3.11361952e-03,
+        -1.38470050e-02,
+    ]
 
     filter_func_name = "scipy.signal.lfilter"
     input_var_name = "x"
@@ -942,7 +942,7 @@ def test_correct_pulse(
         kwargs_dict=kwargs_dict,
     )
 
-    assert len(corrected_pulse.data["pulse_info"][0]["samples"]) >= 1
+    assert len(corrected_pulse.data["pulse_info"][0]["samples"]) > 1
 
 
 def test_qcm_acquisition_error():
