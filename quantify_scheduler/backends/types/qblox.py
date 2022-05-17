@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union, List
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -55,6 +55,8 @@ class StaticHardwareProperties:
     mixer_dc_offset_range: BoundedParameter
     """Specifies the range over which the dc offsets can be set that are used for mixer
     calibration."""
+    valid_ios: List[str]
+    """Specifies the complex/real output identifiers supported by this device."""
 
 
 @dataclass(frozen=True)

@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import tempfile
-from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -26,7 +25,7 @@ from quantify_core.data.handling import set_datadir
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends import qblox_backend as qb
+from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -35,6 +34,9 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
+    convert_hw_config_to_portclock_configs_spec,
+    assign_pulse_and_acq_info_to_devices,
+    generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
     generate_uuid_from_wf_data,
@@ -56,9 +58,11 @@ from quantify_scheduler.compilation import (
     device_compile,
     qcompile,
 )
-from quantify_scheduler.operations.acquisition_library import (
-    Trace,
-)
+
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+
+from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
@@ -79,7 +83,7 @@ with open(cfg_f, "r", encoding="utf-8") as f:
 
 map_f = os.path.abspath(os.path.join(esp, "..", "qblox_test_mapping.json"))
 with open(map_f, "r", encoding="utf-8") as f:
-    HARDWARE_MAPPING = json.load(f)
+    HARDWARE_CFG = json.load(f)
 
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
@@ -96,11 +100,13 @@ def make_hardware_cfg_latency_correction():
                 "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "seq0": {
-                        "port": port,
-                        "clock": clock,
-                        "latency_correction": correction,
-                    },
+                    "portclock_configs": [
+                        {
+                            "port": port,
+                            "clock": clock,
+                            "latency_correction": correction,
+                        },
+                    ],
                 },
             },
         }
@@ -119,16 +125,18 @@ def hardware_cfg_baseband():
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {
-                    "port": "q0:mw",
-                    "clock": "cl0.baseband",
-                    "instruction_generated_pulses_enabled": True,
-                    "interm_freq": 50e6,
-                },
+                "portclock_configs": [
+                    {
+                        "port": "q0:mw",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": True,
+                        "interm_freq": 50e6,
+                    }
+                ],
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq1": {"port": "q1:mw", "clock": "q1.01"},
+                "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
@@ -145,27 +153,33 @@ def hardware_cfg_real_mode():
             "ref": "internal",
             "real_output_0": {
                 "line_gain_db": 0,
-                "seq0": {
-                    "port": "LP",
-                    "clock": "cl0.baseband",
-                    "instruction_generated_pulses_enabled": True,
-                },
+                "portclock_configs": [
+                    {
+                        "port": "LP",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": True,
+                    },
+                ],
             },
             "real_output_1": {
                 "line_gain_db": 0,
-                "seq1": {
-                    "port": "RP",
-                    "clock": "cl0.baseband",
-                    "instruction_generated_pulses_enabled": True,
-                },
+                "portclock_configs": [
+                    {
+                        "port": "RP",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": True,
+                    }
+                ],
             },
             "real_output_2": {
                 "line_gain_db": 0,
-                "seq2": {
-                    "port": "TB",
-                    "clock": "cl0.baseband",
-                    "instruction_generated_pulses_enabled": True,
-                },
+                "portclock_configs": [
+                    {
+                        "port": "TB",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": True,
+                    }
+                ],
             },
         },
     }
@@ -182,35 +196,37 @@ def hardware_cfg_multiplexing():
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq2": {
-                    "port": "q1:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq3": {
-                    "port": "q2:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq4": {
-                    "port": "q3:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
-                "seq5": {
-                    "port": "q4:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                },
+                "portclock_configs": [
+                    {
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q1:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q2:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q3:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q4:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
+                    },
+                ],
             },
             "complex_output_1": {
                 "line_gain_db": 0,
-                "seq1": {"port": "q1:mw", "clock": "q1.01"},
+                "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
@@ -583,7 +599,7 @@ def test_find_inner_dicts_containing_key():
 
 
 def test_find_all_port_clock_combinations():
-    portclocks = find_all_port_clock_combinations(HARDWARE_MAPPING)
+    portclocks = find_all_port_clock_combinations(HARDWARE_CFG)
     portclocks = set(portclocks)
     portclocks.discard((None, None))
     answer = {
@@ -605,43 +621,189 @@ def test_find_all_port_clock_combinations():
 
 
 def test_generate_port_clock_to_device_map():
-    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
+    portclock_map = generate_port_clock_to_device_map(HARDWARE_CFG)
     assert (None, None) not in portclock_map.keys()
     assert len(portclock_map.keys()) == 12
 
 
 # --------- Test classes and member methods ---------
-def test_contruct_sequencer():
-    class TestPulsar(QcmModule):
-        def __init__(self):
-            super().__init__(
-                parent=None,
-                name="tester",
-                total_play_time=1,
-                hw_mapping=HARDWARE_MAPPING["qcm0"],
-            )
+def test_portclocks(make_basic_multi_qubit_schedule):
 
-        def compile(self, repetitions: int = 1) -> Dict[str, Any]:
-            return dict()
+    device_config = {
+        "backend": "quantify_scheduler.compilation.add_pulse_information_transmon",
+        "edges": {},
+        "qubits": {
+            "q4": {
+                "params": {
+                    "acquisition": "SSBIntegrationComplex",
+                    "init_duration": 0.0002,
+                    "mw_amp180": 0.25,
+                    "mw_duration": 1.6e-08,
+                    "mw_ef_amp180": 0.87,
+                    "mw_freq": 6.02e9,
+                    "mw_motzoi": 0.45,
+                },
+                "resources": {
+                    "clock_01": "q4.01",
+                    "clock_12": "q4.12",
+                    "clock_ro": "q4.ro",
+                    "port_flux": "q4:fl",
+                    "port_mw": "q4:mw",
+                    "port_ro": "q4:res",
+                },
+            },
+            "q5": {
+                "params": {
+                    "acquisition": "SSBIntegrationComplex",
+                    "init_duration": 0.0002,
+                    "mw_amp180": 0.25,
+                    "mw_duration": 2e-08,
+                    "mw_ef_amp180": 0.67,
+                    "mw_freq": 5.02e9,
+                    "mw_motzoi": 0.45,
+                },
+                "resources": {
+                    "clock_01": "q5.01",
+                    "clock_12": "q5.12",
+                    "clock_ro": "q5.ro",
+                    "port_flux": "q5:fl",
+                    "port_mw": "q5:mw",
+                    "port_ro": "q5:res",
+                },
+            },
+        },
+    }
 
-    test_p = TestPulsar()
-    test_p.sequencers = test_p._construct_sequencers()
-    seq_keys = list(test_p.sequencers.keys())
+    sched = make_basic_multi_qubit_schedule(["q4", "q5"])
+    sched = device_compile(sched, device_config)
+
+    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        hardware_cfg=HARDWARE_CFG,
+        device_compilers=container.instrument_compilers,
+    )
+
+    compilers = container.instrument_compilers["cluster0"].instrument_compilers
+    assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
+    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
+
+
+def test_contruct_sequencers(make_basic_multi_qubit_schedule):
+    test_module = QcmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=HARDWARE_CFG["qcm0"],
+    )
+    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
+    sched = device_compile(sched, DEVICE_CFG)
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        hardware_cfg=HARDWARE_CFG,
+        device_compilers={"qcm0": test_module},
+    )
+
+    test_module.sequencers = test_module._construct_sequencers()
+    seq_keys = list(test_module.sequencers.keys())
+
     assert len(seq_keys) == 2
-    assert isinstance(test_p.sequencers[seq_keys[0]], Sequencer)
+    assert isinstance(test_module.sequencers[seq_keys[0]], Sequencer)
+
+
+def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_schedule):
+    hardware_cfg = copy.deepcopy(HARDWARE_CFG)
+
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
+        {
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "interm_freq": 50e6,
+        },
+        {
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "interm_freq": 100e6,
+        },
+    ]
+
+    test_module = QcmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=hardware_cfg["qcm0"],
+    )
+    sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
+    sched = device_compile(sched, DEVICE_CFG)
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        hardware_cfg=hardware_cfg,
+        device_compilers={"qcm0": test_module},
+    )
+
+    with pytest.raises(ValueError):
+        test_module.sequencers = test_module._construct_sequencers()
+
+
+def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
+
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM_RF",
+            "ref": "internal",
+            "complex_output_0": {"portclock_configs": []},
+        },
+    }
+
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
+        {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
+    ]
+
+    device = QuantumDevice("device")
+    elements = [TransmonElement(f"q{i}") for i in range(7)]
+    for element in elements:
+        device.add_component(element)
+
+    test_module = QcmRfModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        hw_mapping=hardware_cfg["qcm0"],
+    )
+
+    sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
+    sched = device_compile(sched, device.generate_device_config())
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        hardware_cfg=hardware_cfg,
+        device_compilers={"qcm0": test_module},
+    )
+
+    with pytest.raises(ValueError) as exc:
+        test_module.sequencers = test_module._construct_sequencers()
+    assert (
+        "Number of simultaneously active port-clock combinations exceeds "
+        + "number of sequencers."
+        in str(exc.value)
+    )
 
 
 def test_simple_compile(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+    qcompile(pulse_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
 def test_compile_cluster(cluster_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+    qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
 def test_simple_compile_multiplexing(
@@ -658,9 +820,7 @@ def test_identical_pulses_compile(identical_pulses_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    compiled_schedule = qcompile(
-        identical_pulses_schedule, DEVICE_CFG, HARDWARE_MAPPING
-    )
+    compiled_schedule = qcompile(identical_pulses_schedule, DEVICE_CFG, HARDWARE_CFG)
 
     seq_fn = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
     with open(seq_fn) as file:
@@ -671,7 +831,7 @@ def test_identical_pulses_compile(identical_pulses_schedule):
 def test_compile_measure(duplicate_measure_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    full_program = qcompile(duplicate_measure_schedule, DEVICE_CFG, HARDWARE_MAPPING)
+    full_program = qcompile(duplicate_measure_schedule, DEVICE_CFG, HARDWARE_CFG)
     qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
 
     with open(qrm0_seq0_json) as file:
@@ -682,9 +842,7 @@ def test_compile_measure(duplicate_measure_schedule):
 def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    full_program = qcompile(
-        mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
-    )
+    full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
@@ -705,7 +863,7 @@ def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
 
     sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
     with pytest.raises(ValueError):
-        qb.hardware_compile(sched_with_pulse_info, HARDWARE_MAPPING)
+        hardware_compile(sched_with_pulse_info, HARDWARE_CFG)
 
 
 def test_compile_with_rel_time(
@@ -714,7 +872,7 @@ def test_compile_with_rel_time(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(
-        pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_MAPPING
+        pulse_only_schedule_with_operation_timing, DEVICE_CFG, HARDWARE_CFG
     )
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
@@ -727,9 +885,7 @@ def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     mixed_schedule_with_acquisition.repetitions = 10
-    full_program = qcompile(
-        mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_MAPPING
-    )
+    full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     with open(qcm0_seq0_json) as file:
@@ -755,11 +911,13 @@ def test_qasm_hook(pulse_only_schedule):
             "instrument_type": "Pulsar_QRM",
             "ref": "external",
             "complex_output_0": {
-                "seq0": {
-                    "qasm_hook_func": _func_for_hook_test,
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                }
+                "portclock_configs": [
+                    {
+                        "qasm_hook_func": _func_for_hook_test,
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                    }
+                ]
             },
         },
     }
@@ -776,9 +934,7 @@ def test_qasm_hook(pulse_only_schedule):
 
 
 def test_qcm_acquisition_error():
-    qcm = QcmModule(
-        None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_MAPPING["qcm0"]
-    )
+    qcm = QcmModule(None, "qcm0", total_play_time=10, hw_mapping=HARDWARE_CFG["qcm0"])
     qcm._acquisitions[0] = 0
 
     with pytest.raises(RuntimeError):
@@ -823,7 +979,7 @@ def test_auto_wait(empty_qasm_program_qcm):
 
 def test_expand_from_normalised_range():
     minimal_pulse_data = {"duration": 20e-9}
-    acq = qb.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
+    acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
     expanded_val = QASMProgram.expand_from_normalised_range(
         1, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
     )
@@ -867,13 +1023,12 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 # --------- Test compilation functions ---------
 def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
-    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
 
     container = compiler_container.CompilerContainer.from_mapping(
-        sched_with_pulse_info, HARDWARE_MAPPING
+        sched_with_pulse_info, HARDWARE_CFG
     )
-    qb._assign_pulse_and_acq_info_to_devices(
-        sched_with_pulse_info, container.instrument_compilers, portclock_map
+    assign_pulse_and_acq_info_to_devices(
+        sched_with_pulse_info, container.instrument_compilers, HARDWARE_CFG
     )
     qrm = container.instrument_compilers["qrm0"]
     assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
@@ -881,9 +1036,13 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
 
 
 def test_container_prepare(pulse_only_schedule):
-    container = compiler_container.CompilerContainer.from_mapping(
-        pulse_only_schedule, HARDWARE_MAPPING
+    sched = device_compile(pulse_only_schedule, DEVICE_CFG)
+    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, HARDWARE_CFG
     )
+    container.prepare()
+
     for instr in container.instrument_compilers.values():
         instr.prepare()
 
@@ -893,18 +1052,15 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
-def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
+def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
     sched = copy.deepcopy(mixed_schedule_with_acquisition)
     sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
     sched = device_compile(sched, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_mapping(
-        sched, HARDWARE_MAPPING
-    )
-    portclock_map = qb.generate_port_clock_to_device_map(HARDWARE_MAPPING)
-    qb._assign_pulse_and_acq_info_to_devices(
+    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    assign_pulse_and_acq_info_to_devices(
         schedule=sched,
+        hardware_cfg=HARDWARE_CFG,
         device_compilers=container.instrument_compilers,
-        portclock_mapping=portclock_map,
     )
     for instr in container.instrument_compilers.values():
         if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
@@ -919,11 +1075,14 @@ def test__determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisi
 def test_container_prepare_baseband(
     baseband_square_pulse_schedule, hardware_cfg_baseband
 ):
+    sched = device_compile(baseband_square_pulse_schedule, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_mapping(
-        baseband_square_pulse_schedule, hardware_cfg_baseband
+        sched, hardware_cfg_baseband
     )
-    for instr in container.instrument_compilers.values():
-        instr.prepare()
+    assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, hardware_cfg_baseband
+    )
+    container.prepare()
 
     assert (
         container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
@@ -932,24 +1091,26 @@ def test_container_prepare_baseband(
 
 
 def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
-    container = compiler_container.CompilerContainer.from_mapping(
-        pulse_only_schedule_no_lo, HARDWARE_MAPPING
+    sched = device_compile(pulse_only_schedule_no_lo, DEVICE_CFG)
+    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, HARDWARE_CFG
     )
-    container.compile(repetitions=10)
+    container.prepare()
 
     assert container.instrument_compilers["qrm1"].sequencers["seq0"].frequency == 100e6
 
 
 def test_container_add_from_type(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", QcmModule, HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", QcmModule, HARDWARE_CFG["qcm0"])
     assert "qcm0" in container.instrument_compilers
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
 
 def test_container_add_from_str(pulse_only_schedule):
     container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_MAPPING["qcm0"])
+    container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_CFG["qcm0"])
     assert "qcm0" in container.instrument_compilers
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
 
@@ -959,7 +1120,7 @@ def test_container_add_from_path(pulse_only_schedule):
     container.add_instrument_compiler(
         "qcm0",
         "quantify_scheduler.backends.qblox.instrument_compilers.QcmModule",
-        HARDWARE_MAPPING["qcm0"],
+        HARDWARE_CFG["qcm0"],
     )
     assert "qcm0" in container.instrument_compilers
     assert isinstance(container.instrument_compilers["qcm0"], QcmModule)
@@ -967,9 +1128,9 @@ def test_container_add_from_path(pulse_only_schedule):
 
 def test_from_mapping(pulse_only_schedule):
     container = compiler_container.CompilerContainer.from_mapping(
-        pulse_only_schedule, HARDWARE_MAPPING
+        pulse_only_schedule, HARDWARE_CFG
     )
-    for instr_name in HARDWARE_MAPPING.keys():
+    for instr_name in HARDWARE_CFG.keys():
         if instr_name == "backend":
             continue
         assert instr_name in container.instrument_compilers
@@ -992,6 +1153,11 @@ def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode)
     container = compiler_container.CompilerContainer.from_mapping(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
+    sched = device_compile(real_square_pulse_schedule, DEVICE_CFG)
+    assign_pulse_and_acq_info_to_devices(
+        sched, container.instrument_compilers, hardware_cfg_real_mode
+    )
+    container.prepare()
     qcm0 = container.instrument_compilers["qcm0"]
     for output, seq_name in enumerate(f"seq{i}" for i in range(3)):
         seq_settings = qcm0.sequencers[seq_name].settings
@@ -1009,12 +1175,16 @@ def test_assign_frequencies_baseband():
     q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
     q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
-    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
-    io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
-    io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
-    lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
-    lo1 = HARDWARE_MAPPING[io1_lo_name].get("frequency")
+    if0 = HARDWARE_CFG["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    if1 = HARDWARE_CFG["qcm0"]["complex_output_1"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    io0_lo_name = HARDWARE_CFG["qcm0"]["complex_output_0"]["lo_name"]
+    io1_lo_name = HARDWARE_CFG["qcm0"]["complex_output_1"]["lo_name"]
+    lo0 = HARDWARE_CFG[io0_lo_name].get("frequency")
+    lo1 = HARDWARE_CFG[io1_lo_name].get("frequency")
 
     assert if0 is not None
     assert if1 is None
@@ -1024,7 +1194,7 @@ def test_assign_frequencies_baseband():
     lo0 = q0_clock_freq - if0
     if1 = q1_clock_freq - lo1
 
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
@@ -1044,19 +1214,23 @@ def test_assign_frequencies_baseband_downconverter():
     q0_clock_freq = DEVICE_CFG["qubits"]["q0"]["params"]["mw_freq"]
     q1_clock_freq = DEVICE_CFG["qubits"]["q1"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["seq0"].get("interm_freq")
-    if1 = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["seq1"].get("interm_freq")
-    io0_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_0"]["lo_name"]
-    io1_lo_name = HARDWARE_MAPPING["qcm0"]["complex_output_1"]["lo_name"]
-    lo0 = HARDWARE_MAPPING[io0_lo_name].get("frequency")
-    lo1 = HARDWARE_MAPPING[io1_lo_name].get("frequency")
+    if0 = HARDWARE_CFG["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    if1 = HARDWARE_CFG["qcm0"]["complex_output_1"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    io0_lo_name = HARDWARE_CFG["qcm0"]["complex_output_0"]["lo_name"]
+    io1_lo_name = HARDWARE_CFG["qcm0"]["complex_output_1"]["lo_name"]
+    lo0 = HARDWARE_CFG[io0_lo_name].get("frequency")
+    lo1 = HARDWARE_CFG[io1_lo_name].get("frequency")
 
     assert if0 is not None
     assert if1 is None
     assert lo0 is None
     assert lo1 is not None
 
-    hw_mapping_downconverter = HARDWARE_MAPPING.copy()
+    hw_mapping_downconverter = HARDWARE_CFG.copy()
     hw_mapping_downconverter["qcm0"]["complex_output_0"]["downconverter"] = True
     hw_mapping_downconverter["qcm0"]["complex_output_1"]["downconverter"] = True
 
@@ -1080,10 +1254,14 @@ def test_assign_frequencies_rf():
     sched.add(X("q2"))
     sched.add(X("q3"))
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"].get("interm_freq")
-    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["seq1"].get("interm_freq")
-    lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
-    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"].get("lo_freq")
+    if0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    if1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    lo0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"].get("lo_freq")
 
     assert if0 is not None
     assert if1 is None
@@ -1093,13 +1271,15 @@ def test_assign_frequencies_rf():
     q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
     q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"]["interm_freq"]
-    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
+    if0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
+        "interm_freq"
+    ]
+    lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"]["lo_freq"]
 
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
@@ -1115,10 +1295,14 @@ def test_assign_frequencies_rf_downconverter():
     sched.add(X("q2"))
     sched.add(X("q3"))
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"].get("interm_freq")
-    if1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["seq1"].get("interm_freq")
-    lo0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"].get("lo_freq")
-    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"].get("lo_freq")
+    if0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    if1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"]["portclock_configs"][0].get(
+        "interm_freq"
+    )
+    lo0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"].get("lo_freq")
+    lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"].get("lo_freq")
 
     assert if0 is not None
     assert if1 is None
@@ -1128,20 +1312,22 @@ def test_assign_frequencies_rf_downconverter():
     q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
     q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
 
-    if0 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_0"]["seq0"]["interm_freq"]
-    lo1 = HARDWARE_MAPPING["qcm_rf0"]["complex_output_1"]["lo_freq"]
+    if0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
+        "interm_freq"
+    ]
+    lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"]["lo_freq"]
 
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
 
-    hw_mapping_downconverter = HARDWARE_MAPPING.copy()
+    hw_mapping_downconverter = HARDWARE_CFG.copy()
     hw_mapping_downconverter["qcm_rf0"]["complex_output_0"]["downconverter"] = True
     hw_mapping_downconverter["qcm_rf0"]["complex_output_1"]["downconverter"] = True
 
@@ -1168,7 +1354,7 @@ def test_markers():
     sched.add(Measure("q0"))
     sched.add(Measure("q2"))
 
-    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+    compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     program = compiled_schedule["compiled_instructions"]
 
     def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
@@ -1196,13 +1382,13 @@ def test_markers():
 
 
 def test_pulsar_rf_extract_from_mapping():
-    hw_map = HARDWARE_MAPPING["qcm_rf0"]
+    hw_map = HARDWARE_CFG["qcm_rf0"]
     types.PulsarRFSettings.extract_settings_from_mapping(hw_map)
 
 
 def test_cluster_settings(pulse_only_schedule):
     container = compiler_container.CompilerContainer.from_mapping(
-        pulse_only_schedule, HARDWARE_MAPPING
+        pulse_only_schedule, HARDWARE_CFG
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
     cluster_compiler.prepare()
@@ -1245,7 +1431,7 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
-        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+        ssro_sched, load_example_transmon_config(), HARDWARE_CFG
     )
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
@@ -1286,9 +1472,7 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     set_datadir(tmp_dir.name)
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
-    compiled_allxy_sched = qcompile(
-        sched, load_example_transmon_config(), HARDWARE_MAPPING
-    )
+    compiled_allxy_sched = qcompile(sched, load_example_transmon_config(), HARDWARE_CFG)
 
     assembly_valid(
         compiled_schedule=compiled_allxy_sched,
@@ -1331,7 +1515,7 @@ def test_acq_declaration_dict_append_mode(load_example_transmon_config):
 
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
-        ssro_sched, load_example_transmon_config(), HARDWARE_MAPPING
+        ssro_sched, load_example_transmon_config(), HARDWARE_CFG
     )
 
     with open(
@@ -1350,9 +1534,7 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     set_datadir(tmp_dir.name)
 
     allxy = allxy_sched("q0")
-    compiled_allxy_sched = qcompile(
-        allxy, load_example_transmon_config(), HARDWARE_MAPPING
-    )
+    compiled_allxy_sched = qcompile(allxy, load_example_transmon_config(), HARDWARE_CFG)
 
     with open(
         compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
@@ -1364,6 +1546,68 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
+
+
+def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_schedule):
+
+    old_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "lo_name": "lo1",
+                "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
+                "seq2": {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+    }
+
+    expected_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_name": "lo0",
+                "portclock_configs": [
+                    {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+                ],
+            },
+            "complex_output_1": {
+                "line_gain_db": 0,
+                "lo_name": "lo1",
+                "portclock_configs": [
+                    {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
+                    {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
+                ],
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+    }
+
+    # Test that the conversion works adequately
+    migrated_config = convert_hw_config_to_portclock_configs_spec(old_config)
+    assert migrated_config == expected_config
+
+    # Test that hardware_compile is converting automatically
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
+    sched = device_compile(sched, DEVICE_CFG)
+    with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
+        hardware_compile(sched, old_config)
 
 
 class TestLatencyCorrection:

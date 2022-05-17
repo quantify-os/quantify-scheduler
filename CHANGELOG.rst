@@ -10,6 +10,15 @@ Unreleased
 * Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
+    - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings (see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation)
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 0.7.0 Support for qblox-instruments v0.6.0, new BasicTransmonElement, change for triggers in Zhinst backend (2022-04-11)
 ------------------------------------------------------------------------------------------------------------------------
 

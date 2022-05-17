@@ -46,6 +46,15 @@ class CompilerContainer:
         self.instrument_compilers = {}
         """The compilers for the individual instruments."""
         self.generics: Set[str] = set()
+        """Set of generic instruments in the setup."""
+
+    def prepare(self):
+        """
+        Prepares all the instrument compilers contained in the class,
+        by running their respective :code:`prepare` methods.
+        """
+        for compiler in self.instrument_compilers.values():
+            compiler.prepare()
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
         """
@@ -62,8 +71,6 @@ class CompilerContainer:
             Dictionary containing all the compiled programs for each instrument. The key
             refers to the name of the instrument that the program belongs to.
         """
-        for compiler in self.instrument_compilers.values():
-            compiler.prepare()
 
         # for now name is hardcoded, but should be read from config.
         compiled_schedule = {}
