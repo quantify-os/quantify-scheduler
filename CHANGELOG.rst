@@ -8,7 +8,7 @@ Unreleased
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
-
+* Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
