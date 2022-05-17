@@ -36,7 +36,7 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
-from quantify_scheduler.backends.corrections import correct_pulse
+from quantify_scheduler.backends.corrections import _correct_pulse
 from quantify_scheduler.backends.qblox.helpers import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -784,7 +784,7 @@ def test_apply_distortion_corrections():  # TODO: move to tests/scheduler/backen
 
     # TODO: For better example, see PycQED:
     # https://github.com/DiCarloLab-Delft/PycQED_py3/blob/develop/pycqed/instrument_drivers/meta_instrument/lfilt_kernel_object.py
-    fir_filter_coeffs = np.linspace(0, 1, 10)
+    fir_filter_coeffs = np.linspace(0, 1, 10)  # TODO: Also test list(np.linspace(0, 1, 10))
 
     hw_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -926,20 +926,20 @@ def test_correct_pulse(
         ]
     )
 
-    correction_cfg = {
-        "filter_func": "scipy.signal.lfilter",
-        "input_var_name": "x",
-        "kwargs": {"b": filter_coefficients, "a": 1},
-    }
+    filter_func_name = "scipy.signal.lfilter"
+    input_var_name = "x"
+    kwargs_dict = {"b": filter_coefficients, "a": 1}
 
     pulse = SquarePulse(
         amp=220e-3, duration=duration, port="q0:fl", clock="cl0.baseband"
     )
 
-    corrected_pulse = correct_pulse(
+    corrected_pulse = _correct_pulse(
         pulse_data=pulse.data["pulse_info"][0],
         sampling_rate=constants.SAMPLING_RATE,
-        correction_cfg=correction_cfg,
+        filter_func_name=filter_func_name,
+        input_var_name=input_var_name,
+        kwargs_dict=kwargs_dict,
     )
 
     assert len(corrected_pulse.data["pulse_info"][0]["samples"]) >= 1
