@@ -54,6 +54,7 @@ extensions = [
     "scanpydoc.elegant_typehints",
     "sphinxcontrib.bibtex",
     "quantify_core.sphinx_extensions.notebook_to_jupyter_sphinx",
+    "autoapi.extension",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -232,6 +233,10 @@ texinfo_documents = [
 ]
 
 # -- Other Options -----------------------------------------------------
+
+autoapi_type = "python"
+autoapi_generate_api_docs = True
+autoapi_dirs = ["../quantify_scheduler"]
 
 # avoid duplicate label warning even when manual label has been used
 suppress_warnings = ["autosectionlabel.*"]

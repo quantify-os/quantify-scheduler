@@ -13,6 +13,7 @@ sphinx-jsonschema>=1.15
 sphinx-autobuild
 sphinx-togglebutton
 sphinx-autodoc-typehints==1.12.0 # required by either sphinx.ext.autodoc or sphinx.ext.napoleon (sphinx==4.5.0)
+sphinx-autoapi
 twine==1.14.0
 pytest
 pytest-runner
