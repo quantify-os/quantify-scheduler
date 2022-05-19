@@ -113,7 +113,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             )
 
         if self.output_mode == "imag":
-            self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
+            self.waveform_index0, self.waveform_index1 = idx_imag, idx_real
             self.amplitude_path0, self.amplitude_path1 = amp_imag, amp_real
         else:
             self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
