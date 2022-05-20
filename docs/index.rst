@@ -5,7 +5,7 @@ Welcome to Quantify's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
    :glob:
 
    installation
@@ -16,18 +16,6 @@ Welcome to Quantify's documentation!
    contributing
    authors
    changelog
-
-
-API Reference
-===================
-
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API reference
-
-   api_reference
 
 
 Indices and tables
