@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Pulse corrections for hardware compilation."""
+"""Pulse and acquisition corrections for hardware compilation."""
 import logging
 from typing import Any, Dict
 
@@ -79,8 +79,8 @@ def apply_distortion_corrections(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> Schedule:
     """
-    Apply distortion corrections to operations in the schedule, corrections defined via
-    the hardware configuration file. Example:
+    Apply distortion corrections to operations in the schedule, as defined via the
+    hardware configuration file. Example:
 
     .. code-block::
 
