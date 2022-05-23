@@ -16,7 +16,7 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse
 logger = logging.getLogger(__name__)
 
 
-def _correct_pulse(
+def distortion_correct_pulse(
     pulse_data: Dict[str, Any],
     sampling_rate: int,
     filter_func_name: str,
@@ -24,7 +24,28 @@ def _correct_pulse(
     kwargs_dict: Dict[str, Any],
 ) -> NumericalPulse:
     """
-    TODO: docstring
+    Sample pulse and apply filter function to the sample to distortion correct it.
+
+    Parameters
+    ----------
+    pulse_data
+        Definition of the pulse.
+    sampling_rate
+        The sampling rate used to generate the time axis values.
+    filter_func_name
+        The filter function path of the dynamically loaded filter function.
+        Example: ``"scipy.signal.lfilter"``.
+    input_var_name
+        The input variable name of the dynamically loaded filter function, most likely:
+        ``"x"``.
+    kwargs_dict
+        Dictionary containing kwargs for the dynamically loaded filter function.
+        Example: ``{"b": [0.0, 0.5, 1.0], "a": 1}``.
+
+    Returns
+    -------
+    :
+        The sampled, distortion corrected pulse wrapped in a NumericalPulse.
     """
 
     waveform_data = generate_waveform_data(
@@ -58,9 +79,11 @@ def apply_distortion_corrections(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> Schedule:
     """
-    Apply distortion corrections as defined in the hardware configuration file
+    Apply distortion corrections to operations in the schedule, corrections defined via
+    the hardware configuration file. Example:
 
     .. code-block::
+
         "distortion_corrections": {
             "q0:fl-cl0.baseband": {
                 "filter_func": "scipy.signal.lfilter",
@@ -72,14 +95,13 @@ def apply_distortion_corrections(
             }
         }
 
-    For waveforms in need of correcting (indicated by their port-clock combination) we
-    are *only* replacing the dict in "pulse_info" associated to that specific waveform
+    For pulses in need of correcting (indicated by their port-clock combination) we are
+    **only** replacing the dict in ``"pulse_info"`` associated to that specific
+    pulse. This means that we can have a combination of corrected (i.e., pre-sampled)
+    and uncorrected pulses in the same operation.
 
-    This means that we can have a combination of corrected (i.e., pre-sampled) and
-    uncorrected waveforms in the same operation
-
-    Also, we are not updating the "operation_repr" key, used to reference the operation
-    from the schedulable
+    Note that we are **not** updating the ``"operation_repr"`` key, used to reference
+    the operation from the schedulable.
 
     Parameters
     ----------
@@ -129,7 +151,7 @@ def apply_distortion_corrections(
                         f'"kwargs: {kwargs_dict}"'
                     )
 
-                corrected_pulse = _correct_pulse(
+                corrected_pulse = distortion_correct_pulse(
                     pulse_data=pulse_data,
                     sampling_rate=constants.SAMPLING_RATE,
                     filter_func_name=filter_func_name,

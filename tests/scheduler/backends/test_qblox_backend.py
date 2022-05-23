@@ -36,7 +36,7 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
-from quantify_scheduler.backends.corrections import _correct_pulse
+from quantify_scheduler.backends.corrections import distortion_correct_pulse
 from quantify_scheduler.backends.qblox.helpers import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -890,7 +890,7 @@ def test_apply_distortion_corrections():  # TODO: move to tests/scheduler/backen
 
 
 @pytest.mark.parametrize("duration", list(np.arange(start=1e-9, stop=16e-9, step=1e-9)))
-def test__correct_pulse(
+def test_distortion_correct_pulse(
     duration,
 ):  # TODO: move to tests/scheduler/backends/corrections.py
     filter_coefficients = [
@@ -934,7 +934,7 @@ def test__correct_pulse(
         amp=220e-3, duration=duration, port="q0:fl", clock="cl0.baseband"
     )
 
-    corrected_pulse = _correct_pulse(
+    corrected_pulse = distortion_correct_pulse(
         pulse_data=pulse.data["pulse_info"][0],
         sampling_rate=constants.SAMPLING_RATE,
         filter_func_name=filter_func_name,
