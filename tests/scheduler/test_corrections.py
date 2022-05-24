@@ -53,6 +53,7 @@ def test_apply_distortion_corrections():
                 "filter_func": "scipy.signal.lfilter",
                 "input_var_name": "x",
                 "kwargs": {"b": fir_filter_coeffs, "a": 1},
+                "clipping_values": [-2.5, 2.5],
             },
         },
         "qcm0": {

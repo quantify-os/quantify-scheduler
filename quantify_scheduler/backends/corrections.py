@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Pulse and acquisition corrections for hardware compilation."""
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -22,6 +22,7 @@ def distortion_correct_pulse(
     filter_func_name: str,
     input_var_name: str,
     kwargs_dict: Dict[str, Any],
+    clipping_values: Optional[Tuple[float]] = None,
 ) -> NumericalPulse:
     """
     Sample pulse and apply filter function to the sample to distortion correct it.
@@ -41,6 +42,8 @@ def distortion_correct_pulse(
     kwargs_dict
         Dictionary containing kwargs for the dynamically loaded filter function.
         Example: ``{"b": [0.0, 0.5, 1.0], "a": 1}``.
+    clipping_values
+        TODO
 
     Returns
     -------
@@ -56,6 +59,11 @@ def distortion_correct_pulse(
     filter_func = import_python_object_from_string(filter_func_name)
     kwargs = {input_var_name: waveform_data, **kwargs_dict}
     corrected_waveform_data = filter_func(**kwargs)
+
+    if clipping_values is not None and len(clipping_values) == 2:
+        corrected_waveform_data = np.clip(
+            corrected_waveform_data, clipping_values[0], clipping_values[1]
+        )
 
     if corrected_waveform_data.size == 1:  # Interpolation requires two sample points
         corrected_waveform_data = np.append(
@@ -118,8 +126,10 @@ def apply_distortion_corrections(
     Raises
     ------
     KeyError
-        This exception is raised when elements are missing in distortion correction
-        config for a port-clock combination.
+        when elements are missing in distortion correction config for a port-clock
+        combination.
+    KeyError
+        when clipping values are supplied but not two values exactly, min and max.
     """
 
     distortion_corrections_key = "distortion_corrections"
@@ -141,14 +151,22 @@ def apply_distortion_corrections(
                 filter_func_name = correction_cfg.get("filter_func", None)
                 input_var_name = correction_cfg.get("input_var_name", None)
                 kwargs_dict = correction_cfg.get("kwargs", None)
+                clipping_values = correction_cfg.get("clipping_values", None)
 
                 if None in (filter_func_name, input_var_name, kwargs_dict):
                     raise KeyError(
                         f"One or more elements missing in distortion correction config "
                         f'for "{portclock_key}"\n\n'
-                        f'"filter_func: {filter_func_name}"\n'
-                        f'"input_var_name: {input_var_name}"\n'
-                        f'"kwargs: {kwargs_dict}"'
+                        f'"filter_func": {filter_func_name}\n'
+                        f'"input_var_name": {input_var_name}\n'
+                        f'"kwargs": {kwargs_dict}'
+                    )
+
+                if clipping_values and len(clipping_values) != 2:
+                    raise KeyError(
+                        f'Clipping values for "{portclock_key}" should contain two '
+                        "values, min and max.\n"
+                        f'"clipping_values": {clipping_values}'
                     )
 
                 corrected_pulse = distortion_correct_pulse(
@@ -157,6 +175,7 @@ def apply_distortion_corrections(
                     filter_func_name=filter_func_name,
                     input_var_name=input_var_name,
                     kwargs_dict=kwargs_dict,
+                    clipping_values=clipping_values,
                 )
 
                 schedule.operations[operation_repr].data["pulse_info"][
