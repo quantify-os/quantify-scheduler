@@ -77,10 +77,41 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
     def generate_data(self, wf_dict: Dict[str, Any]):
         """
-        Generates the data and adds them to the wf_dict (if not already present).
+        Generates the data and adds them to the ``wf_dict`` (if not already present).
 
-        If output_mode == "imag", this moves the real-valued data to be produced on
-        path1 instead of path0.
+        By default, real-valued data is produced on path0 and imaginary data on path1.
+        
+        .. math::
+            \\underbrace{\\begin{bmatrix}
+            \\cos\\omega t & -\\sin\\omega t \\\\
+            \\sin\\omega t & \\phantom{-}\\cos\\omega t \\end{bmatrix}}_\\text{NCO}
+            \\begin{bmatrix}
+            I \\\\
+            Q \\end{bmatrix} =
+            \\begin{bmatrix}
+            I_\\text{IF} \\\\
+            Q_\\text{IF} \\end{bmatrix} =
+            \\begin{matrix}
+            \\overbrace{ I \\cdot \\cos\\omega t - Q \\cdot\\sin\\omega t}^{\\small \\textbf{real} \\Rightarrow \\text{path0}} \\\\
+            \\underbrace{I \\cdot \\sin\\omega t + Q \\cdot\\cos\\omega t}_{\\small \\textbf{imag} \\Rightarrow \\text{path1}} \\end{matrix}
+
+        If ``output_mode == "imag"``, this moves the real-valued data to be produced on
+        path1 instead of path0. We multiply Q by -1 (via ``amp_imag``) to undo the 
+        90-degree shift resulting from swapping NCO paths.
+
+        .. math::
+            \\underbrace{\\begin{bmatrix}
+            \\cos\\omega t & -\\sin\\omega t \\\\
+            \\sin\\omega t & \\phantom{-}\\cos\\omega t \\end{bmatrix}}_\\text{NCO}
+            \\begin{bmatrix}
+            -Q \\\\
+            I \\end{bmatrix} =
+            \\begin{bmatrix}
+            - \\\\
+            I_\\text{IF} \\end{bmatrix} =
+            \\begin{matrix}
+            \\\\
+            \\underbrace{-Q \\cdot \\sin\\omega t + I \\cdot\\cos\\omega t}_{\\small \\textbf{real} \\Rightarrow \\text{path1}} \\end{matrix}
 
         Parameters
         ----------
@@ -93,7 +124,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         ValueError
             Data is complex (has an imaginary component), but the output_mode is not set
             to "complex".
-        """
+        """  # pylint: disable=line-too-long
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
             op_info.data, sampling_rate=constants.SAMPLING_RATE
@@ -114,7 +145,10 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
         if self.output_mode == "imag":
             self.waveform_index0, self.waveform_index1 = idx_imag, idx_real
-            self.amplitude_path0, self.amplitude_path1 = amp_imag, amp_real
+            self.amplitude_path0, self.amplitude_path1 = (
+                -amp_imag,  # Multiply by -1 to undo 90-degree shift
+                amp_real,
+            )
         else:
             self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
             self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
