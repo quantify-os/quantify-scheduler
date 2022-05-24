@@ -42,8 +42,6 @@ with open(cfg_f, "r", encoding="utf-8") as f:
 
 def test_apply_distortion_corrections():
 
-    # TODO: For better example, see PycQED:
-    # https://github.com/DiCarloLab-Delft/PycQED_py3/blob/develop/pycqed/instrument_drivers/meta_instrument/lfilt_kernel_object.py
     fir_filter_coeffs = np.linspace(
         0, 1, 10
     )  # TODO: Also test list(np.linspace(0, 1, 10))
@@ -115,6 +113,10 @@ def test_apply_distortion_corrections():
         for operation_repr, operation in full_program.operations.items()
     )
 
+    assert_mssg = (
+        "Only replace waveform components in need of correcting by numerical pulse;"
+        f" operations: {operations_pretty_repr}"
+    )
     assert [
         [None],
         [
@@ -128,25 +130,24 @@ def test_apply_distortion_corrections():
     ] == [
         [pulse_info["wf_func"] for pulse_info in operation.data["pulse_info"]]
         for operation in full_program.operations.values()
-    ], (
-        "Only replace waveform components in need of correcting by numerical pulse;"
-        f" operations: {operations_pretty_repr}"
-    )
+    ], assert_mssg
 
-    assert [Reset, NumericalPulse, RampPulse] == [
-        type(operation) for operation in full_program.operations.values()
-    ], (
+    assert_mssg = (
         "Distortion correction converts to operation type of first entry in pulse_info;"
         f" operations: {operations_pretty_repr}"
     )
+    assert [Reset, NumericalPulse, RampPulse] == [
+        type(operation) for operation in full_program.operations.values()
+    ], assert_mssg
 
-    assert [True, False, True] == [
-        operation_repr == str(operation)
-        for operation_repr, operation in full_program.operations.items()
-    ], (
+    assert_mssg = (
         "Key no longer matches str(operation) if first pulse_info entry was corrected;"
         f" operations: {operations_pretty_repr}"
     )
+    assert [True, False, True] == [
+        operation_repr == str(operation)
+        for operation_repr, operation in full_program.operations.items()
+    ], assert_mssg
 
 
 @pytest.mark.parametrize("duration", list(np.arange(start=1e-9, stop=16e-9, step=1e-9)))
