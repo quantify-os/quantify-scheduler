@@ -38,7 +38,7 @@ def get_operation_strategy(
         The instantiated strategy object.
     """
     if operation.data["port"] is None:
-        if operation.name == "ShiftClockPhase":
+        if operation.data.get("virtual_z_phase"):
             return virtual.NcoPhaseShiftStrategy(operation)
         return virtual.IdleStrategy(operation)
 
