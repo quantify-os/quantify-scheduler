@@ -43,7 +43,8 @@ def distortion_correct_pulse(
         Dictionary containing kwargs for the dynamically loaded filter function.
         Example: ``{"b": [0.0, 0.5, 1.0], "a": 1}``.
     clipping_values
-        TODO
+        Min and max value to which the corrected pulse will be clipped, depending on
+        allowed output values for the instrument.
 
     Returns
     -------
@@ -99,9 +100,13 @@ def apply_distortion_corrections(
                 "kwargs": {
                     "b": [0.0, 0.5, 1.0],
                     "a": 1
-                }
+                },
+                "clipping_values": [-2.5, 2.5]
             }
         }
+
+    Clipping values are the boundaries to which the corrected pulses will be clipped,
+    these are optional to supply.
 
     For pulses in need of correcting (indicated by their port-clock combination) we are
     **only** replacing the dict in ``"pulse_info"`` associated to that specific
