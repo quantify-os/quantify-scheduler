@@ -217,6 +217,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         """
         Constructor for a Cluster compiler object.
@@ -238,6 +239,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             name=name,
             total_play_time=total_play_time,
             hw_mapping=hw_mapping,
+            latency_corrections=latency_corrections,
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
 
