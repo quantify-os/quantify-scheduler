@@ -106,7 +106,7 @@ def apply_distortion_corrections(
         }
 
     Clipping values are the boundaries to which the corrected pulses will be clipped,
-    these are optional to supply.
+    upon exceeding, these are optional to supply.
 
     For pulses in need of correcting (indicated by their port-clock combination) we are
     **only** replacing the dict in ``"pulse_info"`` associated to that specific
