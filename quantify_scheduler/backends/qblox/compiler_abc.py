@@ -1025,7 +1025,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             for target in portclock_configs:
-                print(target)
                 portclock = (target["port"], target["clock"])
 
                 if portclock in self.portclocks_with_data:
