@@ -97,13 +97,12 @@ def compile_sched_latency_correction():
         correction: float,
         port: str,
         clock: str,
-        load_example_transmon_config,
     ):
         """
-        TODO: add type for load_example_transmon config
         Constructs hardware config for the latency correction implementation.
 
         """
+
         portclock_key = f"{port}-{clock}"
         hardware_cfg = {
             "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -117,12 +116,12 @@ def compile_sched_latency_correction():
                 },
             },
         }
-        device_cfg = load_example_transmon_config()
+
         sched = Schedule("single_gate_experiment")
         sched.add(X(qubit))
         compiled_sched = qcompile(
             sched,
-            device_cfg=device_cfg,
+            device_cfg=DEVICE_CFG,
             hardware_cfg=hardware_cfg,
         )
         return compiled_sched
@@ -1678,7 +1677,6 @@ class TestLatencyCorrection:
         qubit,
         correction,
         expected,
-        load_example_transmon_config,
         compiled_schedule_latency_correction,
     ):
 
@@ -1687,7 +1685,6 @@ class TestLatencyCorrection:
         Latency correction is set for the correct portclock key
         by checking against the value set in QASM instructions.
         """
-
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
         compiled_sched = compiled_schedule_latency_correction(
@@ -1695,7 +1692,6 @@ class TestLatencyCorrection:
             clock=clock,
             qubit=qubit,
             correction=correction,
-            load_example_transmon_config=load_example_transmon_config,
         )
 
         filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
@@ -1736,7 +1732,6 @@ class TestLatencyCorrection:
                 clock=clock,
                 qubit=qubit,
                 correction=correction,
-                load_example_transmon_config=load_example_transmon_config,
             )
 
         assert any([warning in mssg for mssg in caplog.messages])

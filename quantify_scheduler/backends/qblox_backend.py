@@ -42,7 +42,7 @@ def hardware_compile(
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
     )
-    # TODO warning for latency
+
     if hardware_cfg != converted_hw_config:
         warnings.warn(
             "The provided hardware config adheres to a specification "
