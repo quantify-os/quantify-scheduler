@@ -90,21 +90,13 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 
 # --------- Test fixtures ---------
-@pytest.fixture(name="compiled_schedule_latency_correction")
-def compile_sched_latency_correction():
-    def _compile_sched_latency_correction(
-        qubit: str,
-        correction: float,
-        port: str,
-        clock: str,
-    ):
-        """
-        Constructs hardware config for the latency correction implementation.
 
-        """
 
+@pytest.fixture(name="hardware_cfg_latency_corrections")
+def make_hardware_cfg_latency_corrections():
+    def _make_hardware_cfg_latency_corrections(port, clock, correction):
         portclock_key = f"{port}-{clock}"
-        hardware_cfg = {
+        return {
             "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
             "latency_corrections": {f"{portclock_key}": correction},
             "qcm0": {
@@ -117,16 +109,7 @@ def compile_sched_latency_correction():
             },
         }
 
-        sched = Schedule("single_gate_experiment")
-        sched.add(X(qubit))
-        compiled_sched = qcompile(
-            sched,
-            device_cfg=DEVICE_CFG,
-            hardware_cfg=hardware_cfg,
-        )
-        return compiled_sched
-
-    return _compile_sched_latency_correction
+    return _make_hardware_cfg_latency_corrections
 
 
 @pytest.fixture
@@ -1665,9 +1648,9 @@ class TestLatencyCorrection:
     @pytest.mark.parametrize(
         "port, clock, qubit, correction, expected",
         [
-            ("q1:mw", "q1.01", "q1", 0, 0),
+            ("q0:mw", "q0.01", "q0", 0, 0),
             ("q0:mw", "q0.01", "q0", 4e-9, 4),
-            ("q1:mw", "q1.01", "q1", 5e-9, 5),
+            ("q0:mw", "q0.01", "q0", 5e-9, 5),
         ],
     )
     def test_apply_latency_corrections_valid(
@@ -1677,7 +1660,8 @@ class TestLatencyCorrection:
         qubit,
         correction,
         expected,
-        compiled_schedule_latency_correction,
+        hardware_cfg_latency_corrections,
+        mock_setup,
     ):
 
         """
@@ -1687,11 +1671,17 @@ class TestLatencyCorrection:
         """
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
-        compiled_sched = compiled_schedule_latency_correction(
-            port=port,
-            clock=clock,
-            qubit=qubit,
-            correction=correction,
+        sched = Schedule("Single Gate Experiment")
+        sched.add(X(qubit))
+        hardware_cfg = hardware_cfg_latency_corrections(
+            port=port, clock=clock, correction=correction
+        )
+        sched.add_resources([ClockResource(clock, freq=5e9)])
+        quantum_device = mock_setup["quantum_device"]
+        compiled_sched = qcompile(
+            sched,
+            device_cfg=quantum_device.generate_device_config(),
+            hardware_cfg=hardware_cfg,
         )
 
         filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
@@ -1708,8 +1698,8 @@ class TestLatencyCorrection:
     def test_apply_latency_corrections_warning(
         self,
         caplog,
-        load_example_transmon_config,
-        compiled_schedule_latency_correction,
+        hardware_cfg_latency_corrections,
+        mock_setup,
     ):
         """
 
@@ -1718,22 +1708,27 @@ class TestLatencyCorrection:
         """
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
-        port = "q1:mw"
-        clock = "q1.01"
-        qubit = "q1"
+        port = "q0:mw"
+        clock = "q0.01"
+        qubit = "q0"
         correction = 5e-9
+        sched = Schedule("Single Gate Experiment")
+        sched.add(X(qubit))
+        hardware_cfg = hardware_cfg_latency_corrections(
+            port=port, clock=clock, correction=correction
+        )
+        sched.add_resources([ClockResource(clock, freq=5e9)])
+        quantum_device = mock_setup["quantum_device"]
 
         warning = f"not a multiple of {constants.GRID_TIME}"
         with caplog.at_level(
             logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
         ):
-            compiled_schedule_latency_correction(
-                port=port,
-                clock=clock,
-                qubit=qubit,
-                correction=correction,
+            qcompile(
+                sched,
+                device_cfg=quantum_device.generate_device_config(),
+                hardware_cfg=hardware_cfg,
             )
-
         assert any([warning in mssg for mssg in caplog.messages])
 
 
