@@ -153,35 +153,41 @@ def hardware_cfg_real_mode():
             "ref": "internal",
             "real_output_0": {
                 "line_gain_db": 0,
+                "lo_name": "lo0",
                 "portclock_configs": [
                     {
-                        "port": "LP",
-                        "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6,
                     },
                 ],
             },
             "real_output_1": {
                 "line_gain_db": 0,
+                "lo_name": "lo1",
                 "portclock_configs": [
                     {
-                        "port": "RP",
-                        "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "port": "q1:mw",
+                        "clock": "q1.01",
+                        "interm_freq": 50e6,
                     }
                 ],
             },
             "real_output_2": {
                 "line_gain_db": 0,
+                "lo_name": "lo2",
                 "portclock_configs": [
                     {
-                        "port": "TB",
-                        "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "port": "q2:mw",
+                        "clock": "q2.01",
+                        "interm_freq": 50e6,
                     }
                 ],
             },
         },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+        "lo2": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -500,31 +506,33 @@ def real_square_pulse_schedule():
     sched.add(
         SquarePulse(
             amp=2.0,
-            duration=2.5e-6,
-            port="LP",
-            clock=BasebandClockResource.IDENTITY,
+            duration=2.4e-8,
+            port="q0:mw",
+            clock="q0.01",
             t0=1e-6,
         )
     )
     sched.add(
         SquarePulse(
             amp=1.0,
-            duration=2.0e-6,
-            port="RP",
-            clock=BasebandClockResource.IDENTITY,
+            duration=2.0e-8,
+            port="q1:mw",
+            clock="q1.01",
             t0=0.5e-6,
         )
     )
     sched.add(
         SquarePulse(
             amp=1.2,
-            duration=3.5e-6,
-            port="TB",
-            clock=BasebandClockResource.IDENTITY,
+            duration=3.6e-8,
+            port="q2:mw",
+            clock="q2.01",
             t0=0,
         )
     )
-    determine_absolute_timing(sched)
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+    sched.add_resources([ClockResource("q2.01", freq=5e9)])
     return sched
 
 
@@ -948,8 +956,23 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
     full_program = qcompile(
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
-    for seq in (f"seq{i}" for i in range(3)):
-        assert seq in full_program.compiled_instructions["qcm0"]
+    for i in range(3):
+        fname = full_program.compiled_instructions["qcm0"][f"seq{i}"]["seq_fn"]
+        with open(fname, "r") as fp:
+            seq_instructions = json.load(fp)
+
+        for key, value in seq_instructions["waveforms"].items():
+            data, index = value["data"], value["index"]
+            if index == 0:
+                assert (np.array(data) == 1).all()
+            if index == 1:
+                assert (np.array(data) == 0).all()
+
+        if i % 2 == 0:
+            play_sequence = "0,1"
+        else:
+            play_sequence = "1,0"
+        assert re.search(f"play\s*{play_sequence}", seq_instructions["program"])
 
 
 # --------- Test QASMProgram class ---------
