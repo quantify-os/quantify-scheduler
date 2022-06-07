@@ -11,7 +11,9 @@ from quantify_scheduler.device_under_test.transmon_element import (
     TransmonElement,
     BasicTransmonElement,
 )
-from quantify_scheduler.device_under_test.sudden_nz_edge import SuddenNetZeroEdge
+from quantify_scheduler.device_under_test.composite_square_edge import (
+    CompositeSquareEdge,
+)
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
@@ -56,7 +58,7 @@ def mock_setup(request, tmp_test_data_dir):
     q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
     q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
 
-    edge_q2_q3 = SuddenNetZeroEdge(
+    edge_q2_q3 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q3.name
     )
 

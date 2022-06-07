@@ -18,7 +18,9 @@ from quantify_scheduler.resources import BasebandClockResource
 class ShiftClockPhase(Operation):
     """An operation that shifts the phase of a clock by a specified amount."""
 
-    def __init__(self, phase: float, clock: str, t0: float = 0, data: Optional[dict] = None):
+    def __init__(
+        self, phase: float, clock: str, t0: float = 0, data: Optional[dict] = None
+    ):
         """
         Create a new instance of ShiftClockPhase.
 
@@ -854,3 +856,76 @@ class NumericalPulse(Operation):
         """Provides a string representation of the Pulse."""
         pulse_info = self.data["pulse_info"][0]
         return self._get_signature(pulse_info)
+
+
+class CustomCompositePulse(Operation):
+    def __init__(
+        self,
+        square_amp: float,
+        square_duration: float,
+        square_port: str,
+        square_clock: str,
+        virt_z_parent_qubit_phase: float,
+        virt_z_parent_qubit_clock: str,
+        virt_z_child_qubit_phase: float,
+        virt_z_child_qubit_clock: str,
+        t0: float = 0,
+        data: Optional[dict] = None,
+    ):
+        """
+        This is an example custom composite pulse to implement a CZ gate. It applies the
+        square pulse and then corrects for the phase shifts on both the qubits.
+
+        Parameters
+        ----------
+        square_amp
+            Amplitude of the square envelope.
+        square_duration
+            The square pulse duration in seconds.
+        square_port
+            Port of the pulse, must be capable of playing a complex waveform.
+        square_clock
+            Clock used to modulate the pulse.
+        virt_z_parent_qubit_phase
+            The phase shift in degrees applied to the parent qubit.
+        virt_z_parent_qubit_clock
+            The clock of which to shift the phase applied to the parent qubit.
+        virt_z_child_qubit_phase
+            The phase shift in degrees applied to the child qubit.
+        virt_z_child_qubit_clock
+            The clock of which to shift the phase applied to the child qubit.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        super().__init__("CustomCompositePulse")
+        # Start the flux pulse
+        self.add_pulse(
+            SquarePulse(
+                amp=square_amp,
+                duration=square_duration,
+                port=square_port,
+                clock=square_clock,
+                t0=t0,
+            )
+        )
+        # Also apply the phase correction on the parent qubit
+        self.add_pulse(
+            ShiftClockPhase(
+                phase=virt_z_parent_qubit_phase,
+                clock=virt_z_parent_qubit_clock,
+                t0=t0,
+            )
+        )
+        # Apply the phase correction on the child qubit
+        self.add_pulse(
+            ShiftClockPhase(
+                phase=virt_z_child_qubit_phase,
+                clock=virt_z_child_qubit_clock,
+                t0=t0,
+            )
+        )
