@@ -75,12 +75,12 @@ class TestIdleStrategy:
 class TestNcoPhaseShiftStrategy:
     def test_constructor(self):
         virtual.NcoPhaseShiftStrategy(
-            types.OpInfo(name="", data={"phase": 123.456}, timing=0)
+            types.OpInfo(name="", data={"virtual_z_phase": 123.456}, timing=0)
         )
 
     def test_operation_info_property(self):
         # arrange
-        op_info = types.OpInfo(name="", data={"phase": 123.456}, timing=0)
+        op_info = types.OpInfo(name="", data={"virtual_z_phase": 123.456}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act
@@ -91,7 +91,7 @@ class TestNcoPhaseShiftStrategy:
 
     def test_generate_data(self):
         # arrange
-        op_info = types.OpInfo(name="", data={"phase": 123.456}, timing=0)
+        op_info = types.OpInfo(name="", data={"virtual_z_phase": 123.456}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act and assert
@@ -117,7 +117,7 @@ class TestNcoPhaseShiftStrategy:
 
         # arrange
         qasm = empty_qasm_program_qcm
-        op_info = types.OpInfo(name="", data={"phase": phase}, timing=0)
+        op_info = types.OpInfo(name="", data={"virtual_z_phase": phase}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act
