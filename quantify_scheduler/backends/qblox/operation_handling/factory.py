@@ -37,6 +37,12 @@ def get_operation_strategy(
     :
         The instantiated strategy object.
     """
+
+    # TODO: remove
+    print("get_operation_strategy")
+    print(repr(operation.data))
+    print()
+
     if operation.data["port"] is None:
         if operation.data.get("virtual_z_phase"):
             return virtual.NcoPhaseShiftStrategy(operation)
@@ -44,6 +50,7 @@ def get_operation_strategy(
 
     if operation.is_acquisition:
         return _get_acquisition_strategy(operation)
+
     return _get_pulse_strategy(
         operation, instruction_generated_pulses_enabled, output_mode
     )
@@ -72,6 +79,12 @@ def _get_acquisition_strategy(
 def _get_pulse_strategy(
     operation: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
 ) -> base.IOperationStrategy:
+
+    # TODO: remove
+    print("_get_pulse_strategy")
+    print(repr(operation.data))
+    print()
+
     """Handles the logic for determining the correct pulse type."""
     if instruction_generated_pulses_enabled:
         wf_func = operation.data["wf_func"]

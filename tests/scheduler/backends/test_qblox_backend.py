@@ -1674,3 +1674,62 @@ def _strip_comments(program: str):
         line = line.rstrip()  # remove trailing whitespace
         stripped_program.append(line)
     return stripped_program
+
+
+from quantify_scheduler.device_under_test.composite_square_edge import (
+    CompositeSquareEdge,
+)
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.operations.gate_library import CZ
+
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
+
+def test_compile_composite_pulse(tmp_test_data_dir):
+    q2b = BasicTransmonElement("q2b")  # pylint: disable=invalid-name
+    q3b = BasicTransmonElement("q3b")  # pylint: disable=invalid-name
+
+    edge_q2b_q3b = CompositeSquareEdge(
+        parent_element_name=q2b.name, child_element_name=q3b.name
+    )
+
+    device = QuantumDevice("device")
+    device.add_element(q2b)
+    device.add_element(q3b)
+    device.add_edge(edge_q2b_q3b)
+
+    sched = Schedule("composite_pulse_experiment")
+    sched.add_resources(
+        [ClockResource("q2b.01", freq=5e9), ClockResource("q3b.01", freq=50e6)]
+    )
+    sched.add(CZ(qC="q2b", qT="q3b"))
+
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"{qubit}:fl", "clock": clock}
+                    for qubit in ["q2b", "q3b"]
+                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                ]
+            },
+        },
+    }
+
+    set_datadir(tmp_test_data_dir)
+
+    sched = qcompile(
+        schedule=sched,
+        device_cfg=device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    # TODO: remove
+    print(device.generate_device_config().edges)
+    print()

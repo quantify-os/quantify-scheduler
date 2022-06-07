@@ -22,8 +22,7 @@ def tmp_test_data_dir(tmp_path_factory):
     """
     This is a fixture which uses the pytest tmp_path_factory fixture
     and extends it by copying the entire contents of the test_data
-    directory. After the test session is finished, then it calls
-    the `cleaup_tmp` method which tears down the fixture and cleans up itself.
+    directory. After the test session is finished, it cleans up the temporary dir.
     """
 
     # disable this if you want to look at the generated datafiles for debugging.
@@ -33,7 +32,7 @@ def tmp_test_data_dir(tmp_path_factory):
         yield temp_data_dir
         shutil.rmtree(temp_data_dir, ignore_errors=True)
     else:
-        set_datadir(os.path.join(pathlib.Path.home(), "quantify_schedule_test"))
+        set_datadir(os.path.join(pathlib.Path.home(), "quantify_scheduler_test"))
         print(f"Data directory set to: {get_datadir()}")
         yield get_datadir()
 

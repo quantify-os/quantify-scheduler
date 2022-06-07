@@ -1,7 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 
-# pylint: disable=too-few-public-methods
 from typing import Dict, Any
 
 from qcodes.instrument import InstrumentChannel
