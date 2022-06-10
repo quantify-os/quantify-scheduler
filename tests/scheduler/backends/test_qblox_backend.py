@@ -1703,7 +1703,7 @@ def test_compile_composite_pulse(tmp_test_data_dir):
 
     sched = Schedule("composite_pulse_experiment")
     sched.add_resources(
-        [ClockResource("q2b.01", freq=5e9), ClockResource("q3b.01", freq=50e6)]
+        [ClockResource("q2b.01", freq=5e6), ClockResource("q3b.01", freq=5e7)]
     )
     sched.add(CZ(qC="q2b", qT="q3b"))
 
