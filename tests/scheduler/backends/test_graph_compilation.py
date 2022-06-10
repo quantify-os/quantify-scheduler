@@ -32,7 +32,6 @@ def test_compilation_backend_empty_graph_raises():
         comp_sched = empty_backend.compile(schedule=empty_sched, cfg=empty_cfg)
 
 
-@pytest.mark.xfail(reason="NotImplemented")
 def test_compilation_backend_trivial_graph_compiles():
 
     trivial_graph = CompilationBackend()

@@ -1,6 +1,7 @@
 import networkx as nx
 from typing import Any, Callable, Dict, List, Optional, Union, Type
 from quantify_scheduler.structure import DataStructure
+from quantify_scheduler import Schedule, CompiledSchedule
 
 
 class CompilationNode(DataStructure):
@@ -38,7 +39,7 @@ class CompilationNode(DataStructure):
 
 class CompilationBackend(nx.DiGraph):
     """
-    A compilation backend defines is defined by a directed acyclic graph.
+    A compilation backend is defined by a directed acyclic graph.
     In this graph, nodes represent modular compilation steps.
 
     Definition
@@ -69,8 +70,35 @@ class CompilationBackend(nx.DiGraph):
         self.add_node("input")
         self.add_node("output")
 
-    def compile(self, schedule, cfg):
-        raise NotImplementedError
+    def compile(self, schedule: Schedule, cfg: dict) -> CompiledSchedule:
+        """
+        Compile a schedule using the backend and the information provided in the config
+
+        Parameters
+        ----------
+        Schedule
+            The schedule to compile
+        cfg
+            A dictionary containing the information needed to compile the schedule.
+            Nodes in this backend specify what key they need information from in this
+            dictionary.
+        """
+
+        path = nx.shortest_path(self, "input", "output")
+        # exclude the input and output from the path to use to compile
+        for node in path[1:-1]:
+            if node.config_key is not None:
+                node_config = cfg[node.config_key]
+                if node.config_validator is not None:
+                    node_config = node.config_validator.parse_obj(node_config)
+            else:
+                node_config = None
+
+            schedule = node.compilation_func(schedule=schedule, config=node_config)
+
+        compiled_schedule = CompiledSchedule(schedule)
+
+        return compiled_schedule
 
 
 class CompilationError(RuntimeError):
