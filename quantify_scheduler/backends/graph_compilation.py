@@ -1,3 +1,5 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
 import networkx as nx
 from typing import Any, Callable, Dict, List, Optional, Union, Type
 from quantify_scheduler.structure import DataStructure

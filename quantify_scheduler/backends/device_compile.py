@@ -1,3 +1,5 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
 from quantify_scheduler.backends.graph_compilation import (
     CompilationNode,
     CompilationBackend,
