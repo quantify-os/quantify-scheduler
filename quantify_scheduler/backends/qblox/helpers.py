@@ -40,7 +40,7 @@ def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     :
         A list containing all the inner dictionaries containing the specified key.
     """
-    dicts_found = list()
+    dicts_found = []
     if isinstance(d, dict):
         if key in d:
             dicts_found.append(d)
@@ -78,7 +78,7 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
         A list containing tuples representing the port and clock combinations found
         in the dictionary.
     """
-    port_clocks = list()
+    port_clocks = []
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
     for inner_dict in dicts_with_port:
         if "port" in inner_dict:
@@ -429,7 +429,7 @@ def generate_port_clock_to_device_map(
         the same device.
     """
 
-    portclock_map = dict()
+    portclock_map = {}
     for device_name, device_info in hardware_cfg.items():
         if not isinstance(device_info, dict):
             continue
@@ -508,35 +508,39 @@ def assign_pulse_and_acq_info_to_devices(
             )
 
             if port is None:
-                for (map_port, map_clock), dev in portclock_mapping.items():
+                for (map_port, map_clock), device_name in portclock_mapping.items():
                     if map_clock == clock:
-                        device_compilers[dev].add_pulse(
-                            map_port, clock, pulse_info=combined_data
+                        device_compilers[device_name].add_pulse(
+                            port=map_port, clock=clock, pulse_info=combined_data
                         )
             else:
                 if (port, clock) not in portclock_mapping:
                     raise KeyError(
-                        f"Could not assign pulse data to device. The combination"
-                        f" of port {port} and clock {clock} could not be found "
+                        f"Could not assign pulse data to device. The combination "
+                        f"of port {port} and clock {clock} could not be found "
                         f"in hardware configuration.\n\nAre both the port and clock "
                         f"specified in the hardware configuration?\n\n"
                         f"Relevant operation:\n{combined_data}."
                     )
-                dev = portclock_mapping[(port, clock)]
-                device_compilers[dev].add_pulse(port, clock, pulse_info=combined_data)
+                device_name = portclock_mapping[(port, clock)]
+                device_compilers[device_name].add_pulse(
+                    port=port, clock=clock, pulse_info=combined_data
+                )
 
         for acq_data in op_data.data["acquisition_info"]:
             if "t0" in acq_data:
                 acq_start_time = operation_start_time + acq_data["t0"]
             else:
                 acq_start_time = operation_start_time
+
             port = acq_data["port"]
             clock = acq_data["clock"]
+
             if port is None:
                 continue
 
             hashed_dict = without(acq_data, ["t0", "waveforms"])
-            hashed_dict["waveforms"] = list()
+            hashed_dict["waveforms"] = []
             for acq in acq_data["waveforms"]:
                 hashed_dict["waveforms"].append(without(acq, ["t0"]))
 
@@ -545,16 +549,19 @@ def assign_pulse_and_acq_info_to_devices(
                 data=acq_data,
                 timing=acq_start_time,
             )
+
             if (port, clock) not in portclock_mapping:
                 raise KeyError(
-                    f"Could not assign acquisition data to device. The combination"
-                    f" of port {port} and clock {clock} could not be found "
+                    f"Could not assign acquisition data to device. The combination "
+                    f"of port {port} and clock {clock} could not be found "
                     f"in hardware configuration.\n\nAre both the port and clock "
-                    f"specified in the hardware configuration?\n\nRelevant operation:\n"
-                    f"{combined_data}."
+                    f"specified in the hardware configuration?\n\n"
+                    f"Relevant operation:\n{combined_data}."
                 )
-            dev = portclock_mapping[(port, clock)]
-            device_compilers[dev].add_acquisition(port, clock, acq_info=combined_data)
+            device_name = portclock_mapping[(port, clock)]
+            device_compilers[device_name].add_acquisition(
+                port=port, clock=clock, acq_info=combined_data
+            )
 
 
 def convert_hw_config_to_portclock_configs_spec(
@@ -594,7 +601,7 @@ def convert_hw_config_to_portclock_configs_spec(
             new_io_cfg["portclock_configs"] = io_cfg.get("portclock_configs", [])
 
             for entry, value in io_cfg.items():
-                if not re.match("^seq\d+$", entry):
+                if not re.match(r"^seq\d+$", entry):
                     new_io_cfg[entry] = value
                     continue
                 new_io_cfg["portclock_configs"].append(io_cfg[entry])
