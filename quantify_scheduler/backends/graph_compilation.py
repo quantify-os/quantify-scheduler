@@ -38,6 +38,33 @@ class CompilationNode(DataStructure):
     def __str__(self):
         return self.name
 
+    def compile(self, schedule: Schedule, config: dict) -> Schedule:
+        """
+        Performs the compilation step specified by the compilation function and
+        the configuration provided to this node.
+
+        Parameters
+        ----------
+        Schedule
+            The schedule to compile
+        config
+            A dictionary containing the information needed to compile the schedule.
+            The `config_key` attribute of this node specifies the information to use
+            from this dictionary.
+        """
+        if self.config_key is not None:
+            node_config = config[self.config_key]
+            if self.config_validator is not None:
+                node_config = self.config_validator.parse_obj(node_config)
+        else:
+            node_config = None
+
+        # using positional arguments as not all compilation functions have the right
+        # function signature.
+        # schedule = self.compilation_func(schedule=schedule, config=node_config)
+        schedule = self.compilation_func(schedule, node_config)
+        return schedule
+
 
 class CompilationBackend(nx.DiGraph):
     """
@@ -72,7 +99,7 @@ class CompilationBackend(nx.DiGraph):
         self.add_node("input")
         self.add_node("output")
 
-    def compile(self, schedule: Schedule, cfg: dict) -> CompiledSchedule:
+    def compile(self, schedule: Schedule, config: dict) -> Schedule:
         """
         Compile a schedule using the backend and the information provided in the config
 
@@ -80,27 +107,20 @@ class CompilationBackend(nx.DiGraph):
         ----------
         Schedule
             The schedule to compile
-        cfg
+        config
             A dictionary containing the information needed to compile the schedule.
             Nodes in this backend specify what key they need information from in this
             dictionary.
         """
-
-        path = nx.shortest_path(self, "input", "output")
+        try:
+            path = nx.shortest_path(self, "input", "output")
+        except nx.exception.NetworkXNoPath as e:
+            raise CompilationError("No path between the input and output nodes")
         # exclude the input and output from the path to use to compile
         for node in path[1:-1]:
-            if node.config_key is not None:
-                node_config = cfg[node.config_key]
-                if node.config_validator is not None:
-                    node_config = node.config_validator.parse_obj(node_config)
-            else:
-                node_config = None
+            schedule = node.compile(schedule=schedule, config=config)
 
-            schedule = node.compilation_func(schedule=schedule, config=node_config)
-
-        compiled_schedule = CompiledSchedule(schedule)
-
-        return compiled_schedule
+        return schedule
 
 
 class CompilationError(RuntimeError):
