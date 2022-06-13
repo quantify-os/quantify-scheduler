@@ -871,7 +871,7 @@ class CustomCompositePulse(Operation):
         virt_z_child_qubit_phase: float,
         virt_z_child_qubit_clock: str,
         t0: float = 0,
-        data: Optional[dict] = None,
+        data: Optional[dict] = None,  # TODO FIXME?
     ):
         """
         This is an example custom composite pulse to implement a CZ gate. It applies the

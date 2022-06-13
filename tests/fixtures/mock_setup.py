@@ -91,6 +91,9 @@ def mock_setup(tmp_test_data_dir):
     q1.freq_01(6.4e9)
     q1.freq_12(5.05e9)
 
+    edge_q2_q3.cz.q2_phase_correction(44)
+    edge_q2_q3.cz.q3_phase_correction(63)
+
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q0)
     quantum_device.add_element(q1)

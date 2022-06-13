@@ -6,9 +6,11 @@ from typing import Dict, Any
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import ManualParameter
+
 from quantify_scheduler.backends.circuit_to_device import OperationCompilationConfig
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.device_under_test.edge import Edge
+from quantify_scheduler.resources import BasebandClockResource
 
 
 class CZ(InstrumentChannel):
@@ -89,7 +91,7 @@ class CompositeSquareEdge(Edge):
                     + "pulse_library.CustomCompositePulse",
                     factory_kwargs={
                         "square_port": self.parent_device_element.ports.flux(),
-                        "square_clock": "cl0.baseband",
+                        "square_clock": BasebandClockResource.IDENTITY,
                         "square_amp": self.cz.square_amp(),
                         "square_duration": self.cz.square_duration(),
                         "virt_z_parent_qubit_phase": self.cz.parameters[
