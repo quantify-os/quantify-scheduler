@@ -122,7 +122,6 @@ def test_dummy_nodes_add_operation():
     assert len(sched.schedulables) == 2
 
 
-@pytest.mark.xfail(reason="NotImplemented")
 def test_merging_graphs():
     """
     here we test that we can easily create a new backend by "composing" two graphs.
@@ -157,7 +156,7 @@ def test_merging_graphs():
         "output",
     ]
 
-    comp_graph = nx.compose(first_graph, second_graph)
+    comp_graph = first_graph.compose(first_graph, second_graph)
     assert nx.shortest_path(comp_graph, "input", "output") == [
         "input",
         dummy_node_A,

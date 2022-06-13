@@ -122,6 +122,23 @@ class CompilationBackend(nx.DiGraph):
 
         return schedule
 
+    def compose(self, G: nx.DiGraph, H: nx.DiGraph) -> nx.DiGraph:
+        """
+        Create a new CompilationBackend composed of two compilation backends.
+        Connects the two graphs by connected nodes connected to the output of G to
+        nodes connected to the input of H.
+        """
+        output_nodes_G = list(G.predecessors("output"))
+        G.remove_node("output")
+        input_nodes_H = list(H.successors("input"))
+        H.remove_node("input")
+
+        composed_graph = nx.compose(G, H)
+        for output_node in output_nodes_G:
+            for input_node in input_nodes_H:
+                composed_graph.add_edge(output_node, input_node)
+        return composed_graph
+
 
 class CompilationError(RuntimeError):
     pass
