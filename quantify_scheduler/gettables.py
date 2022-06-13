@@ -18,8 +18,13 @@ from typing import Any, Callable, Dict, Tuple, Union, List, Optional
 
 import logging
 
+import json
 import numpy as np
+import os
+from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 from qcodes import Parameter
+import time
+import zipfile
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import qcompile
@@ -294,6 +299,56 @@ class ScheduleGettable:
                 return_data.append(np.angle(vals, deg=True))
         logger.debug(f"Returning {len(return_data)} values.")
         return tuple(return_data)
+
+    def generate_diagnostics_report(
+        self, execute_get: bool = False, update: bool = False
+    ) -> str:
+        """
+        Create a report that saves all information contained in this `ScheduleGettable` and save it in the quantify
+        datadir with its own tuid. The information in the report includes the generated schedule, device config,
+        hardware config and snapshot of the instruments.
+
+        Parameters
+        ----------
+        execute_get
+            When True, execute `self.get()` before generating the report
+        update
+            When True, update all parameters before saving the snapshot
+
+        Returns
+        -------
+            returns the tuid of the generated report
+        """
+        tuid = gen_tuid()
+        if execute_get:
+            self.get()
+
+        dev_config = self.quantum_device.generate_device_config().dict()
+        hw_config = self.quantum_device.generate_hardware_config()
+
+        gettable_config = {
+            "repetitions": self.quantum_device.cfg_sched_repetitions(),
+            "schedule_kwargs": self.schedule_kwargs,
+            "evaluated_schedule_kwargs": self._evaluated_sched_kwargs,
+        }
+
+        sched = self.schedule_function(
+            **self._evaluated_sched_kwargs,
+            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        )
+
+        filename = os.path.join(get_datadir(), f"{gen_tuid()}.zip")
+        with zipfile.ZipFile(
+            filename, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+        ) as zip_file:
+            zip_file.writestr("time.txt", str(time.time()))
+            zip_file.writestr("dev_config.json", json.dumps(dev_config))
+            zip_file.writestr("hw_config.json", json.dumps(hw_config))
+            zip_file.writestr("gettable.json", json.dumps(gettable_config))
+            zip_file.writestr("schedule.json", sched.to_json())
+            zip_file.writestr("snapshot.json", json.dumps(snapshot(update=update)))
+
+        return tuid
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:

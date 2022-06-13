@@ -10,6 +10,7 @@ Unreleased
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
 * Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
+* Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file.
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
