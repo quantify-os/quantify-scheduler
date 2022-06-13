@@ -63,10 +63,12 @@ from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
+    IdlePulse,
     RampPulse,
     ShiftClockPhase,
     SquarePulse,
 )
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -839,9 +841,19 @@ def test_compile_measure(duplicate_measure_schedule):
     assert len(wf_and_prog["weights"]) == 0
 
 
-def test_compile_shift_clock_phase(mock_setup, hardware_cfg_baseband):
+@pytest.mark.parametrize(
+    "operation, instruction_to_check",
+    [
+        (IdlePulse(duration=64e-9), "wait       64"),
+        (Reset("q1"), "wait       65532"),
+        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+    ],
+)
+def test_compile_clock_operations(
+    mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
+):
     sched = Schedule("shift_clock_phase_only")
-    sched.add(ShiftClockPhase(clock="q1.01", phase=180.0))
+    sched.add(operation)
     sched.add_resources(
         [ClockResource("q1.01", freq=5e9)]
     )  # Clocks need to be manually added at this stage.
@@ -856,7 +868,7 @@ def test_compile_shift_clock_phase(mock_setup, hardware_cfg_baseband):
     with open(filename, "r") as file:
         program_lines = json.load(file)["program"].splitlines()
 
-    assert any(["set_ph_delta" in line for line in program_lines]), "\n".join(
+    assert any([instruction_to_check in line for line in program_lines]), "\n".join(
         [line for line in program_lines]
     )
 

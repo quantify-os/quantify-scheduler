@@ -508,6 +508,7 @@ def assign_pulse_and_acq_info_to_devices(
             )
 
             if port is None:
+                # Distribute clock operations to all sequencers utilizing that clock
                 for (map_port, map_clock), device_name in portclock_mapping.items():
                     if map_clock == clock:
                         device_compilers[device_name].add_pulse(
