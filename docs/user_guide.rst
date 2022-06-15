@@ -484,3 +484,13 @@ and the resulting dataset can be analyzed using
 .. rubric:: Footnotes
 
 .. [*] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
+
+
+Planned functionality
+---------------------
+
+.. toctree::
+   :maxdepth: 2
+   :glob:
+
+   compilation_backends
