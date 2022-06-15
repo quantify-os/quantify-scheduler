@@ -859,6 +859,11 @@ class NumericalPulse(Operation):
 
 
 class CustomCompositePulse(Operation):
+    """
+    This is an example custom composite pulse to implement a CZ gate. It applies the
+    square pulse and then corrects for the phase shifts on both the qubits.
+    """
+
     def __init__(
         self,
         square_amp: float,
@@ -870,11 +875,9 @@ class CustomCompositePulse(Operation):
         virt_z_child_qubit_phase: float,
         virt_z_child_qubit_clock: str,
         t0: float = 0,
-        data: Optional[dict] = None,  # TODO FIXME?
     ):
         """
-        This is an example custom composite pulse to implement a CZ gate. It applies the
-        square pulse and then corrects for the phase shifts on both the qubits.
+        Creates an instance of CustomCompositePulse.
 
         Parameters
         ----------
@@ -897,12 +900,9 @@ class CustomCompositePulse(Operation):
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data
-            The operation's dictionary, by default None
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
         """
         super().__init__("CustomCompositePulse")
+
         # Start the flux pulse
         self.add_pulse(
             SquarePulse(
