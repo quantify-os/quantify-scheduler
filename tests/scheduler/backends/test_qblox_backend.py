@@ -533,6 +533,7 @@ def real_square_pulse_schedule():
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     sched.add_resources([ClockResource("q1.01", freq=5e9)])
     sched.add_resources([ClockResource("q2.01", freq=5e9)])
+    determine_absolute_timing(sched)
     return sched
 
 
