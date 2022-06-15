@@ -1,12 +1,32 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
 """
-Code to set up a mock setup for use in examples and testing
+Code to set up a mock setup for use in tutorials and testing.
 """
 
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import (
+    TransmonElement,
+    BasicTransmonElement,
+)
+from quantify_scheduler.device_under_test.sudden_nz_edge import SuddenNetZeroEdge
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_core.measurement.control import MeasurementControl
 
-def set_up_mock_transmon_setup(include_legacy_transmons: bool = False):
+
+def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
+    """
+    Sets up a system containing 5 transmon qubits connected in a star shape.
+
+    .. code-block::
+
+        q0    q1
+          \  /
+           q2
+          /  \
+        q3    q4
+
+    """
 
     # importing from init_mock will execute all the code in the module which
     # will instantiate all the instruments in the mock setup.
@@ -15,7 +35,7 @@ def set_up_mock_transmon_setup(include_legacy_transmons: bool = False):
         name="instrument_coordinator", add_default_generic_icc=False
     )
 
-    if include_legacy_transmons:
+    if include_legacy_transmon:
         q0 = TransmonElement("q0")  # pylint: disable=invalid-name
         q1 = TransmonElement("q1")  # pylint: disable=invalid-name
     else:
@@ -24,9 +44,20 @@ def set_up_mock_transmon_setup(include_legacy_transmons: bool = False):
 
     q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
     q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
+    q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
+
+    edge_q0_q2 = SuddenNetZeroEdge(
+        parent_element_name=q0.name, child_element_name=q2.name
+    )
+    edge_q1_q2 = SuddenNetZeroEdge(
+        parent_element_name=q1.name, child_element_name=q2.name
+    )
 
     edge_q2_q3 = SuddenNetZeroEdge(
         parent_element_name=q2.name, child_element_name=q3.name
+    )
+    edge_q2_q4 = SuddenNetZeroEdge(
+        parent_element_name=q2.name, child_element_name=q4.name
     )
 
     q0.ro_pulse_amp(0.08)
@@ -47,6 +78,7 @@ def set_up_mock_transmon_setup(include_legacy_transmons: bool = False):
     quantum_device.add_element(q1)
     quantum_device.add_element(q2)
     quantum_device.add_element(q3)
+    quantum_device.add_element(q4)
     quantum_device.add_edge(edge_q2_q3)
 
     quantum_device.instr_measurement_control(meas_ctrl.name)
@@ -61,6 +93,7 @@ def set_up_mock_transmon_setup(include_legacy_transmons: bool = False):
         q1.close()
         q2.close()
         q3.close()
+        q4.close()
         edge_q2_q3.close()
         quantum_device.close()
 

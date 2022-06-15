@@ -4,15 +4,7 @@ import pathlib
 
 import pytest
 from quantify_core.data.handling import get_datadir, set_datadir
-from quantify_core.measurement.control import MeasurementControl
-
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import (
-    TransmonElement,
-    BasicTransmonElement,
-)
-from quantify_scheduler.device_under_test.sudden_nz_edge import SuddenNetZeroEdge
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,66 +36,19 @@ def mock_setup(request, tmp_test_data_dir):
     """
     set_datadir(tmp_test_data_dir)
 
-    # importing from init_mock will execute all the code in the module which
-    # will instantiate all the instruments in the mock setup.
-    meas_ctrl = MeasurementControl("meas_ctrl")
-    instrument_coordinator = InstrumentCoordinator(
-        name="instrument_coordinator", add_default_generic_icc=False
-    )
+    # moved to a separate module to allow using the mock_setup in tutorials.
+    mock_setup = set_up_mock_transmon_setup(include_legacy_transmon=True)
 
-    q0 = TransmonElement("q0")  # pylint: disable=invalid-name
-    q1 = TransmonElement("q1")  # pylint: disable=invalid-name
-    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
-    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
-
-    edge_q2_q3 = SuddenNetZeroEdge(
-        parent_element_name=q2.name, child_element_name=q3.name
-    )
-
-    q0.ro_pulse_amp(0.08)
-    q0.ro_freq(8.1e9)
-    q0.freq_01(5.8e9)
-    q0.freq_12(5.45e9)
-    q0.mw_amp180(0.314)
-    q0.mw_pulse_duration(20e-9)
-    q0.ro_pulse_delay(20e-9)
-    q0.ro_acq_delay(20e-9)
-
-    q1.ro_freq(8.64e9)
-    q1.freq_01(6.4e9)
-    q1.freq_12(5.05e9)
-
-    quantum_device = QuantumDevice(name="quantum_device")
-    quantum_device.add_element(q0)
-    quantum_device.add_element(q1)
-    quantum_device.add_element(q2)
-    quantum_device.add_element(q3)
-    quantum_device.add_edge(edge_q2_q3)
-
-    quantum_device.instr_measurement_control(meas_ctrl.name)
-    quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
-
-    def cleanup_instruments():
-        # NB only close the instruments this fixture is responsible for to avoid
-        # hard to debug side effects
-        meas_ctrl.close()
-        instrument_coordinator.close()
-        q0.close()
-        q1.close()
-        q2.close()
-        q3.close()
-        edge_q2_q3.close()
-        quantum_device.close()
-
-    request.addfinalizer(cleanup_instruments)
+    request.addfinalizer(mock_setup["cleanup_instruments"])
 
     return {
-        "meas_ctrl": meas_ctrl,
-        "instrument_coordinator": instrument_coordinator,
-        "q0": q0,
-        "q1": q1,
-        "q2": q2,
-        "q3": q3,
-        "edge_q2_q3": edge_q2_q3,
-        "quantum_device": quantum_device,
+        "meas_ctrl": mock_setup["meas_ctrl"],
+        "instrument_coordinator": mock_setup["instrument_coordinator"],
+        "q0": mock_setup["q0"],
+        "q1": mock_setup["q1"],
+        "q2": mock_setup["q2"],
+        "q3": mock_setup["q3"],
+        "q4": mock_setup["q4"],
+        "edge_q2_q3": mock_setup["edge_q2_q3"],
+        "quantum_device": mock_setup["quantum_device"],
     }
