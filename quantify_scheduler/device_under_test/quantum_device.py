@@ -84,11 +84,44 @@ class QuantumDevice(Instrument):
             "quantum-device layer to a hardware backend.",
             parameter_class=ManualParameter,
             vals=validators.Dict(),
+            initial_value=None,
         )
 
     @property
     def compilation_config(self) -> Dict[str, Any]:
-        pass
+        """
+        Generates a compilation config for use with a
+        :class:`~quantify-scheduler.backends.graph_compilation.CompilationBackend`.
+        """
+
+        hardware_config = self.generate_hardware_config()
+
+        # here manual support needs to be added for the different hardware backends
+        if hardware_config == None:
+            backend = "quantify_scheduler.backends.device_compile.DeviceCompile"
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        ):
+            # the old qblox hardware compile
+            # FIXME
+            backend = "Qblox"
+
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+        ):  # the old zhinst hw_compile function
+            pass
+        else:
+            # FIXME
+            backend = "Zhinst"
+
+        compilation_config = {
+            "backend": backend,
+            "device_cfg": self.generate_device_config(),
+        }
+
+        return compilation_config
 
     def generate_hardware_config(self) -> Dict[str, Any]:
         """

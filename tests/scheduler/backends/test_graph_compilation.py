@@ -165,3 +165,16 @@ def test_merging_graphs():
         dummy_node_D,
         "output",
     ]
+
+
+@pytest.mark.xfail(reason="NotImplemented")
+def test_quantum_device_selects_right_backend():
+    """
+    Based on what is specified in the hardware config, the compilation config should
+    select the right backend to compile to.
+
+    (June 2022)Eventually, the separation between the hardware and device config should
+    disappear as these are all "just" nodes. However, for backwards compatibility and
+    migration, this seems to be the most sensible way forward.
+    """
+    raise NotImplementedError

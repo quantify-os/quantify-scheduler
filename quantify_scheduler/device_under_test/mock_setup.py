@@ -36,8 +36,23 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
     )
 
     if include_legacy_transmon:
+        # used in parts of the old test suite
         q0 = TransmonElement("q0")  # pylint: disable=invalid-name
         q1 = TransmonElement("q1")  # pylint: disable=invalid-name
+
+        q0.ro_pulse_amp(0.08)
+        q0.ro_freq(8.1e9)
+        q0.freq_01(5.8e9)
+        q0.freq_12(5.45e9)
+        q0.mw_amp180(0.314)
+        q0.mw_pulse_duration(20e-9)
+        q0.ro_pulse_delay(20e-9)
+        q0.ro_acq_delay(20e-9)
+
+        q1.ro_freq(8.64e9)
+        q1.freq_01(6.4e9)
+        q1.freq_12(5.05e9)
+
     else:
         q0 = BasicTransmonElement("q0")
         q1 = BasicTransmonElement("q1")
@@ -59,19 +74,6 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
     edge_q2_q4 = SuddenNetZeroEdge(
         parent_element_name=q2.name, child_element_name=q4.name
     )
-
-    q0.ro_pulse_amp(0.08)
-    q0.ro_freq(8.1e9)
-    q0.freq_01(5.8e9)
-    q0.freq_12(5.45e9)
-    q0.mw_amp180(0.314)
-    q0.mw_pulse_duration(20e-9)
-    q0.ro_pulse_delay(20e-9)
-    q0.ro_acq_delay(20e-9)
-
-    q1.ro_freq(8.64e9)
-    q1.freq_01(6.4e9)
-    q1.freq_12(5.05e9)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q0)
@@ -104,6 +106,7 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
         "q1": q1,
         "q2": q2,
         "q3": q3,
+        "q4": q4,
         "edge_q2_q3": edge_q2_q3,
         "quantum_device": quantum_device,
         "cleanup_instruments": cleanup_instruments,

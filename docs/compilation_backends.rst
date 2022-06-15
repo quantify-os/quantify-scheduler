@@ -1,3 +1,14 @@
+.. jupyter-kernel::
+  :id: compilation_backends
+
+.. jupyter-execute::
+    :hide-code:
+
+    # Make output easier to read
+    from rich import pretty
+    pretty.install()
+
+
 ====================
 Compilation backends
 ====================
@@ -13,14 +24,6 @@ Using a compilation backend
 
 In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule. This is done using a :class:`~.backends.graph_compilation.CompilationBackend`. The :meth:`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
 
-Because the information required to
-
-
-
-
-
-
-
 
 
 
@@ -34,6 +37,47 @@ The backend compiles the schedule into a CompiledSchedule suitable for execution
 
 Current option -> modify ScheduleGettable to select either of the two compilation modes (based on a parameter in the QuantumDevice).
 Wrap the existing configs.
+
+Because the information required to
+
+.. jupyter-execute::
+
+    import numpy as np
+    from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup
+    import quantify_scheduler.schedules.timedomain_schedules as tds
+
+    mock_setup = set_up_mock_transmon_setup()
+    quantum_device = mock_setup['quantum_device']
+
+
+
+
+
+.. jupyter-execute::
+
+    echo_schedule = tds.echo_sched(times=np.arange(0, 60e-6, 1.5e-6), qubit="q0", repetitions=1024)
+    config = quantum_device.compilation_config
+
+    print(config['backend'])
+
+
+
+.. jupyter-execute::
+
+    from quantify_scheduler.backends.device_compile import DeviceCompile
+
+    backend = DeviceCompile()
+    comp_sched = backend.compile(schedule=echo_schedule, config=config)
+
+    comp_sched
+
+
+
+
+
+
+
+
 
 
 
@@ -80,3 +124,10 @@ Showing the steps in the backend to understand what happens in the compilation.
 
 
 Backend internals
+
+
+
+.. jupyter-execute::
+    :hide-code:
+
+    %reset -f
