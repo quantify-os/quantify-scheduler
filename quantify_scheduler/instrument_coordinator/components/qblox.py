@@ -398,6 +398,7 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 settings_entry
             )
             self._configure_global_settings(module_settings)
+
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"], "sync_en", False
@@ -421,7 +422,7 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
                 "sequence",
-                seq_cfg["seq_fn"],
+                seq_cfg["sequence"],
             )
 
         self._arm_all_sequencers_in_program(program)
@@ -550,6 +551,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                     f"Invalid program. Attempting to access non-existing sequencer "
                     f'with name "{seq_name}".'
                 )
+
             if "settings" in seq_cfg:
                 seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
                 self._configure_sequencer_settings(
@@ -559,7 +561,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
                 "sequence",
-                seq_cfg["seq_fn"],
+                seq_cfg["sequence"],
             )
 
         self._arm_all_sequencers_in_program(program)
