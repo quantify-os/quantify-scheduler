@@ -153,41 +153,35 @@ def hardware_cfg_real_mode():
             "ref": "internal",
             "real_output_0": {
                 "line_gain_db": 0,
-                "lo_name": "lo0",
                 "portclock_configs": [
                     {
-                        "port": "q0:mw",
-                        "clock": "q0.01",
-                        "interm_freq": 50e6,
+                        "port": "LP",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": False,
                     },
                 ],
             },
             "real_output_1": {
                 "line_gain_db": 0,
-                "lo_name": "lo1",
                 "portclock_configs": [
                     {
-                        "port": "q1:mw",
-                        "clock": "q1.01",
-                        "interm_freq": 50e6,
+                        "port": "RP",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": False,
                     }
                 ],
             },
             "real_output_2": {
                 "line_gain_db": 0,
-                "lo_name": "lo2",
                 "portclock_configs": [
                     {
-                        "port": "q2:mw",
-                        "clock": "q2.01",
-                        "interm_freq": 50e6,
+                        "port": "TB",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": False,
                     }
                 ],
             },
         },
-        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
-        "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
-        "lo2": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     }
 
 
@@ -506,33 +500,30 @@ def real_square_pulse_schedule():
     sched.add(
         SquarePulse(
             amp=2.0,
-            duration=2.4e-8,
-            port="q0:mw",
-            clock="q0.01",
+            duration=2.5e-6,
+            port="LP",
+            clock=BasebandClockResource.IDENTITY,
             t0=1e-6,
         )
     )
     sched.add(
         SquarePulse(
             amp=1.0,
-            duration=2.0e-8,
-            port="q1:mw",
-            clock="q1.01",
+            duration=2.0e-6,
+            port="RP",
+            clock=BasebandClockResource.IDENTITY,
             t0=0.5e-6,
         )
     )
     sched.add(
         SquarePulse(
             amp=1.2,
-            duration=3.6e-8,
-            port="q2:mw",
-            clock="q2.01",
+            duration=3.5e-6,
+            port="TB",
+            clock=BasebandClockResource.IDENTITY,
             t0=0,
         )
     )
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    sched.add_resources([ClockResource("q1.01", freq=5e9)])
-    sched.add_resources([ClockResource("q2.01", freq=5e9)])
     determine_absolute_timing(sched)
     return sched
 
@@ -1007,7 +998,9 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
             play_sequence = "0,1"
         else:
             play_sequence = "1,0"
-        assert re.search(f"play\s*{play_sequence}", seq_instructions["program"])
+        assert re.search(
+            f"play\s*{play_sequence}", seq_instructions["program"]
+        ), "Real signals are NOT routed to the correct output paths"
 
 
 # --------- Test QASMProgram class ---------
