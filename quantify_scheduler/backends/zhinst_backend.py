@@ -14,6 +14,10 @@ import numpy as np
 import pandas as pd
 from zhinst.toolkit.helpers import Waveform
 
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationNode,
+    CompilationBackend,
+)
 from quantify_scheduler import enums
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
@@ -1740,3 +1744,24 @@ def construct_waveform_table(
             )
             numerical_wf_dict[row["waveform_id"]] = corr_wf
     return numerical_wf_dict
+
+
+zhinst_hardware_compile = CompilationNode(
+    name="zhinst_hardware_compile",
+    compilation_func=compile_backend,
+    config_key="hardware_cfg",
+    config_validator=None,
+)
+
+
+class ZhinstBackend(CompilationBackend):
+    """
+    Backend for compiling a schedule from the Quantum-device layer to the
+    instructions suitable for ZurichInstruments hardware.
+    """
+
+    def __init__(self, incoming_graph_data=None, **attr):
+        super().__init__(incoming_graph_data=incoming_graph_data, **attr)
+        self.add_node(zhinst_hardware_compile)
+        self.add_edge("input", zhinst_hardware_compile)
+        self.add_edge(zhinst_hardware_compile, "output")
