@@ -1061,13 +1061,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             )
 
         for portclock, pulse_data_list in self._pulses.items():
-
-            # TODO: remove
-            print("\ndistribute_data")
-            for pulse_data in pulse_data_list:
-                print(portclock, pulse_data)
-            print()
-
             for seq in self.sequencers.values():
                 instr_gen_pulses = seq.instruction_generated_pulses_enabled
                 if seq.portclock == portclock or (

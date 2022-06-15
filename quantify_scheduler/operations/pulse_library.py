@@ -42,7 +42,6 @@ class ShiftClockPhase(Operation):
                     {
                         "wf_func": None,
                         "t0": t0,
-                        "virtual_z_phase": phase,
                         "phase": phase,
                         "clock": clock,
                         "port": None,

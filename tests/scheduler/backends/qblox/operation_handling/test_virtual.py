@@ -117,7 +117,7 @@ class TestNcoPhaseShiftStrategy:
 
         # arrange
         qasm = empty_qasm_program_qcm
-        op_info = types.OpInfo(name="", data={"virtual_z_phase": phase}, timing=0)
+        op_info = types.OpInfo(name="", data={"phase": phase}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act

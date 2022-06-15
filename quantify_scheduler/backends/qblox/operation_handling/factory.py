@@ -16,14 +16,14 @@ from quantify_scheduler.backends.qblox.operation_handling import (
 
 
 def get_operation_strategy(
-    operation: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
+    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
 ) -> base.IOperationStrategy:
     """
     Determines and instantiates the correct strategy object.
 
     Parameters
     ----------
-    operation
+    operation_info
         The operation we are building the strategy for.
     instruction_generated_pulses_enabled
         Specifies if instruction generated pulses (e.g. staircase through offsets) are
@@ -37,59 +37,57 @@ def get_operation_strategy(
     :
         The instantiated strategy object.
     """
-
-    # TODO: remove
-    print("get_operation_strategy")
-    print(repr(operation.data))
-    print()
-
-    if operation.data["port"] is None:
-        if operation.data.get("virtual_z_phase"):
-            return virtual.NcoPhaseShiftStrategy(operation)
-        return virtual.IdleStrategy(operation)
-
-    if operation.is_acquisition:
-        return _get_acquisition_strategy(operation)
+    if operation_info.is_acquisition:
+        return _get_acquisition_strategy(operation_info)
 
     return _get_pulse_strategy(
-        operation, instruction_generated_pulses_enabled, output_mode
+        operation_info, instruction_generated_pulses_enabled, output_mode
     )
 
 
 def _get_acquisition_strategy(
-    operation: OpInfo,
+    operation_info: OpInfo,
 ) -> acquisitions.AcquisitionStrategyPartial:
     """Handles the logic for determining the correct acquisition type."""
-    protocol = operation.data["protocol"]
+
+    protocol = operation_info.data["protocol"]
     if protocol in ("trace", "ssb_integration_complex"):
-        if protocol == "trace" and operation.data["bin_mode"] == BinMode.APPEND.value:
+        if (
+            protocol == "trace"
+            and operation_info.data["bin_mode"] == BinMode.APPEND.value
+        ):
             raise ValueError(
                 f"Trace acquisition does not support APPEND bin mode.\n\n"
-                f"{repr(operation)} caused this exception to occur."
+                f"{repr(operation_info)} caused this exception to occur."
             )
-        return acquisitions.SquareAcquisitionStrategy(operation)
+        return acquisitions.SquareAcquisitionStrategy(operation_info)
+
     if protocol == "weighted_integrated_complex":
-        return acquisitions.WeightedAcquisitionStrategy(operation)
+        return acquisitions.WeightedAcquisitionStrategy(operation_info)
+
     raise ValueError(
         f'Unknown acquisition protocol "{protocol}" encountered in '
-        f"Qblox backend when processing acquisition {repr(operation)}."
+        f"Qblox backend when processing acquisition {repr(operation_info)}."
     )
 
 
 def _get_pulse_strategy(
-    operation: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
+    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
 ) -> base.IOperationStrategy:
-
-    # TODO: remove
-    print("_get_pulse_strategy")
-    print(repr(operation.data))
-    print()
-
     """Handles the logic for determining the correct pulse type."""
+
+    if operation_info.data["port"] is None:
+        if operation_info.data.get("phase"):
+            return virtual.NcoPhaseShiftStrategy(operation_info)
+        return virtual.IdleStrategy(operation_info)
+
     if instruction_generated_pulses_enabled:
-        wf_func = operation.data["wf_func"]
+        wf_func = operation_info.data["wf_func"]
+
         if wf_func == "quantify_scheduler.waveforms.square":
-            return pulses.StitchedSquarePulseStrategy(operation, output_mode)
+            return pulses.StitchedSquarePulseStrategy(operation_info, output_mode)
+
         if wf_func == "quantify_scheduler.waveforms.staircase":
-            return pulses.StaircasePulseStrategy(operation, output_mode)
-    return pulses.GenericPulseStrategy(operation, output_mode)
+            return pulses.StaircasePulseStrategy(operation_info, output_mode)
+
+    return pulses.GenericPulseStrategy(operation_info, output_mode)
