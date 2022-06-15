@@ -834,10 +834,8 @@ def test_compile_measure(duplicate_measure_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(duplicate_measure_schedule, DEVICE_CFG, HARDWARE_CFG)
-    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    wf_and_prog = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"]
 
-    with open(qrm0_seq0_json) as file:
-        wf_and_prog = json.load(file)
     assert len(wf_and_prog["weights"]) == 0
 
 
@@ -1398,16 +1396,15 @@ def test_markers():
             mrk_config.start,
             mrk_config.end,
         )
-        with open(device_program["seq0"]["seq_fn"]) as file:
-            qasm = json.load(file)["program"]
+        qasm = device_program["seq0"]["sequence"]["program"]
 
-            matches = re.findall(r"set\_mrk +\d+", qasm)
-            matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
-            if not is_rf:
-                matches = [None, *matches]
+        matches = re.findall(r"set\_mrk +\d+", qasm)
+        matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
+        if not is_rf:
+            matches = [None, *matches]
 
-            for match, answer in zip(matches, answers):
-                assert match == answer
+        for match, answer in zip(matches, answers):
+            assert match == answer
 
     _confirm_correct_markers(program["qcm0"], QcmModule)
     _confirm_correct_markers(program["qrm0"], QrmModule)
