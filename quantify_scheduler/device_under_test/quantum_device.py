@@ -86,6 +86,10 @@ class QuantumDevice(Instrument):
             vals=validators.Dict(),
         )
 
+    @property
+    def compilation_config(self) -> Dict[str, Any]:
+        pass
+
     def generate_hardware_config(self) -> Dict[str, Any]:
         """
         Generates a valid hardware configuration describing the quantum device.

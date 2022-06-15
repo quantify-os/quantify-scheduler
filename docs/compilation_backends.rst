@@ -11,7 +11,11 @@ Compilation backends
 Using a compilation backend
 ===========================
 
-In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule. This is done using a :class:`~.backends.graph_compilation.CompilationBackend`. The :meth::`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
+In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule. This is done using a :class:`~.backends.graph_compilation.CompilationBackend`. The :meth:`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
+
+Because the information required to
+
+
 
 
 
