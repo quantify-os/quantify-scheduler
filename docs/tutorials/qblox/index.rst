@@ -1,5 +1,5 @@
-Tutorials Qblox Backend
-=======================
+Qblox Backend
+=============
 
 .. warning::
     The :mod:`quantify_scheduler.backends.qblox_backend` is still under development.
