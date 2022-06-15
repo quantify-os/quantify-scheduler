@@ -23,7 +23,7 @@ def rxy_drag_pulse(
     # mw_amp180 is the amplitude necessary to get the
     # maximum 180 degree theta (experimentally)
     G_amp = amp180 * theta / 180
-    D_amp = G_amp * motzoi
+    D_amp = motzoi
 
     return pulse_library.DRAGPulse(
         G_amp=G_amp, D_amp=D_amp, phase=phi, port=port, duration=duration, clock=clock
