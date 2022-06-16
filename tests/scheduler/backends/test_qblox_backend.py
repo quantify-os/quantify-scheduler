@@ -1601,6 +1601,26 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 "seq2": {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
             },
         },
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module2": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "seq0": {
+                        "port": "q1:res",
+                        "clock": "q1.ro",
+                        "interm_freq": 50e6,
+                    },
+                    "seq1": {
+                        "port": "q1:mw",
+                        "clock": "q1.01",
+                        "interm_freq": 50e6,
+                    },
+                },
+            },
+        },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
         "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     }
@@ -1624,6 +1644,27 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                     {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
                     {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
                 ],
+            },
+        },
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module2": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    'portclock_configs': [
+                    {
+                        "port": "q1:res",
+                        "clock": "q1.ro",
+                        "interm_freq": 50e6,
+                    },
+                    {
+                        "port": "q1:mw",
+                        "clock": "q1.01",
+                        "interm_freq": 50e6,
+                    }]
+                },
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
