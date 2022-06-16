@@ -873,8 +873,8 @@ def test_compile_clock_operations(
     )
 
 
-def test_compile_composite_pulse(mock_setup):
-    sched = Schedule("composite_pulse_experiment")
+def test_compile_cz_gate(mock_setup):
+    sched = Schedule("two_qubit_gate_experiment")
     sched.add_resources(
         [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
     )  # Clocks need to be manually added at this stage.
