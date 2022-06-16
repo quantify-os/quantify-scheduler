@@ -238,8 +238,8 @@ autoapi_type = "python"
 autoapi_generate_api_docs = True
 autoapi_dirs = ["../quantify_scheduler"]
 
-# avoid duplicate label warning even when manual label has been used
-suppress_warnings = ["autosectionlabel.*"]
+# avoid duplicate label warning even when manual label has been used; suppress autoapi warnings
+suppress_warnings = ["autosectionlabel.*", "autoapi"]  # TODO: https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#suppressing-warnings
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
 # display in docs (very ugly when overflowing the html page width)
