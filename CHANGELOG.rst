@@ -9,6 +9,7 @@ Unreleased
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
+* Qblox backend - Fix for 90 degree phase shift on even output paths as a result of the !397 hotfix. (!412)
 * Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
