@@ -681,8 +681,8 @@ class Sequencer:
         qasm.auto_wait(
             wait_time=constants.GRID_TIME + latency_correction_ns,
             count_as_elapsed_time=False,
-            comment=f"Latency correction of {constants.GRID_TIME} + "
-            f"{latency_correction_ns} ns.",
+            comment=f"latency correction of {constants.GRID_TIME} + "
+            f"{latency_correction_ns} ns",
         )
 
         with qasm.loop(label=loop_label, repetitions=repetitions):
