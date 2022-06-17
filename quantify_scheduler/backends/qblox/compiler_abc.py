@@ -87,6 +87,10 @@ class InstrumentCompiler(ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
+
         """
         self.parent = parent
         self.name = name
@@ -155,7 +159,8 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         latency_corrections
-            TODO
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         self._pulses = defaultdict(list)
@@ -282,6 +287,8 @@ class Sequencer:
             sequencer. The first value is the port, second is the clock.
         seq_settings
             Sequencer settings dictionary.
+        latency_corrections
+            Dict containing the delays for each port-clock combination.
         lo_name
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
@@ -923,7 +930,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
         latency_corrections
-            TODO
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         driver_version_check.verify_qblox_instruments_version()
