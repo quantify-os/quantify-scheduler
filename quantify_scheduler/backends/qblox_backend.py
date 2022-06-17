@@ -8,7 +8,6 @@ from typing import Any, Dict
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
-from quantify_scheduler import compilation
 
 
 def hardware_compile(

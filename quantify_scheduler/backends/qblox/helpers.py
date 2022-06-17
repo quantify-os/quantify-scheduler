@@ -1,7 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
-import logging
 import re
 from copy import deepcopy
 from collections import UserDict
@@ -599,7 +598,7 @@ def convert_hw_config_to_portclock_configs_spec(
 
             latency_correction_key = "latency_correction"
             for key, value in io_cfg.items():
-                if re.match("^seq\d+$", key):
+                if re.match(r"^seq\d+$", key):
                     if (
                         latency_correction_key in value
                     ):  # Move sequencer latency correction

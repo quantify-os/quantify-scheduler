@@ -1690,7 +1690,7 @@ class TestLatencyCorrection:
 
         assert any(
             [
-                f"Latency correction of {constants.GRID_TIME} + {expected} ns" in line
+                f"latency correction of {constants.GRID_TIME} + {expected} ns" in line
                 for line in program_lines
             ]
         )
