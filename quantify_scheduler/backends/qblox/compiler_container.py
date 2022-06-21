@@ -109,7 +109,8 @@ class CompilerContainer:
         instrument_cfg
             The hardware config dict for this specific instrument.
         latency_corrections
-            TODO
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
         if isinstance(instrument_type, str):
             if instrument_type in compiler_classes.COMPILER_MAPPING:

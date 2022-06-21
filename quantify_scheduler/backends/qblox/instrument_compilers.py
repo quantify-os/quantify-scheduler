@@ -242,6 +242,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             latency_corrections=latency_corrections,
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
+        self.latency_corrections = latency_corrections
 
     def construct_instrument_compilers(self) -> Dict[str, compiler_abc.QbloxBaseModule]:
         """
@@ -272,7 +273,11 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 )
             compiler_type: type = self.compiler_classes[instrument_type]
             instance = compiler_type(
-                self, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
+                self,
+                name=name,
+                total_play_time=self.total_play_time,
+                hw_mapping=cfg,
+                latency_corrections=self.latency_corrections,
             )
             assert hasattr(instance, "is_pulsar")
             instance.is_pulsar = False
