@@ -94,17 +94,32 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 @pytest.fixture(name="hardware_cfg_latency_corrections")
 def make_hardware_cfg_latency_corrections():
-    def _make_hardware_cfg_latency_corrections(port, clock, correction):
-        portclock_key = f"{port}-{clock}"
+    def _make_hardware_cfg_latency_corrections():
         return {
             "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "latency_corrections": {f"{portclock_key}": correction},
+            "latency_corrections": {f"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
             "qcm0": {
                 "instrument_type": "Pulsar_QCM",
                 "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "portclock_configs": [{"port": port, "clock": clock}],
+                    "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+                },
+            },
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "cluster0_module1": {
+                    "instrument_type": "QCM",
+                    "complex_output_0": {
+                        "line_gain_db": 0,
+                        "portclock_configs": [
+                            {
+                                "port": "q1:mw",
+                                "clock": "q1.01",
+                            }
+                        ],
+                    },
                 },
             },
         }
@@ -1645,21 +1660,8 @@ class TestLatencyCorrection:
 
     """
 
-    @pytest.mark.parametrize(
-        "port, clock, qubit, correction, expected",
-        [
-            ("q0:mw", "q0.01", "q0", 0, 0),
-            ("q0:mw", "q0.01", "q0", 4e-9, 4),
-            ("q0:mw", "q0.01", "q0", 5e-9, 5),
-        ],
-    )
     def test_apply_latency_corrections_valid(
         self,
-        port,
-        clock,
-        qubit,
-        correction,
-        expected,
         hardware_cfg_latency_corrections,
         mock_setup,
     ):
@@ -1671,17 +1673,19 @@ class TestLatencyCorrection:
         """
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
-        sched = Schedule("Single Gate Experiment")
-        sched.add(X(qubit))
-        hardware_cfg = hardware_cfg_latency_corrections(
-            port=port, clock=clock, correction=correction
+        sched = Schedule("Single Gate Experiment on Two Qubits")
+        sched.add(X("q0"))
+        sched.add(
+            SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+            ref_pt="start",
         )
-        sched.add_resources([ClockResource(clock, freq=5e9)])
+        sched.add_resources([ClockResource("q0.01", freq=5e9)])
+        sched.add_resources([ClockResource("q1.01", freq=5e9)])
         quantum_device = mock_setup["quantum_device"]
         compiled_sched = qcompile(
             sched,
             device_cfg=quantum_device.generate_device_config(),
-            hardware_cfg=hardware_cfg,
+            hardware_cfg=hardware_cfg_latency_corrections(),
         )
 
         filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
@@ -1690,7 +1694,20 @@ class TestLatencyCorrection:
 
         assert any(
             [
-                f"latency correction of {constants.GRID_TIME} + {expected} ns" in line
+                f"latency correction of {constants.GRID_TIME} + {20} ns" in line
+                for line in program_lines
+            ]
+        )
+
+        filename = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "seq0"
+        ]["seq_fn"]
+        with open(filename, "r") as fp:
+            program_lines = json.load(fp)["program"].splitlines()
+
+        assert any(
+            [
+                f"latency correction of {constants.GRID_TIME} + {5} ns" in line
                 for line in program_lines
             ]
         )
@@ -1708,16 +1725,12 @@ class TestLatencyCorrection:
         """
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
-        port = "q0:mw"
-        clock = "q0.01"
-        qubit = "q0"
-        correction = 5e-9
         sched = Schedule("Single Gate Experiment")
-        sched.add(X(qubit))
-        hardware_cfg = hardware_cfg_latency_corrections(
-            port=port, clock=clock, correction=correction
+        sched.add(
+            SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+            ref_pt="start",
         )
-        sched.add_resources([ClockResource(clock, freq=5e9)])
+        sched.add_resources([ClockResource("q1.01", freq=5e9)])
         quantum_device = mock_setup["quantum_device"]
 
         warning = f"not a multiple of {constants.GRID_TIME}"
@@ -1727,7 +1740,7 @@ class TestLatencyCorrection:
             qcompile(
                 sched,
                 device_cfg=quantum_device.generate_device_config(),
-                hardware_cfg=hardware_cfg,
+                hardware_cfg=hardware_cfg_latency_corrections(),
             )
         assert any([warning in mssg for mssg in caplog.messages])
 
