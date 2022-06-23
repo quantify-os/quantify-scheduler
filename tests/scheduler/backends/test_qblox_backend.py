@@ -1614,8 +1614,8 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                         "interm_freq": 50e6,
                     },
                     "seq1": {
-                        "port": "q1:mw",
-                        "clock": "q1.01",
+                        "port": "q2:res",
+                        "clock": "q2.01",
                         "interm_freq": 50e6,
                     },
                 },
@@ -1660,8 +1660,8 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                             "interm_freq": 50e6,
                         },
                         {
-                            "port": "q1:mw",
-                            "clock": "q1.01",
+                            "port": "q2:res",
+                            "clock": "q2.01",
                             "interm_freq": 50e6,
                         },
                     ],
@@ -1680,7 +1680,7 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
+    sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
     sched = device_compile(sched, DEVICE_CFG)
     with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
         hardware_compile(sched, old_config)
