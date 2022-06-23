@@ -144,7 +144,7 @@ def hardware_cfg_baseband():
 
 
 @pytest.fixture
-def hardware_cfg_real_mode():
+def hardware_cfg_real_mode(instruction_generated_pulses_enabled):
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -157,7 +157,7 @@ def hardware_cfg_real_mode():
                     {
                         "port": "LP",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": False,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     },
                 ],
             },
@@ -975,7 +975,10 @@ def test_qcm_acquisition_error():
         qcm.distribute_data()
 
 
-def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
+@pytest.mark.parametrize(
+    "instruction_generated_pulses_enabled", [False]
+)
+def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode,instruction_generated_pulses_enabled):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     real_square_pulse_schedule.repetitions = 10
