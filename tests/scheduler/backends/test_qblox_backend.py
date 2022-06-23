@@ -983,8 +983,8 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
     for i in range(3):
-        fname = full_program.compiled_instructions["qcm0"][f"seq{i}"]["seq_fn"]
-        with open(fname, "r") as fp:
+        filename = full_program.compiled_instructions["qcm0"][f"seq{i}"]["seq_fn"]
+        with open(filename, "r") as fp:
             seq_instructions = json.load(fp)
 
         for key, value in seq_instructions["waveforms"].items():
