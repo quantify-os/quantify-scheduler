@@ -1000,7 +1000,7 @@ def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
             play_sequence = "1,0"
         assert re.search(
             f"play\s*{play_sequence}", seq_instructions["program"]
-        ), "Real signals are NOT routed to the correct output paths"
+        ), f"Sequence must be played in the order {play_sequence} in real mode"
 
 
 # --------- Test QASMProgram class ---------
