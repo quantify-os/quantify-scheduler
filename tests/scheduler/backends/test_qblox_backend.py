@@ -1653,17 +1653,18 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 "instrument_type": "QRM",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    'portclock_configs': [
-                    {
-                        "port": "q1:res",
-                        "clock": "q1.ro",
-                        "interm_freq": 50e6,
-                    },
-                    {
-                        "port": "q1:mw",
-                        "clock": "q1.01",
-                        "interm_freq": 50e6,
-                    }]
+                    "portclock_configs": [
+                        {
+                            "port": "q1:res",
+                            "clock": "q1.ro",
+                            "interm_freq": 50e6,
+                        },
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
                 },
             },
         },
