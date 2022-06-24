@@ -260,7 +260,7 @@ class Sequencer:
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
         seq_settings: dict,
         lo_name: Optional[str] = None,
-        downconverter: bool = False,
+        downconverter: float = 0,
     ):
         """
         Constructor for the sequencer compiler.
@@ -280,8 +280,8 @@ class Sequencer:
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
         downconverter
-            Boolean which expresses whether a downconverter is being used or not.
-            Defaults to `False`, in case case no downconverter is being used.
+            Frequency of the external downconverter if one is being used.
+            Defaults to 0, in case case no downconverter is being used.
         """
         self.parent = parent
         self._name = name
@@ -290,7 +290,7 @@ class Sequencer:
         self.pulses: List[IOperationStrategy] = []
         self.acquisitions: List[IOperationStrategy] = []
         self.associated_ext_lo: str = lo_name
-        self.downconverter: bool = downconverter
+        self.downconverter: float = downconverter
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -997,7 +997,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             lo_name = io_cfg.get("lo_name", None)
-            downconverter = io_cfg.get("downconverter", False)
+            downconverter = io_cfg.get("downconverter", 0)
 
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
                 "portclock_configs", []
@@ -1350,8 +1350,8 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     # If downconverter is used, its frequency will be used when calculating the
     # LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
     # LO/IF frequencies unchanged.
-    if sequencer.downconverter:
-        downconverter_freq = constants.DOWNCONVERTER_FREQ
+    downconverter_freq = sequencer.downconverter
+    if downconverter_freq:
         clk_freq = -clk_freq
     else:
         downconverter_freq = 0
@@ -1490,11 +1490,9 @@ class QbloxRFModule(QbloxBaseModule):
             """If downconverter is used, it's frequency will be used when calculating the
             LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
             LO/IF frequencies unchanged"""
-            if sequencer.downconverter:
-                downconverter_freq = constants.DOWNCONVERTER_FREQ
+            downconverter_freq = sequencer.downconverter
+            if downconverter_freq :
                 clk_freq = -clk_freq
-            else:
-                downconverter_freq = 0
 
             if if_freq is not None:
                 new_lo_freq = clk_freq - if_freq + downconverter_freq
