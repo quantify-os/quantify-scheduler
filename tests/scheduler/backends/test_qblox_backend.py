@@ -1205,7 +1205,12 @@ def test_generate_uuid_from_wf_data():
     assert hash1 != hash2
 
 
-def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode):
+@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
+def test_real_mode_container(
+    real_square_pulse_schedule,
+    hardware_cfg_real_mode,
+    instruction_generated_pulses_enabled,
+):
     container = compiler_container.CompilerContainer.from_mapping(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
