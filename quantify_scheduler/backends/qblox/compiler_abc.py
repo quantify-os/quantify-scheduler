@@ -1491,7 +1491,7 @@ class QbloxRFModule(QbloxBaseModule):
             LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
             LO/IF frequencies unchanged"""
             downconverter_freq = sequencer.downconverter
-            if downconverter_freq :
+            if downconverter_freq:
                 clk_freq = -clk_freq
 
             if if_freq is not None:
