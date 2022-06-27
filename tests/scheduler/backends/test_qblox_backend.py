@@ -1262,10 +1262,14 @@ def test_assign_frequencies_baseband_downconverter(
     lo0 = HARDWARE_CFG[io0_lo_name].get("frequency")
     lo1 = HARDWARE_CFG[io1_lo_name].get("frequency")
 
-    assert if0 is not None, "Modulation frequency must be set for channel 0"
-    assert if1 is None,  "Modulation frequency already set for channel 1"
-    assert lo0 is None, "LO frequency already set for channel 0"
-    assert lo1 is not None, "LO frequency must be set for channel 1"
+    assert (
+        if0 is not None
+    ), "Modulation frequency must be set for channel 0 in hardware config"
+    assert (
+        if1 is None
+    ), "Modulation frequency already set for channel 1 in hardware config"
+    assert lo0 is None, "LO frequency already set for channel 0 in hardware config"
+    assert lo1 is not None, "LO frequency must be set for channel 1 in hardware config"
 
     hw_mapping_downconverter = HARDWARE_CFG.copy()
     hw_mapping_downconverter["qcm0"]["complex_output_0"][
@@ -1284,13 +1288,13 @@ def test_assign_frequencies_baseband_downconverter(
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert (
         compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
-    ), f"LO frequency of channel 0 must be equal to downconverter freq - IF - clock = {lo0} but it is equal to {compiled_instructions[generic_icc][str(io0_lo_name)+'.frequency']}"
+    ), f"LO frequency of channel 0 for baseband QCM must be equal to downconverter freq - IF - clock = {lo0} but it is equal to {compiled_instructions[generic_icc][str(io0_lo_name)+'.frequency']}"
     assert (
         compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
-    ), f"LO frequency of channel 1 must be equal to downconverter freq - IF - clock = {lo1} but it is equal to {compiled_instructions[generic_icc][str(io0_lo_name)+'.frequency']}"
+    ), f"LO frequency of channel 1 for baseband QCM must be equal to downconverter freq - IF - clock = {lo1} but it is equal to {compiled_instructions[generic_icc][str(io0_lo_name)+'.frequency']}"
     assert (
         compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
-    ), f"Modulation frequency of seq1 of qcm0 must be equal to {if1}"
+    ), f"Modulation frequency of seq1 for baseband qcm0 must be equal to {if1}"
 
 
 def test_assign_frequencies_rf():
@@ -1334,7 +1338,10 @@ def test_assign_frequencies_rf():
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
 
 
-def test_assign_frequencies_rf_downconverter():
+@pytest.mark.parametrize("downconverter_freq_0, downconverter_freq_1", [(4e9, 3e9)])
+def test_assign_frequencies_rf_downconverter(
+    downconverter_freq_0, downconverter_freq_1
+):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
@@ -1351,10 +1358,14 @@ def test_assign_frequencies_rf_downconverter():
     lo0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"].get("lo_freq")
     lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"].get("lo_freq")
 
-    assert if0 is not None
-    assert if1 is None
-    assert lo0 is None
-    assert lo1 is not None
+    assert (
+        if0 is not None
+    ), "Modulation frequency must be set for channel 0 in hardware config"
+    assert (
+        if1 is None
+    ), "Modulation frequency already set for channel 1 in hardware config"
+    assert lo0 is None, "LO frequency already set for channel 0 in hardware config"
+    assert lo1 is not None, "LO frequency must be set for channel 1 in hardware config"
 
     q2_clock_freq = DEVICE_CFG["qubits"]["q2"]["params"]["mw_freq"]
     q3_clock_freq = DEVICE_CFG["qubits"]["q3"]["params"]["mw_freq"]
@@ -1370,24 +1381,40 @@ def test_assign_frequencies_rf_downconverter():
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
-    assert qcm_program["settings"]["lo0_freq"] == lo0
-    assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    assert (
+        qcm_program["settings"]["lo0_freq"] == lo0
+    ), f"LO frequency of channel 0 before downconversion must be equal to {lo0}"
+    assert (
+        qcm_program["settings"]["lo1_freq"] == lo1
+    ), f"LO frequency of channel 1 before downconversion must be equal to {lo1}"
+    assert (
+        qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    ), f"Modulation frequency of channel 1 before downconversion must be equal to {lo0}"
 
     hw_mapping_downconverter = HARDWARE_CFG.copy()
-    hw_mapping_downconverter["qcm_rf0"]["complex_output_0"]["downconverter"] = True
-    hw_mapping_downconverter["qcm_rf0"]["complex_output_1"]["downconverter"] = True
+    hw_mapping_downconverter["qcm_rf0"]["complex_output_0"][
+        "downconverter"
+    ] = downconverter_freq_0
+    hw_mapping_downconverter["qcm_rf0"]["complex_output_1"][
+        "downconverter"
+    ] = downconverter_freq_1
 
     compiled_schedule = qcompile(sched, DEVICE_CFG, hw_mapping_downconverter)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
-    lo0 = -q2_clock_freq - if0 + constants.DOWNCONVERTER_FREQ
-    if1 = -q3_clock_freq - lo1 + constants.DOWNCONVERTER_FREQ
+    lo0 = -q2_clock_freq - if0 + downconverter_freq_0
+    if1 = -q3_clock_freq - lo1 + downconverter_freq_1
 
-    assert qcm_program["settings"]["lo0_freq"] == lo0
-    assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    assert (
+        qcm_program["settings"]["lo0_freq"] == lo0
+    ), f"LO frequency of channel 0 after downconversion must be equal to {lo0}"
+    assert (
+        qcm_program["settings"]["lo1_freq"] == lo1
+    ), f"LO frequency of channel 1 after downconversion must be equal to {lo1}"
+    assert (
+        qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    ), f"Modulation frequency of channel 1 after downconversion must be equal to {lo0}"
 
 
 def test_markers():
