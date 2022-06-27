@@ -1,3 +1,8 @@
+"""
+This test style covers the classes and functions in the backends/graph_compilation.py
+file.
+"""
+
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

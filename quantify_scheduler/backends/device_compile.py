@@ -1,5 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+"""
+The compilation graph for generic Quantum-circuit to Quantum-device layer.
+"""
+
 from quantify_scheduler.backends.graph_compilation import (
     CompilationNode,
     CompilationBackend,
