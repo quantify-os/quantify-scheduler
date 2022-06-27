@@ -59,16 +59,16 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
-
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
+    IdlePulse,
     RampPulse,
+    ShiftClockPhase,
     SquarePulse,
 )
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -748,25 +748,27 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
         test_module.sequencers = test_module._construct_sequencers()
 
 
-def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
-
+@pytest.mark.parametrize(
+    "element_names", [[f"q{i}" for i in range(constants.NUMBER_OF_SEQUENCERS_QCM + 1)]]
+)
+def test_contruct_sequencers_excess_error(
+    mock_setup_basic_transmon_elements, make_basic_multi_qubit_schedule, element_names
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "instrument_type": "Pulsar_QCM_RF",
             "ref": "internal",
-            "complex_output_0": {"portclock_configs": []},
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6}
+                    for i in range(len(element_names))
+                ]
+            },
         },
     }
 
-    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
-        {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
-    ]
-
-    device = QuantumDevice("device")
-    elements = [TransmonElement(f"q{i}") for i in range(7)]
-    for element in elements:
-        device.add_component(element)
+    device = mock_setup_basic_transmon_elements["quantum_device"]
 
     test_module = QcmRfModule(
         parent=None,
@@ -775,7 +777,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         hw_mapping=hardware_cfg["qcm0"],
     )
 
-    sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
+    sched = make_basic_multi_qubit_schedule(element_names)
     sched = device_compile(sched, device.generate_device_config())
 
     assign_pulse_and_acq_info_to_devices(
@@ -793,7 +795,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
     )
 
 
-def test_simple_compile(pulse_only_schedule):
+def test_compile_simple(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -806,7 +808,7 @@ def test_compile_cluster(cluster_only_schedule):
     qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
-def test_simple_compile_multiplexing(
+def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
@@ -815,7 +817,7 @@ def test_simple_compile_multiplexing(
     qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
-def test_identical_pulses_compile(identical_pulses_schedule):
+def test_compile_identical_pulses(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -839,7 +841,39 @@ def test_compile_measure(duplicate_measure_schedule):
     assert len(wf_and_prog["weights"]) == 0
 
 
-def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+@pytest.mark.parametrize(
+    "operation, instruction_to_check",
+    [
+        (IdlePulse(duration=64e-9), "wait       64"),
+        (Reset("q1"), "wait       65532"),
+        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+    ],
+)
+def test_compile_clock_operations(
+    mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
+):
+    sched = Schedule("shift_clock_phase_only")
+    sched.add(operation)
+    sched.add_resources(
+        [ClockResource("q1.01", freq=5e9)]
+    )  # Clocks need to be manually added at this stage.
+
+    compiled_sched = qcompile(
+        schedule=sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg_baseband,
+    )
+
+    filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
+    with open(filename, "r") as file:
+        program_lines = json.load(file)["program"].splitlines()
+
+    assert any([instruction_to_check in line for line in program_lines]), "\n".join(
+        [line for line in program_lines]
+    )
+
+
+def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
