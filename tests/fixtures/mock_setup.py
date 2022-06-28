@@ -83,6 +83,49 @@ def mock_setup(tmp_test_data_dir):
     _cleanup_instruments(mock_instruments.keys())
 
 
+# pylint: disable=redefined-outer-name
+@pytest.fixture(scope="module", autouse=False)
+def mock_setup_basic_transmon(tmp_test_data_dir):
+    """
+    Returns a mock setup.
+    """
+
+    set_datadir(tmp_test_data_dir)
+
+    # moved to a separate module to allow using the mock_setup in tutorials.
+    mock_setup = set_up_mock_transmon_setup(include_legacy_transmon=False)
+
+    mock_instruments = {
+        "meas_ctrl": mock_setup["meas_ctrl"],
+        "instrument_coordinator": mock_setup["instrument_coordinator"],
+        "q0": mock_setup["q0"],
+        "q1": mock_setup["q1"],
+        "q2": mock_setup["q2"],
+        "q3": mock_setup["q3"],
+        "q4": mock_setup["q4"],
+        "edge_q2_q3": mock_setup["edge_q2_q3"],
+        "quantum_device": mock_setup["quantum_device"],
+    }
+
+    yield mock_instruments
+
+    # NB only close the instruments this fixture is responsible for to avoid
+    # hard to debug side effects
+    _cleanup_instruments(mock_instruments.keys())
+
+
+@pytest.fixture(scope="function", autouse=False)
+def device_compile_config_basic_transmon(mock_setup_basic_transmon):
+    """
+    A config generated from a quantum device with 5 transmon qubits
+    connected in a star configuration.
+
+    The mock setup has no hardware attached to it.
+    """
+
+    yield mock_setup_basic_transmon["quantum_device"].compilation_config
+
+
 @pytest.fixture(scope="function")
 def mock_setup_basic_transmon_elements(element_names: List[str]):
     """

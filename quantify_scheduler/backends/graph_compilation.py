@@ -68,13 +68,13 @@ class CompilationNode(DataStructure):
 
 class CompilationBackend(nx.DiGraph):
     """
-    A compilation backend is defined by a directed acyclic graph.
+    A compilation backend defines a directed acyclic graph.
     In this graph, nodes represent modular compilation steps.
 
     Definition
     ----------
-    A **quantify backend** is defined by a directed acyclic graph of functions
-    that when executed fulfil the following input output requirements. The input is a
+    A **quantify backend** defines a directed acyclic graph of functions
+    that when executed fulfill the following input output requirements. The input is a
     :class:`~.Schedule` and a configuration file, and the output consists of platform
     specific hardware instructions.
 

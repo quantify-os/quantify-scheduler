@@ -81,23 +81,12 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
     quantum_device.add_element(q2)
     quantum_device.add_element(q3)
     quantum_device.add_element(q4)
+    quantum_device.add_edge(edge_q0_q2)
+    quantum_device.add_edge(edge_q1_q2)
     quantum_device.add_edge(edge_q2_q3)
-
+    quantum_device.add_edge(edge_q2_q4)
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
-
-    def cleanup_instruments():
-        # NB only close the instruments this fixture is responsible for to avoid
-        # hard to debug side effects
-        meas_ctrl.close()
-        instrument_coordinator.close()
-        q0.close()
-        q1.close()
-        q2.close()
-        q3.close()
-        q4.close()
-        edge_q2_q3.close()
-        quantum_device.close()
 
     return {
         "meas_ctrl": meas_ctrl,
@@ -107,7 +96,9 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
         "q2": q2,
         "q3": q3,
         "q4": q4,
+        "edge_q0_q2": edge_q0_q2,
+        "edge_q1_q2": edge_q1_q2,
         "edge_q2_q3": edge_q2_q3,
+        "edge_q2_q4": edge_q2_q4,
         "quantum_device": quantum_device,
-        "cleanup_instruments": cleanup_instruments,
     }
