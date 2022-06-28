@@ -1373,23 +1373,23 @@ def test_assign_frequencies_rf_downconverter(
     if0 = HARDWARE_CFG["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
         "interm_freq"
     ]
-    lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"]["lo_freq"]
+    expected_lo1 = HARDWARE_CFG["qcm_rf0"]["complex_output_1"]["lo_freq"]
 
-    lo0 = q2_clock_freq - if0
-    if1 = q3_clock_freq - lo1
+    expected_lo0 = q2_clock_freq - if0
+    expected_if1 = q3_clock_freq - lo1
 
     compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
     assert (
-        qcm_program["settings"]["lo0_freq"] == lo0
-    ), f"LO frequency of channel 0 before downconversion must be equal to {lo0}"
+        qcm_program["settings"]["lo0_freq"] == expected_lo0
+    ), f"LO frequency of channel 0 before downconversion must be equal to {expected_lo0}"
     assert (
-        qcm_program["settings"]["lo1_freq"] == lo1
-    ), f"LO frequency of channel 1 before downconversion must be equal to {lo1}"
+        qcm_program["settings"]["lo1_freq"] == expected_lo1
+    ), f"LO frequency of channel 1 before downconversion must be equal to {expected_lo1}"
     assert (
-        qcm_program["seq1"]["settings"]["modulation_freq"] == if1
-    ), f"Modulation frequency of channel 1 before downconversion must be equal to {lo0}"
+        qcm_program["seq1"]["settings"]["modulation_freq"] == expected_if1
+    ), f"Modulation frequency of channel 1 before downconversion must be equal to {expected_if1}"
 
     hw_mapping_downconverter = HARDWARE_CFG.copy()
     hw_mapping_downconverter["qcm_rf0"]["complex_output_0"][
@@ -1409,10 +1409,10 @@ def test_assign_frequencies_rf_downconverter(
     actual_if1 = qcm_program["seq1"]["settings"]["modulation_freq"]
     assert (
         expected_lo0 == actual_lo0
-    ), f"LO frequency of channel 0 after downconversion must be equal to {expected_lo0} but it is equal to {lo0}"
+    ), f"LO frequency of channel 0 after downconversion must be equal to {expected_lo0} but it is equal to {actual_lo0}"
     assert (
         expected_if1 == actual_if1
-    ), f"Modulation frequency of channel 1 after downconversion must be equal to {expected_if1} but it is equal to  "
+    ), f"Modulation frequency of channel 1 after downconversion must be equal to {expected_if1} but it is equal to {actual_if1}  "
 
 
 def test_markers():
