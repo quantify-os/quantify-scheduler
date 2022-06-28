@@ -1592,13 +1592,23 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                    "latency_correction": 8e-9,
+                },
             },
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
                 "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
-                "seq2": {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
+                "seq2": {
+                    "port": "q2:mw",
+                    "clock": "q2.01",
+                    "interm_freq": None,
+                    "latency_correction": 4e-9,
+                },
             },
         },
         "cluster0": {
@@ -1617,6 +1627,7 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                         "port": "q2:res",
                         "clock": "q2.01",
                         "interm_freq": 50e6,
+                        "latency_correction": 4e-9,
                     },
                 },
             },
@@ -1627,6 +1638,11 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
 
     expected_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "latency_corrections": {
+            "q0:mw-q0.01": 8e-9,
+            "q2:mw-q2.01": 4e-9,
+            "q2:res-q2.01": 4e-9,
+        },
         "qcm0": {
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",

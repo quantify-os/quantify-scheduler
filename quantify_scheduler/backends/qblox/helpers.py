@@ -594,6 +594,19 @@ def convert_hw_config_to_portclock_configs_spec(
                 nested_dict["portclock_configs"] = nested_dict.get(
                     "portclock_configs", []
                 )
+                # move latency_corrections to parent level of hw_config
+                if "latency_correction" in nested_dict[key].keys():
+                    hw_config["latency_corrections"] = hw_config.get(
+                        "latency_corrections", {}
+                    )
+                    latency_correction_key = (
+                        f"{nested_dict[key]['port']}-{nested_dict[key]['clock']}"
+                    )
+                    hw_config["latency_corrections"][
+                        latency_correction_key
+                    ] = nested_dict[key]["latency_correction"]
+                    del nested_dict[key]["latency_correction"]
+
                 nested_dict["portclock_configs"].append(nested_dict[key])
                 del nested_dict[key]
 
