@@ -98,27 +98,25 @@ class QuantumDevice(Instrument):
 
         # here manual support needs to be added for the different hardware backends
         if hardware_config == None:
-            backend = "quantify_scheduler.backends.device_compile.DeviceCompile"
+            backend = "quantify_scheduler.backends.DeviceCompile"
         elif (
             hardware_config["backend"]
             == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
-            # the old qblox hardware compile
-            # FIXME
-            backend = "Qblox"
+            backend = "quantify_scheduler.backends.QbloxBackend"
 
         elif (
             hardware_config["backend"]
             == "quantify_scheduler.backends.zhinst_backend.compile_backend"
         ):  # the old zhinst hw_compile function
-            pass
+            backend = "quantify_scheduler.backends.ZhinstBackend"
         else:
-            # FIXME
-            backend = "Zhinst"
+            raise NotImplementedError("Hardware backend not recognized")
 
         compilation_config = {
             "backend": backend,
             "device_cfg": self.generate_device_config(),
+            "hardware_cfg": hardware_config,
         }
 
         return compilation_config

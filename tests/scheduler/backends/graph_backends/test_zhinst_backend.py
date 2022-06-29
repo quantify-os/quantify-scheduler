@@ -13,7 +13,7 @@ from quantify_scheduler.backends import zhinst_backend
 
 
 import pytest
-from quantify_scheduler import Schedule
+from quantify_scheduler import Schedule, CompiledSchedule
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
     two_qubit_t1_schedule,
@@ -28,7 +28,7 @@ from .standard_schedules import (
 from quantify_scheduler.backends.device_compile import DeviceCompile
 
 
-@pytest.mark.xfail(reason="zhinst hardware mapping not implemented yet")
+# @pytest.mark.xfail(reason="zhinst hardware mapping not implemented yet")
 @pytest.mark.parametrize(
     "schedule",
     [
@@ -53,4 +53,4 @@ def test_compiles_standard_schedules(
     # Act
     comp_sched = backend.compile(schedule=schedule, config=config)
     # Assert that no exception was raised and output is the right type.
-    assert isinstance(comp_sched, Schedule)
+    assert isinstance(comp_sched, CompiledSchedule)

@@ -25,6 +25,12 @@ from quantify_scheduler.device_under_test.transmon_element import (
 )
 from quantify_scheduler.device_under_test.sudden_nz_edge import SuddenNetZeroEdge
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.schemas.examples import utils
+
+# Test hardware mappings. Note, these will change as we are updating our hardware mapping
+# for the graph based compilation.
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 def _cleanup_instruments(instrument_names):
@@ -144,8 +150,10 @@ def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon):
     A config for a quantum device with 5 transmon qubits connected in a star
     configuration controlled using Zurich Instruments Hardware.
     """
-    # N.B. how this fixture produces the hardware config can change in the future
-    # as long as it keeps doing what is described in this docstring.
+    # N.B. how this fixture produces the hardware config will change in the future
+    # as we separate the config up into a more fine grained config. For now it uses
+    # the old JSON files to load settings from.
+    mock_setup_basic_transmon["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
 
     # add the hardware config here
     yield mock_setup_basic_transmon["quantum_device"].compilation_config
@@ -157,8 +165,10 @@ def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon):
     A config for a quantum device with 5 transmon qubits connected in a star
     configuration controlled using Qblox Hardware.
     """
-    # N.B. how this fixture produces the hardware config can change in the future
-    # as long as it keeps doing what is described in this docstring.
+    # N.B. how this fixture produces the hardware config will change in the future
+    # as we separate the config up into a more fine grained config. For now it uses
+    # the old JSON files to load settings from.
+    mock_setup_basic_transmon["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
 
     yield mock_setup_basic_transmon["quantum_device"].compilation_config
 
