@@ -28,7 +28,7 @@ def hardware_compile(
     ----------
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
-        already added to the operation. Otherwise and exception is raised.
+        already added to the operation. Otherwise an exception is raised.
     hardware_cfg
         The hardware configuration of the setup.
 

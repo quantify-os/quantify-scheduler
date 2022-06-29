@@ -7,10 +7,12 @@ Unreleased
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
+* Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
+* Qblox backend - Fix cluster compatibility when converting old hwconfig to new specs (!419)  
 * Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
-
+* DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)

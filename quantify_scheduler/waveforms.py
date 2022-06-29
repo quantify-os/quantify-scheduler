@@ -146,7 +146,7 @@ def drag(
     .. note:
 
         One would expect a factor :math:`1/\sigma^2` in the prefactor of
-        :math:`1/\sigma^2`, we absorb this in the scaling factor :math:`D_{amp}` to
+        :math:`D(t)`, we absorb this in the scaling factor :math:`D_{amp}` to
         ensure the derivative component is scale invariant with the duration of
         the pulse.
 
