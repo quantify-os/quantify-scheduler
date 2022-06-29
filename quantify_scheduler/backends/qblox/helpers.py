@@ -588,7 +588,10 @@ def convert_hw_config_to_portclock_configs_spec(
 
     """
 
-    def _update_hw_config(nested_dict):
+    def _update_hw_config(nested_dict, max_depth=4):
+        if max_depth == 0:
+            return
+        # list is needed because the dictionary keys are changed during recursion
         for key, value in list(nested_dict.items()):
             if isinstance(key, str) and re.match(r"^seq\d+$", key):
                 nested_dict["portclock_configs"] = nested_dict.get(
@@ -610,8 +613,8 @@ def convert_hw_config_to_portclock_configs_spec(
                 nested_dict["portclock_configs"].append(nested_dict[key])
                 del nested_dict[key]
 
-            elif hasattr(value, "items"):
-                _update_hw_config(value)
+            elif isinstance(value, dict):
+                _update_hw_config(value, max_depth - 1)
 
     hw_config = deepcopy(hw_config)
     _update_hw_config(hw_config)
