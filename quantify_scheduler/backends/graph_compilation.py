@@ -4,6 +4,10 @@ import networkx as nx
 from typing import Any, Callable, Dict, List, Optional, Union, Type
 from quantify_scheduler.structure import DataStructure
 from quantify_scheduler import Schedule, CompiledSchedule
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+
+from typing import Tuple
 
 
 class CompilationNode(DataStructure):
@@ -98,6 +102,45 @@ class CompilationBackend(nx.DiGraph):
         # nodes of the graph when calling the compile method
         self.add_node("input")
         self.add_node("output")
+
+    def draw(
+        self, ax: Axes = None, figsize: Tuple[float, float] = (20, 10), **options
+    ) -> Axes:
+        """
+        Draws the graph defined by this backend using matplotlib.
+
+        Will attempt to position the nodes using the "dot" algorithm from graphviz
+        if available.
+
+
+        Parameters
+        ----------
+        ax:
+            Matplotlib axis to plot the figure on
+        figsize:
+            Optional figure size, defaults to something slightly larger that fits the
+            size of the nodes.
+        options:
+            optional keyword arguments that are passed to
+            :func:`networkx.draw_networkx`.
+
+        """
+        if ax is None:
+            _, ax = plt.subplots(figsize=figsize)
+
+        options_dict = {
+            "font_size": 12,
+            "node_size": 3000,
+            "node_color": "white",
+            "edgecolors": "C0",
+        }
+        options_dict.update(options)
+
+        # attempt to use "dot" layout from graphviz.
+        pos = nx.drawing.nx_agraph.graphviz_layout(self, prog="dot")
+        nx.draw_networkx(self, pos=pos, ax=ax, **options_dict)
+        plt.axis("off")
+        return ax
 
     def compile(self, schedule: Schedule, config: dict) -> Schedule:
         """

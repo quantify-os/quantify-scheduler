@@ -14,6 +14,7 @@ from quantify_scheduler.backends.graph_compilation import (
     CompilationError,
 )
 from quantify_scheduler import Schedule, CompiledSchedule
+from matplotlib.axes import Axes
 
 from quantify_scheduler.backends.device_compile import DeviceCompile
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
@@ -183,3 +184,20 @@ def test_quantum_device_selects_right_backend():
     migration, this seems to be the most sensible way forward.
     """
     raise NotImplementedError
+
+
+def test_draw_backend():
+    """
+    Tests if we can visualize a the graph defined by a generic backend.
+    This test will only test if the draw code can be executed and a matplotlib figure
+    is created. It will not test the details of how this implementation.
+    """
+    test_graph = CompilationBackend()
+    test_graph.add_node(dummy_node_A)
+    test_graph.add_edge("input", dummy_node_A)
+    test_graph.add_node(dummy_node_B)
+    test_graph.add_edge(dummy_node_A, dummy_node_B)
+    test_graph.add_edge(dummy_node_B, "output")
+
+    ax = test_graph.draw()
+    assert isinstance(ax, Axes)

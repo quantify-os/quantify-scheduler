@@ -11,8 +11,9 @@ from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 from quantify_scheduler.backends.graph_compilation import (
     CompilationNode,
-    CompilationBackend,
 )
+
+from quantify_scheduler.backends.device_compile import DeviceCompile
 
 
 def hardware_compile(
@@ -86,10 +87,12 @@ qblox_hardware_compile = CompilationNode(
 )
 
 
-class QbloxBackend(CompilationBackend):
+class QbloxBackend(DeviceCompile):
     """
-    Backend for compiling a schedule from the Quantum-device layer to the
-    instructions suitable for ZurichInstruments hardware.
+    Backend for compiling a schedule from the Quantum-circuit layer to
+    instructions suitable for Qblox hardware.
+
+    This backend extends the DeviceCompile backend.
     """
 
     def __init__(self, incoming_graph_data=None, **attr):
