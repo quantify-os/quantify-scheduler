@@ -1422,7 +1422,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     Test helper that takes a compiled schedule and verifies if the assembly is valid
     by passing it to a dummy qcm and qrm.
 
-    Asssumes only qcm0 and qrm0 are used.
+    Assumes only qcm0 and qrm0 are used.
     """
 
     # test the program for the qcm
@@ -1682,35 +1682,33 @@ class TestLatencyCorrection:
         sched.add_resources([ClockResource("q0.01", freq=5e9)])
         sched.add_resources([ClockResource("q1.01", freq=5e9)])
         quantum_device = mock_setup["quantum_device"]
+        hardware_cfg = hardware_cfg_latency_corrections()
         compiled_sched = qcompile(
             sched,
             device_cfg=quantum_device.generate_device_config(),
-            hardware_cfg=hardware_cfg_latency_corrections(),
+            hardware_cfg=hardware_cfg,
         )
-
-        filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
-        with open(filename, "r") as fp:
-            program_lines = json.load(fp)["program"].splitlines()
-
-        assert any(
-            [
-                f"latency correction of {constants.GRID_TIME} + {20} ns" in line
-                for line in program_lines
-            ]
-        )
-
-        filename = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-            "seq0"
-        ]["seq_fn"]
-        with open(filename, "r") as fp:
-            program_lines = json.load(fp)["program"].splitlines()
-
-        assert any(
-            [
-                f"latency correction of {constants.GRID_TIME} + {5} ns" in line
-                for line in program_lines
-            ]
-        )
+        print(compiled_sched.compiled_instructions)
+        filenames = [
+            compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"],
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+                "seq0"
+            ]["seq_fn"],
+        ]
+        latencies = [
+            int(1e9 * hardware_cfg["latency_corrections"]["q0:mw-q0.01"]),
+            int(1e9 * hardware_cfg["latency_corrections"]["q1:mw-q1.01"]),
+        ]
+        for latency, filename in zip(latencies, filenames):
+            with open(filename, "r") as fp:
+                program_lines = json.load(fp)["program"].splitlines()
+            assert any(
+                [
+                    f"latency correction of {constants.GRID_TIME} + {latency} ns"
+                    in line
+                    for line in program_lines
+                ]
+            )
 
     def test_apply_latency_corrections_warning(
         self,
