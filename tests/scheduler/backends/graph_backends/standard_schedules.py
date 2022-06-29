@@ -15,6 +15,7 @@ The schedules are chosen to cover a range of use-cases that the backends should 
 These are mostly used to assert that the compilers run without errors. These are not
 used to pin specific outcomes of the compiler.
 """
+
 import pytest
 import numpy as np
 from quantify_scheduler import Schedule

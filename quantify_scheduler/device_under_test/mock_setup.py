@@ -14,7 +14,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_core.measurement.control import MeasurementControl
 
 
-def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
+def set_up_mock_transmon_setup_legacy():
     """
     Sets up a system containing 5 transmon qubits connected in a star shape.
 
@@ -35,27 +35,71 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
         name="instrument_coordinator", add_default_generic_icc=False
     )
 
-    if include_legacy_transmon:
-        # used in parts of the old test suite
-        q0 = TransmonElement("q0")  # pylint: disable=invalid-name
-        q1 = TransmonElement("q1")  # pylint: disable=invalid-name
+    # used in parts of the old test suite
+    q0 = TransmonElement("q0")  # pylint: disable=invalid-name
+    q1 = TransmonElement("q1")  # pylint: disable=invalid-name
 
-        q0.ro_pulse_amp(0.08)
-        q0.ro_freq(8.1e9)
-        q0.freq_01(5.8e9)
-        q0.freq_12(5.45e9)
-        q0.mw_amp180(0.314)
-        q0.mw_pulse_duration(20e-9)
-        q0.ro_pulse_delay(20e-9)
-        q0.ro_acq_delay(20e-9)
+    q0.ro_pulse_amp(0.08)
+    q0.ro_freq(8.1e9)
+    q0.freq_01(5.8e9)
+    q0.freq_12(5.45e9)
+    q0.mw_amp180(0.314)
+    q0.mw_pulse_duration(20e-9)
+    q0.ro_pulse_delay(20e-9)
+    q0.ro_acq_delay(20e-9)
 
-        q1.ro_freq(8.64e9)
-        q1.freq_01(6.4e9)
-        q1.freq_12(5.05e9)
+    q1.ro_freq(8.64e9)
+    q1.freq_01(6.4e9)
+    q1.freq_12(5.05e9)
 
-    else:
-        q0 = BasicTransmonElement("q0")
-        q1 = BasicTransmonElement("q1")
+    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
+    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
+    q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
+
+    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device.add_element(q0)
+    quantum_device.add_element(q1)
+    quantum_device.add_element(q2)
+    quantum_device.add_element(q3)
+    quantum_device.add_element(q4)
+    quantum_device.instr_measurement_control(meas_ctrl.name)
+    quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
+
+    return {
+        "meas_ctrl": meas_ctrl,
+        "instrument_coordinator": instrument_coordinator,
+        "q0": q0,
+        "q1": q1,
+        "q2": q2,
+        "q3": q3,
+        "q4": q4,
+        "quantum_device": quantum_device,
+    }
+
+
+def set_up_mock_transmon_setup():
+    """
+    Sets up a system containing 5 transmon qubits connected in a star shape.
+
+    .. code-block::
+
+        q0    q1
+          \  /
+           q2
+          /  \
+        q3    q4
+
+    """
+
+    # importing from init_mock will execute all the code in the module which
+    # will instantiate all the instruments in the mock setup.
+    meas_ctrl = MeasurementControl("meas_ctrl")
+    instrument_coordinator = InstrumentCoordinator(
+        name="instrument_coordinator", add_default_generic_icc=False
+    )
+
+    q0 = BasicTransmonElement("q0")
+    q1 = BasicTransmonElement("q1")
 
     q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
     q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
@@ -96,9 +140,9 @@ def set_up_mock_transmon_setup(include_legacy_transmon: bool = False):
         "q2": q2,
         "q3": q3,
         "q4": q4,
-        "edge_q0_q2": edge_q0_q2,
-        "edge_q1_q2": edge_q1_q2,
-        "edge_q2_q3": edge_q2_q3,
-        "edge_q2_q4": edge_q2_q4,
+        "q0-q2": edge_q0_q2,
+        "q1-q2": edge_q1_q2,
+        "q2-q3": edge_q2_q3,
+        "q2-q4": edge_q2_q4,
         "quantum_device": quantum_device,
     }

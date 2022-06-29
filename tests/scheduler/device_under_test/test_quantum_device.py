@@ -6,9 +6,9 @@ from quantify_scheduler.compilation import validate_config
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
-def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
+def test_QuantumDevice_generate_device_config(mock_setup_basic_transmon: dict) -> None:
 
-    quantum_device = mock_setup["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     # N.B. the validation of the generated config is happening inside the
     # device object itself using the pydantic dataclass. Invoking the function
@@ -20,9 +20,11 @@ def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
     assert "q2-q3" in dev_cfg.edges
 
 
-def test_QuantumDevice_generate_hardware_config(mock_setup: dict) -> None:
+def test_QuantumDevice_generate_hardware_config(
+    mock_setup_basic_transmon: dict,
+) -> None:
 
-    quantum_device = mock_setup["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     mock_hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
