@@ -233,6 +233,9 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
         super().__init__(
             parent=parent,
