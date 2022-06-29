@@ -92,11 +92,18 @@ class QbloxBackend(DeviceCompile):
     Backend for compiling a schedule from the Quantum-circuit layer to
     instructions suitable for Qblox hardware.
 
-    This backend extends the DeviceCompile backend.
+    This backend extends the :class:`.backends.DeviceCompile` backend.
     """
 
     def __init__(self, incoming_graph_data=None, **attr):
         super().__init__(incoming_graph_data=incoming_graph_data, **attr)
+
+        # find the last node of the graph we are extending and remove the output node
+        old_output_nodes = list(self.predecessors("output"))
+        self.remove_node("output")
+
+        # add the new node and connect it to all previous output nodes.
         self.add_node(qblox_hardware_compile)
-        self.add_edge("input", qblox_hardware_compile)
+        for old_output_node in old_output_nodes:
+            self.add_edge(old_output_node, qblox_hardware_compile)
         self.add_edge(qblox_hardware_compile, "output")

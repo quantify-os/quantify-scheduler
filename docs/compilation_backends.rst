@@ -24,9 +24,6 @@ Using a compilation backend
 
 In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule. This is done using a :class:`~.backends.graph_compilation.CompilationBackend`. The :meth:`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
 
-
-
-
 (basic user)
 
 User flow -> give a Schedule and  Quantum device as input.
@@ -72,28 +69,38 @@ Because the information required to
     comp_sched
 
 
-
-
-
-
-
-
-
-
-
-
 Understanding the structure of compilation
 ==========================================
 
-Compilation is done as a graph.
-This makes it really easy to show what steps
+A compilation backend defines a graph of compilation steps.
+This makes it really easy to visualize the different steps in the compilation process by drawing the graph.
+Below we show the graphs defined by the :class:`.backends.DeviceCompile`, the :class:`.backends.QbloxBackend`, and the :class:`.backends.ZhinstBackend`.
 
-special debugging mode where the output at the end of every node is saved (default is False).
-When compilation fails, the traceback should show in which node it fails.
-Easy way to visualize the node.
+.. jupyter-execute::
 
-Easy way to see which part of the config is used for which node.
+    from quantify_scheduler.backends import DeviceCompile, QbloxBackend, ZhinstBackend
 
+    dev_backend = DeviceCompile()
+    qblox_backend = QbloxBackend()
+    zhinst_backend= ZhinstBackend()
+
+    import matplotlib.pyplot as plt
+    f, axs = plt.subplots(1,3, figsize=(16,7))
+
+    # Show the graph of the currently included backends
+    dev_backend.draw(axs[0])
+    axs[0].set_title('DeviceBackend')
+    qblox_backend.draw(axs[1])
+    axs[1].set_title('QbloxBackend')
+    zhinst_backend.draw(axs[2])
+    axs[2].set_title('ZhinstBackend')
+    f
+
+
+One might notice that some nodes appear in multiple backends.
+This is intentional and showcases how we are reusing certain modular compilation steps.
+
+[Planned feature] When using a compilation backend, the graph based structure also allows us to verify the output at the end of every node. This can be particularly useful when the compilation is not producing the output expected by the user.
 
 Creating a custom compilation backend
 =====================================
@@ -123,6 +130,15 @@ What steps does it take?
 Showing the steps in the backend to understand what happens in the compilation.
 
 
+Dynamically generate graphs based on the structure of the config.
+Currently we only support static graphs, but it makes sense to dynamically generate the graph structure upon instantiation of the backend.
+Figuring out how we want to support this requires further thought. My gutfeel teels me that this is related to the part of the hardware configuration that remains fixed.
+
+How to deal with non-linear graphs (nodes in parallel) is not 100% clear yet. The meaning of parallelism is something I am getting to now, but it is not fully clear yet how to deal with input output definitions of nodes yet.
+
+
+
+
 Backend internals
 
 
@@ -131,3 +147,5 @@ Backend internals
     :hide-code:
 
     %reset -f
+
+

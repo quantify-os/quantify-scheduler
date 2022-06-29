@@ -129,8 +129,8 @@ class CompilationBackend(nx.DiGraph):
             _, ax = plt.subplots(figsize=figsize)
 
         options_dict = {
-            "font_size": 12,
-            "node_size": 3000,
+            "font_size": 10,
+            "node_size": 2200,
             "node_color": "white",
             "edgecolors": "C0",
         }
@@ -139,7 +139,8 @@ class CompilationBackend(nx.DiGraph):
         # attempt to use "dot" layout from graphviz.
         pos = nx.drawing.nx_agraph.graphviz_layout(self, prog="dot")
         nx.draw_networkx(self, pos=pos, ax=ax, **options_dict)
-        plt.axis("off")
+        ax.set_axis_off()
+
         return ax
 
     def compile(self, schedule: Schedule, config: dict) -> Schedule:
