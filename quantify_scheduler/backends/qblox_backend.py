@@ -9,6 +9,11 @@ from typing import Any, Dict
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationNode,
+    CompilationBackend,
+)
+
 
 def hardware_compile(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
@@ -71,3 +76,24 @@ def hardware_compile(
     schedule["compiled_instructions"] = compiled_instructions
     # Mark the schedule as a compiled schedule
     return CompiledSchedule(schedule)
+
+
+qblox_hardware_compile = CompilationNode(
+    name="qblox_hardware_compile",
+    compilation_func=hardware_compile,
+    config_key="hardware_cfg",
+    config_validator=None,
+)
+
+
+class QbloxBackend(CompilationBackend):
+    """
+    Backend for compiling a schedule from the Quantum-device layer to the
+    instructions suitable for ZurichInstruments hardware.
+    """
+
+    def __init__(self, incoming_graph_data=None, **attr):
+        super().__init__(incoming_graph_data=incoming_graph_data, **attr)
+        self.add_node(qblox_hardware_compile)
+        self.add_edge("input", qblox_hardware_compile)
+        self.add_edge(qblox_hardware_compile, "output")
