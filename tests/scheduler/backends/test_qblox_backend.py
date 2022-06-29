@@ -97,7 +97,7 @@ def make_hardware_cfg_latency_corrections():
     def _make_hardware_cfg_latency_corrections():
         return {
             "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "latency_corrections": {f"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+            "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
             "qcm0": {
                 "instrument_type": "Pulsar_QCM",
                 "ref": "internal",
@@ -1700,14 +1700,11 @@ class TestLatencyCorrection:
             int(1e9 * hardware_cfg["latency_corrections"]["q1:mw-q1.01"]),
         ]
         for latency, filename in zip(latencies, filenames):
-            with open(filename, "r") as fp:
-                program_lines = json.load(fp)["program"].splitlines()
+            with open(filename, "r") as file:
+                program_lines = json.load(file)["program"].splitlines()
             assert any(
-                [
-                    f"latency correction of {constants.GRID_TIME} + {latency} ns"
-                    in line
-                    for line in program_lines
-                ]
+                f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
+                for line in program_lines
             )
 
     def test_apply_latency_corrections_warning(
@@ -1740,7 +1737,7 @@ class TestLatencyCorrection:
                 device_cfg=quantum_device.generate_device_config(),
                 hardware_cfg=hardware_cfg_latency_corrections(),
             )
-        assert any([warning in mssg for mssg in caplog.messages])
+        assert any(warning in mssg for mssg in caplog.messages)
 
 
 def _strip_comments(program: str):
