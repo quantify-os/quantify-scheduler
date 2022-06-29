@@ -567,7 +567,7 @@ def assign_pulse_and_acq_info_to_devices(
 
 def convert_hw_config_to_portclock_configs_spec(
     hw_config: Dict[str, Any],
-):
+) -> Dict[str, Any]:
     """
     Converts possibly old hardware configs to the new format introduced by
     the new dynamic sequencer allocation feature. I.e. manual
@@ -588,25 +588,22 @@ def convert_hw_config_to_portclock_configs_spec(
 
     """
 
+    def _update_hw_config(
+        nested_dict,
+    ):
+        # List to generator conversion is needed because the dictionary keys are
+        # changed during recursion
+        for key, value in list(nested_dict.items()):
+            if isinstance(key, str) and re.match(r"^seq\d+$", key):
+                nested_dict["portclock_configs"] = nested_dict.get(
+                    "portclock_configs", []
+                )
+                nested_dict["portclock_configs"].append(nested_dict[key])
+                del nested_dict[key]
+
+            elif isinstance(value, dict):
+                _update_hw_config(value)
+
     hw_config = deepcopy(hw_config)
-
-    for device_info in hw_config.values():
-        if not isinstance(device_info, dict):
-            continue
-
-        for io, io_cfg in device_info.items():
-            if not isinstance(io_cfg, dict):
-                continue
-
-            new_io_cfg = {}
-            new_io_cfg["portclock_configs"] = io_cfg.get("portclock_configs", [])
-
-            for entry, value in io_cfg.items():
-                if not re.match(r"^seq\d+$", entry):
-                    new_io_cfg[entry] = value
-                    continue
-                new_io_cfg["portclock_configs"].append(io_cfg[entry])
-
-            device_info[io] = new_io_cfg
-
+    _update_hw_config(hw_config)
     return hw_config

@@ -1601,6 +1601,26 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 "seq2": {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
             },
         },
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module2": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "seq0": {
+                        "port": "q1:res",
+                        "clock": "q1.ro",
+                        "interm_freq": 50e6,
+                    },
+                    "seq1": {
+                        "port": "q2:res",
+                        "clock": "q2.01",
+                        "interm_freq": 50e6,
+                    },
+                },
+            },
+        },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
         "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     }
@@ -1626,6 +1646,28 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 ],
             },
         },
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module2": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [
+                        {
+                            "port": "q1:res",
+                            "clock": "q1.ro",
+                            "interm_freq": 50e6,
+                        },
+                        {
+                            "port": "q2:res",
+                            "clock": "q2.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+            },
+        },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
         "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     }
@@ -1638,7 +1680,7 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
+    sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
     sched = device_compile(sched, DEVICE_CFG)
     with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
         hardware_compile(sched, old_config)
