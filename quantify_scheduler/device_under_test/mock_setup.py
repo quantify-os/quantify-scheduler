@@ -146,3 +146,46 @@ def set_up_mock_transmon_setup():
         "q2-q4": edge_q2_q4,
         "quantum_device": quantum_device,
     }
+
+
+def set_standard_params(mock_setup):
+    """
+    Sets somewhat standard parameters to the mock setup generated above.
+    These parameters serve so that the quantum-device is capable of generating
+    a configuration that can be used for compiling schedules.
+
+    In normal use, unknown parameters are set as 'nan' values, forcing the user to
+    set these. However for testing purposes it can be useful to set some semi-random
+    values. The values here are chosen to reflect typical values as used in practical
+    experiments.
+    """
+
+    q0 = mock_setup["q0"]
+    q0.rxy.amp180(0.45)
+    q0.clock_freqs.f01(7.3e9)
+    q0.clock_freqs.f12(7.0e9)
+    q0.clock_freqs.readout(8.0e9)
+
+    q1 = mock_setup["q1"]
+    q1.rxy.amp180(0.325)
+    q1.clock_freqs.f01(7.25e9)
+    q1.clock_freqs.f12(6.89e9)
+    q1.clock_freqs.readout(8.3e9)
+
+    q2 = mock_setup["q2"]
+    q2.rxy.amp180(0.421)
+    q2.clock_freqs.f01(6.33e9)
+    q2.clock_freqs.f12(6.09e9)
+    q2.clock_freqs.readout(8.5e9)
+
+    q3 = mock_setup["q3"]
+    q3.rxy.amp180(0.421)
+    q3.clock_freqs.f01(5.71e9)
+    q3.clock_freqs.f12(5.48e9)
+    q3.clock_freqs.readout(8.7e9)
+
+    q4 = mock_setup["q4"]
+    q4.rxy.amp180(0.421)
+    q4.clock_freqs.f01(5.68e9)
+    q4.clock_freqs.f12(5.41e9)
+    q4.clock_freqs.readout(9.1e9)

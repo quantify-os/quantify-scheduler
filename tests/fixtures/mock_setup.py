@@ -15,6 +15,7 @@ from quantify_core.data.handling import get_datadir, set_datadir
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_mock_transmon_setup,
     set_up_mock_transmon_setup_legacy,
+    set_standard_params,
 )
 
 
@@ -141,6 +142,7 @@ def device_compile_config_basic_transmon(mock_setup_basic_transmon):
     # N.B. how this fixture produces the hardware config can change in the future
     # as long as it keeps doing what is described in this docstring.
 
+    set_standard_params(mock_setup_basic_transmon)
     yield mock_setup_basic_transmon["quantum_device"].compilation_config
 
 
@@ -153,6 +155,7 @@ def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon):
     # N.B. how this fixture produces the hardware config will change in the future
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
+    set_standard_params(mock_setup_basic_transmon)
     mock_setup_basic_transmon["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
 
     # add the hardware config here
@@ -168,6 +171,7 @@ def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon):
     # N.B. how this fixture produces the hardware config will change in the future
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
+    set_standard_params(mock_setup_basic_transmon)
     mock_setup_basic_transmon["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
 
     yield mock_setup_basic_transmon["quantum_device"].compilation_config
