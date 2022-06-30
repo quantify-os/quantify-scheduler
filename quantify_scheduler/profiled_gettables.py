@@ -1,10 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 16 14:05:01 2022
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+r"""
+Module containing :class:`~quantify_core.measurement.types.ProfiledGettable`\s for use with
+quantify-scheduler.
 
-Profiled gettable
-@author: koen
+.. warning::
+
+    The ProfiledGettable is currently only tested to support Qblox hardware.
 """
 
 import logging
