@@ -780,8 +780,6 @@ def test_contruct_sequencers_excess_error(
         },
     }
 
-    device = mock_setup_basic_transmon_elements["quantum_device"]
-
     test_module = QcmRfModule(
         parent=None,
         name="tester",
@@ -790,7 +788,10 @@ def test_contruct_sequencers_excess_error(
     )
 
     sched = make_basic_multi_qubit_schedule(element_names)
-    sched = device_compile(sched, device.generate_device_config())
+    sched = device_compile(
+        sched,
+        mock_setup_basic_transmon_elements["quantum_device"].generate_device_config(),
+    )
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -1653,10 +1654,7 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
         hardware_compile(sched, old_config)
 
 
-def test_apply_latency_corrections_valid(
-    hardware_cfg_latency_corrections,
-    mock_setup,
-):
+def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_corrections):
     """
     This test function checks that:
     Latency correction is set for the correct portclock key
@@ -1705,9 +1703,7 @@ def test_apply_latency_corrections_valid(
 
 
 def test_apply_latency_corrections_warning(
-    caplog,
-    hardware_cfg_latency_corrections,
-    mock_setup,
+    mock_setup, hardware_cfg_latency_corrections, caplog
 ):
     """
     Checks if warning is raised for a latency correction
@@ -1720,15 +1716,13 @@ def test_apply_latency_corrections_warning(
     )
     sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
-    quantum_device = mock_setup["quantum_device"]
-
     warning = f"not a multiple of {constants.GRID_TIME}"
     with caplog.at_level(
         logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
         qcompile(
             sched,
-            device_cfg=quantum_device.generate_device_config(),
+            device_cfg=mock_setup["quantum_device"].generate_device_config(),
             hardware_cfg=hardware_cfg_latency_corrections(),
         )
     assert any(warning in mssg for mssg in caplog.messages)
