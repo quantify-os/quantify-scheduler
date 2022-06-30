@@ -153,6 +153,15 @@ class ScheduleGettable:
         """Acquire and return data"""
         return self.get()
 
+    def _compile(self, sched):
+        """ Compile schedule """
+        self._compiled_schedule = qcompile(
+            schedule=sched,
+            device_cfg=self.quantum_device.generate_device_config(),
+            hardware_cfg=self.quantum_device.generate_hardware_config(),
+        )
+
+
     def initialize(self):
         """
         This generates the schedule and uploads the compiled instructions to the
@@ -166,12 +175,7 @@ class ScheduleGettable:
             **self._evaluated_sched_kwargs,
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
-
-        self._compiled_schedule = qcompile(
-            schedule=sched,
-            device_cfg=self.quantum_device.generate_device_config(),
-            hardware_cfg=self.quantum_device.generate_hardware_config(),
-        )
+        self._compile(sched)
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(self._compiled_schedule)
