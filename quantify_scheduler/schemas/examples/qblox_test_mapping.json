@@ -1,5 +1,6 @@
 {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "latency_corrections": {"q4:mw-q4.01": 8e-9, "q5:mw-q5.01": 4e-9},
     "cluster0": {
         "ref": "internal",
         "instrument_type": "Cluster",
