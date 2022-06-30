@@ -80,7 +80,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         Generates the data and adds them to the ``wf_dict`` (if not already present).
 
         By default, real-valued data is produced on path0 and imaginary data on path1.
-        
+
         .. math::
             \\underbrace{\\begin{bmatrix}
             \\cos\\omega t & -\\sin\\omega t \\\\
@@ -96,7 +96,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             \\underbrace{I \\cdot \\sin\\omega t + Q \\cdot\\cos\\omega t}_{\\small \\textbf{imag} \\Rightarrow \\text{path1}} \\end{matrix}
 
         If ``output_mode == "imag"``, this moves the real-valued data to be produced on
-        path1 instead of path0. We multiply Q by -1 (via ``amp_imag``) to undo the 
+        path1 instead of path0. We multiply Q by -1 (via ``amp_imag``) to undo the
         90-degree shift resulting from swapping NCO paths.
 
         .. math::

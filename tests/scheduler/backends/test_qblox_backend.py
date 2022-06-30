@@ -154,7 +154,9 @@ def hardware_cfg_baseband():
 
 
 @pytest.fixture
-def hardware_cfg_real_mode(instruction_generated_pulses_enabled):
+def hardware_cfg_real_mode(
+    instruction_generated_pulses_enabled,
+):  # pylint: disable=line-too-long
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -177,7 +179,7 @@ def hardware_cfg_real_mode(instruction_generated_pulses_enabled):
                     {
                         "port": "RP",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": False,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
                 ],
             },
@@ -187,7 +189,7 @@ def hardware_cfg_real_mode(instruction_generated_pulses_enabled):
                     {
                         "port": "TB",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": False,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
                 ],
             },
@@ -960,20 +962,21 @@ def test_qcm_acquisition_error():
 def test_real_mode_pulses(
     real_square_pulse_schedule,
     hardware_cfg_real_mode,
-    instruction_generated_pulses_enabled,
+    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+    set_datadir(tempfile.TemporaryDirectory().name)
+
     real_square_pulse_schedule.repetitions = 10
     full_program = qcompile(
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
+
     for i in range(3):
         filename = full_program.compiled_instructions["qcm0"][f"seq{i}"]["seq_fn"]
-        with open(filename, "r") as fp:
-            seq_instructions = json.load(fp)
+        with open(filename, "r") as file:
+            seq_instructions = json.load(file)
 
-        for key, value in seq_instructions["waveforms"].items():
+        for value in seq_instructions["waveforms"].values():
             data, index = value["data"], value["index"]
             if index == 0:
                 assert (np.array(data) == 1).all()
@@ -984,9 +987,10 @@ def test_real_mode_pulses(
             play_sequence = "0,1"
         else:
             play_sequence = "1,0"
+
         assert re.search(
             f"play\s*{play_sequence}", seq_instructions["program"]
-        ), f"Sequence must be played in the order {play_sequence} in real mode"
+        ), f'Sequence must be played in the order "{play_sequence}" in real mode'
 
 
 # --------- Test QASMProgram class ---------
@@ -1196,7 +1200,7 @@ def test_generate_uuid_from_wf_data():
 def test_real_mode_container(
     real_square_pulse_schedule,
     hardware_cfg_real_mode,
-    instruction_generated_pulses_enabled,
+    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_real_mode
