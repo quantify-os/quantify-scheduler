@@ -592,45 +592,33 @@ def convert_hw_config_to_portclock_configs_spec(
 
     """
 
-    hw_config = deepcopy(hw_config)
-
-    latency_corrections_key = "latency_corrections"
-    hw_config[latency_corrections_key] = hw_config.get(latency_corrections_key, {})
-
-    for device_info in hw_config.values():
-        if not isinstance(device_info, dict):
-            continue
-
-        for io, io_cfg in device_info.items():
-            if not isinstance(io_cfg, dict):
-                continue
-
-            portclock_configs_key = "portclock_configs"
-            new_io_cfg = {}
-            new_io_cfg[portclock_configs_key] = io_cfg.get(portclock_configs_key, [])
-
-            latency_correction_key = "latency_correction"
-            for key, value in io_cfg.items():
-                if re.match(r"^seq\d+$", key):
-                    if (
-                        latency_correction_key in value
-                    ):  # Move sequencer latency correction
-                        portclock_key = f"{value['port']}-{value['clock']}"
-                        hw_config[latency_corrections_key][portclock_key] = value.pop(
-                            latency_correction_key
-                        )
-
-                    new_io_cfg[portclock_configs_key].append(io_cfg[key])
-                else:
-                    new_io_cfg[key] = value
-
-            for config in new_io_cfg[portclock_configs_key]:
-                if (
-                    latency_correction_key in config
-                ):  # Move portclock_config latency correction
-                    portclock_key = f"{config['port']}-{config['clock']}"
-                    hw_config[latency_corrections_key][portclock_key] = config.pop(
-                        latency_correction_key
+    def _update_hw_config(nested_dict, max_depth=4):
+        if max_depth == 0:
+            return
+        # List is needed because the dictionary keys are changed during recursion
+        for key, value in list(nested_dict.items()):
+            if isinstance(key, str) and re.match(r"^seq\d+$", key):
+                nested_dict["portclock_configs"] = nested_dict.get(
+                    "portclock_configs", []
+                )
+                # Move latency_corrections to parent level of hw_config
+                if "latency_correction" in value.keys():
+                    hw_config["latency_corrections"] = hw_config.get(
+                        "latency_corrections", {}
                     )
-            device_info[io] = new_io_cfg
+                    latency_correction_key = f"{value['port']}-{value['clock']}"
+                    hw_config["latency_corrections"][latency_correction_key] = value[
+                        "latency_correction"
+                    ]
+                    del value["latency_correction"]
+
+                nested_dict["portclock_configs"].append(value)
+                del nested_dict[key]
+
+            elif isinstance(value, dict):
+                _update_hw_config(value, max_depth - 1)
+
+    hw_config = deepcopy(hw_config)
+    _update_hw_config(hw_config)
+
     return hw_config
