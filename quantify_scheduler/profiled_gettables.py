@@ -7,17 +7,18 @@ Profiled gettable
 @author: koen
 """
 
-from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.gettables import ScheduleGettable, _evaluate_parameter_dict
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-
 import logging
 import time
-import numpy as np
-from datetime import datetime
-import os
 import json
+import os
+from datetime import datetime
+import numpy as np
+
 import matplotlib.pyplot as plt
+
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     def __init__(self, name: str, parentinstrumentcoordinator):
         self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
-        self.parentIC = parentinstrumentcoordinator
+        self.parent_ic = parentinstrumentcoordinator
 
     def _get_schedule_time(self, compiled_schedule):
         op_len = [op["pulse_info"][0]["duration"]
@@ -54,29 +55,29 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     @profiler
     def add_component(self, component,
                       ) -> None:
-        self.parentIC.add_component(component)
+        self.parent_ic.add_component(component)
 
     @profiler
     def prepare(self, compiled_schedule,
                 ) -> None:
         self._get_schedule_time(compiled_schedule)
-        self.parentIC.prepare(compiled_schedule)
+        self.parent_ic.prepare(compiled_schedule)
 
     @profiler
     def start(self):
-        self.parentIC.start()
+        self.parent_ic.start()
 
     @profiler
     def stop(self, allow_failure=False):
-        self.parentIC.stop()
+        self.parent_ic.stop()
 
     @profiler
     def retrieve_acquisition(self):
-        self.parentIC.retrieve_acquisition()
+        self.parent_ic.retrieve_acquisition()
 
     @profiler
-    def wait_done(self):
-        self.parentIC.wait_done()
+    def wait_done(self, timeout_sec: int = 10):
+        self.parent_ic.wait_done(timeout_sec)
 
 
 class ProfiledGettable(ScheduleGettable):
@@ -97,6 +98,7 @@ class ProfiledGettable(ScheduleGettable):
         self.quantum_device.instr_instrument_coordinator("profiled_IC")
 
     def _compile(self, sched):
+        """ Overwrite compile step ofr profiling. """
         start = time.time()
         self._compiled_schedule = qcompile(
             schedule=sched,
@@ -105,9 +107,8 @@ class ProfiledGettable(ScheduleGettable):
         )
         stop = time.time()
         self.profile["compile"].append(stop - start)
-        
-    def log_profiles(
-        self, path="profiling_logs/profiling_log{}.json".format(
+
+    def log_profiles(self, path="profiling_log{}.json".format(
             datetime.now().strftime("%m%d%H%M"))):
         """
         Store time logs to json file.
@@ -118,39 +119,32 @@ class ProfiledGettable(ScheduleGettable):
 
         if not os.path.exists("profiling_logs"):
             os.makedirs("profiling_logs")
-        with open(path, 'w') as f:
-            json.dump(profile, f, indent=4, separators=(',', ': '))
+        with open("profiling_logs/{}".format(path), 'w') as file:
+            json.dump(profile, file, indent=4, separators=(',', ': '))
 
-    def plot_profile(self):
+    def plot_profile(self, plot_name="average_runtimes.pdf"):
+        """ Create barplot of accumulated profiling data. """
         profile = self.profile.copy()
         profile.update(self.profiled_instr_coordinator.profile)
         time_ax = list(profile.keys())
-        profile_keys = len(time_ax)
-        x_pos = np.arange(profile_keys)
+        num_keys = len(time_ax)
+        x_pos = np.arange(num_keys)
         means = [np.mean(x)
                  for x in profile.values()]
         error = [np.std(x)
                  for x in profile.values()]
         fig, ax = plt.subplots(figsize=(9, 6))
         color = ['xkcd:bright blue', 'xkcd:sky blue', 'xkcd:sea blue',
-                 'xkcd:turquoise blue', 'xkcd:aqua', 'xkcd:cyan']
-        color = color[:profile_keys]
-        ax.bar(
-            x_pos,
-            means,
-            yerr=error,
-            align='center',
-            color=color,
-            ecolor='black',
-            capsize=10)
-        ax.bar(profile_keys, means[0], color=color[0])
-
-        for i in range(1, profile_keys):
-            ax.bar(profile_keys, means[i],
+                 'xkcd:turquoise blue', 'xkcd:aqua', 'xkcd:cyan'][:num_keys]
+        ax.bar(x_pos, means, yerr=error, color=color)
+        ax.bar(num_keys, means[0], color=color[0])
+        for i in range(1, num_keys):
+            ax.bar(num_keys, means[i],
                    color=color[i], bottom=sum(means[:i]))
         time_ax.append('total')
-        ax.set_xticks(np.append(x_pos, profile_keys))
+        ax.set_xticks(np.append(x_pos, num_keys))
         ax.set_xticklabels(time_ax)
         plt.ylabel("runtime [s]")
         plt.title("Average runtimes")
-        plt.savefig("average_runtimes.pdf")
+        fig.savefig(plot_name)
+        
