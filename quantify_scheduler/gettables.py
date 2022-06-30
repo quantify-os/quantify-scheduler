@@ -161,7 +161,6 @@ class ScheduleGettable:
             hardware_cfg=self.quantum_device.generate_hardware_config(),
         )
 
-
     def initialize(self):
         """
         This generates the schedule and uploads the compiled instructions to the
@@ -253,9 +252,9 @@ class ScheduleGettable:
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
-                for acq_idx in acq_indices:
-                    val = acquired_data[(acq_channel, acq_idx)]
-                    dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
+                #for acq_idx in acq_indices:
+                  #  val = acquired_data[(acq_channel, acq_idx)]
+                 #   dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
 
         elif acq_metadata.bin_mode == BinMode.APPEND:
             dataset = {}
