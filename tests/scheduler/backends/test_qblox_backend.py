@@ -763,25 +763,27 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
         test_module.sequencers = test_module._construct_sequencers()
 
 
-def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
-
+@pytest.mark.parametrize(
+    "element_names", [[f"q{i}" for i in range(constants.NUMBER_OF_SEQUENCERS_QCM + 1)]]
+)
+def test_contruct_sequencers_excess_error(
+    mock_setup_basic_transmon_elements, make_basic_multi_qubit_schedule, element_names
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "instrument_type": "Pulsar_QCM_RF",
             "ref": "internal",
-            "complex_output_0": {"portclock_configs": []},
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6}
+                    for i in range(len(element_names))
+                ]
+            },
         },
     }
 
-    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
-        {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
-    ]
-
-    device = QuantumDevice("device")
-    elements = [TransmonElement(f"q{i}") for i in range(7)]
-    for element in elements:
-        device.add_component(element)
+    device = mock_setup_basic_transmon_elements["quantum_device"]
 
     test_module = QcmRfModule(
         parent=None,
@@ -790,8 +792,9 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         hw_mapping=hardware_cfg["qcm0"],
     )
 
-    sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
+    sched = make_basic_multi_qubit_schedule(element_names)
     sched = device_compile(sched, device.generate_device_config())
+
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -1673,6 +1676,7 @@ class TestLatencyCorrection:
         """
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
+
         sched = Schedule("Single Gate Experiment on Two Qubits")
         sched.add(X("q0"))
         sched.add(
@@ -1681,31 +1685,40 @@ class TestLatencyCorrection:
         )
         sched.add_resources([ClockResource("q0.01", freq=5e9)])
         sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
         quantum_device = mock_setup["quantum_device"]
+
         hardware_cfg = hardware_cfg_latency_corrections()
         compiled_sched = qcompile(
             sched,
             device_cfg=quantum_device.generate_device_config(),
             hardware_cfg=hardware_cfg,
         )
-        print(compiled_sched.compiled_instructions)
-        filenames = [
-            compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"],
-            compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-                "seq0"
-            ]["seq_fn"],
-        ]
-        latencies = [
-            int(1e9 * hardware_cfg["latency_corrections"]["q0:mw-q0.01"]),
-            int(1e9 * hardware_cfg["latency_corrections"]["q1:mw-q1.01"]),
-        ]
-        for latency, filename in zip(latencies, filenames):
+
+        for instrument in ["qcm0", ("cluster0", "cluster0_module1")]:
+            compiled_data = compiled_sched.compiled_instructions
+            config_data = hardware_cfg
+
+            if isinstance(instrument, tuple):
+                for key in instrument:
+                    compiled_data = compiled_data.get(key)
+                    config_data = config_data.get(key)
+            else:
+                compiled_data = compiled_data.get(instrument)
+                config_data = config_data.get(instrument)
+
+            filename = compiled_data["seq0"]["seq_fn"]
+
+            port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
+            clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
+            latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
+
             with open(filename, "r") as file:
                 program_lines = json.load(file)["program"].splitlines()
             assert any(
                 f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
                 for line in program_lines
-            )
+            ), f"instrument={instrument}, latency={latency}"
 
     def test_apply_latency_corrections_warning(
         self,
@@ -1720,12 +1733,14 @@ class TestLatencyCorrection:
         """
         tmp_dir = tempfile.TemporaryDirectory()
         set_datadir(tmp_dir.name)
+
         sched = Schedule("Single Gate Experiment")
         sched.add(
             SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
             ref_pt="start",
         )
         sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
         quantum_device = mock_setup["quantum_device"]
 
         warning = f"not a multiple of {constants.GRID_TIME}"

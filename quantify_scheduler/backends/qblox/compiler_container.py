@@ -120,20 +120,20 @@ class CompilerContainer:
 
         if isinstance(instrument_type, type):
             if instrument_type is compiler_classes.LocalOscillator:
-                compiler = instrument_type(
-                    self,
-                    name,
-                    self.total_play_time,
-                    instrument_cfg,
+                compiler = compiler_classes.LocalOscillator(
+                    parent=self,
+                    name=name,
+                    total_play_time=self.total_play_time,
+                    hw_mapping=instrument_cfg,
                 )
                 self.generics.add(name)
             else:
                 compiler = instrument_type(
-                    self,
-                    name,
-                    self.total_play_time,
-                    instrument_cfg,
-                    latency_corrections,
+                    parent=self,
+                    name=name,
+                    total_play_time=self.total_play_time,
+                    hw_mapping=instrument_cfg,
+                    latency_corrections=latency_corrections,
                 )
 
             self.instrument_compilers[name] = compiler
