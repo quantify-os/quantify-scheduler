@@ -59,9 +59,6 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
-
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
@@ -794,7 +791,6 @@ def test_contruct_sequencers_excess_error(
 
     sched = make_basic_multi_qubit_schedule(element_names)
     sched = device_compile(sched, device.generate_device_config())
-
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -1657,102 +1653,85 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
         hardware_compile(sched, old_config)
 
 
-class TestLatencyCorrection:
+def test_apply_latency_corrections_valid(
+    hardware_cfg_latency_corrections,
+    mock_setup,
+):
     """
-    Class containing all the latency correction related tests for qblox backend
-
+    This test function checks that:
+    Latency correction is set for the correct portclock key
+    by checking against the value set in QASM instructions.
     """
+    sched = Schedule("Single Gate Experiment on Two Qubits")
+    sched.add(X("q0"))
+    sched.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
-    def test_apply_latency_corrections_valid(
-        self,
-        hardware_cfg_latency_corrections,
-        mock_setup,
+    hardware_cfg = hardware_cfg_latency_corrections()
+    compiled_sched = qcompile(
+        sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    for instrument in ["qcm0", ("cluster0", "cluster0_module1")]:
+        compiled_data = compiled_sched.compiled_instructions
+        config_data = hardware_cfg
+
+        if isinstance(instrument, tuple):
+            for key in instrument:
+                compiled_data = compiled_data.get(key)
+                config_data = config_data.get(key)
+        else:
+            compiled_data = compiled_data.get(instrument)
+            config_data = config_data.get(instrument)
+
+        filename = compiled_data["seq0"]["seq_fn"]
+
+        port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
+        clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
+        latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
+
+        with open(filename, "r") as file:
+            program_lines = json.load(file)["program"].splitlines()
+        assert any(
+            f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
+            for line in program_lines
+        ), f"instrument={instrument}, latency={latency}"
+
+
+def test_apply_latency_corrections_warning(
+    caplog,
+    hardware_cfg_latency_corrections,
+    mock_setup,
+):
+    """
+    Checks if warning is raised for a latency correction
+    that is not a multiple of 4ns
+    """
+    sched = Schedule("Single Gate Experiment")
+    sched.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
+    quantum_device = mock_setup["quantum_device"]
+
+    warning = f"not a multiple of {constants.GRID_TIME}"
+    with caplog.at_level(
+        logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
-
-        """
-        This test function checks that:
-        Latency correction is set for the correct portclock key
-        by checking against the value set in QASM instructions.
-        """
-        tmp_dir = tempfile.TemporaryDirectory()
-        set_datadir(tmp_dir.name)
-
-        sched = Schedule("Single Gate Experiment on Two Qubits")
-        sched.add(X("q0"))
-        sched.add(
-            SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
-            ref_pt="start",
-        )
-        sched.add_resources([ClockResource("q0.01", freq=5e9)])
-        sched.add_resources([ClockResource("q1.01", freq=5e9)])
-
-        quantum_device = mock_setup["quantum_device"]
-
-        hardware_cfg = hardware_cfg_latency_corrections()
-        compiled_sched = qcompile(
+        qcompile(
             sched,
             device_cfg=quantum_device.generate_device_config(),
-            hardware_cfg=hardware_cfg,
+            hardware_cfg=hardware_cfg_latency_corrections(),
         )
-
-        for instrument in ["qcm0", ("cluster0", "cluster0_module1")]:
-            compiled_data = compiled_sched.compiled_instructions
-            config_data = hardware_cfg
-
-            if isinstance(instrument, tuple):
-                for key in instrument:
-                    compiled_data = compiled_data.get(key)
-                    config_data = config_data.get(key)
-            else:
-                compiled_data = compiled_data.get(instrument)
-                config_data = config_data.get(instrument)
-
-            filename = compiled_data["seq0"]["seq_fn"]
-
-            port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
-            clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
-            latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
-
-            with open(filename, "r") as file:
-                program_lines = json.load(file)["program"].splitlines()
-            assert any(
-                f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
-                for line in program_lines
-            ), f"instrument={instrument}, latency={latency}"
-
-    def test_apply_latency_corrections_warning(
-        self,
-        caplog,
-        hardware_cfg_latency_corrections,
-        mock_setup,
-    ):
-        """
-
-        Checks if warning is raised for a latency correction
-        that is not a multiple of 4ns
-        """
-        tmp_dir = tempfile.TemporaryDirectory()
-        set_datadir(tmp_dir.name)
-
-        sched = Schedule("Single Gate Experiment")
-        sched.add(
-            SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
-            ref_pt="start",
-        )
-        sched.add_resources([ClockResource("q1.01", freq=5e9)])
-
-        quantum_device = mock_setup["quantum_device"]
-
-        warning = f"not a multiple of {constants.GRID_TIME}"
-        with caplog.at_level(
-            logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
-        ):
-            qcompile(
-                sched,
-                device_cfg=quantum_device.generate_device_config(),
-                hardware_cfg=hardware_cfg_latency_corrections(),
-            )
-        assert any(warning in mssg for mssg in caplog.messages)
+    assert any(warning in mssg for mssg in caplog.messages)
 
 
 def _strip_comments(program: str):
