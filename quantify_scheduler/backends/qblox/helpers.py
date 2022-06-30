@@ -1,7 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
-
 import re
 from copy import deepcopy
 from collections import UserDict
@@ -570,10 +569,15 @@ def convert_hw_config_to_portclock_configs_spec(
 ) -> Dict[str, Any]:
     """
     Converts possibly old hardware configs to the new format introduced by
-    the new dynamic sequencer allocation feature. I.e. manual
-    assignment between sequencers and portclocks under each output is removed, and
-    instead only a list of port-clock configurations is specified,
-    under the new `portclock_configs` key.
+    the new dynamic sequencer allocation feature.
+
+    Manual assignment between sequencers and port-clock combinations under each output
+    is removed, and instead only a list of port-clock configurations is specified,
+    under the new ``"portclock_configs"`` key.
+
+    Furthermore, we scan for ``"latency_correction"`` defined at sequencer or
+    portclock_configs level and store under ``"port:clock"`` under toplevel
+    "latency_corrections" key.
 
     Parameters
     ----------
@@ -588,22 +592,45 @@ def convert_hw_config_to_portclock_configs_spec(
 
     """
 
-    def _update_hw_config(
-        nested_dict,
-    ):
-        # List to generator conversion is needed because the dictionary keys are
-        # changed during recursion
-        for key, value in list(nested_dict.items()):
-            if isinstance(key, str) and re.match(r"^seq\d+$", key):
-                nested_dict["portclock_configs"] = nested_dict.get(
-                    "portclock_configs", []
-                )
-                nested_dict["portclock_configs"].append(nested_dict[key])
-                del nested_dict[key]
-
-            elif isinstance(value, dict):
-                _update_hw_config(value)
-
     hw_config = deepcopy(hw_config)
-    _update_hw_config(hw_config)
+
+    latency_corrections_key = "latency_corrections"
+    hw_config[latency_corrections_key] = hw_config.get(latency_corrections_key, {})
+
+    for device_info in hw_config.values():
+        if not isinstance(device_info, dict):
+            continue
+
+        for io, io_cfg in device_info.items():
+            if not isinstance(io_cfg, dict):
+                continue
+
+            portclock_configs_key = "portclock_configs"
+            new_io_cfg = {}
+            new_io_cfg[portclock_configs_key] = io_cfg.get(portclock_configs_key, [])
+
+            latency_correction_key = "latency_correction"
+            for key, value in io_cfg.items():
+                if re.match(r"^seq\d+$", key):
+                    if (
+                        latency_correction_key in value
+                    ):  # Move sequencer latency correction
+                        portclock_key = f"{value['port']}-{value['clock']}"
+                        hw_config[latency_corrections_key][portclock_key] = value.pop(
+                            latency_correction_key
+                        )
+
+                    new_io_cfg[portclock_configs_key].append(io_cfg[key])
+                else:
+                    new_io_cfg[key] = value
+
+            for config in new_io_cfg[portclock_configs_key]:
+                if (
+                    latency_correction_key in config
+                ):  # Move portclock_config latency correction
+                    portclock_key = f"{config['port']}-{config['clock']}"
+                    hw_config[latency_corrections_key][portclock_key] = config.pop(
+                        latency_correction_key
+                    )
+            device_info[io] = new_io_cfg
     return hw_config
