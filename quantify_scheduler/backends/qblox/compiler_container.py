@@ -114,13 +114,9 @@ class CompilerContainer:
         """
         if isinstance(instrument_type, str):
             if instrument_type in compiler_classes.COMPILER_MAPPING:
-                instrument_type: type = compiler_classes.COMPILER_MAPPING[
-                    instrument_type
-                ]
+                instrument_type = compiler_classes.COMPILER_MAPPING[instrument_type]
             else:
-                instrument_type: type = import_python_object_from_string(
-                    instrument_type
-                )
+                instrument_type = import_python_object_from_string(instrument_type)
 
         if isinstance(instrument_type, type):
             if instrument_type is compiler_classes.LocalOscillator:
