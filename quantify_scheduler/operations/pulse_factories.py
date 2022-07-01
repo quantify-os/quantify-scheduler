@@ -30,7 +30,7 @@ def rxy_drag_pulse(
     )
 
 
-def composite_square_pulse(  # pylint: ignore=too-many-arguments
+def composite_square_pulse(  # pylint: disable=too-many-arguments
     square_amp: float,
     square_duration: float,
     square_port: str,
