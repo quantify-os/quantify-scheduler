@@ -24,7 +24,9 @@ from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
+
 from quantify_scheduler import Schedule
+
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -63,10 +65,15 @@ from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
+    IdlePulse,
     RampPulse,
+    ShiftClockPhase,
     SquarePulse,
 )
+from quantify_scheduler.operations.operation import Operation
+
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
+
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
@@ -808,7 +815,7 @@ def test_contruct_sequencers_excess_error(
     )
 
 
-def test_simple_compile(pulse_only_schedule):
+def test_compile_simple(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -821,7 +828,7 @@ def test_compile_cluster(cluster_only_schedule):
     qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
-def test_simple_compile_multiplexing(
+def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
@@ -830,7 +837,7 @@ def test_simple_compile_multiplexing(
     qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
-def test_identical_pulses_compile(identical_pulses_schedule):
+def test_compile_identical_pulses(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -854,7 +861,39 @@ def test_compile_measure(duplicate_measure_schedule):
     assert len(wf_and_prog["weights"]) == 0
 
 
-def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+@pytest.mark.parametrize(
+    "operation, instruction_to_check",
+    [
+        (IdlePulse(duration=64e-9), "wait       64"),
+        (Reset("q1"), "wait       65532"),
+        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+    ],
+)
+def test_compile_clock_operations(
+    mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
+):
+    sched = Schedule("shift_clock_phase_only")
+    sched.add(operation)
+    sched.add_resources(
+        [ClockResource("q1.01", freq=5e9)]
+    )  # Clocks need to be manually added at this stage.
+
+    compiled_sched = qcompile(
+        schedule=sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg_baseband,
+    )
+
+    filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
+    with open(filename, "r") as file:
+        program_lines = json.load(file)["program"].splitlines()
+
+    assert any(instruction_to_check in line for line in program_lines), "\n".join(
+        line for line in program_lines
+    )
+
+
+def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
@@ -1694,6 +1733,10 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
     Latency correction is set for the correct portclock key
     by checking against the value set in QASM instructions.
     """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("Single Gate Experiment on Two Qubits")
     sched.add(X("q0"))
     sched.add(
@@ -1743,6 +1786,10 @@ def test_apply_latency_corrections_warning(
     Checks if warning is raised for a latency correction
     that is not a multiple of 4ns
     """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("Single Gate Experiment")
     sched.add(
         SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
