@@ -888,8 +888,8 @@ def test_compile_clock_operations(
     with open(filename, "r") as file:
         program_lines = json.load(file)["program"].splitlines()
 
-    assert any([instruction_to_check in line for line in program_lines]), "\n".join(
-        [line for line in program_lines]
+    assert any(instruction_to_check in line for line in program_lines), "\n".join(
+        line for line in program_lines
     )
 
 
