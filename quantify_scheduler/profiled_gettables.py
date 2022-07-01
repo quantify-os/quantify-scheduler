@@ -1,8 +1,8 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 r"""
-Module containing :class:`~quantify_core.measurement.types.ProfiledGettable`\s for use with
-quantify-scheduler.
+Module containing :class:`~quantify_core.measurement.types.ProfiledGettable`\s
+for use with quantify-scheduler.
 
 .. warning::
 
@@ -98,7 +98,7 @@ class ProfiledGettable(ScheduleGettable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.profile = {"compile": []}
+        self.profile = {"compile": [float]}
 
         # overwrite linked IC to a profiled IC
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
