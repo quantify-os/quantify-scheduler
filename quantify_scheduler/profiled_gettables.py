@@ -45,7 +45,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     """
 
     def __init__(self, name: str, parentinstrumentcoordinator):
-        self.profile = {"schedule": []}
+        self.profile = {"schedule": [float]}
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parentinstrumentcoordinator
 
