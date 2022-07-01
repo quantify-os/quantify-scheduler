@@ -18,7 +18,6 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
