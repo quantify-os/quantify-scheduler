@@ -834,7 +834,7 @@ def test_compile_measure(duplicate_measure_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(duplicate_measure_schedule, DEVICE_CFG, HARDWARE_CFG)
-    wf_and_prog = full_program["compiled_instructions"]["qrm0"]["seq0"]["settings"]["sequence"]
+    wf_and_prog = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"]
 
     assert len(wf_and_prog["weights"]) == 0
 
@@ -1232,7 +1232,7 @@ def test_assign_frequencies_baseband():
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
-    assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+    assert compiled_instructions["qcm0"]["seq1"]["modulation_freq"] == if1
 
 
 def test_assign_frequencies_baseband_downconverter():
@@ -1275,7 +1275,7 @@ def test_assign_frequencies_baseband_downconverter():
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
-    assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+    assert compiled_instructions["qcm0"]["seq1"]["modulation_freq"] == if1
 
 
 def test_assign_frequencies_rf():
@@ -1316,7 +1316,7 @@ def test_assign_frequencies_rf():
     qcm_program = compiled_instructions["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    assert qcm_program["seq1"]["modulation_freq"] == if1
 
 
 def test_assign_frequencies_rf_downconverter():
@@ -1357,7 +1357,7 @@ def test_assign_frequencies_rf_downconverter():
     qcm_program = compiled_instructions["qcm_rf0"]
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    assert qcm_program["seq1"]["modulation_freq"] == if1
 
     hw_mapping_downconverter = HARDWARE_CFG.copy()
     hw_mapping_downconverter["qcm_rf0"]["complex_output_0"]["downconverter"] = True
@@ -1372,7 +1372,7 @@ def test_assign_frequencies_rf_downconverter():
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    assert qcm_program["seq1"]["modulation_freq"] == if1
 
 
 def test_markers():
@@ -1396,7 +1396,7 @@ def test_markers():
             mrk_config.start,
             mrk_config.end,
         )
-        qasm = device_program["seq0"]["settings"]["sequence"]["program"]
+        qasm = device_program["seq0"]["sequence"]["program"]
 
         matches = re.findall(r"set\_mrk +\d+", qasm)
         matches = [int(m.replace("set_mrk", "").strip()) for m in matches]

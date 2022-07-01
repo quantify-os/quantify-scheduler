@@ -872,7 +872,7 @@ class Sequencer:
         self.settings.sequence = wf_and_pr_dict
         settings_dict = self.settings.to_dict()
 
-        return {"settings": settings_dict}
+        return settings_dict
 
 
 class QbloxBaseModule(ControlDeviceCompiler, ABC):
