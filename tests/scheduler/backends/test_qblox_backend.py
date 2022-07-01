@@ -834,7 +834,7 @@ def test_compile_measure(duplicate_measure_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(duplicate_measure_schedule, DEVICE_CFG, HARDWARE_CFG)
-    wf_and_prog = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"]
+    wf_and_prog = full_program["compiled_instructions"]["qrm0"]["seq0"]["settings"]["sequence"]
 
     assert len(wf_and_prog["weights"]) == 0
 
@@ -1396,7 +1396,7 @@ def test_markers():
             mrk_config.start,
             mrk_config.end,
         )
-        qasm = device_program["seq0"]["sequence"]["program"]
+        qasm = device_program["seq0"]["settings"]["sequence"]["program"]
 
         matches = re.findall(r"set\_mrk +\d+", qasm)
         matches = [int(m.replace("set_mrk", "").strip()) for m in matches]

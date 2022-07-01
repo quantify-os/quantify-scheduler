@@ -295,16 +295,16 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             self.instrument[f"sequencer{seq_idx}"], "sync_en", settings.sync_en
         )
 
-        nco_en: bool = settings.nco_en
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", nco_en
+            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", settings.nco_en
         )
-        if nco_en:
+        if settings.nco_en:
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
                 "nco_freq",
                 settings.modulation_freq,
             )
+
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "mixer_corr_phase_offset_degree",
@@ -323,6 +323,10 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
                 self._get_channel_map_parameter_name(output_index=output_idx),
                 connected,
             )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
+        )
 
     @staticmethod
     def _get_channel_map_parameter_name(output_index: int) -> str:
@@ -418,12 +422,6 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 self._configure_sequencer_settings(
                     seq_idx=seq_idx, settings=seq_settings
                 )
-
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
-                "sequence",
-                seq_cfg["sequence"],
-            )
 
         self._arm_all_sequencers_in_program(program)
 
@@ -558,12 +556,6 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                     seq_idx=seq_idx, settings=seq_settings
                 )
 
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
-                "sequence",
-                seq_cfg["sequence"],
-            )
-
         self._arm_all_sequencers_in_program(program)
 
     def _configure_global_settings(self, settings: BaseModuleSettings):
@@ -596,6 +588,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
+
         if settings.integration_length_acq is not None:
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
@@ -605,8 +598,13 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._acquisition_manager.integration_length_acq = (
                 settings.integration_length_acq
             )
+
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "demod_en_acq", settings.nco_en
+        )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
         )
 
 

@@ -357,6 +357,8 @@ class SequencerSettings(DataClassJsonMixin):
     paths of the mixer."""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
+    sequence: Dict[str, Any] = None
+    """TODO: docstring"""
 
     @classmethod
     def initialize_from_config_dict(
