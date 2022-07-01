@@ -884,8 +884,8 @@ def test_compile_clock_operations(
     with open(filename, "r") as file:
         program_lines = json.load(file)["program"].splitlines()
 
-    assert any([instruction_to_check in line for line in program_lines]), "\n".join(
-        [line for line in program_lines]
+    assert any(instruction_to_check in line for line in program_lines), "\n".join(
+        line for line in program_lines
     )
 
 
@@ -924,16 +924,16 @@ def test_compile_cz_gate(mock_setup):
             program_lines[seq] = json.load(file)["program"].splitlines()
 
     assert any(
-        ["play          0,1,4" in line for line in program_lines["seq0"]]
-    ), "\n".join([line for line in program_lines["seq0"]])
+        "play          0,1,4" in line for line in program_lines["seq0"]
+    ), "\n".join(line for line in program_lines["seq0"])
 
     assert any(
-        ["set_ph_delta  48,355,3472" in line for line in program_lines["seq1"]]
-    ), "\n".join([line for line in program_lines["seq1"]])
+        "set_ph_delta  48,355,3472" in line for line in program_lines["seq1"]
+    ), "\n".join(line for line in program_lines["seq1"])
 
     assert any(
-        ["set_ph_delta  69,399,6249" in line for line in program_lines["seq2"]]
-    ), "\n".join([line for line in program_lines["seq2"]])
+        "set_ph_delta  69,399,6249" in line for line in program_lines["seq2"]
+    ), "\n".join(line for line in program_lines["seq2"])
 
 
 def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):

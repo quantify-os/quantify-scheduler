@@ -5,7 +5,6 @@
 import os
 import shutil
 import pathlib
-import tempfile
 
 from typing import List
 
