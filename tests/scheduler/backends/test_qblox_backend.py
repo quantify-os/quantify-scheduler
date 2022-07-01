@@ -24,7 +24,9 @@ from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
+
 from quantify_scheduler import Schedule
+
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -69,7 +71,9 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.operations.operation import Operation
+
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
+
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
@@ -811,7 +815,7 @@ def test_contruct_sequencers_excess_error(
     )
 
 
-def test_simple_compile(pulse_only_schedule):
+def test_compile_simple(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -824,7 +828,7 @@ def test_compile_cluster(cluster_only_schedule):
     qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
-def test_simple_compile_multiplexing(
+def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
@@ -833,7 +837,7 @@ def test_simple_compile_multiplexing(
     qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
-def test_identical_pulses_compile(identical_pulses_schedule):
+def test_compile_identical_pulses(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
