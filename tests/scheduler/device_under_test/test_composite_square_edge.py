@@ -34,7 +34,7 @@ def test_generate_edge_config(edge_q2b_q3b):
         "q2b-q3b": {
             "CZ": OperationCompilationConfig(
                 factory_func="quantify_scheduler.operations."
-                + "pulse_library.CustomCompositePulse",
+                + "pulse_factories.composite_square_pulse",
                 factory_kwargs={
                     "square_port": "q2b:fl",
                     "square_clock": "cl0.baseband",

@@ -92,7 +92,7 @@ example_transmon_cfg = {
         "q0-q1": {
             "CZ": {
                 "factory_func": "quantify_scheduler.operations."
-                + "pulse_library.CustomCompositePulse",
+                + "pulse_factories.composite_square_pulse",
                 "factory_kwargs": {
                     "square_port": "q0:fl",
                     "square_clock": "cl0.baseband",

@@ -88,7 +88,7 @@ class CompositeSquareEdge(Edge):
             f"{self.name}": {
                 "CZ": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
-                    + "pulse_library.CustomCompositePulse",
+                    + "pulse_factories.composite_square_pulse",
                     factory_kwargs={
                         "square_port": self.parent_device_element.ports.flux(),
                         "square_clock": BasebandClockResource.IDENTITY,
