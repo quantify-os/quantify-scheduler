@@ -111,11 +111,7 @@ class ProfiledGettable(ScheduleGettable):
     def _compile(self, sched):
         """Overwrite compile step ofr profiling."""
         start = time.time()
-        self._compiled_schedule = qcompile(
-            schedule=sched,
-            device_cfg=self.quantum_device.generate_device_config(),
-            hardware_cfg=self.quantum_device.generate_hardware_config(),
-        )
+        super()._compile(sched)
         stop = time.time()
         self.profile["compile"].append(stop - start)
 
