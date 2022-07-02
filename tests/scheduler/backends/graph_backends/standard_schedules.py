@@ -45,11 +45,11 @@ def single_qubit_schedule_circuit_level() -> Schedule:
 
     sched.add(Reset(qubit))
     sched.add(X(qubit))
-    sched.add(Measure(qubit))
+    sched.add(Measure(qubit, acq_index=0))
 
     sched.add(Reset(qubit))
     sched.add(Y(qubit))
-    sched.add(Measure(qubit))
+    sched.add(Measure(qubit, acq_index=1))
 
     return sched
 
@@ -153,10 +153,10 @@ def parametrized_operation_schedule() -> Schedule:
     qubit = "q0"
     sched = Schedule("single_qubit_gate_schedule")
 
-    for theta in [0, 45, 90, 1723.435]:
+    for i, theta in enumerate([0, 45, 90, 1723.435]):
         sched.add(Reset(qubit))
         sched.add(Rxy(theta=theta, phi=0, qubit=qubit))
-        sched.add(Measure(qubit))
+        sched.add(Measure(qubit, acq_index=i))
 
     return sched
 
