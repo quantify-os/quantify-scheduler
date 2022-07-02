@@ -616,6 +616,11 @@ def test_find_all_port_clock_combinations():
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
         ("q4:res", "q4.ro"),
+        ("q0:fl", "cl0.baseband"),
+        ("q1:fl", "cl0.baseband"),
+        ("q2:fl", "cl0.baseband"),
+        ("q3:fl", "cl0.baseband"),
+        ("q4:fl", "cl0.baseband"),
     }
     assert portclocks == answer
 
@@ -623,7 +628,7 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = generate_port_clock_to_device_map(HARDWARE_CFG)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 12
+    assert len(portclock_map.keys()) == 17
 
 
 # --------- Test classes and member methods ---------

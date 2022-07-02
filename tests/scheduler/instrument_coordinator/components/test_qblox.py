@@ -63,6 +63,8 @@ def fixture_make_cluster(mocker):
                 "1": ClusterType.CLUSTER_QCM,
                 "2": ClusterType.CLUSTER_QCM_RF,
                 "3": ClusterType.CLUSTER_QRM,
+                "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0-q3
+                "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
         )
         component = qblox.ClusterComponent(cluster)
