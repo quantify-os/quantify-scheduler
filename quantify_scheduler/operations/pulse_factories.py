@@ -23,8 +23,74 @@ def rxy_drag_pulse(
     # mw_amp180 is the amplitude necessary to get the
     # maximum 180 degree theta (experimentally)
     G_amp = amp180 * theta / 180
-    D_amp = G_amp * motzoi
+    D_amp = motzoi
 
     return pulse_library.DRAGPulse(
         G_amp=G_amp, D_amp=D_amp, phase=phi, port=port, duration=duration, clock=clock
     )
+
+
+def composite_square_pulse(  # pylint: disable=too-many-arguments
+    square_amp: float,
+    square_duration: float,
+    square_port: str,
+    square_clock: str,
+    virt_z_parent_qubit_phase: float,
+    virt_z_parent_qubit_clock: str,
+    virt_z_child_qubit_phase: float,
+    virt_z_child_qubit_clock: str,
+    t0: float = 0,
+) -> pulse_library.SquarePulse:
+    """
+    This is an example composite pulse to implement a CZ gate. It applies the
+    square pulse and then corrects for the phase shifts on both the qubits.
+
+    Parameters
+    ----------
+    square_amp
+        Amplitude of the square envelope.
+    square_duration
+        The square pulse duration in seconds.
+    square_port
+        Port of the pulse, must be capable of playing a complex waveform.
+    square_clock
+        Clock used to modulate the pulse.
+    virt_z_parent_qubit_phase
+        The phase shift in degrees applied to the parent qubit.
+    virt_z_parent_qubit_clock
+        The clock of which to shift the phase applied to the parent qubit.
+    virt_z_child_qubit_phase
+        The phase shift in degrees applied to the child qubit.
+    virt_z_child_qubit_clock
+        The clock of which to shift the phase applied to the child qubit.
+    t0
+        Time in seconds when to start the pulses relative to the start time
+        of the Operation in the Schedule.
+    """
+
+    # Start the flux pulse
+    composite_pulse = pulse_library.SquarePulse(
+        amp=square_amp,
+        duration=square_duration,
+        port=square_port,
+        clock=square_clock,
+        t0=t0,
+    )
+
+    # And at the same time apply clock phase corrections
+    composite_pulse.add_pulse(
+        pulse_library.ShiftClockPhase(
+            phase=virt_z_parent_qubit_phase,
+            clock=virt_z_parent_qubit_clock,
+            t0=t0,
+        )
+    )
+    composite_pulse.add_pulse(
+        pulse_library.ShiftClockPhase(
+            phase=virt_z_child_qubit_phase,
+            clock=virt_z_child_qubit_clock,
+            t0=t0,
+        )
+    )
+
+    return composite_pulse

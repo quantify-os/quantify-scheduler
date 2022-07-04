@@ -61,16 +61,16 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
-
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
+    IdlePulse,
     RampPulse,
+    ShiftClockPhase,
     SquarePulse,
 )
+from quantify_scheduler.operations.operation import Operation
 
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
@@ -94,28 +94,41 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 
 # --------- Test fixtures ---------
-@pytest.fixture(name="hardware_cfg_latency_correction")
-def make_hardware_cfg_latency_correction():
-    def _make_hardware_cfg_latency_correction(correction: float, port: str, clock: str):
+
+
+@pytest.fixture(name="hardware_cfg_latency_corrections")
+def make_hardware_cfg_latency_corrections():
+    def _make_hardware_cfg_latency_corrections():
         return {
             "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
             "qcm0": {
                 "instrument_type": "Pulsar_QCM",
                 "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "portclock_configs": [
-                        {
-                            "port": port,
-                            "clock": clock,
-                            "latency_correction": correction,
-                        },
-                    ],
+                    "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+                },
+            },
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "cluster0_module1": {
+                    "instrument_type": "QCM",
+                    "complex_output_0": {
+                        "line_gain_db": 0,
+                        "portclock_configs": [
+                            {
+                                "port": "q1:mw",
+                                "clock": "q1.01",
+                            }
+                        ],
+                    },
                 },
             },
         }
 
-    return _make_hardware_cfg_latency_correction
+    return _make_hardware_cfg_latency_corrections
 
 
 @pytest.fixture
@@ -681,7 +694,9 @@ def test_portclocks(make_basic_multi_qubit_schedule):
     sched = make_basic_multi_qubit_schedule(["q4", "q5"])
     sched = device_compile(sched, device_config)
 
-    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
+        sched, HARDWARE_CFG
+    )
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -752,25 +767,25 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
         test_module.sequencers = test_module._construct_sequencers()
 
 
-def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
-
+@pytest.mark.parametrize(
+    "element_names", [[f"q{i}" for i in range(constants.NUMBER_OF_SEQUENCERS_QCM + 1)]]
+)
+def test_contruct_sequencers_excess_error(
+    mock_setup_basic_transmon_elements, make_basic_multi_qubit_schedule, element_names
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
             "instrument_type": "Pulsar_QCM_RF",
             "ref": "internal",
-            "complex_output_0": {"portclock_configs": []},
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6}
+                    for i in range(len(element_names))
+                ]
+            },
         },
     }
-
-    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
-        {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6} for i in range(7)
-    ]
-
-    device = QuantumDevice("device")
-    elements = [TransmonElement(f"q{i}") for i in range(7)]
-    for element in elements:
-        device.add_component(element)
 
     test_module = QcmRfModule(
         parent=None,
@@ -779,8 +794,11 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
         hw_mapping=hardware_cfg["qcm0"],
     )
 
-    sched = make_basic_multi_qubit_schedule([f"q{i}" for i in range(7)])
-    sched = device_compile(sched, device.generate_device_config())
+    sched = make_basic_multi_qubit_schedule(element_names)
+    sched = device_compile(
+        sched,
+        mock_setup_basic_transmon_elements["quantum_device"].generate_device_config(),
+    )
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -797,7 +815,7 @@ def test_contruct_sequencers_excess_error(make_basic_multi_qubit_schedule):
     )
 
 
-def test_simple_compile(pulse_only_schedule):
+def test_compile_simple(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -810,7 +828,7 @@ def test_compile_cluster(cluster_only_schedule):
     qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
-def test_simple_compile_multiplexing(
+def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
@@ -819,7 +837,7 @@ def test_simple_compile_multiplexing(
     qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
-def test_identical_pulses_compile(identical_pulses_schedule):
+def test_compile_identical_pulses(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -843,7 +861,86 @@ def test_compile_measure(duplicate_measure_schedule):
     assert len(wf_and_prog["weights"]) == 0
 
 
-def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+@pytest.mark.parametrize(
+    "operation, instruction_to_check",
+    [
+        (IdlePulse(duration=64e-9), "wait       64"),
+        (Reset("q1"), "wait       65532"),
+        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+    ],
+)
+def test_compile_clock_operations(
+    mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
+):
+    sched = Schedule("shift_clock_phase_only")
+    sched.add(operation)
+    sched.add_resources(
+        [ClockResource("q1.01", freq=5e9)]
+    )  # Clocks need to be manually added at this stage.
+
+    compiled_sched = qcompile(
+        schedule=sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg_baseband,
+    )
+
+    filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
+    with open(filename, "r") as file:
+        program_lines = json.load(file)["program"].splitlines()
+
+    assert any(instruction_to_check in line for line in program_lines), "\n".join(
+        line for line in program_lines
+    )
+
+
+def test_compile_cz_gate(mock_setup):
+    sched = Schedule("two_qubit_gate_experiment")
+    sched.add_resources(
+        [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
+    )  # Clocks need to be manually added at this stage.
+    sched.add(CZ(qC="q2", qT="q3"))
+
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"{qubit}:fl", "clock": clock}
+                    for qubit in ["q2", "q3"]
+                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                ]
+            },
+        },
+    }
+
+    compiled_sched = qcompile(
+        schedule=sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    program_lines = {}
+    for seq in ["seq0", "seq1", "seq2"]:
+        filename = compiled_sched.compiled_instructions["qcm0"][seq]["seq_fn"]
+        with open(filename, "r") as file:
+            program_lines[seq] = json.load(file)["program"].splitlines()
+
+    assert any(
+        "play          0,1,4" in line for line in program_lines["seq0"]
+    ), "\n".join(line for line in program_lines["seq0"])
+
+    assert any(
+        "set_ph_delta  48,355,3472" in line for line in program_lines["seq1"]
+    ), "\n".join(line for line in program_lines["seq1"])
+
+    assert any(
+        "set_ph_delta  69,399,6249" in line for line in program_lines["seq2"]
+    ), "\n".join(line for line in program_lines["seq2"])
+
+
+def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
@@ -1028,7 +1125,7 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
     sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
 
-    container = compiler_container.CompilerContainer.from_mapping(
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, HARDWARE_CFG
     )
     assign_pulse_and_acq_info_to_devices(
@@ -1041,7 +1138,9 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
 
 def test_container_prepare(pulse_only_schedule):
     sched = device_compile(pulse_only_schedule, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
+        sched, HARDWARE_CFG
+    )
     assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, HARDWARE_CFG
     )
@@ -1060,7 +1159,9 @@ def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisit
     sched = copy.deepcopy(mixed_schedule_with_acquisition)
     sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
     sched = device_compile(sched, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
+        sched, HARDWARE_CFG
+    )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         hardware_cfg=HARDWARE_CFG,
@@ -1080,7 +1181,7 @@ def test_container_prepare_baseband(
     baseband_square_pulse_schedule, hardware_cfg_baseband
 ):
     sched = device_compile(baseband_square_pulse_schedule, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_mapping(
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, hardware_cfg_baseband
     )
     assign_pulse_and_acq_info_to_devices(
@@ -1096,7 +1197,9 @@ def test_container_prepare_baseband(
 
 def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
     sched = device_compile(pulse_only_schedule_no_lo, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_mapping(sched, HARDWARE_CFG)
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
+        sched, HARDWARE_CFG
+    )
     assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, HARDWARE_CFG
     )
@@ -1131,11 +1234,11 @@ def test_container_add_from_path(pulse_only_schedule):
 
 
 def test_from_mapping(pulse_only_schedule):
-    container = compiler_container.CompilerContainer.from_mapping(
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, HARDWARE_CFG
     )
     for instr_name in HARDWARE_CFG.keys():
-        if instr_name == "backend":
+        if instr_name == "backend" or "corrections" in instr_name:
             continue
         assert instr_name in container.instrument_compilers
 
@@ -1154,7 +1257,7 @@ def test_generate_uuid_from_wf_data():
 
 
 def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode):
-    container = compiler_container.CompilerContainer.from_mapping(
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
     sched = device_compile(real_square_pulse_schedule, DEVICE_CFG)
@@ -1391,7 +1494,7 @@ def test_pulsar_rf_extract_from_mapping():
 
 
 def test_cluster_settings(pulse_only_schedule):
-    container = compiler_container.CompilerContainer.from_mapping(
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, HARDWARE_CFG
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
@@ -1405,7 +1508,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     Test helper that takes a compiled schedule and verifies if the assembly is valid
     by passing it to a dummy qcm and qrm.
 
-    Asssumes only qcm0 and qrm0 are used.
+    Assumes only qcm0 and qrm0 are used.
     """
 
     # test the program for the qcm
@@ -1553,7 +1656,6 @@ def test_acq_declaration_dict_bin_avg_mode(load_example_transmon_config):
 
 
 def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_schedule):
-
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -1562,13 +1664,44 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo0",
-                "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                    "latency_correction": 8e-9,
+                },
             },
             "complex_output_1": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
                 "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
-                "seq2": {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
+                "seq2": {
+                    "port": "q2:mw",
+                    "clock": "q2.01",
+                    "interm_freq": None,
+                    "latency_correction": 4e-9,
+                },
+            },
+        },
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module2": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "seq0": {
+                        "port": "q1:res",
+                        "clock": "q1.ro",
+                        "interm_freq": 50e6,
+                    },
+                    "seq1": {
+                        "port": "q2:res",
+                        "clock": "q2.01",
+                        "interm_freq": 50e6,
+                        "latency_correction": 4e-9,
+                    },
+                },
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
@@ -1577,6 +1710,11 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
 
     expected_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "latency_corrections": {
+            "q0:mw-q0.01": 8e-9,
+            "q2:mw-q2.01": 4e-9,
+            "q2:res-q2.01": 4e-9,
+        },
         "qcm0": {
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
@@ -1596,6 +1734,28 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 ],
             },
         },
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module2": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [
+                        {
+                            "port": "q1:res",
+                            "clock": "q1.ro",
+                            "interm_freq": 50e6,
+                        },
+                        {
+                            "port": "q2:res",
+                            "clock": "q2.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+            },
+        },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
         "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     }
@@ -1608,65 +1768,92 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
+    sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
     sched = device_compile(sched, DEVICE_CFG)
     with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
         hardware_compile(sched, old_config)
 
 
-class TestLatencyCorrection:
-    """Class to group all the tests related to latency correction in backend."""
+def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_corrections):
+    """
+    This test function checks that:
+    Latency correction is set for the correct portclock key
+    by checking against the value set in QASM instructions.
+    """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
 
-    # pylint: disable=no-self-use
-    def test_compilation_valid(
-        self,
-        hardware_cfg_latency_correction,
-        load_example_transmon_config,
-        dummy_pulsars,
+    sched = Schedule("Single Gate Experiment on Two Qubits")
+    sched.add(X("q0"))
+    sched.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
+    hardware_cfg = hardware_cfg_latency_corrections()
+    compiled_sched = qcompile(
+        sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    for instrument in ["qcm0", ("cluster0", "cluster0_module1")]:
+        compiled_data = compiled_sched.compiled_instructions
+        config_data = hardware_cfg
+
+        if isinstance(instrument, tuple):
+            for key in instrument:
+                compiled_data = compiled_data.get(key)
+                config_data = config_data.get(key)
+        else:
+            compiled_data = compiled_data.get(instrument)
+            config_data = config_data.get(instrument)
+
+        filename = compiled_data["seq0"]["seq_fn"]
+
+        port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
+        clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
+        latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
+
+        with open(filename, "r") as file:
+            program_lines = json.load(file)["program"].splitlines()
+        assert any(
+            f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
+            for line in program_lines
+        ), f"instrument={instrument}, latency={latency}"
+
+
+def test_apply_latency_corrections_warning(
+    mock_setup, hardware_cfg_latency_corrections, caplog
+):
+    """
+    Checks if warning is raised for a latency correction
+    that is not a multiple of 4ns
+    """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("Single Gate Experiment")
+    sched.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
+    warning = f"not a multiple of {constants.GRID_TIME}"
+    with caplog.at_level(
+        logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
-        # Arrange
-        tmp_dir = tempfile.TemporaryDirectory()
-        set_datadir(tmp_dir.name)
-
-        sched = Schedule("single_gate_experiment")
-        sched.add(X("q0"))
-
-        hw_cfg = hardware_cfg_latency_correction(
-            correction=4e-9, port="q0:mw", clock="q0.01"
+        qcompile(
+            sched,
+            device_cfg=mock_setup["quantum_device"].generate_device_config(),
+            hardware_cfg=hardware_cfg_latency_corrections(),
         )
-        # Act
-        compiled_sched = qcompile(sched, load_example_transmon_config(), hw_cfg)
-        compiled_instr = compiled_sched.compiled_instructions
-
-        # Assert
-        dummy_pulsars[0].sequencer0.sequence(compiled_instr["qcm0"]["seq0"]["seq_fn"])
-
-    def test_warning(
-        self, hardware_cfg_latency_correction, load_example_transmon_config, caplog
-    ):
-        tmp_dir = tempfile.TemporaryDirectory()
-        set_datadir(tmp_dir.name)
-
-        sched = Schedule("single_gate_experiment")
-        sched.add(X("q0"))
-
-        hw_cfg = hardware_cfg_latency_correction(
-            correction=2e-9, port="q0:mw", clock="q0.01"
-        )
-
-        # Act
-        with caplog.at_level(
-            logging.WARNING, logger="quantify_scheduler.backends.qblox.compiler_abc"
-        ):
-            qcompile(sched, load_example_transmon_config(), hw_cfg)
-
-        # Assert
-        answer = (
-            "Latency correction of 2 ns specified for seq0 of qcm0, which is "
-            "not a multiple of 4 ns. This feature should be considered "
-            "experimental and stable results are not guaranteed at this stage."
-        )
-        assert answer in caplog.messages
+    assert any(warning in mssg for mssg in caplog.messages)
 
 
 def _strip_comments(program: str):
