@@ -38,8 +38,6 @@ def hardware_compile(
     :
         The compiled schedule.
     """
-    schedule = apply_distortion_corrections(schedule, hardware_cfg)
-
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
     )
@@ -57,6 +55,8 @@ def hardware_compile(
             DeprecationWarning,
         )
         hardware_cfg = converted_hw_config
+
+    schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
