@@ -16,7 +16,7 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse
 logger = logging.getLogger(__name__)
 
 
-def distortion_correct_pulse(
+def distortion_correct_pulse(  # pylint: disable=too-many-arguments
     pulse_data: Dict[str, Any],
     sampling_rate: int,
     filter_func_name: str,

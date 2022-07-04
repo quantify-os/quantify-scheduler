@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for pulse and acquisition corrections."""
@@ -26,38 +31,35 @@ from quantify_scheduler.resources import ClockResource
 
 
 # --------- Test fixtures ---------
-@pytest.fixture(name="hardware_cfg_distortion_corrections")
-def make_hardware_cfg_distortion_corrections():
-    def _make_hardware_cfg_distortion_corrections(filter_coeffs):
-        return {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "distortion_corrections": {
-                "q0:fl-cl0.baseband": {
-                    "filter_func": "scipy.signal.lfilter",
-                    "input_var_name": "x",
-                    "kwargs": {"b": filter_coeffs, "a": 1},
-                    "clipping_values": [-2.5, 2.5],
-                },
+@pytest.fixture
+def hardware_cfg_distortion_corrections(filter_coefficients):
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "distortion_corrections": {
+            "q0:fl-cl0.baseband": {
+                "filter_func": "scipy.signal.lfilter",
+                "input_var_name": "x",
+                "kwargs": {"b": filter_coefficients, "a": 1},
+                "clipping_values": [-2.5, 2.5],
             },
-            "qcm0": {
-                "instrument_type": "Pulsar_QCM",
-                "ref": "external",
-                "complex_output_0": {
-                    "seq0": {
-                        "port": "q0:fl",
-                        "clock": "cl0.baseband",
-                    }
-                },
-                "complex_output_1": {
-                    "seq1": {
-                        "port": "q0:mw",
-                        "clock": "cl0.baseband",
-                    }
-                },
+        },
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "external",
+            "complex_output_0": {
+                "seq0": {
+                    "port": "q0:fl",
+                    "clock": "cl0.baseband",
+                }
             },
-        }
-
-    return _make_hardware_cfg_distortion_corrections
+            "complex_output_1": {
+                "seq1": {
+                    "port": "q0:mw",
+                    "clock": "cl0.baseband",
+                }
+            },
+        },
+    }
 
 
 @pytest.fixture
@@ -134,7 +136,7 @@ def test_apply_distortion_corrections(
     full_program = qcompile(
         schedule=sched,
         device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg_distortion_corrections(filter_coefficients),
+        hardware_cfg=hardware_cfg_distortion_corrections,
     )
 
     operations_pretty_repr = "".join(
@@ -182,11 +184,9 @@ def test_apply_distortion_corrections(
 @pytest.mark.parametrize(
     "clipping_values, duration",
     list(
-        [
-            (clip, dur)
-            for clip in [None, [-0.2, 0.4]]
-            for dur in np.arange(start=1e-9, stop=16e-9, step=1e-9)
-        ]
+        (clip, dur)
+        for clip in [None, [-0.2, 0.4]]
+        for dur in np.arange(start=1e-9, stop=16e-9, step=1e-9)
     ),
 )
 def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration):
