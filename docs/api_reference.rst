@@ -19,13 +19,6 @@ circuit_to_device
     :members:
 
 
-corrections
------------
-
-.. automodule:: quantify_scheduler.backends.corrections
-    :members:
-
-
 qblox
 -----
 
