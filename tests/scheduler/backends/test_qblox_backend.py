@@ -62,7 +62,7 @@ from quantify_scheduler.compilation import (
 )
 
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -891,6 +891,53 @@ def test_compile_clock_operations(
     assert any(instruction_to_check in line for line in program_lines), "\n".join(
         line for line in program_lines
     )
+
+
+def test_compile_cz_gate(mock_setup):
+    sched = Schedule("two_qubit_gate_experiment")
+    sched.add_resources(
+        [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
+    )  # Clocks need to be manually added at this stage.
+    sched.add(CZ(qC="q2", qT="q3"))
+
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"{qubit}:fl", "clock": clock}
+                    for qubit in ["q2", "q3"]
+                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                ]
+            },
+        },
+    }
+
+    compiled_sched = qcompile(
+        schedule=sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    program_lines = {}
+    for seq in ["seq0", "seq1", "seq2"]:
+        filename = compiled_sched.compiled_instructions["qcm0"][seq]["seq_fn"]
+        with open(filename, "r") as file:
+            program_lines[seq] = json.load(file)["program"].splitlines()
+
+    assert any(
+        "play          0,1,4" in line for line in program_lines["seq0"]
+    ), "\n".join(line for line in program_lines["seq0"])
+
+    assert any(
+        "set_ph_delta  48,355,3472" in line for line in program_lines["seq1"]
+    ), "\n".join(line for line in program_lines["seq1"])
+
+    assert any(
+        "set_ph_delta  69,399,6249" in line for line in program_lines["seq2"]
+    ), "\n".join(line for line in program_lines["seq2"])
 
 
 def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):

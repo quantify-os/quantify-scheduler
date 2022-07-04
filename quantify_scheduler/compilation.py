@@ -403,7 +403,9 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict = None, hardware_cfg: dict = None
+    schedule: Schedule,
+    device_cfg: Union[DeviceCompilationConfig, dict] = None,
+    hardware_cfg: dict = None,
 ) -> CompiledSchedule:
     """
     Compile and assemble a :class:`~.Schedule` into a
