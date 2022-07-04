@@ -62,7 +62,7 @@ from quantify_scheduler.compilation import (
 )
 
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -94,43 +94,6 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 
 # --------- Test fixtures ---------
-
-
-@pytest.fixture(name="hardware_cfg_latency_corrections")
-def make_hardware_cfg_latency_corrections():
-    def _make_hardware_cfg_latency_corrections():
-        return {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
-            "qcm0": {
-                "instrument_type": "Pulsar_QCM",
-                "ref": "internal",
-                "complex_output_0": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
-                },
-            },
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "ref": "internal",
-                "cluster0_module1": {
-                    "instrument_type": "QCM",
-                    "complex_output_0": {
-                        "line_gain_db": 0,
-                        "portclock_configs": [
-                            {
-                                "port": "q1:mw",
-                                "clock": "q1.01",
-                            }
-                        ],
-                    },
-                },
-            },
-        }
-
-    return _make_hardware_cfg_latency_corrections
-
-
 @pytest.fixture
 def hardware_cfg_baseband():
     yield {
@@ -247,6 +210,56 @@ def hardware_cfg_multiplexing():
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+    }
+
+
+@pytest.fixture
+def hardware_cfg_latency_corrections():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+            },
+        },
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_two_qubit_gate():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"{qubit}:fl", "clock": clock}
+                    for qubit in ["q2", "q3"]
+                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                ]
+            },
+        },
     }
 
 
@@ -893,32 +906,13 @@ def test_compile_clock_operations(
     )
 
 
-def test_compile_cz_gate(mock_setup):
-    sched = Schedule("two_qubit_gate_experiment")
-    sched.add_resources(
-        [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
-    )  # Clocks need to be manually added at this stage.
-    sched.add(CZ(qC="q2", qT="q3"))
-
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM",
-            "ref": "internal",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": f"{qubit}:fl", "clock": clock}
-                    for qubit in ["q2", "q3"]
-                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
-                ]
-            },
-        },
-    }
-
+def test_compile_cz_gate(
+    mock_setup, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
+):
     compiled_sched = qcompile(
-        schedule=sched,
+        schedule=two_qubit_gate_schedule,
         device_cfg=mock_setup["quantum_device"].generate_device_config(),
-        hardware_cfg=hardware_cfg,
+        hardware_cfg=hardware_cfg_two_qubit_gate,
     )
 
     program_lines = {}
@@ -1793,9 +1787,9 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
-    hardware_cfg = hardware_cfg_latency_corrections()
+    hardware_cfg = hardware_cfg_latency_corrections
     compiled_sched = qcompile(
-        sched,
+        schedule=sched,
         device_cfg=mock_setup["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
@@ -1849,9 +1843,9 @@ def test_apply_latency_corrections_warning(
         logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
         qcompile(
-            sched,
+            schedule=sched,
             device_cfg=mock_setup["quantum_device"].generate_device_config(),
-            hardware_cfg=hardware_cfg_latency_corrections(),
+            hardware_cfg=hardware_cfg_latency_corrections,
         )
     assert any(warning in mssg for mssg in caplog.messages)
 

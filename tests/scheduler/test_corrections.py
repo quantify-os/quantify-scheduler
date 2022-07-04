@@ -9,57 +9,35 @@
 import numpy as np
 import pytest
 
-from quantify_scheduler import Schedule
-
 from quantify_scheduler.backends.corrections import distortion_correct_pulse
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import constants as qblox_constants
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
 
-from quantify_scheduler.compilation import (
-    determine_absolute_timing,
-    qcompile,
+from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
+    hardware_cfg_two_qubit_gate as qblox_hardware_cfg_two_qubit_gate,
 )
-
-from quantify_scheduler.operations.gate_library import Reset
-from quantify_scheduler.operations.pulse_library import (
-    DRAGPulse,
-    NumericalPulse,
-    RampPulse,
-    SquarePulse,
-)
-
-from quantify_scheduler.resources import ClockResource
-
 
 # --------- Test fixtures ---------
 @pytest.fixture
-def hardware_cfg_distortion_corrections(filter_coefficients):
-    return {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+def hardware_cfg_distortion_corrections(
+    filter_coefficients, qblox_hardware_cfg_two_qubit_gate, backend
+):
+    hardware_cfg = {
         "distortion_corrections": {
-            "q0:fl-cl0.baseband": {
+            "q2:fl-cl0.baseband": {
                 "filter_func": "scipy.signal.lfilter",
                 "input_var_name": "x",
                 "kwargs": {"b": filter_coefficients, "a": 1},
                 "clipping_values": [-2.5, 2.5],
             },
         },
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM",
-            "ref": "external",
-            "complex_output_0": {
-                "seq0": {
-                    "port": "q0:fl",
-                    "clock": "cl0.baseband",
-                }
-            },
-            "complex_output_1": {
-                "seq1": {
-                    "port": "q0:mw",
-                    "clock": "cl0.baseband",
-                }
-            },
-        },
     }
+
+    if "qblox" in backend:
+        hardware_cfg = {**hardware_cfg, **qblox_hardware_cfg_two_qubit_gate}
+
+    return hardware_cfg
 
 
 @pytest.fixture
@@ -99,104 +77,20 @@ def filter_coefficients():
 
 
 # --------- Test correction functions ---------
-def test_apply_distortion_corrections(
-    mock_setup, hardware_cfg_distortion_corrections, filter_coefficients
-):
-    composite_drag_pulse = DRAGPulse(
-        G_amp=0.5,
-        D_amp=-0.2,
-        phase=90,
-        port="q0:fl",
-        duration=20e-9,
-        clock="cl0.baseband",
-        t0=4e-9,
-    )
-    composite_drag_pulse.data["pulse_info"].append(
-        {**composite_drag_pulse.data["pulse_info"][0], "port": "q0:mw"}
-    )
-
-    composite_ramp_pulse = RampPulse(
-        t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="cl0.baseband"
-    )
-    composite_ramp_pulse.data["pulse_info"].append(
-        {**composite_drag_pulse.data["pulse_info"][0], "port": "q0:fl"}
-    )
-
-    sched = Schedule("pulse_only_experiment")
-    sched.add(Reset("q0"))
-    sched.add(composite_drag_pulse)
-    sched.add(composite_ramp_pulse)
-    sched.add_resources(
-        [ClockResource("q0:fl", freq=5e9), ClockResource("q0:mw", freq=50e6)]
-    )  # Clocks need to be manually added at this stage
-
-    determine_absolute_timing(sched)
-
-    quantum_device = mock_setup["quantum_device"]
-    full_program = qcompile(
-        schedule=sched,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg_distortion_corrections,
-    )
-
-    operations_pretty_repr = "".join(
-        f"\nkey:  {operation_repr}\nrepr: {repr(operation)}\n"
-        for operation_repr, operation in full_program.operations.items()
-    )
-
-    assert_mssg = (
-        "Only replace waveform components in need of correcting by numerical pulse;"
-        f" operations: {operations_pretty_repr}"
-    )
-    assert [
-        [None],
-        [
-            "quantify_scheduler.waveforms.interpolated_complex_waveform",
-            "quantify_scheduler.waveforms.drag",
-        ],
-        [
-            "quantify_scheduler.waveforms.ramp",
-            "quantify_scheduler.waveforms.interpolated_complex_waveform",
-        ],
-    ] == [
-        [pulse_info["wf_func"] for pulse_info in operation.data["pulse_info"]]
-        for operation in full_program.operations.values()
-    ], assert_mssg
-
-    assert_mssg = (
-        "Distortion correction converts to operation type of first entry in pulse_info;"
-        f" operations: {operations_pretty_repr}"
-    )
-    assert [Reset, NumericalPulse, RampPulse] == [
-        type(operation) for operation in full_program.operations.values()
-    ], assert_mssg
-
-    assert_mssg = (
-        "Key no longer matches str(operation) if first pulse_info entry was corrected;"
-        f" operations: {operations_pretty_repr}"
-    )
-    assert [True, False, True] == [
-        operation_repr == str(operation)
-        for operation_repr, operation in full_program.operations.items()
-    ], assert_mssg
-
-
 @pytest.mark.parametrize(
     "clipping_values, duration",
     list(
-        (clip, dur)
-        for clip in [None, [-0.2, 0.4]]
-        for dur in np.arange(start=1e-9, stop=16e-9, step=1e-9)
+        (clipping, duration)
+        for clipping in [None, [-0.2, 0.4]]
+        for duration in np.arange(start=1e-9, stop=16e-9, step=1e-9)
     ),
 )
 def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration):
-    pulse = SquarePulse(
-        amp=220e-3, duration=duration, port="q0:fl", clock="cl0.baseband"
-    )
+    pulse = SquarePulse(amp=220e-3, duration=duration, port="", clock="")
 
     corrected_pulse = distortion_correct_pulse(
         pulse_data=pulse.data["pulse_info"][0],
-        sampling_rate=constants.SAMPLING_RATE,
+        sampling_rate=qblox_constants.SAMPLING_RATE,
         filter_func_name="scipy.signal.lfilter",
         input_var_name="x",
         kwargs_dict={"b": filter_coefficients, "a": 1},
@@ -205,8 +99,65 @@ def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration
 
     corrected_pulse_samples = corrected_pulse.data["pulse_info"][0]["samples"]
 
-    assert len(corrected_pulse_samples) > 1
+    assert (
+        len(corrected_pulse_samples) > 1
+    ), "Correction always generates at least 2 sample points"
 
     if clipping_values:
         assert min(corrected_pulse_samples) >= clipping_values[0]
         assert max(corrected_pulse_samples) <= clipping_values[1]
+
+
+@pytest.mark.parametrize(
+    "backend", ["quantify_scheduler.backends.qblox_backend.hardware_compile"]
+)
+def test_apply_distortion_corrections(  # pylint: disable=unused-argument
+    mock_setup,
+    hardware_cfg_distortion_corrections,
+    filter_coefficients,
+    two_qubit_gate_schedule,
+    backend,
+):
+    compiled_sched = qcompile(
+        schedule=two_qubit_gate_schedule,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg_distortion_corrections,
+    )
+
+    operations_pretty_repr = "".join(
+        f"\noperations:\n  key:  {operation_repr}\n  repr: {repr(operation)}\n"
+        for operation_repr, operation in compiled_sched.operations.items()
+    )
+
+    assert (
+        list(compiled_sched.operations.keys())[0] == "CZ(qC='q2',qT='q3')"
+    ), f'Key of CZ operation is still "CZ(...)" {operations_pretty_repr}'
+
+    assert (  # pylint: disable=unidiomatic-typecheck
+        type(list(compiled_sched.operations.values())[0]) is NumericalPulse
+    ), f"Type of CZ operation is now NumericalPulse {operations_pretty_repr}"
+
+    assert list(compiled_sched.operations.values())[0].data["pulse_info"][0][
+        "samples"
+    ] == [
+        0.979285365,
+        0.8860967635,
+        0.801975495,
+        0.7258634115,
+        0.6569623475,
+        0.5960208985000001,
+        0.5538521118,
+        0.5240073387,
+        0.5041775155,
+        0.49534564565,
+        0.496999234675,
+        0.501212905125,
+        0.5042513900750001,
+        0.5015711775700001,
+        0.49511489812000015,
+        0.49297030829999994,
+        0.4996697756499999,
+        0.5077874985499999,
+        0.5125618424899999,
+        0.5184381916899999,
+    ]

@@ -13,9 +13,6 @@ from quantify_scheduler.helpers.importers import import_python_object_from_strin
 from quantify_scheduler.operations.pulse_library import NumericalPulse
 
 
-logger = logging.getLogger(__name__)
-
-
 def distortion_correct_pulse(  # pylint: disable=too-many-arguments
     pulse_data: Dict[str, Any],
     sampling_rate: int,
@@ -190,7 +187,7 @@ def apply_distortion_corrections(
                 if pulse_info_idx == 0:
                     substitute_operation = corrected_pulse
 
-        # Convert to operation type of first entry in pulse_info,
+        # Convert to operation-type of first entry in pulse_info,
         # required as first entry in pulse_info is used to generate signature in __str__
         if substitute_operation is not None:
             substitute_operation.data["pulse_info"] = schedule.operations[
