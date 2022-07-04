@@ -3,6 +3,8 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 
+# pylint: disable=too-many-lines
+
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
