@@ -49,7 +49,7 @@ def distortion_correct_pulse(  # pylint: disable=too-many-arguments
     Returns
     -------
     :
-        The sampled, distortion corrected pulse wrapped in a NumericalPulse.
+        The sampled, distortion corrected pulse wrapped in a ``NumericalPulse``.
     """
 
     waveform_data = generate_waveform_data(
@@ -88,8 +88,8 @@ def apply_distortion_corrections(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> Schedule:
     """
-    Apply distortion corrections to operations in the schedule, as defined via the
-    hardware configuration file. Example:
+    Apply distortion corrections to operations in the schedule.
+    Defined via the hardware configuration file, example:
 
     .. code-block::
 
