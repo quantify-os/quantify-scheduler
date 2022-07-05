@@ -22,7 +22,7 @@ cached_locate = lru_cache(locate)
 
 
 class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
-    """
+    """# pylint: disable=line-too-long
     A representation of quantum circuit operations.
 
     The `Operation` class is a JSON-compatible data structure that contains information
