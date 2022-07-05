@@ -12,6 +12,7 @@ Unreleased
 * Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
+
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)

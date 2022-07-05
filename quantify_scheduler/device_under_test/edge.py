@@ -12,7 +12,7 @@ class Edge(Instrument):
     QuantumDevice. It provides an interface for the QuantumDevice to generate the
     edge information for use in the device compilation step. See
     :class:`quantify_scheduler.device_under_test.sudden_nz_edge` for an example edge
-    implementation between two `BasicTransmonElement`s of a CZ gate using SuddenNetZero.
+    implementation between two `BasicTransmonElement` s of a CZ gate using SuddenNetZero.
     """
 
     def __init__(self, parent_element_name: str, child_element_name: str):

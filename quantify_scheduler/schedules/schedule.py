@@ -65,7 +65,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     **JSON schema of a valid Schedule**
 
-    .. json-schema:: ../schemas/schedule.json
+    .. json-schema:: /builds/quantify-os/quantify-scheduler/quantify-scheduler/schemas/schedule.json
 
     """
 
