@@ -17,9 +17,17 @@ Welcome to Quantify's documentation!
    authors
    changelog
 
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+   :glob:
+
+   autoapi/index
+   bibliography
 
 Indices and tables
-==================
+===================
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
