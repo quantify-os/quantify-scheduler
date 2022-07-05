@@ -52,7 +52,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
     **JSON schema of a valid Operation**
 
-    .. jsonschema:: ../schemas/operation.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify-scheduler/schemas/operation.json
 
 
     .. note::

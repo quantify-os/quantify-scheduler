@@ -65,7 +65,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     **JSON schema of a valid Schedule**
 
-    .. jsonschema:: ../schemas/schedule.json
+    .. json-schema:: ../schemas/schedule.json
 
     """
 

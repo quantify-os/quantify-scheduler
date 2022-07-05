@@ -165,7 +165,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     .. rubric:: Configuration specification
 
-    .. jsonschema:: schemas/transmon_cfg.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify-scheduler/schemas/transmon_cfg.json
 
     """
     warnings.warn(
@@ -430,7 +430,7 @@ def qcompile(
 
     .. rubric:: Configuration specification
 
-    .. jsonschema:: schemas/transmon_cfg.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify-scheduler/schemas/transmon_cfg.json
 
     .. todo::
 
