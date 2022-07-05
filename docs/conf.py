@@ -240,6 +240,7 @@ autoapi_generate_api_docs = True
 autoapi_dirs = ["../quantify_scheduler"]
 autoapi_ignore = ["../quantify_scheduler.Schedule"]
 ignore_module_all = True
+autoapi_add_toctree_entry = False
 autoapi_options = [
     "members",
     "undoc-members",
@@ -252,11 +253,9 @@ autoapi_options = [
     # 'imported-members',
 ]
 
-# avoid duplicate label warning even when manual label has been used; suppress autoapi
-#  warnings
+# avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
     "autosectionlabel.*",
-    # "autoapi",
 ]  # TODO: https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#suppressing-warnings
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
@@ -313,7 +312,7 @@ import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
 
-# Raises a circular import warning
+# Prevents a circular import warning
 import tenacity
 
 # `pydantic` fails to import automatically and leads to broken documentation,
@@ -346,8 +345,7 @@ notebook_to_jupyter_sphinx_always_rebuild = True
 
 nitpicky = True  # equivalent to `-n` option in the docs Makefile
 nitpick_ignore = [
-    ("py:class", "quantify_scheduler.schedules.schedule.Schedule"),
-    ("py:class", "quantify_scheduler.schedules.schedule.CompiledSchedule"),
+    ("py:class", "quantify_scheduler.device_under_test.composite_square_edge"),
     (
         "py:class",
         "quantify_scheduler.schedules.schedule.CompiledSchedule.hardware_waveform_dict",
@@ -385,7 +383,7 @@ nitpick_ignore_regex = [
     ("py:class", r"Ellipsis.*"),
     ("py:class", r"Parameter.*"),
     ("py:.*", r"dataclasses_json.*"),
-    (".*", r".*Schedule.*"),
+    (".*", r".*Schedule"),
     ("py:class", r"qblox_instruments.*"),
 ]
 

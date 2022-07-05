@@ -23,10 +23,11 @@ cached_locate = lru_cache(locate)
 
 class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
     """
-    A JSON compatible data structure that contains information on
-    how to represent the operation on the quantum-circuit and/or the quantum-device
-    layer.
-    It also contains information on where the operation should be applied: the
+    A representation of quantum circuit operations.
+
+    The `Operation` class is a JSON-compatible data structure that contains information
+    on how to represent the operation on the quantum-circuit and/or the quantum-device
+    layer. It also contains information on where the operation should be applied: the
     :class:`~quantify_scheduler.resources.Resource` s used.
 
     An operation always has the following attributes:

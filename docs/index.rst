@@ -16,14 +16,14 @@ Welcome to Quantify's documentation!
    contributing
    authors
    changelog
+   bibliography
 
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
    :glob:
 
-   autoapi/index
-   bibliography
+   autoapi/quantify_scheduler/index
 
 Indices and tables
 ===================
