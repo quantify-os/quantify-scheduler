@@ -26,9 +26,9 @@
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download:notebook:`Tutorial 1. Basic experiment`
+#     :jupyter-download-notebook:`Tutorial 1. Basic experiment`
 #
-#     :jupyter-download:script:`Tutorial 1. Basic experiment`
+#     :jupyter-download-script:`Tutorial 1. Basic experiment`
 #
 # .. tip::
 #     Following this Tutorial requires familiarity with the **core concepts** of
