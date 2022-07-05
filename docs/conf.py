@@ -24,6 +24,7 @@ import sys
 package_path = os.path.abspath("..")
 sys.path.insert(0, package_path)
 
+
 # -- General configuration ---------------------------------------------
 # pylint: disable=invalid-name
 
@@ -45,7 +46,6 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
-    "sphinx-jsonschema",
     "jupyter_sphinx",
     "sphinx_togglebutton",
     # fancy type hints in docs and
@@ -56,6 +56,7 @@ extensions = [
     "quantify_core.sphinx_extensions.notebook_to_jupyter_sphinx",
     "autoapi.extension",
 ]
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -107,7 +108,7 @@ author = "The Quantify consortium"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -237,9 +238,26 @@ texinfo_documents = [
 autoapi_type = "python"
 autoapi_generate_api_docs = True
 autoapi_dirs = ["../quantify_scheduler"]
+autoapi_ignore = ["../quantify_scheduler.Schedule"]
+ignore_module_all = True
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "private-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+    # Including `important-members` currently leads to multiple cross references to the
+    # same class reference, raising multiple warnings
+    # 'imported-members',
+]
 
-# avoid duplicate label warning even when manual label has been used; suppress autoapi warnings
-suppress_warnings = ["autosectionlabel.*", "autoapi"]  # TODO: https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#suppressing-warnings
+# avoid duplicate label warning even when manual label has been used; suppress autoapi
+#  warnings
+suppress_warnings = [
+    "autosectionlabel.*",
+    # "autoapi",
+]  # TODO: https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#suppressing-warnings
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
 # display in docs (very ugly when overflowing the html page width)
@@ -295,6 +313,9 @@ import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
 
+# Raises a circular import warning
+import tenacity
+
 # `pydantic` fails to import automatically and leads to broken documentation,
 # if not preloaded.
 import pydantic
@@ -324,7 +345,49 @@ notebook_to_jupyter_sphinx_always_rebuild = True
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
 
 nitpicky = True  # equivalent to `-n` option in the docs Makefile
-nitpick_ignore = []  # Tuple[str, str], ignore certain warnings
+nitpick_ignore = [
+    ("py:class", "quantify_scheduler.schedules.schedule.Schedule"),
+    ("py:class", "quantify_scheduler.schedules.schedule.CompiledSchedule"),
+    (
+        "py:class",
+        "quantify_scheduler.schedules.schedule.CompiledSchedule.hardware_waveform_dict",
+    ),
+    (
+        "py:class",
+        "quantify_scheduler.schedules.schedule.CompiledSchedule.hardware_timing_table",
+    ),
+    ("py:class", "quantify_scheduler.helpers.schedule.AcquisitionMetadata"),
+    ("py:class", "_StaircaseParameters"),
+    ("py:class", "quantify_scheduler.operations.operation.Operation"),
+    ("py:class", "quantify_scheduler.operations.operation.Operation.valid_pulse"),
+    (
+        "py:class",
+        "quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator",
+    ),
+    (
+        "py:class",
+        "quantify_scheduler.instrument_coordinator.components.InstrumentCoordinatorComponentBase",
+    ),
+    ("py:class", "AcquisitionIndexing"),
+    ("py:obj", "quantify_scheduler.Operation"),
+    ("py:class", "quantify_scheduler.Operation"),
+    ("py:obj", "quantify_scheduler.Resource"),
+    ("py:class", "quantify_scheduler.Resource"),
+    ("py:obj", "quantify_scheduler.structure.DataStructure"),
+]  # Tuple[str, str], ignore certain warnings
+
+nitpick_ignore_regex = [
+    ("py:class", r"numpy.*"),
+    ("py:class", r"plotly.*"),
+    ("py:.*", r"orjson.*"),
+    ("py:.*", r"pydantic.*"),
+    ("py:.*", r"qcodes.*"),
+    ("py:class", r"Ellipsis.*"),
+    ("py:class", r"Parameter.*"),
+    ("py:.*", r"dataclasses_json.*"),
+    (".*", r".*Schedule.*"),
+    ("py:class", r"qblox_instruments.*"),
+]
 
 with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
     for line in nitpick_exceptions:
