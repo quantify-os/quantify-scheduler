@@ -12,7 +12,7 @@ class Edge(Instrument):
     QuantumDevice. It provides an interface for the QuantumDevice to generate the
     edge information for use in the device compilation step. See
     :class:`quantify_scheduler.device_under_test.composite_square_edge` for an example
-    edge implementation
+    edge implementation.
     """
 
     def __init__(self, parent_element_name: str, child_element_name: str):
