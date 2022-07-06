@@ -22,7 +22,7 @@ cached_locate = lru_cache(locate)
 
 
 class Operation(JSONSchemaValMixin, UserDict):
-    # pylint: disable=too-many-ancestors
+    # pylint: disable=too-many-ancestors, line-too-long
     """
     A representation of quantum circuit operations.
 
@@ -62,7 +62,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         Two different Operations containing the same information generate the
         same hash and are considered identical.
     """
-    # pylint: enable=too-many-ancestors
+    # pylint: enable=line-too-long
 
     schema_filename = "operation.json"
     _class_signature = None
