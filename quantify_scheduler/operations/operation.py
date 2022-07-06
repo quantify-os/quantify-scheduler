@@ -21,8 +21,9 @@ from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 cached_locate = lru_cache(locate)
 
 
-class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
-    """# pylint: disable=line-too-long
+class Operation(JSONSchemaValMixin, UserDict):
+    # pylint: disable=too-many-ancestors
+    """
     A representation of quantum circuit operations.
 
     The `Operation` class is a JSON-compatible data structure that contains information
@@ -61,6 +62,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         Two different Operations containing the same information generate the
         same hash and are considered identical.
     """
+    # pylint: enable=too-many-ancestors
 
     schema_filename = "operation.json"
     _class_signature = None

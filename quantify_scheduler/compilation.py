@@ -408,7 +408,8 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 def qcompile(
     schedule: Schedule, device_cfg: dict = None, hardware_cfg: dict = None
 ) -> CompiledSchedule:
-    """# pylint: disable=line-too-long
+    # pylint: disable=line-too-long
+    """
     Compile and assemble a :class:`~.Schedule` into a
     :class:`~.CompiledSchedule` ready for execution using the
     :class:`~.InstrumentCoordinator`.

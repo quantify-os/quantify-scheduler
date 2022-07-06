@@ -29,7 +29,8 @@ if TYPE_CHECKING:
 
 # pylint: disable=too-many-ancestors
 class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
-    """# pylint: disable=line-too-long
+    # pylint: disable=line-too-long
+    """
     The :class:`~.ScheduleBase` is a data structure that is at
     the core of the Quantify-scheduler and describes when what operations are applied
     where.
@@ -68,7 +69,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/schedule.json
 
     """
-
+    # pylint: enable=line-too-long
     @property
     def name(self) -> str:
         """Returns the name of the schedule."""
