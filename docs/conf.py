@@ -256,7 +256,7 @@ autoapi_options = [
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
     "autosectionlabel.*",
-]  # TODO: https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#suppressing-warnings
+]
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
 # display in docs (very ugly when overflowing the html page width)
