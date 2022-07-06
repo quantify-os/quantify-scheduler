@@ -238,7 +238,6 @@ texinfo_documents = [
 autoapi_type = "python"
 autoapi_generate_api_docs = True
 autoapi_dirs = ["../quantify_scheduler"]
-autoapi_ignore = ["../quantify_scheduler.Schedule"]
 ignore_module_all = True
 autoapi_add_toctree_entry = False
 autoapi_options = [
@@ -248,9 +247,10 @@ autoapi_options = [
     "show-inheritance",
     "show-module-summary",
     "special-members",
-    # Including `important-members` currently leads to multiple cross references to the
-    # same class reference, raising multiple warnings
-    # 'imported-members',
+    # Including `important-members` displays the description of class aliases in the
+    # docs, however, it causes sphinx to raise multiple warnings about finding
+    # multiple targets for cross-references.
+    # "imported-members",
 ]
 
 # avoid duplicate label warning even when manual label has been used;

@@ -134,7 +134,8 @@ def _find_edge(device_cfg, q0, q1, op_name):
 
 
 def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
-    """# pylint: disable=line-too-long
+    # pylint: disable=line-too-long
+    """
     Adds pulse information specified in the device config to the schedule.
 
     Parameters
@@ -168,6 +169,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/transmon_cfg.json
 
     """
+    # pylint: enable=line-too-long
+
     warnings.warn(
         "Support for this compilation backend will be be removed in"
         "quantify-scheduler >= 0.7.0.\n"
