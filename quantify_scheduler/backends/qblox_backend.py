@@ -28,7 +28,7 @@ def hardware_compile(
     ----------
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
-        already added to the operation. Otherwise and exception is raised.
+        already added to the operation. Otherwise an exception is raised.
     hardware_cfg
         The hardware configuration of the setup.
 
@@ -41,6 +41,7 @@ def hardware_compile(
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
     )
+
     if hardware_cfg != converted_hw_config:
         warnings.warn(
             "The provided hardware config adheres to a specification "
@@ -55,7 +56,7 @@ def hardware_compile(
         )
         hardware_cfg = converted_hw_config
 
-    container = compiler_container.CompilerContainer.from_mapping(
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
     )
 

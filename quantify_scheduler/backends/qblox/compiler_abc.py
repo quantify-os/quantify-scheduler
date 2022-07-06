@@ -67,6 +67,7 @@ class InstrumentCompiler(ABC):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -86,11 +87,16 @@ class InstrumentCompiler(ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
+
         """
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
+        self.latency_corrections = latency_corrections or {}
 
     def prepare(self) -> None:
         """
@@ -132,6 +138,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -151,8 +158,11 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
@@ -258,7 +268,8 @@ class Sequencer:
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
-        seq_settings: dict,
+        seq_settings: Dict[str, Any],
+        latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
         downconverter: bool = False,
     ):
@@ -276,6 +287,8 @@ class Sequencer:
             sequencer. The first value is the port, second is the clock.
         seq_settings
             Sequencer settings dictionary.
+        latency_corrections
+            Dict containing the delays for each port-clock combination.
         lo_name
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
@@ -310,22 +323,9 @@ class Sequencer:
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
 
-        self.latency_correction_ns: int = self._get_latency_correction_ns(seq_settings)
+        portclock_key = f"{seq_settings['port']}-{seq_settings['clock']}"
+        self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
-
-    def _get_latency_correction_ns(self, seq_settings: Dict[str, Any]) -> int:
-        latency_correction_ns = int(
-            round(seq_settings.get("latency_correction", 0) * 1e9)
-        )
-        if latency_correction_ns % 4 != 0:
-            logger.warning(
-                f"Latency correction of {latency_correction_ns} ns specified"
-                f" for {self.name} of {self.parent.name}, which is not a"
-                f" multiple of {constants.GRID_TIME} ns. This feature should"
-                f" be considered experimental and stable results are not guaranteed at "
-                f"this stage."
-            )
-        return latency_correction_ns
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -675,11 +675,16 @@ class Sequencer:
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
-        qasm.auto_wait(
-            constants.GRID_TIME + self.latency_correction_ns,
-            count_as_elapsed_time=False,
-            comment=f"Latency correction of {self.latency_correction_ns} ns.",
+        latency_correction_ns: int = self._get_latency_correction_ns(
+            self.latency_correction
         )
+        qasm.auto_wait(
+            wait_time=constants.GRID_TIME + latency_correction_ns,
+            count_as_elapsed_time=False,
+            comment=f"latency correction of {constants.GRID_TIME} + "
+            f"{latency_correction_ns} ns",
+        )
+
         with qasm.loop(label=loop_label, repetitions=repetitions):
             qasm.emit(q1asm_instructions.RESET_PHASE)
             qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
@@ -747,6 +752,22 @@ class Sequencer:
                     f"ch{acq.operation_info.data['acq_channel']}",
                 )
             acq.bin_idx_register = acq_bin_idx_reg
+
+    def _get_latency_correction_ns(self, latency_correction: float) -> int:
+        if latency_correction == 0:
+            return 0
+
+        latency_correction_ns = int(round(latency_correction * 1e9))
+        if latency_correction_ns % 4 != 0:
+            logger.warning(
+                f"Latency correction of {latency_correction_ns} ns specified"
+                f" for {self.name} of {self.parent.name}, which is not a"
+                f" multiple of {constants.GRID_TIME} ns. This feature should"
+                f" be considered experimental and stable results are not guaranteed at "
+                f"this stage."
+            )
+
+        return latency_correction_ns
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -888,6 +909,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -907,8 +929,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         driver_version_check.verify_qblox_instruments_version()
 
         self.is_pulsar: bool = True
@@ -982,7 +1007,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
-
         sequencers: Dict[str, Sequencer] = {}
         portclock_output_map: Dict[Tuple, str] = {}
 
@@ -1021,6 +1045,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         static_hw_properties=self.static_hw_properties,
                         connected_outputs=connected_outputs,
                         seq_settings=target,
+                        latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
                         downconverter=downconverter,
                     )
