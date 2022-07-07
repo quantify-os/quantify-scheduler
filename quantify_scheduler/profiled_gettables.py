@@ -50,11 +50,31 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         self.parent_ic = parentinstrumentcoordinator
 
     def _get_schedule_time(self, compiled_schedule):
-        op_len = [
-            op["pulse_info"][0]["duration"]
-            for op in compiled_schedule["operation_dict"].values()
-        ]
-        schedule_time = sum(op_len)
+         """
+        Method to find the length of the schedule. As operations can be
+        executed in parallel, the operation with the last timestamp does not
+        necessarily end last. To omit this, the addition of the duration is
+        included in the for loop.
+
+        """
+
+        # find last timestamp
+        schedule_time = 0
+        for sc in compiled_schedule.schedulables.items():
+            time_stamp = sc[-1].data["abs_time"]
+            label = sc[-1].data["operation_repr"]
+
+            # find duration of last operation
+            op = compiled_schedule["operation_dict"][label]
+            final_op_len = op.data["pulse_info"][0].get("duration")
+            if not final_op_len:
+                acq = op.data["acquisition_info"][0]
+                final_op_len = sum([x["duration"] for x in acq])
+            tmp_time = time_stamp + final_op_len
+
+            if tmp_time > schedule_time:
+                schedule_time = tmp_time
+        schedule_time *= compiled_schedule.repetitions
         self.profile["schedule"].append(schedule_time)
 
     @profiler
