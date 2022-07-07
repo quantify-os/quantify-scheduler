@@ -111,7 +111,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
 
     @profiler
     def retrieve_acquisition(self):
-        self.parent_ic.retrieve_acquisition()
+        return self.parent_ic.retrieve_acquisition()
 
     @profiler
     def wait_done(self, timeout_sec: int = 10):
