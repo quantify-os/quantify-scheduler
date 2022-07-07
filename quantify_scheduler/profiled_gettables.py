@@ -59,15 +59,15 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
 
         # find last timestamp
         schedule_time = 0
-        for sc in compiled_schedule.schedulables.items():
-            time_stamp = sc[-1].data["abs_time"]
-            label = sc[-1].data["operation_repr"]
+        for schedulable in compiled_schedule.schedulables.items():
+            time_stamp = schedulable[-1].data["abs_time"]
+            label = schedulable[-1].data["operation_repr"]
 
             # find duration of last operation
-            op = compiled_schedule["operation_dict"][label]
-            final_op_len = op.data["pulse_info"][0].get("duration")
+            operation = compiled_schedule["operation_dict"][label]
+            final_op_len = operation.data["pulse_info"][0].get("duration")
             if not final_op_len:
-                acq = op.data["acquisition_info"][0]
+                acq = operation.data["acquisition_info"][0]
                 final_op_len = sum([x["duration"] for x in acq])
             tmp_time = time_stamp + final_op_len
 
