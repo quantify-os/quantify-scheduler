@@ -50,12 +50,11 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         self.parent_ic = parentinstrumentcoordinator
 
     def _get_schedule_time(self, compiled_schedule):
-         """
+        """
         Method to find the length of the schedule. As operations can be
         executed in parallel, the operation with the last timestamp does not
         necessarily end last. To omit this, the addition of the duration is
         included in the for loop.
-
         """
 
         # find last timestamp
