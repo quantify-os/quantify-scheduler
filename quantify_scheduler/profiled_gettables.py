@@ -55,6 +55,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         executed in parallel, the operation with the last timestamp does not
         necessarily end last. To omit this, the addition of the duration is
         included in the for loop.
+
         """
 
         # find last timestamp
@@ -65,10 +66,19 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
 
             # find duration of last operation
             operation = compiled_schedule["operation_dict"][label]
-            final_op_len = operation.data["pulse_info"][0].get("duration")
-            if not final_op_len:
-                acq = operation.data["acquisition_info"][0]
-                final_op_len = sum([x["duration"] for x in acq])
+
+            pulses = [
+                pulse.get("duration") + pulse.get("t0")
+                for pulse in operation.data["pulse_info"]
+            ]
+            acquisitions = [
+                acquisition.get("duration") + acquisition.get("t0")
+                for acquisition in operation.data["acquisition_info"]
+            ]
+            last_pulse = max(pulses, default=0)
+            last_acq = max(acquisitions, default=0)
+            final_op_len = max([last_pulse, last_acq], default=0)
+
             tmp_time = time_stamp + final_op_len
 
             if tmp_time > schedule_time:
