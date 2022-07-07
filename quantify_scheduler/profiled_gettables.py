@@ -45,7 +45,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     """
 
     def __init__(self, name: str, parentinstrumentcoordinator):
-        self.profile = {"schedule": [float]}
+        self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parentinstrumentcoordinator
 
@@ -117,7 +117,7 @@ class ProfiledGettable(ScheduleGettable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.profile = {"compile": [float]}
+        self.profile = {"compile": []}
 
         # overwrite linked IC to a profiled IC
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
