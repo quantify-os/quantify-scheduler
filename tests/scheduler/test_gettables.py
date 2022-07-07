@@ -548,6 +548,101 @@ def test_trace_acquisition():
     _ = meas_ctrl.run(label)
 
 
+def test_trace_acquisition_seq0_error():
+    from quantify_core.data.handling import set_datadir
+    from quantify_scheduler.compilation import qcompile
+    from quantify_scheduler.device_under_test.transmon_element import (
+        BasicTransmonElement,
+        TransmonElement,
+    )
+    from quantify_scheduler.enums import BinMode
+    from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+    from quantify_scheduler.instrument_coordinator.components.qblox import (
+        ClusterComponent,
+        PulsarQCMComponent,
+        PulsarQRMComponent,
+        QRMComponent,
+    )
+    from quantify_scheduler.operations.acquisition_library import Trace
+    from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, Rxy, \
+        X
+    from quantify_scheduler.schedules.schedule import Schedule
+
+    from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType
+    from qcodes import Instrument
+
+    from quantify_scheduler.backends.circuit_to_device import (
+        DeviceCompilationConfig,
+        OperationCompilationConfig,
+    )
+
+    from quantify_scheduler.device_under_test.transmon_element import \
+        BasicTransmonElement
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
+    from quantify_core.data.handling import set_datadir
+    import tempfile
+
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    Instrument.close_all()
+    IC = InstrumentCoordinator("mwe")
+    qrm = Pulsar("QRM", dummy_type=PulsarType.PULSAR_QRM)
+    cluster = Cluster(
+        "cluster0",
+        dummy_cfg={
+            "10": ClusterType.CLUSTER_QRM,
+            "4": ClusterType.CLUSTER_QCM,
+            "6": ClusterType.CLUSTER_QRM_RF,
+            "8": ClusterType.CLUSTER_QCM_RF,
+        },
+    )
+    IC.add_component(QRMComponent(qrm))
+    IC.add_component(ClusterComponent(cluster))
+
+    hardware_cfg={
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module10": {
+                "instrument_type": "QRM",
+                "ref": "internal",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
+                },
+            },
+        },
+    }
+
+    q0 = BasicTransmonElement("q0")
+
+    quantum_device = QuantumDevice(name="quantum_device")
+
+    # quantum_device.instr_measurement_control(meas_ctrl.name)
+    # quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
+
+    quantum_device.hardware_config(hardware_cfg)
+
+    quantum_device.add_element(q0)
+    q0.measure.acq_delay(600e-9)
+    q0.clock_freqs.readout(7404000000.0)
+
+    qubit_name = "q0"
+    schedule = Schedule("Raw trace acquisition", repetitions=1)
+    schedule.add(Reset(qubit_name))
+    schedule.add(Measure(qubit_name, acq_protocol="Trace"))
+
+    compiled_sched = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        # device_cfg=device_cfg,
+        hardware_cfg=hardware_cfg
+    )
+
+    IC.prepare(compiled_sched)
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the
