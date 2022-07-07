@@ -7,6 +7,7 @@ import warnings
 from typing import Any, Dict
 
 from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler.backends.corrections import apply_distortion_corrections
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
@@ -37,7 +38,6 @@ def hardware_compile(
     :
         The compiled schedule.
     """
-
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
     )
@@ -55,6 +55,8 @@ def hardware_compile(
             DeprecationWarning,
         )
         hardware_cfg = converted_hw_config
+
+    schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
