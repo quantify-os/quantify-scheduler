@@ -306,17 +306,14 @@ def test_trace_acquisition():
     from quantify_scheduler.instrument_coordinator.components.qblox import (
         ClusterComponent,
     )
-    from quantify_scheduler.device_under_test.transmon_element import \
-        BasicTransmonElement
+    from quantify_scheduler.device_under_test.transmon_element import (
+        BasicTransmonElement,
+    )
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
     from qblox_instruments import Cluster, ClusterType
     from qcodes.instrument.base import Instrument
-    from quantify_scheduler.instrument_coordinator.components.generic import (
-        GenericInstrumentCoordinatorComponent,
-    )
 
     from quantify_scheduler import Schedule
-    from quantify_scheduler.resources import ClockResource
 
     from quantify_scheduler.operations.gate_library import (
         Measure,
@@ -329,8 +326,8 @@ def test_trace_acquisition():
     import tempfile
 
     def raw_trace(
-            qubit_name: str,
-            repetitions: int = 1,
+        qubit_name: str,
+        repetitions: int = 1,
     ) -> Schedule:
         """
         Generate a schedule to perform raw trace acquisition. (New-style device element.)
@@ -372,7 +369,7 @@ def test_trace_acquisition():
                             "clock": "cl0.baseband",
                             "latency_correction": 8e-9,
                         }
-                    ]
+                    ],
                 },
                 "real_output_1": {
                     "line_gain_db": 0,
@@ -382,7 +379,7 @@ def test_trace_acquisition():
                             "clock": "cl0.baseband",
                             "latency_correction": 8e-9,
                         }
-                    ]
+                    ],
                 },
                 "real_output_2": {
                     "line_gain_db": 0,
@@ -392,7 +389,7 @@ def test_trace_acquisition():
                             "clock": "cl0.baseband",
                             "latency_correction": 8e-9,
                         }
-                    ]
+                    ],
                 },
                 "real_output_3": {
                     "line_gain_db": 0,
@@ -402,7 +399,7 @@ def test_trace_acquisition():
                             "clock": "cl0.baseband",
                             "latency_correction": 8e-9,
                         }
-                    ]
+                    ],
                 },
             },
             "cluster0_module4": {
@@ -410,22 +407,14 @@ def test_trace_acquisition():
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "portclock_configs": [
-                        {
-                            "port": "q0:mw",
-                            "clock": "q0.01",
-                            "interm_freq": -100e6
-                        }
-                    ]
+                        {"port": "q0:mw", "clock": "q0.01", "interm_freq": -100e6}
+                    ],
                 },
                 "complex_output_1": {
                     "line_gain_db": 0,
                     "portclock_configs": [
-                        {
-                            "port": "q1:mw",
-                            "clock": "q1.01",
-                            "interm_freq": -100e6
-                        }
-                    ]
+                        {"port": "q1:mw", "clock": "q1.01", "interm_freq": -100e6}
+                    ],
                 },
             },
             "cluster0_module10": {
@@ -433,37 +422,13 @@ def test_trace_acquisition():
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                            "interm_freq": 50e6
-                        },
-                        {
-                            "port": "q1:res",
-                            "clock": "q1.ro",
-                            "interm_freq": 50e6
-                        },
-                        {
-                            "port": "q2:res",
-                            "clock": "q2.ro",
-                            "interm_freq": 50e6
-                        },
-                        {
-                            "port": "q3:res",
-                            "clock": "q3.ro",
-                            "interm_freq": 50e6
-                        },
-                        {
-                            "port": "q4:res",
-                            "clock": "q4.ro",
-                            "interm_freq": 50e6
-                        },
-                        {
-                            "port": "q5:res",
-                            "clock": "q5.ro",
-                            "interm_freq": 50e6
-                        },
-                    ]
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
+                        {"port": "q3:res", "clock": "q3.ro", "interm_freq": 50e6},
+                        {"port": "q4:res", "clock": "q4.ro", "interm_freq": 50e6},
+                        {"port": "q5:res", "clock": "q5.ro", "interm_freq": 50e6},
+                    ],
                 },
             },
         },
@@ -472,7 +437,15 @@ def test_trace_acquisition():
     Instrument.close_all()
 
     print("Falling back to Dummy device")
-    cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM, "4": ClusterType.CLUSTER_QCM_RF, "8": ClusterType.CLUSTER_QRM, "10": ClusterType.CLUSTER_QRM_RF})
+    cluster0 = Cluster(
+        "cluster0",
+        dummy_cfg={
+            "2": ClusterType.CLUSTER_QCM,
+            "4": ClusterType.CLUSTER_QCM_RF,
+            "8": ClusterType.CLUSTER_QRM,
+            "10": ClusterType.CLUSTER_QRM_RF,
+        },
+    )
 
     print("CMM system status is \n", cluster0.get_system_state())
     print("correctly connected to qblox-cluster-MM.\n")
@@ -522,9 +495,6 @@ def test_trace_acquisition():
     sample_par = ManualParameter("sample", label="Sample time", unit="s")
     sample_par.batched = True
 
-    measure = device_element.measure
-    integration_time = measure.integration_time()
-
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=raw_trace,
@@ -536,48 +506,48 @@ def test_trace_acquisition():
 
     # the sampling rate of the Qblox hardware
     sampling_rate = 1e9
-    # in the Qblox hardware, the trace acquisition will always return 16384 samples. But the dummy returns 16383...
-    sample_times = np.arange(start=0, stop=16383/sampling_rate, step=1/sampling_rate)
 
-    print(np.shape(sample_times))
+    # in the Qblox hardware, the trace acquisition will always return 16384 samples. But the dummy returns 16383...
+    sample_size = 16384
+    if cluster0.get_idn().get("serial_number") == "whatever":
+        sample_size = 16383
+
+    sample_times = np.arange(
+        start=0, stop=sample_size / sampling_rate, step=1 / sampling_rate
+    )
 
     meas_ctrl.settables(sample_par)
     meas_ctrl.setpoints(sample_times)
     meas_ctrl.gettables(sched_gettable)
     label = f"Readout trace schedule of {device_element.name}"
-    _ = meas_ctrl.run(label)
+
+    try:
+        _ = meas_ctrl.run(label)
+    except Exception as ex:
+        import pprint
+
+        print()
+        pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
+        raise ex
 
 
 def test_trace_acquisition_seq0_error():
-    from quantify_core.data.handling import set_datadir
     from quantify_scheduler.compilation import qcompile
-    from quantify_scheduler.device_under_test.transmon_element import (
-        BasicTransmonElement,
-        TransmonElement,
-    )
-    from quantify_scheduler.enums import BinMode
+
     from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
     from quantify_scheduler.instrument_coordinator.components.qblox import (
         ClusterComponent,
-        PulsarQCMComponent,
-        PulsarQRMComponent,
         QRMComponent,
     )
-    from quantify_scheduler.operations.acquisition_library import Trace
-    from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, Rxy, \
-        X
+    from quantify_scheduler.operations.gate_library import Measure, Reset
     from quantify_scheduler.schedules.schedule import Schedule
 
     from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType
     from qcodes import Instrument
 
-    from quantify_scheduler.backends.circuit_to_device import (
-        DeviceCompilationConfig,
-        OperationCompilationConfig,
+    from quantify_scheduler.device_under_test.transmon_element import (
+        BasicTransmonElement,
     )
-
-    from quantify_scheduler.device_under_test.transmon_element import \
-        BasicTransmonElement
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
     from quantify_core.data.handling import set_datadir
@@ -601,7 +571,7 @@ def test_trace_acquisition_seq0_error():
     IC.add_component(QRMComponent(qrm))
     IC.add_component(ClusterComponent(cluster))
 
-    hardware_cfg={
+    hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
             "ref": "internal",
@@ -618,17 +588,12 @@ def test_trace_acquisition_seq0_error():
     }
 
     q0 = BasicTransmonElement("q0")
-
-    quantum_device = QuantumDevice(name="quantum_device")
-
-    # quantum_device.instr_measurement_control(meas_ctrl.name)
-    # quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
-
-    quantum_device.hardware_config(hardware_cfg)
-
-    quantum_device.add_element(q0)
     q0.measure.acq_delay(600e-9)
     q0.clock_freqs.readout(7404000000.0)
+
+    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device.hardware_config(hardware_cfg)
+    quantum_device.add_element(q0)
 
     qubit_name = "q0"
     schedule = Schedule("Raw trace acquisition", repetitions=1)
@@ -638,11 +603,17 @@ def test_trace_acquisition_seq0_error():
     compiled_sched = qcompile(
         schedule=schedule,
         device_cfg=quantum_device.generate_device_config(),
-        # device_cfg=device_cfg,
-        hardware_cfg=hardware_cfg
+        hardware_cfg=hardware_cfg,
     )
 
-    IC.prepare(compiled_sched)
+    try:
+        IC.prepare(compiled_sched)
+    except Exception as ex:
+        import pprint
+
+        print()
+        pprint.pprint(compiled_sched.compiled_instructions)
+        raise ex
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the
