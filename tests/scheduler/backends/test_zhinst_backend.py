@@ -381,7 +381,9 @@ def test_hdawg4_sequence(
 
 
 # pylint: disable=too-many-arguments
-@pytest.mark.parametrize("channelgrouping,enabled_channels", [(0, [0, 1]), (1, [0])])
+@pytest.mark.parametrize(
+    "channelgrouping,enabled_channels", [(0, [0, 1, 2, 3]), (1, [0])]
+)
 def test__program_hdawg4_channelgrouping(
     mocker,
     create_typical_timing_table,
@@ -777,6 +779,8 @@ def test__extract_port_clock_channelmapping_hdawg(
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
         "q1:mw-q1.01": "ic_hdawg0.awg1",
+        "q2:mw-q2.01": "ic_hdawg0.awg2",
+        "q3:mw-q3.01": "ic_hdawg0.awg3",
         "q0:res-q0.ro": "ic_uhfqa0.awg0",
     }
     generated_dict = zhinst_backend._extract_port_clock_channelmapping(
@@ -792,8 +796,10 @@ def test__extract_latencies(
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,
-        "q0:res-q0.ro": 0,
+        "q0:res-q0.ro": 0.0,
         "q1:mw-q1.01": 190e-9,
+        "q2:mw-q2.01": 9.5e-08,
+        "q3:mw-q3.01": 9.5e-08,
     }
     generated_dict = zhinst_backend._extract_latencies(hardware_cfg=hardware_config)
 
