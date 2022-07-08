@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import warnings
 from typing import Any, Dict
+import flatdict
+
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import apply_distortion_corrections
@@ -42,7 +44,15 @@ def hardware_compile(
         hardware_cfg
     )
 
-    if hardware_cfg != converted_hw_config:
+    # Directly comparing dictionaries that contain numpy arrays raises a
+    # ValueError. It is however sufficient to compare all the keys of nested
+    # dictionaries.
+    hw_config_keys = set(flatdict.FlatDict(hardware_cfg, delimiter=".").keys())
+    converted_hw_config_keys = set(
+        flatdict.FlatDict(converted_hw_config, delimiter=".").keys()
+    )
+
+    if hw_config_keys != converted_hw_config_keys:
         warnings.warn(
             "The provided hardware config adheres to a specification "
             "that is now deprecated. Please learn about the new "
