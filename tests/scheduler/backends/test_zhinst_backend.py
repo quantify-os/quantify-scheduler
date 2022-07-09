@@ -1169,7 +1169,7 @@ def test_too_long_acquisition_raises_readable_exception():
         _ = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
     # assert that the name of the offending operation is in the exception message.
-    assert 'Offending operations: "SSBIntegrationComplex(' in str(exc_info.value)
+    assert "SSBIntegrationComplex(" in str(exc_info.value)
 
     # assert that the number of samples we are trying to set is in the exception message
     assert "4320 samples" in str(exc_info.value)
