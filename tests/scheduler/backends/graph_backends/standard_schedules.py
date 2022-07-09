@@ -139,7 +139,7 @@ def pulse_only_schedule() -> Schedule:
 
         sched.add(
             SSBIntegrationComplex(
-                duration=3e-6,
+                duration=2e-6,
                 port=port,
                 clock=clock,
                 acq_index=acq_index,
