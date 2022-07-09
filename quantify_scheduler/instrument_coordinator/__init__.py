@@ -4,11 +4,11 @@
     :widths: auto
 
     * - Import alias
-      - Maps to
-    * - :class:`!quantify_scheduler.instrument_coordinator.InstrumentCoordinator`
-      - :class:`.InstrumentCoordinator`
-    * - :class:`!quantify_scheduler.instrument_coordinator.ZIInstrumentCoordinator`
-      - :class:`.ZIInstrumentCoordinator`
+      - Target
+    * - :class:`.InstrumentCoordinator`
+      - :class:`!quantify_scheduler.instrument_coordinator.InstrumentCoordinator`
+    * - :class:`.ZIInstrumentCoordinator`
+      - :class:`!quantify_scheduler.instrument_coordinator.ZIInstrumentCoordinator`
 """
 from .instrument_coordinator import InstrumentCoordinator, ZIInstrumentCoordinator
 

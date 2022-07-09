@@ -9,7 +9,9 @@ from quantify_scheduler.device_under_test.transmon_element import (
     TransmonElement,
     BasicTransmonElement,
 )
-from quantify_scheduler.device_under_test.sudden_nz_edge import SuddenNetZeroEdge
+from quantify_scheduler.device_under_test.composite_square_edge import (
+    CompositeSquareEdge,
+)
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_core.measurement.control import MeasurementControl
 
@@ -38,6 +40,13 @@ def set_up_mock_transmon_setup_legacy():
     # used in parts of the old test suite
     q0 = TransmonElement("q0")  # pylint: disable=invalid-name
     q1 = TransmonElement("q1")  # pylint: disable=invalid-name
+    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
+    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
+    q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
+
+    edge_q2_q3 = CompositeSquareEdge(
+        parent_element_name=q2.name, child_element_name=q3.name
+    )
 
     q0.ro_pulse_amp(0.08)
     q0.ro_freq(8.1e9)
@@ -52,9 +61,8 @@ def set_up_mock_transmon_setup_legacy():
     q1.freq_01(6.4e9)
     q1.freq_12(5.05e9)
 
-    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
-    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
-    q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
+    edge_q2_q3.cz.q2_phase_correction(44)
+    edge_q2_q3.cz.q3_phase_correction(63)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q0)
@@ -73,6 +81,7 @@ def set_up_mock_transmon_setup_legacy():
         "q2": q2,
         "q3": q3,
         "q4": q4,
+        "q2-q3": edge_q2_q3,
         "quantum_device": quantum_device,
     }
 
@@ -105,17 +114,17 @@ def set_up_mock_transmon_setup():
     q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
     q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
 
-    edge_q0_q2 = SuddenNetZeroEdge(
+    edge_q0_q2 = CompositeSquareEdge(
         parent_element_name=q0.name, child_element_name=q2.name
     )
-    edge_q1_q2 = SuddenNetZeroEdge(
+    edge_q1_q2 = CompositeSquareEdge(
         parent_element_name=q1.name, child_element_name=q2.name
     )
 
-    edge_q2_q3 = SuddenNetZeroEdge(
+    edge_q2_q3 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q3.name
     )
-    edge_q2_q4 = SuddenNetZeroEdge(
+    edge_q2_q4 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q4.name
     )
 

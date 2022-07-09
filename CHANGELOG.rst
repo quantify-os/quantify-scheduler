@@ -10,9 +10,17 @@ Unreleased
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
-* Operation - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
+* Qblox backend - Fix cluster compatibility when converting old hwconfig to new specs (!419)
+* Qblox backend - Latency corrections must now be defined in top layer of hw config (!400)
+* Qblox backend - Fix combination of cluster and latency corrections when converting hw_configs to new specs  (!417)
+* Qblox backend - Fix handling of composite pulses (#299, !411)
+* Qblox backend - Implementation of distortion correction (#285, !388)
+* Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
+* Operations - Introduce basic CZ-gate via `CompositeSquareEdge` (utilizing `quantify_scheduler.operations.pulse_factories.composite_square_pulse`); replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation (!411)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
+* Docs - Fix API reference pages on read-the-docs (#303, !413)
+
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)

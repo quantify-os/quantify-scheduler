@@ -14,7 +14,8 @@ class Resource(UserDict):
     """
     A resource corresponds to a physical resource such as a port or a clock.
 
-    .. jsonschema:: schemas/resource.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/resource.json
+
     """
 
     def __init__(self, name: str, data: Optional[dict] = None) -> None:

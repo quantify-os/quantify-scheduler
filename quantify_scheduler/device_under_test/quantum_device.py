@@ -145,10 +145,6 @@ class QuantumDevice(Instrument):
         """
         Generates a device config to compile from the quantum-circuit to the
         quantum-device layer.
-
-        .. note:
-
-            The config currently does not support two-qubit gates.
         """
 
         clocks = {}
