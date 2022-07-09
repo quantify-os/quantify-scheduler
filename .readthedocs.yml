@@ -12,9 +12,6 @@ sphinx:
 
 build:
   image: latest
-  apt-packages:
-    - graphviz
-    - graphviz-dev
 
 
 # Optionally set the version of Python and requirements required to build your docs

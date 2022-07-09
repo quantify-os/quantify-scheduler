@@ -109,8 +109,13 @@ class CompilationBackend(nx.DiGraph):
         """
         Draws the graph defined by this backend using matplotlib.
 
-        Will attempt to position the nodes using the "dot" algorithm from graphviz
+        Will attempt to position the nodes using the "dot" algorithm for directed
+        acyclic graphs from graphviz
         if available.
+        See https://pygraphviz.github.io/documentation/stable/install.html for
+        installation instructions of pygraphviz and graphviz.
+
+        If not available will use the Kamada Kawai positioning algorithm.
 
 
         Parameters
@@ -137,7 +142,11 @@ class CompilationBackend(nx.DiGraph):
         options_dict.update(options)
 
         # attempt to use "dot" layout from graphviz.
-        pos = nx.drawing.nx_agraph.graphviz_layout(self, prog="dot")
+        try:
+            pos = nx.drawing.nx_agraph.graphviz_layout(self, prog="dot")
+        except ImportError:
+            pos = nx.kamada_kawai_layout(self)
+
         nx.draw_networkx(self, pos=pos, ax=ax, **options_dict)
         ax.set_axis_off()
 

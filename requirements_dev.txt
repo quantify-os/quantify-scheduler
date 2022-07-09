@@ -22,7 +22,6 @@ pytest-mpl
 pytest-mock
 pytest-xdist # run parallel tests
 pygments==2.6.1
-pygraphviz # also requires graphviz, see https://pygraphviz.github.io/documentation/stable/install.html for details on how to install.
 
 black
 mypy
