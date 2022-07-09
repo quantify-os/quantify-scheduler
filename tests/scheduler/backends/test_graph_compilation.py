@@ -186,6 +186,9 @@ def test_quantum_device_selects_right_backend():
     raise NotImplementedError
 
 
+# pygraphviz requires both a python package and an installation of graphviz
+# see https://pygraphviz.github.io/documentation/stable/install.html
+@pytest.mark.xfail(reason="Requires pygraphviz to be installed")
 def test_draw_backend():
     """
     Tests if we can visualize a the graph defined by a generic backend.

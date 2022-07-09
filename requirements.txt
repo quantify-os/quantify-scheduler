@@ -8,7 +8,6 @@ plotly
 fastjsonschema
 dataclasses-json
 networkx
-pygraphviz
 # zhinst versions pinned, see #187
 zhinst==21.8.20515
 zhinst-qcodes==0.1.4
