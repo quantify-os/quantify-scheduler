@@ -28,6 +28,8 @@ from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.resources import ClockResource
 
 ARRAY_DECIMAL_PRECISION = 16
 
@@ -1137,3 +1139,37 @@ def test_acquisition_staircase_right_acq_channel(tmp_test_data_dir):
             expected_zeros_array,
             decimal=ARRAY_DECIMAL_PRECISION,
         )
+
+
+def test_too_long_acquisition_raises_readable_exception():
+    sched = Schedule(name="Too long acquisition schedule", repetitions=1024)
+
+    # these are kind of magic names that are known to exist in the default config.
+    port = "q0:res"
+    clock = "q0.ro"
+
+    # this should not be required.
+    sched.add_resource(ClockResource(name=clock, freq=5e9))
+
+    sched.add(
+        SSBIntegrationComplex(
+            duration=2.4e-6,  # this is longer than the allowed 4096 samples.
+            port=port,
+            clock=clock,
+            acq_index=0,
+            acq_channel=0,
+        ),
+    )
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+
+    # Act
+    with pytest.raises(ValueError) as exc_info:
+        _ = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+
+    # assert that the name of the offending operation is in the exception message.
+    assert 'Offending operations: "SSBIntegrationComplex(' in str(exc_info.value)
+
+    # assert that the number of samples we are trying to set is in the exception message
+    assert "4320 samples" in str(exc_info.value)

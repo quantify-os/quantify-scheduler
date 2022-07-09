@@ -4,6 +4,7 @@ Changelog
 
 Unreleased
 ----------
+* Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
