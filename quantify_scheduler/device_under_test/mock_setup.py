@@ -70,6 +70,7 @@ def set_up_mock_transmon_setup_legacy():
     quantum_device.add_element(q2)
     quantum_device.add_element(q3)
     quantum_device.add_element(q4)
+    quantum_device.add_edge(edge_q2_q3)
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
