@@ -167,7 +167,7 @@ def hardware_cfg_real_mode(
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "LP",
+                        "port": "dummy_port_1",
                         "clock": "cl0.baseband",
                         "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     },
@@ -177,7 +177,7 @@ def hardware_cfg_real_mode(
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "RP",
+                        "port": "dummy_port_2",
                         "clock": "cl0.baseband",
                         "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
@@ -187,7 +187,17 @@ def hardware_cfg_real_mode(
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "TB",
+                        "port": "dummy_port_3",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                    }
+                ],
+            },
+            "real_output_3": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "dummy_port_4",
                         "clock": "cl0.baseband",
                         "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
@@ -513,7 +523,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=2.0,
             duration=2.5e-6,
-            port="LP",
+            port="dummy_port_1",
             clock=BasebandClockResource.IDENTITY,
             t0=1e-6,
         )
@@ -522,7 +532,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.0,
             duration=2.0e-6,
-            port="RP",
+            port="dummy_port_2",
             clock=BasebandClockResource.IDENTITY,
             t0=0.5e-6,
         )
@@ -531,7 +541,16 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.2,
             duration=3.5e-6,
-            port="TB",
+            port="dummy_port_3",
+            clock=BasebandClockResource.IDENTITY,
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=1.2,
+            duration=3.5e-6,
+            port="dummy_port_4",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
         )
@@ -971,26 +990,26 @@ def test_real_mode_pulses(
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
 
-    for i in range(3):
-        filename = full_program.compiled_instructions["qcm0"][f"seq{i}"]["seq_fn"]
+    for output in range(4):
+        filename = full_program.compiled_instructions["qcm0"][f"seq{output}"]["seq_fn"]
         with open(filename, "r") as file:
             seq_instructions = json.load(file)
 
         for value in seq_instructions["waveforms"].values():
-            data, index = value["data"], value["index"]
-            if index == 0:
-                assert (np.array(data) == 1).all()
-            if index == 1:
-                assert (np.array(data) == 0).all()
+            waveform_data, seq_path = value["data"], value["index"]
+            if seq_path == 0:
+                assert (np.array(waveform_data) == 1).all()
+            if seq_path == 1:
+                assert (np.array(waveform_data) == 0).all()
 
-        if i % 2 == 0:
-            play_sequence = "0,1"
+        if output % 2 == 0:
+            seq_path_order = "0,1"
         else:
-            play_sequence = "1,0"
+            seq_path_order = "1,0"
 
         assert re.search(
-            f"play\s*{play_sequence}", seq_instructions["program"]
-        ), f'Sequence must be played in the order "{play_sequence}" in real mode'
+            f"play\s*{seq_path_order}", seq_instructions["program"]
+        ), f'In real mode, sequencer path {seq_path_order[-1]} must be connected to output {output+1}'
 
 
 # --------- Test QASMProgram class ---------
