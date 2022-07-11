@@ -1010,7 +1010,7 @@ def test_real_mode_pulses(
 
         assert re.search(
             f"play\s*{seq_path_order}", seq_instructions["program"]
-        ), f'In real mode, sequencer path {seq_path_order[-1]} must be connected to output {output+1}.'
+        ), f'In real mode, sequencer path {seq_path_order[-1]} must be connected to output {output+1}'
 
 
 # --------- Test QASMProgram class ---------
