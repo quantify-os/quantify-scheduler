@@ -1004,13 +1004,13 @@ def test_real_mode_pulses(
                 assert (np.array(waveform_data) == 0).all()
 
         if output % 2 == 0:
-            seq_path_order = "0,1" # I, Q
+            IQ_order = "0,1" # I, Q
         else:
-            seq_path_order = "1,0" # Q, I
+            IQ_order = "1,0" # Q, I
 
         assert re.search(
-            f"play\s*{seq_path_order}", seq_instructions["program"]
-        ), f'In real mode, sequencer path {seq_path_order[0]} must be connected to output {output+1}.'
+            f"play\s*{IQ_order}", seq_instructions["program"]
+        ), f" Output {output+1} must be connected to sequencer{output} path{IQ_order[0]} in real mode "
 
 
 # --------- Test QASMProgram class ---------
