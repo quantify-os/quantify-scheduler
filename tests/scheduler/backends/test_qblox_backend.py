@@ -983,7 +983,8 @@ def test_real_mode_pulses(
     hardware_cfg_real_mode,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
-    set_datadir(tempfile.TemporaryDirectory().name)
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
 
     real_square_pulse_schedule.repetitions = 10
     full_program = qcompile(
