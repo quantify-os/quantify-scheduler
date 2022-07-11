@@ -99,7 +99,7 @@ def apply_distortion_corrections(
                 "input_var_name": "x",
                 "kwargs": {
                     "b": [0.0, 0.5, 1.0],
-                    "a": 1
+                    "a": [1]
                 },
                 "clipping_values": [-2.5, 2.5]
             }
