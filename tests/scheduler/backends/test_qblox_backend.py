@@ -1004,9 +1004,9 @@ def test_real_mode_pulses(
                 assert (np.array(waveform_data) == 0).all()
 
         if output % 2 == 0:
-            seq_path_order = "0,1"
+            seq_path_order = "0,1" # I, Q
         else:
-            seq_path_order = "1,0"
+            seq_path_order = "1,0" # Q, I
 
         assert re.search(
             f"play\s*{seq_path_order}", seq_instructions["program"]
