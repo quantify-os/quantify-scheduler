@@ -999,7 +999,7 @@ def test_real_mode_pulses(
             waveform_data, seq_path = value["data"], value["index"]
             if seq_path == 0:
                 assert (np.array(waveform_data) == 1).all()
-            if seq_path == 1:
+            elif seq_path == 1:
                 assert (np.array(waveform_data) == 0).all()
 
         if output % 2 == 0:
