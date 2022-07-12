@@ -44,53 +44,59 @@ def hardware_cfg_distortion_corrections(
 
 
 @pytest.fixture
-def filter_coefficients():
-    return np.array(
-        [
-            1.95857073e00,
-            -1.86377203e-01,
-            -1.68242537e-01,
-            -1.52224167e-01,
-            -1.37802128e-01,
-            -1.21882898e-01,
-            -8.43375734e-02,
-            -5.96895462e-02,
-            -3.96596464e-02,
-            -1.76637397e-02,
-            3.30717805e-03,
-            8.42734090e-03,
-            6.07696990e-03,
-            -5.36042501e-03,
-            -1.29125589e-02,
-            -4.28917964e-03,
-            1.33989347e-02,
-            1.62354458e-02,
-            9.54868788e-03,
-            1.17526984e-02,
-            -1.89290954e-03,
-            -9.12214872e-03,
-            -1.36650277e-02,
-            -1.90334368e-02,
-            -1.01304462e-02,
-            1.06730684e-03,
-            1.09447182e-02,
-            1.00001337e-02,
-            3.11361952e-03,
-            -1.38470050e-02,
-        ]
-    )
+def filter_coefficients(use_numpy_array):
+    coeffs = [
+        1.95857073e00,
+        -1.86377203e-01,
+        -1.68242537e-01,
+        -1.52224167e-01,
+        -1.37802128e-01,
+        -1.21882898e-01,
+        -8.43375734e-02,
+        -5.96895462e-02,
+        -3.96596464e-02,
+        -1.76637397e-02,
+        3.30717805e-03,
+        8.42734090e-03,
+        6.07696990e-03,
+        -5.36042501e-03,
+        -1.29125589e-02,
+        -4.28917964e-03,
+        1.33989347e-02,
+        1.62354458e-02,
+        9.54868788e-03,
+        1.17526984e-02,
+        -1.89290954e-03,
+        -9.12214872e-03,
+        -1.36650277e-02,
+        -1.90334368e-02,
+        -1.01304462e-02,
+        1.06730684e-03,
+        1.09447182e-02,
+        1.00001337e-02,
+        3.11361952e-03,
+        -1.38470050e-02,
+    ]
+
+    if use_numpy_array:
+        return np.array(coeffs)
+
+    return coeffs
 
 
 # --------- Test correction functions ---------
 @pytest.mark.parametrize(
-    "clipping_values, duration",
+    "clipping_values, duration, use_numpy_array",
     list(
-        (clipping, duration)
+        (clipping, duration, use_numpy)
         for clipping in [None, [-0.2, 0.4]]
         for duration in np.arange(start=1e-9, stop=16e-9, step=1e-9)
+        for use_numpy in [True, False]
     ),
 )
-def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration):
+def test_distortion_correct_pulse(
+    filter_coefficients, clipping_values, duration, use_numpy_array
+):
     pulse = SquarePulse(amp=220e-3, duration=duration, port="", clock="")
 
     corrected_pulse = distortion_correct_pulse(
@@ -98,7 +104,10 @@ def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration
         sampling_rate=qblox_constants.SAMPLING_RATE,
         filter_func_name="scipy.signal.lfilter",
         input_var_name="x",
-        kwargs_dict={"b": filter_coefficients, "a": 1},
+        kwargs_dict={
+            "b": filter_coefficients,
+            "a": np.array([1]) if use_numpy_array else [1],
+        },
         clipping_values=clipping_values,
     )
 
@@ -114,14 +123,14 @@ def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration
 
 
 @pytest.mark.parametrize(
-    "backend,use_numpy_array",
+    "backend, use_numpy_array",
     [
         (backend, use_numpy)
         for backend in ["quantify_scheduler.backends.qblox_backend.hardware_compile"]
         for use_numpy in [True, False]
     ],
 )
-def test_apply_distortion_corrections(  # pylint: disable=unused-argument
+def test_apply_distortion_corrections(  # pylint: disable=unused-argument disable=too-many-arguments
     mock_setup,
     hardware_cfg_distortion_corrections,
     filter_coefficients,
