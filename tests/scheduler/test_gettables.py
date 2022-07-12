@@ -298,7 +298,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
-def test_trace_acquisition():
+def test_trace_acquisition_measurement_control():
     import quantify_core.measurement as mc
     from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
         InstrumentCoordinator,
@@ -531,13 +531,12 @@ def test_trace_acquisition():
         raise ex
 
 
-def test_trace_acquisition_seq0_error():
+def test_trace_acquisition_instrument_coordinator():
     from quantify_scheduler.compilation import qcompile
 
     from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
     from quantify_scheduler.instrument_coordinator.components.qblox import (
         ClusterComponent,
-        QRMComponent,
     )
     from quantify_scheduler.operations.gate_library import Measure, Reset
     from quantify_scheduler.schedules.schedule import Schedule
@@ -558,7 +557,6 @@ def test_trace_acquisition_seq0_error():
 
     Instrument.close_all()
     IC = InstrumentCoordinator("mwe")
-    qrm = Pulsar("QRM", dummy_type=PulsarType.PULSAR_QRM)
     cluster = Cluster(
         "cluster0",
         dummy_cfg={
@@ -568,7 +566,6 @@ def test_trace_acquisition_seq0_error():
             "8": ClusterType.CLUSTER_QCM_RF,
         },
     )
-    IC.add_component(QRMComponent(qrm))
     IC.add_component(ClusterComponent(cluster))
 
     hardware_cfg = {
@@ -577,11 +574,11 @@ def test_trace_acquisition_seq0_error():
             "ref": "internal",
             "instrument_type": "Cluster",
             "cluster0_module10": {
-                "instrument_type": "QRM",
+                "instrument_type": "QRM_RF",
                 "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
+                    "portclock_configs": [{"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6}],
                 },
             },
         },
