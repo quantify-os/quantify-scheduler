@@ -5,8 +5,6 @@ from __future__ import annotations
 
 import warnings
 from typing import Any, Dict
-import flatdict
-
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import apply_distortion_corrections
@@ -47,20 +45,22 @@ def hardware_compile(
     # Directly comparing dictionaries that contain numpy arrays raises a
     # ValueError. It is however sufficient to compare all the keys of nested
     # dictionaries.
-    def _get_flattened_keys_from_dict(d, parent_key: str = "", sep: str = "."):
+    def _get_flattened_keys_from_dictionary(
+        dictionary, parent_key: str = "", sep: str = "."
+    ):
         flattened_keys = set()
-        for key, value in d.items():
+        for key, value in dictionary.items():
             new_key = parent_key + sep + key if parent_key else key
             if isinstance(value, dict):
                 flattened_keys = flattened_keys.union(
-                    _get_flattened_keys_from_dict(value, new_key, sep=sep)
+                    _get_flattened_keys_from_dictionary(value, new_key, sep=sep)
                 )
             else:
                 flattened_keys = flattened_keys.union({new_key})
         return flattened_keys
 
-    hw_config_keys = _get_flattened_keys_from_dict(hardware_cfg)
-    converted_hw_config_keys = _get_flattened_keys_from_dict(converted_hw_config)
+    hw_config_keys = _get_flattened_keys_from_dictionary(hardware_cfg)
+    converted_hw_config_keys = _get_flattened_keys_from_dictionary(converted_hw_config)
 
     if hw_config_keys != converted_hw_config_keys:
         warnings.warn(
