@@ -41,7 +41,7 @@ setup(
     description="Quantify-scheduler is a python package for writing quantum programs "
     "featuring a hybrid gate-pulse control model with explicit timing control.",
     install_requires=requirements,
-    license="BSD-4 license",
+    license="BSD-3 license",
     long_description=readme + "\n\n" + authors + "\n\n" + history,
     include_package_data=True,
     keywords="quantify-scheduler",
