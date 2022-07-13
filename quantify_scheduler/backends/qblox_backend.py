@@ -42,7 +42,27 @@ def hardware_compile(
         hardware_cfg
     )
 
-    if hardware_cfg != converted_hw_config:
+    # Directly comparing dictionaries that contain numpy arrays raises a
+    # ValueError. It is however sufficient to compare all the keys of nested
+    # dictionaries.
+    def _get_flattened_keys_from_dictionary(
+        dictionary, parent_key: str = "", sep: str = "."
+    ):
+        flattened_keys = set()
+        for key, value in dictionary.items():
+            new_key = parent_key + sep + key if parent_key else key
+            if isinstance(value, dict):
+                flattened_keys = flattened_keys.union(
+                    _get_flattened_keys_from_dictionary(value, new_key, sep=sep)
+                )
+            else:
+                flattened_keys = flattened_keys.union({new_key})
+        return flattened_keys
+
+    hw_config_keys = _get_flattened_keys_from_dictionary(hardware_cfg)
+    converted_hw_config_keys = _get_flattened_keys_from_dictionary(converted_hw_config)
+
+    if hw_config_keys != converted_hw_config_keys:
         warnings.warn(
             "The provided hardware config adheres to a specification "
             "that is now deprecated. Please learn about the new "
