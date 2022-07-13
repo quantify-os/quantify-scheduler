@@ -344,3 +344,36 @@ def _reshape_array_into_acq_return_type(
                 }
                 acquisitions.update(acqs)
     return acquisitions
+
+
+def test_profiling(mock_setup, basic_schedule):
+    """ Tests the log output of the ProfiledGettable. """
+    quantum_device = mock_setup["quantum_device"]
+
+    qubit = quantum_device.get_component("q0")
+
+    schedule_kwargs = {
+        "pulse_amp": qubit.ro_pulse_amp,
+        "pulse_duration": qubit.ro_pulse_duration,
+        "frequency": qubit.ro_freq,
+        "acquisition_delay": qubit.ro_acq_delay,
+        "integration_time": qubit.ro_acq_integration_time,
+        "port": qubit.ro_port,
+        "clock": qubit.ro_clock,
+        "init_duration": qubit.init_duration,
+    }
+
+    basic_sched = basic_schedule
+
+    prof_gettable = ProfiledGettable(
+        quantum_device=quantum_device,
+        schedule_function=basic_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=False,
+    )
+
+    prof_gettable.get()
+    log = prof_gettable.log_profiles(path=False)
+
+    assert len(log) == 6
+    assert [len(x) >= 2 for x in log.values()]
