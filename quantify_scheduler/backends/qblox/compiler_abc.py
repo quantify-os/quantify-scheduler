@@ -1487,7 +1487,7 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
-            """If downconverter is used, it's frequency will be used when calculating the
+            """If downconverter is used, its frequency will be used when calculating the
             LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
             LO/IF frequencies unchanged"""
             downconverter_freq = sequencer.downconverter
