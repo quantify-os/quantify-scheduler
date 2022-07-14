@@ -79,7 +79,8 @@ class GenericPulseStrategy(PulseStrategyPartial):
         """
         Generates the data and adds them to the ``wf_dict`` (if not already present).
 
-        By default, real-valued data is produced on path0 and imaginary data on path1.
+        In complex mode, real-valued data is produced on sequencer path0 (:math:`I_\\text{IF}`) and 
+        imaginary data on sequencer path1 (:math:`Q_\\text{IF}`) after the NCO mixing.
 
         .. math::
             \\underbrace{\\begin{bmatrix}
@@ -88,16 +89,19 @@ class GenericPulseStrategy(PulseStrategyPartial):
             \\begin{bmatrix}
             I \\\\
             Q \\end{bmatrix} =
-            \\begin{bmatrix}
-            I_\\text{IF} \\\\
-            Q_\\text{IF} \\end{bmatrix} =
             \\begin{matrix}
             \\overbrace{ I \\cdot \\cos\\omega t - Q \\cdot\\sin\\omega t}^{\\small \\textbf{real} \\Rightarrow \\text{path0}} \\\\
-            \\underbrace{I \\cdot \\sin\\omega t + Q \\cdot\\cos\\omega t}_{\\small \\textbf{imag} \\Rightarrow \\text{path1}} \\end{matrix}
+            \\underbrace{I \\cdot \\sin\\omega t + Q \\cdot\\cos\\omega t}_{\\small \\textbf{imag} \\Rightarrow \\text{path1}} \\end{matrix} =
+            \\begin{bmatrix}
+            I_\\text{IF} \\\\
+            Q_\\text{IF} \\end{bmatrix}
 
-        If ``output_mode == "imag"``, this moves the real-valued data to be produced on
-        path1 instead of path0. We multiply Q by -1 (via ``amp_imag``) to undo the
-        90-degree shift resulting from swapping NCO paths.
+        In real mode, :math:`I_\\text{IF}` can be produced on either path0 (``output_mode == "real"``) 
+        or path1 (``output_mode == "imag"``). 
+        
+        For ``output_mode == imag``, the real-valued input (:math:`I`) on path0 
+        is swapped with imaginary input (:math:`Q`) on path1. We multiply :math:`Q` by -1 (via ``amp_imag``) to undo the 
+        90-degree phase shift resulting from swapping the NCO input paths.
 
         .. math::
             \\underbrace{\\begin{bmatrix}
@@ -105,13 +109,13 @@ class GenericPulseStrategy(PulseStrategyPartial):
             \\sin\\omega t & \\phantom{-}\\cos\\omega t \\end{bmatrix}}_\\text{NCO}
             \\begin{bmatrix}
             -Q \\\\
-            I \\end{bmatrix} =
-            \\begin{bmatrix}
-            - \\\\
-            I_\\text{IF} \\end{bmatrix} =
+            I \\end{bmatrix}  =
             \\begin{matrix}
             \\\\
-            \\underbrace{-Q \\cdot \\sin\\omega t + I \\cdot\\cos\\omega t}_{\\small \\textbf{real} \\Rightarrow \\text{path1}} \\end{matrix}
+            \\underbrace{-Q \\cdot \\sin\\omega t + I \\cdot\\cos\\omega t}_{\\small \\textbf{real} \\Rightarrow \\text{path1}} \\end{matrix}=
+            \\begin{bmatrix}
+            - \\\\
+            I_\\text{IF} \\end{bmatrix}
 
         Parameters
         ----------
