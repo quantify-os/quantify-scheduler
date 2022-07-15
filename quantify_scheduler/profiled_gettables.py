@@ -49,43 +49,6 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parentinstrumentcoordinator
 
-    def _get_schedule_time(self, compiled_schedule):
-        """
-        Method to find the length of the schedule. As operations can be
-        executed in parallel, the operation with the last timestamp does not
-        necessarily end last. To omit this, the addition of the duration is
-        included in the for loop.
-
-        """
-
-        # find last timestamp
-        schedule_time = 0
-        for schedulable in compiled_schedule.schedulables.items():
-            time_stamp = schedulable[-1].data["abs_time"]
-            label = schedulable[-1].data["operation_repr"]
-
-            # find duration of last operation
-            operation = compiled_schedule["operation_dict"][label]
-
-            pulses = [
-                pulse.get("duration") + pulse.get("t0")
-                for pulse in operation.data["pulse_info"]
-            ]
-            acquisitions = [
-                acquisition.get("duration") + acquisition.get("t0")
-                for acquisition in operation.data["acquisition_info"]
-            ]
-            last_pulse = max(pulses, default=0)
-            last_acq = max(acquisitions, default=0)
-            final_op_len = max([last_pulse, last_acq], default=0)
-
-            tmp_time = time_stamp + final_op_len
-
-            if tmp_time > schedule_time:
-                schedule_time = tmp_time
-        schedule_time *= compiled_schedule.repetitions
-        self.profile["schedule"].append(schedule_time)
-
     @profiler
     def add_component(
         self,
@@ -98,7 +61,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         self,
         compiled_schedule,
     ) -> None:
-        self._get_schedule_time(compiled_schedule)
+        self.profile["schedule"].append(compiled_schedule.get_schedule_duration())
         self.parent_ic.prepare(compiled_schedule)
 
     @profiler
@@ -111,7 +74,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
 
     @profiler
     def retrieve_acquisition(self):
-        return self.parent_ic.retrieve_acquisition()
+        self.parent_ic.retrieve_acquisition()
 
     @profiler
     def wait_done(self, timeout_sec: int = 10):
@@ -152,11 +115,12 @@ class ProfiledGettable(ScheduleGettable):
         """
         profile = self.profile.copy()
         profile.update(self.profiled_instr_coordinator.profile)
-
-        if not os.path.exists("profiling_logs"):
-            os.makedirs("profiling_logs")
-        with open("profiling_logs/{}".format(path), "w") as file:
-            json.dump(profile, file, indent=4, separators=(",", ": "))
+        if path:
+            if not os.path.exists("profiling_logs"):
+                os.makedirs("profiling_logs")
+            with open("profiling_logs/{}".format(path), "w") as file:
+                json.dump(profile, file, indent=4, separators=(",", ": "))
+        return profile
 
     def plot_profile(self, plot_name="average_runtimes.pdf"):
         """Create barplot of accumulated profiling data."""
