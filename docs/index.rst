@@ -5,7 +5,7 @@ Welcome to Quantify's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
    :glob:
 
    installation
@@ -16,22 +16,18 @@ Welcome to Quantify's documentation!
    contributing
    authors
    changelog
-
-
-API Reference
-===================
-
-Contents:
+   bibliography
 
 .. toctree::
    :maxdepth: 2
-   :caption: API reference
+   :caption: API Reference
+   :glob:
 
-   api_reference
-
+   autoapi/quantify_scheduler/index
 
 Indices and tables
-==================
+===================
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

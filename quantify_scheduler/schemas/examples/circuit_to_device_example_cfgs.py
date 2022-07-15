@@ -92,16 +92,16 @@ example_transmon_cfg = {
         "q0-q1": {
             "CZ": {
                 "factory_func": "quantify_scheduler.operations."
-                + "pulse_library.SuddenNetZeroPulse",
+                + "pulse_factories.composite_square_pulse",
                 "factory_kwargs": {
-                    "port": "q0:fl",
-                    "clock": "cl0.baseband",
-                    "amp_A": 0.5,
-                    "amp_B": 0.4,
-                    "net_zero_A_scale": 0.95,
-                    "t_pulse": 2e-08,
-                    "t_phi": 2e-09,
-                    "t_integral_correction": 1e-08,
+                    "square_port": "q0:fl",
+                    "square_clock": "cl0.baseband",
+                    "square_amp": 0.5,
+                    "square_duration": 2e-08,
+                    "virt_z_parent_qubit_phase": 44,
+                    "virt_z_parent_qubit_clock": "q0.01",
+                    "virt_z_child_qubit_phase": 63,
+                    "virt_z_child_qubit_clock": "q1.01",
                 },
             }
         }

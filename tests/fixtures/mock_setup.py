@@ -19,7 +19,9 @@ from quantify_scheduler.device_under_test.transmon_element import (
     TransmonElement,
     BasicTransmonElement,
 )
-from quantify_scheduler.device_under_test.sudden_nz_edge import SuddenNetZeroEdge
+from quantify_scheduler.device_under_test.composite_square_edge import (
+    CompositeSquareEdge,
+)
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
@@ -36,8 +38,7 @@ def tmp_test_data_dir(tmp_path_factory):
     """
     This is a fixture which uses the pytest tmp_path_factory fixture
     and extends it by copying the entire contents of the test_data
-    directory. After the test session is finished, then it calls
-    the `cleaup_tmp` method which tears down the fixture and cleans up itself.
+    directory. After the test session is finished, it cleans up the temporary dir.
     """
 
     # disable this if you want to look at the generated datafiles for debugging.
@@ -47,7 +48,7 @@ def tmp_test_data_dir(tmp_path_factory):
         yield temp_data_dir
         shutil.rmtree(temp_data_dir, ignore_errors=True)
     else:
-        set_datadir(os.path.join(pathlib.Path.home(), "quantify_schedule_test"))
+        set_datadir(os.path.join(pathlib.Path.home(), "quantify_scheduler_test"))
         print(f"Data directory set to: {get_datadir()}")
         yield get_datadir()
 
@@ -73,7 +74,7 @@ def mock_setup(tmp_test_data_dir):
     q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
     q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
 
-    edge_q2_q3 = SuddenNetZeroEdge(
+    edge_q2_q3 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q3.name
     )
 
@@ -89,6 +90,9 @@ def mock_setup(tmp_test_data_dir):
     q1.ro_freq(8.64e9)
     q1.freq_01(6.4e9)
     q1.freq_12(5.05e9)
+
+    edge_q2_q3.cz.q2_phase_correction(44)
+    edge_q2_q3.cz.q3_phase_correction(63)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q0)

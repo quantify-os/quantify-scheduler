@@ -26,7 +26,7 @@ quantify-scheduler
     :target: https://quantify-quantify-scheduler.readthedocs-hosted.com
     :alt: Documentation Status
 
-.. image:: https://img.shields.io/badge/License-BSD%204--Clause-blue.svg
+.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
     :target: https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/LICENSE
     :alt: License
 

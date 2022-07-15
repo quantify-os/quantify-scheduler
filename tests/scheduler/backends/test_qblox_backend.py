@@ -1,7 +1,9 @@
+# pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
-# pylint: disable=missing-module-docstring
+
+# pylint: disable=too-many-lines
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
@@ -24,7 +26,9 @@ from quantify_core.data.handling import set_datadir
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
+
 from quantify_scheduler import Schedule
+
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -63,10 +67,15 @@ from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
+    IdlePulse,
     RampPulse,
+    ShiftClockPhase,
     SquarePulse,
 )
+from quantify_scheduler.operations.operation import Operation
+
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
+
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
@@ -87,43 +96,6 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 
 # --------- Test fixtures ---------
-
-
-@pytest.fixture(name="hardware_cfg_latency_corrections")
-def make_hardware_cfg_latency_corrections():
-    def _make_hardware_cfg_latency_corrections():
-        return {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
-            "qcm0": {
-                "instrument_type": "Pulsar_QCM",
-                "ref": "internal",
-                "complex_output_0": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
-                },
-            },
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "ref": "internal",
-                "cluster0_module1": {
-                    "instrument_type": "QCM",
-                    "complex_output_0": {
-                        "line_gain_db": 0,
-                        "portclock_configs": [
-                            {
-                                "port": "q1:mw",
-                                "clock": "q1.01",
-                            }
-                        ],
-                    },
-                },
-            },
-        }
-
-    return _make_hardware_cfg_latency_corrections
-
-
 @pytest.fixture
 def hardware_cfg_baseband():
     yield {
@@ -252,6 +224,56 @@ def hardware_cfg_multiplexing():
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+    }
+
+
+@pytest.fixture
+def hardware_cfg_latency_corrections():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+            },
+        },
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_two_qubit_gate():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"{qubit}:fl", "clock": clock}
+                    for qubit in ["q2", "q3"]
+                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                ]
+            },
+        },
     }
 
 
@@ -829,7 +851,7 @@ def test_contruct_sequencers_excess_error(
     )
 
 
-def test_simple_compile(pulse_only_schedule):
+def test_compile_simple(pulse_only_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -842,7 +864,7 @@ def test_compile_cluster(cluster_only_schedule):
     qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
 
 
-def test_simple_compile_multiplexing(
+def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed, hardware_cfg_multiplexing
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
@@ -851,7 +873,7 @@ def test_simple_compile_multiplexing(
     qcompile(pulse_only_schedule_multiplexed, DEVICE_CFG, hardware_cfg_multiplexing)
 
 
-def test_identical_pulses_compile(identical_pulses_schedule):
+def test_compile_identical_pulses(identical_pulses_schedule):
     """Tests if compilation with only pulses finishes without exceptions"""
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -875,7 +897,67 @@ def test_compile_measure(duplicate_measure_schedule):
     assert len(wf_and_prog["weights"]) == 0
 
 
-def test_simple_compile_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
+@pytest.mark.parametrize(
+    "operation, instruction_to_check",
+    [
+        (IdlePulse(duration=64e-9), "wait       64"),
+        (Reset("q1"), "wait       65532"),
+        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+    ],
+)
+def test_compile_clock_operations(
+    mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
+):
+    sched = Schedule("shift_clock_phase_only")
+    sched.add(operation)
+    sched.add_resources(
+        [ClockResource("q1.01", freq=5e9)]
+    )  # Clocks need to be manually added at this stage.
+
+    compiled_sched = qcompile(
+        schedule=sched,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg_baseband,
+    )
+
+    filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
+    with open(filename, "r") as file:
+        program_lines = json.load(file)["program"].splitlines()
+
+    assert any(instruction_to_check in line for line in program_lines), "\n".join(
+        line for line in program_lines
+    )
+
+
+def test_compile_cz_gate(
+    mock_setup, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
+):
+    compiled_sched = qcompile(
+        schedule=two_qubit_gate_schedule,
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        hardware_cfg=hardware_cfg_two_qubit_gate,
+    )
+
+    program_lines = {}
+    for seq in ["seq0", "seq1", "seq2"]:
+        filename = compiled_sched.compiled_instructions["qcm0"][seq]["seq_fn"]
+        with open(filename, "r") as file:
+            program_lines[seq] = json.load(file)["program"].splitlines()
+
+    assert any(
+        "play          0,1,4" in line for line in program_lines["seq0"]
+    ), "\n".join(line for line in program_lines["seq0"])
+
+    assert any(
+        "set_ph_delta  48,355,3472" in line for line in program_lines["seq1"]
+    ), "\n".join(line for line in program_lines["seq1"])
+
+    assert any(
+        "set_ph_delta  69,399,6249" in line for line in program_lines["seq2"]
+    ), "\n".join(line for line in program_lines["seq2"])
+
+
+def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
@@ -1745,6 +1827,10 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
     Latency correction is set for the correct portclock key
     by checking against the value set in QASM instructions.
     """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("Single Gate Experiment on Two Qubits")
     sched.add(X("q0"))
     sched.add(
@@ -1754,9 +1840,9 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
-    hardware_cfg = hardware_cfg_latency_corrections()
+    hardware_cfg = hardware_cfg_latency_corrections
     compiled_sched = qcompile(
-        sched,
+        schedule=sched,
         device_cfg=mock_setup["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
@@ -1794,6 +1880,10 @@ def test_apply_latency_corrections_warning(
     Checks if warning is raised for a latency correction
     that is not a multiple of 4ns
     """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("Single Gate Experiment")
     sched.add(
         SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
@@ -1806,9 +1896,9 @@ def test_apply_latency_corrections_warning(
         logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
         qcompile(
-            sched,
+            schedule=sched,
             device_cfg=mock_setup["quantum_device"].generate_device_config(),
-            hardware_cfg=hardware_cfg_latency_corrections(),
+            hardware_cfg=hardware_cfg_latency_corrections,
         )
     assert any(warning in mssg for mssg in caplog.messages)
 

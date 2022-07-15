@@ -1,3 +1,5 @@
+.. _sec-backend-zhinst:
+
 Tutorials Zurich Instruments Backend
 ====================================
 
