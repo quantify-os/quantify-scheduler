@@ -9,6 +9,7 @@ Unreleased
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
+* Qblox backend - Fix for 90 degree phase shift on even output paths as a result of the !397 hotfix. (!412)
 * Qblox backend - Fix cluster compatibility when converting old hwconfig to new specs (!419)
 * Qblox backend - Latency corrections must now be defined in top layer of hw config (!400)
 * Qblox backend - Fix combination of cluster and latency corrections when converting hw_configs to new specs  (!417)
