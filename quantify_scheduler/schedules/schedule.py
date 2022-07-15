@@ -502,7 +502,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             label = schedulable[-1]["operation_repr"]
 
             # find duration of last operation
-            # operation = compiled_schedule["operation_dict"][label]
             operation = self.data["operation_dict"][label]
             pulses = [
                 pulse.get("duration") + pulse.get("t0")
@@ -514,6 +513,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ]
             final_op_len = max([pulses, acquisitions], default=0)
             tmp_time = time_stamp + final_op_len[0]
+
             # keep track of longest found schedule
             if tmp_time > schedule_time:
                 schedule_time = tmp_time
