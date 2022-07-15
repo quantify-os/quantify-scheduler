@@ -1004,9 +1004,9 @@ def test_real_mode_pulses(
                 assert (np.array(waveform_data) == 0).all()
 
         if output % 2 == 0:
-            IQ_order = "0,1" # I, Q
+            IQ_order = "0,1"  # I,Q
         else:
-            IQ_order = "1,0" # Q, I
+            IQ_order = "1,0"  # Q,I
 
         assert re.search(
             f"play\s*{IQ_order}", seq_instructions["program"]
