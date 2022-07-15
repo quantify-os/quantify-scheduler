@@ -79,8 +79,8 @@ class GenericPulseStrategy(PulseStrategyPartial):
         """
         Generates the data and adds them to the ``wf_dict`` (if not already present).
 
-        In complex mode, real-valued data is produced on sequencer path0 (:math:`I_\\text{IF}`) and 
-        imaginary data on sequencer path1 (:math:`Q_\\text{IF}`) after the NCO mixing.
+        In complex mode, real-valued data is produced on sequencer path0 (:math:`I_\\text{IF}`)
+        and imaginary data on sequencer path1 (:math:`Q_\\text{IF}`) after the NCO mixing.
 
         .. math::
             \\underbrace{\\begin{bmatrix}
@@ -96,12 +96,13 @@ class GenericPulseStrategy(PulseStrategyPartial):
             I_\\text{IF} \\\\
             Q_\\text{IF} \\end{bmatrix}
 
-        In real mode, :math:`I_\\text{IF}` can be produced on either path0 (``output_mode == "real"``) 
-        or path1 (``output_mode == "imag"``). 
-        
-        For ``output_mode == imag``, the real-valued input (:math:`I`) on path0 
-        is swapped with imaginary input (:math:`Q`) on path1. We multiply :math:`Q` by -1 (via ``amp_imag``) to undo the 
-        90-degree phase shift resulting from swapping the NCO input paths.
+        In real mode, :math:`I_\\text{IF}` can be produced on either
+        path0 (``output_mode == "real"``) or path1 (``output_mode == "imag"``).
+
+        For ``output_mode == imag``, the real-valued input (:math:`I`) on path0 is
+        swapped with imaginary input (:math:`Q`) on path1. We multiply :math:`Q` by -1
+        (via ``amp_imag``) to undo the 90-degree phase shift resulting from swapping the
+        NCO input paths.
 
         .. math::
             \\underbrace{\\begin{bmatrix}
