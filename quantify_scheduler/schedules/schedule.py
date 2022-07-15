@@ -488,6 +488,38 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         )
         return styled_timing_table
 
+    def get_schedule_duration(self):
+        """
+        Method to find the length of the schedule. As operations can be
+        executed in parallel, the operation with the last timestamp does not
+        necessarily end last. To omit this, the addition of the duration is
+        included in the for loop.
+        """
+        schedule_time = 0
+        # find last timestamp
+        for schedulable in self.schedulables.items():
+            time_stamp = schedulable[-1]["abs_time"]
+            label = schedulable[-1]["operation_repr"]
+
+            # find duration of last operation
+            # operation = compiled_schedule["operation_dict"][label]
+            operation = self.data["operation_dict"][label]
+            pulses = [
+                pulse.get("duration") + pulse.get("t0")
+                for pulse in operation.data["pulse_info"]
+            ]
+            acquisitions = [
+                acquisition.get("duration") + acquisition.get("t0")
+                for acquisition in operation.data["acquisition_info"]
+            ]
+            final_op_len = max([pulses, acquisitions], default=0)
+            tmp_time = time_stamp + final_op_len[0]
+            # keep track of longest found schedule
+            if tmp_time > schedule_time:
+                schedule_time = tmp_time
+        schedule_time *= self.repetitions
+        return schedule_time
+
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
