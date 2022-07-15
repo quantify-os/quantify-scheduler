@@ -1080,19 +1080,22 @@ def test_real_mode_pulses(
 
         for value in seq_instructions["waveforms"].values():
             waveform_data, seq_path = value["data"], value["index"]
+
+            # Asserting that indeed we only have square pulse on I and no signal on Q
             if seq_path == 0:
                 assert (np.array(waveform_data) == 1).all()
             elif seq_path == 1:
                 assert (np.array(waveform_data) == 0).all()
 
         if output % 2 == 0:
-            IQ_order = "0,1"  # I,Q
+            iq_order = "0,1"  # I,Q
         else:
-            IQ_order = "1,0"  # Q,I
+            iq_order = "1,0"  # Q,I
 
-        assert re.search(
-            f"play\s*{IQ_order}", seq_instructions["program"]
-        ), f" Output {output+1} must be connected to sequencer{output} path{IQ_order[0]} in real mode."
+        assert re.search(rf"play\s*{iq_order}", seq_instructions["program"]), (
+            f"Output {output+1} must be connected to "
+            f"sequencer{output} path{iq_order[0]} in real mode."
+        )
 
 
 # --------- Test QASMProgram class ---------
