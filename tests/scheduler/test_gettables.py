@@ -537,6 +537,8 @@ def test_trace_acquisition_instrument_coordinator():
     from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
     from quantify_scheduler.instrument_coordinator.components.qblox import (
         ClusterComponent,
+        QRMRFComponent,
+        QRMComponent,
     )
     from quantify_scheduler.operations.gate_library import Measure, Reset
     from quantify_scheduler.schedules.schedule import Schedule
@@ -568,18 +570,64 @@ def test_trace_acquisition_instrument_coordinator():
     )
     IC.add_component(ClusterComponent(cluster))
 
+    qrm = Pulsar(name="qrm0", dummy_type=PulsarType.PULSAR_QRM)
+    IC.add_component(QRMComponent(qrm))
+
+    qrm_rf = Pulsar(name="qrm_rf0", dummy_type=PulsarType._PULSAR_QRM_RF)
+    IC.add_component(QRMRFComponent(qrm_rf))
+
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
             "ref": "internal",
             "instrument_type": "Cluster",
-            "cluster0_module10": {
+            "cluster0_module6": {
                 "instrument_type": "QRM_RF",
-                "ref": "internal",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "portclock_configs": [{"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6}],
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6}
+                    ],
                 },
+            },
+        },
+    }
+
+    # hardware_cfg = {
+    #     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    #     "cluster0": {
+    #         "ref": "internal",
+    #         "instrument_type": "Cluster",
+    #         "cluster0_module10": {
+    #             "instrument_type": "QRM",
+    #             "complex_output_0": {
+    #                 "line_gain_db": 0,
+    #                 "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
+    #             },
+    #         },
+    #     },
+    # }
+
+    # hardware_cfg = {
+    #     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    #     "qrm_rf0": {
+    #         "instrument_type": "Pulsar_QRM_RF",
+    #         "ref": "internal",
+    #         "complex_output_0": {
+    #             "line_gain_db": 0,
+    #             "portclock_configs": [{"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6}],
+    #         },
+    #     },
+    # }
+
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qrm0": {
+            "instrument_type": "Pulsar_QRM",
+            "ref": "internal",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
             },
         },
     }
