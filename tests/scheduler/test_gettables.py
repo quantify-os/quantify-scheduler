@@ -573,9 +573,6 @@ def test_trace_acquisition_instrument_coordinator():
     qrm = Pulsar(name="qrm0", dummy_type=PulsarType.PULSAR_QRM)
     IC.add_component(QRMComponent(qrm))
 
-    qrm_rf = Pulsar(name="qrm_rf0", dummy_type=PulsarType._PULSAR_QRM_RF)
-    IC.add_component(QRMRFComponent(qrm_rf))
-
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -610,27 +607,15 @@ def test_trace_acquisition_instrument_coordinator():
 
     # hardware_cfg = {
     #     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    #     "qrm_rf0": {
-    #         "instrument_type": "Pulsar_QRM_RF",
+    #     "qrm0": {
+    #         "instrument_type": "Pulsar_QRM",
     #         "ref": "internal",
     #         "complex_output_0": {
     #             "line_gain_db": 0,
-    #             "portclock_configs": [{"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6}],
+    #             "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
     #         },
     #     },
     # }
-
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qrm0": {
-            "instrument_type": "Pulsar_QRM",
-            "ref": "internal",
-            "complex_output_0": {
-                "line_gain_db": 0,
-                "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
-            },
-        },
-    }
 
     q0 = BasicTransmonElement("q0")
     q0.measure.acq_delay(600e-9)
@@ -650,6 +635,15 @@ def test_trace_acquisition_instrument_coordinator():
         device_cfg=quantum_device.generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
+
+    print()
+    print("qrm0.scope_acq_sequencer_select: {}".format(
+        IC.get_component("ic_qrm0").instrument.get("scope_acq_sequencer_select")))
+    print("cluster0.module10.scope_acq_sequencer_select: {}".format(
+        IC.get_component("ic_cluster0").instrument.module10.get("scope_acq_sequencer_select")))
+    print("cluster0.module6.scope_acq_sequencer_select: {}".format(
+        IC.get_component("ic_cluster0").instrument.module6.get("scope_acq_sequencer_select")))
+
 
     try:
         IC.prepare(compiled_sched)
