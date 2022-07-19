@@ -22,8 +22,8 @@ import numpy as np
 from qcodes import Parameter
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
@@ -167,10 +167,13 @@ class ScheduleGettable:
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
 
-        self._compiled_schedule = qcompile(
-            schedule=sched,
-            device_cfg=self.quantum_device.generate_device_config(),
-            hardware_cfg=self.quantum_device.generate_hardware_config(),
+        compilation_config = self.quantum_device.compilation_config
+
+        # made into a private variable for debugging and future caching functionality
+        backend_class = import_python_object_from_string(compilation_config["backend"])
+        self._backend = backend_class()
+        self._compiled_schedule = self._backend.compile(
+            schedule=sched, config=compilation_config
         )
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()

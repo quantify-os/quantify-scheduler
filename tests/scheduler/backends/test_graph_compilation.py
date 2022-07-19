@@ -10,7 +10,7 @@ import pytest
 import networkx as nx
 from quantify_scheduler.backends.graph_compilation import (
     CompilationBackend,
-    CompilationNode,
+    CompilationPass,
     CompilationError,
 )
 from quantify_scheduler import Schedule, CompiledSchedule
@@ -33,7 +33,7 @@ def dummy_compile_add_reset_q0(schedule: Schedule, config=None) -> Schedule:
     return schedule
 
 
-dummy_node_A = CompilationNode(
+dummy_node_A = CompilationPass(
     name="dummy_node_A",
     compilation_func=dummy_compile_add_reset_q0,
     config_key=None,
@@ -41,14 +41,14 @@ dummy_node_A = CompilationNode(
 )
 
 
-dummy_node_B = CompilationNode(
+dummy_node_B = CompilationPass(
     name="dummy_node_B",
     compilation_func=dummy_compile_add_reset_q0,
     config_key=None,
     config_validator=None,
 )
 
-dummy_node_C = CompilationNode(
+dummy_node_C = CompilationPass(
     name="dummy_node_C",
     compilation_func=dummy_compile_add_reset_q0,
     config_key=None,
@@ -56,7 +56,7 @@ dummy_node_C = CompilationNode(
 )
 
 
-dummy_node_D = CompilationNode(
+dummy_node_D = CompilationPass(
     name="dummy_node_D",
     compilation_func=dummy_compile_add_reset_q0,
     config_key=None,
@@ -90,8 +90,8 @@ def test_compilation_backend_trivial_graph():
 
     # issue, how do we define what "node" to compile to/where to feed in the input.
     comp_sched = trivial_graph.compile(schedule=empty_sched, config=empty_cfg)
-    assert isinstance(comp_sched, Schedule)
-    assert comp_sched == empty_sched
+    assert isinstance(comp_sched, CompiledSchedule)
+    assert comp_sched == CompiledSchedule(empty_sched)
 
 
 def test_device_compile_graph_timings_reset():
@@ -103,7 +103,7 @@ def test_device_compile_graph_timings_reset():
     config = {"device_cfg": example_transmon_cfg}
 
     comp_sched = DeviceCompile().compile(sched, config=config)
-    assert isinstance(comp_sched, Schedule)
+    assert isinstance(comp_sched, CompiledSchedule)
     assert comp_sched.timing_table.data.iloc[0].abs_time == 0
     # this is the reset duration of q0 specified in the example config
     assert comp_sched.timing_table.data.iloc[1].abs_time == 200e-6

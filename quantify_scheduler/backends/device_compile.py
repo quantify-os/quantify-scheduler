@@ -5,7 +5,7 @@ The compilation graph for generic Quantum-circuit to Quantum-device layer.
 """
 
 from quantify_scheduler.backends.graph_compilation import (
-    CompilationNode,
+    CompilationPass,
     CompilationBackend,
 )
 from quantify_scheduler import Schedule
@@ -16,7 +16,7 @@ from quantify_scheduler.backends.circuit_to_device import (
 )
 from quantify_scheduler import compilation
 
-circuit_to_device = CompilationNode(
+circuit_to_device = CompilationPass(
     name="circuit_to_device",
     compilation_func=compile_circuit_to_device,
     config_key="device_cfg",
@@ -28,7 +28,7 @@ def _determine_absolute_timing_physical(schedule: Schedule, config: None = None)
     return compilation.determine_absolute_timing(schedule, time_unit="physical")
 
 
-determine_absolute_timing = CompilationNode(
+determine_absolute_timing = CompilationPass(
     name="determine_absolute_timing",
     compilation_func=_determine_absolute_timing_physical,
     config_key=None,

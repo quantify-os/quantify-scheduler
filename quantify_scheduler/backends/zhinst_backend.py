@@ -15,7 +15,7 @@ import pandas as pd
 from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler.backends.graph_compilation import (
-    CompilationNode,
+    CompilationPass,
 )
 from quantify_scheduler.backends.device_compile import DeviceCompile
 
@@ -1759,7 +1759,7 @@ def construct_waveform_table(
     return numerical_wf_dict
 
 
-zhinst_hardware_compile = CompilationNode(
+zhinst_hardware_compile = CompilationPass(
     name="zhinst_hardware_compile",
     compilation_func=compile_backend,
     config_key="hardware_cfg",

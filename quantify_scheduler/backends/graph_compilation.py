@@ -10,10 +10,10 @@ from matplotlib.axes import Axes
 from typing import Tuple
 
 
-class CompilationNode(DataStructure):
+class CompilationPass(DataStructure):
     """
     A datastructure containing the information required to perform a (modular)
-    compilation step.
+    compilation pass.
 
     Parameters
     ----------
@@ -44,7 +44,7 @@ class CompilationNode(DataStructure):
 
     def compile(self, schedule: Schedule, config: dict) -> Schedule:
         """
-        Performs the compilation step specified by the compilation function and
+        Performs the compilation pass specified by the compilation function and
         the configuration provided to this node.
 
         Parameters
@@ -73,7 +73,7 @@ class CompilationNode(DataStructure):
 class CompilationBackend(nx.DiGraph):
     """
     A compilation backend defines a directed acyclic graph.
-    In this graph, nodes represent modular compilation steps.
+    In this graph, nodes represent modular compilation passes.
 
     Definition
     ----------
@@ -152,7 +152,7 @@ class CompilationBackend(nx.DiGraph):
 
         return ax
 
-    def compile(self, schedule: Schedule, config: dict) -> Schedule:
+    def compile(self, schedule: Schedule, config: dict) -> CompiledSchedule:
         """
         Compile a schedule using the backend and the information provided in the config
 
@@ -173,7 +173,8 @@ class CompilationBackend(nx.DiGraph):
         for node in path[1:-1]:
             schedule = node.compile(schedule=schedule, config=config)
 
-        return schedule
+        # mark the schedule as "Compiled" before returning at the final step.
+        return CompiledSchedule(schedule)
 
     def compose(self, G: nx.DiGraph, H: nx.DiGraph) -> nx.DiGraph:
         """

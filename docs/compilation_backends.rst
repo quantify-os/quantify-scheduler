@@ -19,10 +19,26 @@ Compilation backends
     This functionality is intended to replace the existing compilation based on the :func:`~.qcompile` function and is still under active development.
 
 
+In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule.
+This is done using a :class:`~.backends.graph_compilation.CompilationBackend`.
+The :meth:`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
+
+A :class:`~.backends.graph_compilation.CompilationBackend` defines a directed acyclic graph in which the nodes represent compiler passes.
+A :class:`~.Schedule` can be compiled by traversing the graph.
+The :class:`~.Schedule` class serves as the intermediate representation which is modified by the compiler passes.
+For most practical purposes, a user does not need to be aware of the internal structure of the compilation backends.
+
+
+
+
+
 Using a compilation backend
 ===========================
 
-In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule. This is done using a :class:`~.backends.graph_compilation.CompilationBackend`. The :meth:`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
+Executing a schedule
+--------------------
+
+
 
 (basic user)
 

@@ -4,7 +4,7 @@ This stage should take care of the conversion of gates to pulses and also suppor
 schedules.
 """
 import pytest
-from quantify_scheduler import Schedule
+from quantify_scheduler import Schedule, CompiledSchedule
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
     two_qubit_t1_schedule,
@@ -42,4 +42,4 @@ def test_compiles_standard_schedules(
     # Act
     comp_sched = backend.compile(schedule=schedule, config=config)
     # Assert that no exception was raised and output is the right type.
-    assert isinstance(comp_sched, Schedule)
+    assert isinstance(comp_sched, CompiledSchedule)

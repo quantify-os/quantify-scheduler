@@ -11,7 +11,7 @@ from quantify_scheduler.backends.corrections import apply_distortion_corrections
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 from quantify_scheduler.backends.graph_compilation import (
-    CompilationNode,
+    CompilationPass,
 )
 
 from quantify_scheduler.backends.device_compile import DeviceCompile
@@ -102,7 +102,7 @@ def hardware_compile(
     return CompiledSchedule(schedule)
 
 
-qblox_hardware_compile = CompilationNode(
+qblox_hardware_compile = CompilationPass(
     name="qblox_hardware_compile",
     compilation_func=hardware_compile,
     config_key="hardware_cfg",
