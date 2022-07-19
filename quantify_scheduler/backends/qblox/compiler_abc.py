@@ -1347,11 +1347,11 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     if_freq = sequencer.frequency
     lo_freq = lo_compiler.frequency
 
-    # If downconverter is used, its frequency will be used when calculating the
-    # LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
-    # LO/IF frequencies unchanged.
+    """Downconvert the clock frequency if the downconverter frequency is non-zero (otherwise leave it unchanged)
+       and calculate the LO/IF frequencies."""
+
     downconverter_freq = sequencer.downconverter
-    if downconverter_freq:
+    if downconverter_freq != 0:
         clk_freq = -clk_freq
     else:
         downconverter_freq = 0
@@ -1487,11 +1487,10 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
-            """If downconverter is used, its frequency will be used when calculating the
-            LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
-            LO/IF frequencies unchanged"""
+            """Downconvert the clock frequency if the downconverter frequency is non-zero 
+             (otherwise leave it unchanged) and calculate the LO/IF frequencies."""
             downconverter_freq = sequencer.downconverter
-            if downconverter_freq:
+            if downconverter_freq != 0:
                 clk_freq = -clk_freq
 
             if if_freq is not None:
