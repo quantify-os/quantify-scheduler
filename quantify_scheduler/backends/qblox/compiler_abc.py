@@ -1353,8 +1353,6 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     downconverter_freq = sequencer.downconverter_freq
     if downconverter_freq != 0:
         clk_freq = -clk_freq
-    else:
-        downconverter_freq = 0
 
     if lo_freq is None and if_freq is None:
         raise ValueError(
