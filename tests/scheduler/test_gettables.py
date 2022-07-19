@@ -298,21 +298,12 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
-def test_trace_acquisition_measurement_control():
-    import quantify_core.measurement as mc
-    from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
-        InstrumentCoordinator,
-    )
-    from quantify_scheduler.instrument_coordinator.components.qblox import (
-        ClusterComponent,
-    )
-    from quantify_scheduler.device_under_test.transmon_element import (
-        BasicTransmonElement,
-    )
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-    from qblox_instruments import Cluster, ClusterType
-    from qcodes.instrument.base import Instrument
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
+    fixture_make_cluster,
+)
 
+
+def test_trace_acquisition_measurement_control(mock_setup, mocker, make_cluster):
     from quantify_scheduler import Schedule
 
     from quantify_scheduler.operations.gate_library import (
@@ -354,143 +345,61 @@ def test_trace_acquisition_measurement_control():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    CFG_NANONISQ_SINGLEQ = {
+    hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
             "ref": "internal",
             "instrument_type": "Cluster",
-            "cluster0_module2": {
-                "instrument_type": "QCM",
-                "real_output_0": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [
-                        {
-                            "port": "q0:fl",
-                            "clock": "cl0.baseband",
-                            "latency_correction": 8e-9,
-                        }
-                    ],
-                },
-                "real_output_1": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [
-                        {
-                            "port": "q1:fl",
-                            "clock": "cl0.baseband",
-                            "latency_correction": 8e-9,
-                        }
-                    ],
-                },
-                "real_output_2": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [
-                        {
-                            "port": "q2:fl",
-                            "clock": "cl0.baseband",
-                            "latency_correction": 8e-9,
-                        }
-                    ],
-                },
-                "real_output_3": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [
-                        {
-                            "port": "q3:fl",
-                            "clock": "cl0.baseband",
-                            "latency_correction": 8e-9,
-                        }
-                    ],
-                },
-            },
             "cluster0_module4": {
-                "instrument_type": "QCM_RF",
-                "complex_output_0": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [
-                        {"port": "q0:mw", "clock": "q0.01", "interm_freq": -100e6}
-                    ],
-                },
-                "complex_output_1": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [
-                        {"port": "q1:mw", "clock": "q1.01", "interm_freq": -100e6}
-                    ],
-                },
-            },
-            "cluster0_module10": {
                 "instrument_type": "QRM_RF",
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
                         {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
-                        {"port": "q3:res", "clock": "q3.ro", "interm_freq": 50e6},
-                        {"port": "q4:res", "clock": "q4.ro", "interm_freq": 50e6},
-                        {"port": "q5:res", "clock": "q5.ro", "interm_freq": 50e6},
                     ],
                 },
             },
         },
     }
 
-    Instrument.close_all()
+    ic_cluster0 = make_cluster("cluster0")
 
-    print("Falling back to Dummy device")
-    cluster0 = Cluster(
-        "cluster0",
-        dummy_cfg={
-            "2": ClusterType.CLUSTER_QCM,
-            "4": ClusterType.CLUSTER_QCM_RF,
-            "8": ClusterType.CLUSTER_QRM,
-            "10": ClusterType.CLUSTER_QRM_RF,
-        },
-    )
-
-    print("CMM system status is \n", cluster0.get_system_state())
+    print("CMM system status is \n", ic_cluster0.instrument.get_system_state())
     print("correctly connected to qblox-cluster-MM.\n")
 
-    # Reset
-    cluster0.reset()
+    ic_cluster0.instrument.reset()
 
-    # hardware abstraction layer
-    #############################
-
-    ic_cluster0 = ClusterComponent(cluster0)
-
-    instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
+    instrument_coordinator = mock_setup["instrument_coordinator"]
     instrument_coordinator.add_component(ic_cluster0)
 
     # utility instruments
     #############################
 
-    meas_ctrl = mc.MeasurementControl("meas_ctrl")
+    meas_ctrl = mock_setup["meas_ctrl"]
 
     # Config management instruments
     #############################
-    q0 = BasicTransmonElement("q0")
+    q2 = mock_setup["q2"]
 
     #####################################
     # 4 Loading settings onto instruments
     #####################################
 
     # Output attenuation of QRM-RF
-    cluster0.module10.out0_att(50)
+    ic_cluster0.instrument.module4.out0_att(50)
 
-    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device = mock_setup["quantum_device"]
 
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
-    quantum_device.hardware_config(CFG_NANONISQ_SINGLEQ)
+    quantum_device.hardware_config(hardware_cfg)
 
-    quantum_device.add_element(q0)
-
-    q0.measure.acq_delay(600e-9)
-    q0.clock_freqs.readout(7404000000.0)
+    q2.measure.acq_delay(600e-9)
+    q2.clock_freqs.readout(7404000000.0)
 
     meas_ctrl = quantum_device.instr_measurement_control.get_instr()
-    device_element = q0
+    device_element = q2
 
     sample_par = ManualParameter("sample", label="Sample time", unit="s")
     sample_par.batched = True
@@ -499,7 +408,7 @@ def test_trace_acquisition_measurement_control():
         quantum_device=quantum_device,
         schedule_function=raw_trace,
         schedule_kwargs=dict(
-            qubit_name=device_element.name,
+            qubit_name=q2.name,
         ),
         batched=True,
     )
@@ -509,7 +418,7 @@ def test_trace_acquisition_measurement_control():
 
     # in the Qblox hardware, the trace acquisition will always return 16384 samples. But the dummy returns 16383...
     sample_size = 16384
-    if cluster0.get_idn().get("serial_number") == "whatever":
+    if ic_cluster0.instrument.get_idn().get("serial_number") == "whatever":
         sample_size = 16383
 
     sample_times = np.arange(
@@ -519,10 +428,13 @@ def test_trace_acquisition_measurement_control():
     meas_ctrl.settables(sample_par)
     meas_ctrl.setpoints(sample_times)
     meas_ctrl.gettables(sched_gettable)
-    label = f"Readout trace schedule of {device_element.name}"
+
+    mocker.patch.object(
+        meas_ctrl, "_get_fracdone", side_effect=np.linspace(start=0, stop=1, num=6)
+    )
 
     try:
-        _ = meas_ctrl.run(label)
+        _ = meas_ctrl.run(f"Readout trace schedule of {q2.name}")
     except Exception as ex:
         import pprint
 
@@ -531,25 +443,17 @@ def test_trace_acquisition_measurement_control():
         raise ex
 
 
-def test_trace_acquisition_instrument_coordinator():
+from tests.scheduler.backends.test_qblox_backend import dummy_pulsars
+
+
+def test_trace_acquisition_instrument_coordinator(
+    mock_setup, make_cluster, dummy_pulsars
+):
     from quantify_scheduler.compilation import qcompile
 
-    from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-    from quantify_scheduler.instrument_coordinator.components.qblox import (
-        ClusterComponent,
-        QRMRFComponent,
-        QRMComponent,
-    )
+    from quantify_scheduler.instrument_coordinator.components.qblox import QRMComponent
     from quantify_scheduler.operations.gate_library import Measure, Reset
     from quantify_scheduler.schedules.schedule import Schedule
-
-    from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType
-    from qcodes import Instrument
-
-    from quantify_scheduler.device_under_test.transmon_element import (
-        BasicTransmonElement,
-    )
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
     from quantify_core.data.handling import set_datadir
     import tempfile
@@ -557,33 +461,25 @@ def test_trace_acquisition_instrument_coordinator():
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    Instrument.close_all()
-    IC = InstrumentCoordinator("mwe")
-    cluster = Cluster(
-        "cluster0",
-        dummy_cfg={
-            "10": ClusterType.CLUSTER_QRM,
-            "4": ClusterType.CLUSTER_QCM,
-            "6": ClusterType.CLUSTER_QRM_RF,
-            "8": ClusterType.CLUSTER_QCM_RF,
-        },
-    )
-    IC.add_component(ClusterComponent(cluster))
+    IC = mock_setup["instrument_coordinator"]
 
-    qrm = Pulsar(name="qrm0", dummy_type=PulsarType.PULSAR_QRM)
-    IC.add_component(QRMComponent(qrm))
+    ic_cluster0 = make_cluster("cluster0")
+    IC.add_component(ic_cluster0)
+
+    qrm0 = dummy_pulsars["qrm0"]
+    IC.add_component(QRMComponent(qrm0))
 
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
             "ref": "internal",
             "instrument_type": "Cluster",
-            "cluster0_module6": {
+            "cluster0_module4": {
                 "instrument_type": "QRM_RF",
                 "complex_output_0": {
                     "line_gain_db": 0,
                     "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6}
+                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6}
                     ],
                 },
             },
@@ -595,11 +491,11 @@ def test_trace_acquisition_instrument_coordinator():
     #     "cluster0": {
     #         "ref": "internal",
     #         "instrument_type": "Cluster",
-    #         "cluster0_module10": {
+    #         "cluster0_module3": {
     #             "instrument_type": "QRM",
     #             "complex_output_0": {
     #                 "line_gain_db": 0,
-    #                 "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
+    #                 "portclock_configs": [{"port": "q2:res", "clock": "q2.ro"}],
     #             },
     #         },
     #     },
@@ -612,20 +508,19 @@ def test_trace_acquisition_instrument_coordinator():
     #         "ref": "internal",
     #         "complex_output_0": {
     #             "line_gain_db": 0,
-    #             "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
+    #             "portclock_configs": [{"port": "q2:res", "clock": "q2.ro"}],
     #         },
     #     },
     # }
 
-    q0 = BasicTransmonElement("q0")
-    q0.measure.acq_delay(600e-9)
-    q0.clock_freqs.readout(7404000000.0)
+    q2 = mock_setup["q2"]
+    q2.measure.acq_delay(600e-9)
+    q2.clock_freqs.readout(7404000000.0)
 
-    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
-    quantum_device.add_element(q0)
 
-    qubit_name = "q0"
+    qubit_name = "q2"
     schedule = Schedule("Raw trace acquisition", repetitions=1)
     schedule.add(Reset(qubit_name))
     schedule.add(Measure(qubit_name, acq_protocol="Trace"))
@@ -637,13 +532,25 @@ def test_trace_acquisition_instrument_coordinator():
     )
 
     print()
-    print("qrm0.scope_acq_sequencer_select: {}".format(
-        IC.get_component("ic_qrm0").instrument.get("scope_acq_sequencer_select")))
-    print("cluster0.module10.scope_acq_sequencer_select: {}".format(
-        IC.get_component("ic_cluster0").instrument.module10.get("scope_acq_sequencer_select")))
-    print("cluster0.module6.scope_acq_sequencer_select: {}".format(
-        IC.get_component("ic_cluster0").instrument.module6.get("scope_acq_sequencer_select")))
-
+    print(
+        "qrm0.scope_acq_sequencer_select: {}".format(
+            IC.get_component("ic_qrm0").instrument.get("scope_acq_sequencer_select")
+        )
+    )
+    print(
+        "cluster0.module3.scope_acq_sequencer_select: {}".format(
+            IC.get_component("ic_cluster0").instrument.module3.get(
+                "scope_acq_sequencer_select"
+            )
+        )
+    )
+    print(
+        "cluster0.module4.scope_acq_sequencer_select: {}".format(
+            IC.get_component("ic_cluster0").instrument.module4.get(
+                "scope_acq_sequencer_select"
+            )
+        )
+    )
 
     try:
         IC.prepare(compiled_sched)

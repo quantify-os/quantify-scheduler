@@ -63,11 +63,12 @@ def fixture_make_cluster(mocker):
                 "1": ClusterType.CLUSTER_QCM,
                 "2": ClusterType.CLUSTER_QCM_RF,
                 "3": ClusterType.CLUSTER_QRM,
+                "4": ClusterType.CLUSTER_QRM_RF,
             },
         )
         component = qblox.ClusterComponent(cluster)
 
-        mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
+        # mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)  TODO FIXME
 
         for i in range(3):
             mocker.patch.object(
@@ -81,6 +82,9 @@ def fixture_make_cluster(mocker):
         return component
 
     yield _make_cluster
+
+    for instrument in Cluster.instances():
+        instrument.close()
 
 
 @pytest.fixture(name="make_qcm")
@@ -115,6 +119,9 @@ def fixture_make_qcm(mocker):
         return component
 
     yield _make_qcm
+
+    for instrument in Pulsar.instances():
+        instrument.close()
 
 
 @pytest.fixture(name="make_qrm")
@@ -166,6 +173,9 @@ def fixture_make_qrm(mocker):
         return component
 
     yield _make_qrm
+
+    for instrument in Pulsar.instances():
+        instrument.close()
 
 
 @pytest.fixture(name="mock_acquisition_data")

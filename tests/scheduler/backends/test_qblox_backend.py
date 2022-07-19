@@ -15,6 +15,8 @@ import re
 import shutil
 import tempfile
 
+from typing import Dict
+
 import numpy as np
 import pytest
 from qblox_instruments import Pulsar, PulsarType
@@ -251,12 +253,12 @@ def hardware_cfg_multiplexing():
 
 
 @pytest.fixture
-def dummy_pulsars():
-    _pulsars = []
+def dummy_pulsars() -> Dict[str, Pulsar]:
+    _pulsars = {}
     for qcm_name in ["qcm0", "qcm1"]:
-        _pulsars.append(Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM))
+        _pulsars[qcm_name] = Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM)
     for qrm_name in ["qrm0", "qrm1"]:
-        _pulsars.append(Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM))
+        _pulsars[qrm_name] = Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM)
 
     yield _pulsars
 
@@ -947,7 +949,7 @@ def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
-    qcm0 = dummy_pulsars[0]
+    qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
@@ -978,7 +980,7 @@ def test_compile_with_rel_time(
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
-    qcm0 = dummy_pulsars[0]
+    qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
 
 
@@ -1174,7 +1176,7 @@ def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisit
     scope_mode_sequencer = container.instrument_compilers[
         "qrm0"
     ]._settings.scope_mode_sequencer
-    assert scope_mode_sequencer == "seq0"
+    assert scope_mode_sequencer == 0
 
 
 def test_container_prepare_baseband(
@@ -1542,8 +1544,8 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     )
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
-        qcm0=dummy_pulsars[0],
-        qrm0=dummy_pulsars[0],
+        qcm0=dummy_pulsars["qcm0"],
+        qrm0=dummy_pulsars["qrm0"],
     )
 
     with open(
@@ -1583,8 +1585,8 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
 
     assembly_valid(
         compiled_schedule=compiled_allxy_sched,
-        qcm0=dummy_pulsars[0],
-        qrm0=dummy_pulsars[0],
+        qcm0=dummy_pulsars["qcm0"],
+        qrm0=dummy_pulsars["qrm0"],
     )
 
     with open(
