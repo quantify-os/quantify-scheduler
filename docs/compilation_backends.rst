@@ -13,12 +13,6 @@
 Compilation backends
 ====================
 
-
-.. note::
-
-    This functionality is intended to replace the existing compilation based on the :func:`~.qcompile` function and is still under active development.
-
-
 In order to execute a :class:`~.Schedule` on physical hardware or a simulator one needs to compile the schedule.
 This is done using a :class:`~.backends.graph_compilation.CompilationBackend`.
 The :meth:`~.backends.graph_compilation.CompilationBackend.compile` method requires both the :class:`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
@@ -50,7 +44,7 @@ First we set up a mock setup and create a simple schedule that we want to compil
 .. jupyter-execute::
 
     import numpy as np
-    from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup, set_standard_params()
+    from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup, set_standard_params
     from quantify_scheduler.schedules.timedomain_schedules import echo_sched
 
     # instantiate the instruments of the mock setup
