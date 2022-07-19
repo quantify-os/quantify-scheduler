@@ -21,14 +21,17 @@ from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unu
 # --------- Test fixtures ---------
 @pytest.fixture
 def hardware_cfg_distortion_corrections(
-    filter_coefficients, qblox_hardware_cfg_two_qubit_gate, backend
+    filter_coefficients, qblox_hardware_cfg_two_qubit_gate, backend, use_numpy_array
 ):
     hardware_cfg = {
         "distortion_corrections": {
             "q2:fl-cl0.baseband": {
                 "filter_func": "scipy.signal.lfilter",
                 "input_var_name": "x",
-                "kwargs": {"b": filter_coefficients, "a": 1},
+                "kwargs": {
+                    "b": filter_coefficients,
+                    "a": np.array([1]) if use_numpy_array else [1],
+                },
                 "clipping_values": [-2.5, 2.5],
             },
         },
@@ -41,8 +44,8 @@ def hardware_cfg_distortion_corrections(
 
 
 @pytest.fixture
-def filter_coefficients():
-    return [
+def filter_coefficients(use_numpy_array):
+    coeffs = [
         1.95857073e00,
         -1.86377203e-01,
         -1.68242537e-01,
@@ -75,17 +78,25 @@ def filter_coefficients():
         -1.38470050e-02,
     ]
 
+    if use_numpy_array:
+        return np.array(coeffs)
+
+    return coeffs
+
 
 # --------- Test correction functions ---------
 @pytest.mark.parametrize(
-    "clipping_values, duration",
+    "clipping_values, duration, use_numpy_array",
     list(
-        (clipping, duration)
+        (clipping, duration, use_numpy)
         for clipping in [None, [-0.2, 0.4]]
         for duration in np.arange(start=1e-9, stop=16e-9, step=1e-9)
+        for use_numpy in [True, False]
     ),
 )
-def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration):
+def test_distortion_correct_pulse(
+    filter_coefficients, clipping_values, duration, use_numpy_array
+):
     pulse = SquarePulse(amp=220e-3, duration=duration, port="", clock="")
 
     corrected_pulse = distortion_correct_pulse(
@@ -93,7 +104,10 @@ def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration
         sampling_rate=qblox_constants.SAMPLING_RATE,
         filter_func_name="scipy.signal.lfilter",
         input_var_name="x",
-        kwargs_dict={"b": filter_coefficients, "a": 1},
+        kwargs_dict={
+            "b": filter_coefficients,
+            "a": np.array([1]) if use_numpy_array else [1],
+        },
         clipping_values=clipping_values,
     )
 
@@ -109,14 +123,20 @@ def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration
 
 
 @pytest.mark.parametrize(
-    "backend", ["quantify_scheduler.backends.qblox_backend.hardware_compile"]
+    "backend, use_numpy_array",
+    [
+        (backend, use_numpy)
+        for backend in ["quantify_scheduler.backends.qblox_backend.hardware_compile"]
+        for use_numpy in [True, False]
+    ],
 )
-def test_apply_distortion_corrections(  # pylint: disable=unused-argument
+def test_apply_distortion_corrections(  # pylint: disable=unused-argument disable=too-many-arguments
     mock_setup,
     hardware_cfg_distortion_corrections,
     filter_coefficients,
     two_qubit_gate_schedule,
     backend,
+    use_numpy_array,
 ):
     compiled_sched = qcompile(
         schedule=two_qubit_gate_schedule,

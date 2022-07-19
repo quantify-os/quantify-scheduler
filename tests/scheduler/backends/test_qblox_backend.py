@@ -126,7 +126,9 @@ def hardware_cfg_baseband():
 
 
 @pytest.fixture
-def hardware_cfg_real_mode():
+def hardware_cfg_real_mode(
+    instruction_generated_pulses_enabled,
+):  # pylint: disable=line-too-long
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -137,9 +139,9 @@ def hardware_cfg_real_mode():
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "LP",
+                        "port": "dummy_port_1",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     },
                 ],
             },
@@ -147,9 +149,9 @@ def hardware_cfg_real_mode():
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "RP",
+                        "port": "dummy_port_2",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
                 ],
             },
@@ -157,9 +159,19 @@ def hardware_cfg_real_mode():
                 "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "TB",
+                        "port": "dummy_port_3",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                    }
+                ],
+            },
+            "real_output_3": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "dummy_port_4",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
                 ],
             },
@@ -533,7 +545,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=2.0,
             duration=2.5e-6,
-            port="LP",
+            port="dummy_port_1",
             clock=BasebandClockResource.IDENTITY,
             t0=1e-6,
         )
@@ -542,7 +554,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.0,
             duration=2.0e-6,
-            port="RP",
+            port="dummy_port_2",
             clock=BasebandClockResource.IDENTITY,
             t0=0.5e-6,
         )
@@ -551,7 +563,16 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.2,
             duration=3.5e-6,
-            port="TB",
+            port="dummy_port_3",
+            clock=BasebandClockResource.IDENTITY,
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=1.2,
+            duration=3.5e-6,
+            port="dummy_port_4",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
         )
@@ -1043,15 +1064,43 @@ def test_qcm_acquisition_error():
         qcm.distribute_data()
 
 
-def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
+@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
+def test_real_mode_pulses(
+    real_square_pulse_schedule,
+    hardware_cfg_real_mode,
+    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
+):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
+
     real_square_pulse_schedule.repetitions = 10
     full_program = qcompile(
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
-    for seq in (f"seq{i}" for i in range(3)):
-        assert seq in full_program.compiled_instructions["qcm0"]
+
+    for output in range(4):
+        filename = full_program.compiled_instructions["qcm0"][f"seq{output}"]["seq_fn"]
+        with open(filename, "r") as file:
+            seq_instructions = json.load(file)
+
+        for value in seq_instructions["waveforms"].values():
+            waveform_data, seq_path = value["data"], value["index"]
+
+            # Asserting that indeed we only have square pulse on I and no signal on Q
+            if seq_path == 0:
+                assert (np.array(waveform_data) == 1).all()
+            elif seq_path == 1:
+                assert (np.array(waveform_data) == 0).all()
+
+        if output % 2 == 0:
+            iq_order = "0,1"  # I,Q
+        else:
+            iq_order = "1,0"  # Q,I
+
+        assert re.search(rf"play\s*{iq_order}", seq_instructions["program"]), (
+            f"Output {output+1} must be connected to "
+            f"sequencer{output} path{iq_order[0]} in real mode."
+        )
 
 
 # --------- Test QASMProgram class ---------
@@ -1257,7 +1306,12 @@ def test_generate_uuid_from_wf_data():
     assert hash1 != hash2
 
 
-def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode):
+@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
+def test_real_mode_container(
+    real_square_pulse_schedule,
+    hardware_cfg_real_mode,
+    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
+):
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
