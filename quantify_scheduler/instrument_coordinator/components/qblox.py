@@ -624,7 +624,12 @@ class QCMRFComponent(QCMComponent):
         settings
             The settings to configure it to.
         """
-        QCMComponent._configure_global_settings(self, settings)
+        if settings.scope_mode_sequencer is not None:
+            self._set_parameter(
+                self.instrument,
+                "scope_acq_sequencer_select",
+                settings.scope_mode_sequencer,
+            )
 
         if settings.lo0_freq is not None:
             self._set_parameter(self.instrument, "out0_lo_freq", settings.lo0_freq)
@@ -666,8 +671,6 @@ class QRMRFComponent(QRMComponent):
         settings
             The settings to configure it to.
         """
-        QRMComponent._configure_global_settings(self, settings)
-
         if settings.lo0_freq is not None:
             self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
