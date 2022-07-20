@@ -94,3 +94,38 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     )
 
     return composite_pulse
+
+
+def nv_spec_pulse_mw(
+    duration: float,
+    amplitude: float,
+    clock: str,
+    port: str,
+):
+    """Generate hermite pulse for spectroscopy experiment without phi rotation.
+
+    Parameters
+    ----------
+    duration
+        Pulse duration in seconds
+    amplitude
+        Amplitude of the hermite pulse
+    skewness
+        Skewness of hermite pulse
+    clock
+        Name of clock for frequency modulation of hermite pulse
+    port
+        Name of port where hermite pulse is applied
+
+    Returns
+    -------
+        Hermite pulse operation
+    """
+    return pulse_library.HermitePulse(
+        duration=duration,
+        amplitude=amplitude,
+        skewness=0,
+        phase=0,
+        clock=clock,
+        port=port,
+    )

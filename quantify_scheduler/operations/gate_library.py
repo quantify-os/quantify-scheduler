@@ -532,3 +532,49 @@ class Measure(Operation):
             f"acq_channel={acq_channel}, acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)})'
         )
+
+
+class SpecPulseMicrowave(Operation):
+    """
+    A spectroscopy pulse sent to a microwave port. Is intended to be compiled to exact
+    spectroscopy scheme defined by the device element.
+    """
+
+    def __init__(
+        self,
+        qubit: str,
+        clock: str,
+        data: Optional[dict] = None,
+    ):
+        """
+        Parameters
+        ----------
+        qubit
+            The target qubit
+        clock
+            Clock of a pulse
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            data = {
+                "name": f"Microwave spectroscopy pulse {qubit}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": "quantify_scheduler.visualization"
+                    ".circuit_diagram.pulse_modulated",
+                    "tex": r"SPEC_MW",
+                    "qubits": [qubit],
+                    "clock": clock,
+                    "operation_type": "spec_mw",
+                },
+            }
+        super().__init__(data["name"], data=data)
+
+    def __str__(self) -> str:
+        gate_info = self.data["gate_info"]
+        qubit = gate_info["qubits"][0]
+        clock = gate_info["clock"]
+        return f'{self.__class__.__name__}(qubit="{qubit}", clock={clock})'

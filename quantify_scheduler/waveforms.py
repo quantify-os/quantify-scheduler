@@ -8,7 +8,7 @@ These functions are intended to be used to generate waveforms defined in the
 Examples of waveforms that are too advanced are flux pulses that require knowledge of
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from scipy import signal, interpolate
@@ -391,3 +391,74 @@ def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarra
     mod_Q = -sin_mod * wave.real + cos_mod * wave.imag
 
     return mod_I + 1j * mod_Q
+
+
+def hermite(
+    t: np.ndarray,
+    duration: float,
+    amplitude: float,
+    skewness: float,
+    phase: float,
+    pi2_pulse: bool = False,
+    center: Optional[float] = None,
+) -> np.ndarray:
+    """
+    Generates a skewed hermite pulse for single qubit rotation of diamond qubits.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    duration
+        Duration of the pulse in seconds.
+    amplitude
+        Amplitude of the pulse.
+    skewness
+        Skewness in the frequency space
+    pi2_pulse
+        if True, the pulse will be pi/2 otherwise pi pulse
+    center
+        Optional: center of the pulse, if not passed assumed to be duration/2
+
+    Returns
+    -------
+    :
+        complex skewed waveform
+
+    """
+
+    PI_HERMITE_FACTOR = 0.956
+    PI2_HERMITE_FACTOR = 0.667
+
+    t_hermite = 0.1667 * duration
+
+    if pi2_pulse:
+        hermite_factor = PI2_HERMITE_FACTOR
+    else:
+        hermite_factor = PI_HERMITE_FACTOR
+
+    if center is None:
+        center = duration / 2
+    else:
+        center = center
+
+    actual_center = center + t[0]
+
+    normalized_time = (t - actual_center) / t_hermite
+
+    h_t = (1 - hermite_factor * normalized_time**2) * np.exp(-(normalized_time**2))
+
+    I = amplitude * h_t
+    Q = (
+        amplitude
+        * (skewness / np.pi)
+        * (normalized_time / t_hermite)
+        * (hermite_factor + 1 - hermite_factor * normalized_time**2)
+        * np.exp(-(normalized_time**2))
+    )
+
+    hermite = I + 1j * Q
+
+    rotated_hermite = rotate_wave(hermite, phase)
+
+    return rotated_hermite
