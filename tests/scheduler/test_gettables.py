@@ -299,11 +299,14 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
 
 
 from tests.scheduler.instrument_coordinator.components.test_qblox import (
-    fixture_make_cluster,
+    make_cluster_component,
+    make_qrm_component,
 )
 
 
-def test_trace_acquisition_measurement_control(mock_setup, mocker, make_cluster):
+def test_trace_acquisition_measurement_control(
+    mock_setup, mocker, make_cluster_component
+):
     from quantify_scheduler import Schedule
 
     from quantify_scheduler.operations.gate_library import (
@@ -362,15 +365,15 @@ def test_trace_acquisition_measurement_control(mock_setup, mocker, make_cluster)
         },
     }
 
-    ic_cluster0 = make_cluster("cluster0")
+    cluster0 = make_cluster_component("cluster0")
 
-    print("CMM system status is \n", ic_cluster0.instrument.get_system_state())
+    print("CMM system status is \n", cluster0.instrument.get_system_state())
     print("correctly connected to qblox-cluster-MM.\n")
 
-    ic_cluster0.instrument.reset()
+    cluster0.instrument.reset()
 
-    instrument_coordinator = mock_setup["instrument_coordinator"]
-    instrument_coordinator.add_component(ic_cluster0)
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(cluster0)
 
     # utility instruments
     #############################
@@ -386,12 +389,12 @@ def test_trace_acquisition_measurement_control(mock_setup, mocker, make_cluster)
     #####################################
 
     # Output attenuation of QRM-RF
-    ic_cluster0.instrument.module4.out0_att(50)
+    cluster0.instrument.module4.out0_att(50)
 
     quantum_device = mock_setup["quantum_device"]
 
     quantum_device.instr_measurement_control(meas_ctrl.name)
-    quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
+    quantum_device.instr_instrument_coordinator(instr_coordinator.name)
 
     quantum_device.hardware_config(hardware_cfg)
 
@@ -418,7 +421,7 @@ def test_trace_acquisition_measurement_control(mock_setup, mocker, make_cluster)
 
     # in the Qblox hardware, the trace acquisition will always return 16384 samples. But the dummy returns 16383...
     sample_size = 16384
-    if ic_cluster0.instrument.get_idn().get("serial_number") == "whatever":
+    if cluster0.instrument.get_idn().get("serial_number") == "whatever":
         sample_size = 16383
 
     sample_times = np.arange(
@@ -442,12 +445,11 @@ def test_trace_acquisition_measurement_control(mock_setup, mocker, make_cluster)
         pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
         raise ex
 
-
-from tests.scheduler.backends.test_qblox_backend import dummy_pulsars
+    instr_coordinator.remove_component(cluster0.name)
 
 
 def test_trace_acquisition_instrument_coordinator(
-    mock_setup, make_cluster, dummy_pulsars
+    mock_setup, make_cluster_component, make_qrm_component
 ):
     from quantify_scheduler.compilation import qcompile
 
@@ -461,13 +463,13 @@ def test_trace_acquisition_instrument_coordinator(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    IC = mock_setup["instrument_coordinator"]
+    instr_coordinator = mock_setup["instrument_coordinator"]
 
-    ic_cluster0 = make_cluster("cluster0")
-    IC.add_component(ic_cluster0)
+    cluster0 = make_cluster_component("cluster0")
+    instr_coordinator.add_component(cluster0)
 
-    qrm0 = dummy_pulsars["qrm0"]
-    IC.add_component(QRMComponent(qrm0))
+    qrm0 = make_qrm_component("qrm0")
+    instr_coordinator.add_component(qrm0)
 
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -534,32 +536,37 @@ def test_trace_acquisition_instrument_coordinator(
     print()
     print(
         "qrm0.scope_acq_sequencer_select: {}".format(
-            IC.get_component("ic_qrm0").instrument.get("scope_acq_sequencer_select")
+            instr_coordinator.get_component("ic_qrm0").instrument.get(
+                "scope_acq_sequencer_select"
+            )
         )
     )
     print(
         "cluster0.module3.scope_acq_sequencer_select: {}".format(
-            IC.get_component("ic_cluster0").instrument.module3.get(
+            instr_coordinator.get_component("ic_cluster0").instrument.module3.get(
                 "scope_acq_sequencer_select"
             )
         )
     )
     print(
         "cluster0.module4.scope_acq_sequencer_select: {}".format(
-            IC.get_component("ic_cluster0").instrument.module4.get(
+            instr_coordinator.get_component("ic_cluster0").instrument.module4.get(
                 "scope_acq_sequencer_select"
             )
         )
     )
 
     try:
-        IC.prepare(compiled_sched)
+        instr_coordinator.prepare(compiled_sched)
     except Exception as ex:
         import pprint
 
         print()
         pprint.pprint(compiled_sched.compiled_instructions)
         raise ex
+
+    instr_coordinator.remove_component(cluster0.name)
+    instr_coordinator.remove_component(qrm0.name)
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the

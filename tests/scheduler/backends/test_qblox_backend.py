@@ -254,16 +254,24 @@ def hardware_cfg_multiplexing():
 
 @pytest.fixture
 def dummy_pulsars() -> Dict[str, Pulsar]:
+    qcm_names = ["qcm0", "qcm1"]
+    qrm_names = ["qrm0", "qrm1"]
+
+    for name in qcm_names + qrm_names:
+        try:
+            Pulsar.find_instrument(name).close()
+        except:
+            pass
+
     _pulsars = {}
-    for qcm_name in ["qcm0", "qcm1"]:
+    for qcm_name in qcm_names:
         _pulsars[qcm_name] = Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM)
-    for qrm_name in ["qrm0", "qrm1"]:
+    for qrm_name in qrm_names:
         _pulsars[qrm_name] = Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM)
 
     yield _pulsars
 
-    # teardown
-    for instrument in Pulsar.instances():
+    for instrument in _pulsars.values():
         instrument.close()
 
 
