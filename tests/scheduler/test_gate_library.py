@@ -19,7 +19,10 @@ from quantify_scheduler.operations.gate_library import (
     Rxy,
     X,
     Y,
+    SpecPulseMicrowave,
 )
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.compilation import device_compile
 
 
 def test_schedule_add_schedulables() -> None:
@@ -210,3 +213,68 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
 
     # Assert
     assert obj != operation
+
+
+def get_nv_device_config():
+    from quantify_scheduler.backends.circuit_to_device import OperationCompilationConfig
+
+    spec_mw_cfg = OperationCompilationConfig(
+        factory_func="quantify_scheduler.operations.pulse_factories.nv_spec_pulse_mw",
+        factory_kwargs={"duration": 15e-6, "amplitude": 1, "clock": "qe0.01", "port": "mw"},
+    )
+
+    cfg_dict = {
+        "backend": "quantify_scheduler.backends"
+        ".circuit_to_device.compile_circuit_to_device",
+        "elements": {
+            f"qe0": {
+                "spec_mw": spec_mw_cfg,
+            }
+        },
+        "clocks": {
+            f"qe.01": 50e6,
+        },
+        "edges": {},
+    }
+    return cfg_dict
+
+
+def test_pulse_compilation_spec_pulse_microwave():
+    schedule = Schedule(name="Spec Pulse", repetitions=1)
+    schedule.add_resource(ClockResource(name="qe0.01", freq=1e9))
+
+    # TODO: are the arguments to SpecPulseMicrowave even needed?
+    label1 = "MW pi pulse 1"
+    label2 = "MW pi pulse 2"
+    _ = schedule.add(SpecPulseMicrowave("qe0", "qe0.01"), label=label1)
+    _ = schedule.add(SpecPulseMicrowave("qe0", "qe0.01"), label=label2)
+
+    # SpecPulseMicrowave is added to the operations.
+    # It has "gate_info", but no "pulse_info" yet.
+    spec_pulse_str = str(SpecPulseMicrowave("qe0", "qe0.01"))
+    assert spec_pulse_str in schedule.operations
+    assert "gate_info" in schedule.operations[spec_pulse_str]
+    assert schedule.operations[spec_pulse_str]["pulse_info"] == []
+
+    # Operation is added twice to schedulables and has no timing information yet.
+    assert label1 in schedule.schedulables
+    assert label2 in schedule.schedulables
+    assert 'abs_time' not in schedule.schedulables[label1].data.keys()
+    assert 'abs_time' not in schedule.schedulables[label2].data.keys()
+
+    # We can plot the circuit diagram
+    schedule.plot_circuit_diagram()
+
+    # TODO: retrieve the device config from elsewhere?
+    dev_cfg = get_nv_device_config()
+    schedule_device = device_compile(schedule, dev_cfg)
+
+    # The gate_info remains unchanged, but the pulse info has been added
+    assert spec_pulse_str in schedule_device.operations
+    assert "gate_info" in schedule_device.operations[spec_pulse_str]
+    assert schedule_device.operations[spec_pulse_str]["gate_info"] == schedule.operations[spec_pulse_str]["gate_info"]
+    assert not schedule_device.operations[spec_pulse_str]["pulse_info"] == []
+
+    # Timing info has been added
+    assert 'abs_time' in schedule_device.schedulables[label1].data.keys()
+    assert 'abs_time' in schedule_device.schedulables[label2].data.keys()
