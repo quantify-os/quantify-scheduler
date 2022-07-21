@@ -1265,6 +1265,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         scope_acq_seq = None
         for seq in self.sequencers.values():
             op_infos = [acq.operation_info for acq in seq.acquisitions]
+
             has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:
                 if scope_acq_seq is not None:

@@ -22,8 +22,7 @@ import numpy as np
 import pytest
 from qblox_instruments import Pulsar, PulsarType
 
-# pylint: disable=no-name-in-module
-from quantify_core.data.handling import set_datadir
+from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
@@ -642,6 +641,7 @@ def test_find_all_port_clock_combinations():
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
         ("q4:res", "q4.ro"),
+        ("q5:res", "q5.ro"),
     }
     assert portclocks == answer
 
@@ -649,7 +649,7 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = generate_port_clock_to_device_map(HARDWARE_CFG)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 12
+    assert len(portclock_map.keys()) == 13
 
 
 # --------- Test classes and member methods ---------
@@ -1164,26 +1164,30 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
-def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
-    sched = copy.deepcopy(mixed_schedule_with_acquisition)
-    sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
-    sched = device_compile(sched, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, HARDWARE_CFG
+def test_determine_scope_mode_acquisition_sequencer(mock_setup):
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("determine_scope_mode_acquisition_sequencer")
+    sched.add(Measure("q0"))
+    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
+    sched.add(Trace(duration=100e-9, port="q5:res", clock="q5.ro"))
+
+    sched = qcompile(
+        sched, mock_setup["quantum_device"].generate_device_config(), HARDWARE_CFG
     )
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=HARDWARE_CFG,
-        device_compilers=container.instrument_compilers,
+
+    assert HARDWARE_CFG["qrm0"]["instrument_type"] == "Pulsar_QRM"
+    assert sched.compiled_instructions["qrm0"]["settings"]["scope_mode_sequencer"] == 1
+
+    assert HARDWARE_CFG["cluster0"]["cluster0_module4"]["instrument_type"] == "QRM_RF"
+    assert (
+        sched.compiled_instructions["cluster0"]["cluster0_module4"]["settings"][
+            "scope_mode_sequencer"
+        ]
+        == 0
     )
-    for instr in container.instrument_compilers.values():
-        if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
-            instr.prepare()
-            instr._determine_scope_mode_acquisition_sequencer()
-    scope_mode_sequencer = container.instrument_compilers[
-        "qrm0"
-    ]._settings.scope_mode_sequencer
-    assert scope_mode_sequencer == 0
 
 
 def test_container_prepare_baseband(

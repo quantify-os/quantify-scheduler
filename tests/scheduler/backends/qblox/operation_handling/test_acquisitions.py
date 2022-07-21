@@ -29,9 +29,13 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.instrument_coordinator.components.qblox import (
+    QbloxInstrumentCoordinatorComponentBase,
+)
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_gate
+
 
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (
@@ -394,15 +398,14 @@ def test_trace_acquisition_measurement_control(
     meas_ctrl.setpoints(sample_times)
     meas_ctrl.gettables(sched_gettable)
 
-    mocker.patch.object(
+    with mocker.patch.object(
         meas_ctrl, "_get_fracdone", side_effect=np.linspace(start=0, stop=1, num=10)
-    )
-
-    try:
-        dataset = meas_ctrl.run(f"Readout trace schedule of {q2.name}")
-    except:
-        pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
-        raise
+    ):
+        try:
+            dataset = meas_ctrl.run(f"Readout trace schedule of {q2.name}")
+        except:
+            pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
+            raise
 
     assert dataset.sizes == {"dim_0": sample_size}
 
@@ -414,28 +417,8 @@ def test_trace_acquisition_measurement_control(
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, PulsarType.PULSAR_QRM],
 )
 def test_trace_acquisition_instrument_coordinator(
-    mock_setup, make_cluster_component, make_qrm_component, module_under_test
+    mocker, mock_setup, make_cluster_component, make_qrm_component, module_under_test
 ):
-    instr_coordinator = mock_setup["instrument_coordinator"]
-
-    ic_cluster0 = None
-    if isinstance(module_under_test, ClusterType):
-        try:
-            name = "cluster0"
-            ic_cluster0 = make_cluster_component(name)
-        except KeyError:
-            close_instruments([name])
-
-        try:
-            instr_coordinator.add_component(ic_cluster0)
-        except ValueError:
-            ic_cluster0.instrument.reset()
-
-    ic_qrm0 = None
-    if module_under_test is PulsarType.PULSAR_QRM:
-        ic_qrm0 = make_qrm_component("qrm0")
-        instr_coordinator.add_component(ic_qrm0)
-
     hardware_cfgs = {}
     hardware_cfgs[ClusterType.CLUSTER_QRM_RF] = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -477,6 +460,30 @@ def test_trace_acquisition_instrument_coordinator(
     }
     hardware_cfg = hardware_cfgs[module_under_test]
 
+    instr_coordinator = mock_setup["instrument_coordinator"]
+
+    if isinstance(module_under_test, ClusterType):
+        name = "cluster0"
+
+        try:
+            ic_component = make_cluster_component(name)
+        except KeyError:
+            close_instruments([name])
+
+        module_name = (
+            set(hardware_cfg[name].keys())
+            .intersection(ic_component._cluster_modules)
+            .pop()
+        )
+    else:
+        ic_component = make_qrm_component("qrm0")
+        instr_coordinator.add_component(ic_component)
+
+    try:
+        instr_coordinator.add_component(ic_component)
+    except ValueError:
+        ic_component.instrument.reset()
+
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
@@ -494,20 +501,39 @@ def test_trace_acquisition_instrument_coordinator(
         hardware_cfg=hardware_cfg,
     )
 
-    try:
-        instr_coordinator.prepare(compiled_sched)
-        instr_coordinator.start()
-        acquired_data = instr_coordinator.retrieve_acquisition()
-        instr_coordinator.stop()
-    except:
-        pprint.pprint(compiled_sched.compiled_instructions)
-        raise
+    wrappee = (
+        ic_component._cluster_modules[module_name]
+        if isinstance(module_under_test, ClusterType)
+        else ic_component
+    )
+    wrapped = QbloxInstrumentCoordinatorComponentBase._set_parameter
+    called_with = None
+
+    def wrapper(*args, **kwargs):
+        nonlocal called_with
+        if "scope_acq_sequencer_select" in args + tuple(kwargs.values()):
+            called_with = args + tuple(kwargs.values())
+        wrapped(wrappee, *args, **kwargs)
+
+    with mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox."
+        "QbloxInstrumentCoordinatorComponentBase._set_parameter",
+        wraps=wrapper,
+    ):
+        try:
+            instr_coordinator.prepare(compiled_sched)
+        except:
+            pprint.pprint(compiled_sched.compiled_instructions)
+            raise
+
+    assert called_with == (wrappee.instrument, "scope_acq_sequencer_select", 0)
+
+    instr_coordinator.start()
+    acquired_data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
 
     acquired_data = list(acquired_data.values())[0]
     assert isinstance(acquired_data, tuple)
     assert tuple(map(type, acquired_data)) == (np.ndarray, np.ndarray)
 
-    if ic_cluster0:
-        instr_coordinator.remove_component(ic_cluster0.name)
-    if ic_qrm0:
-        instr_coordinator.remove_component(ic_qrm0.name)
+    instr_coordinator.remove_component(ic_component.name)

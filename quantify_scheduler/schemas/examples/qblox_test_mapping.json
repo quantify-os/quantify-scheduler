@@ -35,7 +35,6 @@
         },
         "cluster0_module3": {
             "instrument_type": "QRM",
-            "ref": "external",
             "complex_output_0": {
                 "line_gain_db": 0,
                 "lo_name": "lo1",
@@ -48,6 +47,18 @@
                         "port": "q4:res",
                         "clock": "q4.ro",
                         "interm_freq": null
+                    }
+                ]
+            }
+        },
+        "cluster0_module4": {
+            "instrument_type": "QRM_RF",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {
+                        "port": "q5:res",
+                        "clock": "q5.ro",
+                        "interm_freq": 50e6
                     }
                 ]
             }
