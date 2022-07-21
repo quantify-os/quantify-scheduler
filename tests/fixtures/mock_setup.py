@@ -25,7 +25,7 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
-def _cleanup_instruments(instrument_names):
+def close_instruments(instrument_names: List[str]):
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()
@@ -118,7 +118,7 @@ def mock_setup(tmp_test_data_dir):
 
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
-    _cleanup_instruments(mock_instruments.keys())
+    close_instruments(mock_instruments)
 
 
 @pytest.fixture(scope="function")
@@ -137,4 +137,4 @@ def mock_setup_basic_transmon_elements(element_names: List[str]):
     mock_instruments = {"quantum_device": quantum_device, **elements}
     yield mock_instruments
 
-    _cleanup_instruments(mock_instruments)
+    close_instruments(mock_instruments)

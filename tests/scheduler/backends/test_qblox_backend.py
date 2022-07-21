@@ -15,7 +15,7 @@ import re
 import shutil
 import tempfile
 
-from typing import Dict
+from typing import Dict, Generator
 
 import numpy as np
 import pytest
@@ -80,6 +80,8 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
+
+from tests.fixtures.mock_setup import close_instruments
 
 esp = inspect.getfile(es)
 
@@ -253,15 +255,11 @@ def hardware_cfg_multiplexing():
 
 
 @pytest.fixture
-def dummy_pulsars() -> Dict[str, Pulsar]:
+def dummy_pulsars() -> Generator[Dict[str, Pulsar], None, None]:
     qcm_names = ["qcm0", "qcm1"]
     qrm_names = ["qrm0", "qrm1"]
 
-    for name in qcm_names + qrm_names:
-        try:
-            Pulsar.find_instrument(name).close()
-        except:
-            pass
+    close_instruments(qcm_names + qrm_names)
 
     _pulsars = {}
     for qcm_name in qcm_names:

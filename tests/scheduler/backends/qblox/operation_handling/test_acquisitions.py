@@ -13,6 +13,7 @@ from typing import Dict, Any
 
 import pytest
 import numpy as np
+from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler import waveforms
 
@@ -23,6 +24,16 @@ from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.qblox.operation_handling import acquisitions
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.operations.gate_library import Measure, Reset
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.schedules.trace_schedules import trace_schedule_gate
+
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
+    make_cluster_component,
+    make_qrm_component,
+)
 
 
 @pytest.fixture(name="empty_qasm_program_qrm")
@@ -325,3 +336,188 @@ class TestWeightedAcquisitionStrategy:
             ],
             ["", "", "", ""],
         ]
+
+
+def test_trace_acquisition_measurement_control(
+    mock_setup, mocker, make_cluster_component
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [
+                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q2 = mock_setup["q2"]
+    q2.measure.acq_delay(600e-9)
+    q2.clock_freqs.readout(7404000000.0)
+
+    meas_ctrl = quantum_device.instr_measurement_control.get_instr()
+
+    sample_par = ManualParameter("sample", label="Sample time", unit="s")
+    sample_par.batched = True
+
+    sched_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=trace_schedule_gate,
+        schedule_kwargs=dict(
+            qubit_name=q2.name,
+        ),
+        batched=True,
+    )
+
+    # the sampling rate of the Qblox hardware
+    sampling_rate = 1e9
+
+    # in the Qblox hardware, the trace acquisition will always return 16384 samples. But the dummy returns 16383...
+    sample_size = 16384
+    if cluster0.instrument.get_idn().get("serial_number") == "whatever":
+        sample_size = 16383
+
+    sample_times = np.arange(
+        start=0, stop=sample_size / sampling_rate, step=1 / sampling_rate
+    )
+
+    meas_ctrl.settables(sample_par)
+    meas_ctrl.setpoints(sample_times)
+    meas_ctrl.gettables(sched_gettable)
+
+    mocker.patch.object(
+        meas_ctrl, "_get_fracdone", side_effect=np.linspace(start=0, stop=1, num=10)
+    )
+
+    try:
+        _ = meas_ctrl.run(f"Readout trace schedule of {q2.name}")
+    except Exception as ex:
+        import pprint
+
+        print()
+        pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
+        raise ex
+
+    instr_coordinator.remove_component(cluster0.name)
+
+
+def test_trace_acquisition_instrument_coordinator(
+    mock_setup, make_cluster_component, make_qrm_component
+):
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    cluster0 = make_cluster_component("cluster0")
+    instr_coordinator.add_component(cluster0)
+
+    qrm0 = make_qrm_component("qrm0")
+    instr_coordinator.add_component(qrm0)
+
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "portclock_configs": [
+                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6}
+                    ],
+                },
+            },
+        },
+    }
+
+    # hardware_cfg = {
+    #     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    #     "cluster0": {
+    #         "ref": "internal",
+    #         "instrument_type": "Cluster",
+    #         "cluster0_module3": {
+    #             "instrument_type": "QRM",
+    #             "complex_output_0": {
+    #                 "line_gain_db": 0,
+    #                 "portclock_configs": [{"port": "q2:res", "clock": "q2.ro"}],
+    #             },
+    #         },
+    #     },
+    # }
+
+    # hardware_cfg = {
+    #     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    #     "qrm0": {
+    #         "instrument_type": "Pulsar_QRM",
+    #         "ref": "internal",
+    #         "complex_output_0": {
+    #             "line_gain_db": 0,
+    #             "portclock_configs": [{"port": "q2:res", "clock": "q2.ro"}],
+    #         },
+    #     },
+    # }
+
+    q2 = mock_setup["q2"]
+    q2.measure.acq_delay(600e-9)
+    q2.clock_freqs.readout(7404000000.0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    qubit_name = "q2"
+    schedule = Schedule("Raw trace acquisition", repetitions=1)
+    schedule.add(Reset(qubit_name))
+    schedule.add(Measure(qubit_name, acq_protocol="Trace"))
+
+    compiled_sched = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    print()
+    print(
+        "qrm0.scope_acq_sequencer_select: {}".format(
+            instr_coordinator.get_component("ic_qrm0").instrument.get(
+                "scope_acq_sequencer_select"
+            )
+        )
+    )
+    print(
+        "cluster0.module3.scope_acq_sequencer_select: {}".format(
+            instr_coordinator.get_component("ic_cluster0").instrument.module3.get(
+                "scope_acq_sequencer_select"
+            )
+        )
+    )
+    print(
+        "cluster0.module4.scope_acq_sequencer_select: {}".format(
+            instr_coordinator.get_component("ic_cluster0").instrument.module4.get(
+                "scope_acq_sequencer_select"
+            )
+        )
+    )
+
+    try:
+        instr_coordinator.prepare(compiled_sched)
+    except Exception as ex:
+        import pprint
+
+        print()
+        pprint.pprint(compiled_sched.compiled_instructions)
+        raise ex
+
+    instr_coordinator.remove_component(cluster0.name)
+    instr_coordinator.remove_component(qrm0.name)

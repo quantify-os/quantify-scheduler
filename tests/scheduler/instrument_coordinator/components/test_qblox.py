@@ -26,11 +26,14 @@ from qblox_instruments import (
     SequencerStatus,
     SequencerStatusFlags,
 )
+
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler.schemas.examples as es
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator.components import qblox
+
+from tests.fixtures.mock_setup import close_instruments
 
 pytestmark = pytest.mark.usefixtures("close_all_instruments")
 
@@ -59,6 +62,7 @@ def make_cluster_component(mocker):
         mocker.patch("qblox_instruments.native.cluster.Cluster.start_sequencer")
         mocker.patch("qblox_instruments.native.cluster.Cluster.stop_sequencer")
 
+        close_instruments([name])
         cluster = Cluster(
             name=name,
             dummy_cfg={
@@ -109,6 +113,7 @@ def make_qcm_component(mocker):
             "qblox_instruments.scpi.pulsar_qcm.PulsarQcm._set_reference_source"
         )
 
+        close_instruments([name])
         qcm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QCM)
         qcm._serial = serial
 
@@ -150,6 +155,7 @@ def make_qrm_component(mocker):
             "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
         )
 
+        close_instruments([name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
         qrm._serial = serial
 
@@ -224,20 +230,26 @@ def fixture_mock_acquisition_data():
 
 @pytest.fixture
 def make_qcm_rf(mocker):
+    component: qblox.QCMRFComponent = None
+
     def _make_qcm_rf(
         name: str = "qcm_rf0",
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QCMRFComponent:
+
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
 
+        close_instruments([name])
         qcm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QCM_RF)
         qcm_rf._serial = serial
 
+        nonlocal component
         component = qblox.QCMRFComponent(qcm_rf)
+
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qcm_rf)
         mocker.patch.object(
             component.instrument,
@@ -251,23 +263,31 @@ def make_qcm_rf(mocker):
 
     yield _make_qcm_rf
 
+    component.close()
+
 
 @pytest.fixture
 def make_qrm_rf(mocker):
+    component: qblox.QRMRFComponent = None
+
     def _make_qrm_rf(
         name: str = "qrm_rf0",
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QRMRFComponent:
+
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
 
+        close_instruments([name])
         qrm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QRM_RF)
         qrm_rf._serial = serial
 
+        nonlocal component
         component = qblox.QRMRFComponent(qrm_rf)
+
         mocker.patch.object(component.instrument_ref, "get_instr", return_value=qrm_rf)
         mocker.patch.object(
             component.instrument,
@@ -296,6 +316,8 @@ def make_qrm_rf(mocker):
         return component
 
     yield _make_qrm_rf
+
+    component.close()
 
 
 def test_sequencer_state_flag_info():
