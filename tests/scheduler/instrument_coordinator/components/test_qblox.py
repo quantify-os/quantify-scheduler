@@ -1,12 +1,13 @@
-# Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the main branch
-# pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-module-docstring
 # pylint: disable=redefined-outer-name
+# pylint: disable=too-many-arguments
 # pylint: disable=unused-argument
-from __future__ import annotations
 
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+"""Tests for Qblox instrument coordinator components."""
 import inspect
 import json
 import logging
@@ -90,9 +91,10 @@ def make_cluster_component(mocker):
 
     yield _make_cluster_component
 
-    for component in cluster_component._cluster_modules.values():
-        component.close()
-    cluster_component.close()
+    if cluster_component:
+        for component in cluster_component._cluster_modules.values():
+            component.close()
+        cluster_component.close()
 
 
 @pytest.fixture
@@ -133,7 +135,8 @@ def make_qcm_component(mocker):
 
     yield _make_qcm_component
 
-    component.close()
+    if component:
+        component.close()
 
 
 @pytest.fixture
@@ -145,15 +148,19 @@ def make_qrm_component(mocker):
         serial: str = "dummy",
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
+        patch_acquisitions: bool = False,
     ) -> qblox.PulsarQRMComponent:
 
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition")
         mocker.patch(
             "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
         )
+        if patch_acquisitions:
+            mocker.patch(
+                "qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition"
+            )
 
         close_instruments([name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
@@ -170,28 +177,31 @@ def make_qrm_component(mocker):
                 sequencer_status, sequencer_flags if sequencer_flags else []
             ),
         )
-        mocker.patch.object(
-            component.instrument,
-            "get_acquisitions",
-            return_value={
-                "0": {
-                    "index": 0,
-                    "acquisition": {
-                        "bins": {
-                            "integration": {"path0": [0], "path1": [0]},
-                            "threshold": [0.12],
-                            "avg_cnt": [1],
-                        }
-                    },
-                }
-            },
-        )
+
+        if patch_acquisitions:
+            mocker.patch.object(
+                component.instrument,
+                "get_acquisitions",
+                return_value={
+                    "0": {
+                        "index": 0,
+                        "acquisition": {
+                            "bins": {
+                                "integration": {"path0": [0], "path1": [0]},
+                                "threshold": [0.12],
+                                "avg_cnt": [1],
+                            }
+                        },
+                    }
+                },
+            )
 
         return component
 
     yield _make_qrm_component
 
-    component.close()
+    if component:
+        component.close()
 
 
 @pytest.fixture(name="mock_acquisition_data")
@@ -263,7 +273,8 @@ def make_qcm_rf(mocker):
 
     yield _make_qcm_rf
 
-    component.close()
+    if component:
+        component.close()
 
 
 @pytest.fixture
@@ -317,7 +328,8 @@ def make_qrm_rf(mocker):
 
     yield _make_qrm_rf
 
-    component.close()
+    if component:
+        component.close()
 
 
 def test_sequencer_state_flag_info():
@@ -772,7 +784,9 @@ def test_store_scope_acquisition(make_qrm_component):
     acq_mapping = {
         qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
     }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
+    qrm: qblox.PulsarQRMComponent = make_qrm_component(
+        name="qrm0", serial="1234", patch_acquisitions=True
+    )
     acq_manager = qblox._QRMAcquisitionManager(
         qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
