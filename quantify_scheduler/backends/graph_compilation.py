@@ -1,13 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+
+from typing import Any, Callable, Dict, List, Optional, Union, Type, Tuple
 import networkx as nx
-from typing import Any, Callable, Dict, List, Optional, Union, Type
-from quantify_scheduler.structure import DataStructure
-from quantify_scheduler import Schedule, CompiledSchedule
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-
-from typing import Tuple
+from quantify_scheduler.structure import DataStructure
+from quantify_scheduler import Schedule, CompiledSchedule
 
 
 class CompilationPass(DataStructure):
