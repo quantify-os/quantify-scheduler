@@ -103,7 +103,7 @@ pprint(operation_schema["properties"]["gate_info"]["properties"])
 # As the first example, we want to create a schedule for performing the
 # `Bell experiment <https://en.wikipedia.org/wiki/Bell%27s_theorem>`_.
 # The goal of the Bell experiment is to create a Bell state
-# :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` which is a perfectly entagled state, followed by a measurement.
+# :math:`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` which is a perfectly entangled state, followed by a measurement.
 # By rotating the measurement basis, or equivalently one of the qubits, it is possible
 # to observe violations of the CSHS inequality.
 #
@@ -205,7 +205,7 @@ with open(cfg_f, "r") as f:
 pprint(list(transmon_test_config.keys()))
 
 # %% [raw]
-# Before explaning how this can be used to compile schedules, let us first investigate
+# Before explaining how this can be used to compile schedules, let us first investigate
 # the contents of the configuration file.
 
 # %%
