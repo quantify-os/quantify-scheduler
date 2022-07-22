@@ -18,7 +18,9 @@ from quantify_scheduler.resources import BasebandClockResource
 class ShiftClockPhase(Operation):
     """An operation that shifts the phase of a clock by a specified amount."""
 
-    def __init__(self, phase: float, clock: str, data: Optional[dict] = None):
+    def __init__(
+        self, phase: float, clock: str, t0: float = 0, data: Optional[dict] = None
+    ):
         """
         Create a new instance of ShiftClockPhase.
 
@@ -39,11 +41,11 @@ class ShiftClockPhase(Operation):
                 "pulse_info": [
                     {
                         "wf_func": None,
-                        "t0": 0,
+                        "t0": t0,
                         "phase": phase,
                         "clock": clock,
                         "port": None,
-                        "duration": 0.0,
+                        "duration": 0,
                     }
                 ],
             }

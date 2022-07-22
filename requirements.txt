@@ -1,31 +1,27 @@
-# quantify installation requirements
+# Quantify-scheduler installation requirements
 
-numpy
-scipy
 columnar
-matplotlib
-plotly
-fastjsonschema
 dataclasses-json
+fastjsonschema
+matplotlib
+numpy
+orjson
+pandas
+pathvalidate
+plotly
+pydantic
+qblox-instruments>=0.6.0
+quantify_core>=0.5.0
+qcodes>=0.28.0,<0.34.0 # 0.28.0: document Parameter attributes, <0.34.0: https://gitlab.com/quantify-os/quantify-scheduler/-/issues/300
+scipy
 # zhinst versions pinned, see #187
 zhinst==21.8.20515
 zhinst-qcodes==0.1.4
 zhinst-toolkit==0.1.5
-orjson
-pathvalidate
-pydantic
-quantify_core>=0.5.0
-qcodes>=0.28.0 # 0.28.0: document Parameter attributes
-qblox-instruments==0.6.0
 
 # We are using rich in our tutorials
 rich[jupyter]
 
-# tmp fixes
+# Tmp fixes
 funcparserlib==1.0.0a0 # https://github.com/vlasovskikh/funcparserlib/issues/69
 Jinja2==3.0.3 # due to old sphinx incompatibility with newer API of Jinja2. See #304 of quantify-core
-
-# See https://gitlab.com/quantify-os/quantify-core/-/merge_requests/242
-# A requirement for quantify-core but won't work on RTD because it uses the released
-# versions of quantify-core
-lmfit<=1.0.2

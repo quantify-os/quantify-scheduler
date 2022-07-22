@@ -29,6 +29,7 @@ Welcome to Quantify's documentation!
    tutorials/qblox/index
    tutorials/zhinst/index
 
+   bibliography
 
 API Reference
 ===================
@@ -37,13 +38,14 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   :caption: API reference
+   :caption: API Reference
+   :glob:
 
-   api_reference
-
+   autoapi/quantify_scheduler/index
 
 Indices and tables
-==================
+===================
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

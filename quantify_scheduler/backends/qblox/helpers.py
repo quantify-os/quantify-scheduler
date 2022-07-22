@@ -1,14 +1,21 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
-
+import re
+from copy import deepcopy
 from collections import UserDict
 from typing import Any, Dict, Iterable, List, Literal, Tuple, Union
 
 import numpy as np
 
+from quantify_core.utilities.general import without
+
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
+from quantify_scheduler import Schedule
+
+from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.operations.pulse_library import WindowOperation
 
 
 # pylint: disable=invalid-name
@@ -32,7 +39,7 @@ def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     :
         A list containing all the inner dictionaries containing the specified key.
     """
-    dicts_found = list()
+    dicts_found = []
     if isinstance(d, dict):
         if key in d:
             dicts_found.append(d)
@@ -70,7 +77,7 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
         A list containing tuples representing the port and clock combinations found
         in the dictionary.
     """
-    port_clocks = list()
+    port_clocks = []
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
     for inner_dict in dicts_with_port:
         if "port" in inner_dict:
@@ -371,6 +378,8 @@ def is_multiple_of_grid_time(
 def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.
+    We take `phase_deg` modulo 360 to account for negative phase and phase larger than
+    360.
 
     Parameters
     ----------
@@ -380,17 +389,236 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     Returns
     -------
     :
-        The three ints corresponding to the phase arguments (course, fine, ultra-fine).
+        The three ints corresponding to the phase arguments (coarse, fine, ultra-fine).
     """
-    phase_course: int = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COURSE)
-    assert phase_course <= constants.NCO_PHASE_NUM_STEP_COURSE
+    phase_deg %= 360
 
-    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COURSE
-    phase_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
-    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_FINE
+    phase_coarse = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
+
+    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COARSE
+    phase_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
 
     remaining_phase = remaining_phase % constants.NCO_PHASE_DEG_STEP_FINE
-    phase_ultra_fine: int = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
-    assert phase_fine <= constants.NCO_PHASE_NUM_STEP_U_FINE
+    phase_ultra_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
 
-    return phase_course, phase_fine, phase_ultra_fine
+    return phase_coarse, phase_fine, phase_ultra_fine
+
+
+def generate_port_clock_to_device_map(
+    hardware_cfg: Dict[str, Any]
+) -> Dict[Tuple[str, str], str]:
+    """
+    Generates a mapping that specifies which port-clock combinations belong to which
+    device.
+
+    .. note::
+        The same device may contain multiple port-clock combinations, but each
+        port-clock combination may only occur once.
+
+    Parameters
+    ----------
+    hardware_cfg:
+        The hardware config dictionary.
+
+    Returns
+    -------
+    :
+        A dictionary with as key a tuple representing a port-clock combination, and
+        as value the name of the device. Note that multiple port-clocks may point to
+        the same device.
+    """
+
+    portclock_map = {}
+    for device_name, device_info in hardware_cfg.items():
+        if not isinstance(device_info, dict):
+            continue
+
+        portclocks = find_all_port_clock_combinations(device_info)
+
+        for portclock in portclocks:
+            portclock_map[portclock] = device_name
+
+    return portclock_map
+
+
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-branches
+def assign_pulse_and_acq_info_to_devices(
+    schedule: Schedule,
+    device_compilers: Dict[str, Any],
+    hardware_cfg: Dict[str, Any],
+):
+    """
+    Traverses the schedule and generates `OpInfo` objects for every pulse and
+    acquisition, and assigns it to the correct `InstrumentCompiler`.
+
+    Parameters
+    ----------
+    schedule
+        The schedule to extract the pulse and acquisition info from.
+    device_compilers
+        Dictionary containing InstrumentCompilers as values and their names as keys.
+    hardware_cfg
+        The hardware config dictionary.
+
+    Raises
+    ------
+    RuntimeError
+        This exception is raised then the function encountered an operation that has no
+        pulse or acquisition info assigned to it.
+    KeyError
+        This exception is raised when attempting to assign a pulse with a port-clock
+        combination that is not defined in the hardware configuration.
+    KeyError
+        This exception is raised when attempting to assign an acquisition with a
+        port-clock combination that is not defined in the hardware configuration.
+    """
+
+    portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
+
+    for schedulable in schedule.schedulables.values():
+        op_hash = schedulable["operation_repr"]
+        op_data = schedule.operations[op_hash]
+
+        if isinstance(op_data, WindowOperation):
+            continue
+
+        if not op_data.valid_pulse and not op_data.valid_acquisition:
+            raise RuntimeError(
+                f"Operation {op_hash} is not a valid pulse or acquisition. Please check"
+                f" whether the device compilation been performed successfully. "
+                f"Operation data: {repr(op_data)}"
+            )
+
+        operation_start_time = schedulable["abs_time"]
+        for pulse_data in op_data.data["pulse_info"]:
+            if "t0" in pulse_data:
+                pulse_start_time = operation_start_time + pulse_data["t0"]
+            else:
+                pulse_start_time = operation_start_time
+
+            port = pulse_data["port"]
+            clock = pulse_data["clock"]
+
+            combined_data = OpInfo(
+                name=op_data.data["name"],
+                data=pulse_data,
+                timing=pulse_start_time,
+            )
+
+            if port is None:
+                # Distribute clock operations to all sequencers utilizing that clock
+                for (map_port, map_clock), device_name in portclock_mapping.items():
+                    if map_clock == clock:
+                        device_compilers[device_name].add_pulse(
+                            port=map_port, clock=clock, pulse_info=combined_data
+                        )
+            else:
+                if (port, clock) not in portclock_mapping:
+                    raise KeyError(
+                        f"Could not assign pulse data to device. The combination "
+                        f"of port {port} and clock {clock} could not be found "
+                        f"in hardware configuration.\n\nAre both the port and clock "
+                        f"specified in the hardware configuration?\n\n"
+                        f"Relevant operation:\n{combined_data}."
+                    )
+                device_name = portclock_mapping[(port, clock)]
+                device_compilers[device_name].add_pulse(
+                    port=port, clock=clock, pulse_info=combined_data
+                )
+
+        for acq_data in op_data.data["acquisition_info"]:
+            if "t0" in acq_data:
+                acq_start_time = operation_start_time + acq_data["t0"]
+            else:
+                acq_start_time = operation_start_time
+
+            port = acq_data["port"]
+            clock = acq_data["clock"]
+
+            if port is None:
+                continue
+
+            hashed_dict = without(acq_data, ["t0", "waveforms"])
+            hashed_dict["waveforms"] = []
+            for acq in acq_data["waveforms"]:
+                hashed_dict["waveforms"].append(without(acq, ["t0"]))
+
+            combined_data = OpInfo(
+                name=op_data.data["name"],
+                data=acq_data,
+                timing=acq_start_time,
+            )
+
+            if (port, clock) not in portclock_mapping:
+                raise KeyError(
+                    f"Could not assign acquisition data to device. The combination "
+                    f"of port {port} and clock {clock} could not be found "
+                    f"in hardware configuration.\n\nAre both the port and clock "
+                    f"specified in the hardware configuration?\n\n"
+                    f"Relevant operation:\n{combined_data}."
+                )
+            device_name = portclock_mapping[(port, clock)]
+            device_compilers[device_name].add_acquisition(
+                port=port, clock=clock, acq_info=combined_data
+            )
+
+
+def convert_hw_config_to_portclock_configs_spec(
+    hw_config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Converts possibly old hardware configs to the new format introduced by
+    the new dynamic sequencer allocation feature.
+
+    Manual assignment between sequencers and port-clock combinations under each output
+    is removed, and instead only a list of port-clock configurations is specified,
+    under the new ``"portclock_configs"`` key.
+
+    Furthermore, we scan for ``"latency_correction"`` defined at sequencer or
+    portclock_configs level and store under ``"port:clock"`` under toplevel
+    "latency_corrections" key.
+
+    Parameters
+    ----------
+    hw_config
+        The hardware config to be upgraded to the new specification.
+
+    Returns
+    -------
+    :
+        A hardware config compatible with the specification required by the new
+        dynamic sequencer allocation feature.
+
+    """
+
+    def _update_hw_config(nested_dict, max_depth=4):
+        if max_depth == 0:
+            return
+        # List is needed because the dictionary keys are changed during recursion
+        for key, value in list(nested_dict.items()):
+            if isinstance(key, str) and re.match(r"^seq\d+$", key):
+                nested_dict["portclock_configs"] = nested_dict.get(
+                    "portclock_configs", []
+                )
+                # Move latency_corrections to parent level of hw_config
+                if "latency_correction" in value.keys():
+                    hw_config["latency_corrections"] = hw_config.get(
+                        "latency_corrections", {}
+                    )
+                    latency_correction_key = f"{value['port']}-{value['clock']}"
+                    hw_config["latency_corrections"][latency_correction_key] = value[
+                        "latency_correction"
+                    ]
+                    del value["latency_correction"]
+
+                nested_dict["portclock_configs"].append(value)
+                del nested_dict[key]
+
+            elif isinstance(value, dict):
+                _update_hw_config(value, max_depth - 1)
+
+    hw_config = deepcopy(hw_config)
+    _update_hw_config(hw_config)
+
+    return hw_config

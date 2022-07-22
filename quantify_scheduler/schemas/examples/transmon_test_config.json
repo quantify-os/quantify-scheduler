@@ -145,6 +145,19 @@
                 "phase_correction_control": 0,
                 "phase_correction_target": 0
             }
+        },
+        "q2-q0": {
+            "resource_map": {
+                "q2": "q2:fl",
+                "q0": "q0:fl"
+            },
+            "params": {
+                "flux_duration": 3.2e-08,
+                "flux_amp_control": 0.5,
+                "flux_amp_target": 0,
+                "phase_correction_control": 0,
+                "phase_correction_target": 0
+            }
         }
     }
 }

@@ -66,7 +66,8 @@ class InstrumentCompiler(ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        hw_mapping: Optional[Dict[str, Any]] = None,
+        hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -86,11 +87,16 @@ class InstrumentCompiler(ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
+
         """
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
+        self.latency_corrections = latency_corrections or {}
 
     def prepare(self) -> None:
         """
@@ -132,6 +138,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -151,8 +158,11 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
@@ -258,7 +268,8 @@ class Sequencer:
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
-        seq_settings: dict,
+        seq_settings: Dict[str, Any],
+        latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
         downconverter: bool = False,
     ):
@@ -276,6 +287,8 @@ class Sequencer:
             sequencer. The first value is the port, second is the clock.
         seq_settings
             Sequencer settings dictionary.
+        latency_corrections
+            Dict containing the delays for each port-clock combination.
         lo_name
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
@@ -310,22 +323,9 @@ class Sequencer:
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
 
-        self.latency_correction_ns: int = self._get_latency_correction_ns(seq_settings)
+        portclock_key = f"{seq_settings['port']}-{seq_settings['clock']}"
+        self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
-
-    def _get_latency_correction_ns(self, seq_settings: Dict[str, Any]) -> int:
-        latency_correction_ns = int(
-            round(seq_settings.get("latency_correction", 0) * 1e9)
-        )
-        if latency_correction_ns % 4 != 0:
-            logger.warning(
-                f"Latency correction of {latency_correction_ns} ns specified"
-                f" for {self.name} of {self.parent.name}, which is not a"
-                f" multiple of {constants.GRID_TIME} ns. This feature should"
-                f" be considered experimental and stable results are not guaranteed at "
-                f"this stage."
-            )
-        return latency_correction_ns
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -675,11 +675,16 @@ class Sequencer:
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
-        qasm.auto_wait(
-            constants.GRID_TIME + self.latency_correction_ns,
-            count_as_elapsed_time=False,
-            comment=f"Latency correction of {self.latency_correction_ns} ns.",
+        latency_correction_ns: int = self._get_latency_correction_ns(
+            self.latency_correction
         )
+        qasm.auto_wait(
+            wait_time=constants.GRID_TIME + latency_correction_ns,
+            count_as_elapsed_time=False,
+            comment=f"latency correction of {constants.GRID_TIME} + "
+            f"{latency_correction_ns} ns",
+        )
+
         with qasm.loop(label=loop_label, repetitions=repetitions):
             qasm.emit(q1asm_instructions.RESET_PHASE)
             qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
@@ -747,6 +752,22 @@ class Sequencer:
                     f"ch{acq.operation_info.data['acq_channel']}",
                 )
             acq.bin_idx_register = acq_bin_idx_reg
+
+    def _get_latency_correction_ns(self, latency_correction: float) -> int:
+        if latency_correction == 0:
+            return 0
+
+        latency_correction_ns = int(round(latency_correction * 1e9))
+        if latency_correction_ns % 4 != 0:
+            logger.warning(
+                f"Latency correction of {latency_correction_ns} ns specified"
+                f" for {self.name} of {self.parent.name}, which is not a"
+                f" multiple of {constants.GRID_TIME} ns. This feature should"
+                f" be considered experimental and stable results are not guaranteed at "
+                f"this stage."
+            )
+
+        return latency_correction_ns
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -888,6 +909,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -907,23 +929,42 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         driver_version_check.verify_qblox_instruments_version()
 
-        self.portclock_map = self._generate_portclock_to_seq_map()
-        self.sequencers = self._construct_sequencers()
         self.is_pulsar: bool = True
         """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
         by the cluster compiler if needed."""
         self._settings: Union[
             BaseModuleSettings, None
         ] = None  # set in the prepare method.
+        self.sequencers: Dict[str, Sequencer] = {}
 
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
-        """Returns all the port and clocks available to this device."""
-        return list(self.portclock_map.keys())
+        """Returns all the port-clock combinations that this device can target."""
+
+        portclocks = []
+
+        for io in self.static_hw_properties.valid_ios:
+            if io not in self.hw_mapping:
+                continue
+
+            portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
+            if not portclock_configs:
+                raise KeyError(
+                    f"No 'portclock_configs' entry found in '{io}' of {self.name}."
+                )
+
+            portclocks += [
+                (target["port"], target["clock"]) for target in portclock_configs
+            ]
+
+        return portclocks
 
     @property
     @abstractmethod
@@ -940,40 +981,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         differences between the different modules.
         """
 
-    def _generate_portclock_to_seq_map(self) -> Dict[Tuple[str, str], str]:
-        """
-        Generates a mapping from portclock tuples to sequencer names.
-
-        Returns
-        -------
-        :
-            A dictionary with as key a portclock tuple and as value the name of a
-            sequencer.
-        """
-        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
-            f"real_output_{i}" for i in range(4)
-        ]
-        valid_seq_names = [
-            f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
-        ]
-
-        mapping = {}
-        for io in valid_ios:
-            if io not in self.hw_mapping:
-                continue
-
-            io_cfg = self.hw_mapping[io]
-
-            for seq_name in valid_seq_names:
-                if seq_name not in io_cfg:
-                    continue
-
-                seq_cfg = io_cfg[seq_name]
-                portclock = seq_cfg["port"], seq_cfg["clock"]
-
-                mapping[portclock] = seq_name
-        return mapping
-
     def _construct_sequencers(self) -> Dict[str, Sequencer]:
         """
         Constructs `Sequencer` objects for each port and clock combination
@@ -988,60 +995,78 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Raises
         ------
         ValueError
-            Raised when multiple definitions for the same sequencer is found, i.e. we
-            are attempting to use the same sequencer multiple times in the compilation.
+            When the output names do not conform to the
+            `complex_output_X`/`real_output_X` norm,
+            where X is the index of the output.
+        KeyError
+            Raised if no 'portclock_configs' entry is found in the specific outputs of
+            the hardware config.
+        ValueError
+            Raised when the same port-clock is multiply assigned in the hardware config.
         ValueError
             Attempting to use more sequencers than available.
+
         """
-        valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
-            f"real_output_{i}" for i in range(4)
-        ]
-        sequencers = {}
+        sequencers: Dict[str, Sequencer] = {}
+        portclock_output_map: Dict[Tuple, str] = {}
+
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
                 continue
-            if io not in valid_ios:
+            if io not in self.static_hw_properties.valid_ios:
                 raise ValueError(
                     f"Invalid hardware config. '{io}' of {self.name} is not a "
-                    f"valid name of an input/output.\n\nSupported names:\n{valid_ios}."
+                    f"valid name of an input/output.\n\nSupported names:\n"
+                    f"{self.static_hw_properties.valid_ios}"
                 )
 
             lo_name = io_cfg.get("lo_name", None)
             downconverter = io_cfg.get("downconverter", False)
 
-            valid_seq_names = (
-                f"seq{i}" for i in range(self.static_hw_properties.max_sequencers)
+            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
+                "portclock_configs", []
             )
-            for seq_name in valid_seq_names:
-                if seq_name not in io_cfg:
-                    continue
 
-                seq_cfg = io_cfg[seq_name]
-                portclock = seq_cfg["port"], seq_cfg["clock"]
-
-                if seq_name in sequencers:
-                    raise ValueError(
-                        f"Attempting to create multiple instances of "
-                        f"{seq_name}. Is it defined multiple times in "
-                        f"the hardware configuration?"
-                    )
-                connected_outputs = helpers.output_name_to_outputs(io)
-
-                sequencers[seq_name] = Sequencer(
-                    self,
-                    seq_name,
-                    portclock,
-                    self.static_hw_properties,
-                    connected_outputs,
-                    seq_cfg,
-                    lo_name,
-                    downconverter,
+            if not portclock_configs:
+                raise KeyError(
+                    f"No 'portclock_configs' entry found in '{io}' of {self.name}."
                 )
 
+            for target in portclock_configs:
+                portclock = (target["port"], target["clock"])
+
+                if portclock in self.portclocks_with_data:
+                    connected_outputs = helpers.output_name_to_outputs(io)
+                    seq_name = f"seq{len(sequencers)}"
+                    sequencers[seq_name] = Sequencer(
+                        parent=self,
+                        name=seq_name,
+                        portclock=portclock,
+                        static_hw_properties=self.static_hw_properties,
+                        connected_outputs=connected_outputs,
+                        seq_settings=target,
+                        latency_corrections=self.latency_corrections,
+                        lo_name=lo_name,
+                        downconverter=downconverter,
+                    )
+
+                    # Check if the portclock was not multiply specified
+                    if portclock in portclock_output_map:
+                        raise ValueError(
+                            f"Portclock {portclock} was assigned to multiple "
+                            f"portclock_configs of {self.name}. This portclock was "
+                            f"used in output '{io}' despite being already previously "
+                            f"used in output '{portclock_output_map[portclock]}'."
+                        )
+
+                    portclock_output_map[portclock] = io
+
+        # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
-                "Attempting to construct too many sequencer compilers. "
-                f"Maximum allowed for {self.__class__.__name__} is "
+                "Number of simultaneously active port-clock combinations exceeds "
+                "number of sequencers."
+                f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )
 
@@ -1127,6 +1152,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             self.hw_mapping
         )
         self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
+        self.sequencers = self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():

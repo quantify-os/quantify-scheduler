@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Set, Union
+from typing import Any, Dict, Optional, Set, Union
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import constants
@@ -21,7 +21,8 @@ class CompilerContainer:
     devices at the same time, such as calculating the modulation frequency for a device
     with a separate local oscillator from a clock that is defined at the schedule level.
 
-    It is recommended to construct this object using the `from_mapping` factory method.
+    It is recommended to construct this object using the ``from_hardware_cfg`` factory
+    method.
     """
 
     def __init__(self, schedule: Schedule):
@@ -46,6 +47,15 @@ class CompilerContainer:
         self.instrument_compilers = {}
         """The compilers for the individual instruments."""
         self.generics: Set[str] = set()
+        """Set of generic instruments in the setup."""
+
+    def prepare(self):
+        """
+        Prepares all the instrument compilers contained in the class,
+        by running their respective :code:`prepare` methods.
+        """
+        for compiler in self.instrument_compilers.values():
+            compiler.prepare()
 
     def compile(self, repetitions: int) -> Dict[str, Any]:
         """
@@ -62,8 +72,6 @@ class CompilerContainer:
             Dictionary containing all the compiled programs for each instrument. The key
             refers to the name of the instrument that the program belongs to.
         """
-        for compiler in self.instrument_compilers.values():
-            compiler.prepare()
 
         # for now name is hardcoded, but should be read from config.
         compiled_schedule = {}
@@ -82,7 +90,11 @@ class CompilerContainer:
         return compiled_schedule
 
     def add_instrument_compiler(
-        self, name: str, instrument: Union[str, type], mapping: Dict[str, Any]
+        self,
+        name: str,
+        instrument_type: Union[str, type],
+        instrument_cfg: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ) -> None:
         """
         Adds an instrument compiler to the container.
@@ -91,85 +103,51 @@ class CompilerContainer:
         ----------
         name
             Name of the instrument.
-        instrument
+        instrument_type
             A reference to the compiler class. Can either be passed as string or a
             direct reference.
-        mapping
-            The hardware mapping dict for this specific instrument.
+        instrument_cfg
+            The hardware config dict for this specific instrument.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is
+            specified in the top layer of hardware config.
         """
-        if isinstance(instrument, type):
-            self._add_from_type(name, instrument, mapping)
-        elif isinstance(instrument, str):
-            self._add_from_str(name, instrument, mapping)
+        if isinstance(instrument_type, str):
+            if instrument_type in compiler_classes.COMPILER_MAPPING:
+                instrument_type = compiler_classes.COMPILER_MAPPING[instrument_type]
+            else:
+                instrument_type = import_python_object_from_string(instrument_type)
+
+        if isinstance(instrument_type, type):
+            if instrument_type is compiler_classes.LocalOscillator:
+                compiler = compiler_classes.LocalOscillator(
+                    parent=self,
+                    name=name,
+                    total_play_time=self.total_play_time,
+                    hw_mapping=instrument_cfg,
+                )
+                self.generics.add(name)
+            else:
+                compiler = instrument_type(
+                    parent=self,
+                    name=name,
+                    total_play_time=self.total_play_time,
+                    hw_mapping=instrument_cfg,
+                    latency_corrections=latency_corrections,
+                )
+
+            self.instrument_compilers[name] = compiler
         else:
             raise ValueError(
-                f"{instrument} is not a valid compiler. {self.__class__} "
-                f"expects either a string or a type. But {type(instrument)} was "
+                f"{instrument_type} is not a valid compiler. {self.__class__} "
+                f"expects either a string or a type. But {type(instrument_type)} was "
                 f"passed."
             )
 
-    def _add_from_str(
-        self, name: str, instrument: str, mapping: Dict[str, Any]
-    ) -> None:
-        """
-        Adds the instrument compiler from a string.
-
-        Parameters
-        ----------
-        name
-            Name of the Instrument.
-        instrument
-            The string that specifies the type of the compiler.
-        mapping
-            Hardware mapping for this instrument.
-        """
-        if instrument in compiler_classes.COMPILER_MAPPING:
-            compiler: type = compiler_classes.COMPILER_MAPPING[instrument]
-            self.add_instrument_compiler(name, compiler, mapping)
-        else:
-            self._add_from_path(name, instrument, mapping)
-
-    def _add_from_path(
-        self, name: str, instrument: str, mapping: Dict[str, Any]
-    ) -> None:
-        """
-        Adds the instrument compiler from a path.
-
-        Parameters
-        ----------
-        name
-            Name of the Instrument.
-        instrument
-            The string that specifies the path to the type of the compiler.
-            E.g., ``"my_module.MyInstrument"``.
-        mapping
-            Hardware mapping for this instrument.
-        """
-        compiler: type = import_python_object_from_string(instrument)
-        self.add_instrument_compiler(name, compiler, mapping)
-
-    def _add_from_type(
-        self, name: str, instrument: type, mapping: Dict[str, Any]
-    ) -> None:
-        """
-        Adds the instrument compiler from a type.
-
-        Parameters
-        ----------
-        name
-            Name of the Instrument.
-        instrument
-            The type of the compiler.
-        mapping
-            Hardware mapping for this instrument.
-        """
-        compiler = instrument(self, name, self.total_play_time, mapping)
-        if isinstance(compiler, compiler_classes.LocalOscillator):
-            self.generics.add(name)
-        self.instrument_compilers[name] = compiler
-
     @classmethod
-    def from_mapping(cls, schedule: Schedule, mapping: dict) -> CompilerContainer:
+    def from_hardware_cfg(
+        cls, schedule: Schedule, hardware_cfg: dict
+    ) -> CompilerContainer:
         """
         Factory method for the CompilerContainer. This is the preferred way to use the
         CompilerContainer class.
@@ -178,17 +156,24 @@ class CompilerContainer:
         ----------
         schedule
             The schedule to pass to the constructor.
-        mapping
-            The hardware mapping.
+        hardware_cfg
+            The hardware config.
         """
         composite = cls(schedule)
-        for instr_name, instr_cfg in mapping.items():
-            if not isinstance(instr_cfg, dict):
+        for instrument_name, instrument_cfg in hardware_cfg.items():
+            if (
+                not isinstance(instrument_cfg, dict)
+                or "instrument_type" not in instrument_cfg
+            ):
                 continue
 
-            device_type = instr_cfg["instrument_type"]
-            composite.add_instrument_compiler(
-                instr_name, device_type, mapping[instr_name]
-            )
+            instrument_type = instrument_cfg["instrument_type"]
+            latency_corrections = hardware_cfg.get("latency_corrections", {})
 
+            composite.add_instrument_compiler(
+                name=instrument_name,
+                instrument_type=instrument_type,
+                instrument_cfg=instrument_cfg,
+                latency_corrections=latency_corrections,
+            )
         return composite

@@ -1,7 +1,7 @@
+# pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
-# pylint: disable=missing-module-docstring
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional, Callable, List
 
 import numpy as np
 import pytest
@@ -22,7 +22,8 @@ from quantify_scheduler.compilation import (
     device_compile,
     qcompile,
 )
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
+from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples import utils
 
 # load here to avoid loading every time a fixture is used
@@ -114,6 +115,17 @@ def make_basic_schedule() -> Callable[[str], Schedule]:
 
 
 @pytest.fixture
+def make_basic_multi_qubit_schedule() -> Callable[[List[str]], Schedule]:
+    def _make_basic_schedule(qubits: List[str]) -> Schedule:
+        schedule = Schedule(f"Basic schedule {qubits}")
+        for qubit in qubits:
+            schedule.add(X90(qubit))
+        return schedule
+
+    return _make_basic_schedule
+
+
+@pytest.fixture
 def schedule_with_measurement(make_schedule_with_measurement) -> Schedule:
     """
     Simple schedule with gate and measurement on qubit 0.
@@ -143,6 +155,16 @@ def make_schedule_with_measurement() -> Callable[[str], Schedule]:
         return schedule
 
     return _make_schedule_with_measurement
+
+
+@pytest.fixture
+def two_qubit_gate_schedule():
+    sched = Schedule("two_qubit_gate_schedule")
+    sched.add_resources(
+        [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
+    )  # Clocks need to be manually added at this stage.
+    sched.add(CZ(qC="q2", qT="q3"))
+    return sched
 
 
 @pytest.fixture
