@@ -385,6 +385,7 @@ nitpick_ignore_regex = [
     ("py:.*", r"dataclasses_json.*"),
     (".*", r".*Schedule"),
     ("py:class", r"qblox_instruments.*"),
+    ("py:class", r"matplotlib.*"),
 ]
 
 with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
