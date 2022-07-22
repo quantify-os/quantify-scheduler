@@ -30,7 +30,6 @@
         "cluster0_module1": {
             "instrument_type": "QCM",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -46,7 +45,6 @@
         "cluster0_module2": {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q5:mw",
@@ -60,7 +58,6 @@
             "instrument_type": "QRM",
             "ref": "external",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "dc_mixer_offset_I": -0.054,
                 "dc_mixer_offset_Q": -0.034,
@@ -80,7 +77,6 @@
         "instrument_type": "Pulsar_QCM",
         "ref": "internal",
         "complex_output_0": {
-            "line_gain_db": 0,
             "lo_name": "lo0",
             "dc_mixer_offset_I": 0.1234,
             "dc_mixer_offset_Q": -1.337,
@@ -95,7 +91,6 @@
             ]
         },
         "complex_output_1": {
-            "line_gain_db": 0,
             "lo_name": "lo1",
             "portclock_configs": [
                 {
@@ -110,7 +105,6 @@
         "instrument_type": "Pulsar_QRM",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "lo_name": "lo1",
             "dc_mixer_offset_I": -0.054,
             "dc_mixer_offset_Q": -0.034,
@@ -136,7 +130,6 @@
         "instrument_type": "Pulsar_QRM",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "portclock_configs": [
                 {
                     "port": "q1:res",
@@ -149,7 +142,6 @@
         "instrument_type": "Pulsar_QCM_RF",
         "ref": "internal",
         "complex_output_0": {
-            "line_gain_db": 0,
             "dc_mixer_offset_I": -0.045,
             "dc_mixer_offset_Q": -0.035,
             "portclock_configs": [
@@ -163,7 +155,6 @@
             ]
         },
         "complex_output_1": {
-            "line_gain_db": 0,
             "lo_freq": 5e9,
             "portclock_configs": [
                 {
@@ -178,7 +169,6 @@
         "instrument_type": "Pulsar_QRM_RF",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "lo_freq": 7.2e9,
             "dc_mixer_offset_I": -0.046,
             "dc_mixer_offset_Q": -0.036,
@@ -197,7 +187,6 @@
         "instrument_type": "Pulsar_QRM_RF",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "portclock_configs": [
                 {
                     "port": "q3:res",
