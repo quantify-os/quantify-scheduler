@@ -25,9 +25,9 @@
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download:notebook:`Tutorial 1. Schedules and pulses`
+#     :jupyter-download-notebook:`Tutorial 1. Schedules and pulses`
 #
-#     :jupyter-download:script:`Tutorial 1. Schedules and pulses`
+#     :jupyter-download-script:`Tutorial 1. Schedules and pulses`
 
 # %% [raw]
 # The Schedule

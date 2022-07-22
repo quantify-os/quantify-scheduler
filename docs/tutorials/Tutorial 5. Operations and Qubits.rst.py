@@ -25,9 +25,9 @@
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download:notebook:`Tutorial 5. Operations and Qubits`
+#     :jupyter-download-notebook:`Tutorial 5. Operations and Qubits`
 #
-#     :jupyter-download:script:`Tutorial 5. Operations and Qubits`
+#     :jupyter-download-script:`Tutorial 5. Operations and Qubits`
 
 # %% [raw]
 # Gates, measurements and qubits
@@ -267,7 +267,9 @@ pulse_sched = device_compile(sched, transmon_test_config)
 # Now that the timings have been determined, we can show the first few rows of the `timing_table`:
 
 # %%
-pulse_sched.timing_table.hide_index(slice(11, None)).hide_columns("waveform_op_id")
+pulse_sched.timing_table.hide(slice(11, None), axis="index").hide(
+    "waveform_op_id", axis="columns"
+)
 
 # %% [raw]
 # And since all pulse information has been determined, we can show the pulse diagram as
@@ -400,7 +402,9 @@ compiled_sched = qcompile(sched, dut.generate_device_config())
 # its pulse diagram:
 
 # %%
-compiled_sched.timing_table.hide_index(slice(11, None)).hide_columns("waveform_op_id")
+compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
+    "waveform_op_id", axis="columns"
+)
 
 # %%
 f, ax = compiled_sched.plot_pulse_diagram()

@@ -25,9 +25,9 @@
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download:notebook:`Tutorial 3. Compilation and hardware execution`
+#     :jupyter-download-notebook:`Tutorial 3. Compilation and hardware execution`
 #
-#     :jupyter-download:script:`Tutorial 3. Compilation and hardware execution`
+#     :jupyter-download-script:`Tutorial 3. Compilation and hardware execution`
 
 # %% [raw]
 # Compilation allows converting the schedules introduced in :ref:`Tutorial 1 <sec-tutorial1>` into a set of instructions that can be executed on the control hardware.
