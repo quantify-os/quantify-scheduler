@@ -7,7 +7,7 @@ Might be good to mark those tests in detail.
 """
 
 import pytest
-from quantify_scheduler.backends import qblox_backend
+from quantify_scheduler.backends import SerialBackend
 
 
 import pytest
@@ -20,10 +20,6 @@ from .standard_schedules import (
     parametrized_operation_schedule,
     hybrid_schedule_rabi,
 )
-
-
-# The module we are interested in testing
-from quantify_scheduler.backends.device_compile import DeviceCompile
 
 
 # @pytest.mark.xfail(reason="qblox hardware mapping not implemented yet")
@@ -44,8 +40,12 @@ def test_compiles_standard_schedules(
 ):
 
     config = compile_config_basic_transmon_qblox_hardware
-    # Arrange
-    backend = qblox_backend.QbloxBackend()
+    assert config.name == "Qblox backend"
+    assert (
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+    )
+
+    backend = SerialBackend("Qblox backend")
 
     # assert that no exception is raised.
     # Act

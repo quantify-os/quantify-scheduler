@@ -442,6 +442,41 @@ def qcompile(
 
         Add a schema for the hardware config.
     """
+
+    # code for the future backends.
+    # def _construct_compilation_config_from_dev_hw_cfg(device_config, hardware_config):
+    #     if hardware_config is None:
+    #         backend = "quantify_scheduler.backends.DeviceCompile"
+    #     elif (
+    #         hardware_config["backend"]
+    #         == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+    #     ):
+    #         backend = "quantify_scheduler.backends.QbloxBackend"
+
+    #     elif (
+    #         hardware_config["backend"]
+    #         == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+    #     ):  # the old zhinst hw_compile function
+    #         backend = "quantify_scheduler.backends.ZhinstBackend"
+    #     else:
+    #         raise NotImplementedError("Hardware backend not recognized")
+
+    #     compilation_config = {
+    #         "backend": backend,
+    #         "device_cfg": device_config,
+    #         "hardware_cfg": hardware_config,
+    #     }
+    #     # print(compilation_config)
+    #     return compilation_config
+
+    # compilation_config = _construct_compilation_config_from_dev_hw_cfg(
+    #     device_cfg, hardware_cfg
+    # )
+
+    # backend_class = import_python_object_from_string(compilation_config["backend"])
+    # backend = backend_class()
+    # compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
+
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
@@ -452,6 +487,7 @@ def qcompile(
         compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
     else:
         compiled_schedule = CompiledSchedule(schedule)
+
     return compiled_schedule
 
 

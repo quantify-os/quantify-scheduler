@@ -10,12 +10,6 @@ from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import apply_distortion_corrections
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
-from quantify_scheduler.backends.graph_compilation import (
-    CompilationPass,
-)
-
-from quantify_scheduler.backends.device_compile import DeviceCompile
-
 
 def hardware_compile(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
@@ -100,33 +94,3 @@ def hardware_compile(
     schedule["compiled_instructions"] = compiled_instructions
     # Mark the schedule as a compiled schedule
     return CompiledSchedule(schedule)
-
-
-qblox_hardware_compile = CompilationPass(
-    name="qblox_hardware_compile",
-    compilation_func=hardware_compile,
-    config_key="hardware_cfg",
-    config_validator=None,
-)
-
-
-class QbloxBackend(DeviceCompile):
-    """
-    Backend for compiling a schedule from the Quantum-circuit layer to
-    instructions suitable for Qblox hardware.
-
-    This backend extends the :class:`.backends.DeviceCompile` backend.
-    """
-
-    def __init__(self, incoming_graph_data=None, **attr):
-        super().__init__(incoming_graph_data=incoming_graph_data, **attr)
-
-        # find the last node of the graph we are extending and remove the output node
-        old_output_nodes = list(self.predecessors("output"))
-        self.remove_node("output")
-
-        # add the new node and connect it to all previous output nodes.
-        self.add_node(qblox_hardware_compile)
-        for old_output_node in old_output_nodes:
-            self.add_edge(old_output_node, qblox_hardware_compile)
-        self.add_edge(qblox_hardware_compile, "output")

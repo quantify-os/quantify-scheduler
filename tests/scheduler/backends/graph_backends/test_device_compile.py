@@ -16,7 +16,7 @@ from .standard_schedules import (
 
 
 # The module we are interested in testing
-from quantify_scheduler.backends.device_compile import DeviceCompile
+from quantify_scheduler.backends import SerialBackend
 
 
 @pytest.mark.parametrize(
@@ -36,9 +36,14 @@ def test_compiles_standard_schedules(
 
     config = device_compile_config_basic_transmon
     # Arrange
-    backend = DeviceCompile()
+    assert config.name == "Device compilation"
+    assert (
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+    )
 
-    # assert that no exception is raised.
+    backend = SerialBackend(
+        name="Device compilation"
+    )  # assert that no exception is raised.
     # Act
     comp_sched = backend.compile(schedule=schedule, config=config)
     # Assert that no exception was raised and output is the right type.

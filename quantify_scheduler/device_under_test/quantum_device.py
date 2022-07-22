@@ -11,6 +11,11 @@ from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
 from quantify_core.utilities import deprecated
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    SimpleNodeConfig,
+    SerialCompilationConfig,
+)
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
@@ -88,36 +93,65 @@ class QuantumDevice(Instrument):
         )
 
     @property
-    def compilation_config(self) -> Dict[str, Any]:
+    def compilation_config(self) -> CompilationConfig:
         """
         Generates a compilation config for use with a
         :class:`~quantify-scheduler.backends.graph_compilation.CompilationBackend`.
         """
 
-        hardware_config = self.generate_hardware_config()
+        # Part that is always the same
+        dev_cfg = self.generate_device_config()
+        compilation_passes = [
+            SimpleNodeConfig(
+                name="circuit_to_device",
+                compilation_func=dev_cfg.backend,
+                compilation_options=dev_cfg,
+            ),
+            SimpleNodeConfig(
+                name="determine_absolute_timing",
+                compilation_func="quantify_scheduler.compilation.determine_absolute_timing",
+                compilation_options={},
+            ),
+        ]
 
-        # here manual support needs to be added for the different hardware backends
-        if hardware_config == None:
-            backend = "quantify_scheduler.backends.DeviceCompile"
+        # If statements to support the different (currently unstructured) hardware
+        # configs.
+        hardware_config = self.generate_hardware_config()
+        if hardware_config is None:
+            backend_name = "Device compilation"
         elif (
             hardware_config["backend"]
             == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
-            backend = "quantify_scheduler.backends.QbloxBackend"
-
+            backend_name = "Qblox backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="qblox_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
         elif (
             hardware_config["backend"]
             == "quantify_scheduler.backends.zhinst_backend.compile_backend"
-        ):  # the old zhinst hw_compile function
-            backend = "quantify_scheduler.backends.ZhinstBackend"
-        else:
-            raise NotImplementedError("Hardware backend not recognized")
+        ):
+            backend_name = "Zhinst backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="zhinst_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
 
-        compilation_config = {
-            "backend": backend,
-            "device_cfg": self.generate_device_config(),
-            "hardware_cfg": hardware_config,
-        }
+        else:
+            raise NotImplementedError(
+                f"Hardware backend {hardware_config['backend']} not recognized"
+            )
+
+        compilation_config = SerialCompilationConfig(
+            name=backend_name, compilation_passes=compilation_passes
+        )
 
         return compilation_config
 
