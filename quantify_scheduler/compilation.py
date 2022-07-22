@@ -226,6 +226,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
+                            reset_clock_phase=op["gate_info"]["reset_clock_phase"],
                         )
                     )
                     op.add_acquisition(
@@ -257,6 +258,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
+                            reset_clock_phase=op["gate_info"]["reset_clock_phase"],
                         )
                     )
                     # pylint: disable=fixme

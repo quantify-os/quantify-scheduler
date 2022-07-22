@@ -173,6 +173,8 @@ class GenericPulseStrategy(PulseStrategyPartial):
         qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
+        if self.operation_info.data.get("reset_clock_phase"):
+            qasm_program.emit(q1asm_instructions.RESET_PHASE)
         qasm_program.emit(
             q1asm_instructions.PLAY,
             self.waveform_index0,

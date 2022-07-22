@@ -520,7 +520,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         repetitions
             The amount of times the schedule will be repeated, by default 1
         data
-            A dictionary containing a pre-existing schedule., by default None
+            A dictionary containing a pre-existing schedule, by default None
         """
 
         # validate the input data to ensure it is valid schedule data
@@ -625,11 +625,11 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     """
     This class represents an element on a schedule. All elements on a schedule are
     schedulables. A schedulable contains all information regarding the timing of this
-    element as well as the operation being executing by this element.
+    element as well as the operation being executed by this element.
     This operation is currently represented by an operation ID.
 
     Schedulables can contain an arbitrary number of timing constraints to determine the
-    timing. Multiple different contraints are currently resolved by delaying the element
+    timing. Multiple different constraints are currently resolved by delaying the element
     until after all timing constraints have been met, to aid compatibility.
     To specify an exact timing between two schedulables, please ensure to only specify
     exactly one timing constraint.
@@ -648,7 +648,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         operation_repr
             The operation which is to be executed by this schedulable
         schedule
-            The schedule to which the schedulable is added. This allows to scheduable to
+            The schedule to which the schedulable is added. This allows ``Schedulable`` to
             find other elements on the schedule
         """
         super().__init__()
@@ -730,7 +730,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         """
         Returns the string representation  of this instance.
 
-        This represenation can always be evalued to create a new instance.
+        This representation can always be evaluated to create a new instance.
 
         .. code-block::
 

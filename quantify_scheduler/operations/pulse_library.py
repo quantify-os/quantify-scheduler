@@ -250,6 +250,7 @@ class SquarePulse(Operation):
         clock: str = BasebandClockResource.IDENTITY,
         phase: float = 0,
         t0: float = 0,
+        reset_clock_phase: bool = False,
         data: Optional[dict] = None,
     ):
         """
@@ -296,6 +297,7 @@ class SquarePulse(Operation):
                         "t0": t0,
                         "clock": clock,
                         "port": port,
+                        "reset_clock_phase": reset_clock_phase,
                     }
                 ],
             }
