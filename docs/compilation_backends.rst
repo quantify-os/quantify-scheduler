@@ -57,7 +57,8 @@ First we set up a mock setup and create a simple schedule that we want to compil
     echo_schedule = echo_sched(times=np.arange(0, 60e-6, 1.5e-6), qubit="q0", repetitions=1024)
 
 
-Next, we retrieve the compilation config from the quantum device and see for which compilation backend this is suitable.
+Next, we retrieve the :class:`~.CompilationConfig` from the quantum device and see for which compilation backend this is suitable.
+In the current example we have a simple :class:`~.backends.graph_compilation.SerialBackend` that is used to do different compilation passes as a linear chain.
 
 .. jupyter-execute::
 
@@ -65,7 +66,7 @@ Next, we retrieve the compilation config from the quantum device and see for whi
     quantum_device = mock_setup['quantum_device']
     config = quantum_device.compilation_config
 
-    print(config['backend'])
+    print(config.backend)
 
 
 
@@ -74,9 +75,9 @@ We can then instantiate the backend and compile the program.
 
 .. jupyter-execute::
 
-    from quantify_scheduler.backends.device_compile import DeviceCompile
+    from quantify_scheduler.backends import SerialBackend
 
-    backend = DeviceCompile()
+    backend = SerialBackend(name="Device compile")
     comp_sched = backend.compile(schedule=echo_schedule, config=config)
 
     comp_sched
@@ -87,15 +88,51 @@ Understanding the structure of compilation
 
 A compilation backend defines a graph of compilation steps.
 This makes it really easy to visualize the different steps in the compilation process by drawing the graph.
-Below we show the graphs defined by the :class:`.backends.DeviceCompile`, the :class:`.backends.QbloxBackend`, and the :class:`.backends.ZhinstBackend`.
+
+Here we show the compilation structure for several commonly used backends.
+To do this, we will use the example configuration files of the different backends and then use the quantum device to generate the relevant :class:`~.CompilationConfig`s.
+Note that in the future we want to improve how the hardware config is managed so one does not need to set a custom dictionary to the hardware config parameter of the quantum_device object.
+
 
 .. jupyter-execute::
 
-    from quantify_scheduler.backends import DeviceCompile, QbloxBackend, ZhinstBackend
+    from quantify_scheduler.schemas.examples import utils
 
-    dev_backend = DeviceCompile()
-    qblox_backend = QbloxBackend()
-    zhinst_backend= ZhinstBackend()
+    QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+    ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
+
+    dev_cfg = quantum_device.compilation_config
+
+    quantum_device.hardware_config(QBLOX_HARDWARE_MAPPING)
+    qblox_cfg = quantum_device.compilation_config
+
+    quantum_device.hardware_config(ZHINST_HARDWARE_MAPPING)
+    zhinst_cfg = quantum_device.compilation_config
+
+
+
+
+.. jupyter-execute::
+
+    from quantify_scheduler.backends import SerialBackend
+
+
+
+    # constructing graph is normally done when at compile time as it
+    # requires information from the compilation config.
+
+    dev_backend = SerialBackend(name="Device backend")
+    dev_backend.construct_graph(dev_cfg)
+
+
+    qblox_backend = SerialBackend(name="Qblox compile")
+    qblox_backend.construct_graph(qblox_cfg)
+
+    zhinst_backend= SerialBackend(name="Zhinst backend")
+    zhinst_backend.construct_graph(zhinst_cfg)
+
+
+
 
     import matplotlib.pyplot as plt
     f, axs = plt.subplots(1,3, figsize=(16,7))
@@ -108,51 +145,6 @@ Below we show the graphs defined by the :class:`.backends.DeviceCompile`, the :c
     zhinst_backend.draw(axs[2])
     axs[2].set_title('ZhinstBackend')
     f
-
-
-One might notice that some nodes appear in multiple backends.
-This is intentional and showcases how we are reusing certain modular compilation steps.
-
-[Planned feature] When using a compilation backend, the graph based structure also allows us to verify the output at the end of every node. This can be particularly useful when the compilation is not producing the output expected by the user.
-
-Creating a custom compilation backend
-=====================================
-
-(advanced user/basic developer)
-
-Here we describe the internals for developers who want to add a custom node or parts of the config that are different.
-
-Selection mechanism for what backend is used/instantiated to compile with.
-(change this to your custom backend).
-Emphasize modularity and testing on how to develop a custom backend.
-
-
-
-Understanding the structure of compilation.
-It is a graph.
-Different parts of the config are used in different nodes.
-Show an example of a graph.
-
-
-Future ideas
-============
-
-Explain the idea of the graph.
-Where does the config come from?
-What steps does it take?
-Showing the steps in the backend to understand what happens in the compilation.
-
-
-Dynamically generate graphs based on the structure of the config.
-Currently we only support static graphs, but it makes sense to dynamically generate the graph structure upon instantiation of the backend.
-Figuring out how we want to support this requires further thought. My gutfeel teels me that this is related to the part of the hardware configuration that remains fixed.
-
-How to deal with non-linear graphs (nodes in parallel) is not 100% clear yet. The meaning of parallelism is something I am getting to now, but it is not fully clear yet how to deal with input output definitions of nodes yet.
-
-
-
-
-Backend internals
 
 
 

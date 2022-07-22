@@ -61,11 +61,13 @@ def determine_absolute_timing(
     if len(schedule.schedulables) == 0:
         raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
 
-    valid_time_units = ("physical", "ideal")
+    valid_time_units = ("physical", "ideal", None)
     if time_unit not in valid_time_units:
         raise ValueError(
             f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
         )
+    if time_unit is None:
+        time_unit = "physical"
 
     # iterate over the objects in the schedule.
     last_schedulable = next(iter(schedule.schedulables.values()))

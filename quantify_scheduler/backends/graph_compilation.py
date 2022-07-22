@@ -10,6 +10,11 @@ from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
 
+class CompilationError(RuntimeError):
+    # custom exception class for failures in compilation
+    pass
+
+
 class SimpleNodeConfig(DataStructure):
     """
     A config specifying the structure of a simple compilation config.
@@ -30,7 +35,7 @@ class SimpleNodeConfig(DataStructure):
     compilation_func: str
     # N.B. custom node configs could inherit and put a stronger type check/schema
     # on options for a particular node.
-    compilation_options: Dict
+    compilation_options: Optional[Dict]
 
 
 class CompilationConfig(DataStructure):
@@ -276,13 +281,18 @@ class SerialBackend(CompilationBackend):
             Nodes in this backend specify what key they need information from in this
             dictionary.
         """
+        self.construct_graph(config=config)
         try:
             path = nx.shortest_path(self, self.input_node, self.output_node)
         except nx.exception.NetworkXNoPath as e:
-            raise CompilationError("No path between the input and output nodes")
+            raise CompilationError("No path between the input and output nodes") from e
+
         # exclude the input and output from the path to use to compile
-        for node in path:
-            schedule = node.compile(schedule=schedule, config=config)
+        for i, node in enumerate(path):
+            schedule = node.compile(
+                schedule=schedule,
+                config=config.compilation_passes[i].compilation_options,
+            )
 
         # mark the schedule as "Compiled" before returning at the final step.
         return CompiledSchedule(schedule)

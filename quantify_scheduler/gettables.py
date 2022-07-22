@@ -170,8 +170,8 @@ class ScheduleGettable:
         compilation_config = self.quantum_device.compilation_config
 
         # made into a private variable for debugging and future caching functionality
-        backend_class = import_python_object_from_string(compilation_config["backend"])
-        self._backend = backend_class()
+        backend_class = import_python_object_from_string(compilation_config.backend)
+        self._backend = backend_class(name=compilation_config.name)
         self._compiled_schedule = self._backend.compile(
             schedule=sched, config=compilation_config
         )
