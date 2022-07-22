@@ -105,7 +105,6 @@ def hardware_cfg_baseband():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -117,7 +116,6 @@ def hardware_cfg_baseband():
                 ],
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
@@ -136,7 +134,6 @@ def hardware_cfg_real_mode(
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "real_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "dummy_port_1",
@@ -146,7 +143,6 @@ def hardware_cfg_real_mode(
                 ],
             },
             "real_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "dummy_port_2",
@@ -156,7 +152,6 @@ def hardware_cfg_real_mode(
                 ],
             },
             "real_output_2": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "dummy_port_3",
@@ -166,7 +161,6 @@ def hardware_cfg_real_mode(
                 ],
             },
             "real_output_3": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "dummy_port_4",
@@ -188,7 +182,6 @@ def hardware_cfg_multiplexing():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -219,7 +212,6 @@ def hardware_cfg_multiplexing():
                 ],
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
@@ -236,7 +228,6 @@ def hardware_cfg_latency_corrections():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
             },
         },
@@ -246,7 +237,6 @@ def hardware_cfg_latency_corrections():
             "cluster0_module1": {
                 "instrument_type": "QCM",
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "portclock_configs": [
                         {
                             "port": "q1:mw",
@@ -1712,7 +1702,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "seq0": {
                     "port": "q0:mw",
@@ -1722,7 +1711,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 },
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
                 "seq2": {
@@ -1739,7 +1727,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "cluster0_module2": {
                 "instrument_type": "QRM",
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "seq0": {
                         "port": "q1:res",
                         "clock": "q1.ro",
@@ -1769,14 +1756,12 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
                 ],
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "portclock_configs": [
                     {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
@@ -1790,7 +1775,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "cluster0_module2": {
                 "instrument_type": "QRM",
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "portclock_configs": [
                         {
                             "port": "q1:res",
