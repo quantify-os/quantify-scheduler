@@ -431,7 +431,7 @@ class Sequencer:
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
                 raise ValueError(
-                    f"Attempting to set the modulation frequency of {self._name} of "
+                    f"Attempting to set the modulation frequency of {self.name} of "
                     f"{self.parent.name} to {freq}, while it has previously been set "
                     f"to {self._settings.modulation_freq}."
                 )

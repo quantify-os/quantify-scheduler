@@ -26,6 +26,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
 def close_instruments(instrument_names: List[str]):
+    """Close all instruments in the list of names supplied."""
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()

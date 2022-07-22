@@ -32,13 +32,10 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
 )
-from quantify_scheduler.operations.gate_library import Measure, Reset
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_gate
 
-
 from tests.fixtures.mock_setup import close_instruments
-from tests.scheduler.instrument_coordinator.components.test_qblox import (
+from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
     make_qrm_component,
 )
@@ -416,7 +413,7 @@ def test_trace_acquisition_measurement_control(
     "module_under_test",
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, PulsarType.PULSAR_QRM],
 )
-def test_trace_acquisition_instrument_coordinator(
+def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-locals
     mocker, mock_setup, make_cluster_component, make_qrm_component, module_under_test
 ):
     hardware_cfgs = {}
