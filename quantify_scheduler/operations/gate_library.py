@@ -36,9 +36,9 @@ class Rxy(Operation):
         Parameters
         ----------
         theta
-            rotation angle in degrees
+            rotation angle in degrees, will be casted to the [-180, 180) domain.
         phi
-            phase of the rotation axis
+            phase of the rotation axis, will be casted to the [0, 360) domain.
         qubit
             the target qubit
         data
@@ -53,7 +53,8 @@ class Rxy(Operation):
 
         # this solves an issue where different rotations with the same rotation angle
         # modulo a full period are treated as distinct operations in the OperationDict.
-        theta = theta % 360
+        theta = (theta + 180) % 360 - 180
+
         phi = phi % 360
 
         if data is None:
