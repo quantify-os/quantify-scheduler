@@ -118,7 +118,7 @@ pulse_diagram_plotly(sched)
 # %% [raw]
 # We see that we added a DRAG pulse to the schedule. Two things stand out:
 #
-# 1. The DRAG pulse is plotted seperately from the square pulse, this is because we specified a different port for this pulse than we did for the square pulse.
+# 1. The DRAG pulse is plotted separately from the square pulse, this is because we specified a different port for this pulse than we did for the square pulse.
 # 2. The DRAG pulse shows two lines instead of one. This is because a DRAG pulse is specified as a complex-valued pulse, so we have to plot both the I and Q components of the signal. The real part of the waveform is shown in color, whereas the imaginary component is shown in greyscale.
 
 # %% [raw]
