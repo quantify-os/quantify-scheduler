@@ -62,7 +62,8 @@ class CompilationNode:
         Parameters
         ----------
         name:
-            The name of the node. Should be unique if it is added to a (larger) compilation
+            The name of the node. Should be unique if it is added to a (larger)
+            compilation
             graph.
 
         .. note:
@@ -109,12 +110,13 @@ class SimpleNode(CompilationNode):
         Parameters
         ----------
         name:
-            The name of the node. Should be unique if it is added to a (larger) compilation
-            graph.
+            The name of the node. Should be unique if it is added to a (larger)
+            compilation graph.
         compilation_func:
-            A Callable that will be wrapped in this object. A compilation function should
-            takes the intermediate representation (commonly a :class:`~.Schedule`) and
-            a config as an input and returns a new (modified) intermediate representation.
+            A Callable that will be wrapped in this object. A compilation function
+            should takes the intermediate representation (commonly :class:`~.Schedule`)
+            and a config as an input and returns a new (modified) intermediate
+            representation.
 
         .. note::
 
@@ -132,59 +134,6 @@ class SimpleNode(CompilationNode):
         # we should only support DataStructures for the compiler options to have
         # stricter typing and error handling. Dict is for legacy support.
         return self.compilation_func(schedule, config)
-
-
-class CompilationPass(CompilationNode):
-    """
-    A datastructure containing the information required to perform a (modular)
-    compilation pass.
-
-    Parameters
-    ----------
-    name
-    compilation_func:
-    config_key
-    config_validator
-    """
-
-    def __init__(self, name, compilation_func, config_key, config_validator):
-        self.name = name  #: str
-        self.compilation_func = compilation_func  #: Callable
-        self.config_key = config_key  #: Union[None, str]
-        self.config_validator = config_validator  #: Union[None, Type[DataStructure]]
-
-    # a node in networkx must be a hashable object
-    def __hash__(self):
-        return hash(
-            (self.name, self.compilation_func, self.config_key, self.config_validator)
-        )
-
-    def compile(self, schedule: Schedule, config: dict) -> Schedule:
-        """
-        Performs the compilation pass specified by the compilation function and
-        the configuration provided to this node.
-
-        Parameters
-        ----------
-        Schedule
-            The schedule to compile
-        config
-            A dictionary containing the information needed to compile the schedule.
-            The `config_key` attribute of this node specifies the information to use
-            from this dictionary.
-        """
-        if self.config_key is not None:
-            node_config = config[self.config_key]
-            if self.config_validator is not None:
-                node_config = self.config_validator.parse_obj(node_config)
-        else:
-            node_config = None
-
-        # using positional arguments as not all compilation functions have the right
-        # function signature.
-        # schedule = self.compilation_func(schedule=schedule, config=node_config)
-        schedule = self.compilation_func(schedule, node_config)
-        return schedule
 
 
 class CompilationBackend(nx.DiGraph, CompilationNode):

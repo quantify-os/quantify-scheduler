@@ -14,9 +14,6 @@ import numpy as np
 import pandas as pd
 from zhinst.toolkit.helpers import Waveform
 
-from quantify_scheduler.backends.graph_compilation import (
-    CompilationPass,
-)
 
 from quantify_scheduler import enums
 from quantify_scheduler.backends.types import common, zhinst
