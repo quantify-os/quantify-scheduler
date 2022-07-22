@@ -347,15 +347,6 @@ qrm0.start_sequencer()
 #
 #
 #
-# Precise timing control: The Ramsey experiment
-# ---------------------------------------------
-#
-# .. todo::
-#
-#     This tutorial should showcase in detail the timing options possible in the
-#     schedule.
-#
-#
 #
 # A hybrid experiment: The Chevron
 # --------------------------------
