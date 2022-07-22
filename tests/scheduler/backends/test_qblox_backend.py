@@ -64,7 +64,7 @@ from quantify_scheduler.compilation import (
 )
 
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -745,7 +745,7 @@ def test_portclocks(make_basic_multi_qubit_schedule):
     assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
 
 
-def test_contruct_sequencers(make_basic_multi_qubit_schedule):
+def test_construct_sequencers(make_basic_multi_qubit_schedule):
     test_module = QcmModule(
         parent=None,
         name="tester",
@@ -768,7 +768,9 @@ def test_contruct_sequencers(make_basic_multi_qubit_schedule):
     assert isinstance(test_module.sequencers[seq_keys[0]], Sequencer)
 
 
-def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_schedule):
+def test_construct_sequencers_repeated_portclocks_error(
+    make_basic_multi_qubit_schedule,
+):
     hardware_cfg = copy.deepcopy(HARDWARE_CFG)
 
     hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
@@ -806,7 +808,7 @@ def test_contruct_sequencers_repeated_portclocks_error(make_basic_multi_qubit_sc
 @pytest.mark.parametrize(
     "element_names", [[f"q{i}" for i in range(constants.NUMBER_OF_SEQUENCERS_QCM + 1)]]
 )
-def test_contruct_sequencers_excess_error(
+def test_construct_sequencers_excess_error(
     mock_setup_basic_transmon_elements, make_basic_multi_qubit_schedule, element_names
 ):
     hardware_cfg = {
@@ -969,6 +971,69 @@ def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
+
+@pytest.mark.parametrize(
+    "reset_clock_phase",
+    [(True, False)],
+)
+def test_compile_measurement_with_clock_phase_reset(
+    reset_clock_phase,
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    schedule = Schedule(f"Test schedule")
+    schedule.add(X90("q0"))
+    schedule.add(Measure("q0", reset_clock_phase=reset_clock_phase))
+    compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
+    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
+    with open(qrm0_seq0_json, "r") as file:
+        program = json.load(file)["program"]
+    reset_counts = program.count(" reset_ph ")
+    expected_counts = 2 if reset_clock_phase else 1
+    assert reset_counts == expected_counts, (
+        f"Expected qasm program to contain `reset_ph`-command 2 times, but found "
+        f"{reset_counts} times instead."
+    )
+
+
+@pytest.mark.parametrize(
+    "reset_clock_phase",
+    [(True, False)],
+)
+def test_compile_acq_measurement_with_clock_phase_reset(
+    reset_clock_phase,
+):
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    schedule = Schedule(f"Test schedule")
+
+    q0, q1 = "q0", "q1"
+    times = np.arange(0, 60e-6, 3e-6)
+    for i, tau in enumerate(times):
+        schedule.add(Reset(q0, q1), label=f"Reset {i}")
+        schedule.add(X(q0), label=f"pi {i} {q0}")
+        schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
+
+        schedule.add(
+            Measure(
+                q0, acq_index=i, acq_channel=0, reset_clock_phase=reset_clock_phase
+            ),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {q0}{i}",
+        )
+
+    compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
+    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
+    with open(qrm0_seq0_json, "r") as file:
+        program = json.load(file)["program"]
+    reset_counts = program.count(" reset_ph ")
+    expected_counts = (1 + len(times)) if reset_clock_phase else 1
+    assert reset_counts == expected_counts, (
+        f"Expected qasm program to contain `reset_ph`-command {1+len(times)} times, "
+        f"but found {reset_counts} times instead."
+    )
 
 
 def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
