@@ -982,12 +982,12 @@ def test_compile_measurement_with_clock_phase_reset(
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    schedule = Schedule(f"Test schedule")
+    schedule = Schedule("Test schedule")
     schedule.add(X90("q0"))
     schedule.add(Measure("q0", reset_clock_phase=reset_clock_phase))
     compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
-    with open(qrm0_seq0_json, "r") as file:
+    with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
     reset_counts = program.count(" reset_ph ")
     expected_counts = 2 if reset_clock_phase else 1
@@ -1026,7 +1026,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
 
     compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
-    with open(qrm0_seq0_json, "r") as file:
+    with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
     reset_counts = program.count(" reset_ph ")
     expected_counts = (1 + len(times)) if reset_clock_phase else 1

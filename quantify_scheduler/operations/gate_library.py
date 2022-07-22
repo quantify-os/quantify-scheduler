@@ -483,8 +483,8 @@ class Measure(Operation):
             projective measurement. The phase reset can be optionally be turned off.
 
             Note: disabling the phase reset has consequences for scope mode acquisitions
-            (e.g. averaging is not possible anymore) and weighed integration (phase shifts
-            lead to different integration results).
+            (e.g. averaging is not possible anymore) and weighed integration (phase
+            shifts lead to different integration results).
         """
 
         # this if else statement a workaround to support multiplexed measurements (#262)
