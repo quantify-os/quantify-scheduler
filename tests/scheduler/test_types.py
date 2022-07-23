@@ -45,6 +45,7 @@ def t1_schedule():
 
     return schedule
 
+
 def test_schedule_properties():
     # Act
     schedule = Schedule("Test", repetitions=1e3)
@@ -241,10 +242,13 @@ def test_schedule_from_json():
     assert schedule == result
     assert schedule.data == result.data
 
-@pytest.mark.xfail(reason='json serialization error', strict=True)
+
+@pytest.mark.xfail(reason="json serialization error", strict=True)
 def test_spec_schedule_from_json():
     # Arrange
-    schedule = heterodyne_spec_sched(0.1, 0.1, 6e9, 1e-7, 1e-6,  'q0:mw', 'q0.01', 200e-6, 1024)
+    schedule = heterodyne_spec_sched(
+        0.1, 0.1, 6e9, 1e-7, 1e-6, "q0:mw", "q0.01", 200e-6, 1024
+    )
 
     # Act
     json_data = schedule.to_json()
@@ -253,6 +257,7 @@ def test_spec_schedule_from_json():
     # Assert
     assert schedule == result
     assert schedule.data == result.data
+
 
 def test_t1_sched_valid(t1_schedule):
     """

@@ -22,7 +22,9 @@ import json
 import numpy as np
 import os
 from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
+from quantify_core.utilities.general import save_json
 from qcodes import Parameter
+from qcodes.utils.helpers import NumpyJSONEncoder
 import time
 import zipfile
 
@@ -322,13 +324,17 @@ class ScheduleGettable:
         tuid = gen_tuid()
         if execute_get:
             self.get()
+        if not self.is_initialized:
+            raise RuntimeError(
+                "generate_diagnostics_report can only run on initialized ScheduleGettables. "
+                "Please initialize manually or run with `execute_get=True`"
+            )
 
         dev_config = self.quantum_device.generate_device_config().dict()
         hw_config = self.quantum_device.generate_hardware_config()
 
         gettable_config = {
             "repetitions": self.quantum_device.cfg_sched_repetitions(),
-            "schedule_kwargs": self.schedule_kwargs,
             "evaluated_schedule_kwargs": self._evaluated_sched_kwargs,
         }
 
@@ -337,18 +343,29 @@ class ScheduleGettable:
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
 
-        filename = os.path.join(get_datadir(), f"{gen_tuid()}.zip")
+        filename = os.path.join(get_datadir(), f"{tuid}.zip")
         with zipfile.ZipFile(
             filename, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
         ) as zip_file:
             zip_file.writestr("time.txt", str(time.time()))
-            zip_file.writestr("dev_config.json", json.dumps(dev_config))
-            zip_file.writestr("hw_config.json", json.dumps(hw_config))
-            zip_file.writestr("gettable.json", json.dumps(gettable_config))
+            zip_file.writestr(
+                "dev_config.json",
+                json.dumps(dev_config, cls=NumpyJSONEncoder, indent=4),
+            )
+            zip_file.writestr(
+                "hw_config.json", json.dumps(hw_config, cls=NumpyJSONEncoder, indent=4)
+            )
+            zip_file.writestr(
+                "gettable.json",
+                json.dumps(gettable_config, cls=NumpyJSONEncoder, indent=4),
+            )
             zip_file.writestr("schedule.json", sched.to_json())
-            zip_file.writestr("snapshot.json", json.dumps(snapshot(update=update)))
+            zip_file.writestr(
+                "snapshot.json",
+                json.dumps(snapshot(update=update), cls=NumpyJSONEncoder, indent=4),
+            )
 
-        return tuid
+        return filename
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
