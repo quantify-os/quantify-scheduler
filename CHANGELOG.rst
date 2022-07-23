@@ -6,6 +6,7 @@ Unreleased
 ----------
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
+* Compilation - Call `determine_absolute_timing` in `qcompile` when no `device_cfg` supplied. (!436)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
