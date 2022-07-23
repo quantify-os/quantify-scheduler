@@ -290,3 +290,14 @@ def test_compile_trace_acquisition(load_legacy_transmon_config):
 
     measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"
+
+
+def test_qcompile_no_device_config_determine_absolute_timing(mocker):
+    sched = Schedule("One pulse schedule")
+    sched.add_resources([ClockResource("q0.01", 3.1e9)])
+    sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
+
+    mock = mocker.patch("quantify_scheduler.compilation.determine_absolute_timing")
+    qcompile(schedule=sched, device_cfg=None)
+
+    mock.assert_called()

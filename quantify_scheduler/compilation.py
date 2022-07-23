@@ -1,12 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
-from __future__ import annotations
-
 import logging
 import warnings
 from copy import deepcopy
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.enums import BinMode
@@ -407,8 +405,8 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 def qcompile(
     schedule: Schedule,
-    device_cfg: Union[DeviceCompilationConfig, dict] = None,
-    hardware_cfg: dict = None,
+    device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
+    hardware_cfg: Optional[dict] = None,
 ) -> CompiledSchedule:
     # pylint: disable=line-too-long
     """
@@ -447,11 +445,14 @@ def qcompile(
 
     if device_cfg is not None:
         schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
+    else:
+        schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     if hardware_cfg is not None:
         compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
     else:
         compiled_schedule = CompiledSchedule(schedule)
+
     return compiled_schedule
 
 

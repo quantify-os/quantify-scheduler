@@ -300,7 +300,6 @@ def pulse_only_schedule():
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -334,7 +333,6 @@ def cluster_only_schedule():
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q4.01", freq=5e9)])
     sched.add_resources([ClockResource("q5.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -371,7 +369,6 @@ def pulse_only_schedule_multiplexed():
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -391,7 +388,6 @@ def pulse_only_schedule_no_lo():
     )
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q1.ro", freq=100e6)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -423,7 +419,6 @@ def identical_pulses_schedule():
     )
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -450,7 +445,6 @@ def pulse_only_schedule_with_operation_timing():
     )
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -472,7 +466,6 @@ def mixed_schedule_with_acquisition():
     sched.add(Measure("q0"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -484,7 +477,6 @@ def gate_only_schedule():
     sched.add(Measure("q0"), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -497,7 +489,6 @@ def duplicate_measure_schedule():
     sched.add(Measure("q0", acq_index=1), ref_op=x_gate, rel_time=3e-6, ref_pt="end")
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -523,7 +514,6 @@ def baseband_square_pulse_schedule():
             t0=1e-6,
         )
     )
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -567,7 +557,6 @@ def real_square_pulse_schedule():
             t0=0,
         )
     )
-    determine_absolute_timing(sched)
     return sched
 
 
@@ -852,6 +841,23 @@ def test_compile_cluster(cluster_only_schedule):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(cluster_only_schedule, DEVICE_CFG, HARDWARE_CFG)
+
+
+def test_compile_no_device_cfg():
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("One pulse schedule")
+    sched.add_resources([ClockResource("q0.01", 3.1e9)])
+    sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
+
+    compiled_schedule = qcompile(schedule=sched, hardware_cfg=HARDWARE_CFG)
+
+    seq_fn = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
+    with open(seq_fn) as file:
+        wf_and_prog = json.load(file)
+
+    assert "play" in wf_and_prog["program"]
 
 
 def test_compile_simple_multiplexing(
@@ -1244,6 +1250,7 @@ def test_container_prepare_no_lo(pulse_only_schedule_no_lo):
 
 
 def test_container_add_from_type(pulse_only_schedule):
+    determine_absolute_timing(pulse_only_schedule)
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", QcmModule, HARDWARE_CFG["qcm0"])
     assert "qcm0" in container.instrument_compilers
@@ -1251,6 +1258,7 @@ def test_container_add_from_type(pulse_only_schedule):
 
 
 def test_container_add_from_str(pulse_only_schedule):
+    determine_absolute_timing(pulse_only_schedule)
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", "Pulsar_QCM", HARDWARE_CFG["qcm0"])
     assert "qcm0" in container.instrument_compilers
@@ -1258,6 +1266,7 @@ def test_container_add_from_str(pulse_only_schedule):
 
 
 def test_container_add_from_path(pulse_only_schedule):
+    determine_absolute_timing(pulse_only_schedule)
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler(
         "qcm0",
@@ -1269,6 +1278,7 @@ def test_container_add_from_path(pulse_only_schedule):
 
 
 def test_from_mapping(pulse_only_schedule):
+    determine_absolute_timing(pulse_only_schedule)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, HARDWARE_CFG
     )
@@ -1297,6 +1307,7 @@ def test_real_mode_container(
     hardware_cfg_real_mode,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
+    determine_absolute_timing(real_square_pulse_schedule)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
@@ -1534,6 +1545,7 @@ def test_pulsar_rf_extract_from_mapping():
 
 
 def test_cluster_settings(pulse_only_schedule):
+    determine_absolute_timing(pulse_only_schedule)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, HARDWARE_CFG
     )
