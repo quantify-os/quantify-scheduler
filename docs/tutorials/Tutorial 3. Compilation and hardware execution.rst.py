@@ -63,6 +63,7 @@ sched
 # In our example setup, we will use a Qblox Cluster containing a QCM-RF module. To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware configuration.
 #
 # Please check the documentation on how to properly create such a configuration for the supported backends:
+#
 # - :ref:`sec-backend-qblox`
 # - :ref:`sec-backend-zhinst`
 #
@@ -73,7 +74,7 @@ sched
 # - A Cluster containing a QCM-RF module (in the 2nd slot).
 # - A Local Oscillator.
 
-# In the QCM-RF output's settings, `interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
+# In the QCM-RF output's settings, :code:`interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
 # In this case, the internal LO frequency is not specified but is automatically calculated by the backend, such that the relation :math:`clock = LO + IF` is respected.
 
 # %%
@@ -121,7 +122,7 @@ hw_config = {
 #
 # We can perform each of these steps via :func:`~quantify_scheduler.compilation.determine_absolute_timing` and :func:`~quantify_scheduler.compilation.hardware_compile`, respectively.
 #
-# We start by setting the directory where the compilation output files will be stored, via `set_datadir <https://quantify-quantify-core.readthedocs-hosted.com/en/develop/usage.py.html#data-directory)>`.
+# We start by setting the directory where the compilation output files will be stored, via `set_datadir <https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.py.html#data-directory>`_.
 #
 
 # %%
@@ -137,7 +138,7 @@ sched = determine_absolute_timing(sched)
 compilation_output = hardware_compile(sched, hardware_cfg=hw_config)
 
 # %% [raw]
-# The cell above compiles the schedule, returning a :class:`quantify_scheduler.schedules.schedule.CompiledSchedule` object. This class differs from :class:`quantify_scheduler.schedules.schedule.Schedule` in that it is immutable and contains the :attr:`quantify_scheduler.schedules.schedule.CompiledSchedule.compiled_instructions` attribute.  We inspect these instructions below.
+# The cell above compiles the schedule, returning a :class:`~quantify_scheduler.schedules.schedule.CompiledSchedule` object. This class differs from :class:`~quantify_scheduler.schedules.schedule.Schedule` in that it is immutable and contains the :attr:`~quantify_scheduler.schedules.schedule.CompiledSchedule.compiled_instructions` attribute.  We inspect these instructions below.
 
 # %%
 compilation_output.compiled_instructions
@@ -148,15 +149,16 @@ compilation_output.compiled_instructions
 #
 # In the compilation output, we have all the information necessary to execute the schedule.
 #
-# In this specific case, only `seq0` of the QCM-RF is necessary. The compilation output contains the filepath where the sequencer's program is stored, as well as the Qcodes parameters that need to be set in the device.
+# In this specific case, only :code:`seq0` of the QCM-RF is necessary. The compilation output contains the filepath where the sequencer's program is stored, as well as the QCoDeS parameters that need to be set in the device.
 #
 # Now that we have the output of the compilation, we are almost ready to execute it with our control setup.
 #
 # To achieve this, two steps are necessary:
-# 1. Connect to our control instruments by instantiating the appropriate classes;
-# 2. Instantiate a :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` object and attach to it the appropriate subclass of :class:`~quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase`.
 #
-# The `InstrumentCoordinator` object is responsible for the smooth and in-concert operation of the different instruments, so that the provided schedule is correctly executed. Essentially, it "coordinates" the control stack instruments, giving the relevant commands to the different instruments of the control stack at each point in time.
+# 1. Connect to our control instruments by instantiating the appropriate classes.
+# 2. Instantiate an :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` object and attach to it the appropriate subclass of :class:`~quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase`.
+#
+# The :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` object is responsible for the smooth and in-concert operation of the different instruments, so that the provided schedule is correctly executed. Essentially, it "coordinates" the control stack instruments, giving the relevant commands to the different instruments of the control stack at each point in time.
 #
 # We start by connecting to the control instruments below.
 #
@@ -167,7 +169,7 @@ from qblox_instruments import Cluster, ClusterType
 cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF})
 
 # %% [raw]
-# And we attach these instruments to the `InstrumentCoordinator` via the appropriate `InstrumentCoordinatorComponent` wrapper class.
+# And we attach these instruments to the :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` via the appropriate :code:`InstrumentCoordinatorComponent` wrapper class.
 #
 # %%
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
@@ -179,7 +181,7 @@ ic = InstrumentCoordinator("ic")
 ic.add_component(ClusterComponent(cluster0))
 
 # %% [raw]
-# The experiment can now be conducted using the methods of `InstrumentCoordinator`:
+# The experiment can now be conducted using the methods of :class:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`:
 #
 # 1. We prepare the instruments with the appropriate settings and upload the schedule program by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.prepare` method and passing the compilation output as argument.
 # 2. We start the hardware execution by calling the :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.start` method.
@@ -199,12 +201,12 @@ ic.start()
 ic.wait_done(timeout_sec=10)
 
 # %% [raw]
-# The `InstrumentCoordinator` has two more functions which were not covered in this experiment:
+# The :class:`~~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` has two more functions which were not covered in this experiment:
 #
 # - :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition`
 #   - In case the schedule contained acquisitions, this method retrieves the acquired data.
 # - :meth:`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.stop`
 #   - Stops all running instruments.
 #
-# We conclude tutorial with the remark that the schedule used in this tutorial was defined purely in terms of pulses.
-# However, quantify-scheduler also supports the usage of quantum gates in schedules. Given that gates may require different pulses when executed in different quantum devices. Consequently, when using gates, one requires an additional compilation step, called "Device Compilation", that converts these gates into pulses that can be interpreted by the backend. This use case will be covered in Tutorial 5.
+# We conclude this tutorial with the remark that the schedule used in this tutorial was defined purely in terms of pulses.
+# However, quantify-scheduler also supports the usage of quantum gates in schedules. Given that gates may require different pulses when executed in different quantum devices. Consequently, when using gates, one requires an additional compilation step, called "Device Compilation", that converts these gates into pulses that can be interpreted by the backend. This use case will be covered in :ref:`Tutorial 5 <sec-tutorial5>`.

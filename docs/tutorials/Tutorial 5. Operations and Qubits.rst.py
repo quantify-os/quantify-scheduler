@@ -13,7 +13,7 @@
 # ---
 
 # %% [raw]
-#  .. _sec-tutorial5:
+# .. _sec-tutorial5:
 #
 # Tutorial 5. Operations and Qubits
 # =================================
@@ -39,11 +39,11 @@
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 # Instead of signals, clocks, and ports, operations are defined by the the effect they have on specific qubits. This representation of the schedules can be compiled to the quantum-device level to create the pulse schemes.
 #
-# In this tutorial we show how to define operations on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit level visualization. We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically. Finally, we showcase the hybrid nature of quantify-scheduler, allowing the scheduling circuit level and device level operations side by side in the same schedule.
+# In this tutorial we show how to define operations on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit level visualization. We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically. Finally, we showcase the hybrid nature of `quantify_scheduler`, allowing the scheduling circuit level and device level operations side by side in the same schedule.
 #
 # Many of the gates used in the circuit layer description are defined in
-# :class:`quantify_scheduler.operations.gate_library` such as `Reset`, `X90` and
-# `Measure`.
+# :class:`~quantify_scheduler.operations.gate_library` such as :class:`~quantify_scheduler.operations.gate_library.Reset`, :class:`~quantify_scheduler.operations.gate_library.X90` and
+# :class:`~quantify_scheduler.operations.gate_library.Measure`.
 # Operations are instantiated by providing them with the name of the qubit(s) on which
 # they operate:
 
@@ -69,8 +69,8 @@ pprint(rxy45.data)
 
 # %% [raw]
 # As we can see, the structure of a circuit level operation is similar to a pulse level
-# operation. However, the information is contained inside the `gate_info` entry rather
-# than the `pulse_info` entry of the data dictionary.
+# operation. However, the information is contained inside the :code:`gate_info` entry rather
+# than the :code:`pulse_info` entry of the data dictionary.
 # Importantly, there is no device-specific information coupled to the operation such that
 # it represents the abstract notion of this qubit rotation, rather than how to perform it
 # on any physical qubit implementation.
@@ -136,8 +136,9 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
 sched
 
 # %% [raw]
-# By scheduling 7 operations for 21 different values for `theta` we indeed get a schedule containing 7\*21=147 operations. To minimize the size of the schedule, identical operations are stored only once. For example, the `CZ` operations is stored only once but used 21 times, which leaves only 66 unique operations in the schedule.
-# .. note :: The acquisitions are different for every iteration due to their different `acq_index`. The `Rxy` rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since $R^{360}=R^0$). Hence the number of unique operations is 3\*21-1+4=66.
+# By scheduling 7 operations for 21 different values for :code:`theta` we indeed get a schedule containing 7\*21=147 operations. To minimize the size of the schedule, identical operations are stored only once. For example, the :class:`~quantify_scheduler.operations.gate_library.CZ` operation is stored only once but used 21 times, which leaves only 66 unique operations in the schedule.
+#
+# .. note :: The acquisitions are different for every iteration due to their different :code:`acq_index`. The :class:`~quantify_scheduler.operations.gate_library.Rxy`-gate rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since :math:`R^{360}=R^0`). Hence the number of unique operations is 3\*21-1+4=66.
 
 # %% [raw]
 # Visualizing the quantum circuit
@@ -153,7 +154,7 @@ import matplotlib.pyplot as plt
 
 _, ax = sched.plot_circuit_diagram()
 # all gates are plotted, but it doesn't all fit in a matplotlib figure.
-# Therefore we use `set_xlim` to limit the number of gates shown.
+# Therefore we use :code:`set_xlim` to limit the number of gates shown.
 ax.set_xlim(-0.5, 9.5)
 plt.show()
 
@@ -163,14 +164,14 @@ plt.show()
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>` without defining the
 # corresponding pulse shapes.
 # Therefore, trying to run :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` will raise an error which
-# signifies no `pulse_info` is present in the schedule:
+# signifies no :code:`pulse_info` is present in the schedule:
 
 # %%
 rst_conf = {"indent": "    ", "jupyter_execute_options": [":raises:"]}
 sched.plot_pulse_diagram()
 
 # %% [raw]
-# And similarly for the `timing_table`:
+# And similarly for the :code:`timing_table`:
 
 # %%
 rst_conf = {"indent": "    ", "jupyter_execute_options": [":raises:"]}
@@ -187,7 +188,7 @@ sched.timing_table
 #
 # To start this section, we will unpack the structure of the configuration file.
 # Here we will use a configuration file for a transmon based system that is used in the
-# quantify-scheduler test suite.
+# `quantify-scheduler` test suite.
 
 # %%
 import inspect
@@ -239,7 +240,7 @@ pprint(transmon_schema["properties"])
 # %% [raw]
 # As can be seen form the JSON schema, the
 # :ref:`device configuration file<sec-device-config>` also contains the
-# parameters required by the `device_compilation_backend` for all qubits and edges.
+# parameters required by the :code:`device_compilation_backend` for all qubits and edges.
 
 # %%
 pprint(list(transmon_test_config["qubits"].keys()))
@@ -254,7 +255,7 @@ pprint(transmon_test_config["qubits"]["q0"])
 # %% [raw]
 # Now that we went through the different components of the configuration file, let's use
 # it to compile our previously defined schedule.
-# The `device_compile` function takes care of this task and adds pulse information based
+# The :func:`~quantify_scheduler.compilation.device_compile` function takes care of this task and adds pulse information based
 # on the configuration file, as discussed above.
 # It also determines the timing of the different pulses in the schedule.
 
@@ -264,7 +265,7 @@ from quantify_scheduler.compilation import device_compile
 pulse_sched = device_compile(sched, transmon_test_config)
 
 # %% [raw]
-# Now that the timings have been determined, we can show the first few rows of the `timing_table`:
+# Now that the timings have been determined, we can show the first few rows of the :code:`timing_table`:
 
 # %%
 pulse_sched.timing_table.hide(slice(11, None), axis="index").hide(
@@ -310,7 +311,7 @@ dut.add_component(transmon)
 dut, dut.components()
 
 # %% [raw]
-# The different transmon properties can be set through the `TransmonElement`
+# The different transmon properties can be set through attributes of :code:`transmon` class instance
 # e.g.
 
 # %%
@@ -318,9 +319,9 @@ transmon.freq_01(6e9)
 list(transmon.parameters.keys())
 
 # %% [raw]
-# The device configuration is now simply obtained using `dut.generate_device_config()`.
+# The device configuration is now simply obtained using :code:`dut.generate_device_config()`.
 # In order for this command to provide a correct device configuration, the different
-# parameters need to be specified in the `TransmonElement` and `QuantumDevice` objects.
+# parameters need to be specified in the :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` and :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
 
 # %%
 pprint(dut.generate_device_config())
