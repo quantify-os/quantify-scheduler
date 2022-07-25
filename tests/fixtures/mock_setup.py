@@ -60,7 +60,6 @@ def mock_setup(tmp_test_data_dir):
     """
     Returns a mock setup.
     """
-
     set_datadir(tmp_test_data_dir)
 
     # importing from init_mock will execute all the code in the module which
