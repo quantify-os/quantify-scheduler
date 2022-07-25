@@ -5,7 +5,7 @@ bump2version==0.5.11
 wheel==0.33.6
 watchdog==0.9.0
 coverage
-sphinx>=5.0.2
+sphinx==5.0.2 # sphinx 5.1.0 crashes in site-packages/sphinx/ext/napoleon/docstring.py", line 303, in _consume_inline_attribute
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-bibtex
 jupyter_sphinx>=0.4.0
