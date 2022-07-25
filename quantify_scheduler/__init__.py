@@ -4,15 +4,17 @@
     :widths: auto
 
     * - Import alias
-      - Maps to
-    * - :class:`!quantify_scheduler.schedules.schedule.Schedule`
-      - :class:`.Schedule`
-    * - :class:`!quantify_scheduler.operations.operation.Operation`
-      - :class:`.Operation`
-    * - :class:`!quantify_scheduler.schedules.schedule.CompiledSchedule`
-      - :class:`.CompiledSchedule`
-    * - :class:`!quantify_scheduler.Resource`
-      - :class:`.Resource`
+      - Target
+    * - :class:`.Schedule`
+      - :class:`!quantify_scheduler.schedules.schedule.Schedule`
+    * - :class:`.Schedulable`
+      - :class:`!quantify_scheduler.schedules.schedule.Schedulable`
+    * - :class:`.CompiledSchedule`
+      - :class:`!quantify_scheduler.schedules.schedule.CompiledSchedule`
+    * - :class:`.Operation`
+      - :class:`!quantify_scheduler.operations.operation.Operation`
+    * - :class:`.Resource`
+      - :class:`!quantify_scheduler.Resource`
 """
 
 __version__ = "0.7.0"

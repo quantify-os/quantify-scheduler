@@ -217,6 +217,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         """
         Constructor for a Cluster compiler object.
@@ -232,14 +233,19 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is
+            specified in the top layer of hardware config.
         """
         super().__init__(
             parent=parent,
             name=name,
             total_play_time=total_play_time,
             hw_mapping=hw_mapping,
+            latency_corrections=latency_corrections,
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
+        self.latency_corrections = latency_corrections
 
     def construct_instrument_compilers(self) -> Dict[str, compiler_abc.QbloxBaseModule]:
         """
@@ -270,7 +276,11 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 )
             compiler_type: type = self.compiler_classes[instrument_type]
             instance = compiler_type(
-                self, name=name, total_play_time=self.total_play_time, hw_mapping=cfg
+                self,
+                name=name,
+                total_play_time=self.total_play_time,
+                hw_mapping=cfg,
+                latency_corrections=self.latency_corrections,
             )
             assert hasattr(instance, "is_pulsar")
             instance.is_pulsar = False

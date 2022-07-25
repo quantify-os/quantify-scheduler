@@ -207,15 +207,20 @@ To specify *where* an operation is applied, the quantum-device layer description
 For many systems, it is possible to associate a qubit with an element or location on a device that a signal can be applied to.
 We call such a location on a device a port.
 Like qubits, ports are represented as strings (e.g., :code:`P0`, :code:`feedline_in`, :code:`q0:mw_drive`, etc.).
-A port can be associated with a qubit by including the qubit name in the name of the port (separated by a colon :code:`:`).
+In the last example, a port is associated with a qubit by including the qubit name in the beginning of the port name (separated by a colon :code:`:`).
 
 Associating a qubit can be useful when visualizing a schedule and or to keep configuration files readable.
-Associating a port with a single qubit is not required so as not to complicate matters when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
+It is, however, not required to associate a port with a single qubit.
+This keeps matters simple when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
 
 
-Besides the physical location on a device, a pulse is typically applied at a certain frequency.
-A :class:`~quantify_scheduler.resources.ClockResource` can be used to track the phase of a certain transition or simply to ensure the signal ends up at the right frequency.
-Similar to ports, clocks can be associated with qubits by including it in the name, but this is not required to account for non-qubit elements.
+Besides the physical location on a device, a pulse is typically applied at a certain frequency and with a phase.
+These two parameters are stored in a :class:`~quantify_scheduler.resources.ClockResource`.
+Each :class:`~quantify_scheduler.resources.ClockResource` also has a :code:`name` to be easily identified.
+The :code:`name` should identify the purpose of the clock resource, not the value of the frequency.
+By storing the frequency and phase in a clock, we can adjust the frequency of a transition, but refer to it with the same name.
+
+Similar to ports, clocks can be associated with qubits by including the qubit name in the clock name (again, this is not required).
 If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband and is assumed to be real-valued.
 
 :numref:`resources_fig` shows how the resources (qubit, port and clock) map to a physical device.
@@ -227,7 +232,8 @@ If the frequency of a clock is set to 0 (zero), the pulse is applied at baseband
     Resources are used to indicate *where* operations are applied.
     (a) Ports (purple) indicate a location on a device.
     By prefixing the name of a qubit in a port name (separated by a colon :code:`:`) a port can be associated with a qubit (red), but this is not required.
-    (b) Clocks (blue) denote the location in frequency space and can be set to track the phase of a known transition.
+    (b) Clocks (blue) denote the frequency and phase of a signal.
+    They can be set to track the phase of a known transition.
     By prefixing the name of a qubit in a clock name (separated by a colon :code:`:`) a clock can be associated with a qubit (red), but this is not required.
     Device image from `Dickel (2018) <https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5>`_ .
 

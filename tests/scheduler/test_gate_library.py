@@ -51,6 +51,18 @@ def test_schedule_add_schedulables() -> None:
     assert Schedule.is_valid(sched)
 
 
+def test_rxy_angle_modulo() -> None:
+    """asserts that theta angles fall in the domain -180 to 180"""
+    rxy_270 = Rxy(theta=270, phi=23.9, qubit="q5")
+    rxy_m90 = Rxy(theta=-90, phi=23.9, qubit="q5")
+    assert rxy_270 == rxy_m90
+
+    assert rxy_270.data["gate_info"]["theta"] == -90.0
+
+    rxy_360 = Rxy(theta=360, phi=23.9, qubit="q5")
+    assert rxy_360.data["gate_info"]["theta"] == 0
+
+
 @pytest.mark.parametrize(
     "operation",
     [

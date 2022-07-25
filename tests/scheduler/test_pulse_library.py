@@ -7,8 +7,8 @@ from unittest import TestCase
 import pytest
 
 import numpy as np
-from quantify_scheduler import Operation
-from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -21,8 +21,22 @@ from quantify_scheduler.operations.pulse_library import (
     decompose_long_square_pulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
+from quantify_scheduler.device_under_test.transmon_element import (
+    BasicTransmonElement,
+)
+from quantify_scheduler.compilation import qcompile
 
 
+# --------- Test fixtures ---------
+@pytest.fixture
+def device_DRAG_pulse():
+    q0 = BasicTransmonElement("q0")
+    device_cfg = q0.generate_device_config()
+    yield q0, device_cfg
+    q0.close()
+
+
+# --------- Test classes and member methods ---------
 def test_operation_duration_single_pulse() -> None:
     dgp = DRAGPulse(
         G_amp=0.8, D_amp=-0.3, phase=24.3, duration=20e-9, clock="cl:01", port="p.01"
@@ -317,3 +331,21 @@ def test_dccompensation_pulse_both_params() -> None:
             sampling_rate=int(1e9),
             port="LP",
         )
+
+
+# --------- Test pulse compilation ---------
+def test_dragpulse_motzoi(device_DRAG_pulse):
+    q0, device_cfg = device_DRAG_pulse
+    device_cfg.elements["q0"]["Rxy"].factory_kwargs["amp180"] = 0.2
+    device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"] = 0.02
+
+    sched = Schedule("Test DRAG Pulse")
+    sched.add(X("q0"))
+
+    compiled_sched = qcompile(sched, device_cfg)
+    for op, op_info in compiled_sched.operations.items():
+        D_amp = op_info.data["pulse_info"][0].get("D_amp")
+
+    assert (
+        D_amp == device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"]
+    ), "The amplification of the derivative DRAG pulse is not equal to the motzoi parameter"

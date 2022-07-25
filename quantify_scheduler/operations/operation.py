@@ -21,12 +21,14 @@ from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 cached_locate = lru_cache(locate)
 
 
-class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ancestors
+class Operation(JSONSchemaValMixin, UserDict):
+    # pylint: disable=too-many-ancestors, line-too-long
     """
-    A JSON compatible data structure that contains information on
-    how to represent the operation on the quantum-circuit and/or the quantum-device
-    layer.
-    It also contains information on where the operation should be applied: the
+    A representation of quantum circuit operations.
+
+    The `Operation` class is a JSON-compatible data structure that contains information
+    on how to represent the operation on the quantum-circuit and/or the quantum-device
+    layer. It also contains information on where the operation should be applied: the
     :class:`~quantify_scheduler.resources.Resource` s used.
 
     An operation always has the following attributes:
@@ -52,7 +54,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
 
     **JSON schema of a valid Operation**
 
-    .. jsonschema:: ../schemas/operation.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/operation.json
 
 
     .. note::
@@ -60,6 +62,7 @@ class Operation(JSONSchemaValMixin, UserDict):  # pylint: disable=too-many-ances
         Two different Operations containing the same information generate the
         same hash and are considered identical.
     """
+    # pylint: enable=line-too-long
 
     schema_filename = "operation.json"
     _class_signature = None
