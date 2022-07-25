@@ -1361,11 +1361,12 @@ def test_assign_frequencies_baseband():
 
 
 @pytest.mark.parametrize(
-    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (6e9, 3e9)]
+    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (9e9, 6e9)]
 )
 def test_assign_frequencies_baseband_downconverter(
     downconverter_freq_0, downconverter_freq_1
 ):
+
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
@@ -1475,7 +1476,7 @@ def test_assign_frequencies_rf():
 
 
 @pytest.mark.parametrize(
-    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (4e9, 3e9)]
+    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (8.2e9, 8.2e9)]
 )
 def test_assign_frequencies_rf_downconverter(
     downconverter_freq_0, downconverter_freq_1

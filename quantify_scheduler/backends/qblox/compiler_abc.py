@@ -1141,6 +1141,40 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
 
+    def downconvert_clock(self, downconverter_freq: float, clk_freq: float):
+        """ "
+        Downconverts clock frequency.
+
+        Parameters
+        ----------
+        downconverter_freq
+            Frequency of the downconverter.
+        clk_freq
+            clock frequency that is being downconverted.
+
+        Raises
+        ------
+        ValueError
+            When downconverter frequency is negative.
+        ValueError
+            When downconverter frequency is less than clk_freq.
+        ------
+        """
+
+        if downconverter_freq != 0:
+            if downconverter_freq < 0:
+                raise ValueError(f"Downconverter frequency must be positive.")
+
+            if downconverter_freq > clk_freq:
+                new_clk_freq = downconverter_freq - clk_freq
+            else:
+                raise ValueError(
+                    "Downconverter frequency specified for the portclock must be greater than its clock frequency."
+                )
+            return new_clk_freq
+        else:
+            return clk_freq
+
     def prepare(self) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
@@ -1358,6 +1392,41 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         return acq_mapping if len(acq_mapping) > 0 else None
 
+def downconvert_clock_frequency(downconverter_freq: float, clk_freq: float):
+    """ "
+    Downconverts clock frequency.
+
+    Parameters
+    ----------
+    downconverter_freq
+        Frequency of the downconverter.
+    clk_freq
+        clock frequency that is being downconverted.
+
+    Raises
+    ------
+    ValueError
+        When downconverter frequency is negative.
+    ValueError
+        When downconverter frequency is less than clk_freq.
+    ------
+    """
+
+    if downconverter_freq != 0:
+        if downconverter_freq < 0:
+            raise ValueError(f"Downconverter frequency must be positive.")
+
+        if downconverter_freq > clk_freq:
+            new_clk_freq = downconverter_freq - clk_freq
+        else:
+            print(f"downocnverter freq HERE: {downconverter_freq}, clock_freq here : {clk_freq}")
+            raise ValueError(
+                "Downconverter frequency specified for the portclock must be greater than its clock frequency."
+            )
+        return new_clk_freq
+    else:
+        return clk_freq
+
 
 def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     if sequencer.clock not in container.resources:
@@ -1376,8 +1445,7 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
        and calculate the LO/IF frequencies."""
 
     downconverter_freq = sequencer.downconverter_freq
-    if downconverter_freq != 0:
-        clk_freq = -clk_freq
+    clk_freq = downconvert_clock_frequency(downconverter_freq,clk_freq)
 
     if lo_freq is None and if_freq is None:
         raise ValueError(
@@ -1388,10 +1456,10 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         )
 
     if if_freq is not None:
-        lo_compiler.frequency = clk_freq - if_freq + downconverter_freq
+        lo_compiler.frequency = clk_freq - if_freq
 
     if lo_freq is not None:
-        if_freq = clk_freq - lo_freq + downconverter_freq
+        if_freq = clk_freq - lo_freq
         sequencer.frequency = if_freq
 
     if if_freq != 0 and if_freq is not None:
@@ -1513,11 +1581,10 @@ class QbloxRFModule(QbloxBaseModule):
             """Downconvert the clock frequency if the downconverter frequency is non-zero 
              (otherwise leave it unchanged) and calculate the LO/IF frequencies."""
             downconverter_freq = sequencer.downconverter_freq
-            if downconverter_freq != 0:
-                clk_freq = -clk_freq
+            clk_freq = downconvert_clock_frequency(downconverter_freq,clk_freq)
 
             if if_freq is not None:
-                new_lo_freq = clk_freq - if_freq + downconverter_freq
+                new_lo_freq = clk_freq - if_freq
                 if lo_freq is not None and new_lo_freq != lo_freq:
                     raise ValueError(
                         f"Attempting to set 'lo{complex_output}_freq' to frequency "
@@ -1530,7 +1597,7 @@ class QbloxRFModule(QbloxBaseModule):
                     self._settings.lo1_freq = new_lo_freq
 
             if lo_freq is not None:
-                sequencer.frequency = clk_freq - lo_freq + downconverter_freq
+                sequencer.frequency = clk_freq - lo_freq
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
