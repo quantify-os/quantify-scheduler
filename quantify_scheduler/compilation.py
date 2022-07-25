@@ -9,6 +9,11 @@ from copy import deepcopy
 from typing import Literal, Union
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    SimpleNodeConfig,
+    SerialCompilationConfig,
+)
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.json_utils import load_json_schema, validate_json
@@ -445,39 +450,84 @@ def qcompile(
         Add a schema for the hardware config.
     """
 
-    # code for the future backends.
-    # def _construct_compilation_config_from_dev_hw_cfg(device_config, hardware_config):
-    #     if hardware_config is None:
-    #         backend = "quantify_scheduler.backends.DeviceCompile"
-    #     elif (
-    #         hardware_config["backend"]
-    #         == "quantify_scheduler.backends.qblox_backend.hardware_compile"
-    #     ):
-    #         backend = "quantify_scheduler.backends.QbloxBackend"
+    def _construct_compilation_config_from_dev_hw_cfg(device_config, hardware_config):
 
-    #     elif (
-    #         hardware_config["backend"]
-    #         == "quantify_scheduler.backends.zhinst_backend.compile_backend"
-    #     ):  # the old zhinst hw_compile function
-    #         backend = "quantify_scheduler.backends.ZhinstBackend"
-    #     else:
-    #         raise NotImplementedError("Hardware backend not recognized")
+        compilation_passes = []
 
-    #     compilation_config = {
-    #         "backend": backend,
-    #         "device_cfg": device_config,
-    #         "hardware_cfg": hardware_config,
-    #     }
-    #     # print(compilation_config)
-    #     return compilation_config
+        if isinstance(device_config, DeviceCompilationConfig):
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="circuit_to_device",
+                    compilation_func=device_config.backend,
+                    compilation_options=device_config,
+                )
+            )
+        elif isinstance(device_config, dict):
+            # this is a deprecated config format. only legacy support here.
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="add_pulse_information_transmon",
+                    compilation_func=device_config["backend"],
+                    compilation_options=device_config,
+                )
+            )
+        else:
+            # this is to support compiling when no device config is supplied
+            pass
 
-    # compilation_config = _construct_compilation_config_from_dev_hw_cfg(
-    #     device_cfg, hardware_cfg
-    # )
+        compilation_passes.append(
+            SimpleNodeConfig(
+                name="determine_absolute_timing",
+                compilation_func="quantify_scheduler.compilation.determine_absolute_timing",
+            )
+        )
 
-    # backend_class = import_python_object_from_string(compilation_config["backend"])
-    # backend = backend_class()
-    # compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
+        # If statements to support the different (currently unstructured) hardware
+        # configs.
+        if hardware_config is None:
+            backend_name = "Device compilation"
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        ):
+            backend_name = "Qblox backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="qblox_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+        ):
+            backend_name = "Zhinst backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="zhinst_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+
+        else:
+            raise NotImplementedError(
+                f"Hardware backend {hardware_config['backend']} not recognized"
+            )
+
+        compilation_config = SerialCompilationConfig(
+            name=backend_name, compilation_passes=compilation_passes
+        )
+        return compilation_config
+
+    compilation_config = _construct_compilation_config_from_dev_hw_cfg(
+        device_cfg, hardware_cfg
+    )
+
+    backend_class = import_python_object_from_string(compilation_config.backend)
+    backend = backend_class(name=compilation_config.name)
+    compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
 
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)

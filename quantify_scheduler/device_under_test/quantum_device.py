@@ -110,7 +110,6 @@ class QuantumDevice(Instrument):
             SimpleNodeConfig(
                 name="determine_absolute_timing",
                 compilation_func="quantify_scheduler.compilation.determine_absolute_timing",
-                # compilation_options="physical",
             ),
         ]
 
