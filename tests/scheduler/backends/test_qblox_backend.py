@@ -64,7 +64,7 @@ from quantify_scheduler.compilation import (
 )
 
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -98,43 +98,6 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 
 # --------- Test fixtures ---------
-
-
-@pytest.fixture(name="hardware_cfg_latency_corrections")
-def make_hardware_cfg_latency_corrections():
-    def _make_hardware_cfg_latency_corrections():
-        return {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
-            "qcm0": {
-                "instrument_type": "Pulsar_QCM",
-                "ref": "internal",
-                "complex_output_0": {
-                    "line_gain_db": 0,
-                    "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
-                },
-            },
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "ref": "internal",
-                "cluster0_module1": {
-                    "instrument_type": "QCM",
-                    "complex_output_0": {
-                        "line_gain_db": 0,
-                        "portclock_configs": [
-                            {
-                                "port": "q1:mw",
-                                "clock": "q1.01",
-                            }
-                        ],
-                    },
-                },
-            },
-        }
-
-    return _make_hardware_cfg_latency_corrections
-
-
 @pytest.fixture
 def hardware_cfg_baseband():
     yield {
@@ -144,7 +107,6 @@ def hardware_cfg_baseband():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -156,7 +118,6 @@ def hardware_cfg_baseband():
                 ],
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
@@ -165,7 +126,9 @@ def hardware_cfg_baseband():
 
 
 @pytest.fixture
-def hardware_cfg_real_mode():
+def hardware_cfg_real_mode(
+    instruction_generated_pulses_enabled,
+):  # pylint: disable=line-too-long
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -173,32 +136,38 @@ def hardware_cfg_real_mode():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "real_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "LP",
+                        "port": "dummy_port_1",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     },
                 ],
             },
             "real_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "RP",
+                        "port": "dummy_port_2",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
                 ],
             },
             "real_output_2": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
-                        "port": "TB",
+                        "port": "dummy_port_3",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                    }
+                ],
+            },
+            "real_output_3": {
+                "portclock_configs": [
+                    {
+                        "port": "dummy_port_4",
+                        "clock": "cl0.baseband",
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
                     }
                 ],
             },
@@ -215,7 +184,6 @@ def hardware_cfg_multiplexing():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -246,11 +214,58 @@ def hardware_cfg_multiplexing():
                 ],
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+    }
+
+
+@pytest.fixture
+def hardware_cfg_latency_corrections():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+            },
+        },
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_two_qubit_gate():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"{qubit}:fl", "clock": clock}
+                    for qubit in ["q2", "q3"]
+                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                ]
+            },
+        },
     }
 
 
@@ -269,8 +284,7 @@ def dummy_pulsars() -> Generator[Dict[str, Pulsar], None, None]:
 
     yield _pulsars
 
-    for instrument in _pulsars.values():
-        instrument.close()
+    close_instruments(qcm_names + qrm_names)
 
 
 @pytest.fixture
@@ -526,7 +540,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=2.0,
             duration=2.5e-6,
-            port="LP",
+            port="dummy_port_1",
             clock=BasebandClockResource.IDENTITY,
             t0=1e-6,
         )
@@ -535,7 +549,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.0,
             duration=2.0e-6,
-            port="RP",
+            port="dummy_port_2",
             clock=BasebandClockResource.IDENTITY,
             t0=0.5e-6,
         )
@@ -544,7 +558,16 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.2,
             duration=3.5e-6,
-            port="TB",
+            port="dummy_port_3",
+            clock=BasebandClockResource.IDENTITY,
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=1.2,
+            duration=3.5e-6,
+            port="dummy_port_4",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
         )
@@ -902,32 +925,13 @@ def test_compile_clock_operations(
     )
 
 
-def test_compile_cz_gate(mock_setup):
-    sched = Schedule("two_qubit_gate_experiment")
-    sched.add_resources(
-        [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
-    )  # Clocks need to be manually added at this stage.
-    sched.add(CZ(qC="q2", qT="q3"))
-
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM",
-            "ref": "internal",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": f"{qubit}:fl", "clock": clock}
-                    for qubit in ["q2", "q3"]
-                    for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
-                ]
-            },
-        },
-    }
-
+def test_compile_cz_gate(
+    mock_setup, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
+):
     compiled_sched = qcompile(
-        schedule=sched,
+        schedule=two_qubit_gate_schedule,
         device_cfg=mock_setup["quantum_device"].generate_device_config(),
-        hardware_cfg=hardware_cfg,
+        hardware_cfg=hardware_cfg_two_qubit_gate,
     )
 
     program_lines = {}
@@ -1051,15 +1055,43 @@ def test_qcm_acquisition_error():
         qcm.distribute_data()
 
 
-def test_real_mode_pulses(real_square_pulse_schedule, hardware_cfg_real_mode):
+@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
+def test_real_mode_pulses(
+    real_square_pulse_schedule,
+    hardware_cfg_real_mode,
+    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
+):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
+
     real_square_pulse_schedule.repetitions = 10
     full_program = qcompile(
         real_square_pulse_schedule, DEVICE_CFG, hardware_cfg_real_mode
     )
-    for seq in (f"seq{i}" for i in range(3)):
-        assert seq in full_program.compiled_instructions["qcm0"]
+
+    for output in range(4):
+        filename = full_program.compiled_instructions["qcm0"][f"seq{output}"]["seq_fn"]
+        with open(filename, "r") as file:
+            seq_instructions = json.load(file)
+
+        for value in seq_instructions["waveforms"].values():
+            waveform_data, seq_path = value["data"], value["index"]
+
+            # Asserting that indeed we only have square pulse on I and no signal on Q
+            if seq_path == 0:
+                assert (np.array(waveform_data) == 1).all()
+            elif seq_path == 1:
+                assert (np.array(waveform_data) == 0).all()
+
+        if output % 2 == 0:
+            iq_order = "0,1"  # I,Q
+        else:
+            iq_order = "1,0"  # Q,I
+
+        assert re.search(rf"play\s*{iq_order}", seq_instructions["program"]), (
+            f"Output {output+1} must be connected to "
+            f"sequencer{output} path{iq_order[0]} in real mode."
+        )
 
 
 # --------- Test QASMProgram class ---------
@@ -1269,7 +1301,12 @@ def test_generate_uuid_from_wf_data():
     assert hash1 != hash2
 
 
-def test_real_mode_container(real_square_pulse_schedule, hardware_cfg_real_mode):
+@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
+def test_real_mode_container(
+    real_square_pulse_schedule,
+    hardware_cfg_real_mode,
+    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
+):
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
@@ -1675,7 +1712,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "seq0": {
                     "port": "q0:mw",
@@ -1685,7 +1721,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
                 },
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
                 "seq2": {
@@ -1702,7 +1737,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "cluster0_module2": {
                 "instrument_type": "QRM",
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "seq0": {
                         "port": "q1:res",
                         "clock": "q1.ro",
@@ -1732,14 +1766,12 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
                 ],
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "portclock_configs": [
                     {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
@@ -1753,7 +1785,6 @@ def test_convert_hw_config_to_portclock_configs_spec(make_basic_multi_qubit_sche
             "cluster0_module2": {
                 "instrument_type": "QRM",
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "portclock_configs": [
                         {
                             "port": "q1:res",
@@ -1806,9 +1837,9 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
-    hardware_cfg = hardware_cfg_latency_corrections()
+    hardware_cfg = hardware_cfg_latency_corrections
     compiled_sched = qcompile(
-        sched,
+        schedule=sched,
         device_cfg=mock_setup["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
@@ -1862,9 +1893,9 @@ def test_apply_latency_corrections_warning(
         logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
         qcompile(
-            sched,
+            schedule=sched,
             device_cfg=mock_setup["quantum_device"].generate_device_config(),
-            hardware_cfg=hardware_cfg_latency_corrections(),
+            hardware_cfg=hardware_cfg_latency_corrections,
         )
     assert any(warning in mssg for mssg in caplog.messages)
 

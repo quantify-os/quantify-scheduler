@@ -1,13 +1,26 @@
 {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "latency_corrections": {"q4:mw-q4.01": 8e-9, "q5:mw-q5.01": 4e-9},
+    "latency_corrections": {
+        "q4:mw-q4.01": 8e-9,
+        "q5:mw-q5.01": 4e-9
+    },
+    "distortion_corrections": {
+        "q0:fl-cl0.baseband": {
+            "filter_func": "scipy.signal.lfilter",
+            "input_var_name": "x",
+            "kwargs": {
+                "b": [0, 0.25, 0.5],
+                "a": [1]
+            },
+            "clipping_values": [-2.5, 2.5]
+        }
+    },
     "cluster0": {
         "ref": "internal",
         "instrument_type": "Cluster",
         "cluster0_module1": {
             "instrument_type": "QCM",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -23,7 +36,6 @@
         "cluster0_module2": {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q5:mw",
@@ -36,7 +48,6 @@
         "cluster0_module3": {
             "instrument_type": "QRM",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "dc_mixer_offset_I": -0.054,
                 "dc_mixer_offset_Q": -0.034,
@@ -68,7 +79,6 @@
         "instrument_type": "Pulsar_QCM",
         "ref": "internal",
         "complex_output_0": {
-            "line_gain_db": 0,
             "lo_name": "lo0",
             "dc_mixer_offset_I": 0.1234,
             "dc_mixer_offset_Q": -1.337,
@@ -83,7 +93,6 @@
             ]
         },
         "complex_output_1": {
-            "line_gain_db": 0,
             "lo_name": "lo1",
             "portclock_configs": [
                 {
@@ -98,7 +107,6 @@
         "instrument_type": "Pulsar_QRM",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "lo_name": "lo1",
             "dc_mixer_offset_I": -0.054,
             "dc_mixer_offset_Q": -0.034,
@@ -124,7 +132,6 @@
         "instrument_type": "Pulsar_QRM",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "portclock_configs": [
                 {
                     "port": "q1:res",
@@ -137,7 +144,6 @@
         "instrument_type": "Pulsar_QCM_RF",
         "ref": "internal",
         "complex_output_0": {
-            "line_gain_db": 0,
             "dc_mixer_offset_I": -0.045,
             "dc_mixer_offset_Q": -0.035,
             "portclock_configs": [
@@ -151,7 +157,6 @@
             ]
         },
         "complex_output_1": {
-            "line_gain_db": 0,
             "lo_freq": 5e9,
             "portclock_configs": [
                 {
@@ -166,7 +171,6 @@
         "instrument_type": "Pulsar_QRM_RF",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "lo_freq": 7.2e9,
             "dc_mixer_offset_I": -0.046,
             "dc_mixer_offset_Q": -0.036,
@@ -185,7 +189,6 @@
         "instrument_type": "Pulsar_QRM_RF",
         "ref": "external",
         "complex_output_0": {
-            "line_gain_db": 0,
             "portclock_configs": [
                 {
                     "port": "q3:res",
