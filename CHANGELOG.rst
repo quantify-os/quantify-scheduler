@@ -23,6 +23,7 @@ Unreleased
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
+* Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
