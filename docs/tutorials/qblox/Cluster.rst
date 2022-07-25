@@ -35,7 +35,6 @@ We start by looking at an example config for a single cluster:
         "cluster0": {
             "cluster0_module1": {
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "lo_name": "lo0",
                     "portclock_configs": [
                         {
@@ -51,7 +50,6 @@ We start by looking at an example config for a single cluster:
             },
             "cluster0_module2": {
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "portclock_configs": [
                         {
                             "clock": "q5.01",

@@ -33,7 +33,6 @@ Each device in the setup can be individually configured using the entry in the c
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
@@ -44,7 +43,6 @@ Each device in the setup can be individually configured using the entry in the c
                 ]
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "lo_name": "lo1",
                 "portclock_configs": [
                     {
@@ -192,7 +190,6 @@ mixer correction parameters as well as the frequencies.
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q0:mw",
@@ -201,7 +198,6 @@ mixer correction parameters as well as the frequencies.
                 ]
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q1:mw",
@@ -233,7 +229,6 @@ It is possible to do frequency multiplexing of the signals by adding multiple po
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q0:mw",
@@ -246,7 +241,6 @@ It is possible to do frequency multiplexing of the signals by adding multiple po
                 ]
             },
             "complex_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q1:mw",
@@ -297,7 +291,6 @@ The resulting config looks like:
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "real_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q0:mw",
@@ -306,7 +299,6 @@ The resulting config looks like:
                 ]
             },
             "real_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q1:mw",
@@ -315,7 +307,6 @@ The resulting config looks like:
                 ]
             },
             "real_output_2": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q2:mw",
@@ -383,7 +374,6 @@ In order to enable the advanced capabilities we need to add line :code:`"instruc
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q0:mw",
