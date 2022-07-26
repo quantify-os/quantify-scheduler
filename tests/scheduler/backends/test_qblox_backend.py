@@ -1425,6 +1425,7 @@ def test_assign_frequencies_baseband_downconverter(
 
         expected_if1 = downconverter_freq_1 - q1_clock_freq - lo1
         actual_if1 = qcm_program["seq1"]["settings"]["modulation_freq"]
+
         status = "after"
 
     assert (
@@ -1529,9 +1530,9 @@ def test_assign_frequencies_rf_downconverter(
         status = "without"
 
     else:
-        status = "after"
         expected_lo0 = downconverter_freq_0 - q2_clock_freq - if0
         expected_if1 = downconverter_freq_1 - q3_clock_freq - lo1
+        status = "after"
 
     assert expected_lo0 == actual_lo0, (
         f"LO frequency of channel 0 {status} downconversion must be equal to "
