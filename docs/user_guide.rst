@@ -255,7 +255,9 @@ Compilation
 -----------
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
-The scheduler supports two main compilation steps, the first from the gate to the pulse level, and a second from the pulse-level to a hardware back end.
+The scheduler supports multiple compilation steps, the most important ones are the step from the quantum-circuit layer to the quantum-device layer, and the one from the quantum-device layer into instructions suitable for execution on physical hardware.
+This compilation is performed by a compilation backend. These backends are described in detail in :ref:`Compilation backends`.
+
 This is schematically shown in :numref:`compilation_overview`.
 
 
@@ -282,6 +284,15 @@ Both compilation steps can be triggered by passing a :class:`.Schedule` and the 
     We use the term "**device**" to refer to the physical object(s) on the receiving end of the control pulses, e.g. a thin-film chip inside a dilution refrigerator.
 
     And we employ the term "**hardware**" to refer to the instruments (electronics) that are involved in the pulse generations / signal digitization.
+
+
+
+.. toctree::
+   :maxdepth: 2
+   :glob:
+
+   compilation_backends
+
 
 .. _sec-device-config:
 
@@ -335,6 +346,7 @@ Similar to the device configuration file, the hardware configuration file can be
         path = Path(examples.__file__).parent / "zhinst_test_mapping.json"
         json_data = json.loads(path.read_text())
         json_data
+
 
 
 Execution
@@ -491,12 +503,3 @@ and the resulting dataset can be analyzed using
 
 .. [*] Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
 
-
-Planned functionality
----------------------
-
-.. toctree::
-   :maxdepth: 2
-   :glob:
-
-   compilation_backends
