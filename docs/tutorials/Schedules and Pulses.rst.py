@@ -25,9 +25,9 @@
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download-notebook:`Tutorial: Schedules and Pulses`
+#     :jupyter-download-notebook:`Schedules and Pulses`
 #
-#     :jupyter-download-script:`Tutorial: Schedules and Pulses`
+#     :jupyter-download-script:`Schedules and Pulses`
 
 # %% [raw]
 # The Schedule
@@ -59,7 +59,7 @@ square_pulse = sched.add(
 sched
 
 # %% [raw]
-# You may have noticed that we passed a :code:`port` and a :code:`clock` to the pulse. The :code:`port` specifies the physical location on the quantum chip to which we are sending the pulses, whilst the :code:`clock` tracks the frequency of the signal. This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
+# You may have noticed that we passed a :code:`port` and a :code:`clock` to the pulse. The :code:`port` specifies the physical location on the quantum chip to which we are sending the pulses, whilst the :code:`clock` tracks the frequency of the signal (see :ref:`sec-user-guide-ports-clocks`). This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
 
 # %%
 from quantify_scheduler.resources import ClockResource
@@ -100,7 +100,7 @@ pulse_diagram_plotly(sched)
 # %% [raw]
 # We can see that :code:`rel_time=500e-9` schedules the pulse 500 ns shifted relative to the end of the :code:`ref_op`. If no additional arguments are passed, operations are added directly after the operation that was added last.
 #
-# Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can choose to instead specify it relative to the beginning. This is done by passing :code:`ref_pt='start'`.
+# Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can choose to instead specify it relative to the beginning. This is done by passing :code:`ref_pt="start"`.
 
 # %%
 sched.add(

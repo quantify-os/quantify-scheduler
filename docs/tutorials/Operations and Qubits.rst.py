@@ -25,21 +25,23 @@
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download-notebook:`Tutorial: Operations and Qubits`
+#     :jupyter-download-notebook:`Operations and Qubits`
 #
-#     :jupyter-download-script:`Tutorial: Operations and Qubits`
+#     :jupyter-download-script:`Operations and Qubits`
 
 # %% [raw]
 # Gates, measurements and qubits
 # ------------------------------
 #
-# In the previous tutorials, experiments were created on the quantum-device level. On this level,
+# In the previous tutorials, experiments were created on the :ref:`quantum-device level<sec-user-guide-quantum-device>`. On this level,
 # operations are defined in terms of explicit signals and locations on chip, rather than the qubit and the intended operation.
 # To allow working at a greater level of abstraction, `quantify_scheduler` allows creating operations on the
 # :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 # Instead of signals, clocks, and ports, operations are defined by the the effect they have on specific qubits. This representation of the schedules can be compiled to the quantum-device level to create the pulse schemes.
 #
-# In this tutorial we show how to define operations on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit level visualization. We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically. Finally, we showcase the hybrid nature of `quantify_scheduler`, allowing the scheduling circuit level and device level operations side by side in the same schedule.
+# In this tutorial we show how to define operations on the :ref:`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit-level visualization.
+# We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically.
+# Finally, we showcase the hybrid nature of `quantify_scheduler`, allowing the scheduling circuit-level and device-level operations side by side in the same schedule.
 #
 # Many of the gates used in the circuit layer description are defined in
 # :class:`~quantify_scheduler.operations.gate_library` such as :class:`~quantify_scheduler.operations.gate_library.Reset`, :class:`~quantify_scheduler.operations.gate_library.X90` and
@@ -48,7 +50,7 @@
 # they operate:
 
 # %%
-from quantify_scheduler.operations.gate_library import CZ, X, X90, Measure, Reset, Rxy
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X90
 
 q0, q1 = ("q0", "q1")
 X90(q0)
@@ -57,18 +59,19 @@ CZ(q0, q1)
 Reset(q0)
 
 # %% [raw]
-# Let's investigate the different components present in the circuit level description of
+# Let's investigate the different components present in the circuit-level description of
 # the operation. As an example, we create a 45 degree rotation operation over the
 # x-axis.
 
 # %%
 from pprint import pprint
+from quantify_scheduler.operations.gate_library import Rxy
 
 rxy45 = Rxy(theta=45.0, phi=0.0, qubit=q0)
 pprint(rxy45.data)
 
 # %% [raw]
-# As we can see, the structure of a circuit level operation is similar to a pulse level
+# As we can see, the structure of a circuit-level operation is similar to a pulse-level
 # operation. However, the information is contained inside the :code:`gate_info` entry rather
 # than the :code:`pulse_info` entry of the data dictionary.
 # Importantly, there is no device-specific information coupled to the operation such that
@@ -81,23 +84,23 @@ pprint(rxy45.data)
 
 # %%
 import importlib.resources
-from quantify_scheduler import schemas
 import json
+from quantify_scheduler import schemas
 
 operation_schema = json.loads(importlib.resources.read_text(schemas, "operation.json"))
 pprint(operation_schema["properties"]["gate_info"]["properties"])
 
 # %% [raw]
-# Schedule creation from the circuit layer
-# ----------------------------------------
+# Schedule creation from the circuit layer (Bell)
+# -----------------------------------------------
 #
-# The circuit level operations can be used to create a `schedule` within
-# `quantify_scheduler` using the same method as for the pulse level operations.
+# The circuit-level operations can be used to create a `schedule` within
+# `quantify_scheduler` using the same method as for the pulse-level operations.
 # This enables creating schedules on a more abstract level.
 # We exemplify this extra layer of abstraction by creating a `schedule` for measuring
 # `Bell violations`.
 #
-# .. note:: Within a single `schedule`, high-level circuit layer operations can be mixed with quantum-device level operations. This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in :ref:`Mixing pulse and circuit layer operations <Mixing pulse and circuit layer operations>`.
+# .. note:: Within a single `schedule`, high-level circuit layer operations can be mixed with quantum-device level operations. This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in :ref:`Mixing pulse and circuit layer operations (Chevron)`.
 
 # %% [raw]
 # As the first example, we want to create a schedule for performing the
@@ -113,20 +116,21 @@ pprint(operation_schema["properties"]["gate_info"]["properties"])
 
 # %%
 import numpy as np
-
 from quantify_scheduler import Schedule
-
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, Rxy, X90
 
 sched = Schedule("Bell experiment")
 
 for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     sched.add(Reset(q0, q1))
     sched.add(X90(q0))
-    sched.add(X90(q1), ref_pt="start")  # this ensures pulses are aligned
+    sched.add(X90(q1), ref_pt="start")  # This ensures pulses are aligned
     sched.add(CZ(q0, q1))
     sched.add(Rxy(theta=theta, phi=0, qubit=q0))
 
-    sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
+    sched.add(
+        Measure(q0, acq_index=acq_idx),
+        label="M q0 {:.2f} deg".format(theta))
     sched.add(
         Measure(q1, acq_index=acq_idx),
         label="M q1 {:.2f} deg".format(theta),
@@ -198,7 +202,6 @@ import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
 cfg_f = Path(esp).parent / "transmon_test_config.json"
-
 
 with open(cfg_f, "r") as f:
     transmon_test_config = json.load(f)
@@ -287,36 +290,36 @@ ax.set_xlim(0.4005e-3, 0.4006e-3)
 # of the physical device under test (DUT).
 # To generate these configuration files on the fly, `quantify_scheduler` provides the
 # :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and
-# :code:`DeviceElement` classes.
+# :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement` classes.
+#
 # These classes contain the information necessary to generate the config files and allow
 # changing their parameters on-the-fly.
 # The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class
-# represents the DUT containing different :code:`DeviceElement` s.
+# represents the DUT containing different :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement` s.
 # Currently, `quantify_scheduler` contains the
 # :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` class
 # to represent a transmon qubit connected to a feedline. We show their interaction below:
 
 # %%
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 
-# first create a device under test:
+# First create a device under test:
 dut = QuantumDevice("DUT")
 
-# then create a transmon element
-transmon = TransmonElement("transmon1")
+# Then create a transmon element
+qubit = TransmonElement("qubit")
 
 # Finally, add the transmon element to the QuantumDevice:
-dut.add_component(transmon)
+dut.add_component(qubit)
 dut, dut.components()
 
 # %% [raw]
-# The different transmon properties can be set through attributes of :code:`transmon` class instance
-# e.g.
+# The different transmon properties can be set through attributes of the :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` class instance, e.g.:
 
 # %%
-transmon.freq_01(6e9)
-list(transmon.parameters.keys())
+qubit.freq_01(6e9)
+list(qubit.parameters.keys())
 
 # %% [raw]
 # The device configuration is now simply obtained using :code:`dut.generate_device_config()`.
@@ -327,42 +330,43 @@ list(transmon.parameters.keys())
 pprint(dut.generate_device_config())
 
 # %% [raw]
-# Mixing pulse and circuit layer operations
-# -----------------------------------------
+# Mixing pulse and circuit layer operations (Chevron)
+# ---------------------------------------------------
 #
 # As well as defining our schedules in terms of gates, we can also mix the circuit layer
-# representation with pulse level operations.
+# representation with pulse-level operations.
 # This can be useful for experiments involving pulses not easily represented by Gates,
 # such as the Chevron experiment.
 # In this experiment, we want to vary the length and amplitude of a square pulse between
 # X gates on a pair of qubits.
 
 # %%
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 
 sched = Schedule("Chevron Experiment")
 acq_idx = 0
 
-# NB multiples of 4 ns need to be used due to limitations of the pulsars
-for duration in np.linspace(20e-9, 60e-9, 6):
-    for amp in np.linspace(0.1, 1.0, 10):
+# NB multiples of 4 ns need to be used due to sampling rate of the Qblox modules
+for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
+    for amp in np.linspace(start=0.1, stop=1.0, num=10):
         begin = sched.add(Reset("q0", "q1"))
         sched.add(X("q0"), ref_op=begin, ref_pt="end")
-        # NB we specify a clock for tutorial purposes,
-        # Chevron experiments do not necessarily use modulated square pulses
+        # NB we specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
         square = sched.add(SquarePulse(amp, duration, "q0:mw", clock="q0.01"))
         sched.add(X90("q0"), ref_op=square)
         sched.add(X90("q1"), ref_op=square)
-        sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
+        sched.add(
+            Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
         sched.add(
             Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx}", ref_pt="start"
         )
 
         acq_idx += 1
 
-
-sched.add_resources([ClockResource("q0.01", 6.02e9)])  # manually add the pulse clock
+sched.add_resources([ClockResource("q0.01", 6.02e9)])  # Manually add the pulse clock
 
 # %%
 fig, ax = sched.plot_circuit_diagram()
@@ -379,7 +383,7 @@ for t in ax.texts:
 #
 #     When adding a Pulse to a schedule, the clock is not automatically added to the
 #     resources of the schedule. It may be necessary to add this clock manually, as in
-#     the final line of the above example
+#     the final line of the example above.
 #
 # Rather than first using :func:`~quantify_scheduler.compilation.device_compile` and subsequently
 # :func:`~quantify_scheduler.compilation.hardware_compile`, the two function calls can be combined using

@@ -38,7 +38,7 @@ quantify-scheduler
     :target: http://unitary.fund
     :alt: Unitary Fund
 
-.. figure:: https://orangeqs.com/logos/QUANTIFY_LANDSCAPE.svg
+.. figure:: /images/QUANTIFY_LANDSCAPE.svg
     :align: center
     :alt: Quantify logo
 
