@@ -1140,6 +1140,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
+
     @staticmethod
     def downconvert_clock(downconverter_freq: float, clock_freq: float):
         """ "
@@ -1392,10 +1393,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         return acq_mapping if len(acq_mapping) > 0 else None
 
 
-
-
-
-
 class QbloxBasebandModule(QbloxBaseModule):
     """
     Abstract class with all the shared functionality between the QRM and QCM baseband
@@ -1442,7 +1439,9 @@ class QbloxBasebandModule(QbloxBaseModule):
             return
 
         clock_freq = container.resources[sequencer.clock]["freq"]
-        lo_compiler = container.instrument_compilers.get(sequencer.associated_ext_lo, None)
+        lo_compiler = container.instrument_compilers.get(
+            sequencer.associated_ext_lo, None
+        )
         if lo_compiler is None:
             sequencer.frequency = clock_freq
             return
@@ -1450,7 +1449,9 @@ class QbloxBasebandModule(QbloxBaseModule):
         if_freq = sequencer.frequency
         lo_freq = lo_compiler.frequency
 
-        clock_freq = QbloxBaseModule.downconvert_clock(sequencer.downconverter_freq, clock_freq)
+        clock_freq = QbloxBaseModule.downconvert_clock(
+            sequencer.downconverter_freq, clock_freq
+        )
 
         if lo_freq is None and if_freq is None:
             raise ValueError(
@@ -1469,6 +1470,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         if if_freq != 0 and if_freq is not None:
             sequencer.settings.nco_en = True
+
 
 class QbloxRFModule(QbloxBaseModule):
     """
@@ -1541,7 +1543,9 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
-            clock_freq = QbloxBaseModule.downconvert_clock(sequencer.downconverter_freq,clock_freq)
+            clock_freq = QbloxBaseModule.downconvert_clock(
+                sequencer.downconverter_freq, clock_freq
+            )
 
             if if_freq is not None:
                 new_lo_freq = clock_freq - if_freq
