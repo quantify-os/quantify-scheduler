@@ -1,7 +1,7 @@
 .. _sec-backend-qblox:
 
 Backend: Qblox
-=============
+==============
 
 .. warning::
     The :mod:`quantify_scheduler.backends.qblox_backend` is still under development.
