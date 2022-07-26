@@ -243,7 +243,7 @@ def test_schedule_from_json():
     assert schedule.data == result.data
 
 
-@pytest.mark.xfail(reason="json serialization error", strict=True)
+@pytest.mark.xfail(reason="json serialization issue for schedules", strict=True)
 def test_spec_schedule_from_json():
     # Arrange
     schedule = heterodyne_spec_sched(

@@ -304,6 +304,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
 
 def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
     schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
+    quantum_device = mock_setup["quantum_device"]
 
     # Prepare the mock data the t1 schedule
     acq_metadata = AcquisitionMetadata(
@@ -341,8 +342,8 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
     assert gettable.is_initialized is True
 
     with zipfile.ZipFile(filename, mode="r") as zf:
-        dev_cfg = json.loads(zf.read("dev_config.json").decode())
-        hw_cfg = json.loads(zf.read("hw_config.json").decode())
+        dev_cfg = json.loads(zf.read("device_cfg.json").decode())
+        hw_cfg = json.loads(zf.read("hardware_cfg.json").decode())
         get_cfg = json.loads(zf.read("gettable.json").decode())
         sched = Schedule.from_json(zf.read("schedule.json").decode())
         snap = json.loads(zf.read("snapshot.json").decode())

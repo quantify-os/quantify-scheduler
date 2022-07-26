@@ -349,11 +349,11 @@ class ScheduleGettable:
         ) as zip_file:
             zip_file.writestr("time.txt", str(time.time()))
             zip_file.writestr(
-                "dev_config.json",
+                "device_cfg.json",
                 json.dumps(dev_config, cls=NumpyJSONEncoder, indent=4),
             )
             zip_file.writestr(
-                "hw_config.json", json.dumps(hw_config, cls=NumpyJSONEncoder, indent=4)
+                "hardware_cfg.json", json.dumps(hw_config, cls=NumpyJSONEncoder, indent=4)
             )
             zip_file.writestr(
                 "gettable.json",
