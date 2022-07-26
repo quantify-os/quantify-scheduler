@@ -397,13 +397,70 @@ def hermite(
     t: np.ndarray,
     duration: float,
     amplitude: float,
+    phase: float,
+    pi2_pulse: bool = False,
+    center: Optional[float] = None,
+    duration_over_T = 6,
+) -> np.ndarray:
+    """Generates a hermite pulse for single qubit rotations in NV centers.
+
+    A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
+    See H.K.C. Beukers MSc Thesis (2019), Appendix A.2.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    duration
+        Duration of the pulse in seconds.
+    amplitude
+        Amplitude of the pulse.
+    phase
+        Phase of the pulse in degrees.
+    pi2_pulse
+        if True, the pulse will be pi/2 otherwise pi pulse
+    center
+        Optional: time after which the pulse center occurs. If ``None``, it is
+        automatically set to duration/2.
+    duration_over_T
+        Ratio of the pulse duration and the characteristic time of the hermite
+        polynomial. Increasing this number will compress the pulse. By default, 6.
+
+    Returns
+    -------
+    :
+        complex waveform
+
+    """
+    return skewed_hermite(
+        t=t,
+        duration=duration,
+        amplitude=amplitude,
+        phase=phase,
+        pi2_pulse=pi2_pulse,
+        center=center,
+        duration_over_T=duration_over_T,
+        skewness=0,
+    )
+
+def skewed_hermite(
+    t: np.ndarray,
+    duration: float,
+    amplitude: float,
     skewness: float,
     phase: float,
     pi2_pulse: bool = False,
     center: Optional[float] = None,
+    duration_over_T: float = 6.,
 ) -> np.ndarray:
-    """
-    Generates a skewed hermite pulse for single qubit rotation of diamond qubits.
+    """Generates a skewed hermite pulse for single qubit rotations in NV centers.
+
+    The skew parameter is a first order amplitude correction to the hermite pulse (see
+    :func:`hermite`). It increases the fidelity of the performed gates.
+    See H.K.C.Beukers MSc Thesis (2019), section 4.2.
+
+    The hermite factors are taken from equation 44 and 45 of
+    :cite:t:`Warren_NMR_pulse_shapes_1984`.
 
     Parameters
     ----------
@@ -415,10 +472,16 @@ def hermite(
         Amplitude of the pulse.
     skewness
         Skewness in the frequency space
+    phase
+        Phase of the pulse in degrees.
     pi2_pulse
         if True, the pulse will be pi/2 otherwise pi pulse
     center
-        Optional: center of the pulse, if not passed assumed to be duration/2
+        Optional: time after which the pulse center occurs. If ``None``, it is
+        automatically set to duration/2.
+    duration_over_T
+        Ratio of the pulse duration and the characteristic time of the hermite
+        polynomial. Increasing this number will compress the pulse. By default, 6.
 
     Returns
     -------
@@ -430,24 +493,23 @@ def hermite(
     PI_HERMITE_FACTOR = 0.956
     PI2_HERMITE_FACTOR = 0.667
 
-    t_hermite = 0.1667 * duration
-
-    if pi2_pulse:
-        hermite_factor = PI2_HERMITE_FACTOR
-    else:
-        hermite_factor = PI_HERMITE_FACTOR
-
+    # Determine parameters based on switches:
+    #   - characteristic time of hermite polynomial
+    #   - hermite factor
+    #   - center position of pulse
+    t_hermite = duration / duration_over_T
+    hermite_factor = PI2_HERMITE_FACTOR if pi2_pulse else PI_HERMITE_FACTOR
     if center is None:
-        center = duration / 2
-    else:
-        center = center
+        center = duration / 2.
 
-    actual_center = center + t[0]
+    # normalize time array for easier evaluation
+    center_total = center + t[0]
+    normalized_time = (t - center_total) / t_hermite
 
-    normalized_time = (t - actual_center) / t_hermite
-
+    # Hermite pulse with zero skewness
     h_t = (1 - hermite_factor * normalized_time**2) * np.exp(-(normalized_time**2))
 
+    # I and Q components
     I = amplitude * h_t
     Q = (
         amplitude
@@ -456,9 +518,9 @@ def hermite(
         * (hermite_factor + 1 - hermite_factor * normalized_time**2)
         * np.exp(-(normalized_time**2))
     )
-
     hermite = I + 1j * Q
 
+    # Rotate pulse to get correct phase
     rotated_hermite = rotate_wave(hermite, phase)
 
     return rotated_hermite
