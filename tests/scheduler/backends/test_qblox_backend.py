@@ -1433,7 +1433,7 @@ def test_assign_frequencies_baseband_downconverter(
     ), f"LO frequency of channel 0 {status} downconversion must be equal to {expected_lo0} but it is equal to {actual_lo0}"
     assert (
         expected_if1 == actual_if1
-    ), f"Modulation frequency of channel 1 {status} downconversion must be equal to {expected_if1} but it is equal to {actual_if1} "
+    ), f"Modulation frequency of channel 1 {status} downconversion must be equal to {expected_if1} but it is equal to {actual_if1}"
 
 
 def test_assign_frequencies_rf():

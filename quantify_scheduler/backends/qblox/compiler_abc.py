@@ -1166,11 +1166,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             return clock_freq
 
         if downconverter_freq < 0:
-            raise ValueError(f"Downconverter frequency must be positive.")
+            raise ValueError("Downconverter frequency must be positive.")
 
         if downconverter_freq < clock_freq:
             raise ValueError(
-                "Downconverter frequency specified for the portclock must be greater than its clock frequency."
+                "Downconverter frequency specified for this port and clock combination"
+                "must be greater than its clock frequency."
             )
 
         return downconverter_freq - clock_freq
@@ -1411,6 +1412,17 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
 
     def assign_frequencies(self, sequencer: Sequencer):
+        """
+        Assigns frequencies for baseband modules.
+
+        """
+        if self.is_pulsar:
+            self.assign_frequency_with_ext_lo(sequencer, self.parent)
+        else:
+            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+
+    @staticmethod
+    def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         r"""
         Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1428,13 +1440,7 @@ class QbloxBasebandModule(QbloxBaseModule):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-        if self.is_pulsar:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent)
-        else:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
-    @staticmethod
-    def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         if sequencer.clock not in container.resources:
             return
 
