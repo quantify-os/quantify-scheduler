@@ -1414,7 +1414,6 @@ class QbloxBasebandModule(QbloxBaseModule):
     def assign_frequencies(self, sequencer: Sequencer):
         """
         Assigns frequencies for baseband modules.
-
         """
         if self.is_pulsar:
             self.assign_frequency_with_ext_lo(sequencer, self.parent)
