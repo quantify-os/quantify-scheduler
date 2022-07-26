@@ -259,8 +259,8 @@ def test_pulse_compilation_spec_pulse_microwave():
     # Operation is added twice to schedulables and has no timing information yet.
     assert label1 in schedule.schedulables
     assert label2 in schedule.schedulables
-    assert 'abs_time' not in schedule.schedulables[label1].data.keys()
-    assert 'abs_time' not in schedule.schedulables[label2].data.keys()
+    assert 'abs_time' not in schedule.schedulables[label1].data.keys() or schedule.schedulables[label1].data['abs_time'] is None
+    assert 'abs_time' not in schedule.schedulables[label2].data.keys() or schedule.schedulables[label2].data['abs_time'] is None
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
