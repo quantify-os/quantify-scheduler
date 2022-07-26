@@ -14,19 +14,18 @@ quantify-scheduler.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Tuple, Union, List, Optional
-
-import logging
-
 import json
-import numpy as np
+import logging
 import os
-from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
-from quantify_core.utilities.general import save_json
-from qcodes import Parameter
-from qcodes.utils.helpers import NumpyJSONEncoder
 import time
 import zipfile
+from typing import Any, Callable, Dict, Tuple, Union, List, Optional
+
+import numpy as np
+from qcodes import Parameter
+from qcodes.utils.helpers import NumpyJSONEncoder
+
+from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import qcompile
@@ -307,26 +306,27 @@ class ScheduleGettable:
     ) -> str:
         """
         Create a report that saves all information contained in this `ScheduleGettable` and save it in the quantify
-        datadir with its own tuid. The information in the report includes the generated schedule, device config,
+        datadir with its own `tuid`. The information in the report includes the generated schedule, device config,
         hardware config and snapshot of the instruments.
 
         Parameters
         ----------
         execute_get
-            When True, execute `self.get()` before generating the report
+            When ``True``, executes ``self.get()`` before generating the report.
         update
-            When True, update all parameters before saving the snapshot
+            When ``True``, updates all parameters before saving the snapshot.
 
         Returns
         -------
-            returns the tuid of the generated report
+        :
+            The `tuid` of the generated report.
         """
         tuid = gen_tuid()
         if execute_get:
             self.get()
         if not self.is_initialized:
             raise RuntimeError(
-                "generate_diagnostics_report can only run on initialized ScheduleGettables. "
+                "`generate_diagnostics_report` can only run for an initialized `ScheduleGettable`. "
                 "Please initialize manually or run with `execute_get=True`"
             )
 

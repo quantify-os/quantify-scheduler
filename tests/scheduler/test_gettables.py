@@ -9,10 +9,10 @@ from collections import namedtuple
 from typing import Any, Dict, Tuple
 
 import json
-import numpy as np
-import os
-import pytest
 import zipfile
+
+import numpy as np
+import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.compilation import qcompile
@@ -29,7 +29,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
-from quantify_core.data.handling import get_datadir
 
 # this is taken from the qblox backend and is used to make the tuple indexing of
 # acquisitions more explicit. See also #179 of quantify-scheduler
@@ -304,11 +303,6 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
 
 
 def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
-    meas_ctrl = mock_setup["meas_ctrl"]
-    quantum_device = mock_setup["quantum_device"]
-
-    qubit = quantum_device.get_component("q0")
-
     schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
 
     # Prepare the mock data the t1 schedule
