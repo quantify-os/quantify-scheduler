@@ -348,6 +348,7 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
         sched = Schedule.from_json(zf.read("schedule.json").decode())
         snap = json.loads(zf.read("snapshot.json").decode())
 
+    assert "init_duration" in snap["instruments"]["q0"]["parameters"]
     assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
     assert gettable._compiled_schedule == qcompile(
         sched, device_cfg=dev_cfg, hardware_cfg=hw_cfg
