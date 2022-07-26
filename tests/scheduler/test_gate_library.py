@@ -220,7 +220,7 @@ def get_nv_device_config():
 
     spec_mw_cfg = OperationCompilationConfig(
         factory_func="quantify_scheduler.operations.pulse_factories.nv_spec_pulse_mw",
-        factory_kwargs={"duration": 15e-6, "amplitude": 1, "clock": "qe0.01", "port": "mw"},
+        factory_kwargs={"duration": 15e-6, "amplitude": 1, "clock": "qe0.clock_freqs.spec", "port": "mw"},
     )
 
     cfg_dict = {
@@ -232,7 +232,7 @@ def get_nv_device_config():
             }
         },
         "clocks": {
-            f"qe.01": 50e6,
+            f"qe0.clock_freqs.spec": 50e6,
         },
         "edges": {},
     }
@@ -241,17 +241,15 @@ def get_nv_device_config():
 
 def test_pulse_compilation_spec_pulse_microwave():
     schedule = Schedule(name="Spec Pulse", repetitions=1)
-    schedule.add_resource(ClockResource(name="qe0.01", freq=1e9))
 
-    # TODO: are the arguments to SpecPulseMicrowave even needed?
     label1 = "MW pi pulse 1"
     label2 = "MW pi pulse 2"
-    _ = schedule.add(SpecPulseMicrowave("qe0", "qe0.01"), label=label1)
-    _ = schedule.add(SpecPulseMicrowave("qe0", "qe0.01"), label=label2)
+    _ = schedule.add(SpecPulseMicrowave("qe0"), label=label1)
+    _ = schedule.add(SpecPulseMicrowave("qe0"), label=label2)
 
     # SpecPulseMicrowave is added to the operations.
     # It has "gate_info", but no "pulse_info" yet.
-    spec_pulse_str = str(SpecPulseMicrowave("qe0", "qe0.01"))
+    spec_pulse_str = str(SpecPulseMicrowave("qe0"))
     assert spec_pulse_str in schedule.operations
     assert "gate_info" in schedule.operations[spec_pulse_str]
     assert schedule.operations[spec_pulse_str]["pulse_info"] == []

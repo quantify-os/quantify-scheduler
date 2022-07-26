@@ -49,7 +49,7 @@ class Ports(InstrumentChannel):
             initial_cache_value=f"{parent.name}:spd",
             set_cmd=False,
         )
-        """Name of the element's microwave port."""
+        """Name of the element's single-photon detector port."""
 
 class ClocksFrequencies(InstrumentChannel):
     """
@@ -94,6 +94,17 @@ class ClocksFrequencies(InstrumentChannel):
         """Resonance frequency of the spin conserving transition from ground
         state |g> to excited state |e> for triplet spin state |1> electrons
         :cite:t:`DOHERTY20131`."""
+
+        self.spec= ManualParameter(
+            name="spec",
+            label="Spectroscopy frequency",
+            unit="Hz",
+            instrument=self,
+            initial_value=float("nan"),
+            vals=Numbers(min_value=1e9, max_value=1e10, allow_nan=True),
+        )
+        """Parameter that is swept for a spectroscopy measurement. It does not track
+        properties of the device element."""
 
 class CRcheck(InstrumentChannel):
     """
