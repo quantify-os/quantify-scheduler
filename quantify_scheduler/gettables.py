@@ -353,7 +353,8 @@ class ScheduleGettable:
                 json.dumps(device_cfg, cls=NumpyJSONEncoder, indent=4),
             )
             zip_file.writestr(
-                "hardware_cfg.json", json.dumps(hardware_cfg, cls=NumpyJSONEncoder, indent=4)
+                "hardware_cfg.json",
+                json.dumps(hardware_cfg, cls=NumpyJSONEncoder, indent=4),
             )
             zip_file.writestr(
                 "gettable.json",
