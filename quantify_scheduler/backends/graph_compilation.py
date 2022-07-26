@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 
-from typing import Any, Callable, Dict, List, Optional, Union, Type, Tuple, Callable
+from typing import Callable, Dict, List, Optional, Union, Tuple
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -11,7 +11,10 @@ from quantify_scheduler.helpers.importers import import_python_object_from_strin
 
 
 class CompilationError(RuntimeError):
-    # custom exception class for failures in compilation
+    """
+    Custom exception class for failures in compilation of quantify schedules.
+    """
+
     pass
 
 
