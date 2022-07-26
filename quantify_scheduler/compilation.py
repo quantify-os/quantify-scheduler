@@ -21,6 +21,7 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     SoftSquarePulse,
     SquarePulse,
+    ResetClockPhase,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
@@ -217,7 +218,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                 acq_protocol = (
                     op["gate_info"]["acq_protocol"] or q_cfg["params"]["acquisition"]
                 )
-
+                if op["gate_info"]["reset_clock_phase"]:
+                    op.add_pulse(ResetClockPhase(clock=q_cfg["resources"]["clock_ro"]))
                 if acq_protocol == "SSBIntegrationComplex":
                     # readout pulse
                     op.add_pulse(
@@ -226,7 +228,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
-                            reset_clock_phase=op["gate_info"]["reset_clock_phase"],
+                            # reset_clock_phase=op["gate_info"]["reset_clock_phase"],
                         )
                     )
                     op.add_acquisition(
@@ -258,7 +260,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                             duration=q_cfg["params"]["ro_pulse_duration"],
                             port=q_cfg["resources"]["port_ro"],
                             clock=q_cfg["resources"]["clock_ro"],
-                            reset_clock_phase=op["gate_info"]["reset_clock_phase"],
+                            # reset_clock_phase=op["gate_info"]["reset_clock_phase"],
                         )
                     )
                     # pylint: disable=fixme

@@ -56,6 +56,42 @@ class ShiftClockPhase(Operation):
         return self._get_signature(pulse_info)
 
 
+class ResetClockPhase(Operation):
+    """An operation that resets the phase of a clock."""
+
+    def __init__(self, clock: str, t0: float = 0, data: Optional[dict] = None):
+        """
+        Create a new instance of ShiftClockPhase.
+
+        Parameters
+        ----------
+        clock
+            The clock of which to reset the phase.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            data = {
+                "name": "ResetClockPhase",
+                "pulse_info": [
+                    {
+                        "wf_func": None,
+                        "clock": clock,
+                        "t0": t0,
+                        "duration": 0,
+                        "port": None,
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 class IdlePulse(Operation):
     """
     The IdlePulse Operation is a placeholder for a specified duration of time.
