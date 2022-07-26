@@ -282,10 +282,16 @@ class SerialBackend(CompilationBackend):
             dictionary.
         """
         self.construct_graph(config=config)
-        try:
-            path = nx.shortest_path(self, self.input_node, self.output_node)
-        except nx.exception.NetworkXNoPath as e:
-            raise CompilationError("No path between the input and output nodes") from e
+        # if there is only 1 node there is no shortest_path defined
+        if self.input_node == self.output_node:
+            path = [self.input_node]
+        else:
+            try:
+                path = nx.shortest_path(self, self.input_node, self.output_node)
+            except nx.exception.NetworkXNoPath as e:
+                raise CompilationError(
+                    "No path between the input and output nodes"
+                ) from e
 
         # exclude the input and output from the path to use to compile
         for i, node in enumerate(path):

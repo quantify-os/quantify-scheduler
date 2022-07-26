@@ -61,6 +61,7 @@ def determine_absolute_timing(
         a new schedule object where the absolute time for each operation has been
         determined.
     """
+
     if len(schedule.schedulables) == 0:
         raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
 
@@ -129,7 +130,7 @@ def determine_absolute_timing(
 
 def _find_edge(device_cfg, q0, q1, op_name):
     try:
-        edge_cfg = device_cfg["edges"]["{}-{}".format(q0, q1)]
+        edge_cfg = device_cfg["edges"][f"{q0}-{q1}"]
     except KeyError as e:
         raise ValueError(
             f"Attempting operation '{op_name}' on qubits {q0} and {q1} which lack a"
@@ -523,22 +524,12 @@ def qcompile(
         device_cfg, hardware_cfg
     )
 
-    backend_class = import_python_object_from_string(compilation_config.backend)
-    backend = backend_class(name=compilation_config.name)
-    compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
-
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    if device_cfg is not None:
-        schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    else:
-        schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
-
-    if hardware_cfg is not None:
-        compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
-    else:
-        compiled_schedule = CompiledSchedule(schedule)
+    backend_class = import_python_object_from_string(compilation_config.backend)
+    backend = backend_class(name=compilation_config.name)
+    compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
 
     return compiled_schedule
 
