@@ -1141,7 +1141,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
     @staticmethod
-    def downconvert_clock(self, downconverter_freq: float, clock_freq: float):
+    def downconvert_clock(downconverter_freq: float, clock_freq: float):
         """ "
         Downconverts clock frequency.
 
@@ -1149,7 +1149,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ----------
         downconverter_freq
             Frequency of the downconverter.
-        clk_freq
+        clock_freq
             clock frequency that is being downconverted.
 
         Raises
@@ -1157,22 +1157,22 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ValueError
             When downconverter frequency is negative.
         ValueError
-            When downconverter frequency is less than clk_freq.
+            When downconverter frequency is less than the clock frequency.
         ------
         """
 
         if downconverter_freq == 0:
-            return clk_freq
+            return clock_freq
 
         if downconverter_freq < 0:
             raise ValueError(f"Downconverter frequency must be positive.")
 
-        if downconverter_freq < clk_freq:
+        if downconverter_freq < clock_freq:
             raise ValueError(
                 "Downconverter frequency specified for the portclock must be greater than its clock frequency."
             )
 
-        return downconverter_freq - clk_freq
+        return downconverter_freq - clock_freq
 
     def prepare(self) -> None:
         """
@@ -1393,41 +1393,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
 
 
-def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
-    if sequencer.clock not in container.resources:
-        return
 
-    clk_freq = container.resources[sequencer.clock]["freq"]
-    lo_compiler = container.instrument_compilers.get(sequencer.associated_ext_lo, None)
-    if lo_compiler is None:
-        sequencer.frequency = clk_freq
-        return
-
-    if_freq = sequencer.frequency
-    lo_freq = lo_compiler.frequency
-
-    """Downconvert the clock frequency if the downconverter frequency is non-zero (otherwise leave it unchanged)
-       and calculate the LO/IF frequencies."""
-
-    clock_freq = QbloxBaseModule.downconvert_clock(sequencer.downconverter_freq, clock_freq)
-
-    if lo_freq is None and if_freq is None:
-        raise ValueError(
-            f"Frequency settings underconstraint for sequencer {sequencer.name} "
-            f"with port {sequencer.port} and clock {sequencer.clock}. When using "
-            f"an external local oscillator it is required to either supply an "
-            f'"lo_freq" or an "interm_freq". Neither was given.'
-        )
-
-    if if_freq is not None:
-        lo_compiler.frequency = clk_freq - if_freq
-
-    if lo_freq is not None:
-        if_freq = clk_freq - lo_freq
-        sequencer.frequency = if_freq
-
-    if if_freq != 0 and if_freq is not None:
-        sequencer.settings.nco_en = True
 
 
 class QbloxBasebandModule(QbloxBaseModule):
@@ -1466,10 +1432,43 @@ class QbloxBasebandModule(QbloxBaseModule):
             :code:`None` values.
         """
         if self.is_pulsar:
-            _assign_frequency_with_ext_lo(sequencer, self.parent)
+            self.assign_frequency_with_ext_lo(sequencer, self.parent)
         else:
-            _assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
+    @staticmethod
+    def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
+        if sequencer.clock not in container.resources:
+            return
+
+        clock_freq = container.resources[sequencer.clock]["freq"]
+        lo_compiler = container.instrument_compilers.get(sequencer.associated_ext_lo, None)
+        if lo_compiler is None:
+            sequencer.frequency = clock_freq
+            return
+
+        if_freq = sequencer.frequency
+        lo_freq = lo_compiler.frequency
+
+        clock_freq = QbloxBaseModule.downconvert_clock(sequencer.downconverter_freq, clock_freq)
+
+        if lo_freq is None and if_freq is None:
+            raise ValueError(
+                f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
+                f"an external local oscillator it is required to either supply an "
+                f'"lo_freq" or an "interm_freq". Neither was given.'
+            )
+
+        if if_freq is not None:
+            lo_compiler.frequency = clock_freq - if_freq
+
+        if lo_freq is not None:
+            if_freq = clock_freq - lo_freq
+            sequencer.frequency = if_freq
+
+        if if_freq != 0 and if_freq is not None:
+            sequencer.settings.nco_en = True
 
 class QbloxRFModule(QbloxBaseModule):
     """
@@ -1513,7 +1512,7 @@ class QbloxRFModule(QbloxBaseModule):
         if sequencer.clock not in resources:
             return
 
-        clk_freq = resources[sequencer.clock]["freq"]
+        clock_freq = resources[sequencer.clock]["freq"]
 
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
@@ -1542,13 +1541,10 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
-            """Downconvert the clock frequency if the downconverter frequency is non-zero 
-             (otherwise leave it unchanged) and calculate the LO/IF frequencies."""
-            downconverter_freq = sequencer.downconverter_freq
-            clk_freq = downconvert_clock_frequency(downconverter_freq,clk_freq)
+            clock_freq = QbloxBaseModule.downconvert_clock(sequencer.downconverter_freq,clock_freq)
 
             if if_freq is not None:
-                new_lo_freq = clk_freq - if_freq
+                new_lo_freq = clock_freq - if_freq
                 if lo_freq is not None and new_lo_freq != lo_freq:
                     raise ValueError(
                         f"Attempting to set 'lo{complex_output}_freq' to frequency "
@@ -1561,7 +1557,7 @@ class QbloxRFModule(QbloxBaseModule):
                     self._settings.lo1_freq = new_lo_freq
 
             if lo_freq is not None:
-                sequencer.frequency = clk_freq - lo_freq
+                sequencer.frequency = clock_freq - lo_freq
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
