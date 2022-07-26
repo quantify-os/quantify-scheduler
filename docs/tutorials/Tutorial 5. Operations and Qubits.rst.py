@@ -15,19 +15,19 @@
 # %% [raw]
 # .. _sec-tutorial5:
 #
-# Tutorial 5. Operations and Qubits
+# Tutorial: Operations and Qubits
 # =================================
 #
 #  .. jupyter-kernel::
-#    :id: Tutorial 5. Operations and Qubits
+#    :id: Tutorial: Operations and Qubits
 #
 # .. seealso::
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download-notebook:`Tutorial 5. Operations and Qubits`
+#     :jupyter-download-notebook:`Tutorial: Operations and Qubits`
 #
-#     :jupyter-download-script:`Tutorial 5. Operations and Qubits`
+#     :jupyter-download-script:`Tutorial: Operations and Qubits`
 
 # %% [raw]
 # Gates, measurements and qubits

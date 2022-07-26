@@ -1,6 +1,6 @@
 .. _sec-backend-qblox:
 
-Qblox Backend
+Backend: Qblox
 =============
 
 .. warning::

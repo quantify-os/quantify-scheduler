@@ -15,19 +15,19 @@
 # %% [raw]
 # .. _sec-tutorial1:
 #
-# Tutorial 1. Schedules and pulses
+# Tutorial: Schedules and pulses
 # ================================
 #
 # .. jupyter-kernel::
-#   :id: Tutorial 1. Schedules and pulses
+#   :id: Tutorial: Schedules and pulses
 #
 # .. seealso::
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download-notebook:`Tutorial 1. Schedules and pulses`
+#     :jupyter-download-notebook:`Tutorial: Schedules and pulses`
 #
-#     :jupyter-download-script:`Tutorial 1. Schedules and pulses`
+#     :jupyter-download-script:`Tutorial: Schedules and pulses`
 
 # %% [raw]
 # The Schedule
