@@ -222,6 +222,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                     op.add_pulse(ResetClockPhase(clock=q_cfg["resources"]["clock_ro"]))
                 if acq_protocol == "SSBIntegrationComplex":
                     # readout pulse
+                    # -> phase and reset_clock_phase
                     op.add_pulse(
                         SquarePulse(
                             amp=q_cfg["params"]["ro_pulse_amp"],
@@ -368,6 +369,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             )
 
             op.add_pulse(pulse)
+
         elif op_type == "reset":
             # Initialization through relaxation
             qubits = op["gate_info"]["qubits"]
@@ -378,6 +380,8 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                 )
             op.add_pulse(IdlePulse(max(init_times)))
 
+        elif op_type == "reset clock phase":
+            continue
         else:
             raise NotImplementedError(
                 'Operation type "{}" not supported by backend'.format(

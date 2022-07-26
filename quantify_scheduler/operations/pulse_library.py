@@ -15,6 +15,10 @@ from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
 
+class ResetClockPhase(Operation):
+    raise NotImplementedError()
+
+
 class ShiftClockPhase(Operation):
     """An operation that shifts the phase of a clock by a specified amount."""
 

@@ -65,10 +65,14 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        phase = self.operation_info.data["phase"]
-        phase_args = helpers.get_nco_phase_arguments(phase)
-        qasm_program.emit(
-            q1asm_instructions.INCR_NCO_PHASE_OFFSET,
-            *phase_args,
-            comment=f"increment nco phase by {phase:.2f} deg",
-        )
+        phase = self.operation_info.data.get("phase")
+        reset_clock_phase = self.operation_info.data.get("reset_clock_phase")
+        if phase is not None:
+            phase_args = helpers.get_nco_phase_arguments(phase)
+            qasm_program.emit(
+                q1asm_instructions.INCR_NCO_PHASE_OFFSET,
+                *phase_args,
+                comment=f"increment nco phase by {phase:.2f} deg",
+            )
+        elif reset_clock_phase is not None:
+            qasm.emit(q1asm_instructions.RESET_PHASE)
