@@ -908,7 +908,7 @@ class HermitePulse(Operation):
                 "name": "hermite",
                 "pulse_info": [
                     {
-                        "wf_func": "qutech_diamond_control.operations.waveforms.skewed_hermite",
+                        "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
                         "duration": duration,
                         "amplitude": amplitude,
                         "skewness": skewness,

@@ -35,31 +35,13 @@ class Ports(InstrumentChannel):
         )
         """Name of the element's microwave port."""
 
-        self.redlaser_ge0 = Parameter(
-            name="redlaser_ge0",
+        self.optical = Parameter(
+            name="optical",
             instrument=self,
-            initial_cache_value=f"{parent.name}:laser_ge0",
+            initial_cache_value=f"{parent.name}:opt",
             set_cmd=False,
         )
-        """Name of the element's red laser port which is in resonance of the
-        |g> -> |e> transition in the spin 0 state."""
-
-        self.redlaser_ge1 = Parameter(
-            name="redlaser_ge1",
-            instrument=self,
-            initial_cache_value=f"{parent.name}:laser_ge1",
-            set_cmd=False,
-        )
-        """Name of the element's red laser port which is in resonance of the
-        |g> -> |e> transition in the spin 1 state."""
-
-        self.greenlaser = Parameter(
-            name="greenlaser",
-            instrument=self,
-            initial_cache_value=f"{parent.name}:green_laser",
-            set_cmd=False,
-        )
-        """Name of the element's green laser port for the charge reset."""
+        """Name of the element's optical port."""
 
         self.readout = Parameter(
             name="readout",
@@ -85,7 +67,9 @@ class ClocksFrequencies(InstrumentChannel):
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
-        f"""Frequency of the {parent.name}.01 clock."""
+        """Microwave frequency to resonantly drive the electron spin state of a
+        negatively charged diamond NV center from |0> to |1> :cite:t:`DOHERTY20131`.
+        """
 
         self.ge0= ManualParameter(
             name="ge0",
@@ -95,7 +79,9 @@ class ClocksFrequencies(InstrumentChannel):
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
-        f"""Frequency of the {parent.name}.ge0 clock."""
+        """Resonance frequency of the spin conserving transition from ground
+        state |g> to excited state |e> for singlet spin state |0> electrons
+        :cite:t:`DOHERTY20131`."""
 
         self.ge1= ManualParameter(
             name="ge1",
@@ -105,7 +91,9 @@ class ClocksFrequencies(InstrumentChannel):
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
-        f"""Frequency of the {parent.name}.ge1 clock."""
+        """Resonance frequency of the spin conserving transition from ground
+        state |g> to excited state |e> for triplet spin state |1> electrons
+        :cite:t:`DOHERTY20131`."""
 
 class CRcheck(InstrumentChannel):
     """
@@ -350,7 +338,7 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_kwargs={
                         "amp": self.reset.power(),
                         "duration": self.reset.duration(),
-                        "port": self.ports.redlaser_ge0(),
+                        "port": self.ports.optical(),
                         "clock": f"{self.name}.ge0",
                     },
                 ),
