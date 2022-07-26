@@ -135,7 +135,9 @@ sched
 # %%
 from quantify_core.data import handling as dh
 
-dh.set_datadir(dh.default_datadir())  # Or: from pathlib import Path; dh.set_datadir(Path.home() / "quantify-data")
+dh.set_datadir(
+    dh.default_datadir()
+)  # Or: from pathlib import Path; dh.set_datadir(Path.home() / "quantify-data")
 
 # %%
 from quantify_scheduler.compilation import determine_absolute_timing, hardware_compile

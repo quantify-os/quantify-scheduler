@@ -128,9 +128,7 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     sched.add(CZ(q0, q1))
     sched.add(Rxy(theta=theta, phi=0, qubit=q0))
 
-    sched.add(
-        Measure(q0, acq_index=acq_idx),
-        label="M q0 {:.2f} deg".format(theta))
+    sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
     sched.add(
         Measure(q1, acq_index=acq_idx),
         label="M q1 {:.2f} deg".format(theta),
@@ -358,8 +356,7 @@ for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
         square = sched.add(SquarePulse(amp, duration, "q0:mw", clock="q0.01"))
         sched.add(X90("q0"), ref_op=square)
         sched.add(X90("q1"), ref_op=square)
-        sched.add(
-            Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
+        sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
         sched.add(
             Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx}", ref_pt="start"
         )
