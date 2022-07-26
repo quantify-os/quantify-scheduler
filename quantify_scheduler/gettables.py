@@ -330,8 +330,8 @@ class ScheduleGettable:
                 "Please initialize manually or run with `execute_get=True`"
             )
 
-        dev_config = self.quantum_device.generate_device_config().dict()
-        hw_config = self.quantum_device.generate_hardware_config()
+        device_cfg = self.quantum_device.generate_device_config().dict()
+        hardware_cfg = self.quantum_device.generate_hardware_config()
 
         gettable_config = {
             "repetitions": self.quantum_device.cfg_sched_repetitions(),
@@ -350,10 +350,10 @@ class ScheduleGettable:
             zip_file.writestr("time.txt", str(time.time()))
             zip_file.writestr(
                 "device_cfg.json",
-                json.dumps(dev_config, cls=NumpyJSONEncoder, indent=4),
+                json.dumps(device_cfg, cls=NumpyJSONEncoder, indent=4),
             )
             zip_file.writestr(
-                "hardware_cfg.json", json.dumps(hw_config, cls=NumpyJSONEncoder, indent=4)
+                "hardware_cfg.json", json.dumps(hardware_cfg, cls=NumpyJSONEncoder, indent=4)
             )
             zip_file.writestr(
                 "gettable.json",
