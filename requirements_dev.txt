@@ -14,6 +14,8 @@ sphinx-autobuild
 sphinx-togglebutton
 sphinx-autodoc-typehints==1.12.0 # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
 sphinx-autoapi
+myst-parser
+myst-nb
 twine==1.14.0
 pytest
 pytest-runner

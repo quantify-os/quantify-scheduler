@@ -4,6 +4,9 @@ Changelog
 
 Unreleased
 ----------
+
+* Compilation - Compilation is now a graph. (#305, !407)
+* Docs - Support for myst_nb added (#301, !407)
 * Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration.
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
