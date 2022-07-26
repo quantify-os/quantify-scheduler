@@ -13,13 +13,13 @@
 # ---
 
 # %% [raw]
-# .. _sec-tutorial3:
+# .. _sec-tutorial-compiling:
 #
-# Tutorial: Compilation and hardware execution
-# ==============================================
+# Tutorial: Compiling to Hardware
+# ===============================
 #
 # .. jupyter-kernel::
-#   :id: Tutorial: Compilation and hardware execution
+#   :id: Tutorial: Compiling to Hardware
 #
 # .. seealso::
 #
@@ -30,7 +30,7 @@
 #     :jupyter-download-script:`Tutorial: Compilation and hardware execution`
 
 # %% [raw]
-# Compilation allows converting the schedules introduced in :ref:`Tutorial 1 <sec-tutorial1>` into a set of instructions that can be executed on the control hardware.
+# Compilation allows converting the schedules introduced in :ref:`Tutorial: Schedules and Pulses <sec-tutorial-sched+pulse>` into a set of instructions that can be executed on the control hardware.
 #
 # In this notebook we will define an example schedule, demonstrate how to compile it, and run it on a virtual hardware setup.
 
@@ -209,4 +209,4 @@ ic.wait_done(timeout_sec=10)
 #   - Stops all running instruments.
 #
 # We conclude this tutorial with the remark that the schedule used in this tutorial was defined purely in terms of pulses.
-# However, quantify-scheduler also supports the usage of quantum gates in schedules. Given that gates may require different pulses when executed in different quantum devices. Consequently, when using gates, one requires an additional compilation step, called "Device Compilation", that converts these gates into pulses that can be interpreted by the backend. This use case will be covered in :ref:`Tutorial 5 <sec-tutorial5>`.
+# However, quantify-scheduler also supports the usage of quantum gates in schedules. Given that gates may require different pulses when executed in different quantum devices. Consequently, when using gates, one requires an additional compilation step, called "Device Compilation", that converts these gates into pulses that can be interpreted by the backend. This use case will be covered in :ref:`Tutorial: Operations and Qubits <sec-tutorial-ops+qubits>`.

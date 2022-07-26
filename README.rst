@@ -27,13 +27,16 @@ quantify-scheduler
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-    :target: https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/LICENSE
+    :target: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/LICENSE
     :alt: License
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
     :alt: Code style
 
+.. image:: https://img.shields.io/badge/Supported%20By-UNITARY%20FUND-brightgreen.svg?style=flat
+    :target: http://unitary.fund
+    :alt: Unitary Fund
 
 .. figure:: https://orangeqs.com/logos/QUANTIFY_LANDSCAPE.svg
     :align: center
@@ -77,9 +80,6 @@ Quantify-scheduler is maintained by The Quantify consortium consisting of Qblox 
 
 |_|
 
-The software is free to use under the conditions specified in the license.
-
-
---------------------------
+The software is free to use under the conditions specified in the `license <https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/LICENSE>`_.
 
 .. nothing-to-avoid-a-sphinx-warning:

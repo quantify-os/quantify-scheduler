@@ -13,10 +13,10 @@
 # ---
 
 # %% [raw]
-# .. _sec-tutorial5:
+# .. _sec-tutorial-ops+qubits:
 #
 # Tutorial: Operations and Qubits
-# =================================
+# ===============================
 #
 #  .. jupyter-kernel::
 #    :id: Tutorial: Operations and Qubits
