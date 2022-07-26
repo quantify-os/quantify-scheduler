@@ -216,27 +216,13 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
 
 
 def get_nv_device_config():
-    from quantify_scheduler.backends.circuit_to_device import OperationCompilationConfig
+    from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 
-    spec_mw_cfg = OperationCompilationConfig(
-        factory_func="quantify_scheduler.operations.pulse_factories.nv_spec_pulse_mw",
-        factory_kwargs={"duration": 15e-6, "amplitude": 1, "clock": "qe0.01", "port": "mw"},
-    )
-
-    cfg_dict = {
-        "backend": "quantify_scheduler.backends"
-        ".circuit_to_device.compile_circuit_to_device",
-        "elements": {
-            f"qe0": {
-                "spec_mw": spec_mw_cfg,
-            }
-        },
-        "clocks": {
-            f"qe.01": 50e6,
-        },
-        "edges": {},
-    }
-    return cfg_dict
+    q0 = BasicElectronicNVElement("q0")
+    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device.add_element(q0)
+    device_config = device.generate_device_config().dict()
+    return device_config
 
 
 def test_pulse_compilation_spec_pulse_microwave():
@@ -246,8 +232,8 @@ def test_pulse_compilation_spec_pulse_microwave():
     # TODO: are the arguments to SpecPulseMicrowave even needed?
     label1 = "MW pi pulse 1"
     label2 = "MW pi pulse 2"
-    _ = schedule.add(SpecPulseMicrowave("qe0", "qe0.01"), label=label1)
-    _ = schedule.add(SpecPulseMicrowave("qe0", "qe0.01"), label=label2)
+    _ = schedule.add(SpecPulseMicrowave("qe0", "ge0"), label=label1)
+    _ = schedule.add(SpecPulseMicrowave("qe0", "ge0"), label=label2)
 
     # SpecPulseMicrowave is added to the operations.
     # It has "gate_info", but no "pulse_info" yet.
