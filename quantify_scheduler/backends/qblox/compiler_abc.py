@@ -294,7 +294,7 @@ class Sequencer:
             an IQ mixer. This is used for frequency calculations.
         downconverter_freq
             Frequency of the external downconverter if one is being used.
-            Defaults to 0, in case case no downconverter is being used.
+            Defaults to 0, in which case no downconverter is being used.
         """
         self.parent = parent
         self._name = name
@@ -1140,8 +1140,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-
-    def downconvert_clock(self, downconverter_freq: float, clk_freq: float):
+    @staticmethod
+    def downconvert_clock(self, downconverter_freq: float, clock_freq: float):
         """ "
         Downconverts clock frequency.
 
@@ -1161,19 +1161,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ------
         """
 
-        if downconverter_freq != 0:
-            if downconverter_freq < 0:
-                raise ValueError(f"Downconverter frequency must be positive.")
-
-            if downconverter_freq > clk_freq:
-                new_clk_freq = downconverter_freq - clk_freq
-            else:
-                raise ValueError(
-                    "Downconverter frequency specified for the portclock must be greater than its clock frequency."
-                )
-            return new_clk_freq
-        else:
+        if downconverter_freq == 0:
             return clk_freq
+
+        if downconverter_freq < 0:
+            raise ValueError(f"Downconverter frequency must be positive.")
+
+        if downconverter_freq < clk_freq:
+            raise ValueError(
+                "Downconverter frequency specified for the portclock must be greater than its clock frequency."
+            )
+
+        return downconverter_freq - clk_freq
 
     def prepare(self) -> None:
         """
@@ -1392,40 +1391,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         return acq_mapping if len(acq_mapping) > 0 else None
 
-def downconvert_clock_frequency(downconverter_freq: float, clk_freq: float):
-    """ "
-    Downconverts clock frequency.
-
-    Parameters
-    ----------
-    downconverter_freq
-        Frequency of the downconverter.
-    clk_freq
-        clock frequency that is being downconverted.
-
-    Raises
-    ------
-    ValueError
-        When downconverter frequency is negative.
-    ValueError
-        When downconverter frequency is less than clk_freq.
-    ------
-    """
-
-    if downconverter_freq != 0:
-        if downconverter_freq < 0:
-            raise ValueError(f"Downconverter frequency must be positive.")
-
-        if downconverter_freq > clk_freq:
-            new_clk_freq = downconverter_freq - clk_freq
-        else:
-            print(f"downocnverter freq HERE: {downconverter_freq}, clock_freq here : {clk_freq}")
-            raise ValueError(
-                "Downconverter frequency specified for the portclock must be greater than its clock frequency."
-            )
-        return new_clk_freq
-    else:
-        return clk_freq
 
 
 def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
@@ -1444,8 +1409,7 @@ def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
     """Downconvert the clock frequency if the downconverter frequency is non-zero (otherwise leave it unchanged)
        and calculate the LO/IF frequencies."""
 
-    downconverter_freq = sequencer.downconverter_freq
-    clk_freq = downconvert_clock_frequency(downconverter_freq,clk_freq)
+    clock_freq = QbloxBaseModule.downconvert_clock(sequencer.downconverter_freq, clock_freq)
 
     if lo_freq is None and if_freq is None:
         raise ValueError(
