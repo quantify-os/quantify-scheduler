@@ -278,3 +278,5 @@ def test_pulse_compilation_spec_pulse_microwave():
     # Timing info has been added
     assert 'abs_time' in schedule_device.schedulables[label1].data.keys()
     assert 'abs_time' in schedule_device.schedulables[label2].data.keys()
+    assert not schedule_device.schedulables[label1].data['abs_time'] is None
+    assert not schedule_device.schedulables[label2].data['abs_time'] is None
