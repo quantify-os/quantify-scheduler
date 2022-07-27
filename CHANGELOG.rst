@@ -4,6 +4,7 @@ Changelog
 
 Unreleased
 ----------
+* Support MyST notebooks
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
 * Compilation - Call `determine_absolute_timing` in `qcompile` when no `device_cfg` supplied. (!436)
