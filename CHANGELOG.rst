@@ -23,6 +23,7 @@ Unreleased
 * Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Operations - Introduce basic CZ-gate via `CompositeSquareEdge` (utilizing `quantify_scheduler.operations.pulse_factories.composite_square_pulse`); replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation (!411)
 * Operations - Added `reset_clock_phase` optional parameter to `Measure`, that set the phase of the clock to zero at the start of each measurement. Set to True by default (!434, #296).
+* Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
