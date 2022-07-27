@@ -75,7 +75,7 @@ We can then instantiate the backend and compile the program.
 
 ```{code-cell}
 
-from quantify_scheduler.backends import SerialBackend
+from quantify_scheduler.backends.graph_compilation import SerialBackend
 
 backend = SerialBackend(name="Device compile")
 comp_sched = backend.compile(schedule=echo_schedule, config=config)
