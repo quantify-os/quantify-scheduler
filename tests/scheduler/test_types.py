@@ -27,6 +27,7 @@ from quantify_scheduler.operations.gate_library import (
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
+from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
@@ -232,6 +233,22 @@ def test_schedule_to_json():
 def test_schedule_from_json():
     # Arrange
     schedule = timedomain_schedules.t1_sched(np.zeros(1), "q0")
+
+    # Act
+    json_data = schedule.to_json()
+    result = Schedule.from_json(json_data)
+
+    # Assert
+    assert schedule == result
+    assert schedule.data == result.data
+
+
+@pytest.mark.xfail(reason="json serialization issue for schedules", strict=True)
+def test_spec_schedule_from_json():
+    # Arrange
+    schedule = heterodyne_spec_sched(
+        0.1, 0.1, 6e9, 1e-7, 1e-6, "q0:mw", "q0.01", 200e-6, 1024
+    )
 
     # Act
     json_data = schedule.to_json()

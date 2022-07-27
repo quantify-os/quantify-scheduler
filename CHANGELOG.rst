@@ -6,10 +6,13 @@ Unreleased
 ----------
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
+* Compilation - Call `determine_absolute_timing` in `qcompile` when no `device_cfg` supplied. (!436)
+* Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
+* Qblox backend - Make Qblox backend compatible with generic downconverter values in hardware_config (!418)
 * Qblox backend - Fix for 90 degree phase shift on even output paths as a result of the !397 hotfix. (!412)
 * Qblox backend - Fix cluster compatibility when converting old hwconfig to new specs (!419)
 * Qblox backend - Latency corrections must now be defined in top layer of hw config (!400)
@@ -23,6 +26,7 @@ Unreleased
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
+* Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
