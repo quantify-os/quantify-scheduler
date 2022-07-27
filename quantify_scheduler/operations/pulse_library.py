@@ -15,10 +15,6 @@ from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
 
-class ResetClockPhase(Operation):
-    raise NotImplementedError()
-
-
 class ShiftClockPhase(Operation):
     """An operation that shifts the phase of a clock by a specified amount."""
 
@@ -86,6 +82,7 @@ class ResetClockPhase(Operation):
                         "t0": t0,
                         "duration": 0,
                         "port": None,
+                        "reset_clock_phase": True,
                     }
                 ],
             }
@@ -290,7 +287,6 @@ class SquarePulse(Operation):
         clock: str = BasebandClockResource.IDENTITY,
         phase: float = 0,
         t0: float = 0,
-        reset_clock_phase: bool = False,
         data: Optional[dict] = None,
     ):
         """
@@ -337,7 +333,6 @@ class SquarePulse(Operation):
                         "t0": t0,
                         "clock": clock,
                         "port": port,
-                        "reset_clock_phase": reset_clock_phase,
                     }
                 ],
             }

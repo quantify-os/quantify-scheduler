@@ -466,24 +466,27 @@ def pulse_only_schedule_with_operation_timing():
 
 @pytest.fixture
 def mixed_schedule_with_acquisition():
-    sched = Schedule("mixed_schedule_with_acquisition")
-    sched.add(Reset("q0"))
-    sched.add(
-        DRAGPulse(
-            G_amp=0.7,
-            D_amp=-0.2,
-            phase=90,
-            port="q0:mw",
-            duration=20e-9,
-            clock="q0.01",
-            t0=4e-9,
+    def _mixed_schedule_with_acquisition(reset_clock_phase=True):
+        sched = Schedule("mixed_schedule_with_acquisition")
+        sched.add(Reset("q0"))
+        sched.add(
+            DRAGPulse(
+                G_amp=0.7,
+                D_amp=-0.2,
+                phase=90,
+                port="q0:mw",
+                duration=20e-9,
+                clock="q0.01",
+                t0=4e-9,
+            )
         )
-    )
-    sched.add(Measure("q0"))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    determine_absolute_timing(sched)
-    return sched
+        sched.add(Measure("q0", reset_clock_phase=reset_clock_phase))
+        # Clocks need to be manually added at this stage.
+        sched.add_resources([ClockResource("q0.01", freq=5e9)])
+        determine_absolute_timing(sched)
+        return sched
+
+    return _mixed_schedule_with_acquisition
 
 
 @pytest.fixture
@@ -962,7 +965,7 @@ def test_compile_cz_gate(
 def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
+    full_program = qcompile(mixed_schedule_with_acquisition(), DEVICE_CFG, HARDWARE_CFG)
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
@@ -1039,7 +1042,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
 def test_acquisitions_back_to_back(mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    sched = copy.deepcopy(mixed_schedule_with_acquisition())
     meas_op = sched.add(Measure("q0"))
     # add another one too quickly
     sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
@@ -1067,8 +1070,9 @@ def test_compile_with_rel_time(
 def test_compile_with_repetitions(mixed_schedule_with_acquisition):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    mixed_schedule_with_acquisition.repetitions = 10
-    full_program = qcompile(mixed_schedule_with_acquisition, DEVICE_CFG, HARDWARE_CFG)
+    sched = mixed_schedule_with_acquisition()
+    sched.repetitions = 10
+    full_program = qcompile(sched, DEVICE_CFG, HARDWARE_CFG)
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
     with open(qcm0_seq0_json) as file:
@@ -1232,8 +1236,12 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 
 
 # --------- Test compilation functions ---------
-def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
-    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+@pytest.mark.parametrize("reset_clock_phase", [True, False])
+def test_assign_pulse_and_acq_info_to_devices(
+    mixed_schedule_with_acquisition, reset_clock_phase
+):
+    sched = mixed_schedule_with_acquisition(reset_clock_phase)
+    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, HARDWARE_CFG
@@ -1242,8 +1250,19 @@ def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
         sched_with_pulse_info, container.instrument_compilers, HARDWARE_CFG
     )
     qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+    expected_num_of_pulses = 1 if reset_clock_phase == False else 2
+    actual_num_of_pulses = len(qrm._pulses[list(qrm.portclocks_with_data)[0]])
+    actual_num_of_acquisitions = len(
+        qrm._acquisitions[list(qrm.portclocks_with_data)[0]]
+    )
+    assert actual_num_of_pulses == expected_num_of_pulses, (
+        f"Expected {expected_num_of_pulses} number of pulses, but found "
+        f"{actual_num_of_pulses} instead."
+    )
+    assert actual_num_of_acquisitions == 1, (
+        f"Expected 1 number of acquisitions, but found {actual_num_of_acquisitions} "
+        "instead."
+    )
 
 
 def test_container_prepare(pulse_only_schedule):
@@ -1266,7 +1285,7 @@ def test_container_prepare(pulse_only_schedule):
 
 
 def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
-    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    sched = copy.deepcopy(mixed_schedule_with_acquisition())
     sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
     sched = device_compile(sched, DEVICE_CFG)
     container = compiler_container.CompilerContainer.from_hardware_cfg(

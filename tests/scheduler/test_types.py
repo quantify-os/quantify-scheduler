@@ -283,7 +283,8 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
     _ = comp_sched.plot_pulse_diagram_mpl()
 
 
-def test_sched_timing_table(tmp_test_data_dir):
+@pytest.mark.parametrize("reset_clock_phase", (True, False))
+def test_sched_timing_table(tmp_test_data_dir, reset_clock_phase):
 
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
@@ -292,7 +293,10 @@ def test_sched_timing_table(tmp_test_data_dir):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
-            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+            Measure(qubit, reset_clock_phase=reset_clock_phase),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {i}",
         )
 
     with pytest.raises(ValueError):
@@ -315,11 +319,31 @@ def test_sched_timing_table(tmp_test_data_dir):
         "wf_idx",
     }
 
-    assert len(timing_table.data) == 12
+    expected_len_timing_table_data = 12 if reset_clock_phase == False else 15
+    assert len(timing_table.data) == expected_len_timing_table_data
 
-    np.testing.assert_almost_equal(
-        actual=np.array(timing_table.data["abs_time"]),
-        desired=np.array(
+    if reset_clock_phase:
+        desired_timing = np.array(
+            [
+                0,
+                200e-6,
+                200e-6,
+                200e-6,
+                200e-6 + 120e-9,  # acq delay
+                200e-6 + 420e-9,
+                400e-6 + 420e-9,
+                410e-6 + 420e-9,
+                410e-6 + 420e-9,
+                410e-6 + 540e-9,
+                410e-6 + 840e-9,
+                610e-6 + 840e-9,
+                640e-6 + 840e-9,
+                640e-6 + 840e-9,
+                640e-6 + 960e-9,
+            ]
+        )
+    else:
+        desired_timing = np.array(
             [
                 0,
                 200e-6,
@@ -334,7 +358,10 @@ def test_sched_timing_table(tmp_test_data_dir):
                 640e-6 + 840e-9,
                 640e-6 + 960e-9,
             ]
-        ),
+        )
+    np.testing.assert_almost_equal(
+        actual=np.array(timing_table.data["abs_time"]),
+        desired=desired_timing,
         decimal=10,
     )
 

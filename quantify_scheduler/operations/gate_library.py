@@ -482,14 +482,11 @@ class Measure(Operation):
             measurement if ``reset_clock_phase=True`` in order to obtain a fully
             projective measurement. The phase reset can be optionally be turned off.
 
-            Note: disabling the phase reset has consequences for scope mode acquisitions
-            (e.g. averaging is not possible anymore) and weighed integration (phase
-            shifts lead to different integration results).
+            .. note::
+                disabling the phase reset has consequences for scope mode acquisitions
+                (e.g. averaging is not possible anymore) and weighed integration (phase
+                shifts lead to different integration results).
         """
-
-        if reset_clock_phase:
-            op = ResetClockPhase()
-            super().__init__(op.data["name"], data=op.data)
 
         # this if else statement a workaround to support multiplexed measurements (#262)
 
@@ -581,9 +578,10 @@ class ResetClockPhase(Operation):
             measurement if ``reset_clock_phase=True`` in order to obtain a fully
             projective measurement. The phase reset can be optionally be turned off.
 
-            Note: disabling the phase reset has consequences for scope mode acquisitions
-            (e.g. averaging is not possible anymore) and weighed integration (phase
-            shifts lead to different integration results).
+            .. note::
+                disabling the phase reset has consequences for scope mode acquisitions
+                (e.g. averaging is not possible anymore) and weighed integration (phase
+                shifts lead to different integration results).
         """
 
         if data is None:

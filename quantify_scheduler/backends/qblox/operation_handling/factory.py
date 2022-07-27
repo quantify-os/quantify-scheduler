@@ -75,7 +75,6 @@ def _get_pulse_strategy(
     operation_info: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
-    print("_get_pulse_strategy:", operation_info.data)
     if operation_info.data["port"] is None:
         if "phase" in operation_info.data:  # phase -> phase_shift
             return virtual.NcoPhaseShiftStrategy(operation_info)
