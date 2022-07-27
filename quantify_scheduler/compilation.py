@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENSE file on the main branch
+# Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
 import logging
 import warnings

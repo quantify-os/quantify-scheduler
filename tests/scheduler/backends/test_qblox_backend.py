@@ -904,7 +904,10 @@ def test_compile_measure(duplicate_measure_schedule):
     [
         (IdlePulse(duration=64e-9), "wait       64"),
         (Reset("q1"), "wait       65532"),
-        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+        (
+            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
+            "set_ph_delta  199,399,6249",
+        ),
     ],
 )
 def test_compile_clock_operations(

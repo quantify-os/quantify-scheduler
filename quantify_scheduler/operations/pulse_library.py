@@ -19,7 +19,7 @@ class ShiftClockPhase(Operation):
     """An operation that shifts the phase of a clock by a specified amount."""
 
     def __init__(
-        self, phase: float, clock: str, t0: float = 0, data: Optional[dict] = None
+        self, phase_shift: float, clock: str, t0: float = 0, data: Optional[dict] = None
     ):
         """
         Create a new instance of ShiftClockPhase.
@@ -42,7 +42,7 @@ class ShiftClockPhase(Operation):
                     {
                         "wf_func": None,
                         "t0": t0,
-                        "phase": phase,
+                        "phase_shift": phase_shift,
                         "clock": clock,
                         "port": None,
                         "duration": 0,
