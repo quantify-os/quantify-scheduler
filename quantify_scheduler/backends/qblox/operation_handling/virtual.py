@@ -56,7 +56,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
     """Strategy for operation that does not produce any output, but rather applies a
     phase shift to the NCO."""
 
-    def insert_qasm(self, qasm: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram):
         """
         Inserts the instructions needed to shift the nco phase by a specific amount.
 
@@ -68,7 +68,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         phase = self.operation_info.data.get("phase_shift")
         if phase is not None:
             phase_args = helpers.get_nco_phase_arguments(phase)
-            qasm.emit(
+            qasm_program.emit(
                 q1asm_instructions.INCR_NCO_PHASE_OFFSET,
                 *phase_args,
                 comment=f"increment nco phase by {phase:.2f} deg",
@@ -79,7 +79,7 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
     """Strategy for operation that does not produce any output, but rather resets
     the phase of the NCO."""
 
-    def insert_qasm(self, qasm: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram):
         """
         Inserts the instructions needed to shift the nco phase by a specific amount.
 
@@ -90,4 +90,4 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
         """
         reset_clock_phase = self.operation_info.data.get("reset_clock_phase")
         if reset_clock_phase is not None:
-            qasm.emit(q1asm_instructions.RESET_PHASE)
+            qasm_program.emit(q1asm_instructions.RESET_PHASE)

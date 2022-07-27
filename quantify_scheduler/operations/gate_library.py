@@ -586,7 +586,7 @@ class ResetClockPhase(Operation):
 
         if data is None:
             data = {
-                "name": f"ResetClockPhase",
+                "name": "ResetClockPhase",
                 "gate_info": {
                     "unitary": None,
                     "operation_type": "reset clock phase",

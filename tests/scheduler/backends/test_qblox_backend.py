@@ -1006,7 +1006,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    schedule = Schedule(f"Test schedule")
+    schedule = Schedule("Test schedule")
 
     q0, q1 = "q0", "q1"
     times = np.arange(0, 60e-6, 3e-6)
@@ -1247,7 +1247,7 @@ def test_assign_pulse_and_acq_info_to_devices(
         sched_with_pulse_info, container.instrument_compilers, HARDWARE_CFG
     )
     qrm = container.instrument_compilers["qrm0"]
-    expected_num_of_pulses = 1 if reset_clock_phase == False else 2
+    expected_num_of_pulses = 1 if reset_clock_phase is False else 2
     actual_num_of_pulses = len(qrm._pulses[list(qrm.portclocks_with_data)[0]])
     actual_num_of_acquisitions = len(
         qrm._acquisitions[list(qrm.portclocks_with_data)[0]]

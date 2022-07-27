@@ -336,7 +336,7 @@ def test_sched_timing_table(tmp_test_data_dir, reset_clock_phase):
         "wf_idx",
     }
 
-    expected_len_timing_table_data = 12 if reset_clock_phase == False else 15
+    expected_len_timing_table_data = 12 if reset_clock_phase is False else 15
     assert len(timing_table.data) == expected_len_timing_table_data
 
     if reset_clock_phase:
