@@ -35,6 +35,7 @@ sys.path.insert(0, package_path)
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    "myst_nb",  # notebooks formatted with MyST Markdown
     "sphinx.ext.autodoc",  # auto document docstrings
     "sphinx.ext.napoleon",  # autodoc understands numpy docstrings
     # load after napoleon, improved compatibility with type hints annotations
