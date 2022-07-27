@@ -130,7 +130,7 @@ zhinst_hardware_cfg
 # Creating the staircase program
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# We start by manually recreating the :func:`~quantify_scheduler.schedules.verification.awg_staircase_sched`, a schedule in which (modulated) square pulses are played on an HDAWG and the UHFQA is triggered subsequently to observe the reulst of that schedule.
+# We start by manually recreating the :func:`~quantify_scheduler.schedules.verification.awg_staircase_sched`, a schedule in which (modulated) square pulses are played on an HDAWG and the UHFQA is triggered subsequently to observe the result of that schedule.
 
 # %%
 # import statements required to make a schedule
@@ -217,7 +217,7 @@ comp_sched = qcompile(
 #
 
 # %%
-# Pandas dataframes do not render correctly in the sphinx documentation environement. See issue #238.
+# Pandas dataframes do not render correctly in the sphinx documentation environment. See issue #238.
 comp_sched.timing_table
 
 # %% [raw]

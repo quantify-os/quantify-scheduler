@@ -1,7 +1,7 @@
 .. _sec-backend-zhinst:
 
-Tutorials Zurich Instruments Backend
-====================================
+Backend: Zurich Instruments
+===========================
 
 
 Introduction
@@ -79,7 +79,7 @@ Keep these in mind when operating the hardware.
 - **All operations need to start at an integer number of samples**. Because of the choice of sampling rates of 2.4 GSps (~0.416 ns) and 1.8 GSps (~0.555 ns) it is useful to stick to a 10 ns grid for HDAWG (microwave and flux) pulses and a 40 ns grid for UHFQA (readout) pulses.
 - **Different instructions on the same "awg" cannot start in the same clock cycle.** This implies that the readout acquisition delay cannot be 0 (but it can be 40 ns or - 40ns).
 - **All measurements are triggered simultaneously** using the `StartQA(QA_INT_ALL, true)` instruction. This implies it is not possible to read out only a specific qubit/channel.
-- **All measurements have to start at the same sample within a clock cycle** because one can only define a single integration weight per channel. To gaurantee this, all operations are shifted around a bit (the measurement fixpoint correction). As a consequence, the reset/initialization operation can sometimes be a bit longer than specified in the schedule.
+- **All measurements have to start at the same sample within a clock cycle** because one can only define a single integration weight per channel. To guarantee this, all operations are shifted around a bit (the measurement fixpoint correction). As a consequence, the reset/initialization operation can sometimes be a bit longer than specified in the schedule.
 - Because the **timing between two devices needs to align over longer schedules**, it is important that the clock-rates are accurate. To ensure phase stability, use a 10 MHz shared reference and operate the hardware in external reference mode.
 
 - Only a single HDAWG supported as the primary device, other HDAWGs need to be configured as secondary devices.

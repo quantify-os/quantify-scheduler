@@ -98,7 +98,7 @@ for more information on the role of ports and clocks within the Quantify-Schedul
         }
     ]
 
-Additionally, the entry :code:`interm_freq` specifies the intermediate frequency to use for I/Q modulation (in Hz) when targetting this port and clock.
+Additionally, the entry :code:`interm_freq` specifies the intermediate frequency to use for I/Q modulation (in Hz) when targeting this port and clock.
 
 I/Q modulation
 ^^^^^^^^^^^^^^
