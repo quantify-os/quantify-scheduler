@@ -840,7 +840,9 @@ class Sequencer:
 
         return file_path
 
-    def compile(self, repetitions: int = 1, dump_to_file: bool = False) -> Optional[Dict[str, Any]]:
+    def compile(
+        self, repetitions: int = 1, dump_to_file: bool = False
+    ) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
@@ -885,8 +887,8 @@ class Sequencer:
         )
 
         if dump_to_file:
-            json_filename = self._dump_waveforms_and_program_json(
-                wf_and_pr_dict, f"{self.port}_{self.clock}"
+            self._dump_waveforms_and_program_json(
+                wf_and_pr_dict=wf_and_pr_dict, label=f"{self.port}_{self.clock}"
             )
 
         self.update_settings()

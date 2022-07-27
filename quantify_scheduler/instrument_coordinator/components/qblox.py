@@ -418,9 +418,7 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
 
             seq_settings = SequencerSettings.from_dict(seq_cfg)
-            self._configure_sequencer_settings(
-                seq_idx=seq_idx, settings=seq_settings
-            )
+            self._configure_sequencer_settings(seq_idx=seq_idx, settings=seq_settings)
 
         self._arm_all_sequencers_in_program(program)
 
@@ -550,9 +548,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
 
             seq_settings = SequencerSettings.from_dict(seq_cfg)
-            self._configure_sequencer_settings(
-                seq_idx=seq_idx, settings=seq_settings
-            )
+            self._configure_sequencer_settings(seq_idx=seq_idx, settings=seq_settings)
 
         self._arm_all_sequencers_in_program(program)
 
