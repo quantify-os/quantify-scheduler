@@ -328,8 +328,8 @@ config = hardware_compile(sched, qblox_test_mapping)["compiled_instructions"]
 # The compiled schedule can be uploaded to the hardware using the following commands.
 
 # %%
-seq_fn = config["qrm0"]["seq0"]["seq_fn"]
-qrm0.sequencer0.sequence(seq_fn)
+seq_json = config["qrm0"]["seq0"]["sequence"]
+qrm0.sequencer0.sequence(seq_json)
 
 # %% [raw]
 # At this point, the assembler on the device will load the waveforms into memory and
