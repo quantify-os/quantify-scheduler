@@ -1648,7 +1648,7 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     )
 
     if REGENERATE_REF_FILES:
-        with open(baseline_assembly, "w") as file:
+        with open(baseline_assembly, "w", encoding="utf-8") as file:
             json.dump(qrm0_seq_instructions, file)
 
     with open(baseline_assembly) as file:
@@ -1687,7 +1687,7 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     )
 
     if REGENERATE_REF_FILES:
-        with open(baseline_assembly, "w") as file:
+        with open(baseline_assembly, "w", encoding="utf-8") as file:
             json.dump(qrm0_seq_instructions, file)
 
     with open(baseline_assembly) as file:
