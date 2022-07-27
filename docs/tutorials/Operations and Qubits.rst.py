@@ -124,12 +124,12 @@ sched = Schedule("Bell experiment")
 for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     sched.add(Reset(q0, q1))
     sched.add(X90(q0))
-    sched.add(X90(q1), ref_pt="start")  # This ensures pulses are aligned
+    sched.add(X90(q1), ref_pt="start")  # Start at the same time as the other X90
     sched.add(CZ(q0, q1))
     sched.add(Rxy(theta=theta, phi=0, qubit=q0))
 
     sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
-    sched.add(
+    sched.add(  # Start at the same time as the other measure
         Measure(q1, acq_index=acq_idx),
         label="M q1 {:.2f} deg".format(theta),
         ref_pt="start",
@@ -180,90 +180,82 @@ rst_conf = {"indent": "    ", "jupyter_execute_options": [":raises:"]}
 sched.timing_table
 
 # %% [raw]
-# Device configuration and compilation
-# ------------------------------------
+# Device configuration
+# --------------------
 #
 # Up until now the schedule is not specific to any qubit implementation.
 # The aim of this section is to add device specific information to the schedule.
-# This knowledge is contained in the :ref:`device configuration file<sec-device-config>`, which we introduce in this section.
+# This knowledge is contained in the :ref:`device configuration<sec-device-config>`, which we introduce in this section.
 # By compiling the schedule to the quantum-device layer, we incorporate the device configuration into the schedule (for example by adding pulse information to every gate) and thereby enable it to run on a specific qubit implementation.
 #
-# To start this section, we will unpack the structure of the configuration file.
-# Here we will use a configuration file for a transmon based system that is used in the
+# To start this section, we will unpack the structure of the device configuration.
+# Here we will use an example device configuration for a transmon-based system that is used in the
 # `quantify-scheduler` test suite.
 
 # %%
-import inspect
-from pathlib import Path
+import json
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
 
-import quantify_scheduler.schemas.examples as es
+device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
-esp = inspect.getfile(es)
-cfg_f = Path(esp).parent / "transmon_test_config.json"
-
-with open(cfg_f, "r") as f:
-    transmon_test_config = json.load(f)
-
-pprint(list(transmon_test_config.keys()))
+pprint(list(json.loads(device_cfg.json()).keys()))
 
 # %% [raw]
 # Before explaining how this can be used to compile schedules, let us first investigate
-# the contents of the configuration file.
+# the contents of the device configuration.
 
 # %%
-transmon_test_config["backend"]
+device_cfg.backend
 
 # %% [raw]
-# The backend of the configuration file specifies what function will be used to add
+# The backend of the device configuration specifies what function will be used to add
 # pulse information to the gates. In other words, it specifies how to interpret the
-# qubit parameters present in the configuration file and achieve the required gates.
-#
-# Let us briefly investigate this function:
+# qubit parameters present in the device configuration and achieve the required gates.
+# Let us briefly investigate the backend function:
 
 # %%
-from quantify_core.utilities.general import import_python_object_from_string
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 
-device_compilation_backend = import_python_object_from_string(
-    transmon_test_config["backend"]
-)
-help(device_compilation_backend)
+help(import_python_object_from_string(device_cfg.backend))
 
 # %% [raw]
-# A more detailed description of the configuration file can be obtained from the
-# specified JSON schema:
+# The :ref:`device configuration <sec-device-config>` also contains the
+# parameters required by the backend for all qubits and edges.
 
 # %%
-transmon_schema = json.loads(
-    importlib.resources.read_text(schemas, "transmon_cfg.json")
-)
-pprint(transmon_schema["properties"])
+pprint(list(device_cfg.elements.keys()))
+pprint(list(device_cfg.edges.keys()))
 
 # %% [raw]
-# As can be seen form the JSON schema, the
-# :ref:`device configuration file<sec-device-config>` also contains the
-# parameters required by the :code:`device_compilation_backend` for all qubits and edges.
+# For every qubit and edge we can investigate the contained parameters.
 
 # %%
-pprint(list(transmon_test_config["qubits"].keys()))
+pprint(device_cfg.elements["q0"])
+print()
+pprint(list(device_cfg.edges.values())[0])
 
 # %% [raw]
-# In fact, this configuration file specifies more qubits than we need for our schedule. The unused qubit will be ignored. This allows writing only a single configuration file for separate experiments using a different number of qubits.
+# Lastly, the complete example device configuration (also see :class:`~quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig`):
 
 # %%
-# For every qubit we can investigate the contained parameters
-pprint(transmon_test_config["qubits"]["q0"])
+pprint(example_transmon_cfg)
 
 # %% [raw]
+# Device compilation
+# ^^^^^^^^^^^^^^^^^^
 # Now that we went through the different components of the configuration file, let's use
 # it to compile our previously defined schedule.
 # The :func:`~quantify_scheduler.compilation.device_compile` function takes care of this task and adds pulse information based
 # on the configuration file, as discussed above.
-# It also determines the timing of the different pulses in the schedule.
+# It also determines the timing of the different pulses in the schedule. Also see :ref:`Device and Hardware compilation combined`.
 
 # %%
 from quantify_scheduler.compilation import device_compile
 
-pulse_sched = device_compile(sched, transmon_test_config)
+pulse_sched = device_compile(sched, device_cfg)
 
 # %% [raw]
 # Now that the timings have been determined, we can show the first few rows of the :code:`timing_table`:
@@ -284,45 +276,50 @@ ax.set_xlim(0.4005e-3, 0.4006e-3)
 # %% [raw]
 # Quantum Devices and Elements
 # ----------------------------
-# The :ref:`device configuration file<sec-device-config>` contains all knowledge
+# The :ref:`device configuration<sec-device-config>` contains all knowledge
 # of the physical device under test (DUT).
-# To generate these configuration files on the fly, `quantify_scheduler` provides the
+# To generate these device configurations on the fly, `quantify_scheduler` provides the
 # :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and
 # :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement` classes.
 #
-# These classes contain the information necessary to generate the config files and allow
+# These classes contain the information necessary to generate the device configs and allow
 # changing their parameters on-the-fly.
 # The :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class
 # represents the DUT containing different :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement` s.
 # Currently, `quantify_scheduler` contains the
-# :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` class
-# to represent a transmon qubit connected to a feedline. We show their interaction below:
+# :class:`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class
+# to represent a fixed-frequency transmon qubit connected to a feedline. We show their interaction below:
 
 # %%
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import TransmonElement
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
-# First create a device under test:
+# First create a device under test
 dut = QuantumDevice("DUT")
 
 # Then create a transmon element
-qubit = TransmonElement("qubit")
+qubit = BasicTransmonElement("qubit")
 
-# Finally, add the transmon element to the QuantumDevice:
+# Finally, add the transmon element to the QuantumDevice
 dut.add_component(qubit)
 dut, dut.components()
 
 # %% [raw]
-# The different transmon properties can be set through attributes of the :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` class instance, e.g.:
+# The different transmon properties can be set through attributes of the :class:`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class instance, e.g.:
 
 # %%
-qubit.freq_01(6e9)
-list(qubit.parameters.keys())
+qubit.clock_freqs.f01(6e9)
+
+print(list(qubit.submodules.keys()))
+print()
+for submodule_name, submodule in qubit.submodules.items():
+    print(f"{qubit.name}.{submodule_name}: {list(submodule.parameters.keys())}")
+
 
 # %% [raw]
 # The device configuration is now simply obtained using :code:`dut.generate_device_config()`.
 # In order for this command to provide a correct device configuration, the different
-# parameters need to be specified in the :class:`~quantify_scheduler.device_under_test.transmon_element.TransmonElement` and :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
+# parameters need to be specified in the :class:`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` and :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
 
 # %%
 pprint(dut.generate_device_config())
@@ -347,18 +344,20 @@ from quantify_scheduler.resources import ClockResource
 sched = Schedule("Chevron Experiment")
 acq_idx = 0
 
-# NB multiples of 4 ns need to be used due to sampling rate of the Qblox modules
+# Multiples of 4 ns need to be used due to sampling rate of the Qblox modules
 for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
     for amp in np.linspace(start=0.1, stop=1.0, num=10):
-        begin = sched.add(Reset("q0", "q1"))
-        sched.add(X("q0"), ref_op=begin, ref_pt="end")
-        # NB we specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
+        reset = sched.add(Reset("q0", "q1"))
+        sched.add(X("q0"), ref_op=reset, ref_pt="end")  # Start at the end of the reset
+        # We specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
         square = sched.add(SquarePulse(amp, duration, "q0:mw", clock="q0.01"))
-        sched.add(X90("q0"), ref_op=square)
+        sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
         sched.add(X90("q1"), ref_op=square)
         sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
-        sched.add(
-            Measure(q1, acq_index=acq_idx), label=f"M q1 {acq_idx}", ref_pt="start"
+        sched.add(  # Start at the same time as the other measure
+            Measure(q1, acq_index=acq_idx),
+            label=f"M q1 {acq_idx}",
+            ref_pt="start",
         )
 
         acq_idx += 1
@@ -382,22 +381,29 @@ for t in ax.texts:
 #     resources of the schedule. It may be necessary to add this clock manually, as in
 #     the final line of the example above.
 #
+# Device and Hardware compilation combined
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Rather than first using :func:`~quantify_scheduler.compilation.device_compile` and subsequently
 # :func:`~quantify_scheduler.compilation.hardware_compile`, the two function calls can be combined using
 # :func:`~quantify_scheduler.compilation.qcompile`.
 
 # %%
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
 dut.close()
 dut = QuantumDevice("DUT")
-q0 = TransmonElement("q0")
-q1 = TransmonElement("q1")
+q0 = BasicTransmonElement("q0")
+q1 = BasicTransmonElement("q1")
 dut.add_component(q0)
 dut.add_component(q1)
-dut.get_component("q0").mw_amp180(0.6)
-dut.get_component("q1").mw_amp180(0.6)
-compiled_sched = qcompile(sched, dut.generate_device_config())
+dut.get_component("q0").rxy.amp180(0.6)
+dut.get_component("q1").rxy.amp180(0.6)
+
+compiled_sched = qcompile(
+    schedule=sched, device_cfg=dut.generate_device_config(), hardware_cfg=None
+)
 
 # %% [raw]
 # So, finally, we can show the timing table associated to the chevron schedule and plot
