@@ -6,20 +6,19 @@ file.
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-import pytest
+from matplotlib.axes import Axes
 from quantify_scheduler.backends.graph_compilation import (
     CompilationBackend,
     SimpleNode,
 )
 from quantify_scheduler import Schedule
-from matplotlib.axes import Axes
 
 
 from quantify_scheduler.operations.gate_library import (
     Reset,
 )
 
-
+# pylint: disable=unused-argument
 def dummy_compile_add_reset_q0(schedule: Schedule, config=None) -> Schedule:
     schedule.add(Reset("q0"))
     return schedule

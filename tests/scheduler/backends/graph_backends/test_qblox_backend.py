@@ -8,9 +8,6 @@ Might be good to mark those tests in detail.
 
 import pytest
 from quantify_scheduler.backends import SerialBackend
-
-
-import pytest
 from quantify_scheduler import Schedule, CompiledSchedule
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -38,6 +35,9 @@ def test_compiles_standard_schedules(
     schedule: Schedule,
     compile_config_basic_transmon_qblox_hardware,
 ):
+    """
+    Tests if a set of standard schedules compile without raising exceptions
+    """
 
     config = compile_config_basic_transmon_qblox_hardware
     assert config.name == "Qblox backend"

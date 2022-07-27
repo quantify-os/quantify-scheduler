@@ -15,8 +15,6 @@ class CompilationError(RuntimeError):
     Custom exception class for failures in compilation of quantify schedules.
     """
 
-    pass
-
 
 class SimpleNodeConfig(DataStructure):
     """
@@ -63,6 +61,10 @@ class SerialCompilationConfig(CompilationConfig):
 
 
 class CompilationNode:
+    """
+    A node representing a compiler pass.
+    """
+
     def __init__(self, name: str):
         """
         A node representing a compiler pass.
@@ -110,10 +112,17 @@ class CompilationNode:
         return self._compilation_func(schedule=schedule, config=config)
 
 
+# pylint: disable=too-few-public-methods
 class SimpleNode(CompilationNode):
+    """
+    A node representing a simple compiler pass consisting of calling a single
+    compilation function.
+    """
+
     def __init__(self, name: str, compilation_func: Callable):
         """
-        A node representing a compiler pass.
+        A node representing a simple compiler pass consisting of calling a single
+        compilation function.
 
         Parameters
         ----------
@@ -131,8 +140,7 @@ class SimpleNode(CompilationNode):
             Note that to compile, the :meth:`~.CompilationNode.compile` method should be
             used.
         """
-
-        self.name = name
+        super().__init__(name=name)
         self.compilation_func = compilation_func
 
     def _compilation_func(
@@ -144,6 +152,7 @@ class SimpleNode(CompilationNode):
         return self.compilation_func(schedule, config)
 
 
+# pylint: disable=abstract-method
 class CompilationBackend(nx.DiGraph, CompilationNode):
     """
     A compilation backend defines a directed acyclic graph.
@@ -179,10 +188,18 @@ class CompilationBackend(nx.DiGraph, CompilationNode):
 
     @property
     def input_node(self):
+        """
+        Node designated as the default input for compilation.
+        If not specified will return None.
+        """
         return self._input_node
 
     @property
     def output_node(self):
+        """
+        Node designated as the default output for compilation.
+        If not specified will return None.
+        """
         return self._ouput_node
 
     def draw(

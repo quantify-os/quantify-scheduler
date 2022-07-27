@@ -155,6 +155,10 @@ class ScheduleGettable:
         # the quantum device object containing setup configuration information
         self.quantum_device = quantum_device
 
+        # The backend used for compilation. Available as a private variable
+        # to facilitate debugging. Will be assigned upon compilation in self.initialize
+        self._backend = None
+
     def __call__(self) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
         """Acquire and return data"""
         return self.get()
