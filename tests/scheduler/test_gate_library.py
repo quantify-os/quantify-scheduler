@@ -23,6 +23,8 @@ from quantify_scheduler.operations.gate_library import (
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.compilation import device_compile
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 def test_schedule_add_schedulables() -> None:
@@ -228,49 +230,21 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
 
 
 def get_nv_device_config():
-    from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 
-<<<<<<< HEAD
-    q0 = BasicElectronicNVElement("q0")
+    qe0 = BasicElectronicNVElement("qe0")
     quantum_device = QuantumDevice(name="quantum_device")
-    quantum_device.add_element(q0)
-    device_config = device.generate_device_config().dict()
+    quantum_device.add_element(qe0)
+    device_config = quantum_device.generate_device_config().dict()
     return device_config
-=======
-    spec_mw_cfg = OperationCompilationConfig(
-        factory_func="quantify_scheduler.operations.pulse_factories.nv_spec_pulse_mw",
-        factory_kwargs={"duration": 15e-6, "amplitude": 1, "clock": "qe0.clock_freqs.spec", "port": "mw"},
-    )
-
-    cfg_dict = {
-        "backend": "quantify_scheduler.backends"
-        ".circuit_to_device.compile_circuit_to_device",
-        "elements": {
-            f"qe0": {
-                "spec_mw": spec_mw_cfg,
-            }
-        },
-        "clocks": {
-            f"qe0.clock_freqs.spec": 50e6,
-        },
-        "edges": {},
-    }
-    return cfg_dict
->>>>>>> refs/remotes/private/initial-nv-dev
 
 
 def test_pulse_compilation_spec_pulse_microwave():
-    schedule = Schedule(name="Spec Pulse", repetitions=1)
+    schedule = Schedule(name="Two Spectroscopy Pulses", repetitions=1)
 
-    label1 = "MW pi pulse 1"
-    label2 = "MW pi pulse 2"
-<<<<<<< HEAD
-    _ = schedule.add(SpecPulseMicrowave("qe0", "ge0"), label=label1)
-    _ = schedule.add(SpecPulseMicrowave("qe0", "ge0"), label=label2)
-=======
+    label1 = "Spectroscopy pulse 1"
+    label2 = "Spectroscopy pulse 2"
     _ = schedule.add(SpecPulseMicrowave("qe0"), label=label1)
     _ = schedule.add(SpecPulseMicrowave("qe0"), label=label2)
->>>>>>> refs/remotes/private/initial-nv-dev
 
     # SpecPulseMicrowave is added to the operations.
     # It has "gate_info", but no "pulse_info" yet.
@@ -288,7 +262,7 @@ def test_pulse_compilation_spec_pulse_microwave():
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    # TODO: retrieve the device config from elsewhere?
+    # TODO: retrieve the device config from mock setup file?
     dev_cfg = get_nv_device_config()
     schedule_device = device_compile(schedule, dev_cfg)
 
