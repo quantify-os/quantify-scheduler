@@ -1,12 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
-from __future__ import annotations
-
 import logging
 import warnings
 from copy import deepcopy
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.enums import BinMode
@@ -37,10 +35,10 @@ def determine_absolute_timing(
     This function determines absolute timings for every operation in the
     :attr:`~.ScheduleBase.schedulables`. It does this by:
 
-        1. iterating over all and elements in the
-            :attr:`~.ScheduleBase.schedulables`.
+        1. iterating over all and elements in the :attr:`~.ScheduleBase.schedulables`.
         2. determining the absolute time of the reference operation.
-        3. determining the start of the operation based on the `rel_time` and `duration` of operations.
+        3. determining the start of the operation based on the `rel_time` and `duration`
+           of operations.
 
     Parameters
     ----------
@@ -57,7 +55,7 @@ def determine_absolute_timing(
     :
         a new schedule object where the absolute time for each operation has been
         determined.
-    """  # pylint: disable=line-too-long
+    """
     if len(schedule.schedulables) == 0:
         raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
 
@@ -134,6 +132,7 @@ def _find_edge(device_cfg, q0, q1, op_name):
 
 
 def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
+    # pylint: disable=line-too-long
     """
     Adds pulse information specified in the device config to the schedule.
 
@@ -165,9 +164,11 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     .. rubric:: Configuration specification
 
-    .. jsonschema:: schemas/transmon_cfg.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/transmon_cfg.json
 
     """
+    # pylint: enable=line-too-long
+
     warnings.warn(
         "Support for this compilation backend will be be removed in"
         "quantify-scheduler >= 0.7.0.\n"
@@ -403,8 +404,11 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
 
 
 def qcompile(
-    schedule: Schedule, device_cfg: dict = None, hardware_cfg: dict = None
+    schedule: Schedule,
+    device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
+    hardware_cfg: Optional[dict] = None,
 ) -> CompiledSchedule:
+    # pylint: disable=line-too-long
     """
     Compile and assemble a :class:`~.Schedule` into a
     :class:`~.CompiledSchedule` ready for execution using the
@@ -430,7 +434,7 @@ def qcompile(
 
     .. rubric:: Configuration specification
 
-    .. jsonschema:: schemas/transmon_cfg.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/transmon_cfg.json
 
     .. todo::
 
@@ -441,11 +445,14 @@ def qcompile(
 
     if device_cfg is not None:
         schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
+    else:
+        schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
 
     if hardware_cfg is not None:
         compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
     else:
         compiled_schedule = CompiledSchedule(schedule)
+
     return compiled_schedule
 
 

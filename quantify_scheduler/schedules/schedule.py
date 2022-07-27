@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 # pylint: disable=too-many-ancestors
 class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
+    # pylint: disable=line-too-long
     """
     The :class:`~.ScheduleBase` is a data structure that is at
     the core of the Quantify-scheduler and describes when what operations are applied
@@ -65,10 +66,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     **JSON schema of a valid Schedule**
 
-    .. jsonschema:: ../schemas/schedule.json
+    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/schedule.json
 
     """
-
+    # pylint: enable=line-too-long
     @property
     def name(self) -> str:
         """Returns the name of the schedule."""
@@ -757,12 +758,14 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 # pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
-    A schedule that contains compiled instructions ready for execution using
-    the :class:`~.InstrumentCoordinator`.
+    A schedule that contains compiled instructions.
+
+    These instructions are ready for execution using the
+    :class:`~.InstrumentCoordinator`.
 
     The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
-    that it is considered immutable (no new operations or resources can be added), and
-    that it contains :attr:`~.compiled_instructions`.
+    that it is considered immutable (no new operations or resources can be added),
+    and that it contains :attr:`~.compiled_instructions`.
 
     .. tip::
 

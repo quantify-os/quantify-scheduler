@@ -67,6 +67,7 @@ class InstrumentCompiler(ABC):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -86,11 +87,16 @@ class InstrumentCompiler(ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
+
         """
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.hw_mapping = hw_mapping
+        self.latency_corrections = latency_corrections or {}
 
     def prepare(self) -> None:
         """
@@ -132,6 +138,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -151,8 +158,11 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         self._pulses = defaultdict(list)
         self._acquisitions = defaultdict(list)
 
@@ -258,9 +268,10 @@ class Sequencer:
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
-        seq_settings: dict,
+        seq_settings: Dict[str, Any],
+        latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
-        downconverter: bool = False,
+        downconverter_freq: float = 0,
     ):
         """
         Constructor for the sequencer compiler.
@@ -276,12 +287,14 @@ class Sequencer:
             sequencer. The first value is the port, second is the clock.
         seq_settings
             Sequencer settings dictionary.
+        latency_corrections
+            Dict containing the delays for each port-clock combination.
         lo_name
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
-        downconverter
-            Boolean which expresses whether a downconverter is being used or not.
-            Defaults to `False`, in case case no downconverter is being used.
+        downconverter_freq
+            Frequency of the external downconverter if one is being used.
+            Defaults to 0, in which case no downconverter is being used.
         """
         self.parent = parent
         self._name = name
@@ -290,7 +303,7 @@ class Sequencer:
         self.pulses: List[IOperationStrategy] = []
         self.acquisitions: List[IOperationStrategy] = []
         self.associated_ext_lo: str = lo_name
-        self.downconverter: bool = downconverter
+        self.downconverter_freq: float = downconverter_freq
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -310,22 +323,9 @@ class Sequencer:
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
 
-        self.latency_correction_ns: int = self._get_latency_correction_ns(seq_settings)
+        portclock_key = f"{seq_settings['port']}-{seq_settings['clock']}"
+        self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
-
-    def _get_latency_correction_ns(self, seq_settings: Dict[str, Any]) -> int:
-        latency_correction_ns = int(
-            round(seq_settings.get("latency_correction", 0) * 1e9)
-        )
-        if latency_correction_ns % 4 != 0:
-            logger.warning(
-                f"Latency correction of {latency_correction_ns} ns specified"
-                f" for {self.name} of {self.parent.name}, which is not a"
-                f" multiple of {constants.GRID_TIME} ns. This feature should"
-                f" be considered experimental and stable results are not guaranteed at "
-                f"this stage."
-            )
-        return latency_correction_ns
 
     @property
     def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
@@ -675,11 +675,16 @@ class Sequencer:
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
-        qasm.auto_wait(
-            constants.GRID_TIME + self.latency_correction_ns,
-            count_as_elapsed_time=False,
-            comment=f"Latency correction of {self.latency_correction_ns} ns.",
+        latency_correction_ns: int = self._get_latency_correction_ns(
+            self.latency_correction
         )
+        qasm.auto_wait(
+            wait_time=constants.GRID_TIME + latency_correction_ns,
+            count_as_elapsed_time=False,
+            comment=f"latency correction of {constants.GRID_TIME} + "
+            f"{latency_correction_ns} ns",
+        )
+
         with qasm.loop(label=loop_label, repetitions=repetitions):
             qasm.emit(q1asm_instructions.RESET_PHASE)
             qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
@@ -747,6 +752,22 @@ class Sequencer:
                     f"ch{acq.operation_info.data['acq_channel']}",
                 )
             acq.bin_idx_register = acq_bin_idx_reg
+
+    def _get_latency_correction_ns(self, latency_correction: float) -> int:
+        if latency_correction == 0:
+            return 0
+
+        latency_correction_ns = int(round(latency_correction * 1e9))
+        if latency_correction_ns % 4 != 0:
+            logger.warning(
+                f"Latency correction of {latency_correction_ns} ns specified"
+                f" for {self.name} of {self.parent.name}, which is not a"
+                f" multiple of {constants.GRID_TIME} ns. This feature should"
+                f" be considered experimental and stable results are not guaranteed at "
+                f"this stage."
+            )
+
+        return latency_correction_ns
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -892,6 +913,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         name: str,
         total_play_time: float,
         hw_mapping: Dict[str, Any],
+        latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
         """
@@ -911,8 +933,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         hw_mapping
             The hardware configuration dictionary for this specific device. This is one
             of the inner dictionaries of the overall hardware config.
+        latency_corrections
+            Dict containing the delays for each port-clock combination. This is specified in
+            the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping)
+        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
         driver_version_check.verify_qblox_instruments_version()
 
         self.is_pulsar: bool = True
@@ -986,7 +1011,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
-
         sequencers: Dict[str, Sequencer] = {}
         portclock_output_map: Dict[Tuple, str] = {}
 
@@ -1001,7 +1025,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             lo_name = io_cfg.get("lo_name", None)
-            downconverter = io_cfg.get("downconverter", False)
+            downconverter_freq = io_cfg.get("downconverter_freq", 0)
 
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
                 "portclock_configs", []
@@ -1025,8 +1049,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         static_hw_properties=self.static_hw_properties,
                         connected_outputs=connected_outputs,
                         seq_settings=target,
+                        latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
-                        downconverter=downconverter,
+                        downconverter_freq=downconverter_freq,
                     )
 
                     # Check if the portclock was not multiply specified
@@ -1119,6 +1144,41 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
+
+    @staticmethod
+    def downconvert_clock(downconverter_freq: float, clock_freq: float):
+        """ "
+        Downconverts clock frequency.
+
+        Parameters
+        ----------
+        downconverter_freq
+            Frequency of the downconverter.
+        clock_freq
+            clock frequency that is being downconverted.
+
+        Raises
+        ------
+        ValueError
+            When downconverter frequency is negative.
+        ValueError
+            When downconverter frequency is less than the clock frequency.
+        ------
+        """
+
+        if downconverter_freq == 0:
+            return clock_freq
+
+        if downconverter_freq < 0:
+            raise ValueError("Downconverter frequency must be positive.")
+
+        if downconverter_freq < clock_freq:
+            raise ValueError(
+                "Downconverter frequency specified for this port and clock combination"
+                "must be greater than its clock frequency."
+            )
+
+        return downconverter_freq - clock_freq
 
     def prepare(self) -> None:
         """
@@ -1338,47 +1398,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         return acq_mapping if len(acq_mapping) > 0 else None
 
 
-def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
-    if sequencer.clock not in container.resources:
-        return
-
-    clk_freq = container.resources[sequencer.clock]["freq"]
-    lo_compiler = container.instrument_compilers.get(sequencer.associated_ext_lo, None)
-    if lo_compiler is None:
-        sequencer.frequency = clk_freq
-        return
-
-    if_freq = sequencer.frequency
-    lo_freq = lo_compiler.frequency
-
-    # If downconverter is used, its frequency will be used when calculating the
-    # LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
-    # LO/IF frequencies unchanged.
-    if sequencer.downconverter:
-        downconverter_freq = constants.DOWNCONVERTER_FREQ
-        clk_freq = -clk_freq
-    else:
-        downconverter_freq = 0
-
-    if lo_freq is None and if_freq is None:
-        raise ValueError(
-            f"Frequency settings underconstraint for sequencer {sequencer.name} "
-            f"with port {sequencer.port} and clock {sequencer.clock}. When using "
-            f"an external local oscillator it is required to either supply an "
-            f'"lo_freq" or an "interm_freq". Neither was given.'
-        )
-
-    if if_freq is not None:
-        lo_compiler.frequency = clk_freq - if_freq + downconverter_freq
-
-    if lo_freq is not None:
-        if_freq = clk_freq - lo_freq + downconverter_freq
-        sequencer.frequency = if_freq
-
-    if if_freq != 0 and if_freq is not None:
-        sequencer.settings.nco_en = True
-
-
 class QbloxBasebandModule(QbloxBaseModule):
     """
     Abstract class with all the shared functionality between the QRM and QCM baseband
@@ -1397,6 +1416,16 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
 
     def assign_frequencies(self, sequencer: Sequencer):
+        """
+        Assigns frequencies for baseband modules.
+        """
+        if self.is_pulsar:
+            self.assign_frequency_with_ext_lo(sequencer, self.parent)
+        else:
+            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+
+    @staticmethod
+    def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         r"""
         Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1414,10 +1443,42 @@ class QbloxBasebandModule(QbloxBaseModule):
             Neither the LO nor the IF frequency has been set and thus contain
             :code:`None` values.
         """
-        if self.is_pulsar:
-            _assign_frequency_with_ext_lo(sequencer, self.parent)
-        else:
-            _assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+
+        if sequencer.clock not in container.resources:
+            return
+
+        clock_freq = container.resources[sequencer.clock]["freq"]
+        lo_compiler = container.instrument_compilers.get(
+            sequencer.associated_ext_lo, None
+        )
+        if lo_compiler is None:
+            sequencer.frequency = clock_freq
+            return
+
+        if_freq = sequencer.frequency
+        lo_freq = lo_compiler.frequency
+
+        clock_freq = QbloxBaseModule.downconvert_clock(
+            sequencer.downconverter_freq, clock_freq
+        )
+
+        if lo_freq is None and if_freq is None:
+            raise ValueError(
+                f"Frequency settings underconstraint for sequencer {sequencer.name} "
+                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
+                f"an external local oscillator it is required to either supply an "
+                f'"lo_freq" or an "interm_freq". Neither was given.'
+            )
+
+        if if_freq is not None:
+            lo_compiler.frequency = clock_freq - if_freq
+
+        if lo_freq is not None:
+            if_freq = clock_freq - lo_freq
+            sequencer.frequency = if_freq
+
+        if if_freq != 0 and if_freq is not None:
+            sequencer.settings.nco_en = True
 
 
 class QbloxRFModule(QbloxBaseModule):
@@ -1462,7 +1523,7 @@ class QbloxRFModule(QbloxBaseModule):
         if sequencer.clock not in resources:
             return
 
-        clk_freq = resources[sequencer.clock]["freq"]
+        clock_freq = resources[sequencer.clock]["freq"]
 
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
@@ -1491,17 +1552,12 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
-            """If downconverter is used, it's frequency will be used when calculating the
-            LO/IF frequency. If not, a frequency of 0 is considered, which will leave the
-            LO/IF frequencies unchanged"""
-            if sequencer.downconverter:
-                downconverter_freq = constants.DOWNCONVERTER_FREQ
-                clk_freq = -clk_freq
-            else:
-                downconverter_freq = 0
+            clock_freq = QbloxBaseModule.downconvert_clock(
+                sequencer.downconverter_freq, clock_freq
+            )
 
             if if_freq is not None:
-                new_lo_freq = clk_freq - if_freq + downconverter_freq
+                new_lo_freq = clock_freq - if_freq
                 if lo_freq is not None and new_lo_freq != lo_freq:
                     raise ValueError(
                         f"Attempting to set 'lo{complex_output}_freq' to frequency "
@@ -1514,7 +1570,7 @@ class QbloxRFModule(QbloxBaseModule):
                     self._settings.lo1_freq = new_lo_freq
 
             if lo_freq is not None:
-                sequencer.frequency = clk_freq - lo_freq + downconverter_freq
+                sequencer.frequency = clock_freq - lo_freq
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
