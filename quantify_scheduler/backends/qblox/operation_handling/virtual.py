@@ -65,8 +65,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        phase = self.operation_info.data.get("phase")
-        reset_clock_phase = self.operation_info.data.get("reset_clock_phase")
+        phase = self.operation_info.data.get("phase_shift")
         if phase is not None:
             phase_args = helpers.get_nco_phase_arguments(phase)
             qasm.emit(
@@ -77,8 +76,8 @@ class NcoPhaseShiftStrategy(IdleStrategy):
 
 
 class NcoResetClockPhaseStrategy(IdleStrategy):
-    """Strategy for operation that does not produce any output, but rather applies a
-    phase shift to the NCO."""
+    """Strategy for operation that does not produce any output, but rather resets
+    the phase of the NCO."""
 
     def insert_qasm(self, qasm: QASMProgram):
         """

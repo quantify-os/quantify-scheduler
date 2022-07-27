@@ -1,5 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the main branch
+# Licensed according to the LICENSE file on the main branch
 """Compiler for the quantify_scheduler."""
 import logging
 import warnings
@@ -375,8 +375,6 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                 )
             op.add_pulse(IdlePulse(max(init_times)))
 
-        elif op_type == "reset clock phase":
-            continue
         else:
             raise NotImplementedError(
                 'Operation type "{}" not supported by backend'.format(
