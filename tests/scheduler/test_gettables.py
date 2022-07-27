@@ -9,6 +9,9 @@
 
 from typing import Any, Dict, Tuple
 
+import json
+import zipfile
+
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
@@ -19,14 +22,16 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
+    t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_pulse
 
@@ -296,6 +301,59 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     np.testing.assert_array_equal(dset.x0, sample_times)
     np.testing.assert_array_equal(dset.y0, exp_trace.real)
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
+
+
+def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
+    schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
+    quantum_device = mock_setup["quantum_device"]
+
+    # Prepare the mock data the t1 schedule
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="ssb_integration_complex",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=complex,
+        acq_indices={0: range(50)},
+    )
+
+    data = np.ones(50) * np.exp(1j * np.deg2rad(45))
+
+    acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
+
+    mocker.patch.object(
+        mock_setup["instrument_coordinator"],
+        "retrieve_acquisition",
+        return_value=acq_indices_data,
+    )
+
+    # Configure the gettable
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=True,
+        batched=True,
+    )
+    assert gettable.is_initialized is False
+
+    with pytest.raises(RuntimeError):
+        gettable.generate_diagnostics_report()
+
+    filename = gettable.generate_diagnostics_report(execute_get=True)
+
+    assert gettable.is_initialized is True
+
+    with zipfile.ZipFile(filename, mode="r") as zf:
+        dev_cfg = json.loads(zf.read("device_cfg.json").decode())
+        hw_cfg = json.loads(zf.read("hardware_cfg.json").decode())
+        get_cfg = json.loads(zf.read("gettable.json").decode())
+        sched = Schedule.from_json(zf.read("schedule.json").decode())
+        snap = json.loads(zf.read("snapshot.json").decode())
+
+    assert snap["instruments"]["q0"]["parameters"]["init_duration"]["value"] == 0.0002
+    assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
+    assert gettable._compiled_schedule == qcompile(
+        sched, device_cfg=dev_cfg, hardware_cfg=hw_cfg
+    )
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the
