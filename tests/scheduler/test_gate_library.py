@@ -19,7 +19,7 @@ from quantify_scheduler.operations.gate_library import (
     Rxy,
     X,
     Y,
-    SpecPulseMicrowave,
+    SpectroscopyPulse,
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.compilation import device_compile
@@ -243,18 +243,18 @@ def test_pulse_compilation_spec_pulse_microwave():
 
     label1 = "Spectroscopy pulse 1"
     label2 = "Spectroscopy pulse 2"
-    _ = schedule.add(SpecPulseMicrowave("qe0"), label=label1)
-    _ = schedule.add(SpecPulseMicrowave("qe0"), label=label2)
+    _ = schedule.add(SpectroscopyPulse("qe0"), label=label1)
+    _ = schedule.add(SpectroscopyPulse("qe0"), label=label2)
 
-    # SpecPulseMicrowave is added to the operations.
+    # SpectroscopyPulse is added to the operations.
     # It has "gate_info", but no "pulse_info" yet.
-    spec_pulse_str = str(SpecPulseMicrowave("qe0"))
+    spec_pulse_str = str(SpectroscopyPulse("qe0"))
     assert spec_pulse_str in schedule.operations
     assert "gate_info" in schedule.operations[spec_pulse_str]
     assert schedule.operations[spec_pulse_str]["pulse_info"] == []
 
     # Operation is added twice to schedulables and has no timing information yet.
-    assert label1 in schedule.schedulables
+    assert label1 in schedule.schedulables # TODO: test type
     assert label2 in schedule.schedulables
     assert 'abs_time' not in schedule.schedulables[label1].data.keys() or schedule.schedulables[label1].data['abs_time'] is None
     assert 'abs_time' not in schedule.schedulables[label2].data.keys() or schedule.schedulables[label2].data['abs_time'] is None

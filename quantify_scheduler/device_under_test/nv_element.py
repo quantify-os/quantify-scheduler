@@ -219,9 +219,8 @@ class Reset(InstrumentChannel):
             vals=validators.Numbers(min_value=0, max_value=1),
         )
 
-class Spec_MW(InstrumentChannel): # SpecPulseMicrowave
-    """
-    Submodule containing parameters to attempt an Rxy gate on the NV qubit.
+class SpectroscopyPulseMW(InstrumentChannel): # SpectroscopyPulse
+    """Submodule containing parameters run a spectroscopy pulse in the microwave range.
     """
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
@@ -321,7 +320,7 @@ class BasicElectronicNVElement(DeviceElement):
 
         self.add_submodule("CRcheck", CRcheck(self, "CRcheck"))
         self.add_submodule("reset", Reset(self, "reset"))
-        self.add_submodule("spec_mw", Spec_MW(self, "spec_mw"))
+        self.add_submodule("spectroscopy_pulse", SpectroscopyPulseMW(self, "spectroscopy_pulse"))
         self.add_submodule("measure", SpinStateMeasurement(self, "measure"))
         self.add_submodule("ports", Ports(self, "ports"))
         self.add_submodule("clock_freqs", ClocksFrequencies(self, "clock_freqs"))
@@ -354,12 +353,12 @@ class BasicElectronicNVElement(DeviceElement):
                     },
                 ),
 
-                "spec_mw": OperationCompilationConfig(
+                "spectroscopy_pulse": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
                     + "pulse_factories.nv_spec_pulse_mw",
                     factory_kwargs={
-                        "duration": self.spec_mw.duration(),
-                        "amplitude": self.spec_mw.amplitude(),
+                        "duration": self.spectroscopy_pulse.duration(),
+                        "amplitude": self.spectroscopy_pulse.amplitude(),
                         "port": self.ports.microwave(),
                         "clock": f"{self.name}.f01",
                     },

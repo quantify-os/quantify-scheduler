@@ -101,10 +101,10 @@ schedule_device = device_compile(schedule, dev_cfg)
 Why is there a `.dict()` in the line in which we retrieve the device config?
 ```
 
-When we look into the device config, we can see that the quantum device specifies that the operation type `"spec_mw"` should be translated using the function {func}`.nv_spec_pulse_mw`.
+When we look into the device config, we can see that the quantum device specifies that the operation type `"spectroscopy_pulse"` should be translated using the function {func}`.nv_spec_pulse_mw`.
 
 ```{code-block} ipython3
-device_config["elements"][qubit_name]["spec_mw"]
+device_config["elements"][qubit_name]["spectroscopy_pulse"]
 ```
 
 This function returns a {class}`.SkewedHermitePulse`. This class can now be found in the compiled schedule:

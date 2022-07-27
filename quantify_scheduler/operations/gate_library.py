@@ -535,8 +535,8 @@ class Measure(Operation):
         )
 
 
-class SpecPulseMicrowave(Operation):
-    """Spectroscopy pulse on the microwave port.
+class SpectroscopyPulse(Operation):
+    """Spectroscopy pulse with a certain frequency.
 
     The frequency of the spectroscopy pulse is taken from a clock of the device element
     that is determined during the compilation.
@@ -550,7 +550,7 @@ class SpecPulseMicrowave(Operation):
         """
         Parameters
         ----------
-        qubit
+        qubit_name
             The target qubit
         data
             The operation's dictionary, by default None
@@ -564,9 +564,9 @@ class SpecPulseMicrowave(Operation):
                     "unitary": None,
                     "plot_func": "quantify_scheduler.visualization"
                     ".circuit_diagram.pulse_modulated",
-                    "tex": r"SPEC_MW",
+                    "tex": r"Spectroscopy pulse",
                     "qubits": [qubit_name],
-                    "operation_type": "spec_mw",
+                    "operation_type": "spectroscopy_pulse",
                 },
             }
         super().__init__(data["name"], data=data)
