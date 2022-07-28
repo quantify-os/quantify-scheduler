@@ -364,8 +364,8 @@ def test_sched_hardware_timing_table(
     # assert that files properly compile
     compiled_schedule = qcompile(
         t1_schedule,  # pylint: disable=no-member
-        load_example_transmon_config(),
-        load_example_zhinst_hardware_config(),
+        load_example_transmon_config,
+        load_example_zhinst_hardware_config,
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
     columns_of_hw_timing_table = hardware_timing_table.columns
@@ -385,8 +385,8 @@ def test_sched_hardware_waveform_dict(
     # assert that files properly compile
     compiled_schedule = qcompile(
         t1_schedule,  # pylint: disable=no-member
-        load_example_transmon_config(),
-        load_example_zhinst_hardware_config(),
+        load_example_transmon_config,
+        load_example_zhinst_hardware_config,
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
     hardware_waveform_dict = compiled_schedule.hardware_waveform_dict

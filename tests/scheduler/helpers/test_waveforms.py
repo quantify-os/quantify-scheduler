@@ -112,7 +112,7 @@ def test_get_waveform_by_pulseid_are_unique(
     schedule.add(X90("q0"))
     schedule.add(X90("q0"))
 
-    schedule = device_compile(schedule, load_example_transmon_config())
+    schedule = device_compile(schedule, load_example_transmon_config)
 
     operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
     pulse_info_0 = schedule.operations[operation_repr]["pulse_info"][0]
