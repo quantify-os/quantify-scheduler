@@ -41,7 +41,7 @@ def profiler(func):
 
 class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     """
-    This subclass implements a profiling tool to log the timing results.
+    This subclass implements a profiling tool to log timing results.
     """
 
     def __init__(self, name: str, parentinstrumentcoordinator):
