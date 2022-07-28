@@ -44,10 +44,10 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     This subclass implements a profiling tool to log timing results.
     """
 
-    def __init__(self, name: str, parentinstrumentcoordinator):
+    def __init__(self, name: str, parent_ic: InstrumentCoordinator):
         self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
-        self.parent_ic = parentinstrumentcoordinator
+        self.parent_ic = parent_ic
 
     @profiler
     def add_component(
