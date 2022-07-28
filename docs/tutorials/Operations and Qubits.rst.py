@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -19,7 +20,7 @@
 # ===============================
 #
 #  .. jupyter-kernel::
-#    :id: Tutorial: Operations and Qubits
+#    :id: Operations and Qubits
 #
 # .. seealso::
 #
@@ -233,15 +234,18 @@ print(list(device_cfg.clocks))
 # For every qubit and edge we can investigate the contained parameters.
 
 # %%
-pprint(device_cfg.elements["q0"])
+print(device_cfg.elements["q0"])
+print(device_cfg.elements["q0"]["Rxy"].factory_kwargs)
 
 # %%
-pprint(list(device_cfg.edges.values())[0])
+print(device_cfg.edges)
 
 # %%
-pprint(device_cfg.clocks["q0.01"])
+print(device_cfg.clocks)
+
 
 # %% [raw]
+#
 # Lastly, the complete example device configuration (also see :class:`~quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig`):
 
 # %%
