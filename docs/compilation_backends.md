@@ -43,14 +43,14 @@ First we set up a mock setup and create a simple schedule that we want to compil
 ```{code-cell}
 
     import numpy as np
-    from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup, set_standard_params
+    from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup, set_standard_params_transmon
     from quantify_scheduler.schedules.timedomain_schedules import echo_sched
 
     # instantiate the instruments of the mock setup
     mock_setup = set_up_mock_transmon_setup()
 
     # provide some sensible values to allow compilation without errors
-    set_standard_params(mock_setup)
+    set_standard_params_transmon(mock_setup)
 
 
     echo_schedule = echo_sched(times=np.arange(0, 60e-6, 1.5e-6), qubit="q0", repetitions=1024)

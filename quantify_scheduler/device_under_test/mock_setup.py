@@ -4,6 +4,7 @@
 Code to set up a mock setup for use in tutorials and testing.
 """
 
+from typing import Dict
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import (
     TransmonElement,
@@ -16,18 +17,22 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_core.measurement.control import MeasurementControl
 
 
-def set_up_mock_transmon_setup_legacy():
+def set_up_mock_transmon_setup_legacy() -> Dict:
     """
-    Sets up a system containing 5 transmon qubits connected in a star shape.
+    Sets up a system containing 5 transmon qubits. In this legacy setup only qubits
+    2 and 3 are connected.
 
     .. code-block::
 
         q0    q1
-          \  /
+
            q2
-          /  \
+          /
         q3    q4
 
+
+    Returns a dictionary containing the instruments that are instantiated as part of
+    this setup. The keys corresponds to the names of the instruments.
     """
 
     # importing from init_mock will execute all the code in the module which
@@ -74,6 +79,10 @@ def set_up_mock_transmon_setup_legacy():
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
+    # rational of the dict format is that this function is historically used as part
+    # of a fixture and by providing this dict, a cleanup instruments function can
+    # iterate over these keys to close all individual instruments and avoid
+    # statefull behavior in the tests.
     return {
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,
@@ -87,7 +96,7 @@ def set_up_mock_transmon_setup_legacy():
     }
 
 
-def set_up_mock_transmon_setup():
+def set_up_mock_transmon_setup() -> Dict:
     """
     Sets up a system containing 5 transmon qubits connected in a star shape.
 
@@ -99,6 +108,8 @@ def set_up_mock_transmon_setup():
           /  \
         q3    q4
 
+    Returns a dictionary containing the instruments that are instantiated as part of
+    this setup. The keys corresponds to the names of the instruments.
     """
 
     # importing from init_mock will execute all the code in the module which
@@ -142,6 +153,10 @@ def set_up_mock_transmon_setup():
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
+    # rational of the dict format is that this function is historically used as part
+    # of a fixture and by providing this dict, a cleanup instruments function can
+    # iterate over these keys to close all individual instruments and avoid
+    # statefull behavior in the tests.
     return {
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,
@@ -158,7 +173,7 @@ def set_up_mock_transmon_setup():
     }
 
 
-def set_standard_params(mock_setup):
+def set_standard_params_transmon(mock_setup):
     """
     Sets somewhat standard parameters to the mock setup generated above.
     These parameters serve so that the quantum-device is capable of generating
