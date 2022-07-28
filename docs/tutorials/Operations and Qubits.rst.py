@@ -193,7 +193,6 @@ sched.timing_table
 # `quantify-scheduler` test suite.
 
 # %%
-import json
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
@@ -201,7 +200,7 @@ from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
 
 device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
-pprint(list(json.loads(device_cfg.json()).keys()))
+list(device_cfg.dict())
 
 # %% [raw]
 # Before explaining how this can be used to compile schedules, let us first investigate
@@ -226,16 +225,21 @@ help(import_python_object_from_string(device_cfg.backend))
 # parameters required by the backend for all qubits and edges.
 
 # %%
-pprint(list(device_cfg.elements.keys()))
-pprint(list(device_cfg.edges.keys()))
+print(list(device_cfg.elements))
+print(list(device_cfg.edges))
+print(list(device_cfg.clocks))
 
 # %% [raw]
 # For every qubit and edge we can investigate the contained parameters.
 
 # %%
 pprint(device_cfg.elements["q0"])
-print()
+
+# %%
 pprint(list(device_cfg.edges.values())[0])
+
+# %%
+pprint(device_cfg.clocks["q0.01"])
 
 # %% [raw]
 # Lastly, the complete example device configuration (also see :class:`~quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig`):
