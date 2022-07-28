@@ -858,7 +858,7 @@ class NumericalPulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class HermitePulse(Operation):
+class SkewedHermitePulse(Operation):
     # pylint: disable=line-too-long, too-many-ancestors
     """
     Hermite pulse intended for single qubit gates in diamond based systems.
@@ -878,7 +878,7 @@ class HermitePulse(Operation):
         data: Optional[dict] = None,
     ):
         """
-        Create a new instance of HermitePulse.
+        Create a new instance of SkewedHermitePulse.
 
         Parameters
         ----------
