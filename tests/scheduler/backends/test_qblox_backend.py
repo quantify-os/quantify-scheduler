@@ -9,7 +9,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
 import copy
-import inspect
 import json
 import logging
 import os
@@ -1437,8 +1436,8 @@ def test_assign_frequencies_baseband(
     sched.add(X("q1"))
 
     device_cfg = load_example_transmon_config
-    q0_clock_freq = device_cfg.elements["q0"]["params"]["mw_freq"]
-    q1_clock_freq = device_cfg.elements["q1"]["params"]["mw_freq"]
+    q0_clock_freq = device_cfg.clocks["q0.01"]
+    q1_clock_freq = device_cfg.clocks["q1.01"]
 
     hardware_cfg = load_example_qblox_hardware_config
     if0 = load_example_qblox_hardware_config["qcm0"]["complex_output_0"][
@@ -1487,8 +1486,8 @@ def test_assign_frequencies_baseband_downconverter(
     sched.add(X("q1"))
 
     device_cfg = load_example_transmon_config
-    q0_clock_freq = device_cfg.elements["q0"]["params"]["mw_freq"]
-    q1_clock_freq = device_cfg.elements["q1"]["params"]["mw_freq"]
+    q0_clock_freq = device_cfg.clocks["q0.01"]
+    q1_clock_freq = device_cfg.clocks["q1.01"]
 
     hardware_cfg = load_example_qblox_hardware_config
     if0 = hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
@@ -1577,8 +1576,10 @@ def test_assign_frequencies_rf(
     assert lo1 is not None
 
     device_cfg = load_example_transmon_config
-    q2_clock_freq = device_cfg["qubits"]["q2"]["params"]["mw_freq"]
-    q3_clock_freq = device_cfg["qubits"]["q3"]["params"]["mw_freq"]
+    # q2_clock_freq = device_cfg["qubits"]["q2"]["params"]["mw_freq"]
+    # q3_clock_freq = device_cfg["qubits"]["q3"]["params"]["mw_freq"]
+    q2_clock_freq = device_cfg.clocks["q2.01"]
+    q3_clock_freq = device_cfg.clocks["q3.01"]
 
     if0 = hardware_cfg["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
         "interm_freq"

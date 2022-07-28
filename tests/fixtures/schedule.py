@@ -43,16 +43,6 @@ def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, N
 
 
 @pytest.fixture
-def load_legacy_transmon_config() -> Generator[Dict[str, Any], None, None]:
-    """
-    Loads the configuration for `add_pulse_information_transmon`.
-    To be removed after 0.7.0 when this functionality is phased out.
-    """
-
-    yield dict(DEVICE_CONFIG)
-
-
-@pytest.fixture
 def load_example_qblox_hardware_config() -> Generator[Dict[str, Any], None, None]:
     yield dict(HARDWARE_CONFIG_QBLOX)
 
