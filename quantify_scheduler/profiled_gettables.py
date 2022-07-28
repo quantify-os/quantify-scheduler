@@ -81,7 +81,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         self.parent_ic.wait_done(timeout_sec)
 
 
-class ProfiledGettable(ScheduleGettable):
+class ProfiledScheduleGettable(ScheduleGettable):
     """
     Subclass to overwite the initialize method, in order to include
     compilation in the profiling.
