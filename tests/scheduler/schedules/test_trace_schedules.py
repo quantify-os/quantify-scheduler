@@ -17,7 +17,7 @@ def test_trace_schedule() -> None:
     repetitions = 10
 
     # Act
-    schedule = trace_schedules.trace_schedule(
+    schedule = trace_schedules.trace_schedule_pulse(
         pulse_amp=1,
         pulse_duration=pulse_duration,
         pulse_delay=pulse_delay,

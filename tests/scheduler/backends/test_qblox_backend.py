@@ -1,8 +1,7 @@
-# pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-module-docstring
 # pylint: disable=redefined-outer-name
-
 # pylint: disable=too-many-lines
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
@@ -17,12 +16,13 @@ import re
 import shutil
 import tempfile
 
+from typing import Dict, Generator
+
 import numpy as np
 import pytest
 from qblox_instruments import Pulsar, PulsarType
 
-# pylint: disable=no-name-in-module
-from quantify_core.data.handling import set_datadir
+from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler
 import quantify_scheduler.schemas.examples as es
@@ -80,6 +80,8 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
+
+from tests.fixtures.mock_setup import close_instruments
 
 esp = inspect.getfile(es)
 
@@ -268,18 +270,21 @@ def hardware_cfg_two_qubit_gate():
 
 
 @pytest.fixture
-def dummy_pulsars():
-    _pulsars = []
-    for qcm_name in ["qcm0", "qcm1"]:
-        _pulsars.append(Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM))
-    for qrm_name in ["qrm0", "qrm1"]:
-        _pulsars.append(Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM))
+def dummy_pulsars() -> Generator[Dict[str, Pulsar], None, None]:
+    qcm_names = ["qcm0", "qcm1"]
+    qrm_names = ["qrm0", "qrm1"]
+
+    close_instruments(qcm_names + qrm_names)
+
+    _pulsars = {}
+    for qcm_name in qcm_names:
+        _pulsars[qcm_name] = Pulsar(name=qcm_name, dummy_type=PulsarType.PULSAR_QCM)
+    for qrm_name in qrm_names:
+        _pulsars[qrm_name] = Pulsar(name=qrm_name, dummy_type=PulsarType.PULSAR_QRM)
 
     yield _pulsars
 
-    # teardown
-    for instrument in Pulsar.instances():
-        instrument.close()
+    close_instruments(qcm_names + qrm_names)
 
 
 @pytest.fixture
@@ -648,6 +653,7 @@ def test_find_all_port_clock_combinations():
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
         ("q4:res", "q4.ro"),
+        ("q5:res", "q5.ro"),
     }
     assert portclocks == answer
 
@@ -655,7 +661,7 @@ def test_find_all_port_clock_combinations():
 def test_generate_port_clock_to_device_map():
     portclock_map = generate_port_clock_to_device_map(HARDWARE_CFG)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 12
+    assert len(portclock_map.keys()) == 13
 
 
 # --------- Test classes and member methods ---------
@@ -960,7 +966,7 @@ def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
-    qcm0 = dummy_pulsars[0]
+    qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
@@ -991,7 +997,7 @@ def test_compile_with_rel_time(
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
-    qcm0 = dummy_pulsars[0]
+    qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
 
 
@@ -1196,26 +1202,30 @@ def test_container_prepare(pulse_only_schedule):
     assert container.instrument_compilers["lo0"].frequency is not None
 
 
-def test_determine_scope_mode_acquisition_sequencer(mixed_schedule_with_acquisition):
-    sched = copy.deepcopy(mixed_schedule_with_acquisition)
-    sched.add(Trace(100e-9, port="q0:res", clock="q0.ro"))
-    sched = device_compile(sched, DEVICE_CFG)
-    container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, HARDWARE_CFG
+def test_determine_scope_mode_acquisition_sequencer(mock_setup):
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("determine_scope_mode_acquisition_sequencer")
+    sched.add(Measure("q0"))
+    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
+    sched.add(Trace(duration=100e-9, port="q5:res", clock="q5.ro"))
+
+    sched = qcompile(
+        sched, mock_setup["quantum_device"].generate_device_config(), HARDWARE_CFG
     )
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=HARDWARE_CFG,
-        device_compilers=container.instrument_compilers,
+
+    assert HARDWARE_CFG["qrm0"]["instrument_type"] == "Pulsar_QRM"
+    assert sched.compiled_instructions["qrm0"]["settings"]["scope_mode_sequencer"] == 1
+
+    assert HARDWARE_CFG["cluster0"]["cluster0_module4"]["instrument_type"] == "QRM_RF"
+    assert (
+        sched.compiled_instructions["cluster0"]["cluster0_module4"]["settings"][
+            "scope_mode_sequencer"
+        ]
+        == 0
     )
-    for instr in container.instrument_compilers.values():
-        if hasattr(instr, "_determine_scope_mode_acquisition_sequencer"):
-            instr.prepare()
-            instr._determine_scope_mode_acquisition_sequencer()
-    scope_mode_sequencer = container.instrument_compilers[
-        "qrm0"
-    ]._settings.scope_mode_sequencer
-    assert scope_mode_sequencer == "seq0"
 
 
 def test_container_prepare_baseband(
@@ -1643,8 +1653,8 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     )
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
-        qcm0=dummy_pulsars[0],
-        qrm0=dummy_pulsars[0],
+        qcm0=dummy_pulsars["qcm0"],
+        qrm0=dummy_pulsars["qrm0"],
     )
 
     with open(
@@ -1684,8 +1694,8 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
 
     assembly_valid(
         compiled_schedule=compiled_allxy_sched,
-        qcm0=dummy_pulsars[0],
-        qrm0=dummy_pulsars[0],
+        qcm0=dummy_pulsars["qcm0"],
+        qrm0=dummy_pulsars["qrm0"],
     )
 
     with open(

@@ -2,12 +2,38 @@
 # Licensed according to the LICENCE file on the main branch
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
 
 
+def trace_schedule_gate(
+    qubit_name: str,
+    repetitions: int = 1,
+) -> Schedule:
+    """
+    Generate a simple schedule using gates to perform raw trace acquisition.
+
+    Parameters
+    ----------
+    qubit_name
+        Name of a device element.
+    repetitions
+        The amount of times the Schedule will be repeated.
+
+    Returns
+    -------
+    :
+        The Raw Trace acquisition Schedule.
+    """
+    schedule = Schedule("Raw trace acquisition", repetitions)
+    schedule.add(Reset(qubit_name))
+    schedule.add(Measure(qubit_name, acq_protocol="Trace"))
+    return schedule
+
+
 # pylint: disable=too-many-arguments
-def trace_schedule(
+def trace_schedule_pulse(
     pulse_amp: float,
     pulse_duration: float,
     pulse_delay: float,
@@ -20,7 +46,7 @@ def trace_schedule(
     repetitions: int = 1,
 ) -> Schedule:
     """
-    Generate a schedule to perform raw trace acquisition.
+    Generate a schedule using pulses to perform raw trace acquisition.
 
     Parameters
     ----------
@@ -28,23 +54,21 @@ def trace_schedule(
         The amplitude of the pulse in Volt.
     pulse_duration
         The duration of the pulse in seconds.
-    pulse_delay :
+    pulse_delay
         The pulse delay in seconds.
-    frequency :
-        The frequency of the pulse
-        and of the data acquisition in Hertz.
+    frequency
+        The frequency of the pulse and of the data acquisition in Hertz.
     acquisition_delay
-        The start of the data acquisition with respect to
-        the start of the pulse in seconds.
-    integration_time :
+        The start of the data acquisition with respect to the start of the pulse in
+        seconds.
+    integration_time
         The time in seconds to integrate.
-    port :
+    port
         The location on the device where the
         pulse should be applied.
-    clock :
-        The reference clock used to track the
-        pulse frequency.
-    init_duration :
+    clock
+        The reference clock used to track the pulse frequency.
+    init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
