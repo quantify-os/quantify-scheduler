@@ -56,7 +56,7 @@ class SerialCompilationConfig(CompilationConfig):
     Specifies compilation as a list of compilation passes.
     """
 
-    backend: str = "quantify_scheduler.backends.graph_compilation.SerialBackend"
+    backend: str = "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     compilation_passes: List[SimpleNodeConfig]
 
 
@@ -153,9 +153,10 @@ class SimpleNode(CompilationNode):
 
 
 # pylint: disable=abstract-method
-class CompilationBackend(nx.DiGraph, CompilationNode):
+class QuantifyCompiler(nx.DiGraph, CompilationNode):
     """
-    A compilation backend defines a directed acyclic graph.
+    A compiler for quantify schedules.
+    The compiler defines a directed acyclic graph containing :class:`~.CompilationNode`
     In this graph, nodes represent modular compilation passes.
 
     Definition
@@ -253,9 +254,9 @@ class CompilationBackend(nx.DiGraph, CompilationNode):
         return ax
 
 
-class SerialBackend(CompilationBackend):
+class SerialCompiler(QuantifyCompiler):
     """
-    A compilation backend that dynamically generates a graph of serial compilation
+    A compiler that dynamically generates a graph of serial compilation
     passes upon calling the compile method.
     """
 

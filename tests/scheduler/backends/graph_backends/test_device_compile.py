@@ -16,7 +16,7 @@ from .standard_schedules import (
 
 
 # The module we are interested in testing
-from quantify_scheduler.backends import SerialBackend
+from quantify_scheduler.backends import SerialCompiler
 
 
 @pytest.mark.parametrize(
@@ -38,10 +38,10 @@ def test_compiles_standard_schedules(
     # Arrange
     assert config.name == "Device compilation"
     assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialBackend(
+    backend = SerialCompiler(
         name="Device compilation"
     )  # assert that no exception is raised.
     # Act

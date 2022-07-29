@@ -7,7 +7,7 @@ Might be good to mark those tests in detail.
 """
 
 import pytest
-from quantify_scheduler.backends import SerialBackend
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler import Schedule, CompiledSchedule
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -42,10 +42,10 @@ def test_compiles_standard_schedules(
     config = compile_config_basic_transmon_qblox_hardware
     assert config.name == "Qblox backend"
     assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialBackend("Qblox backend")
+    backend = SerialCompiler("Qblox backend")
 
     # assert that no exception is raised.
     # Act

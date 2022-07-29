@@ -96,7 +96,7 @@ class QuantumDevice(Instrument):
     def compilation_config(self) -> CompilationConfig:
         """
         Generates a compilation config for use with a
-        :class:`~quantify-scheduler.backends.graph_compilation.CompilationBackend`.
+        :class:`~quantify-scheduler.backends.graph_compilation.QuantifyCompiler`.
         """
 
         # Part that is always the same

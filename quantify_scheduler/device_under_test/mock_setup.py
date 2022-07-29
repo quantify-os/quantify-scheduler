@@ -1,10 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+# pylint: disable=(invalid-name)
 """
 Code to set up a mock setup for use in tutorials and testing.
 """
 
 from typing import Dict
+from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import (
     TransmonElement,
@@ -14,7 +16,6 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
     CompositeSquareEdge,
 )
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_core.measurement.control import MeasurementControl
 
 
 def set_up_mock_transmon_setup_legacy() -> Dict:
@@ -153,7 +154,7 @@ def set_up_mock_transmon_setup() -> Dict:
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
-    # rational of the dict format is that this function is historically used as part
+    # rationale of the dict format is that this function is historically used as part
     # of a fixture and by providing this dict, a cleanup instruments function can
     # iterate over these keys to close all individual instruments and avoid
     # statefull behavior in the tests.

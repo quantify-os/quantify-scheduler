@@ -1,5 +1,5 @@
-from .graph_compilation import SerialBackend
+from .graph_compilation import SerialCompiler
 
 __all__ = [
-    "SerialBackend",
+    "SerialCompiler",
 ]

@@ -13,7 +13,7 @@ from quantify_scheduler.backends import zhinst_backend
 
 
 from quantify_scheduler import Schedule, CompiledSchedule
-from quantify_scheduler.backends import SerialBackend
+from quantify_scheduler.backends import SerialCompiler
 
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -48,10 +48,10 @@ def test_compiles_standard_schedules(
     # Arrange
     assert config.name == "Zhinst backend"
     assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialBackend(name="Zhinst backend")
+    backend = SerialCompiler(name="Zhinst backend")
 
     # assert that no exception is raised.
     # Act
@@ -81,10 +81,10 @@ def test_compiles_standard_schedules_mux_ro(
     # Arrange
     assert config.name == "Zhinst backend"
     assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialBackend(name="Zhinst backend")
+    backend = SerialCompiler(name="Zhinst backend")
 
     # assert that no exception is raised.
     # Act
@@ -112,10 +112,10 @@ def test_compiles_standard_schedules_edge(
     # Arrange
     assert config.name == "Zhinst backend"
     assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialBackend"
+        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialBackend(name="Zhinst backend")
+    backend = SerialCompiler(name="Zhinst backend")
 
     # assert that no exception is raised.
     # Act

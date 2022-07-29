@@ -18,22 +18,22 @@ pretty.install()
 # Compilation backends
 
 In order to execute a {class}`~.Schedule` on physical hardware or a simulator one needs to compile the schedule.
-This is done using a {class}`~.backends.graph_compilation.CompilationBackend`.
-The {meth}`~.backends.graph_compilation.CompilationBackend.compile` method requires both the {class}`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
+This is done using a {class}`~.backends.graph_compilation.QuantifyCompiler`.
+The {meth}`~.backends.graph_compilation.QuantifyCompiler.compile` method requires both the {class}`~.Schedule` to compile and a configuration describing the information required to perform the compilation.
 
-A {class}`~.backends.graph_compilation.CompilationBackend` defines a directed acyclic graph in which the nodes represent compiler passes.
+A {class}`~.backends.graph_compilation.QuantifyCompiler` defines a directed acyclic graph in which the nodes represent compiler passes.
 A {class}`~.Schedule` can be compiled by traversing the graph.
 The {class}`~.Schedule` class serves as the intermediate representation which is modified by the compiler passes.
 For most practical purposes, a user does not need to be aware of the internal structure of the compilation backends.
 
 ## Compiling a schedule
 
-To compile a schedule, one needs to instantiate a {class}`~.backends.graph_compilation.CompilationBackend` and call the {meth}`~.backends.graph_compilation.CompilationBackend.compile` method.
+To compile a schedule, one needs to instantiate a {class}`~.backends.graph_compilation.QuantifyCompiler` and call the {meth}`~.backends.graph_compilation.QuantifyCompiler.compile` method.
 This method requires both the {class}`~.Schedule` to compile as well as a {attr}`~.QuantumDevice.compilation_config`.
 This config can conveniently be generated from a {class}`QuantumDevice` object which describes the knowledge required for compilation.
 
 ```{note}
-Here we focus on using a {class}`~.backends.graph_compilation.CompilationBackend` to compile a {class}`~.Schedule` in isolation.
+Here we focus on using a {class}`~.backends.graph_compilation.QuantifyCompiler` to compile a {class}`~.Schedule` in isolation.
 When executing schedules, one needs to interact with and manage the parameters of an experimental setup.
 For this we refer to the {ref}`section on execution <sec-user-guide-execution>` in the user guide.
 ```
@@ -58,7 +58,7 @@ First we set up a mock setup and create a simple schedule that we want to compil
 ```
 
 Next, we retrieve the {class}`~.CompilationConfig` from the quantum device and see for which compilation backend this is suitable.
-In the current example we have a simple {class}`~.backends.graph_compilation.SerialBackend` that is used to do different compilation passes as a linear chain.
+In the current example we have a simple {class}`~.backends.graph_compilation.SerialCompiler` that is used to do different compilation passes as a linear chain.
 
 ```{code-cell}
 
@@ -75,9 +75,9 @@ We can then instantiate the backend and compile the program.
 
 ```{code-cell}
 
-from quantify_scheduler.backends.graph_compilation import SerialBackend
+from quantify_scheduler.backends.graph_compilation import SerialCompiler
 
-backend = SerialBackend(name="Device compile")
+backend = SerialCompiler(name="Device compile")
 comp_sched = backend.compile(schedule=echo_schedule, config=config)
 
 comp_sched
@@ -113,21 +113,21 @@ zhinst_cfg = quantum_device.compilation_config
 
 ```{code-cell}
 
-from quantify_scheduler.backends import SerialBackend
+from quantify_scheduler.backends import SerialCompiler
 
 
 
 # constructing graph is normally done when at compile time as it
 # requires information from the compilation config.
 
-dev_backend = SerialBackend(name="Device backend")
+dev_backend = SerialCompiler(name="Device backend")
 dev_backend.construct_graph(dev_cfg)
 
 
-qblox_backend = SerialBackend(name="Qblox compile")
+qblox_backend = SerialCompiler(name="Qblox compile")
 qblox_backend.construct_graph(qblox_cfg)
 
-zhinst_backend= SerialBackend(name="Zhinst backend")
+zhinst_backend= SerialCompiler(name="Zhinst backend")
 zhinst_backend.construct_graph(zhinst_cfg)
 
 

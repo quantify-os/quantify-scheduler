@@ -8,7 +8,7 @@ file.
 # pylint: disable=missing-function-docstring
 from matplotlib.axes import Axes
 from quantify_scheduler.backends.graph_compilation import (
-    CompilationBackend,
+    QuantifyCompiler,
     SimpleNode,
 )
 from quantify_scheduler import Schedule
@@ -53,7 +53,7 @@ def test_draw_backend():
     This test will only test if the draw code can be executed and a matplotlib figure
     is created. It will not test the details of how the figure looks.
     """
-    test_graph = CompilationBackend(name="test")
+    test_graph = QuantifyCompiler(name="test")
     test_graph.add_node(dummy_node_A)
     test_graph.add_node(dummy_node_B)
     test_graph.add_edge(dummy_node_A, dummy_node_B)
