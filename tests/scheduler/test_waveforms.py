@@ -230,3 +230,34 @@ def test_hermite_amp_linear_scaling(hermite_kwargs):
     del hermite_kwargs["amplitude"]
     approx = np.frompyfunc(pytest.approx, 1, 1)
     assert (2*skewed_hermite(amplitude=0.032, **hermite_kwargs) == approx(skewed_hermite(amplitude=0.064, **hermite_kwargs))).all()
+
+def test_hermite_duration_scaling(hermite_kwargs):
+    """When time and duration are scaled by a factor, the result stays unchanged.
+    """
+    dur = hermite_kwargs["duration"]
+    del hermite_kwargs["duration"]
+    t = hermite_kwargs["t"]
+    del hermite_kwargs["t"]
+
+    # Note that we also have to scale the skewness. This is unintuitive, but can be
+    # understood from eqs. (A.12) and (A.36) in H.K.C.Beukers MSc Thesis (2019), where
+    # the skewness factor b has the unit time.
+    skewness = hermite_kwargs["skewness"]
+    del hermite_kwargs["skewness"]
+
+    scaling = 2.7
+
+    assert (
+        skewed_hermite(
+            t=t,
+            duration=dur,
+            skewness=skewness,
+            **hermite_kwargs
+        ) ==
+        pytest.approx(skewed_hermite(
+            t=scaling*t,
+            duration=scaling*dur,
+            skewness=scaling*skewness,
+            **hermite_kwargs)
+        )
+    )
