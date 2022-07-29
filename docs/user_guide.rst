@@ -92,7 +92,7 @@ Quantify-scheduler can be understood by understanding the following concepts.
 - :class:`.Schedule`\s describe when an operation needs to be applied.
 - :class:`.Operation`\s describe what needs to be done.
 - :class:`~quantify_scheduler.resources.Resource`\s describe where an operation should be applied.
-- :ref:`Compilation <sec-compilation>`: between different abstraction layers and onto a hardware backend.
+- :ref:`Compilation <sec-compilation>`: between different abstraction layers for execution on physical hardware.
 
 The following table shows an overview of the different concepts and how these are represented at the quantum-circuit layer and quantum-device layer.
 
@@ -254,7 +254,7 @@ Compilation
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
 The scheduler supports multiple compilation steps, the most important ones are the step from the quantum-circuit layer to the quantum-device layer, and the one from the quantum-device layer into instructions suitable for execution on physical hardware.
-This compilation is performed by a compilation backend. These backends are described in detail in :ref:`Compilation backends`.
+This compilation is performed by a :class:`~.QuantifyCompiler`. The compilers are described in detail in :ref:`Compilers`.
 
 This is schematically shown in :numref:`compilation_overview`.
 
@@ -289,7 +289,7 @@ Both compilation steps can be triggered by passing a :class:`.Schedule` and the 
    :maxdepth: 2
    :glob:
 
-   compilation_backends
+   quantify_compilers
 
 
 .. _sec-device-config:
