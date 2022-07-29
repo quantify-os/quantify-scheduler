@@ -79,8 +79,6 @@ In the following example, we will create a function to generate a :class:`.Sched
     f, ax = circuit_diagram_matplotlib(sched)
 
 
-For more details on how to create schedules, specify timing constraints and seamlessly mix the gate- and pulse-level descriptions, see :ref:`Tutorial 1 <sec-tutorial1>`.
-
 .. tip::
 
     Creating schedule generating functions is a convenient design pattern when creating measurement code. See :ref:`the section on execution <sec-user-guide-execution>` for an example of how this is used in practice.

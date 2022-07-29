@@ -16,6 +16,7 @@ Unreleased
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
+* Qblox backend - Make Qblox backend compatible with generic downconverter values in hardware_config (!418)
 * Qblox backend - Fix for 90 degree phase shift on even output paths as a result of the !397 hotfix. (!412)
 * Qblox backend - Fix cluster compatibility when converting old hwconfig to new specs (!419)
 * Qblox backend - Latency corrections must now be defined in top layer of hw config (!400)
@@ -29,6 +30,7 @@ Unreleased
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
+* Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
