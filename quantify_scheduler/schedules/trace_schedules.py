@@ -27,7 +27,6 @@ def trace_schedule_gate(
         The Raw Trace acquisition Schedule.
     """
     schedule = Schedule("Raw trace acquisition", repetitions)
-    schedule.add(Reset(qubit_name))
     schedule.add(Measure(qubit_name, acq_protocol="Trace"))
     return schedule
 
