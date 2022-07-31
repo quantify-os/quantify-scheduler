@@ -354,7 +354,6 @@ def test_trace_acquisition_measurement_control(
             "cluster0_module4": {
                 "instrument_type": "QRM_RF",
                 "complex_output_0": {
-                    "line_gain_db": 0,
                     "portclock_configs": [
                         {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
                     ],
@@ -396,8 +395,11 @@ def test_trace_acquisition_measurement_control(
     meas_ctrl.gettables(sched_gettable)
 
     with mocker.patch.object(
-        meas_ctrl, "_get_fracdone", side_effect=np.linspace(start=0, stop=1, num=10)
-    ):
+        meas_ctrl,
+        "_get_fracdone",
+        side_effect=np.linspace(start=0, stop=1.0, num=4).tolist()
+        + 3 * [1.0],  # Prevent StopIteration upon more calls than elem in side_effect
+    ):                # (https://stackoverflow.com/a/71833875)
         try:
             dataset = meas_ctrl.run(f"Readout trace schedule of {q2.name}")
         except:
