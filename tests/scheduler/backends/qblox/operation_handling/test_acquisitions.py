@@ -399,7 +399,7 @@ def test_trace_acquisition_measurement_control(
         "_get_fracdone",
         side_effect=np.linspace(start=0, stop=1.0, num=4).tolist()
         + 3 * [1.0],  # Prevent StopIteration upon more calls than elem in side_effect
-    ):                # (https://stackoverflow.com/a/71833875)
+    ):
         try:
             dataset = meas_ctrl.run(f"Readout trace schedule of {q2.name}")
         except:
