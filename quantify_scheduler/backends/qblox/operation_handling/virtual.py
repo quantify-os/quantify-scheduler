@@ -58,7 +58,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
-        Inserts the instructions needed to shift the nco phase by a specific amount.
+        Inserts the instructions needed to shift the NCO phase by a specific amount.
 
         Parameters
         ----------
@@ -66,7 +66,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
             The QASMProgram to add the assembly instructions to.
         """
         phase = self.operation_info.data.get("phase_shift")
-        if phase is not None:
+        if phase != 0:
             phase_args = helpers.get_nco_phase_arguments(phase)
             qasm_program.emit(
                 q1asm_instructions.INCR_NCO_PHASE_OFFSET,
@@ -81,7 +81,7 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
-        Inserts the instructions needed to shift the nco phase by a specific amount.
+        Inserts the instructions needed to reset the NCO phase.
 
         Parameters
         ----------
@@ -89,5 +89,9 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
             The QASMProgram to add the assembly instructions to.
         """
         reset_clock_phase = self.operation_info.data.get("reset_clock_phase")
-        if reset_clock_phase is not None:
-            qasm_program.emit(q1asm_instructions.RESET_PHASE)
+        if reset_clock_phase is None:
+            raise KeyError(
+                "NcoResetClockPhaseStrategy called, "
+                "but reset_clock_phase not present in operation_info.data"
+            )
+        qasm_program.emit(q1asm_instructions.RESET_PHASE)

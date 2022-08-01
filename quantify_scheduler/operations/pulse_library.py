@@ -61,7 +61,7 @@ class ResetClockPhase(Operation):
 
     def __init__(self, clock: str, t0: float = 0, data: Optional[dict] = None):
         """
-        Create a new instance of ShiftClockPhase.
+        Create a new instance of ResetClockPhase.
 
         Parameters
         ----------

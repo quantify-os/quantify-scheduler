@@ -976,28 +976,28 @@ def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     assert uploaded_waveforms is not None
 
 
-@pytest.mark.parametrize(
-    "reset_clock_phase",
-    [(True, False)],
-)
-def test_compile_measurement_with_clock_phase_reset(
-    reset_clock_phase,
-):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
-    schedule = Schedule("Test schedule")
-    schedule.add(X90("q0"))
-    schedule.add(Measure("q0", reset_clock_phase=reset_clock_phase))
-    compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
-    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
-    with open(qrm0_seq0_json) as file:
-        program = json.load(file)["program"]
-    reset_counts = program.count(" reset_ph ")
-    expected_counts = 2 if reset_clock_phase else 1
-    assert reset_counts == expected_counts, (
-        f"Expected qasm program to contain `reset_ph`-command 2 times, but found "
-        f"{reset_counts} times instead."
-    )
+# @pytest.mark.parametrize(
+#     "reset_clock_phase",
+#     [(True, False)],
+# )
+# def test_compile_measurement_with_clock_phase_reset(
+#     reset_clock_phase,
+# ):
+#     tmp_dir = tempfile.TemporaryDirectory()
+#     set_datadir(tmp_dir.name)
+#     schedule = Schedule("Test schedule")
+#     schedule.add(X90("q0"))
+#     schedule.add(Measure("q0", reset_clock_phase=reset_clock_phase))
+#     compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
+#     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
+#     with open(qrm0_seq0_json) as file:
+#         program = json.load(file)["program"]
+#     reset_counts = program.count(" reset_ph ")
+#     expected_counts = 2 if reset_clock_phase else 1
+#     assert reset_counts == expected_counts, (
+#         f"Expected qasm program to contain `reset_ph`-instruction 2 times, but found "
+#         f"{reset_counts} times instead."
+#     )
 
 
 @pytest.mark.parametrize(
@@ -1034,7 +1034,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     reset_counts = program.count(" reset_ph ")
     expected_counts = (1 + len(times)) if reset_clock_phase else 1
     assert reset_counts == expected_counts, (
-        f"Expected qasm program to contain `reset_ph`-command {1+len(times)} times, "
+        f"Expected qasm program to contain `reset_ph`-instruction {expected_counts} times, "
         f"but found {reset_counts} times instead."
     )
 

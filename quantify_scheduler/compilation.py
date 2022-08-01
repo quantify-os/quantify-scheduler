@@ -210,14 +210,16 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
                     acq_channel = op["gate_info"]["acq_channel"]
                     acq_index = op["gate_info"]["acq_index"]
 
+                if op["gate_info"]["reset_clock_phase"]:
+                    op.add_pulse(ResetClockPhase(clock=q_cfg["resources"]["clock_ro"]))
+
                 # If the user specifies bin-mode use that otherwise use a default
                 # better would be to get it from the config file in the "or"
                 bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE
                 acq_protocol = (
                     op["gate_info"]["acq_protocol"] or q_cfg["params"]["acquisition"]
                 )
-                if op["gate_info"]["reset_clock_phase"]:
-                    op.add_pulse(ResetClockPhase(clock=q_cfg["resources"]["clock_ro"]))
+
                 if acq_protocol == "SSBIntegrationComplex":
                     # readout pulse
                     op.add_pulse(

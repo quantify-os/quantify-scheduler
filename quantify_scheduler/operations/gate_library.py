@@ -478,9 +478,10 @@ class Measure(Operation):
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         reset_clock_phase
-            The phase of the measurement clock will be set to zero at the start of each
-            measurement if ``reset_clock_phase=True`` in order to obtain a fully
-            projective measurement. The phase reset can be optionally be turned off.
+            The phase of the measurement clock will be reset by the control hardware
+            at the start of each measurement if ``reset_clock_phase=True`` in order to
+            obtain a fully projective measurement. The phase reset can be optionally be
+            turned off.
 
             .. note::
                 disabling the phase reset has consequences for scope mode acquisitions
