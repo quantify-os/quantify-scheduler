@@ -33,7 +33,7 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     readout_calibration_sched,
     t1_sched,
 )
-from quantify_scheduler.schedules.trace_schedules import trace_schedule_pulse
+from quantify_scheduler.schedules.trace_schedules import trace_schedule
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -269,7 +269,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
 
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
-        schedule_function=trace_schedule_pulse,
+        schedule_function=trace_schedule,
         schedule_kwargs=schedule_kwargs,
         batched=True,
     )
