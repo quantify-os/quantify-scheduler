@@ -127,4 +127,7 @@ class TestNcoPhaseShiftStrategy:
         strategy.insert_qasm(qasm)
 
         # assert
-        assert extract_instruction_and_args(qasm) == answer
+        if phase_shift == 0.0:
+            assert qasm.instructions == []
+        else:
+            assert extract_instruction_and_args(qasm) == answer
