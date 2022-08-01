@@ -8,16 +8,16 @@ for use with quantify-scheduler.
 
     The ProfiledGettable is currently only tested to support Qblox hardware.
 """
-
-import logging
-import time
 import json
+import logging
 import os
-from datetime import datetime
-import numpy as np
+import time
 
+import numpy as np
 import matplotlib.pyplot as plt
 
+
+from qcodes import Instrument
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
@@ -31,7 +31,7 @@ def profiler(func):
         start = time.time()
         result = func(self, *args, **kwargs)
         end = time.time()
-        if not self.profile.get(func.__name__):
+        if func.__name__ not in self.profile:
             self.profile[func.__name__] = []
         self.profile[func.__name__].append(end - start)
         return result
@@ -90,56 +90,58 @@ class ProfiledScheduleGettable(ScheduleGettable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.profile = {"compile": []}
+        self.profile = {}
 
         # overwrite linked IC to a profiled IC
-        instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
-        self.profiled_instr_coordinator = ProfiledInstrumentCoordinator(
-            "profiled_IC", instr_coordinator
+
+        self.instr_coordinator = (
+            self.quantum_device.instr_instrument_coordinator.get_instr()
         )
-        self.quantum_device.instr_instrument_coordinator("profiled_IC")
+        self.profiled_instr_coordinator = ProfiledInstrumentCoordinator(
+            name="profiled_ic", parent_ic=self.instr_coordinator
+        )
 
+        self.quantum_device.instr_instrument_coordinator(
+            self.profiled_instr_coordinator.name
+        )
+
+    @profiler
     def _compile(self, sched):
-        """Overwrite compile step ofr profiling."""
-        start = time.time()
+        """Overwrite compile step for profiling."""
         super()._compile(sched)
-        stop = time.time()
-        self.profile["compile"].append(stop - start)
 
-    def log_profiles(
-        self, path="profiling_log{}.json".format(datetime.now().strftime("%m%d%H%M"))
-    ):
-        """
-        Store time logs to json file.
+    def log_profile(self, path=""):
+        """Store profiling logs to json file."""
 
-        """
-        profile = self.profile.copy()
-        profile.update(self.profiled_instr_coordinator.profile)
+        folder_name = "profiling_logs"
         if path:
-            if not os.path.exists("profiling_logs"):
-                os.makedirs("profiling_logs")
-            with open("profiling_logs/{}".format(path), "w") as file:
-                json.dump(profile, file, indent=4, separators=(",", ": "))
-        return profile
+            if not os.path.exists(folder_name):
+                os.makedirs(folder_name)
+
+            write_path = os.path.join(folder_name, path)
+            with open(write_path, "w") as file:
+                json.dump(self.profile, file, indent=4, separators=(",", ": "))
+
+        return self.profile
+
+    def close(self):
+        """Cleanup new profiling instruments to avoid future conflicts."""
+        self.profile.update(self.profiled_instr_coordinator.profile)
+        self.quantum_device.instr_instrument_coordinator(self.instr_coordinator.name)
+        prof_ic = Instrument.find_instrument("profiled_ic")
+        Instrument.close(prof_ic)
 
     def plot_profile(self, plot_name="average_runtimes.pdf"):
         """Create barplot of accumulated profiling data."""
-        profile = self.profile.copy()
-        profile.update(self.profiled_instr_coordinator.profile)
+        profile = self.profile
         time_ax = list(profile.keys())
         num_keys = len(time_ax)
         x_pos = np.arange(num_keys)
         means = [np.mean(x) for x in profile.values()]
         error = [np.std(x) for x in profile.values()]
         fig, ax = plt.subplots(figsize=(9, 6))
-        color = [
-            "xkcd:bright blue",
-            "xkcd:sky blue",
-            "xkcd:sea blue",
-            "xkcd:turquoise blue",
-            "xkcd:aqua",
-            "xkcd:cyan",
-        ][:num_keys]
+
+        color = ["r", "b", "c", "m", "k", "g"][:num_keys]
         ax.bar(x_pos, means, yerr=error, color=color)
         ax.bar(num_keys, means[0], color=color[0])
         for i in range(1, num_keys):
