@@ -1,12 +1,16 @@
-# Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the main branch
-# pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-module-docstring
 # pylint: disable=too-many-locals
 # pylint: disable=invalid-name
 
-from collections import namedtuple
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+
 from typing import Any, Dict, Tuple
+
+import json
+import zipfile
 
 import numpy as np
 import pytest
@@ -18,17 +22,19 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
+from quantify_scheduler.instrument_coordinator.components.qblox import (
+    AcquisitionIndexing,
+)
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
+    t1_sched,
+    rabi_sched,
 )
-from quantify_scheduler.schedules.trace_schedules import trace_schedule
-
-# this is taken from the qblox backend and is used to make the tuple indexing of
-# acquisitions more explicit. See also #179 of quantify-scheduler
-AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
+from quantify_scheduler.schedules.trace_schedules import trace_schedule_pulse
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -264,7 +270,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
 
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
-        schedule_function=trace_schedule,
+        schedule_function=trace_schedule_pulse,
         schedule_kwargs=schedule_kwargs,
         batched=True,
     )
@@ -296,6 +302,59 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     np.testing.assert_array_equal(dset.x0, sample_times)
     np.testing.assert_array_equal(dset.y0, exp_trace.real)
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
+
+
+def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
+    schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
+    quantum_device = mock_setup["quantum_device"]
+
+    # Prepare the mock data the t1 schedule
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="ssb_integration_complex",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=complex,
+        acq_indices={0: range(50)},
+    )
+
+    data = np.ones(50) * np.exp(1j * np.deg2rad(45))
+
+    acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
+
+    mocker.patch.object(
+        mock_setup["instrument_coordinator"],
+        "retrieve_acquisition",
+        return_value=acq_indices_data,
+    )
+
+    # Configure the gettable
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=True,
+        batched=True,
+    )
+    assert gettable.is_initialized is False
+
+    with pytest.raises(RuntimeError):
+        gettable.generate_diagnostics_report()
+
+    filename = gettable.generate_diagnostics_report(execute_get=True)
+
+    assert gettable.is_initialized is True
+
+    with zipfile.ZipFile(filename, mode="r") as zf:
+        dev_cfg = json.loads(zf.read("device_cfg.json").decode())
+        hw_cfg = json.loads(zf.read("hardware_cfg.json").decode())
+        get_cfg = json.loads(zf.read("gettable.json").decode())
+        sched = Schedule.from_json(zf.read("schedule.json").decode())
+        snap = json.loads(zf.read("snapshot.json").decode())
+
+    assert snap["instruments"]["q0"]["parameters"]["init_duration"]["value"] == 0.0002
+    assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
+    assert gettable._compiled_schedule == qcompile(
+        sched, device_cfg=dev_cfg, hardware_cfg=hw_cfg
+    )
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the
@@ -346,34 +405,36 @@ def _reshape_array_into_acq_return_type(
     return acquisitions
 
 
-def test_profiling(mock_setup, basic_schedule):
-    """ Tests the log output of the ProfiledGettable. """
+def test_profiling(mock_setup):
     quantum_device = mock_setup["quantum_device"]
-
     qubit = quantum_device.get_component("q0")
 
     schedule_kwargs = {
         "pulse_amp": qubit.ro_pulse_amp,
         "pulse_duration": qubit.ro_pulse_duration,
         "frequency": qubit.ro_freq,
-        "acquisition_delay": qubit.ro_acq_delay,
-        "integration_time": qubit.ro_acq_integration_time,
-        "port": qubit.ro_port,
-        "clock": qubit.ro_clock,
-        "init_duration": qubit.init_duration,
+        "qubit": "q0",
     }
 
-    basic_sched = basic_schedule
-
-    prof_gettable = ProfiledGettable(
+    prof_gettable = ProfiledScheduleGettable(
         quantum_device=quantum_device,
-        schedule_function=basic_sched,
+        schedule_function=rabi_sched,
         schedule_kwargs=schedule_kwargs,
-        real_imag=False,
     )
 
-    prof_gettable.get()
-    log = prof_gettable.log_profiles(path=False)
+    prof_gettable.initialize()
+    instr_coordinator = (
+        prof_gettable.quantum_device.instr_instrument_coordinator.get_instr()
+    )
+    instr_coordinator.start()
+    acquired_data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+    prof_gettable.close()
 
+    log = prof_gettable.log_profile()
+
+    # Test if all steps have been measured and have a value > 0
     assert len(log) == 6
-    assert [len(x) >= 2 for x in log.values()]
+    for x in log.values():
+        assert len(x) >= 1
+        assert [k > 0 for k in x]
