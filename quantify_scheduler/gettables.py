@@ -14,12 +14,18 @@ quantify-scheduler.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Tuple, Union, List, Optional
-
+import json
 import logging
+import os
+import time
+import zipfile
+from typing import Any, Callable, Dict, Tuple, Union, List, Optional
 
 import numpy as np
 from qcodes import Parameter
+from qcodes.utils.helpers import NumpyJSONEncoder
+
+from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import qcompile
@@ -154,7 +160,7 @@ class ScheduleGettable:
         return self.get()
 
     def _compile(self, sched):
-        """Compile schedule"""
+        """Compile schedule, seperated to allow for profiling compilation duration."""
         self._compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.quantum_device.generate_device_config(),
@@ -297,6 +303,73 @@ class ScheduleGettable:
                 return_data.append(np.angle(vals, deg=True))
         logger.debug(f"Returning {len(return_data)} values.")
         return tuple(return_data)
+
+    def generate_diagnostics_report(
+        self, execute_get: bool = False, update: bool = False
+    ) -> str:
+        """
+        Create a report that saves all information contained in this `ScheduleGettable` and save it in the quantify
+        datadir with its own `tuid`. The information in the report includes the generated schedule, device config,
+        hardware config and snapshot of the instruments.
+
+        Parameters
+        ----------
+        execute_get
+            When ``True``, executes ``self.get()`` before generating the report.
+        update
+            When ``True``, updates all parameters before saving the snapshot.
+
+        Returns
+        -------
+        :
+            The `tuid` of the generated report.
+        """
+        tuid = gen_tuid()
+        if execute_get:
+            self.get()
+        if not self.is_initialized:
+            raise RuntimeError(
+                "`generate_diagnostics_report` can only run for an initialized `ScheduleGettable`. "
+                "Please initialize manually or run with `execute_get=True`"
+            )
+
+        device_cfg = self.quantum_device.generate_device_config().dict()
+        hardware_cfg = self.quantum_device.generate_hardware_config()
+
+        gettable_config = {
+            "repetitions": self.quantum_device.cfg_sched_repetitions(),
+            "evaluated_schedule_kwargs": self._evaluated_sched_kwargs,
+        }
+
+        sched = self.schedule_function(
+            **self._evaluated_sched_kwargs,
+            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        )
+
+        filename = os.path.join(get_datadir(), f"{tuid}.zip")
+        with zipfile.ZipFile(
+            filename, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+        ) as zip_file:
+            zip_file.writestr("time.txt", str(time.time()))
+            zip_file.writestr(
+                "device_cfg.json",
+                json.dumps(device_cfg, cls=NumpyJSONEncoder, indent=4),
+            )
+            zip_file.writestr(
+                "hardware_cfg.json",
+                json.dumps(hardware_cfg, cls=NumpyJSONEncoder, indent=4),
+            )
+            zip_file.writestr(
+                "gettable.json",
+                json.dumps(gettable_config, cls=NumpyJSONEncoder, indent=4),
+            )
+            zip_file.writestr("schedule.json", sched.to_json())
+            zip_file.writestr(
+                "snapshot.json",
+                json.dumps(snapshot(update=update), cls=NumpyJSONEncoder, indent=4),
+            )
+
+        return filename
 
 
 def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
