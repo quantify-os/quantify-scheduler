@@ -19,10 +19,11 @@ from qcodes.instrument.parameter import ManualParameter
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
+
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
@@ -34,7 +35,7 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
     rabi_sched,
 )
-from quantify_scheduler.schedules.trace_schedules import trace_schedule_pulse
+from quantify_scheduler.schedules.trace_schedules import trace_schedule
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -270,7 +271,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
 
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
-        schedule_function=trace_schedule_pulse,
+        schedule_function=trace_schedule,
         schedule_kwargs=schedule_kwargs,
         batched=True,
     )
