@@ -21,6 +21,7 @@ Unreleased
 * Qblox backend - Implementation of distortion correction (#285, !388)
 * Qblox backend - Fix incompatibility of distortion_correction parameters as numpy arrays (!426)
 * Qblox ICCs - Fix for setting `scope_acq_sequencer_select` for QRM and QRM-RF (!432, !441)
+* Qblox ICCs - Fix `ClusterComponent.prepare` mutating the schedule (!443)
 * Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Operations - Introduce basic CZ-gate via `CompositeSquareEdge` (utilizing `quantify_scheduler.operations.pulse_factories.composite_square_pulse`); replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation (!411)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
