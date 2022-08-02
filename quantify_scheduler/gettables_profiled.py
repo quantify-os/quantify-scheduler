@@ -1,12 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 r"""
-Module containing :class:`~quantify_core.measurement.types.ProfiledGettable`\s
-for use with quantify-scheduler.
+Module containing ProfiledScheduleGettable, a subclass of ScheduleGettable
+used for profiling.
 
 .. warning::
 
-    The ProfiledGettable is currently only tested to support Qblox hardware.
+    The ProfiledScheduleGettable is currently only tested to support Qblox hardware.
 """
 import json
 import logging
