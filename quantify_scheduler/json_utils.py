@@ -176,6 +176,12 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         :
             The deserialized result.
         """
+        if "deserialization_type" in obj:
+            class_type: Type = self.classes[obj["deserialization_type"]]
+            new_obj = class_type.__new__(class_type)
+            new_obj.__setstate__(obj)
+            return new_obj
+
         for key in obj:
             value = obj[key]
             if isinstance(value, str):
@@ -265,6 +271,8 @@ class ScheduleJSONEncoder(json.JSONEncoder):
 
         if isinstance(o, (Operation, resources.Resource, Schedulable)):
             return repr(o)
+        if hasattr(o, "__getstate__"):
+            return o.__getstate__()
         if hasattr(o, "__dict__"):
             return o.__dict__
 
