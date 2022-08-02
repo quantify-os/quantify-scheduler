@@ -436,6 +436,7 @@ def test_profiling(mock_setup):
 
     # Test if all steps have been measured and have a value > 0
     assert len(log) == 6
+    assert log["schedule"][0] == 0.05153792
     for x in log.values():
         assert len(x) >= 1
         assert [k > 0 for k in x]
