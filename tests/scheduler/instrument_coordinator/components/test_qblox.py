@@ -12,6 +12,7 @@ import inspect
 import json
 import logging
 import tempfile
+from copy import deepcopy
 from operator import countOf
 from pathlib import Path
 from typing import List, Optional
@@ -438,12 +439,14 @@ def test_prepare_ref_source_cluster(
         set_datadir(tmp_dir)
 
         compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule2 = deepcopy(compiled_schedule)
         prog = compiled_schedule["compiled_instructions"]
 
         cluster.prepare(prog[cluster_name])
 
     # Assert it's only set in initialization
     cluster.instrument.reference_source.assert_called_once()
+    assert compiled_schedule == compiled_schedule2
 
 
 def test_prepare_rf(
