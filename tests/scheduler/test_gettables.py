@@ -428,7 +428,7 @@ def test_profiling(mock_setup):
         prof_gettable.quantum_device.instr_instrument_coordinator.get_instr()
     )
     instr_coordinator.start()
-    acquired_data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
     prof_gettable.close()
 
