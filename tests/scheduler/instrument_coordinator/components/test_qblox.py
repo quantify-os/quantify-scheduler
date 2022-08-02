@@ -8,11 +8,11 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
-from copy import deepcopy
 import inspect
 import json
 import logging
 import tempfile
+from copy import deepcopy
 from operator import countOf
 from pathlib import Path
 from typing import List, Optional
