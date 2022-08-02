@@ -8,6 +8,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
+from copy import deepcopy
 import inspect
 import json
 import logging
@@ -438,12 +439,14 @@ def test_prepare_ref_source_cluster(
         set_datadir(tmp_dir)
 
         compiled_schedule = qcompile(sched, DEVICE_CFG, HARDWARE_MAPPING)
+        compiled_schedule2 = deepcopy(compiled_schedule)
         prog = compiled_schedule["compiled_instructions"]
 
         cluster.prepare(prog[cluster_name])
 
     # Assert it's only set in initialization
     cluster.instrument.reference_source.assert_called_once()
+    assert compiled_schedule == compiled_schedule2
 
 
 def test_prepare_rf(
