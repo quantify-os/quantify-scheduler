@@ -31,9 +31,9 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
+    rabi_sched,
     readout_calibration_sched,
     t1_sched,
-    rabi_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
 

@@ -25,7 +25,8 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
-def _cleanup_instruments(instrument_names):
+def close_instruments(instrument_names: List[str]):
+    """Close all instruments in the list of names supplied."""
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()
@@ -59,7 +60,6 @@ def mock_setup(tmp_test_data_dir):
     """
     Returns a mock setup.
     """
-
     set_datadir(tmp_test_data_dir)
 
     # importing from init_mock will execute all the code in the module which
@@ -69,10 +69,12 @@ def mock_setup(tmp_test_data_dir):
         name="instrument_coordinator", add_default_generic_icc=False
     )
 
-    q0 = TransmonElement("q0")  # pylint: disable=invalid-name
-    q1 = TransmonElement("q1")  # pylint: disable=invalid-name
-    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
-    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
+    q0 = TransmonElement("q0")
+    q1 = TransmonElement("q1")
+    q2 = BasicTransmonElement("q2")
+    q3 = BasicTransmonElement("q3")
+    q4 = BasicTransmonElement("q4")
+    q5 = BasicTransmonElement("q5")
 
     edge_q2_q3 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q3.name
@@ -99,6 +101,8 @@ def mock_setup(tmp_test_data_dir):
     quantum_device.add_element(q1)
     quantum_device.add_element(q2)
     quantum_device.add_element(q3)
+    quantum_device.add_element(q4)
+    quantum_device.add_element(q5)
     quantum_device.add_edge(edge_q2_q3)
 
     quantum_device.instr_measurement_control(meas_ctrl.name)
@@ -111,6 +115,8 @@ def mock_setup(tmp_test_data_dir):
         "q1": q1,
         "q2": q2,
         "q3": q3,
+        "q4": q4,
+        "q5": q5,
         "q2-q3": edge_q2_q3,
         "quantum_device": quantum_device,
     }
@@ -118,7 +124,7 @@ def mock_setup(tmp_test_data_dir):
 
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
-    _cleanup_instruments(mock_instruments.keys())
+    close_instruments(mock_instruments)
 
 
 @pytest.fixture(scope="function")
@@ -137,4 +143,4 @@ def mock_setup_basic_transmon_elements(element_names: List[str]):
     mock_instruments = {"quantum_device": quantum_device, **elements}
     yield mock_instruments
 
-    _cleanup_instruments(mock_instruments)
+    close_instruments(mock_instruments)
