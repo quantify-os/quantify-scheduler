@@ -110,6 +110,13 @@ class ProfiledScheduleGettable(ScheduleGettable):
         """Overwrite compile step for profiling."""
         super()._compile(sched)
 
+    def close(self):
+        """Cleanup new profiling instruments to avoid future conflicts."""
+        self.profile.update(self.profiled_instr_coordinator.profile)
+        self.quantum_device.instr_instrument_coordinator(self.instr_coordinator.name)
+        prof_ic = Instrument.find_instrument("profiled_ic")
+        Instrument.close(prof_ic)
+
     def log_profile(self, path=""):
         """Store profiling logs to json file."""
 
@@ -119,17 +126,9 @@ class ProfiledScheduleGettable(ScheduleGettable):
                 os.makedirs(folder_name)
 
             write_path = os.path.join(folder_name, path)
-            with open(write_path, "w") as file:
+            with open(write_path, "w", encoding="utf-8") as file:
                 json.dump(self.profile, file, indent=4, separators=(",", ": "))
-
         return self.profile
-
-    def close(self):
-        """Cleanup new profiling instruments to avoid future conflicts."""
-        self.profile.update(self.profiled_instr_coordinator.profile)
-        self.quantum_device.instr_instrument_coordinator(self.instr_coordinator.name)
-        prof_ic = Instrument.find_instrument("profiled_ic")
-        Instrument.close(prof_ic)
 
     def plot_profile(self, plot_name="average_runtimes.pdf"):
         """Create barplot of accumulated profiling data."""
