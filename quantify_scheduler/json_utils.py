@@ -146,7 +146,11 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         # Use local import to void Error('Operation' from partially initialized module
         # 'quantify_scheduler')
         # pylint: disable=import-outside-toplevel
-        from quantify_scheduler import Schedulable, resources
+        from quantify_scheduler import resources
+        from quantify_scheduler.schedules.schedule import (
+            AcquisitionMetadata,
+            Schedulable,
+        )
         from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
             acquisition_library,
             gate_library,
@@ -160,7 +164,9 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
-        self.classes.update({"Schedulable": Schedulable})
+        self.classes.update(
+            {"Schedulable": Schedulable, "AcquisitionMetadata": AcquisitionMetadata}
+        )
 
     def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
