@@ -176,12 +176,16 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         :
             The deserialized result.
         """
+        # If "deserialization_type" is present in `obj` it means the object was
+        # serialized using `__getstate__` and should be deserialized using
+        # `__setstate__`.
         if "deserialization_type" in obj:
             class_type: Type = self.classes[obj["deserialization_type"]]
             new_obj = class_type.__new__(class_type)
             new_obj.__setstate__(obj)
             return new_obj
 
+        # Otherwise, check if serialization happened using `repr` and deserialize accordingly.
         for key in obj:
             value = obj[key]
             if isinstance(value, str):
@@ -259,7 +263,9 @@ class ScheduleJSONEncoder(json.JSONEncoder):
     def default(self, o):
         """
         Overloads the json.JSONEncoder default method that returns a serializable
-        object.
+        object. It will try 3 different serialization methods which are, in order,
+        serialize object to a string using repr. If this is not possible, use
+        `__getstate__`. Finally, try to serialize the `__dict__` property.
         """
         # Use local import to void Error('Operation' from partially initialized module
         # 'quantify_scheduler')
