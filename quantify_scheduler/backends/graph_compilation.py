@@ -91,13 +91,24 @@ class CompilationNode:
     def __str__(self):
         return self.name
 
-    def _compilation_func(self, schedule: Schedule, config: DataStructure) -> Schedule:
+    def _compilation_func(
+        self, schedule: Union[Schedule, DataStructure], config: DataStructure
+    ) -> Union[Schedule, DataStructure]:
         # this is the private compilation method. It should be completely stateless
         # whenever inheriting from the CompilationNode, this is the object that should
         # be modified.
+
+        # note that for linear/serial compilation graphs, the input and output is always
+        # a Schedule class but for more advanced compilers, a graph might want to do
+        # several steps in parallel. For this reason the base class supports a more
+        # relaxed Union of types as the type hint.
+        # How this Datastructure is allowed to look like depends on #311
+
         raise NotImplementedError
 
-    def compile(self, schedule: Schedule, config: DataStructure) -> Schedule:
+    def compile(
+        self, schedule: Union[Schedule, DataStructure], config: DataStructure
+    ) -> Union[Schedule, DataStructure]:
         """
         Execute a compilation pass, taking a :class:~.Schedule` and using the
         information provided in the config to return a new (updated) :class:~.Schedule`.
@@ -146,9 +157,13 @@ class SimpleNode(CompilationNode):
     def _compilation_func(
         self, schedule: Schedule, config: Union[DataStructure, dict]
     ) -> Schedule:
-        # note, the type hint indicates both datastructures and dicts. In the future
-        # we should only support DataStructures for the compiler options to have
-        # stricter typing and error handling. Dict is for legacy support.
+        # note that in contrast to the CompilationNode parent class, the compilation
+        # function has a much stricter type hint as this is for use in a SerialCompiler
+        # which constitutes a linear graph.
+
+        # note, the type hint indicates both datastructures and dicts as valid configs.
+        # In the future we should only support DataStructures for the compiler options
+        # to have stricter typing and error handling. Dict is for legacy support.
         return self.compilation_func(schedule, config)
 
 
@@ -311,7 +326,9 @@ class SerialCompiler(QuantifyCompiler):
 
         self._ouput_node = node
 
-    def _compilation_func(self, schedule: Schedule, config: dict) -> CompiledSchedule:
+    def _compilation_func(
+        self, schedule: Schedule, config: SerialCompilationConfig
+    ) -> CompiledSchedule:
         """
         Compile a schedule using the backend and the information provided in the config
 
@@ -346,4 +363,6 @@ class SerialCompiler(QuantifyCompiler):
             )
 
         # mark the schedule as "Compiled" before returning at the final step.
+        # in the future CompiledSchedule will likely become an attribute of a
+        # single Schedule class, see also #311
         return CompiledSchedule(schedule)
