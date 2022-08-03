@@ -144,8 +144,13 @@ class QuantumDevice(Instrument):
             )
 
         else:
-            raise NotImplementedError(
-                f"Hardware backend {hardware_config['backend']} not recognized"
+            backend_name = "Custom backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="custom_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
             )
 
         compilation_config = SerialCompilationConfig(
