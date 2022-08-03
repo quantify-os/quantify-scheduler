@@ -20,10 +20,10 @@ def test_getsetstate_json_serialization():
             self.bar = state["data"]["bar"]
 
     # create and import a module containing this class
-    test_module = types.ModuleType('test_module')
+    test_module = types.ModuleType("test_module")
     test_module.foo = foo
-    foo.__module__ = 'test_module'
-    sys.modules['test_module'] = test_module
+    foo.__module__ = "test_module"
+    sys.modules["test_module"] = test_module
 
     f1 = foo()
     # Check that for the test class, it works as expected
@@ -40,7 +40,7 @@ def test_getsetstate_json_serialization():
     assert f2.__dict__ == f1.__dict__
 
     # Clear the test_module from sys.modules
-    del sys.modules['test_module']
+    del sys.modules["test_module"]
 
     # Create a class which improperly implements get_state
     class foo_fail:
@@ -57,5 +57,3 @@ def test_getsetstate_json_serialization():
     # Check that the copy mechanism of python indeed uses getstate and setstate
     assert copy.copy(f1).__dict__ != f1.__dict__
     assert copy.copy(f1).bar == 1
-
-
