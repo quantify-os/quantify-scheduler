@@ -153,7 +153,7 @@ class SimpleNode(CompilationNode):
 
 
 # pylint: disable=abstract-method
-class QuantifyCompiler(nx.DiGraph, CompilationNode):
+class QuantifyCompiler(CompilationNode):
     """
     A compiler for quantify schedules.
     The compiler defines a directed acyclic graph containing :class:`~.CompilationNode`
@@ -180,9 +180,14 @@ class QuantifyCompiler(nx.DiGraph, CompilationNode):
 
     """
 
-    def __init__(self, name, incoming_graph_data=None, **attr):
-        super().__init__()
-        self.name = name
+    def __init__(self, name):
+        super().__init__(name=name)
+
+        # current implementations use networkx directed graph to store the task graph
+        # that is (typically) determined at compile time. It's fine for subclasses
+        # to specify a different type for this datastructure as long as the public
+        # interfaces are the same.
+        self._task_graph: nx.DiGraph = None
 
         self._input_node = None
         self._ouput_node = None
@@ -202,6 +207,12 @@ class QuantifyCompiler(nx.DiGraph, CompilationNode):
         If not specified will return None.
         """
         return self._ouput_node
+
+    def construct_graph(self, config: CompilationConfig):
+        """
+        Construct the compilation graph based on a provided config.
+        """
+        raise NotImplementedError
 
     def draw(
         self, ax: Axes = None, figsize: Tuple[float, float] = (20, 10), **options
@@ -230,6 +241,13 @@ class QuantifyCompiler(nx.DiGraph, CompilationNode):
             :func:`networkx.draw_networkx`.
 
         """
+
+        if self._task_graph is None:
+            raise RuntimeError(
+                "Task graph has not been initialized. Consider compiling a Schedule "
+                "using .compile or calling .construct_graph."
+            )
+
         if ax is None:
             _, ax = plt.subplots(figsize=figsize)
 
@@ -244,11 +262,11 @@ class QuantifyCompiler(nx.DiGraph, CompilationNode):
 
         # attempt to use "dot" layout from graphviz.
         try:
-            pos = nx.drawing.nx_agraph.graphviz_layout(self, prog="dot")
+            pos = nx.drawing.nx_agraph.graphviz_layout(self._task_graph, prog="dot")
         except ImportError:
-            pos = nx.kamada_kawai_layout(self)
+            pos = nx.kamada_kawai_layout(self._task_graph)
 
-        nx.draw_networkx(self, pos=pos, ax=ax, **options_dict)
+        nx.draw_networkx(self._task_graph, pos=pos, ax=ax, **options_dict)
         ax.set_axis_off()
 
         return ax
@@ -267,9 +285,13 @@ class SerialCompiler(QuantifyCompiler):
         For a serial backend, it is just a list of compilation passes.
         """
 
+        if self._task_graph is None:
+            self._task_graph = nx.DiGraph(name=self.name)
+
         # removes any old pre-existing graph removing any statefulness
-        # this should be removed in the future once we want to improve performance a bit
-        self.clear()
+        # this should be removed in the future once we want to support features
+        # like caching and visualization of compilation errors.
+        self._task_graph.clear()
 
         # check legacy
 
@@ -284,7 +306,7 @@ class SerialCompiler(QuantifyCompiler):
             if i == 0:
                 self._input_node = node
             else:
-                self.add_edge(last_added_node, node)
+                self._task_graph.add_edge(last_added_node, node)
             last_added_node = node
 
         self._ouput_node = node
@@ -308,7 +330,9 @@ class SerialCompiler(QuantifyCompiler):
             path = [self.input_node]
         else:
             try:
-                path = nx.shortest_path(self, self.input_node, self.output_node)
+                path = nx.shortest_path(
+                    self._task_graph, self.input_node, self.output_node
+                )
             except nx.exception.NetworkXNoPath as e:
                 raise CompilationError(
                     "No path between the input and output nodes"

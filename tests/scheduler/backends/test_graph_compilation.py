@@ -6,6 +6,8 @@ file.
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+import pytest
+import networkx as nx
 from matplotlib.axes import Axes
 from quantify_scheduler.backends.graph_compilation import (
     QuantifyCompiler,
@@ -53,13 +55,23 @@ def test_draw_backend():
     This test will only test if the draw code can be executed and a matplotlib figure
     is created. It will not test the details of how the figure looks.
     """
-    test_graph = QuantifyCompiler(name="test")
-    test_graph.add_node(dummy_node_A)
-    test_graph.add_node(dummy_node_B)
-    test_graph.add_edge(dummy_node_A, dummy_node_B)
+    quantify_compilation = QuantifyCompiler(name="test")
 
-    test_graph.add_edge(dummy_node_C, dummy_node_B)
-    test_graph.add_edge(dummy_node_C, dummy_node_A)
+    with pytest.raises(RuntimeError):
+        # because the graph is not initialized yet.
+        quantify_compilation.draw()
 
-    ax = test_graph.draw()
+    # this is a private attribute, normally this is set using the construct graph
+    # based on a config file, but here we wnat to keep the test of the drawing backend
+    # uncoupled from the configs.
+    quantify_compilation._task_graph = nx.DiGraph()
+
+    quantify_compilation._task_graph.add_node(dummy_node_A)
+    quantify_compilation._task_graph.add_node(dummy_node_B)
+    quantify_compilation._task_graph.add_edge(dummy_node_A, dummy_node_B)
+
+    quantify_compilation._task_graph.add_edge(dummy_node_C, dummy_node_B)
+    quantify_compilation._task_graph.add_edge(dummy_node_C, dummy_node_A)
+
+    ax = quantify_compilation.draw()
     assert isinstance(ax, Axes)
