@@ -24,6 +24,8 @@ Unreleased
 * Qblox backend - Fix handling of composite pulses (#299, !411)
 * Qblox backend - Implementation of distortion correction (#285, !388)
 * Qblox backend - Fix incompatibility of distortion_correction parameters as numpy arrays (!426)
+* Qblox ICCs - Fix for setting `scope_acq_sequencer_select` for QRM and QRM-RF (!432, !441)
+* Qblox ICCs - Fix `ClusterComponent.prepare` mutating the schedule (!443)
 * Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Operations - Introduce basic CZ-gate via `CompositeSquareEdge` (utilizing `quantify_scheduler.operations.pulse_factories.composite_square_pulse`); replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation (!411)
 * Helpers - Moved MockLocalOscillator definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
@@ -31,6 +33,7 @@ Unreleased
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
+* Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
 
 Breaking changes
 ~~~~~~~~~~~~~~~~

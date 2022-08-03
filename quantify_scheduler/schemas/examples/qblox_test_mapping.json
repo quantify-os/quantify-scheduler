@@ -9,19 +9,10 @@
             "filter_func": "scipy.signal.lfilter",
             "input_var_name": "x",
             "kwargs": {
-                "b": [
-                    0,
-                    0.25,
-                    0.5
-                ],
-                "a": [
-                    1
-                ]
+                "b": [0, 0.25, 0.5],
+                "a": [1]
             },
-            "clipping_values": [
-                -2.5,
-                2.5
-            ]
+            "clipping_values": [-2.5, 2.5]
         }
     },
     "cluster0": {
@@ -56,7 +47,6 @@
         },
         "cluster0_module3": {
             "instrument_type": "QRM",
-            "ref": "external",
             "complex_output_0": {
                 "lo_name": "lo1",
                 "dc_mixer_offset_I": -0.054,
@@ -119,6 +109,18 @@
                     {
                         "port": "q4:fl",
                         "clock": "cl0.baseband"
+                    }
+                ]
+            }
+        },
+        "cluster0_module4": {
+            "instrument_type": "QRM_RF",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {
+                        "port": "q5:res",
+                        "clock": "q5.ro",
+                        "interm_freq": 50e6
                     }
                 ]
             }

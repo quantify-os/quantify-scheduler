@@ -36,7 +36,8 @@ QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
-def _cleanup_instruments(instrument_names):
+def close_instruments(instrument_names: List[str]):
+    """Close all instruments in the list of names supplied."""
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()
@@ -70,7 +71,6 @@ def mock_setup(tmp_test_data_dir):
     """
     Returns a mock setup.
     """
-
     set_datadir(tmp_test_data_dir)
 
     # moved to a separate module to allow using the mock_setup in tutorials.
@@ -94,7 +94,7 @@ def mock_setup(tmp_test_data_dir):
     # hard to debug side effects
     # N.B. the keys need to correspond to the names of the instruments otherwise
     # they do not close correctly. Watch out with edges (e.g., q0-q2)
-    _cleanup_instruments(mock_instruments.keys())
+    close_instruments(mock_instruments.keys())
 
 
 # pylint: disable=redefined-outer-name
@@ -128,9 +128,9 @@ def mock_setup_basic_transmon(tmp_test_data_dir):
 
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
-    # N.B. the keys need to correspond to the names of the instruments otherwise
     # they do not close correctly. Watch out with edges (e.g., q0-q2)
-    _cleanup_instruments(mock_instruments.keys())
+    # N.B. the keys need to correspond to the names of the instruments otherwise
+    close_instruments(mock_instruments)
 
 
 @pytest.fixture(scope="function", autouse=False)
@@ -195,4 +195,4 @@ def mock_setup_basic_transmon_elements(element_names: List[str]):
     mock_instruments = {"quantum_device": quantum_device, **elements}
     yield mock_instruments
 
-    _cleanup_instruments(mock_instruments)
+    close_instruments(mock_instruments)
