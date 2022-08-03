@@ -9,8 +9,6 @@ Might be good to mark those tests in detail.
 
 
 import pytest
-from quantify_scheduler.backends import zhinst_backend
-
 
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler

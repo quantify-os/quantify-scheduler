@@ -5,7 +5,7 @@ from typing import Callable, Dict, List, Optional, Union, Tuple
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from quantify_scheduler.structure import DataStructure
+from quantify_scheduler.structure.model import DataStructure
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
@@ -22,7 +22,8 @@ class SimpleNodeConfig(DataStructure):
 
     Parameters
     ----------
-    name: the name of the compilation pass
+    name:
+        the name of the compilation pass
     compilation_func:
         the function to perform the compilation pass as an
         importable string (e.g., "package_name.my_module.function_name").
@@ -110,8 +111,8 @@ class CompilationNode:
         self, schedule: Union[Schedule, DataStructure], config: DataStructure
     ) -> Union[Schedule, DataStructure]:
         """
-        Execute a compilation pass, taking a :class:~.Schedule` and using the
-        information provided in the config to return a new (updated) :class:~.Schedule`.
+        Execute a compilation pass, taking a :class:`~.Schedule` and using the
+        information provided in the config to return a new (updated) :class:`~.Schedule`.
         """
 
         # this is the public facing compile method.
@@ -170,29 +171,9 @@ class SimpleNode(CompilationNode):
 # pylint: disable=abstract-method
 class QuantifyCompiler(CompilationNode):
     """
-    A compiler for quantify schedules.
+    A compiler for quantify :class:`~.Schedule` s.
     The compiler defines a directed acyclic graph containing :class:`~.CompilationNode`
     In this graph, nodes represent modular compilation passes.
-
-    Definition
-    ----------
-    A **quantify backend** defines a directed acyclic graph of functions
-    that when executed fulfill the following input output requirements. The input is a
-    :class:`~.Schedule` and a configuration file, and the output consists of platform
-    specific hardware instructions.
-
-
-    .. tip::
-
-        If you have graphviz installed you can visualize the compilation backend
-        as a directed graph using the following commands:
-
-        .. code-block::
-
-            import networkx as nx
-            gvG = nx.nx_agraph.to_agraph(my_graph)
-            gvG.draw('compilation_graph.svg', prog="dot")
-
     """
 
     def __init__(self, name):
@@ -206,6 +187,35 @@ class QuantifyCompiler(CompilationNode):
 
         self._input_node = None
         self._ouput_node = None
+
+    def compile(
+        self, schedule: Schedule, config: CompilationConfig
+    ) -> CompiledSchedule:
+        """
+        Compile a :class:`~.Schedule` using the information provided in the config.
+
+        Parameters
+        ----------
+        schedule:
+            the schedule to compile
+        config:
+            describing the information required to compile the schedule
+
+        Returns
+        -------
+        CompiledSchedule:
+            a compiled schedule containing the compiled instructions suitable
+            for execution on a (hardware) backend.
+
+        """
+
+        # this is the public facing compile method.
+        # it wraps around the self._compilation_func, but also contains the common logic
+        # to support (planned) features like caching and parallel evaluation.
+
+        # classes inheriting from this node should overwrite the _compilation_func and
+        # not the public facing compile.
+        return self._compilation_func(schedule=schedule, config=config)
 
     @property
     def input_node(self):
@@ -253,7 +263,7 @@ class QuantifyCompiler(CompilationNode):
             size of the nodes.
         options:
             optional keyword arguments that are passed to
-            :func:`networkx.draw_networkx`.
+            :code:`networkx.draw_networkx`.
 
         """
 

@@ -29,8 +29,8 @@ For most practical purposes, a user does not need to be aware of the internal st
 ## Compiling a schedule
 
 To compile a schedule, one needs to instantiate a {class}`~.backends.graph_compilation.QuantifyCompiler` and call the {meth}`~.backends.graph_compilation.QuantifyCompiler.compile` method.
-This method requires both the {class}`~.Schedule` to compile as well as a {attr}`~.QuantumDevice.generate_compilation_config()`.
-This config can conveniently be generated from a {class}`QuantumDevice` object which describes the knowledge required for compilation.
+This method requires both the {class}`~.Schedule` to compile as well as a {meth}`~.QuantumDevice.generate_compilation_config()`.
+This config can conveniently be generated from a {class}`~.QuantumDevice` object which describes the knowledge required for compilation.
 
 ```{note}
 Here we focus on using a {class}`~.backends.graph_compilation.QuantifyCompiler` to compile a {class}`~.Schedule` in isolation.

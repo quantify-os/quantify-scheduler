@@ -16,7 +16,6 @@ These are mostly used to assert that the compilers run without errors. These are
 used to pin specific outcomes of the compiler.
 """
 
-import pytest
 import numpy as np
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.gate_library import (
