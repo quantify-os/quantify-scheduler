@@ -264,7 +264,7 @@ class ScheduleJSONEncoder(json.JSONEncoder):
         """
         Overloads the json.JSONEncoder default method that returns a serializable
         object. It will try 3 different serialization methods which are, in order,
-        serialize object to a string using repr. If this is not possible, use
+        check if the object is to be serialized to a string using repr. If not, try to use
         `__getstate__`. Finally, try to serialize the `__dict__` property.
         """
         # Use local import to void Error('Operation' from partially initialized module
