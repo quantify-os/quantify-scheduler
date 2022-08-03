@@ -9,7 +9,7 @@ import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-from dataclasses import dataclass
+import dataclasses
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from uuid import uuid4
 
@@ -870,7 +870,7 @@ class CompiledSchedule(ScheduleBase):
         return self._hardware_waveform_dict
 
 
-@dataclass
+@dataclasses.dataclass
 class AcquisitionMetadata:
     """
     Class to provide a description of the shape and type of data that a schedule will
@@ -891,3 +891,28 @@ class AcquisitionMetadata:
     acq_indices: Dict[int, List[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
+
+    def __getstate__(self):
+        data = dataclasses.asdict(self)
+        data["acq_return_type"] = str(self.acq_return_type)
+        return {"deserialization_type": self.__class__.__name__, "data": data}
+
+    def __setstate__(self, state):
+        if state["data"]["acq_return_type"] == "<class 'complex'>":
+            state["data"]["acq_return_type"] = complex
+        elif state["data"]["acq_return_type"] == "<class 'numpy.ndarray'>":
+            state["data"]["acq_return_type"] = np.ndarray
+        else:
+            raise ValueError(
+                f"acquisition metadata setstate got unknown type: {state['data']['acq_return_type']}"
+            )
+        if state["data"]["bin_mode"] == "average":
+            state["data"]["bin_mode"] = enums.BinMode.AVERAGE
+        elif state["data"]["bin_mode"] == "append":
+            state["data"]["bin_mode"] = enums.BinMode.APPEND
+        else:
+            raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
+        state["data"]["acq_indices"] = {
+            int(k): v for k, v in state["data"]["acq_indices"].items()
+        }
+        self.__init__(**state["data"])
