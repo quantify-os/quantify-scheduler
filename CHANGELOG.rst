@@ -30,7 +30,7 @@ Unreleased
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
-* JSON_Utils - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
+* JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
