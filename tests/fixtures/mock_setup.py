@@ -145,7 +145,7 @@ def device_compile_config_basic_transmon(mock_setup_basic_transmon):
     # as long as it keeps doing what is described in this docstring.
 
     set_standard_params_transmon(mock_setup_basic_transmon)
-    yield mock_setup_basic_transmon["quantum_device"].compilation_config
+    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function", autouse=False)
@@ -161,7 +161,7 @@ def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon):
     mock_setup_basic_transmon["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
 
     # add the hardware config here
-    yield mock_setup_basic_transmon["quantum_device"].compilation_config
+    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function", autouse=False)
@@ -176,7 +176,7 @@ def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon):
     set_standard_params_transmon(mock_setup_basic_transmon)
     mock_setup_basic_transmon["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
 
-    yield mock_setup_basic_transmon["quantum_device"].compilation_config
+    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function")

@@ -177,7 +177,7 @@ class ScheduleGettable:
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
 
-        compilation_config = self.quantum_device.compilation_config
+        compilation_config = self.quantum_device.generate_compilation_config()
 
         # made into a private variable for debugging and future caching functionality
         backend_class = import_python_object_from_string(compilation_config.backend)

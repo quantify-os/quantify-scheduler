@@ -92,8 +92,7 @@ class QuantumDevice(Instrument):
             initial_value=None,
         )
 
-    @property
-    def compilation_config(self) -> CompilationConfig:
+    def generate_compilation_config(self) -> CompilationConfig:
         """
         Generates a compilation config for use with a
         :class:`~.graph_compilation.QuantifyCompiler`.

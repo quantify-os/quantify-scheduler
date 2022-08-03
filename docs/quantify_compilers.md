@@ -29,7 +29,7 @@ For most practical purposes, a user does not need to be aware of the internal st
 ## Compiling a schedule
 
 To compile a schedule, one needs to instantiate a {class}`~.backends.graph_compilation.QuantifyCompiler` and call the {meth}`~.backends.graph_compilation.QuantifyCompiler.compile` method.
-This method requires both the {class}`~.Schedule` to compile as well as a {attr}`~.QuantumDevice.compilation_config`.
+This method requires both the {class}`~.Schedule` to compile as well as a {attr}`~.QuantumDevice.generate_compilation_config()`.
 This config can conveniently be generated from a {class}`QuantumDevice` object which describes the knowledge required for compilation.
 
 ```{note}
@@ -64,7 +64,7 @@ In the current example we have a simple {class}`~.backends.graph_compilation.Ser
 
 
     quantum_device = mock_setup['quantum_device']
-    config = quantum_device.compilation_config
+    config = quantum_device.generate_compilation_config()
 
     print(config.backend)
 
@@ -101,13 +101,13 @@ from quantify_scheduler.schemas.examples import utils
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
-dev_cfg = quantum_device.compilation_config
+dev_cfg = quantum_device.generate_compilation_config()
 
 quantum_device.hardware_config(QBLOX_HARDWARE_MAPPING)
-qblox_cfg = quantum_device.compilation_config
+qblox_cfg = quantum_device.generate_compilation_config()
 
 quantum_device.hardware_config(ZHINST_HARDWARE_MAPPING)
-zhinst_cfg = quantum_device.compilation_config
+zhinst_cfg = quantum_device.generate_compilation_config()
 
 ```
 
