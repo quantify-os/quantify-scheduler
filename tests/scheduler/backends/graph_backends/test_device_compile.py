@@ -5,6 +5,9 @@ schedules.
 """
 import pytest
 from quantify_scheduler import Schedule, CompiledSchedule
+
+# The module we are interested in testing
+from quantify_scheduler.backends import SerialCompiler
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
     two_qubit_t1_schedule,
@@ -13,10 +16,6 @@ from .standard_schedules import (
     parametrized_operation_schedule,
     hybrid_schedule_rabi,
 )
-
-
-# The module we are interested in testing
-from quantify_scheduler.backends import SerialCompiler
 
 
 @pytest.mark.parametrize(
@@ -33,6 +32,10 @@ from quantify_scheduler.backends import SerialCompiler
 def test_compiles_standard_schedules(
     schedule: Schedule, device_compile_config_basic_transmon
 ):
+    """
+    Tests if a bunch of standard schedules compile with the SerialCompiler to the
+    device layer.
+    """
 
     config = device_compile_config_basic_transmon
     # Arrange

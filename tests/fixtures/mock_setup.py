@@ -30,8 +30,8 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.schemas.examples import utils
 
-# Test hardware mappings. Note, these will change as we are updating our hardware mapping
-# for the graph based compilation.
+# Test hardware mappings. Note, these will change as we are updating our hardware
+# mapping for the graph based compilation.
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 

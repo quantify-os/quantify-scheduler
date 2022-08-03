@@ -16,6 +16,7 @@ class CompilationError(RuntimeError):
     """
 
 
+# pylint: disable=too-few-public-methods
 class SimpleNodeConfig(DataStructure):
     """
     A config specifying the structure of a simple compilation config.
@@ -40,6 +41,7 @@ class SimpleNodeConfig(DataStructure):
     compilation_options: Optional[Dict]
 
 
+# pylint: disable=too-few-public-methods
 class CompilationConfig(DataStructure):
     """
     Base class for a CompilationConfig.
@@ -51,6 +53,7 @@ class CompilationConfig(DataStructure):
     backend: str
 
 
+# pylint: disable=too-few-public-methods
 class SerialCompilationConfig(CompilationConfig):
     """
     A compilation config for a simple serial compiler.
@@ -112,7 +115,8 @@ class CompilationNode:
     ) -> Union[Schedule, DataStructure]:
         """
         Execute a compilation pass, taking a :class:`~.Schedule` and using the
-        information provided in the config to return a new (updated) :class:`~.Schedule`.
+        information provided in the config to return a new (updated)
+        :class:`~.Schedule`.
         """
 
         # this is the public facing compile method.
