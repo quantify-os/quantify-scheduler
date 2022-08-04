@@ -908,6 +908,8 @@ class AcquisitionMetadata:
             state["data"]["acq_return_type"] = bool
         elif state["data"]["acq_return_type"] == "<class 'float'>":
             state["data"]["acq_return_type"] = float
+        elif state["data"]["acq_return_type"] == "<class 'str'>":
+            state["data"]["acq_return_type"] = str
         else:
             raise ValueError(
                 f"acquisition metadata setstate got unknown "

@@ -444,7 +444,7 @@ def test_acquisitionmetadata():
     metadata2 = AcquisitionMetadata(
         acq_protocol="ssb_integration_complex",
         bin_mode=enums.BinMode.AVERAGE,
-        acq_return_type=str,
+        acq_return_type=type,
         acq_indices={0: [0]},
     )
     with pytest.raises(ValueError):
