@@ -904,7 +904,8 @@ class AcquisitionMetadata:
             state["data"]["acq_return_type"] = np.ndarray
         else:
             raise ValueError(
-                f"acquisition metadata setstate got unknown type: {state['data']['acq_return_type']}"
+                f"acquisition metadata setstate got unknown "
+                f"type: {state['data']['acq_return_type']}"
             )
         for binmode in enums.BinMode:
             if state["data"]["bin_mode"] == binmode.value:
