@@ -906,10 +906,10 @@ class AcquisitionMetadata:
             raise ValueError(
                 f"acquisition metadata setstate got unknown type: {state['data']['acq_return_type']}"
             )
-        if state["data"]["bin_mode"] == "average":
-            state["data"]["bin_mode"] = enums.BinMode.AVERAGE
-        elif state["data"]["bin_mode"] == "append":
-            state["data"]["bin_mode"] = enums.BinMode.APPEND
+        for binmode in enums.BinMode:
+            if state["data"]["bin_mode"] == binmode.value:
+                state["data"]["bin_mode"] = binmode
+                break
         else:
             raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
         state["data"]["acq_indices"] = {
