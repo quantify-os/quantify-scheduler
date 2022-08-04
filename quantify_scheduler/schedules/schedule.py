@@ -902,6 +902,12 @@ class AcquisitionMetadata:
             state["data"]["acq_return_type"] = complex
         elif state["data"]["acq_return_type"] == "<class 'numpy.ndarray'>":
             state["data"]["acq_return_type"] = np.ndarray
+        elif state["data"]["acq_return_type"] == "<class 'int'>":
+            state["data"]["acq_return_type"] = int
+        elif state["data"]["acq_return_type"] == "<class 'bool'>":
+            state["data"]["acq_return_type"] = bool
+        elif state["data"]["acq_return_type"] == "<class 'float'>":
+            state["data"]["acq_return_type"] = float
         else:
             raise ValueError(
                 f"acquisition metadata setstate got unknown "

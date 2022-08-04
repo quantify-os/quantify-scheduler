@@ -419,6 +419,19 @@ def test_acquisitionmetadata():
         assert isinstance(metadata_copy.bin_mode, enums.BinMode)
         assert isinstance(metadata_copy.acq_return_type, type)
 
+    for returntype in [complex, float, int, bool, np.ndarray]:
+        metadata = AcquisitionMetadata(
+            acq_protocol="ssb_integration_complex",
+            bin_mode=enums.BinMode.AVERAGE,
+            acq_return_type=returntype,
+            acq_indices={0: [0]},
+        )
+        # test whether the copy function works correctly
+        metadata_copy = copy.copy(metadata)
+        assert metadata_copy == metadata
+        assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+        assert isinstance(metadata_copy.acq_return_type, type)
+
     # Test that json serialization works correctly
     serialized = json.dumps(metadata, cls=json_utils.ScheduleJSONEncoder)
     # Test that json deserialization works correctly
