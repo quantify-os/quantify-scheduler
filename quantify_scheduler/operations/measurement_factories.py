@@ -14,7 +14,7 @@ from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
 )
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import SquarePulse, ResetClockPhase
 
 
 # pylint: disable=too-many-arguments
@@ -33,6 +33,7 @@ def dispersive_measurement(
     acq_protocol_default: Literal[
         "SSBIntegrationComplex", "Trace"
     ] = "SSBIntegrationComplex",
+    reset_clock_phase: bool = None,
 ) -> Operation:
     """
     Generator function for a standard dispersive measurement.
@@ -53,7 +54,7 @@ def dispersive_measurement(
     # using different measurement pulses) would require a different generator function.
 
     if pulse_type == "SquarePulse":
-        device_op = SquarePulse(
+        pulse_op = SquarePulse(
             amp=pulse_amp,
             duration=pulse_duration,
             port=port,
@@ -62,10 +63,16 @@ def dispersive_measurement(
     else:
         # here we need to add support for SoftSquarePulse
         raise NotImplementedError(
-            f'Invalid pulse_type "{pulse_type}" specified as argument to '
+            f'Invalid pulse_type "{pulse_op}" specified as argument to '
             + "dispersive_measurement. Currently dispersive_measurement only"
             + ' allows "SquarePulse". Please correct your device config.'
         )
+
+    if reset_clock_phase:
+        device_op = ResetClockPhase(clock=clock)
+        device_op.add_pulse(pulse_op)
+    else:
+        device_op = pulse_op
 
     if acq_protocol is None:
         acq_protocol = acq_protocol_default

@@ -448,7 +448,6 @@ class Measure(Operation):
         ] = None,
         bin_mode: BinMode = None,
         data: Optional[dict] = None,
-        reset_clock_phase: bool = True,
     ):
         """
         Gate level description for a measurement.
@@ -477,16 +476,6 @@ class Measure(Operation):
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
-        reset_clock_phase
-            The phase of the measurement clock will be reset by the control hardware
-            at the start of each measurement if ``reset_clock_phase=True`` in order to
-            obtain a fully projective measurement. The phase reset can be optionally be
-            turned off.
-
-            .. note::
-                disabling the phase reset has consequences for scope mode acquisitions
-                (e.g. averaging is not possible anymore) and weighed integration (phase
-                shifts lead to different integration results).
         """
 
         # this if else statement a workaround to support multiplexed measurements (#262)
@@ -527,7 +516,6 @@ class Measure(Operation):
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
                     "operation_type": "measure",
-                    "reset_clock_phase": reset_clock_phase,
                 },
             }
         super().__init__(data["name"], data=data)
@@ -539,10 +527,8 @@ class Measure(Operation):
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
-        reset_clock_phase = gate_info["reset_clock_phase"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
             f"acq_channel={acq_channel}, acq_index={acq_index}, "
-            f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)}, '
-            f"reset_clock_phase={reset_clock_phase})"
+            f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)})'
         )
