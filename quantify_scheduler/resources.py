@@ -14,7 +14,7 @@ class Resource(UserDict):
     """
     A resource corresponds to a physical resource such as a port or a clock.
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/resource.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/resource.json
 
     """
 

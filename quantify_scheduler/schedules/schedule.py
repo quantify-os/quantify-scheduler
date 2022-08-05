@@ -66,7 +66,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     **JSON schema of a valid Schedule**
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/schedule.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/schedule.json
 
     """
     # pylint: enable=line-too-long

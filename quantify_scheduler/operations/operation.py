@@ -54,7 +54,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     **JSON schema of a valid Operation**
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/operation.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/operation.json
 
 
     .. note::
