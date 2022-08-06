@@ -19,19 +19,18 @@ class CompilationError(RuntimeError):
 # pylint: disable=too-few-public-methods
 class SimpleNodeConfig(DataStructure):
     """
-    A config specifying the structure of a simple compilation config.
+    Datastructure specifying the structure of a simple compiler pass config (also see :class:`~.SimpleNode`).
 
     Parameters
     ----------
-    name:
+    name
         the name of the compilation pass
-    compilation_func:
+    compilation_func
         the function to perform the compilation pass as an
         importable string (e.g., "package_name.my_module.function_name").
-    compilation_options:
+    compilation_options
         the options passed to the compilation function along with the intermediate
         representation.
-
     """
 
     name: str
@@ -45,7 +44,7 @@ class SimpleNodeConfig(DataStructure):
 class CompilationConfig(DataStructure):
     """
     Base class for a CompilationConfig.
-    Subclassing is generaly required to create useful configs, here extra fields can
+    Subclassing is generally required to create useful configs, here extra fields can
     be defined.
     """
 
@@ -75,7 +74,7 @@ class CompilationNode:
 
         Parameters
         ----------
-        name:
+        name
             The name of the node. Should be unique if it is added to a (larger)
             compilation
             graph.
@@ -106,7 +105,7 @@ class CompilationNode:
         # a Schedule class but for more advanced compilers, a graph might want to do
         # several steps in parallel. For this reason the base class supports a more
         # relaxed Union of types as the type hint.
-        # How this Datastructure is allowed to look like depends on #311
+        # How this Datastructure is allowed to look like depends on https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
 
         raise NotImplementedError
 
@@ -147,8 +146,8 @@ class SimpleNode(CompilationNode):
             compilation graph.
         compilation_func:
             A Callable that will be wrapped in this object. A compilation function
-            should takes the intermediate representation (commonly :class:`~.Schedule`)
-            and a config as an input and returns a new (modified) intermediate
+            should take the intermediate representation (commonly :class:`~.Schedule`)
+            and a config as inputs and returns a new (modified) intermediate
             representation.
 
         .. note::
@@ -176,7 +175,7 @@ class SimpleNode(CompilationNode):
 class QuantifyCompiler(CompilationNode):
     """
     A compiler for quantify :class:`~.Schedule` s.
-    The compiler defines a directed acyclic graph containing :class:`~.CompilationNode`
+    The compiler defines a directed acyclic graph containing :class:`~.CompilationNode` s.
     In this graph, nodes represent modular compilation passes.
     """
 
@@ -250,8 +249,7 @@ class QuantifyCompiler(CompilationNode):
         Draws the graph defined by this backend using matplotlib.
 
         Will attempt to position the nodes using the "dot" algorithm for directed
-        acyclic graphs from graphviz
-        if available.
+        acyclic graphs from graphviz if available.
         See https://pygraphviz.github.io/documentation/stable/install.html for
         installation instructions of pygraphviz and graphviz.
 
@@ -274,7 +272,7 @@ class QuantifyCompiler(CompilationNode):
         if self._task_graph is None:
             raise RuntimeError(
                 "Task graph has not been initialized. Consider compiling a Schedule "
-                "using .compile or calling .construct_graph."
+                "using .compile or calling .construct_graph"
             )
 
         if ax is None:
@@ -344,15 +342,15 @@ class SerialCompiler(QuantifyCompiler):
         self, schedule: Schedule, config: SerialCompilationConfig
     ) -> CompiledSchedule:
         """
-        Compile a schedule using the backend and the information provided in the config
+        Compile a schedule using the backend and the information provided in the config.
 
         Parameters
         ----------
-        Schedule
-            The schedule to compile
+        schedule
+            The schedule to compile.
         config
             A dictionary containing the information needed to compile the schedule.
-            Nodes in this backend specify what key they need information from in this
+            Nodes in this compiler specify what key they need information from in this
             dictionary.
         """
         self.construct_graph(config=config)
@@ -378,5 +376,5 @@ class SerialCompiler(QuantifyCompiler):
 
         # mark the schedule as "Compiled" before returning at the final step.
         # in the future CompiledSchedule will likely become an attribute of a
-        # single Schedule class, see also #311
+        # single Schedule class, see also https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
         return CompiledSchedule(schedule)

@@ -7,8 +7,10 @@ Might be good to mark those tests in detail.
 """
 
 import pytest
-from quantify_scheduler.backends import SerialCompiler
+
 from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler.backends import SerialCompiler
+
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
     two_qubit_t1_schedule,
@@ -19,7 +21,6 @@ from .standard_schedules import (
 )
 
 
-# @pytest.mark.xfail(reason="qblox hardware mapping not implemented yet")
 @pytest.mark.parametrize(
     "schedule",
     [

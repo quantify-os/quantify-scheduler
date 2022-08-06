@@ -51,7 +51,7 @@ dummy_node_D = SimpleNode(
 
 def test_draw_backend():
     """
-    Tests if we can visualize a the graph defined by a generic backend.
+    Tests if we can visualize a graph defined by a generic backend.
     This test will only test if the draw code can be executed and a matplotlib figure
     is created. It will not test the details of how the figure looks.
     """
@@ -62,7 +62,7 @@ def test_draw_backend():
         quantify_compilation.draw()
 
     # this is a private attribute, normally this is set using the construct graph
-    # based on a config file, but here we wnat to keep the test of the drawing backend
+    # based on a config file, but here we want to keep the test of the drawing backend
     # uncoupled from the configs.
     quantify_compilation._task_graph = nx.DiGraph()
 

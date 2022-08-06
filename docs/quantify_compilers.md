@@ -63,7 +63,7 @@ In the current example we have a simple {class}`~.backends.graph_compilation.Ser
 ```{code-cell}
 
 
-    quantum_device = mock_setup['quantum_device']
+    quantum_device = mock_setup["quantum_device"]
     config = quantum_device.generate_compilation_config()
 
     print(config.backend)
@@ -91,7 +91,7 @@ This makes it really easy to visualize the different steps in the compilation pr
 
 Here we show the compilation structure for several commonly used backends.
 To do this, we will use the example configuration files of the different backends and then use the quantum device to generate the relevant {class}`~.CompilationConfig` s.
-Note that in the future we want to improve how the hardware config is managed so one does not need to set a custom dictionary to the hardware config parameter of the quantum_device object.
+Note that in the future we want to improve how the hardware config is managed so one does not need to set a custom dictionary to the hardware config parameter of the ``quantum_device`` object.
 
 
 ```{code-cell}
@@ -138,11 +138,11 @@ f, axs = plt.subplots(1,3, figsize=(16,7))
 
 # Show the graph of the currently included backends
 dev_backend.draw(axs[0])
-axs[0].set_title('DeviceBackend')
+axs[0].set_title("DeviceBackend")
 qblox_backend.draw(axs[1])
-axs[1].set_title('QbloxBackend')
+axs[1].set_title("QbloxBackend")
 zhinst_backend.draw(axs[2])
-axs[2].set_title('ZhinstBackend')
+axs[2].set_title("ZhinstBackend")
 f
 
 ```

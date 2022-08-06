@@ -12,22 +12,14 @@ import pytest
 from qcodes import Instrument
 
 from quantify_core.data.handling import get_datadir, set_datadir
+
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_mock_transmon_setup,
     set_up_mock_transmon_setup_legacy,
     set_standard_params_transmon,
 )
-
-
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import (
-    TransmonElement,
-    BasicTransmonElement,
-)
-from quantify_scheduler.device_under_test.composite_square_edge import (
-    CompositeSquareEdge,
-)
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.schemas.examples import utils
 
 # Test hardware mappings. Note, these will change as we are updating our hardware

@@ -33,7 +33,7 @@ def set_up_mock_transmon_setup_legacy() -> Dict:
 
 
     Returns a dictionary containing the instruments that are instantiated as part of
-    this setup. The keys corresponds to the names of the instruments.
+    this setup. The keys correspond to the names of the instruments.
     """
 
     # importing from init_mock will execute all the code in the module which
@@ -44,11 +44,11 @@ def set_up_mock_transmon_setup_legacy() -> Dict:
     )
 
     # used in parts of the old test suite
-    q0 = TransmonElement("q0")  # pylint: disable=invalid-name
-    q1 = TransmonElement("q1")  # pylint: disable=invalid-name
-    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
-    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
-    q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
+    q0 = TransmonElement("q0")
+    q1 = TransmonElement("q1")
+    q2 = BasicTransmonElement("q2")
+    q3 = BasicTransmonElement("q3")
+    q4 = BasicTransmonElement("q4")
 
     edge_q2_q3 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q3.name
@@ -123,9 +123,9 @@ def set_up_mock_transmon_setup() -> Dict:
     q0 = BasicTransmonElement("q0")
     q1 = BasicTransmonElement("q1")
 
-    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
-    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
-    q4 = BasicTransmonElement("q4")  # pylint: disable=invalid-name
+    q2 = BasicTransmonElement("q2")
+    q3 = BasicTransmonElement("q3")
+    q4 = BasicTransmonElement("q4")
 
     edge_q0_q2 = CompositeSquareEdge(
         parent_element_name=q0.name, child_element_name=q2.name

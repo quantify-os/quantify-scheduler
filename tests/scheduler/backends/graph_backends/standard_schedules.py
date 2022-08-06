@@ -18,6 +18,7 @@ used to pin specific outcomes of the compiler.
 
 import numpy as np
 from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
     Measure,
     Reset,
@@ -26,7 +27,6 @@ from quantify_scheduler.operations.gate_library import (
     CZ,
     Rxy,
 )
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -40,7 +40,7 @@ def single_qubit_schedule_circuit_level() -> Schedule:
     A trivial schedule containing a reset, a gate and a measurement.
     """
     qubit = "q0"
-    sched = Schedule("single_qubit_gate_schedule")
+    sched = Schedule("single_qubit_schedule_circuit_level")
 
     sched.add(Reset(qubit))
     sched.add(X(qubit))
@@ -57,7 +57,7 @@ def two_qubit_t1_schedule() -> Schedule:
 
     q0, q1 = ("q0", "q1")
     repetitions = 1024
-    sched = Schedule("Multi-qubit T1", repetitions)
+    sched = Schedule("two_qubit_t1_schedule", repetitions)
 
     times = np.arange(0, 60e-6, 3e-6)
 
@@ -110,19 +110,17 @@ def two_qubit_schedule_with_edge() -> Schedule:
     return sched
 
 
-# def hybrid_schedule_single_qubit_spec() -> Schedule:
-#     pass
 
 
 def pulse_only_schedule() -> Schedule:
 
-    sched = Schedule(name="pulse only schedule", repetitions=1024)
+    sched = Schedule(name="pulse_only_schedule", repetitions=1024)
 
-    # these are kind of magic names that are known to exist in the default config.
+    # these are kind of magic names that are known to exist in the default hardware config.
     port = "q0:res"
     clock = "q0.ro"
 
-    # this should not be required.
+     # manually specifying the clock should not be required in the future.
     sched.add_resource(ClockResource(name=clock, freq=5e9))
 
     for acq_index in [0, 1, 2]:
@@ -149,9 +147,10 @@ def pulse_only_schedule() -> Schedule:
 
 
 def parametrized_operation_schedule() -> Schedule:
-    qubit = "q0"
-    sched = Schedule("single_qubit_gate_schedule")
 
+    sched = Schedule("parametrized_operation_schedule")
+
+    qubit = "q0"
     for i, theta in enumerate([0, 45, 90, 1723.435]):
         sched.add(Reset(qubit))
         sched.add(Rxy(theta=theta, phi=0, qubit=qubit))
@@ -162,11 +161,14 @@ def parametrized_operation_schedule() -> Schedule:
 
 def hybrid_schedule_rabi() -> Schedule:
 
-    schedule = Schedule("Rabi", 8192)
-    # manually specifying the clock should not br required in the future.
+    schedule = Schedule("hybrid_schedule_rabi", 8192)
+
     port = "q0:mw"
     clock = "q0.01"
+
+    # manually specifying the clock should not be required in the future.
     schedule.add_resource(ClockResource(name=clock, freq=6.4e9))
+
     for i, amp in enumerate(np.linspace(-1, 1, 11)):
         schedule.add(Reset("q0"), label=f"Reset {i}")
         schedule.add(

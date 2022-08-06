@@ -203,7 +203,7 @@ class DispersiveMeasurement(InstrumentChannel):
             unit="s",
             parameter_class=ManualParameter,
             # in principle the values should be a few 100 ns but the validator is here
-            # only to protect against silly typo's that lead to out of memory errors.
+            # only to protect against silly typos that lead to out of memory errors.
             vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
         self.add_parameter(
@@ -213,7 +213,7 @@ class DispersiveMeasurement(InstrumentChannel):
             unit="s",
             parameter_class=ManualParameter,
             # in principle the values should be a few us but the validator is here
-            # only to protect against silly typo's that lead to out of memory errors.
+            # only to protect against silly typos that lead to out of memory errors.
             vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
 

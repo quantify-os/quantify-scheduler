@@ -253,8 +253,8 @@ Compilation
 -----------
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
-The scheduler supports multiple compilation steps, the most important ones are the step from the quantum-circuit layer to the quantum-device layer, and the one from the quantum-device layer into instructions suitable for execution on physical hardware.
-This compilation is performed by a :class:`~.QuantifyCompiler`. The compilers are described in detail in :ref:`Compilers`.
+The scheduler supports multiple compilation steps, the most important ones are the step from the quantum-circuit layer (gates) to the quantum-device layer (pulses), and the one from the quantum-device layer into instructions suitable for execution on physical hardware.
+The compilation is performed by a :class:`~.QuantifyCompiler`. The compilers are described in detail in :ref:`Compilers`.
 
 This is schematically shown in :numref:`compilation_overview`.
 

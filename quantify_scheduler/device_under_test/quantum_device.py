@@ -11,12 +11,12 @@ from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
 from quantify_core.utilities import deprecated
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     SimpleNodeConfig,
     SerialCompilationConfig,
 )
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
 
