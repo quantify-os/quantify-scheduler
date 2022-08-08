@@ -419,7 +419,7 @@ def test_acquisition_metadata():
         assert isinstance(metadata_copy.bin_mode, enums.BinMode)
         assert isinstance(metadata_copy.acq_return_type, type)
 
-    for returntype in [complex, float, int, bool, np.ndarray]:
+    for return_type in [complex, np.ndarray, int, bool, float, str]:
         metadata = AcquisitionMetadata(
             acq_protocol="ssb_integration_complex",
             bin_mode=enums.BinMode.AVERAGE,

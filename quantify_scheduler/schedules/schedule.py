@@ -898,29 +898,25 @@ class AcquisitionMetadata:
         return {"deserialization_type": self.__class__.__name__, "data": data}
 
     def __setstate__(self, state):
-        if state["data"]["acq_return_type"] == "<class 'complex'>":
-            state["data"]["acq_return_type"] = complex
-        elif state["data"]["acq_return_type"] == "<class 'numpy.ndarray'>":
-            state["data"]["acq_return_type"] = np.ndarray
-        elif state["data"]["acq_return_type"] == "<class 'int'>":
-            state["data"]["acq_return_type"] = int
-        elif state["data"]["acq_return_type"] == "<class 'bool'>":
-            state["data"]["acq_return_type"] = bool
-        elif state["data"]["acq_return_type"] == "<class 'float'>":
-            state["data"]["acq_return_type"] = float
-        elif state["data"]["acq_return_type"] == "<class 'str'>":
-            state["data"]["acq_return_type"] = str
+        return_types = {str(t): t for t in [complex, np.ndarray, int, bool, float, str]}
+
+        if state["data"]["acq_return_type"] in return_types:
+            state["data"]["acq_return_type"] = return_types[
+                state["data"]["acq_return_type"]
+            ]
         else:
             raise ValueError(
-                f"acquisition metadata setstate got unknown "
+                f"AcquisitionMetaData setstate got unknown "
                 f"type: {state['data']['acq_return_type']}"
             )
+
         for binmode in enums.BinMode:
             if state["data"]["bin_mode"] == binmode.value:
                 state["data"]["bin_mode"] = binmode
                 break
         else:
             raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
+
         state["data"]["acq_indices"] = {
             int(k): v for k, v in state["data"]["acq_indices"].items()
         }
