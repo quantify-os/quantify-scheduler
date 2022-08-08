@@ -1,12 +1,11 @@
-.. _sec-qblox-how-to-configure:
+(sec-qblox-how-to-configure)=
 
-Usage of the backend
-====================
+# Usage of the backend
 
 Configuring the backend is done by specifying a python dictionary (or loading it from a JSON file)
 that describes your experimental setup. An example of such a config:
 
-.. jupyter-execute::
+```{jupyter-execute}
     :hide-code:
     :linenos:
 
@@ -23,8 +22,9 @@ that describes your experimental setup. An example of such a config:
       qblox_test_mapping = json.load(f)
 
     print(json.dumps(qblox_test_mapping, indent=4, sort_keys=False))  # Do not sort to retain the order as in the file
+```
 
-Here the entry :code:`"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
-that we are using the Qblox backend (specifically the :func:`~quantify_scheduler.backends.qblox_backend.hardware_compile` function).
+Here the entry {code}`"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
+that we are using the Qblox backend (specifically the {func}`~quantify_scheduler.backends.qblox_backend.hardware_compile` function).
 
-Apart from the :code:`"backend"`, each entry in the dictionary corresponds to a device connected to the setup. In the other sections we will look at the specific instrument configurations in more detail.
+Apart from the {code}`"backend"`, each entry in the dictionary corresponds to a device connected to the setup. In the other sections we will look at the specific instrument configurations in more detail.

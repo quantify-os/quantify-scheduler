@@ -1,9 +1,8 @@
-.. _sec-qblox-cluster:
+(sec-qblox-cluster)=
 
-Cluster
-=======
+# Cluster
 
-.. jupyter-execute::
+```{jupyter-execute}
     :hide-code:
 
     # in the hidden cells we include some code that checks for correctness of the examples
@@ -19,14 +18,15 @@ Cluster
 
     temp_dir = TemporaryDirectory()
     set_datadir(temp_dir.name)
+```
 
-In the previous sections we explained how to configure the backend for use with the standalone `Pulsars <https://www.qblox.com/pulsar>`_, now we will explain how to adapt this config
-to use one or multiple `Clusters <https://www.qblox.com/cluster>`_ instead.
-Since the cluster modules behave similarly, we recommend first familiarizing yourself with the configuration for the :doc:`pulsars <Pulsar>`.
+In the previous sections we explained how to configure the backend for use with the standalone [Pulsars](https://www.qblox.com/pulsar), now we will explain how to adapt this config
+to use one or multiple [Clusters](https://www.qblox.com/cluster) instead.
+Since the cluster modules behave similarly, we recommend first familiarizing yourself with the configuration for the {doc}`pulsars <Pulsar>`.
 
 We start by looking at an example config for a single cluster:
 
-.. jupyter-execute::
+```{jupyter-execute}
     :hide-output:
     :linenos:
 
@@ -65,8 +65,9 @@ We start by looking at an example config for a single cluster:
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     }
+```
 
-.. jupyter-execute::
+```{jupyter-execute}
     :hide-code:
     :hide-output:
 
@@ -84,8 +85,9 @@ We start by looking at an example config for a single cluster:
     test_sched = determine_absolute_timing(test_sched)
 
     hardware_compile(test_sched, mapping_config)
+```
 
-In the example, we notice that the cluster is specified using an instrument with :code:`"instrument_type": "Cluster"`. In the backend, the cluster instrument functions as a collection of
-modules. The modules themselves can be configured identically to pulsars, except for the :code:`ref`, which has now become a cluster wide setting.
+In the example, we notice that the cluster is specified using an instrument with {code}`"instrument_type": "Cluster"`. In the backend, the cluster instrument functions as a collection of
+modules. The modules themselves can be configured identically to pulsars, except for the {code}`ref`, which has now become a cluster wide setting.
 
-Valid values for :code:`"instrument_type"` for the modules are: :code:`QCM`, :code:`QRM`, :code:`QCM_RF` and :code:`QRM_RF`.
+Valid values for {code}`"instrument_type"` for the modules are: {code}`QCM`, {code}`QRM`, {code}`QCM_RF` and {code}`QRM_RF`.
