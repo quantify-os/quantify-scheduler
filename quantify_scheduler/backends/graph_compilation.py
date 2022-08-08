@@ -19,7 +19,8 @@ class CompilationError(RuntimeError):
 # pylint: disable=too-few-public-methods
 class SimpleNodeConfig(DataStructure):
     """
-    Datastructure specifying the structure of a simple compiler pass config (also see :class:`~.SimpleNode`).
+    Datastructure specifying the structure of a simple compiler pass config
+    (also see :class:`~.SimpleNode`).
 
     Parameters
     ----------
@@ -105,7 +106,8 @@ class CompilationNode:
         # a Schedule class but for more advanced compilers, a graph might want to do
         # several steps in parallel. For this reason the base class supports a more
         # relaxed Union of types as the type hint.
-        # How this Datastructure is allowed to look like depends on https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
+        # How this Datastructure is allowed to look like depends
+        # on https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
 
         raise NotImplementedError
 
@@ -175,8 +177,9 @@ class SimpleNode(CompilationNode):
 class QuantifyCompiler(CompilationNode):
     """
     A compiler for quantify :class:`~.Schedule` s.
-    The compiler defines a directed acyclic graph containing :class:`~.CompilationNode` s.
-    In this graph, nodes represent modular compilation passes.
+    The compiler defines a directed acyclic graph containing
+    :class:`~.CompilationNode` s. In this graph, nodes represent modular
+    compilation passes.
     """
 
     def __init__(self, name):
@@ -376,5 +379,6 @@ class SerialCompiler(QuantifyCompiler):
 
         # mark the schedule as "Compiled" before returning at the final step.
         # in the future CompiledSchedule will likely become an attribute of a
-        # single Schedule class, see also https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
+        # single Schedule class, see
+        # also https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
         return CompiledSchedule(schedule)

@@ -114,7 +114,8 @@ def pulse_only_schedule() -> Schedule:
 
     sched = Schedule(name="pulse_only_schedule", repetitions=1024)
 
-    # these are kind of magic names that are known to exist in the default hardware config.
+    # these are kind of magic names that are known to exist in the default hardware
+    # config.
     port = "q0:res"
     clock = "q0.ro"
 
