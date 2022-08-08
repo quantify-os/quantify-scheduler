@@ -33,6 +33,7 @@ Unreleased
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
 
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
+* Schedules - Make `AcquisitionMetadata` a serializable class (!446)
 * JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
 
 Breaking changes
