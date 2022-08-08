@@ -9,7 +9,7 @@ import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-from dataclasses import dataclass
+import dataclasses
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from uuid import uuid4
 
@@ -904,7 +904,7 @@ class CompiledSchedule(ScheduleBase):
         return self._hardware_waveform_dict
 
 
-@dataclass
+@dataclasses.dataclass
 class AcquisitionMetadata:
     """
     Class to provide a description of the shape and type of data that a schedule will
@@ -925,3 +925,33 @@ class AcquisitionMetadata:
     acq_indices: Dict[int, List[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
+
+    def __getstate__(self):
+        data = dataclasses.asdict(self)
+        data["acq_return_type"] = str(self.acq_return_type)
+        return {"deserialization_type": self.__class__.__name__, "data": data}
+
+    def __setstate__(self, state):
+        return_types = {str(t): t for t in [complex, float, int, bool, str, np.ndarray]}
+
+        if state["data"]["acq_return_type"] in return_types:
+            state["data"]["acq_return_type"] = return_types[
+                state["data"]["acq_return_type"]
+            ]
+        else:
+            raise ValueError(
+                f"AcquisitionMetaData setstate got unknown "
+                f"type: {state['data']['acq_return_type']}"
+            )
+
+        for binmode in enums.BinMode:
+            if state["data"]["bin_mode"] == binmode.value:
+                state["data"]["bin_mode"] = binmode
+                break
+        else:
+            raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
+
+        state["data"]["acq_indices"] = {
+            int(k): v for k, v in state["data"]["acq_indices"].items()
+        }
+        self.__init__(**state["data"])
