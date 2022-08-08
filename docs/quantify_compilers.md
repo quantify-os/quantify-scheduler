@@ -127,7 +127,7 @@ dev_compiler.construct_graph(dev_cfg)
 qblox_compiler = SerialCompiler(name="Qblox compiler")
 qblox_compiler.construct_graph(qblox_cfg)
 
-zhinst_compiler= SerialCompiler(name="Zhinst compiler")
+zhinst_compiler = SerialCompiler(name="Zhinst compiler")
 zhinst_compiler.construct_graph(zhinst_cfg)
 
 
