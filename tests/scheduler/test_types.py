@@ -404,7 +404,7 @@ def test_sched_hardware_waveform_dict(
         assert isinstance(hardware_waveform_dict.get(waveform_id), np.ndarray)
 
 
-def test_acquisitionmetadata():
+def test_acquisition_metadata():
     metadata = None
     for binmode in enums.BinMode:
         metadata = AcquisitionMetadata(
