@@ -7,7 +7,7 @@
 
 ```
 
-```{seealso}
+``````{seealso}
 The complete source code of this tutorial can be found in
 
 {jupyter-download-notebook}`download as .ipynb <tutorial_zhinst-hardware-verification>`
@@ -22,7 +22,7 @@ The complete source code of this tutorial can be found in
 
     pretty.install()
 ```
-```
+``````
 
 ## Introduction
 
@@ -32,7 +32,7 @@ We set up this test setup so that it is easy to verify the hardware is behaving 
 
 In {ref}`how to connect <sec-zhinst-how-to-connect>` we discuss how to set up the test setup, connect all the cables, and use quantify to connect to the hardware.
 In {ref}`how to configure <sec-zhinst-how-to-configure>` we discuss how to write a hardware configuration file that can be used to compile instructions for the Zurich Instruments hardware.
-In {ref}`verification programs <sec-zhinst-verification programs>` we go over how to write and compile several verification programs, how to verify that these are correct, and how to execute these on the physical hardware.
+In {ref}`verification programs <sec-zhinst-verification-programs>` we go over how to write and compile several verification programs, how to verify that these are correct, and how to execute these on the physical hardware.
 
 (sec-zhinst-how-to-connect)=
 

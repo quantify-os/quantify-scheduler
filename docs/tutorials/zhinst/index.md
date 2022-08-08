@@ -254,5 +254,5 @@ instrument = zhinst.qcodes.HDAWG(name='hdawg0', serial='dev1234', ...)
 ```{toctree}
 :maxdepth: 3
 
-T_verification_programs.py
+T_verification_programs
 ```

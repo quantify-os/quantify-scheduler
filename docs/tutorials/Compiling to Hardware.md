@@ -212,4 +212,4 @@ The {class}`~~quantify_scheduler.instrument_coordinator.instrument_coordinator.I
 We conclude this tutorial with the remark that the schedule used in this tutorial was defined purely in terms of pulses.
 However, quantify-scheduler also supports the usage of quantum gates in schedules. Given that gates may require different pulses when executed in different quantum devices.
 
-Consequently, when using gates, one requires an additional compilation step, called "Device Compilation", that converts these gates into pulses that can be interpreted by the backend. This use case will be covered in {ref}`sec-tutorial-ops+qubits`.
+Consequently, when using gates, one requires an additional compilation step, called "Device Compilation", that converts these gates into pulses that can be interpreted by the backend. This use case will be covered in {ref}`sec-tutorial-ops-qubits`.
