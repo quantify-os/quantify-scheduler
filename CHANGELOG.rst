@@ -28,13 +28,18 @@ Unreleased
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
+* Docs - Unpin sphinx >=5.1.1 (!445)
+* Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
+
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
+* JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
     - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings (see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation)
+* Qblox backend - Strictly requires v0.7.x of the qblox-instruments package (!449)
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
