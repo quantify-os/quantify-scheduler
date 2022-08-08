@@ -264,7 +264,7 @@ class Sequencer:
     def __init__(
         self,
         parent: QbloxBaseModule,
-        name: str,
+        index: int,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
@@ -280,8 +280,8 @@ class Sequencer:
         ----------
         parent
             A reference to the parent instrument this sequencer belongs to.
-        name
-            Name of the sequencer. This is supposed to match ``"seq{index}"``.
+        index
+            Index of the sequencer.
         portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
@@ -297,7 +297,7 @@ class Sequencer:
             Defaults to 0, in which case no downconverter is being used.
         """
         self.parent = parent
-        self._name = name
+        self.index = index
         self.port = portclock[0]
         self.clock = portclock[1]
         self.pulses: List[IOperationStrategy] = []
@@ -385,7 +385,7 @@ class Sequencer:
         :
             The name.
         """
-        return self._name
+        return f"seq{self.index}"
 
     @property
     def has_data(self) -> bool:
@@ -431,7 +431,7 @@ class Sequencer:
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
                 raise ValueError(
-                    f"Attempting to set the modulation frequency of {self._name} of "
+                    f"Attempting to set the modulation frequency of {self.name} of "
                     f"{self.parent.name} to {freq}, while it has previously been set "
                     f"to {self._settings.modulation_freq}."
                 )
@@ -1037,10 +1037,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                 if portclock in self.portclocks_with_data:
                     connected_outputs = helpers.output_name_to_outputs(io)
-                    seq_name = f"seq{len(sequencers)}"
-                    sequencers[seq_name] = Sequencer(
+                    seq_idx = len(sequencers)
+                    new_seq = Sequencer(
                         parent=self,
-                        name=seq_name,
+                        index=seq_idx,
                         portclock=portclock,
                         static_hw_properties=self.static_hw_properties,
                         connected_outputs=connected_outputs,
@@ -1049,6 +1049,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         lo_name=lo_name,
                         downconverter_freq=downconverter_freq,
                     )
+                    sequencers[new_seq.name] = new_seq
 
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_output_map:
@@ -1299,6 +1300,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         scope_acq_seq = None
         for seq in self.sequencers.values():
             op_infos = [acq.operation_info for acq in seq.acquisitions]
+
             has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:
                 if scope_acq_seq is not None:
@@ -1310,7 +1312,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         "only one port and clock combination has to "
                         "perform raw trace acquisition per instrument."
                     )
-                scope_acq_seq = seq.name
+                scope_acq_seq = seq.index
 
         self._settings.scope_mode_sequencer = scope_acq_seq
 

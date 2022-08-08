@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -19,7 +20,7 @@
 # ==============================
 #
 # .. jupyter-kernel::
-#   :id: Tutorial: Schedules and Pulses
+#   :id: Schedules and Pulses
 #
 # .. seealso::
 #

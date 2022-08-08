@@ -664,6 +664,13 @@ class QRMRFComponent(QRMComponent):
         settings
             The settings to configure it to.
         """
+        if settings.scope_mode_sequencer is not None:
+            self._set_parameter(
+                self.instrument,
+                "scope_acq_sequencer_select",
+                settings.scope_mode_sequencer,
+            )
+
         if settings.lo0_freq is not None:
             self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
@@ -1094,15 +1101,16 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         options
             The compiled instructions to configure the cluster to.
         """
-        settings = options.pop("settings")
-        self._configure_cmm_settings(settings=settings)
         for name, comp_options in options.items():
-            if name not in self._cluster_modules:
+            if name == "settings":
+                self._configure_cmm_settings(settings=comp_options)
+            elif name in self._cluster_modules:
+                self._cluster_modules[name].prepare(comp_options)
+            else:
                 raise KeyError(
                     f"Attempting to prepare module {name} of cluster {self.name}, while"
                     f" module has not been added to the cluster component."
                 )
-            self._cluster_modules[name].prepare(comp_options)
 
     def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
         """

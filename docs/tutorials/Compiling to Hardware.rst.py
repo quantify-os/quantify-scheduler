@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -19,15 +20,15 @@
 # ===============================
 #
 # .. jupyter-kernel::
-#   :id: Tutorial: Compiling to Hardware
+#   :id: Compiling to Hardware
 #
 # .. seealso::
 #
 #     The complete source code of this tutorial can be found in
 #
-#     :jupyter-download-notebook:`Compilation and hardware execution`
+#     :jupyter-download-notebook:`Compiling to Hardware`
 #
-#     :jupyter-download-script:`Compilation and hardware execution`
+#     :jupyter-download-script:`Compiling to Hardware`
 
 # %% [raw]
 # Compilation allows converting the schedules introduced in :ref:`sec-tutorial-sched+pulse` into a set of instructions that can be executed on the control hardware.

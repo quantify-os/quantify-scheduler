@@ -1,11 +1,12 @@
-# Repository: https://gitlab.com/quantify-os/quantify-scheduler
-# Licensed according to the LICENCE file on the main branch
-# pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-module-docstring
 # pylint: disable=too-many-locals
 # pylint: disable=invalid-name
 
-from collections import namedtuple
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+
 from typing import Any, Dict, Tuple
 
 import json
@@ -21,6 +22,10 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+
+from quantify_scheduler.instrument_coordinator.components.qblox import (
+    AcquisitionIndexing,
+)
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schedules.timedomain_schedules import (
@@ -29,10 +34,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
-
-# this is taken from the qblox backend and is used to make the tuple indexing of
-# acquisitions more explicit. See also #179 of quantify-scheduler
-AcquisitionIndexing = namedtuple("AcquisitionIndexing", "acq_channel acq_index")
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
