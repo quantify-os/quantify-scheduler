@@ -40,6 +40,7 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
     - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings (see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation)
+* Qblox backend - Strictly requires v0.7.x of the qblox-instruments package (!449)
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
