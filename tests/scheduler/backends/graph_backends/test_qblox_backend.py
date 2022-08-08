@@ -64,7 +64,6 @@ def test_compile_empty_device():
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
     quantum_device.hardware_config(QBLOX_HARDWARE_MAPPING)
-    # utils.load_json_example_scheme("qblox_test_mapping.json")
 
     compilation_config = quantum_device.generate_compilation_config()
 
