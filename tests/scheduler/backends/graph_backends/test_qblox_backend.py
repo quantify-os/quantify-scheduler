@@ -10,6 +10,7 @@ import pytest
 
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -19,6 +20,7 @@ from .standard_schedules import (
     parametrized_operation_schedule,
     hybrid_schedule_rabi,
 )
+from ....fixtures.mock_setup import QBLOX_HARDWARE_MAPPING
 
 
 @pytest.mark.parametrize(
@@ -50,3 +52,26 @@ def test_compiles_standard_schedules(
     comp_sched = backend.compile(schedule=schedule, config=config)
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)
+
+
+def test_compile_empty_device():
+    """
+    Test if compilation works for a pulse only schedule on a freshly initialized
+    quantum device object to which only a hardware config has been provided.
+    """
+
+    sched = pulse_only_schedule()
+
+    quantum_device = QuantumDevice(name="empty_quantum_device")
+    quantum_device.hardware_config(QBLOX_HARDWARE_MAPPING)
+    # utils.load_json_example_scheme("qblox_test_mapping.json")
+
+    compilation_config = quantum_device.generate_compilation_config()
+
+    backend = SerialCompiler(compilation_config.name)
+    comp_sched = backend.compile(schedule=sched, config=compilation_config)
+
+    # Assert that no exception was raised and output is the right type.
+    assert isinstance(comp_sched, CompiledSchedule)
+
+    quantum_device.close()  # need to clean up nicely after the test
