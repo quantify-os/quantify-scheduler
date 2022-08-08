@@ -28,7 +28,10 @@ Unreleased
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
+* Docs - Unpin sphinx >=5.1.1 (!445)
+* Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
+
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
 * JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
 
