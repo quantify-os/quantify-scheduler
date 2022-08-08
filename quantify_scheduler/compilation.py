@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def determine_absolute_timing(
-    schedule: Schedule, time_unit: Literal["physical", "ideal"] = "physical"
+    schedule: Schedule, time_unit: Literal["physical", "ideal", None] = "physical"
 ) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
@@ -50,9 +50,10 @@ def determine_absolute_timing(
         The schedule for which to determine timings.
     time_unit
         Whether to use physical units to determine the absolute time or ideal time.
-        When :code:`time_unit == 'physical'` the duration attribute is used.
-        When :code:`time_unit == 'ideal'` the duration attribute is ignored and treated
+        When :code:`time_unit == "physical"` the duration attribute is used.
+        When :code:`time_unit == "ideal"` the duration attribute is ignored and treated
         as if it is :code:`1`.
+        When :code:`time_unit == None` it will revert to :code:`"physical"`.
 
     Returns
     -------
@@ -62,15 +63,15 @@ def determine_absolute_timing(
     """
 
     if len(schedule.schedulables) == 0:
-        raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
+        raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
 
-    valid_time_units = ("physical", "ideal", None)
+    if time_unit is None:
+        time_unit = "physical"
+    valid_time_units = ("physical", "ideal")
     if time_unit not in valid_time_units:
         raise ValueError(
             f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
         )
-    if time_unit is None:
-        time_unit = "physical"
 
     # iterate over the objects in the schedule.
     last_schedulable = next(iter(schedule.schedulables.values()))
@@ -104,9 +105,7 @@ def determine_absolute_timing(
                 t0 = ref_schedulable["abs_time"] + duration_ref_op
             else:
                 raise NotImplementedError(
-                    'Timing "{}" not supported by backend'.format(
-                        ref_schedulable["abs_time"]
-                    )
+                    f'Timing "{ref_schedulable["abs_time"]}" not supported by backend.'
                 )
 
             duration_new_op = curr_op.duration if time_unit == "physical" else 1

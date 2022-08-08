@@ -36,8 +36,6 @@ def set_up_mock_transmon_setup_legacy() -> Dict:
     this setup. The keys correspond to the names of the instruments.
     """
 
-    # importing from init_mock will execute all the code in the module which
-    # will instantiate all the instruments in the mock setup.
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
         name="instrument_coordinator", add_default_generic_icc=False
@@ -113,8 +111,6 @@ def set_up_mock_transmon_setup() -> Dict:
     this setup. The keys corresponds to the names of the instruments.
     """
 
-    # importing from init_mock will execute all the code in the module which
-    # will instantiate all the instruments in the mock setup.
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
         name="instrument_coordinator", add_default_generic_icc=False

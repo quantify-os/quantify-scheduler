@@ -8,7 +8,7 @@ Unreleased
 * Compilation - Compilation is now a graph. (#305, !407)
 * Docs - Support for myst-nb added (#301, !407)
 # Docs - Add pin on nbclient<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)
-* Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration.
+* Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
 * Compilation - Call `determine_absolute_timing` in `qcompile` when no `device_cfg` supplied. (!436)

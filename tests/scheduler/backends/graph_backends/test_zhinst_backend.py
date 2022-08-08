@@ -43,17 +43,14 @@ def test_compiles_standard_schedules(
     """
 
     config = compile_config_basic_transmon_zhinst_hardware
-    # Arrange
-    assert config.name == "Zhinst backend"
+    assert config.name == "Zhinst compiler"
     assert (
         config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialCompiler(name="Zhinst backend")
-
-    # assert that no exception is raised.
-    # Act
+    backend = SerialCompiler(name=config.name)
     comp_sched = backend.compile(schedule=schedule, config=config)
+
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)
 
@@ -76,17 +73,15 @@ def test_compiles_standard_schedules_mux_ro(
     """
 
     config = compile_config_basic_transmon_zhinst_hardware
-    # Arrange
-    assert config.name == "Zhinst backend"
+    assert config.name == "Zhinst compiler"
     assert (
         config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialCompiler(name="Zhinst backend")
+    backend = SerialCompiler(name=config.name)
 
-    # assert that no exception is raised.
-    # Act
     comp_sched = backend.compile(schedule=schedule, config=config)
+
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)
 
@@ -107,16 +102,13 @@ def test_compiles_standard_schedules_edge(
     """
 
     config = compile_config_basic_transmon_zhinst_hardware
-    # Arrange
-    assert config.name == "Zhinst backend"
+    assert config.name == "Zhinst compiler"
     assert (
         config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialCompiler(name="Zhinst backend")
-
-    # assert that no exception is raised.
-    # Act
+    backend = SerialCompiler(name=config.name)
     comp_sched = backend.compile(schedule=schedule, config=config)
+
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)

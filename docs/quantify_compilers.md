@@ -89,8 +89,8 @@ comp_sched
 A compilation backend defines a graph of compilation steps.
 This makes it really easy to visualize the different steps in the compilation process by drawing the graph.
 
-Here we show the compilation structure for several commonly used backends.
-To do this, we will use the example configuration files of the different backends and then use the quantum device to generate the relevant {class}`~.CompilationConfig` s.
+Here we show the compilation structure for several commonly used compilers.
+To do this, we will use the example configuration files of the different compilers and then use the quantum device to generate the relevant {class}`~.CompilationConfig` s.
 Note that in the future we want to improve how the hardware config is managed so one does not need to set a custom dictionary to the hardware config parameter of the ``quantum_device`` object.
 
 
@@ -120,15 +120,15 @@ from quantify_scheduler.backends import SerialCompiler
 # constructing graph is normally done when at compile time as it
 # requires information from the compilation config.
 
-dev_backend = SerialCompiler(name="Device backend")
-dev_backend.construct_graph(dev_cfg)
+dev_compiler = SerialCompiler(name="Device compiler")
+dev_compiler.construct_graph(dev_cfg)
 
 
-qblox_backend = SerialCompiler(name="Qblox compile")
-qblox_backend.construct_graph(qblox_cfg)
+qblox_compiler = SerialCompiler(name="Qblox compiler")
+qblox_compiler.construct_graph(qblox_cfg)
 
-zhinst_backend= SerialCompiler(name="Zhinst backend")
-zhinst_backend.construct_graph(zhinst_cfg)
+zhinst_compiler= SerialCompiler(name="Zhinst compiler")
+zhinst_compiler.construct_graph(zhinst_cfg)
 
 
 
@@ -136,13 +136,13 @@ zhinst_backend.construct_graph(zhinst_cfg)
 import matplotlib.pyplot as plt
 f, axs = plt.subplots(1,3, figsize=(16,7))
 
-# Show the graph of the currently included backends
-dev_backend.draw(axs[0])
-axs[0].set_title("DeviceBackend")
-qblox_backend.draw(axs[1])
-axs[1].set_title("QbloxBackend")
-zhinst_backend.draw(axs[2])
-axs[2].set_title("ZhinstBackend")
+# Show the graph of the currently included compilers
+dev_compiler.draw(axs[0])
+axs[0].set_title("Device Backend")
+qblox_compiler.draw(axs[1])
+axs[1].set_title("Qblox Backend")
+zhinst_compiler.draw(axs[2])
+axs[2].set_title("Zhinst Backend")
 f
 
 ```

@@ -117,12 +117,12 @@ class QuantumDevice(Instrument):
         # configs.
         hardware_config = self.generate_hardware_config()
         if hardware_config is None:
-            backend_name = "Device compilation"
+            backend_name = "Device compiler"
         elif (
             hardware_config["backend"]
             == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
-            backend_name = "Qblox backend"
+            backend_name = "Qblox compiler"
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="qblox_hardware_compile",
@@ -134,7 +134,7 @@ class QuantumDevice(Instrument):
             hardware_config["backend"]
             == "quantify_scheduler.backends.zhinst_backend.compile_backend"
         ):
-            backend_name = "Zhinst backend"
+            backend_name = "Zhinst compiler"
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="zhinst_hardware_compile",
@@ -144,7 +144,7 @@ class QuantumDevice(Instrument):
             )
 
         else:
-            backend_name = "Custom backend"
+            backend_name = "Custom compiler"
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="custom_hardware_compile",

@@ -38,16 +38,13 @@ def test_compiles_standard_schedules(
     """
 
     config = device_compile_config_basic_transmon
-    # Arrange
-    assert config.name == "Device compilation"
+    assert config.name == "Device compiler"
     assert (
         config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
     )
 
-    backend = SerialCompiler(
-        name="Device compilation"
-    )  # assert that no exception is raised.
-    # Act
+    backend = SerialCompiler(name=config.name)  # assert that no exception is raised.
     comp_sched = backend.compile(schedule=schedule, config=config)
+
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)

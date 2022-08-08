@@ -62,7 +62,15 @@ def tmp_test_data_dir(tmp_path_factory):
 def mock_setup(tmp_test_data_dir):
     """
     Returns a mock setup.
+
+    This mock setup is created using the :code:`set_up_mock_transmon_setup_legacy`
+    function from the .device_under_test.mock_setup module.
+
     """
+    # The name of this function is not so good, and could be more specific. Moreover,
+    # this it supports a legacy object to use in the tests. We should not use
+    # this fixture in future tests and phase it out at some point.
+    # The preferred alternative is the mock_setup_basic_transmon.
     set_datadir(tmp_test_data_dir)
 
     # moved to a separate module to allow using the mock_setup in tutorials.
@@ -93,7 +101,10 @@ def mock_setup(tmp_test_data_dir):
 @pytest.fixture(scope="module", autouse=False)
 def mock_setup_basic_transmon(tmp_test_data_dir):
     """
-    Returns a mock setup.
+    Returns a mock setup for a basic 5-qubit transmon device.
+
+    This mock setup is created using the :code:`set_up_mock_transmon_setup`
+    function from the .device_under_test.mock_setup module.
     """
 
     set_datadir(tmp_test_data_dir)

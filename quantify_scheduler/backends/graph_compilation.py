@@ -98,9 +98,11 @@ class CompilationNode:
     def _compilation_func(
         self, schedule: Union[Schedule, DataStructure], config: DataStructure
     ) -> Union[Schedule, DataStructure]:
-        # this is the private compilation method. It should be completely stateless
-        # whenever inheriting from the CompilationNode, this is the object that should
-        # be modified.
+        """
+        This is the private compilation method. It should be completely stateless
+        whenever inheriting from the CompilationNode, this is the object that should
+        be modified.
+        """
 
         # note that for linear/serial compilation graphs, the input and output is always
         # a Schedule class but for more advanced compilers, a graph might want to do
@@ -143,10 +145,10 @@ class SimpleNode(CompilationNode):
 
         Parameters
         ----------
-        name:
+        name
             The name of the node. Should be unique if it is added to a (larger)
             compilation graph.
-        compilation_func:
+        compilation_func
             A Callable that will be wrapped in this object. A compilation function
             should take the intermediate representation (commonly :class:`~.Schedule`)
             and a config as inputs and returns a new (modified) intermediate
@@ -202,10 +204,10 @@ class QuantifyCompiler(CompilationNode):
 
         Parameters
         ----------
-        schedule:
-            the schedule to compile
-        config:
-            describing the information required to compile the schedule
+        schedule
+            the schedule to compile.
+        config
+            describing the information required to compile the schedule.
 
         Returns
         -------
@@ -261,12 +263,12 @@ class QuantifyCompiler(CompilationNode):
 
         Parameters
         ----------
-        ax:
+        ax
             Matplotlib axis to plot the figure on
-        figsize:
+        figsize
             Optional figure size, defaults to something slightly larger that fits the
             size of the nodes.
-        options:
+        options
             optional keyword arguments that are passed to
             :code:`networkx.draw_networkx`.
 
@@ -322,8 +324,6 @@ class SerialCompiler(QuantifyCompiler):
         # this should be removed in the future once we want to support features
         # like caching and visualization of compilation errors.
         self._task_graph.clear()
-
-        # check legacy
 
         for i, compilation_pass in enumerate(config.compilation_passes):
             compilation_func = import_python_object_from_string(
