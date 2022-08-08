@@ -32,7 +32,7 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
 )
-from quantify_scheduler.schedules.trace_schedules import trace_schedule_gate
+from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
 
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
@@ -384,7 +384,7 @@ def test_trace_acquisition_measurement_control(
 
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
-        schedule_function=trace_schedule_gate,
+        schedule_function=trace_schedule_circuit_layer,
         schedule_kwargs=dict(qubit_name=q2.name),
         batched=True,
     )
@@ -492,7 +492,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
         7.404e9 if module_under_test is ClusterType.CLUSTER_QRM_RF else 3e8
     )
 
-    schedule = trace_schedule_gate(qubit_name="q2")
+    schedule = trace_schedule_circuit_layer(qubit_name="q2")
 
     compiled_sched = qcompile(
         schedule=schedule,

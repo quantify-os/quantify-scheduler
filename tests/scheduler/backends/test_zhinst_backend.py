@@ -652,7 +652,7 @@ def test_uhfqa_sequence2_trace_acquisition(
     uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
     # Arrange
     awg_index = 0
-    schedule = trace_schedules.trace_schedule_pulse(
+    schedule = trace_schedules.trace_schedule(
         pulse_amp=1,
         pulse_duration=16e-9,
         pulse_delay=0,
