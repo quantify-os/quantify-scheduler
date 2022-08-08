@@ -419,11 +419,11 @@ def test_acquisition_metadata():
         assert isinstance(metadata_copy.bin_mode, enums.BinMode)
         assert isinstance(metadata_copy.acq_return_type, type)
 
-    for return_type in [complex, np.ndarray, int, bool, float, str]:
+    for return_type in complex, float, int, bool, str, np.ndarray:
         metadata = AcquisitionMetadata(
             acq_protocol="ssb_integration_complex",
             bin_mode=enums.BinMode.AVERAGE,
-            acq_return_type=returntype,
+            acq_return_type=return_type,
             acq_indices={0: [0]},
         )
         # test whether the copy function works correctly

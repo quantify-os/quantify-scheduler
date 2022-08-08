@@ -898,7 +898,7 @@ class AcquisitionMetadata:
         return {"deserialization_type": self.__class__.__name__, "data": data}
 
     def __setstate__(self, state):
-        return_types = {str(t): t for t in [complex, np.ndarray, int, bool, float, str]}
+        return_types = {str(t): t for t in [complex, float, int, bool, str, np.ndarray]}
 
         if state["data"]["acq_return_type"] in return_types:
             state["data"]["acq_return_type"] = return_types[
