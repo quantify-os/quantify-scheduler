@@ -164,12 +164,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
-        self.classes.update(
-            {
-                AcquisitionMetadata.__name__: AcquisitionMetadata,
-                Schedulable.__name__: Schedulable,
-            }
-        )
+        self.classes.update({c.__name__: c for c in [AcquisitionMetadata, Schedulable]})
 
     def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
