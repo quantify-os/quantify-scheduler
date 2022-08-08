@@ -70,9 +70,7 @@ def create_schedule_with_pulse_info(
     ) -> Schedule:
         _schedule = schedule if schedule is not None else deepcopy(basic_schedule)
         _device_config = (
-            device_config
-            if device_config is not None
-            else load_example_transmon_config
+            device_config if device_config is not None else load_example_transmon_config
         )
         _schedule = device_compile(_schedule, _device_config)
         return _schedule
