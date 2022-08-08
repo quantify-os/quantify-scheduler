@@ -71,14 +71,14 @@ In the current example we have a simple {class}`~.backends.graph_compilation.Ser
 
 ```
 
-We can then instantiate the backend and compile the program.
+We can then instantiate the compiler and compile the program.
 
 ```{code-cell}
 
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 
-backend = SerialCompiler(name="Device compile")
-comp_sched = backend.compile(schedule=echo_schedule, config=config)
+compiler = SerialCompiler(name="Device compile")
+comp_sched = compiler.compile(schedule=echo_schedule, config=config)
 
 comp_sched
 
