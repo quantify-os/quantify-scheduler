@@ -101,7 +101,7 @@ def test_missing_ref_op():
         sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
 
 
-def test_compile_transmon_program(load_example_transmon_config):
+def test_compile_transmon_program(load_legacy_transmon_config):
     sched = Schedule("Test schedule")
 
     # define the resources
@@ -114,14 +114,14 @@ def test_compile_transmon_program(load_example_transmon_config):
     sched.add(Measure(q0, q1), label="M0")
     # pulse information is added
     sched = add_pulse_information_transmon(
-        sched, device_cfg=load_example_transmon_config.dict()
+        sched, device_cfg=load_legacy_transmon_config
     )
     sched = determine_absolute_timing(sched, time_unit="physical")
 
 
-def test_missing_edge(load_example_transmon_config):
+def test_missing_edge(load_legacy_transmon_config):
     sched = Schedule("Bad edge")
-    bad_cfg = load_example_transmon_config
+    bad_cfg = load_legacy_transmon_config
     del bad_cfg["edges"]["q0-q1"]
 
     q0, q1 = ("q0", "q1")
@@ -142,7 +142,7 @@ def test_empty_sched():
         determine_absolute_timing(sched)
 
 
-def test_bad_gate(load_example_transmon_config):
+def test_bad_gate(load_legacy_transmon_config):
     class NotAGate(Operation):
         def __init__(self, q):
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
@@ -165,10 +165,10 @@ def test_bad_gate(load_example_transmon_config):
     with pytest.raises(
         NotImplementedError, match='Operation type "bad" not supported by backend'
     ):
-        add_pulse_information_transmon(sched, load_example_transmon_config.dict())
+        add_pulse_information_transmon(sched, load_legacy_transmon_config)
 
 
-def test_pulse_and_clock(load_example_transmon_config):
+def test_pulse_and_clock(load_legacy_transmon_config):
     sched = Schedule("pulse_no_clock")
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
@@ -176,7 +176,7 @@ def test_pulse_and_clock(load_example_transmon_config):
         op for op in sched.schedulables.values() if op["label"] == str(op_label)
     )["operation_repr"]
     with pytest.raises(ValueError) as execinfo:
-        add_pulse_information_transmon(sched, device_cfg=load_example_transmon_config.dict())
+        add_pulse_information_transmon(sched, device_cfg=load_legacy_transmon_config)
 
     assert str(execinfo.value) == (
         "Operation '{}' contains an unknown clock '{}'; ensure this resource has "
@@ -184,7 +184,7 @@ def test_pulse_and_clock(load_example_transmon_config):
     )
 
     sched.add_resources([ClockResource(mystery_clock, 6e9)])
-    add_pulse_information_transmon(sched, device_cfg=load_example_transmon_config.dict())
+    add_pulse_information_transmon(sched, device_cfg=load_legacy_transmon_config)
 
 
 def test_resource_resolution(load_example_transmon_config):

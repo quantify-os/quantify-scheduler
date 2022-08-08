@@ -847,14 +847,14 @@ def test_compile_simple(
 
 def test_compile_cluster(
     cluster_only_schedule,
-    load_example_transmon_config,
+    load_legacy_transmon_config,
     load_example_qblox_hardware_config,
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(
         cluster_only_schedule,
-        load_example_transmon_config,
+        load_legacy_transmon_config,
         load_example_qblox_hardware_config,
     )
 
@@ -1551,7 +1551,7 @@ def test_assign_frequencies_baseband_downconverter(
 
 
 def test_assign_frequencies_rf(
-    load_example_transmon_config, load_example_qblox_hardware_config
+    load_legacy_transmon_config, load_example_qblox_hardware_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -1575,11 +1575,9 @@ def test_assign_frequencies_rf(
     assert lo0 is None
     assert lo1 is not None
 
-    device_cfg = load_example_transmon_config
-    # q2_clock_freq = device_cfg["qubits"]["q2"]["params"]["mw_freq"]
-    # q3_clock_freq = device_cfg["qubits"]["q3"]["params"]["mw_freq"]
-    q2_clock_freq = device_cfg.clocks["q2.01"]
-    q3_clock_freq = device_cfg.clocks["q3.01"]
+    device_cfg = load_legacy_transmon_config
+    q2_clock_freq = device_cfg["qubits"]["q2"]["params"]["mw_freq"]
+    q3_clock_freq = device_cfg["qubits"]["q3"]["params"]["mw_freq"]
 
     if0 = hardware_cfg["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
         "interm_freq"
@@ -1603,7 +1601,7 @@ def test_assign_frequencies_rf(
 def test_assign_frequencies_rf_downconverter(
     downconverter_freq_0,
     downconverter_freq_1,
-    load_example_transmon_config,
+    load_legacy_transmon_config,
     load_example_qblox_hardware_config,
 ):
     tmp_dir = tempfile.TemporaryDirectory()
@@ -1638,7 +1636,7 @@ def test_assign_frequencies_rf_downconverter(
     assert lo0 is None, "LO frequency already set for channel 0 in hardware config"
     assert lo1 is not None, "LO frequency must be set for channel 1 in hardware config"
 
-    device_cfg = load_example_transmon_config
+    device_cfg = load_legacy_transmon_config
     compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
@@ -1676,7 +1674,7 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
-def test_markers(load_example_transmon_config, load_example_qblox_hardware_config):
+def test_markers(load_legacy_transmon_config, load_example_qblox_hardware_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
@@ -1688,7 +1686,7 @@ def test_markers(load_example_transmon_config, load_example_qblox_hardware_confi
     sched.add(Measure("q2"))
 
     compiled_schedule = qcompile(
-        sched, load_example_transmon_config, load_example_qblox_hardware_config
+        sched, load_legacy_transmon_config, load_example_qblox_hardware_config
     )
     program = compiled_schedule["compiled_instructions"]
 
@@ -1760,14 +1758,14 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 
 
 def test_acq_protocol_append_mode_valid_assembly_ssro(
-    dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
+    dummy_pulsars, load_legacy_transmon_config, load_example_qblox_hardware_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
-        ssro_sched, load_example_transmon_config, load_example_qblox_hardware_config
+        ssro_sched, load_legacy_transmon_config, load_example_qblox_hardware_config
     )
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
@@ -1802,14 +1800,14 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
 
 
 def test_acq_protocol_average_mode_valid_assembly_allxy(
-    dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
+    dummy_pulsars, load_legacy_transmon_config, load_example_qblox_hardware_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
     compiled_allxy_sched = qcompile(
-        sched, load_example_transmon_config, load_example_qblox_hardware_config
+        sched, load_legacy_transmon_config, load_example_qblox_hardware_config
     )
 
     assembly_valid(
@@ -1893,7 +1891,7 @@ def test_acq_declaration_dict_bin_avg_mode(
 
 
 def test_convert_hw_config_to_portclock_configs_spec(
-    make_basic_multi_qubit_schedule, load_example_transmon_config
+    make_basic_multi_qubit_schedule, load_legacy_transmon_config
 ):
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -2002,7 +2000,7 @@ def test_convert_hw_config_to_portclock_configs_spec(
     set_datadir(tmp_dir.name)
 
     sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
-    sched = device_compile(sched, load_example_transmon_config)
+    sched = device_compile(sched, load_legacy_transmon_config)
     with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
         hardware_compile(sched, old_config)
 

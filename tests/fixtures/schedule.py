@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Dict, Generator, Optional, Callable, List
+from typing import Any, Callable, Generator, Dict, List, Optional
 
 import numpy as np
 import pytest
@@ -17,7 +17,7 @@ from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
 )
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import (
     device_compile,
     qcompile,
@@ -26,36 +26,45 @@ from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X9
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples import utils
 
-# Load here to avoid loading every time a fixture is used
+# load here to avoid loading every time a fixture is used
 DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
-HARDWARE_CONFIG_QBLOX = utils.load_json_example_scheme("qblox_test_mapping.json")
-HARDWARE_CONFIG_ZHINST = utils.load_json_example_scheme("zhinst_test_mapping.json")
+
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 @pytest.fixture
-def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, None]:
+def load_example_transmon_config() -> Generator[Dict[str, Any], None, None]:
     """
     Circuit to device level compilation for the add_pulse_info_transmon compilation
     backend.
     """
-
     yield DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
 
 @pytest.fixture
+def load_legacy_transmon_config() -> Generator[Dict[str, Any], None, None]:
+    """
+    Loads the configuration for `add_pulse_information_transmon`.
+    To be removed after 0.7.0 when this functionality is phased out.
+    """
+    yield dict(DEVICE_CONFIG)
+
+
+@pytest.fixture
 def load_example_qblox_hardware_config() -> Generator[Dict[str, Any], None, None]:
-    yield dict(HARDWARE_CONFIG_QBLOX)
+    yield dict(QBLOX_HARDWARE_MAPPING)
 
 
 @pytest.fixture
 def load_example_zhinst_hardware_config() -> Generator[Dict[str, Any], None, None]:
-    yield dict(HARDWARE_CONFIG_ZHINST)
+    yield dict(ZHINST_HARDWARE_MAPPING)
 
 
 @pytest.fixture
 def create_schedule_with_pulse_info(
     load_example_transmon_config, basic_schedule: Schedule
-) -> Generator[Callable[[Optional[Schedule], Optional[dict]], Schedule], None, None]:
+):
     def _create_schedule_with_pulse_info(
         schedule: Optional[Schedule] = None, device_config: Optional[dict] = None
     ) -> Schedule:
@@ -72,38 +81,38 @@ def create_schedule_with_pulse_info(
 
 
 @pytest.fixture
-def empty_schedule() -> Generator[Schedule, None, None]:
-    yield Schedule("Empty Experiment")
+def empty_schedule() -> Schedule:
+    return Schedule("Empty Experiment")
 
 
 @pytest.fixture
-def basic_schedule(make_basic_schedule) -> Generator[Schedule, None, None]:
-    yield make_basic_schedule("q0")
+def basic_schedule(make_basic_schedule) -> Schedule:
+    return make_basic_schedule("q0")
 
 
 @pytest.fixture
-def make_basic_schedule() -> Generator[Callable[[str], Schedule], None, None]:
+def make_basic_schedule() -> Callable[[str], Schedule]:
     def _make_basic_schedule(qubit: str) -> Schedule:
         schedule = Schedule(f'Basic schedule{" "+qubit if qubit != "q0" else ""}')
         schedule.add(X90(qubit))
         return schedule
 
-    yield _make_basic_schedule
+    return _make_basic_schedule
 
 
 @pytest.fixture
-def make_basic_multi_qubit_schedule() -> Generator[Callable[[List[str]], Schedule]]:
+def make_basic_multi_qubit_schedule() -> Callable[[List[str]], Schedule]:
     def _make_basic_schedule(qubits: List[str]) -> Schedule:
         schedule = Schedule(f"Basic schedule {qubits}")
         for qubit in qubits:
             schedule.add(X90(qubit))
         return schedule
 
-    yield _make_basic_schedule
+    return _make_basic_schedule
 
 
 @pytest.fixture
-def schedule_with_measurement(make_schedule_with_measurement) -> Generator[Schedule, None, None]:
+def schedule_with_measurement(make_schedule_with_measurement) -> Schedule:
     """
     Simple schedule with gate and measurement on qubit 0.
     """
@@ -111,17 +120,15 @@ def schedule_with_measurement(make_schedule_with_measurement) -> Generator[Sched
 
 
 @pytest.fixture
-def schedule_with_measurement_q2(make_schedule_with_measurement) -> Generator[Schedule, None, None]:
+def schedule_with_measurement_q2(make_schedule_with_measurement) -> Schedule:
     """
     Simple schedule with gate and measurement on qubit 2.
     """
-    yield make_schedule_with_measurement("q2")
+    return make_schedule_with_measurement("q2")
 
 
 @pytest.fixture
-def make_schedule_with_measurement() -> Generator[
-    Callable[[str], Schedule], None, None
-]:
+def make_schedule_with_measurement() -> Callable[[str], Schedule]:
     """
     Simple schedule with gate and measurement on single qubit.
     """
@@ -133,30 +140,26 @@ def make_schedule_with_measurement() -> Generator[
         schedule.add(Measure(qubit))
         return schedule
 
-    yield _make_schedule_with_measurement
+    return _make_schedule_with_measurement
 
 
 @pytest.fixture
-def two_qubit_gate_schedule() -> Generator[Schedule, None, None]:
+def two_qubit_gate_schedule():
     sched = Schedule("two_qubit_gate_schedule")
     sched.add_resources(
         [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
     )  # Clocks need to be manually added at this stage.
     sched.add(CZ(qC="q2", qT="q3"))
-    yield sched
+    return sched
 
 
 @pytest.fixture
-def schedule_with_pulse_info(
-    create_schedule_with_pulse_info,
-) -> Generator[Schedule, None, None]:
-    yield create_schedule_with_pulse_info()
+def schedule_with_pulse_info(create_schedule_with_pulse_info) -> Schedule:
+    return create_schedule_with_pulse_info()
 
 
 @pytest.fixture
-def compiled_two_qubit_t1_schedule(
-    load_example_transmon_config,
-) -> Generator[CompiledSchedule, None, None]:
+def compiled_two_qubit_t1_schedule(load_example_transmon_config):
     """
     a schedule performing T1 on two-qubits simultaneously
     """
@@ -187,4 +190,4 @@ def compiled_two_qubit_t1_schedule(
         )
 
     comp_t1_sched = qcompile(schedule, device_config)
-    yield comp_t1_sched
+    return comp_t1_sched
