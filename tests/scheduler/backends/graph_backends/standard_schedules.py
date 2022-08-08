@@ -110,8 +110,6 @@ def two_qubit_schedule_with_edge() -> Schedule:
     return sched
 
 
-
-
 def pulse_only_schedule() -> Schedule:
 
     sched = Schedule(name="pulse_only_schedule", repetitions=1024)
@@ -120,7 +118,7 @@ def pulse_only_schedule() -> Schedule:
     port = "q0:res"
     clock = "q0.ro"
 
-     # manually specifying the clock should not be required in the future.
+    # manually specifying the clock should not be required in the future.
     sched.add_resource(ClockResource(name=clock, freq=5e9))
 
     for acq_index in [0, 1, 2]:
