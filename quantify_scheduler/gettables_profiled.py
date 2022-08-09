@@ -16,8 +16,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 from qcodes import Instrument
+
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
@@ -93,14 +93,12 @@ class ProfiledScheduleGettable(ScheduleGettable):
         self.profile = {}
 
         # overwrite linked IC to a profiled IC
-
         self.instr_coordinator = (
             self.quantum_device.instr_instrument_coordinator.get_instr()
         )
         self.profiled_instr_coordinator = ProfiledInstrumentCoordinator(
             name="profiled_ic", parent_ic=self.instr_coordinator
         )
-
         self.quantum_device.instr_instrument_coordinator(
             self.profiled_instr_coordinator.name
         )
@@ -128,6 +126,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
             write_path = os.path.join(folder_name, path)
             with open(write_path, "w", encoding="utf-8") as file:
                 json.dump(self.profile, file, indent=4, separators=(",", ": "))
+
         return self.profile
 
     def plot_profile(self, plot_name="average_runtimes.pdf"):

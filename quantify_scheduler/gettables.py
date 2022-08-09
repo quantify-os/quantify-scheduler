@@ -160,7 +160,7 @@ class ScheduleGettable:
         return self.get()
 
     def _compile(self, sched):
-        """Compile schedule, seperated to allow for profiling compilation duration."""
+        """Compile schedule, separated to allow for profiling compilation duration."""
         self._compiled_schedule = qcompile(
             schedule=sched,
             device_cfg=self.quantum_device.generate_device_config(),

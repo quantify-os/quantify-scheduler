@@ -500,10 +500,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         """
         schedule_duration = 0
-        # find last timestamp
 
+        # find last timestamp
         for schedulable in self.schedulables.values():
-            time_stamp = schedulable["abs_time"]
+            timestamp = schedulable["abs_time"]
             operation_repr = schedulable["operation_repr"]
 
             # find duration of last operation
@@ -522,6 +522,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             # keep track of longest found schedule
             if tmp_time > schedule_duration:
                 schedule_duration = tmp_time
+
         schedule_duration *= self.repetitions
         return schedule_duration
 
