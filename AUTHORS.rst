@@ -13,7 +13,7 @@ Contributors
 * Damien Crielaard <dcrielaard@qblox.com>
 * Diogo Valada <dvalada@qblox.com>
 * Edgar Reehuis <ereehuis@qblox.com>
-* Gabor Oszkar Denes <mailto:gdenes@qblox.com>
+* Gabor Oszkar Denes <gdenes@qblox.com>
 * Gijs Vermarien <gijs@orangeqs.com>
 * Jordy Gloudemans <jgloudemans@qblox.com>
 * Jules van Oven <jules@qblox.com>
@@ -25,6 +25,3 @@ Contributors
 * Thomas Reynders <thomas@orangeqs.com>
 * Viacheslav Ostroukh <viacheslav@orangeqs.com>
 * Victor Negirneac <vnegirneac@qblox.com>
-
-
-
