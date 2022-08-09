@@ -92,6 +92,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         super().__init__(*args, **kwargs)
 
         self.profile = {}
+        self.plot = None
 
         # overwrite linked IC to a profiled IC
         self.instr_coordinator = (
@@ -116,7 +117,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         prof_ic = Instrument.find_instrument("profiled_ic")
         Instrument.close(prof_ic)
 
-    def log_profile(self, obj=[], path="", indent: int = 4, separators=None):
+    def log_profile(self, obj=None, path=None, indent: int = 4, separators=None):
         """Store profiling logs to json file."""
         if not obj:
             obj = self.profile
