@@ -5,7 +5,7 @@ import logging
 import warnings
 from copy import deepcopy
 from typing import Literal, Optional, Union
-
+from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
@@ -409,6 +409,11 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
     return True
 
 
+@deprecated(
+    "0.9.0",
+    "Use the `QuantifyCompiler.compile` method instead. "
+    "See the user guide section on compilers for details.",
+)
 def qcompile(
     schedule: Schedule,
     device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
