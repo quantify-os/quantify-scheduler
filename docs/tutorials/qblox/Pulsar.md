@@ -111,13 +111,12 @@ Since the Quantify-Scheduler aim is to only specify the final RF frequency when 
 
 The backend assumes that upconversion happens according to the relation
 
-$$
-f_{RF} = f_{IF} + f_{LO}
-$$
+```{math} f_{RF} = f_{IF} + f_{LO}
+```
 
-This means that in order to generate a certain $f_{RF}$, we need to specify either an IF or an LO frequency. In the
+This means that in order to generate a certain {math}`f_{RF}`, we need to specify either an IF or an LO frequency. In the
 dictionary, we therefore either set the {code}`lo_freq` or the {code}`interm_freq` and leave the other to be calculated by
-the backend by specifying it as {code}`None`. Specifying both will raise an error if it violates $f_{RF} = f_{IF} + f_{LO}$.
+the backend by specifying it as {code}`None`. Specifying both will raise an error if it violates {math}`f_{RF} = f_{IF} + f_{LO}`.
 
 ### Downconverter
 

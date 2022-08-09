@@ -396,11 +396,11 @@ This flow is schematically shown in {numref}`experiments_control_flow`.
 A schematic overview of the experiments control flow.
 ```
 
-Let us consider the example of an experiment used to measure the coherence time $T_1$.
-In this experiment a $\pi$ pulse is used to excite the qubit, which is left to idle for a time $\tau$ before it is measured.
-This experiment is then repeated for different $\tau$ and averaged.
+Let us consider the example of an experiment used to measure the coherence time {math}`T_1`.
+In this experiment a {math}`\pi` pulse is used to excite the qubit, which is left to idle for a time {math}`\tau` before it is measured.
+This experiment is then repeated for different {math}`\tau` and averaged.
 
-In terms of settables and gettables to use with the {class}`~quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time $\tau$, and the gettable is the execution of the schedule.
+In terms of settables and gettables to use with the {class}`~quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time {math}`\tau`, and the gettable is the execution of the schedule.
 
 We represent the settable as a {class}`qcodes.instrument.parameter.ManualParameter`:
 
@@ -414,7 +414,7 @@ tau = ManualParameter("tau", label=r"Delay time", initial_value=0, unit="s")
 
 To execute the schedule with the right parameters, the {code}`ScheduleGettable` needs to have a reference to a template function that generates the schedule, the appropriate keyword arguments for that function, and a reference to the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` to generate the required configuration files.
 
-For the $T_1$ experiment, quantify-scheduler provides a schedule generating function as part of the {mod}`quantify_scheduler.schedules.timedomain_schedules`: the {func}`quantify_scheduler.schedules.timedomain_schedules.t1_sched`.
+For the {math}`T_1` experiment, quantify-scheduler provides a schedule generating function as part of the {mod}`quantify_scheduler.schedules.timedomain_schedules`: the {func}`quantify_scheduler.schedules.timedomain_schedules.t1_sched`.
 
 ```{jupyter-execute}
 
@@ -423,7 +423,7 @@ schedule_function = t1_sched
 
 ```
 
-Inspecting the {func}`quantify_scheduler.schedules.timedomain_schedules.t1_sched`, we find that we need to provide the times $\tau$, the name of the qubit, and the number of times we want to repeat the schedule.
+Inspecting the {func}`quantify_scheduler.schedules.timedomain_schedules.t1_sched`, we find that we need to provide the times {math}`\tau`, the name of the qubit, and the number of times we want to repeat the schedule.
 Rather than specifying the values of the delay times, we pass the parameter {code}`tau`.
 
 ```{jupyter-execute}

@@ -62,7 +62,7 @@ In this configuration, we include:
 - A Local Oscillator.
 
 In the QCM-RF output's settings, {code}`interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
-In this case, the internal LO frequency is not specified but is automatically calculated by the backend, such that the relation $\text{clock} = \text{LO} + \text{IF}$ is respected.
+In this case, the internal LO frequency is not specified but is automatically calculated by the backend, such that the relation {math}`\text{clock} = \text{LO} + \text{IF}` is respected.
 
 ```{jupyter-execute}
 

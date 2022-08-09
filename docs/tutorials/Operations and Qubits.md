@@ -99,7 +99,7 @@ Within a single `schedule`, high-level circuit layer operations can be mixed wit
 As the first example, we want to create a schedule for performing the
 [Bell experiment](https://en.wikipedia.org/wiki/Bell%27s_theorem).
 The goal of the Bell experiment is to create a Bell state
-$|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)$ which is a perfectly entangled state, followed by a measurement.
+{math}`|\Phi ^+\rangle=\frac{1}{2}(|00\rangle+|11\rangle)` which is a perfectly entangled state, followed by a measurement.
 By rotating the measurement basis, or equivalently one of the qubits, it is possible
 to observe violations of the CSHS inequality.
 
@@ -137,7 +137,7 @@ sched
 By scheduling 7 operations for 21 different values for {code}`theta` we indeed get a schedule containing 7\*21=147 operations. To minimize the size of the schedule, identical operations are stored only once. For example, the {class}`~quantify_scheduler.operations.gate_library.CZ` operation is stored only once but used 21 times, which leaves only 66 unique operations in the schedule.
 
 ```{note}
-The acquisitions are different for every iteration due to their different {code}`acq_index`. The {class}`~quantify_scheduler.operations.gate_library.Rxy`-gate rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since $R^{360}=R^0$). Hence the number of unique operations is 3\*21-1+4=66.
+The acquisitions are different for every iteration due to their different {code}`acq_index`. The {class}`~quantify_scheduler.operations.gate_library.Rxy`-gate rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since {math}`R^{360}=R^0`). Hence the number of unique operations is 3\*21-1+4=66.
 ```
 
 ## Visualizing the quantum circuit
