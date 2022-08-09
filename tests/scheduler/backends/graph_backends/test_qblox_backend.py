@@ -7,7 +7,7 @@ Might be good to mark those tests in detail.
 """
 
 import pytest
-
+from quantify_core.data.handling import set_datadir
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -54,11 +54,13 @@ def test_compiles_standard_schedules(
     assert isinstance(comp_sched, CompiledSchedule)
 
 
-def test_compile_empty_device():
+def test_compile_empty_device(tmp_test_data_dir):
     """
     Test if compilation works for a pulse only schedule on a freshly initialized
     quantum device object to which only a hardware config has been provided.
     """
+    # ensures the datadir is set up and files can be written during compilation
+    set_datadir(tmp_test_data_dir)
 
     sched = pulse_only_schedule()
 
@@ -72,5 +74,8 @@ def test_compile_empty_device():
 
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)
+
+    # this will fail if no hardware_config was specified
+    assert len(comp_sched.compiled_instructions) > 0
 
     quantum_device.close()  # need to clean up nicely after the test
