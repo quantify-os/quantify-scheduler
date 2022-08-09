@@ -406,7 +406,7 @@ def _reshape_array_into_acq_return_type(
     return acquisitions
 
 
-def test_profiling(mock_setup, module_mocker):
+def test_profiling(mock_setup, mocker):
     quantum_device = mock_setup["quantum_device"]
     qubit = quantum_device.get_component("q0")
 
@@ -427,6 +427,7 @@ def test_profiling(mock_setup, module_mocker):
         prof_gettable.quantum_device.instr_instrument_coordinator.get_instr()
     )
     instr_coordinator.start()
+    instr_coordinator.wait_done()
     instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
     prof_gettable.close()
@@ -435,15 +436,16 @@ def test_profiling(mock_setup, module_mocker):
 
     # Test if all steps have been measured and have a value > 0
     assert log["schedule"][0] == 0.05153792
-    verif_dict = {
-        "_compile": [],
-        "schedule": [],
-        "stop": [],
-        "prepare": [],
-        "start": [],
-        "retrieve_acquisition": [],
-    }
-    for x in verif_dict.keys():
+    verif_keys = [
+        "schedule",
+        "_compile",
+        "prepare",
+        "start",
+        "wait_done",
+        "retrieve_acquisition",
+        "stop",
+    ]
+    for x in verif_keys:
         assert len(log[x]) >= 1
         assert [k > 0 for k in log[x]]
 
@@ -455,11 +457,8 @@ def test_profiling(mock_setup, module_mocker):
     obj = {"test": ["test"]}
     file = "test"
 
-    def test_json_dump(mocker):
-        def wrapper(obj, fp, indent, separators):
-            json.dumps(obj=obj, indent=indent, separators=separators)
+    def wrapper(obj, fp, indent, separators):
+        json.dumps(obj=obj, indent=indent, separators=separators)
 
-        with mocker.patch("json.dump", wraps=wrapper):
-            prof_gettable.log_profile(
-                obj=obj, path=file, indent=4, separators=(",", ": ")
-            )
+    with mocker.patch("json.dump", wraps=wrapper):
+        prof_gettable.log_profile(obj=obj, path=file, indent=4, separators=(",", ": "))
