@@ -105,6 +105,7 @@ def test_missing_ref_op():
 def test_config_spec(load_legacy_transmon_config):
     validate_config(load_legacy_transmon_config, scheme_fn="transmon_cfg.json")
 
+
 def test_compile_transmon_program(load_legacy_transmon_config):
     sched = Schedule("Test schedule")
 
