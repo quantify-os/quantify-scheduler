@@ -48,6 +48,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parent_ic
+        self.plot = None
 
     @profiler
     def add_component(
@@ -115,10 +116,12 @@ class ProfiledScheduleGettable(ScheduleGettable):
         prof_ic = Instrument.find_instrument("profiled_ic")
         Instrument.close(prof_ic)
 
-    def log_profile(self, obj=[], path="", indent: int = 4, separators=(",", ": ")):
+    def log_profile(self, obj=[], path="", indent: int = 4, separators=None):
         """Store profiling logs to json file."""
         if not obj:
             obj = self.profile
+        if not separators:
+            separators = (",", ": ")
         folder_name = "profiling_logs"
         if path:
             if not os.path.exists(folder_name):
