@@ -52,7 +52,7 @@ class TestRabiPulse(_CompilesAllBackends):
 
     def test_timing(self, load_example_transmon_config):
         # This will determine the timing
-        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config())
+        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config)
 
         # test that the right operations are added and timing is as expected.
         labels = ["qubit reset", "Rabi_pulse", "readout_pulse", "acquisition"]
@@ -70,7 +70,7 @@ class TestRabiPulse(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config)
 
 
 class TestRabiSched(_CompilesAllBackends):
@@ -94,7 +94,7 @@ class TestRabiSched(_CompilesAllBackends):
 
     def test_timing(self, load_example_transmon_config):
         # This will determine the timing
-        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config())
+        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config)
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
@@ -124,7 +124,7 @@ class TestRabiSched(_CompilesAllBackends):
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
@@ -149,7 +149,7 @@ class TestRabiSched(_CompilesAllBackends):
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -179,7 +179,7 @@ class TestRabiSched(_CompilesAllBackends):
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -247,7 +247,7 @@ class TestT1Sched(_CompilesAllBackends):
         }
 
         sched = ts.t1_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
 
     def test_operations(self):
         assert len(self.uncomp_sched.operations) == 2 + 21  # init, pi and 21*measure
@@ -292,7 +292,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
         assert any(
             op["timing_constraints"][0]["rel_time"] == 3e-6
             for op in sched.schedulables.values()
@@ -339,7 +339,7 @@ class TestRamseySched(_CompilesAllBackends):
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
 
     def test_operations(self):
         assert (
@@ -370,7 +370,7 @@ class TestEchoSched(_CompilesAllBackends):
         }
 
         sched = ts.echo_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config())
+        sched = qcompile(sched, load_example_transmon_config)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.
