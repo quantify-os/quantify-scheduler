@@ -15,12 +15,12 @@ The complete source code of this tutorial can be found in
 {jupyter-download-script}`download as .py <tutorial_zhinst-hardware-verification>`
 
 ```{jupyter-execute}
-    :hide-code:
+:hide-code:
 
-    # Make output easier to read
-    from rich import pretty
+# Make output easier to read
+from rich import pretty
 
-    pretty.install()
+pretty.install()
 ```
 ``````
 
@@ -54,13 +54,13 @@ In this tutorial we make use of the example configuration file that contains an 
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.schemas.examples import utils
+from quantify_scheduler.schemas.examples import utils
 
-    # load here to avoid loading every time a fixture is used
-    transmon_device_cfg = utils.load_json_example_scheme("transmon_test_config.json")
-    zhinst_hardware_cfg = utils.load_json_example_scheme("zhinst_test_mapping.json")
+# load here to avoid loading every time a fixture is used
+transmon_device_cfg = utils.load_json_example_scheme("transmon_test_config.json")
+zhinst_hardware_cfg = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
-    zhinst_hardware_cfg
+zhinst_hardware_cfg
 ```
 ``````
 
@@ -91,74 +91,74 @@ We start by manually recreating the {func}`~quantify_scheduler.schedules.verific
 
 ```{jupyter-execute}
 
-    # import statements required to make a schedule
+# import statements required to make a schedule
 
-    import numpy as np
+import numpy as np
 
-    from quantify_scheduler import Schedule
-    from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-    from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
-    from quantify_scheduler.resources import ClockResource
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
+from quantify_scheduler.resources import ClockResource
 
 
 ```
 
 ```{jupyter-execute}
 
-    pulse_amps = np.linspace(0.05, 0.9, 3)
-    repetitions = 1024
-    init_duration = 4000e-6  # 4us should allow for plenty of wait time
-    mw_port = "q0:mw"
-    ro_port = "q0:res"
-    mw_clock = "q0.01"  # chosen to correspond to values in the hardware cfg
-    ro_clock = "q0.ro"
-    readout_frequency = (
-        6.5e9  # this frequency will be used for both the AWG pulse as well as
+pulse_amps = np.linspace(0.05, 0.9, 3)
+repetitions = 1024
+init_duration = 4000e-6  # 4us should allow for plenty of wait time
+mw_port = "q0:mw"
+ro_port = "q0:res"
+mw_clock = "q0.01"  # chosen to correspond to values in the hardware cfg
+ro_clock = "q0.ro"
+readout_frequency = (
+    6.5e9  # this frequency will be used for both the AWG pulse as well as
+)
+# for the readout.
+
+pulse_duration = 1e-6
+acq_channel = 0
+integration_time = 2e-6
+acquisition_delay = 0
+
+
+sched = Schedule(name="AWG staircase", repetitions=repetitions)
+
+sched.add_resource(ClockResource(name=mw_clock, freq=readout_frequency))
+sched.add_resource(ClockResource(name=ro_clock, freq=readout_frequency))
+pulse_amps = np.asarray(pulse_amps)
+
+
+for acq_index, pulse_amp in enumerate(pulse_amps):
+
+    sched.add(IdlePulse(duration=init_duration))
+
+    pulse = sched.add(
+        SquarePulse(
+            duration=pulse_duration,
+            amp=pulse_amp,
+            port=mw_port,
+            clock=mw_clock,
+        ),
+        label=f"SquarePulse_{acq_index}",
     )
-    # for the readout.
 
-    pulse_duration = 1e-6
-    acq_channel = 0
-    integration_time = 2e-6
-    acquisition_delay = 0
+    sched.add(
+        SSBIntegrationComplex(
+            duration=integration_time,
+            port=ro_port,
+            clock=ro_clock,
+            acq_index=acq_index,
+            acq_channel=acq_channel,
+        ),
+        ref_op=pulse,
+        ref_pt="start",
+        rel_time=acquisition_delay,
+        label=f"Acquisition_{acq_index}",
+    )
 
-
-    sched = Schedule(name="AWG staircase", repetitions=repetitions)
-
-    sched.add_resource(ClockResource(name=mw_clock, freq=readout_frequency))
-    sched.add_resource(ClockResource(name=ro_clock, freq=readout_frequency))
-    pulse_amps = np.asarray(pulse_amps)
-
-
-    for acq_index, pulse_amp in enumerate(pulse_amps):
-
-        sched.add(IdlePulse(duration=init_duration))
-
-        pulse = sched.add(
-            SquarePulse(
-                duration=pulse_duration,
-                amp=pulse_amp,
-                port=mw_port,
-                clock=mw_clock,
-            ),
-            label=f"SquarePulse_{acq_index}",
-        )
-
-        sched.add(
-            SSBIntegrationComplex(
-                duration=integration_time,
-                port=ro_port,
-                clock=ro_clock,
-                acq_index=acq_index,
-                acq_channel=acq_channel,
-            ),
-            ref_op=pulse,
-            ref_pt="start",
-            rel_time=acquisition_delay,
-            label=f"Acquisition_{acq_index}",
-        )
-
-    sched
+sched
 
 
 ```
@@ -167,11 +167,11 @@ Now that we have generated the schedule we can compile it and verify if the hard
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.compilation import qcompile
 
-    comp_sched = qcompile(
-        schedule=sched, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
-    )
+comp_sched = qcompile(
+    schedule=sched, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
+)
 
 
 ```
@@ -182,8 +182,8 @@ The {attr}`.ScheduleBase.timing_table` can be used after the absolute timing has
 
 ```{jupyter-execute}
 
-    # Pandas dataframes do not render correctly in the sphinx documentation environment. See issue #238.
-    comp_sched.timing_table
+# Pandas dataframes do not render correctly in the sphinx documentation environment. See issue #238.
+comp_sched.timing_table
 
 
 ```
@@ -196,7 +196,7 @@ The "waveform_id" key can be used to find the numerical waveforms in {attr}`.Com
 
 ```{jupyter-execute}
 
-    comp_sched.hardware_timing_table
+comp_sched.hardware_timing_table
 
 
 ```
@@ -205,7 +205,7 @@ The "waveform_id" key can be used to find the numerical waveforms in {attr}`.Com
 
 ```{jupyter-execute}
 
-    comp_sched.hardware_waveform_dict
+comp_sched.hardware_waveform_dict
 
 
 ```
@@ -216,7 +216,7 @@ The compiled instructions can be found in the `compiled_instructions` of the com
 
 ```{jupyter-execute}
 
-    comp_sched.compiled_instructions
+comp_sched.compiled_instructions
 
 
 ```
@@ -225,12 +225,12 @@ The setting for the Zurich Instruments instruments are stored as a {class}`~.ZID
 
 ```{jupyter-execute}
 
-    # the .as_dict method can be used to generate a "readable" overview of the settings.
-    hdawg_settings_dict = (
-        comp_sched.compiled_instructions["ic_hdawg0"].settings_builder.build().as_dict()
-    )
-    # hdawg_settings_dict
-    hdawg_settings_dict
+# the .as_dict method can be used to generate a "readable" overview of the settings.
+hdawg_settings_dict = (
+    comp_sched.compiled_instructions["ic_hdawg0"].settings_builder.build().as_dict()
+)
+# hdawg_settings_dict
+hdawg_settings_dict
 
 
 ```
@@ -240,28 +240,28 @@ The clock-cycles are tracked by the assembler backend and can be compared to the
 
 ```{jupyter-execute}
 
-    awg_index = 0
-    print(hdawg_settings_dict["compiler/sourcestring"][awg_index])
+awg_index = 0
+print(hdawg_settings_dict["compiler/sourcestring"][awg_index])
 
 
 ```
 
 ```{jupyter-execute}
 
-    # the .as_dict method can be used to generate a "readable" overview of the settings.
-    uhfqa_settings_dict = (
-        comp_sched.compiled_instructions["ic_uhfqa0"].settings_builder.build().as_dict()
-    )
-    # uhfqa_settings_dict
-    uhfqa_settings_dict
+# the .as_dict method can be used to generate a "readable" overview of the settings.
+uhfqa_settings_dict = (
+    comp_sched.compiled_instructions["ic_uhfqa0"].settings_builder.build().as_dict()
+)
+# uhfqa_settings_dict
+uhfqa_settings_dict
 
 
 ```
 
 ```{jupyter-execute}
 
-    awg_index = 0
-    print(uhfqa_settings_dict["compiler/sourcestring"][awg_index])
+awg_index = 0
+print(uhfqa_settings_dict["compiler/sourcestring"][awg_index])
 
 
 ```
@@ -327,23 +327,23 @@ Additionally, depending on the overlap between the pulse and the integration win
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.schedules.verification import acquisition_staircase_sched
+from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 
-    acq_channel = 0
-    schedule = acquisition_staircase_sched(
-        readout_pulse_amps=np.linspace(0, 1, 4),
-        readout_pulse_duration=1e-6,
-        readout_frequency=6e9,
-        acquisition_delay=100e-9,
-        integration_time=2e-6,
-        port="q0:res",
-        clock="q0.ro",
-        repetitions=1024,
-        acq_channel=acq_channel,
-    )
+acq_channel = 0
+schedule = acquisition_staircase_sched(
+    readout_pulse_amps=np.linspace(0, 1, 4),
+    readout_pulse_duration=1e-6,
+    readout_frequency=6e9,
+    acquisition_delay=100e-9,
+    integration_time=2e-6,
+    port="q0:res",
+    clock="q0.ro",
+    repetitions=1024,
+    acq_channel=acq_channel,
+)
 
 
-    comp_sched = qcompile(
-        schedule, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
-    )
+comp_sched = qcompile(
+    schedule, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
+)
 ```

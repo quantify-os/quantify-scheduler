@@ -24,20 +24,20 @@ We start by defining an example schedule.
 
 ```{jupyter-execute}
 
-    from quantify_scheduler import Schedule
-    from quantify_scheduler.operations.pulse_library import SquarePulse
-    from quantify_scheduler.resources import ClockResource
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.resources import ClockResource
 
 
-    sched = Schedule("Simple schedule")
-    square_pulse = sched.add(
-        SquarePulse(amp=0.2, duration=1e-6, port="q0:res", clock="q0.ro")
-    )
+sched = Schedule("Simple schedule")
+square_pulse = sched.add(
+    SquarePulse(amp=0.2, duration=1e-6, port="q0:res", clock="q0.ro")
+)
 
-    readout_clock = ClockResource(name="q0.ro", freq=7e9)
-    sched.add_resource(readout_clock)
+readout_clock = ClockResource(name="q0.ro", freq=7e9)
+sched.add_resource(readout_clock)
 
-    sched
+sched
 
 
 ```
@@ -66,30 +66,30 @@ In this case, the internal LO frequency is not specified but is automatically ca
 
 ```{jupyter-execute}
 
-       hardware_cfg = {
-           "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-           "cluster0": {
-               "ref": "internal",
-               "instrument_type": "Cluster",
-               "cluster0_module2": {
-                   "instrument_type": "QCM_RF",
-                   "complex_output_0": {
-                       "lo_freq": None,
-                       "dc_mixer_offset_I": -0.00552,
-                       "dc_mixer_offset_Q": -0.00556,
-                       "portclock_configs": [
-                           {
-                               "mixer_amp_ratio": 0.9998,
-                               "mixer_phase_error_deg": -4.1,
-                               "port": "q0:res",
-                               "clock": "q0.ro",
-                               "interm_freq": 50e6,
-                           }
-                       ],
-                   },
-               },
-           },
-       }
+hardware_cfg = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+        "ref": "internal",
+        "instrument_type": "Cluster",
+        "cluster0_module2": {
+            "instrument_type": "QCM_RF",
+            "complex_output_0": {
+                "lo_freq": None,
+                "dc_mixer_offset_I": -0.00552,
+                "dc_mixer_offset_Q": -0.00556,
+                "portclock_configs": [
+                    {
+                        "mixer_amp_ratio": 0.9998,
+                        "mixer_phase_error_deg": -4.1,
+                        "port": "q0:res",
+                        "clock": "q0.ro",
+                        "interm_freq": 50e6,
+                    }
+                ],
+            },
+        },
+    },
+}
 ```
 
 Note that, for any experiment, all the required instruments need to be present in the hardware config.
@@ -116,22 +116,22 @@ We start by setting the directory where the compiled schedule files will be stor
 
 ```{jupyter-execute}
 
-    from quantify_core.data import handling as dh
-    from quantify_scheduler import Schedule
+from quantify_core.data import handling as dh
+from quantify_scheduler import Schedule
 
-    dh.set_datadir(
-        dh.default_datadir()
-    )  # Or: from pathlib import Path; dh.set_datadir(Path.home() / "quantify-data")
+dh.set_datadir(
+    dh.default_datadir()
+)  # Or: from pathlib import Path; dh.set_datadir(Path.home() / "quantify-data")
 
 
 ```
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.compilation import determine_absolute_timing, hardware_compile
+from quantify_scheduler.compilation import determine_absolute_timing, hardware_compile
 
-    sched = determine_absolute_timing(sched)
-    compiled_sched = hardware_compile(sched, hardware_cfg=hardware_cfg)
+sched = determine_absolute_timing(sched)
+compiled_sched = hardware_compile(sched, hardware_cfg=hardware_cfg)
 
 
 ```
@@ -140,7 +140,7 @@ The cell above compiles the schedule, returning a {class}`~quantify_scheduler.sc
 
 ```{jupyter-execute}
 
-    compiled_sched.compiled_instructions
+compiled_sched.compiled_instructions
 
 
 ```
@@ -156,11 +156,11 @@ We start by connecting to the control instrument.
 
 ```{jupyter-execute}
 
-    from qblox_instruments import Cluster, ClusterType
+from qblox_instruments import Cluster, ClusterType
 
-    Cluster.close_all()  # Close any open connection to a Cluster instrument
+Cluster.close_all()  # Close any open connection to a Cluster instrument
 
-    cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF})
+cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF})
 
 
 ```
@@ -169,11 +169,11 @@ And we attach these instruments to the {class}`~quantify_scheduler.instrument_co
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-    from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
-    ic = InstrumentCoordinator("ic")
-    ic.add_component(ClusterComponent(cluster0))
+ic = InstrumentCoordinator("ic")
+ic.add_component(ClusterComponent(cluster0))
 
 
 ```
@@ -190,14 +190,14 @@ Additionally, the {meth}`~quantify_scheduler.instrument_coordinator.instrument_c
 
 ```{jupyter-execute}
 
-    # Set the qcodes parameters and upload the schedule program
-    ic.prepare(compiled_sched)
+# Set the qcodes parameters and upload the schedule program
+ic.prepare(compiled_sched)
 
-    # Start the hardware execution
-    ic.start()
+# Start the hardware execution
+ic.start()
 
-    # Wait for the experiment to finish or for a timeout
-    ic.wait_done(timeout_sec=10)
+# Wait for the experiment to finish or for a timeout
+ic.wait_done(timeout_sec=10)
 
 
 ```

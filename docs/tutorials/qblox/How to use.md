@@ -6,20 +6,20 @@ Configuring the backend is done by specifying a python dictionary (or loading it
 that describes your experimental setup. An example of such a config:
 
 ```{jupyter-execute}
-    :hide-code:
-    :linenos:
+:hide-code:
+:linenos:
 
-    import json
-    import os, inspect
-    from pathlib import Path
-    import quantify_scheduler.schemas.examples as es
+import json
+import os, inspect
+from pathlib import Path
+import quantify_scheduler.schemas.examples as es
 
-    esp = inspect.getfile(es)
+esp = inspect.getfile(es)
 
-    cfg_f = Path(esp).parent / 'qblox_test_mapping.json'
+cfg_f = Path(esp).parent / 'qblox_test_mapping.json'
 
-    with open(cfg_f, 'r') as f:
-      qblox_test_mapping = json.load(f)
+with open(cfg_f, 'r') as f:
+  qblox_test_mapping = json.load(f)
 
     print(json.dumps(qblox_test_mapping, indent=4, sort_keys=False))  # Do not sort to retain the order as in the file
 ```

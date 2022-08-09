@@ -7,11 +7,11 @@
 ```
 
 ```{jupyter-execute}
-    :hide-code:
+:hide-code:
 
-    # Make output easier to read
-    from rich import pretty
-    pretty.install()
+# Make output easier to read
+from rich import pretty
+pretty.install()
 
 ```
 
@@ -34,47 +34,47 @@ The most convenient way to interact with a {class}`.Schedule` is through the {mo
 In the following example, we will create a function to generate a {class}`.Schedule` for a a [Bell experiment](https://en.wikipedia.org/wiki/Bell%27s_theorem) and visualize one instance of such a circuit.
 
 ```{jupyter-execute}
-    :hide-output:
+:hide-output:
 
-    # import the Schedule class and some basic operations.
-    from quantify_scheduler import Schedule
-    from quantify_scheduler.operations.gate_library import Reset, Measure, CZ, Rxy, X90
+# import the Schedule class and some basic operations.
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.gate_library import Reset, Measure, CZ, Rxy, X90
 
-    def bell_schedule(angles, q0:str, q1:str, repetitions: int):
+def bell_schedule(angles, q0:str, q1:str, repetitions: int):
 
-        for acq_index, angle in enumerate(angles):
+    for acq_index, angle in enumerate(angles):
 
-            sched = Schedule(f"Bell experiment on {q0}-{q1}")
+        sched = Schedule(f"Bell experiment on {q0}-{q1}")
 
-            sched.add(Reset(q0, q1))  # initialize the qubits
-            sched.add(X90(qubit=q0))
-            # Here we use a timing constraint to explicitly schedule the second gate to start
-            # simultaneously with the first gate.
-            sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
-            sched.add(CZ(qC=q0, qT=q1))
-            sched.add(Rxy(theta=angle, phi=0, qubit=q0) )
-            sched.add(Measure(q0, acq_index=acq_index))  # denote where to store the data
-            sched.add(Measure(q1, acq_index=acq_index), ref_pt="start")
+        sched.add(Reset(q0, q1))  # initialize the qubits
+        sched.add(X90(qubit=q0))
+        # Here we use a timing constraint to explicitly schedule the second gate to start
+        # simultaneously with the first gate.
+        sched.add(X90(qubit=q1), ref_pt="start", rel_time=0)
+        sched.add(CZ(qC=q0, qT=q1))
+        sched.add(Rxy(theta=angle, phi=0, qubit=q0) )
+        sched.add(Measure(q0, acq_index=acq_index))  # denote where to store the data
+        sched.add(Measure(q1, acq_index=acq_index), ref_pt="start")
 
-        return sched
+    return sched
 
 
-    sched = bell_schedule(
-        angles=[45.0],
-        q0="q0",
-        q1="q1",
-        repetitions=1024)
+sched = bell_schedule(
+    angles=[45.0],
+    q0="q0",
+    q1="q1",
+    repetitions=1024)
 
 
 ```
 
 ```{jupyter-execute}
 
-    # import the circuit visualizer
-    from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+# import the circuit visualizer
+from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 
-    # visualize the circuit
-    f, ax = circuit_diagram_matplotlib(sched)
+# visualize the circuit
+f, ax = circuit_diagram_matplotlib(sched)
 
 ```
 
@@ -149,17 +149,17 @@ Alternatively, one can plot the waveforms in schedules using {func}`~quantify_sc
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
-    from quantify_scheduler.compilation import determine_absolute_timing
-    from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
+from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
+from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
 
-    schedule = Schedule("waveforms")
-    schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
-    schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
-    schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
-    determine_absolute_timing(schedule)
+schedule = Schedule("waveforms")
+schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
+schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
+determine_absolute_timing(schedule)
 
-    _ = pulse_diagram_matplotlib(schedule, sampling_rate=20e6)
+_ = pulse_diagram_matplotlib(schedule, sampling_rate=20e6)
 
 ```
 
@@ -303,15 +303,15 @@ Similar to the device configuration file, the hardware configuration file can be
 :class: dropdown
 
 ```{jupyter-execute}
-    :hide-code:
+:hide-code:
 
-    from pathlib import Path
-    import json
-    import quantify_scheduler.schemas.examples as examples
+from pathlib import Path
+import json
+import quantify_scheduler.schemas.examples as examples
 
-    path = Path(examples.__file__).parent / "qblox_test_mapping.json"
-    json_data = json.loads(path.read_text())
-    json_data
+path = Path(examples.__file__).parent / "qblox_test_mapping.json"
+json_data = json.loads(path.read_text())
+json_data
 ```
 ``````
 
@@ -321,15 +321,15 @@ Similar to the device configuration file, the hardware configuration file can be
 :class: dropdown
 
 ```{jupyter-execute}
-    :hide-code:
+:hide-code:
 
-    from pathlib import Path
-    import json
-    import quantify_scheduler.schemas.examples as examples
+from pathlib import Path
+import json
+import quantify_scheduler.schemas.examples as examples
 
-    path = Path(examples.__file__).parent / "zhinst_test_mapping.json"
-    json_data = json.loads(path.read_text())
-    json_data
+path = Path(examples.__file__).parent / "zhinst_test_mapping.json"
+json_data = json.loads(path.read_text())
+json_data
 ```
 ``````
 
@@ -406,9 +406,9 @@ We represent the settable as a {class}`qcodes.instrument.parameter.ManualParamet
 
 ```{jupyter-execute}
 
-    from qcodes.instrument.parameter import ManualParameter
+from qcodes.instrument.parameter import ManualParameter
 
-    tau = ManualParameter("tau", label=r"Delay time", initial_value=0, unit="s")
+tau = ManualParameter("tau", label=r"Delay time", initial_value=0, unit="s")
 
 ```
 
@@ -418,8 +418,8 @@ For the $T_1$ experiment, quantify-scheduler provides a schedule generating func
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.schedules.timedomain_schedules import t1_sched
-    schedule_function = t1_sched
+from quantify_scheduler.schedules.timedomain_schedules import t1_sched
+schedule_function = t1_sched
 
 ```
 
@@ -428,12 +428,12 @@ Rather than specifying the values of the delay times, we pass the parameter {cod
 
 ```{jupyter-execute}
 
-    qubit_name = "q0"
-    sched_kwargs = {
-        "times": tau,
-        "qubit": qubit_name,
-        "repetitions": 1024 # could also be a parameter
-    }
+qubit_name = "q0"
+sched_kwargs = {
+    "times": tau,
+    "qubit": qubit_name,
+    "repetitions": 1024 # could also be a parameter
+}
 ```
 
 The {code}`ScheduleGettable` is set up to evaluate the value of these parameter on every call of {code}`ScheduleGettable.get`.
@@ -444,16 +444,16 @@ This ensures that if a calibration parameter is changed on the {class}`~quantify
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-    device = QuantumDevice(name="quantum_sample")
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+device = QuantumDevice(name="quantum_sample")
 ```
 
 These ingredients can then be combined to perform the experiment:
 
 ```{jupyter-execute}
 
-    from quantify_core.measurement import MeasurementControl
-    meas_ctrl = MeasurementControl("meas_ctrl")
+from quantify_core.measurement import MeasurementControl
+meas_ctrl = MeasurementControl("meas_ctrl")
 ```
 
 ```python
@@ -474,8 +474,8 @@ and the resulting dataset can be analyzed using
 
 ```{jupyter-execute}
 
-    # from quantify_core.analysis.t1_analysis import T1Analysis
-    # analysis = T1Analysis(label=label).run()
+# from quantify_core.analysis.t1_analysis import T1Analysis
+# analysis = T1Analysis(label=label).run()
 
 
 ```

@@ -3,7 +3,7 @@
 
 # Tutorial: Operations and Qubits
 
-> ``{jupyter-kernel}
+> ```{jupyter-kernel}
 >   :id: Operations and Qubits
 > ```
 
@@ -35,13 +35,13 @@ they operate:
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X90
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X90
 
-    q0, q1 = ("q0", "q1")
-    X90(q0)
-    Measure(q1)
-    CZ(q0, q1)
-    Reset(q0)
+q0, q1 = ("q0", "q1")
+X90(q0)
+Measure(q1)
+CZ(q0, q1)
+Reset(q0)
 
 
 ```
@@ -52,11 +52,11 @@ x-axis.
 
 ```{jupyter-execute}
 
-    from pprint import pprint
-    from quantify_scheduler.operations.gate_library import Rxy
+from pprint import pprint
+from quantify_scheduler.operations.gate_library import Rxy
 
-    rxy45 = Rxy(theta=45.0, phi=0.0, qubit=q0)
-    pprint(rxy45.data)
+rxy45 = Rxy(theta=45.0, phi=0.0, qubit=q0)
+pprint(rxy45.data)
 
 
 ```
@@ -74,12 +74,12 @@ not part of this tutorial. This schema can be inspected via:
 
 ```{jupyter-execute}
 
-    import importlib.resources
-    import json
-    from quantify_scheduler import schemas
+import importlib.resources
+import json
+from quantify_scheduler import schemas
 
-    operation_schema = json.loads(importlib.resources.read_text(schemas, "operation.json"))
-    pprint(operation_schema["properties"]["gate_info"]["properties"])
+operation_schema = json.loads(importlib.resources.read_text(schemas, "operation.json"))
+pprint(operation_schema["properties"]["gate_info"]["properties"])
 
 
 ```
@@ -109,27 +109,27 @@ This allows defining the Bell schedule as:
 
 ```{jupyter-execute}
 
-    import numpy as np
-    from quantify_scheduler import Schedule
-    from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, Rxy, X90
+import numpy as np
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, Rxy, X90
 
-    sched = Schedule("Bell experiment")
+sched = Schedule("Bell experiment")
 
-    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
-        sched.add(Reset(q0, q1))
-        sched.add(X90(q0))
-        sched.add(X90(q1), ref_pt="start")  # Start at the same time as the other X90
-        sched.add(CZ(q0, q1))
-        sched.add(Rxy(theta=theta, phi=0, qubit=q0))
+for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
+    sched.add(Reset(q0, q1))
+    sched.add(X90(q0))
+    sched.add(X90(q1), ref_pt="start")  # Start at the same time as the other X90
+    sched.add(CZ(q0, q1))
+    sched.add(Rxy(theta=theta, phi=0, qubit=q0))
 
-        sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
-        sched.add(  # Start at the same time as the other measure
-            Measure(q1, acq_index=acq_idx),
-            label="M q1 {:.2f} deg".format(theta),
-            ref_pt="start",
-        )
+    sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
+    sched.add(  # Start at the same time as the other measure
+        Measure(q1, acq_index=acq_idx),
+        label="M q1 {:.2f} deg".format(theta),
+        ref_pt="start",
+    )
 
-    sched
+sched
 
 
 ```
@@ -148,14 +148,14 @@ This visualization shows every operation on a line representing the different qu
 
 ```{jupyter-execute}
 
-    %matplotlib inline
-    import matplotlib.pyplot as plt
+%matplotlib inline
+import matplotlib.pyplot as plt
 
-    _, ax = sched.plot_circuit_diagram()
-    # all gates are plotted, but it doesn't all fit in a matplotlib figure.
-    # Therefore we use :code:`set_xlim` to limit the number of gates shown.
-    ax.set_xlim(-0.5, 9.5)
-    plt.show()
+_, ax = sched.plot_circuit_diagram()
+# all gates are plotted, but it doesn't all fit in a matplotlib figure.
+# Therefore we use :code:`set_xlim` to limit the number of gates shown.
+ax.set_xlim(-0.5, 9.5)
+plt.show()
 
 
 ```
@@ -168,9 +168,9 @@ Therefore, trying to run {meth}`~quantify_scheduler.schedules.schedule.ScheduleB
 signifies no {code}`pulse_info` is present in the schedule:
 
 > ```{jupyter-execute}
->     :raises:
+> :raises:
 >
->     sched.plot_pulse_diagram()
+> sched.plot_pulse_diagram()
 >
 >
 > ```
@@ -178,9 +178,9 @@ signifies no {code}`pulse_info` is present in the schedule:
 And similarly for the {code}`timing_table`:
 
 > ```{jupyter-execute}
->     :raises:
+> :raises:
 >
->     sched.timing_table
+> sched.timing_table
 >
 >
 > ```
@@ -198,14 +198,14 @@ Here we will use an example device configuration for a transmon-based system tha
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-    from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
-        example_transmon_cfg,
-    )
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
 
-    device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
-    list(device_cfg.dict())
+list(device_cfg.dict())
 
 
 ```
@@ -215,7 +215,7 @@ the contents of the device configuration.
 
 ```{jupyter-execute}
 
-    device_cfg.backend
+device_cfg.backend
 
 
 ```
@@ -227,9 +227,9 @@ Let us briefly investigate the backend function:
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 
-    help(import_python_object_from_string(device_cfg.backend))
+help(import_python_object_from_string(device_cfg.backend))
 
 
 ```
@@ -239,9 +239,9 @@ parameters required by the backend for all qubits and edges.
 
 ```{jupyter-execute}
 
-    print(list(device_cfg.elements))
-    print(list(device_cfg.edges))
-    print(list(device_cfg.clocks))
+print(list(device_cfg.elements))
+print(list(device_cfg.edges))
+print(list(device_cfg.clocks))
 
 
 ```
@@ -250,22 +250,22 @@ For every qubit and edge we can investigate the contained parameters.
 
 ```{jupyter-execute}
 
-    print(device_cfg.elements["q0"])
-    print(device_cfg.elements["q0"]["Rxy"].factory_kwargs)
+print(device_cfg.elements["q0"])
+print(device_cfg.elements["q0"]["Rxy"].factory_kwargs)
 
 
 ```
 
 ```{jupyter-execute}
 
-    print(device_cfg.edges)
+print(device_cfg.edges)
 
 
 ```
 
 ```{jupyter-execute}
 
-    print(device_cfg.clocks)
+print(device_cfg.clocks)
 
 
 
@@ -275,7 +275,7 @@ Lastly, the complete example device configuration (also see {class}`~quantify_sc
 
 ```{jupyter-execute}
 
-    pprint(example_transmon_cfg)
+pprint(example_transmon_cfg)
 
 
 ```
@@ -290,9 +290,9 @@ It also determines the timing of the different pulses in the schedule. Also see 
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.compilation import device_compile
+from quantify_scheduler.compilation import device_compile
 
-    pulse_sched = device_compile(sched, device_cfg)
+pulse_sched = device_compile(sched, device_cfg)
 
 
 ```
@@ -301,9 +301,9 @@ Now that the timings have been determined, we can show the first few rows of the
 
 ```{jupyter-execute}
 
-    pulse_sched.timing_table.hide(slice(11, None), axis="index").hide(
-        "waveform_op_id", axis="columns"
-    )
+pulse_sched.timing_table.hide(slice(11, None), axis="index").hide(
+    "waveform_op_id", axis="columns"
+)
 
 
 ```
@@ -313,8 +313,8 @@ well:
 
 ```{jupyter-execute}
 
-    f, ax = pulse_sched.plot_pulse_diagram()
-    ax.set_xlim(0.4005e-3, 0.4006e-3)
+f, ax = pulse_sched.plot_pulse_diagram()
+ax.set_xlim(0.4005e-3, 0.4006e-3)
 
 
 ```
@@ -337,18 +337,18 @@ to represent a fixed-frequency transmon qubit connected to a feedline. We show t
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-    from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
-    # First create a device under test
-    dut = QuantumDevice("DUT")
+# First create a device under test
+dut = QuantumDevice("DUT")
 
-    # Then create a transmon element
-    qubit = BasicTransmonElement("qubit")
+# Then create a transmon element
+qubit = BasicTransmonElement("qubit")
 
-    # Finally, add the transmon element to the QuantumDevice
-    dut.add_component(qubit)
-    dut, dut.components()
+# Finally, add the transmon element to the QuantumDevice
+dut.add_component(qubit)
+dut, dut.components()
 
 
 ```
@@ -357,12 +357,12 @@ The different transmon properties can be set through attributes of the {class}`~
 
 ```{jupyter-execute}
 
-    qubit.clock_freqs.f01(6e9)
+qubit.clock_freqs.f01(6e9)
 
-    print(list(qubit.submodules.keys()))
-    print()
-    for submodule_name, submodule in qubit.submodules.items():
-        print(f"{qubit.name}.{submodule_name}: {list(submodule.parameters.keys())}")
+print(list(qubit.submodules.keys()))
+print()
+for submodule_name, submodule in qubit.submodules.items():
+    print(f"{qubit.name}.{submodule_name}: {list(submodule.parameters.keys())}")
 
 
 ```
@@ -373,7 +373,7 @@ parameters need to be specified in the {class}`~quantify_scheduler.device_under_
 
 ```{jupyter-execute}
 
-    pprint(dut.generate_device_config())
+pprint(dut.generate_device_config())
 
 
 ```
@@ -389,44 +389,44 @@ X gates on a pair of qubits.
 
 ```{jupyter-execute}
 
-    from quantify_scheduler import Schedule
-    from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
-    from quantify_scheduler.operations.pulse_library import SquarePulse
-    from quantify_scheduler.resources import ClockResource
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.resources import ClockResource
 
-    sched = Schedule("Chevron Experiment")
-    acq_idx = 0
+sched = Schedule("Chevron Experiment")
+acq_idx = 0
 
-    # Multiples of 4 ns need to be used due to sampling rate of the Qblox modules
-    for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
-        for amp in np.linspace(start=0.1, stop=1.0, num=10):
-            reset = sched.add(Reset("q0", "q1"))
-            sched.add(X("q0"), ref_op=reset, ref_pt="end")  # Start at the end of the reset
-            # We specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
-            square = sched.add(SquarePulse(amp, duration, "q0:mw", clock="q0.01"))
-            sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
-            sched.add(X90("q1"), ref_op=square)
-            sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
-            sched.add(  # Start at the same time as the other measure
-                Measure(q1, acq_index=acq_idx),
-                label=f"M q1 {acq_idx}",
-                ref_pt="start",
-            )
+# Multiples of 4 ns need to be used due to sampling rate of the Qblox modules
+for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
+    for amp in np.linspace(start=0.1, stop=1.0, num=10):
+        reset = sched.add(Reset("q0", "q1"))
+        sched.add(X("q0"), ref_op=reset, ref_pt="end")  # Start at the end of the reset
+        # We specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
+        square = sched.add(SquarePulse(amp, duration, "q0:mw", clock="q0.01"))
+        sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
+        sched.add(X90("q1"), ref_op=square)
+        sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
+        sched.add(  # Start at the same time as the other measure
+            Measure(q1, acq_index=acq_idx),
+            label=f"M q1 {acq_idx}",
+            ref_pt="start",
+        )
 
-            acq_idx += 1
+        acq_idx += 1
 
-    sched.add_resources([ClockResource("q0.01", 6.02e9)])  # Manually add the pulse clock
+sched.add_resources([ClockResource("q0.01", 6.02e9)])  # Manually add the pulse clock
 
 
 ```
 
 ```{jupyter-execute}
 
-    fig, ax = sched.plot_circuit_diagram()
-    ax.set_xlim(-0.5, 9.5)
-    for t in ax.texts:
-        if t.get_position()[0] > 9.5:
-            t.set_visible(False)
+fig, ax = sched.plot_circuit_diagram()
+ax.set_xlim(-0.5, 9.5)
+for t in ax.texts:
+    if t.get_position()[0] > 9.5:
+        t.set_visible(False)
 
 
 ```
@@ -448,22 +448,22 @@ Rather than first using {func}`~quantify_scheduler.compilation.device_compile` a
 
 ```{jupyter-execute}
 
-    from quantify_scheduler.compilation import qcompile
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-    from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
-    dut.close()
-    dut = QuantumDevice("DUT")
-    q0 = BasicTransmonElement("q0")
-    q1 = BasicTransmonElement("q1")
-    dut.add_component(q0)
-    dut.add_component(q1)
-    dut.get_component("q0").rxy.amp180(0.6)
-    dut.get_component("q1").rxy.amp180(0.6)
+dut.close()
+dut = QuantumDevice("DUT")
+q0 = BasicTransmonElement("q0")
+q1 = BasicTransmonElement("q1")
+dut.add_component(q0)
+dut.add_component(q1)
+dut.get_component("q0").rxy.amp180(0.6)
+dut.get_component("q1").rxy.amp180(0.6)
 
-    compiled_sched = qcompile(
-        schedule=sched, device_cfg=dut.generate_device_config(), hardware_cfg=None
-    )
+compiled_sched = qcompile(
+    schedule=sched, device_cfg=dut.generate_device_config(), hardware_cfg=None
+)
 
 
 ```
@@ -473,16 +473,15 @@ its pulse diagram:
 
 ```{jupyter-execute}
 
-    compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
-        "waveform_op_id", axis="columns"
-    )
+compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
+    "waveform_op_id", axis="columns"
+)
 
 
 ```
 
-```{eval-rst}
-.. jupyter-execute::
+```{jupyter-execute}
 
-    f, ax = compiled_sched.plot_pulse_diagram()
-    ax.set_xlim(200e-6, 200.4e-6)
+f, ax = compiled_sched.plot_pulse_diagram()
+ax.set_xlim(200e-6, 200.4e-6)
 ```
