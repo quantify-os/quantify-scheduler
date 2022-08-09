@@ -34,7 +34,7 @@ ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.js
 
 
 @pytest.fixture
-def load_example_transmon_config() -> Generator[Dict[str, Any], None, None]:
+def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, None]:
     """
     Circuit to device level compilation for the add_pulse_info_transmon compilation
     backend.

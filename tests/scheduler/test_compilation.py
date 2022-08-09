@@ -13,6 +13,7 @@ from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
     qcompile,
+    validate_config,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
@@ -100,6 +101,9 @@ def test_missing_ref_op():
     with pytest.raises(ValueError):
         sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
 
+
+def test_config_spec(load_legacy_transmon_config):
+    validate_config(load_legacy_transmon_config(), scheme_fn="transmon_cfg.json")
 
 def test_compile_transmon_program(load_legacy_transmon_config):
     sched = Schedule("Test schedule")
