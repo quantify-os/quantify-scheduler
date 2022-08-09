@@ -1457,10 +1457,10 @@ def test_assign_frequencies_baseband(
     q1_clock_freq = device_cfg.clocks["q1.01"]
 
     hardware_cfg = load_example_qblox_hardware_config
-    if0 = load_example_qblox_hardware_config["qcm0"]["complex_output_0"][
+    if0 = hardware_cfg ["qcm0"]["complex_output_0"][
         "portclock_configs"
     ][0].get("interm_freq")
-    if1 = load_example_qblox_hardware_config["qcm0"]["complex_output_1"][
+    if1 = hardware_cfg ["qcm0"]["complex_output_1"][
         "portclock_configs"
     ][0].get("interm_freq")
     io0_lo_name = hardware_cfg["qcm0"]["complex_output_0"]["lo_name"]
