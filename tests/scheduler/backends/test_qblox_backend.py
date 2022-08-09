@@ -852,15 +852,15 @@ def test_compile_simple(
 
 
 def test_compile_cluster(
+    mock_setup,
     cluster_only_schedule,
-    load_legacy_transmon_config,
     load_example_qblox_hardware_config,
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     qcompile(
         cluster_only_schedule,
-        load_legacy_transmon_config,
+        mock_setup["quantum_device"].generate_device_config(),
         load_example_qblox_hardware_config,
     )
 
@@ -1767,14 +1767,14 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 
 
 def test_acq_protocol_append_mode_valid_assembly_ssro(
-    dummy_pulsars, load_legacy_transmon_config, load_example_qblox_hardware_config
+    dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
-        ssro_sched, load_legacy_transmon_config, load_example_qblox_hardware_config
+        ssro_sched, load_example_transmon_config, load_example_qblox_hardware_config
     )
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
@@ -1809,14 +1809,14 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
 
 
 def test_acq_protocol_average_mode_valid_assembly_allxy(
-    dummy_pulsars, load_legacy_transmon_config, load_example_qblox_hardware_config
+    dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
     compiled_allxy_sched = qcompile(
-        sched, load_legacy_transmon_config, load_example_qblox_hardware_config
+        sched, load_example_transmon_config, load_example_qblox_hardware_config
     )
 
     assembly_valid(
