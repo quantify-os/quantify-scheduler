@@ -115,9 +115,10 @@ class ProfiledScheduleGettable(ScheduleGettable):
         prof_ic = Instrument.find_instrument("profiled_ic")
         Instrument.close(prof_ic)
 
-    def log_profile(self, path=""):
+    def log_profile(self, obj=[], path="", indent: int = 4, separators=(",", ": ")):
         """Store profiling logs to json file."""
-
+        if not obj:
+            obj = self.profile
         folder_name = "profiling_logs"
         if path:
             if not os.path.exists(folder_name):
@@ -125,7 +126,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
 
             write_path = os.path.join(folder_name, path)
             with open(write_path, "w", encoding="utf-8") as file:
-                json.dump(self.profile, file, indent=4, separators=(",", ": "))
+                json.dump(obj, file, indent=indent, separators=separators)
 
         return self.profile
 
@@ -139,7 +140,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         error = [np.std(x) for x in profile.values()]
         fig, ax = plt.subplots(figsize=(9, 6))
 
-        color = ["r", "b", "c", "m", "k", "g"][:num_keys]
+        color = ["r", "b", "c", "m", "k", "g", "y"][:num_keys]
         ax.bar(x_pos, means, yerr=error, color=color)
         ax.bar(num_keys, means[0], color=color[0])
         for i in range(1, num_keys):
