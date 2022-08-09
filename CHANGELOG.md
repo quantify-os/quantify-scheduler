@@ -63,6 +63,16 @@
 - Qblox ICCs - Fix `ClusterComponent.prepare` mutating the schedule (!443)
 - Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
 - Schedules - Make `AcquisitionMetadata` a serializable class (!446)
+- JSON utilities - Add JSON serialization/deserialization methods based on \_\_getstate\_\_/\_\_setstate\_\_
+- Documentation - Sources are converted from restructured text format to MyST markdown. (!452)
+
+### Breaking changes
+
+- Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
+  : - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings (see <https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation>)
+- Qblox backend - Strictly requires v0.7.x of the qblox-instruments package (!449)
+
+### Merged branches and closed issues
 
 ## 0.7.0 Support for qblox-instruments v0.6.0, new BasicTransmonElement, change for triggers in Zhinst backend (2022-04-11)
 
