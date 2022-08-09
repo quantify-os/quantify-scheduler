@@ -14,7 +14,7 @@ Contributors
 * Diogo Valada <dvalada@qblox.com>
 * Edgar Reehuis <ereehuis@qblox.com>
 * Gabor Oszkar Denes <mailto:gdenes@qblox.com>
-* Gijs Vermariën <gijs@orangeqs.com>
+* Gijs Vermarien <gijs@orangeqs.com>
 * Jordy Gloudemans <jgloudemans@qblox.com>
 * Jules van Oven <jules@qblox.com>
 * Kelvin Loh <kelvin@orangeqs.com>
@@ -24,7 +24,7 @@ Contributors
 * Robert Sokolewicz <rsokolewicz@qblox.com>
 * Thomas Reynders <thomas@orangeqs.com>
 * Viacheslav Ostroukh <viacheslav@orangeqs.com>
-* Victor Negîrneac <vnegirneac@qblox.com>
+* Victor Negirneac <vnegirneac@qblox.com>
 
 
 
