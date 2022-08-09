@@ -950,6 +950,10 @@ def test_compile_measure(
 def test_compile_clock_operations(
     mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
 ):
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     sched = Schedule("shift_clock_phase_only")
     sched.add(operation)
     sched.add_resources(
@@ -974,6 +978,10 @@ def test_compile_clock_operations(
 def test_compile_cz_gate(
     mock_setup, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
 ):
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
     compiled_sched = qcompile(
         schedule=two_qubit_gate_schedule,
         device_cfg=mock_setup["quantum_device"].generate_device_config(),
