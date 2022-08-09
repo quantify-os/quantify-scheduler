@@ -517,7 +517,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 for acquisition in operation.data["acquisition_info"]
             ]
             final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
-            tmp_time = time_stamp + final_op_len
+            tmp_time = timestamp + final_op_len
 
             # keep track of longest found schedule
             if tmp_time > schedule_duration:
