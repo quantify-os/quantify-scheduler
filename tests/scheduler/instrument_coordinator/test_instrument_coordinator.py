@@ -399,6 +399,7 @@ def test_profiled_instrument_coordinator(mock_setup, dummy_components):
     instr_coordinator.wait_done()
     instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
+
     verif_keys = [
         "schedule",
         "prepare",
