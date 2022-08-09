@@ -7,6 +7,7 @@ Unreleased
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
 * Compilation - Call `determine_absolute_timing` in `qcompile` when no `device_cfg` supplied. (!436)
+* Compilation - Decrease test usage of deprecated transmon_test_config.json / add_pulse_information_transmon (!450)
 * Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
@@ -31,7 +32,6 @@ Unreleased
 * Docs - Unpin sphinx >=5.1.1 (!445)
 * Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
-
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
 * Schedules - Make `AcquisitionMetadata` a serializable class (!446)
 * JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
