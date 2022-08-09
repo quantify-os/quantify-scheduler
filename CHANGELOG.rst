@@ -2,15 +2,17 @@
 Changelog
 =========
 
-0.8.0
-----------
+0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
+------------------------------------------------------------------------------------
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
+* Operations - Pin `qcodes` package to <0.34.0 due to breaking `Edge` naming (#300, !409)
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
-    - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings
-    - see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation
-* Qblox backend - Strictly requires v0.7.x of the qblox-instruments package (!449)
+    - For each instrument, the config now contains a `portclock_configs` entry, a list with a dictionary of settings per port-clock combination
+    - See https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.8.0/tutorials/qblox/recent.html
+* Qblox backend - Strictly requires v0.7.x of the `qblox-instruments` package (!449)
+* Zhinst backend - Strictly requires v21.8.20515 of the `zhinst` package (!387)
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,16 +24,18 @@ Merged branches and closed issues
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
 * Docs - Unpin sphinx >=5.1.1 (!445)
 * Docs - Fix jsonschemas not rendered on read-the-docs (!448)
+* Docs - Clarify port and clock concepts (!431)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
 * Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 * Helpers - Moved `MockLocalOscillator` definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
-* JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
+* JSON utilities - Add JSON serialization/deserialization methods based on `__getstate__`/`__setstate__` (!444)
 * Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 * Operations - Introduce basic CZ-gate via `CompositeSquareEdge` (utilizing `quantify_scheduler.operations.pulse_factories.composite_square_pulse`) (!411)
     - Replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees. (!433)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. (!389)
     - The `Edge` has been added as an abstract base class for edges to be added to a device.
+* Qblox backend - Only add clocks to the schedule that are actually being used, avoids trying to assign frequencies for unused clocks (#278, !371)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
 * Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
 * Qblox backend - Fix for outputting signals on even output paths of qblox hardware in real_output_x mode (!397)
@@ -43,6 +47,7 @@ Merged branches and closed issues
 * Qblox backend - Fix handling of composite pulses (#299, !411)
 * Qblox backend - Implementation of distortion correction (#285, !388)
 * Qblox backend - Fix incompatibility of distortion_correction parameters as numpy arrays (!426)
+* Qblox backend - Remove all references to the inactive `line_gain_db` param (!435)
 * Qblox ICCs - Fix for setting `scope_acq_sequencer_select` for QRM and QRM-RF (!432, !441)
 * Qblox ICCs - Fix `ClusterComponent.prepare` mutating the schedule (!443)
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)

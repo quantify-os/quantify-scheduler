@@ -59,6 +59,7 @@ How to use
 .. toctree::
     :maxdepth: 2
 
+    recent
     How to use
     Pulsar
     Cluster
