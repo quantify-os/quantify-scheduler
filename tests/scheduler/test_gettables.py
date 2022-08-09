@@ -406,7 +406,7 @@ def _reshape_array_into_acq_return_type(
     return acquisitions
 
 
-def test_profiling(mock_setup):
+def test_profiling(mock_setup, module_mocker):
     quantum_device = mock_setup["quantum_device"]
     qubit = quantum_device.get_component("q0")
 
@@ -416,7 +416,6 @@ def test_profiling(mock_setup):
         "frequency": qubit.ro_freq,
         "qubit": "q0",
     }
-
     prof_gettable = ProfiledScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=rabi_sched,
@@ -435,8 +434,32 @@ def test_profiling(mock_setup):
     log = prof_gettable.log_profile()
 
     # Test if all steps have been measured and have a value > 0
-    assert len(log) == 6
     assert log["schedule"][0] == 0.05153792
-    for x in log.values():
-        assert len(x) >= 1
-        assert [k > 0 for k in x]
+    verif_dict = {
+        "_compile": [],
+        "schedule": [],
+        "stop": [],
+        "prepare": [],
+        "start": [],
+        "retrieve_acquisition": [],
+    }
+    for x in verif_dict.keys():
+        assert len(log[x]) >= 1
+        assert [k > 0 for k in log[x]]
+
+    # test plot function
+    prof_gettable.plot_profile()
+    assert prof_gettable.plot
+
+    # test logging to json
+    obj = {"test": ["test"]}
+    file = "test"
+
+    def test_json_dump(mocker):
+        def wrapper(obj, fp, indent, separators):
+            json.dumps(obj=obj, indent=indent, separators=separators)
+
+        with mocker.patch("json.dump", wraps=wrapper):
+            prof_gettable.log_profile(
+                obj=obj, path=file, indent=4, separators=(",", ": ")
+            )
