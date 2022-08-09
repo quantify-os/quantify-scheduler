@@ -19,8 +19,8 @@ class _CompilesAllBackends:
         # assert that files properly compile
         qcompile(
             self.uncomp_sched,  # pylint: disable=no-member
-            load_example_transmon_config(),
-            load_example_qblox_hardware_config(),
+            load_example_transmon_config,
+            load_example_qblox_hardware_config,
         )
 
     def test_compiles_zi_backend(
@@ -28,6 +28,6 @@ class _CompilesAllBackends:
     ) -> None:
         qcompile(
             self.uncomp_sched,  # pylint: disable=no-member
-            load_example_transmon_config(),
-            load_example_zhinst_hardware_config(),
+            load_example_transmon_config,
+            load_example_zhinst_hardware_config,
         )
