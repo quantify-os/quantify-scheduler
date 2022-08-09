@@ -401,6 +401,7 @@ def test_profiled_instrument_coordinator(mock_setup, dummy_components):
     instr_coordinator.stop()
     verif_keys = [
         "schedule",
+        "prepare",
         "add_component",
         "start",
         "wait_done",
@@ -410,4 +411,3 @@ def test_profiled_instrument_coordinator(mock_setup, dummy_components):
     for key in verif_keys:
         assert key in instr_coordinator.profile
         assert (x > 0 for x in instr_coordinator.profile[key])
-        
