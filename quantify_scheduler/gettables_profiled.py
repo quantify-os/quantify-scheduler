@@ -147,6 +147,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         time_ax.append("total")
         ax.set_xticks(np.append(x_pos, num_keys))
         ax.set_xticklabels(time_ax)
+        self.plot = (fig, ax)
         plt.ylabel("runtime [s]")
         plt.title("Average runtimes")
         fig.savefig(plot_name)
