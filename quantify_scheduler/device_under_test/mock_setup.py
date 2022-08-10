@@ -46,8 +46,6 @@ def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
     qe0 = mock_nv_device.get_element("qe0")
     qe0.spectroscopy_pulse.amplitude.set(0.1)
     qe0.clock_freqs.f01.set(3.592e9)
-    qe0.clock_freqs.ge0.set(470.4e12 + 0)
-    qe0.clock_freqs.ge1.set(470.4e12 - 300e6)
 
     qblox_hardware_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
