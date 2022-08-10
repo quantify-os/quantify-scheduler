@@ -51,23 +51,23 @@ def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
 
     qblox_hardware_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
         "cluster0": {
             # QCM-RF for microwave control
             "instrument_type": "Cluster",
             "ref": "internal",
-            # TODO: why is this module1 and not module0 (taken from quantify-scheduler docs)
-            "cluster0_module1": {
+            "cluster0_module6": {
                 "instrument_type": "QCM_RF",
                 "complex_output_0": {
                     "line_gain_db": 0,
-                    "lo_name": "lo0",
+                    "lo_freq": None,
+                    "dc_mixer_offset_I": 0.0,
+                    "dc_mixer_offset_Q": 0.0,
                     "seq0": {
-                        "clock": "qe0.spec",
                         "interm_freq": 200.0e6,
-                        # "mixer_amp_ratio": 0.9999,
-                        # "mixer_phase_error_deg": -4.2,
+                        "mixer_amp_ratio": 0.9999,
+                        "mixer_phase_error_deg": -4.2,
                         "port": "qe0:mw",
+                        "clock": "qe0.spec",
                     },
                 },
             },
