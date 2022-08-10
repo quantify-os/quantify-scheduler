@@ -307,7 +307,11 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
 
 
 @pytest.mark.parametrize("reset_clock_phase", (True, False))
-def test_sched_timing_table(tmp_test_data_dir, reset_clock_phase):
+def test_sched_timing_table(
+    tmp_test_data_dir,
+    reset_clock_phase,
+    load_example_transmon_config,
+):
 
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
@@ -326,7 +330,10 @@ def test_sched_timing_table(tmp_test_data_dir, reset_clock_phase):
         _ = schedule.timing_table
 
     set_datadir(tmp_test_data_dir)
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
+    device_cfg.elements.get("q0").get("measure").factory_kwargs[
+        "reset_clock_phase"
+    ] = reset_clock_phase
     comp_sched = qcompile(schedule, device_cfg=device_cfg)
     # will only test that a figure is created and runs without errors
     timing_table = comp_sched.timing_table

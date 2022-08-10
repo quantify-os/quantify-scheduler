@@ -81,6 +81,13 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     readout_calibration_sched,
 )
 
+from quantify_scheduler.device_under_test.transmon_element import (
+    BasicTransmonElement,
+)
+from quantify_core.measurement import Gettable, MeasurementControl
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
 from tests.fixtures.mock_setup import close_instruments
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
@@ -728,7 +735,7 @@ def test_portclocks(
     assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
 
 
-def test_contruct_sequencers(
+def test_construct_sequencers(
     make_basic_multi_qubit_schedule,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
@@ -755,7 +762,7 @@ def test_contruct_sequencers(
     assert isinstance(test_module.sequencers[seq_keys[0]], Sequencer)
 
 
-def test_contruct_sequencers_repeated_portclocks_error(
+def test_construct_sequencers_repeated_portclocks_error(
     make_basic_multi_qubit_schedule,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
@@ -1025,7 +1032,7 @@ def test_compile_simple_with_acq(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(
-        mixed_schedule_with_acquisition,
+        mixed_schedule_with_acquisition(),
         load_example_transmon_config,
         load_example_qblox_hardware_config,
     )
@@ -1041,9 +1048,11 @@ def test_compile_simple_with_acq(
 
 @pytest.mark.parametrize(
     "reset_clock_phase",
-    [(True, False)],
+    [True, False],
 )
-def test_compile_acq_measurement_with_clock_phase_reset(reset_clock_phase, mock_setup):
+def test_compile_acq_measurement_with_clock_phase_reset(
+    reset_clock_phase, load_example_qblox_hardware_config, load_example_transmon_config
+):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     schedule = Schedule("Test schedule")
@@ -1062,12 +1071,14 @@ def test_compile_acq_measurement_with_clock_phase_reset(reset_clock_phase, mock_
             label=f"Measurement {q0}{i}",
         )
 
-    device_cfg = mock_setup["quantum_device"].generate_device_config()
+    device_cfg = load_example_transmon_config
     device_cfg.elements.get("q0").get("measure").factory_kwargs[
         "reset_clock_phase"
     ] = reset_clock_phase
 
-    compiled_schedule = qcompile(schedule, device_cfg, HARDWARE_CFG)
+    compiled_schedule = qcompile(
+        schedule, device_cfg, load_example_qblox_hardware_config
+    )
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
     with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
@@ -1123,9 +1134,10 @@ def test_compile_with_repetitions(
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    mixed_schedule_with_acquisition.repetitions = 10
+    schedule = mixed_schedule_with_acquisition()
+    schedule.repetitions = 10
     full_program = qcompile(
-        mixed_schedule_with_acquisition,
+        schedule,
         load_example_transmon_config,
         load_example_qblox_hardware_config,
     )
@@ -1298,8 +1310,21 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 
 
 # --------- Test compilation functions ---------
-def test_assign_pulse_and_acq_info_to_devices(mixed_schedule_with_acquisition):
-    sched_with_pulse_info = device_compile(mixed_schedule_with_acquisition, DEVICE_CFG)
+@pytest.mark.parametrize("reset_clock_phase", [True, False])
+def test_assign_pulse_and_acq_info_to_devices(
+    mixed_schedule_with_acquisition,
+    reset_clock_phase,
+    mock_setup,
+    load_example_qblox_hardware_config,
+):
+    sched = mixed_schedule_with_acquisition(reset_clock_phase)
+
+    device_cfg = mock_setup["quantum_device"].generate_device_config()
+    device_cfg.elements.get("q0").get("measure").factory_kwargs[
+        "reset_clock_phase"
+    ] = reset_clock_phase
+
+    sched_with_pulse_info = device_compile(sched, device_cfg)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, load_example_qblox_hardware_config
