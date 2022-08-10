@@ -46,10 +46,10 @@ class Ports(InstrumentChannel):
         self.readout = Parameter(
             name="readout",
             instrument=self,
-            initial_cache_value=f"{parent.name}:spd",
+            initial_cache_value=f"{parent.name}:pd",
             set_cmd=False,
         )
-        """Name of the element's single-photon detector port."""
+        """Name of the element's photon detector port."""
 
 class ClocksFrequencies(InstrumentChannel):
     """
