@@ -2023,7 +2023,10 @@ def test_convert_hw_config_to_portclock_configs_spec(
 
     sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
     sched = device_compile(sched, load_legacy_transmon_config)
-    with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"hardware config adheres to a specification that is deprecated",
+    ):
         hardware_compile(sched, old_config)
 
 
