@@ -360,7 +360,7 @@ class BasicElectronicNVElement(DeviceElement):
                         "duration": self.spectroscopy_pulse.duration(),
                         "amplitude": self.spectroscopy_pulse.amplitude(),
                         "port": self.ports.microwave(),
-                        "clock": f"{self.name}.f01",
+                        "clock": f"{self.name}.spec",
                     },
                 ),
 
@@ -411,6 +411,7 @@ class BasicElectronicNVElement(DeviceElement):
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.ge0": self.clock_freqs.ge0(),
                 f"{self.name}.ge1": self.clock_freqs.ge1(),
+                f"{self.name}.spec": self.clock_freqs.spec(),
             },
             "edges": {},
         }
