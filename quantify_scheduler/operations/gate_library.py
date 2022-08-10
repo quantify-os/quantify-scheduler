@@ -544,13 +544,13 @@ class SpectroscopyPulse(Operation):
 
     def __init__(
         self,
-        qubit_name: str,
+        qubit: str,
         data: Optional[dict] = None,
     ):
         """
         Parameters
         ----------
-        qubit_name
+        qubit
             The target qubit
         data
             The operation's dictionary, by default None
@@ -559,13 +559,13 @@ class SpectroscopyPulse(Operation):
         """
         if data is None:
             data = {
-                "name": f"Microwave spectroscopy pulse {qubit_name}",
+                "name": f"Microwave spectroscopy pulse {qubit}",
                 "gate_info": {
                     "unitary": None,
                     "plot_func": "quantify_scheduler.visualization"
                     ".circuit_diagram.pulse_modulated",
                     "tex": r"Spectroscopy pulse",
-                    "qubits": [qubit_name],
+                    "qubits": [qubit],
                     "operation_type": "spectroscopy_pulse",
                 },
             }
