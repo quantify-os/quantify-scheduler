@@ -67,7 +67,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
     meas_ctrl = mock_setup["meas_ctrl"]
     quantum_device = mock_setup["quantum_device"]
 
-    qubit = quantum_device.get_component("q0")
+    qubit = quantum_device.get_element("q0")
 
     # manual parameter for testing purposes
     ro_freq = ManualParameter("ro_freq", initial_value=5e9, unit="Hz")
@@ -131,7 +131,7 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     meas_ctrl = mock_setup["meas_ctrl"]
     quantum_device = mock_setup["quantum_device"]
 
-    qubit = quantum_device.get_component("q0")
+    qubit = quantum_device.get_element("q0")
 
     index_par = ManualParameter("index", initial_value=0, unit="#")
     index_par.batched = True
@@ -190,7 +190,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
     quantum_device = mock_setup["quantum_device"]
 
     repetitions = 256
-    qubit = quantum_device.get_component("q0")
+    qubit = quantum_device.get_element("q0")
 
     prep_state = ManualParameter("prep_state", label="Prepared qubit state", unit="")
     prep_state.batched = True
@@ -250,14 +250,14 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     meas_ctrl = mock_setup["meas_ctrl"]
     quantum_device = mock_setup["quantum_device"]
     # q0 is a  device element from the test setup has all the right params
-    device_element = quantum_device.get_component("q0")
+    device_element = quantum_device.get_element("q0")
 
     sample_par = ManualParameter("sample", label="Sample time", unit="s")
     sample_par.batched = True
 
     schedule_kwargs = {
-        "pulse_amp": device_element.ro_pulse_amp,
-        "pulse_duration": device_element.ro_pulse_duration,
+        "pulse_amp": device_element.measure.pulse_amp,
+        "pulse_duration": device_element.measure.duration,  ### <-- left here
         "pulse_delay": device_element.ro_pulse_delay,
         "frequency": device_element.ro_freq,
         "acquisition_delay": device_element.ro_acq_delay,

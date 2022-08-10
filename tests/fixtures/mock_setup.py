@@ -69,8 +69,8 @@ def mock_setup(tmp_test_data_dir):
         name="instrument_coordinator", add_default_generic_icc=False
     )
 
-    q0 = TransmonElement("q0")
-    q1 = TransmonElement("q1")
+    q0 = BasicTransmonElement("q0")
+    q1 = BasicTransmonElement("q1")
     q2 = BasicTransmonElement("q2")
     q3 = BasicTransmonElement("q3")
     q4 = BasicTransmonElement("q4")
@@ -79,19 +79,31 @@ def mock_setup(tmp_test_data_dir):
     edge_q2_q3 = CompositeSquareEdge(
         parent_element_name=q2.name, child_element_name=q3.name
     )
+    q0.measure.pulse_amp.set(0.08)
 
-    q0.ro_pulse_amp(0.08)
-    q0.ro_freq(8.1e9)
-    q0.freq_01(5.8e9)
-    q0.freq_12(5.45e9)
-    q0.mw_amp180(0.314)
-    q0.mw_pulse_duration(20e-9)
-    q0.ro_pulse_delay(20e-9)
-    q0.ro_acq_delay(20e-9)
+    q0.clock_freqs.readout.set(8.1e9)
+    q0.clock_freqs.f01.set(5.8e9)
+    q0.clock_freqs.f12.set(5.45e9)
+    q0.rxy.amp180.set(0.314)
+    q0.rxy.duration.set(20e-9)
 
-    q1.ro_freq(8.64e9)
-    q1.freq_01(6.4e9)
-    q1.freq_12(5.05e9)
+    q1.measure.pulse_amp.set(0.08)
+    q1.clock_freqs.readout.set(8.1e9)
+    q1.clock_freqs.f01.set(5.8e9)
+    q1.clock_freqs.f12.set(5.45e9)
+    q1.rxy.amp180.set(0.314)
+    q1.rxy.duration.set(20e-9)
+
+    q0.measure.pulse_duration.set(1.6e-07)
+    q0.measure.acq_delay.set(1.2e-07)
+
+    q1.measure.pulse_duration.set(1.6e-07)
+    q1.measure.acq_delay.set(1.2e-07)
+
+    q0.measure.pulse_amp.set(0.08)
+    q0.clock_freqs.readout.set(8.1e9)
+    q0.clock_freqs.f01.set(5.8e9)
+    q0.clock_freqs.f12.set(5.45e9)
 
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)

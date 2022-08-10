@@ -83,4 +83,4 @@ def test_mc() -> QuantumDevice:
 def test_adding_non_component_raises(dev, test_mc):
 
     with pytest.raises(TypeError):
-        dev.add_component(test_mc)
+        dev.add_element(test_mc)

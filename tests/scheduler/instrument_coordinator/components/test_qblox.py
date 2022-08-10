@@ -411,7 +411,7 @@ def test_prepare(
 @pytest.mark.parametrize("force_set_parameters", [False, True])
 def test_prepare_ref_source_cluster(
     make_basic_schedule,
-    load_legacy_transmon_config,
+    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_cluster_component,
     force_set_parameters,
@@ -423,14 +423,14 @@ def test_prepare_ref_source_cluster(
     cluster.force_set_parameters(force_set_parameters)
     cluster.instrument.reference_source("internal")  # Put it in a known state
 
-    sched = make_basic_schedule("q4")
+    sched = make_basic_schedule("q0")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
         compiled_schedule = qcompile(
-            sched, load_legacy_transmon_config, load_example_qblox_hardware_config
+            sched, load_example_transmon_config, load_example_qblox_hardware_config
         )
         compiled_schedule2 = deepcopy(compiled_schedule)
         prog = compiled_schedule["compiled_instructions"]
@@ -443,8 +443,8 @@ def test_prepare_ref_source_cluster(
 
 
 def test_prepare_rf(
-    schedule_with_measurement_q2,
-    load_legacy_transmon_config,
+    schedule_with_measurement,
+    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qcm_rf,
     make_qrm_rf,
@@ -458,14 +458,14 @@ def test_prepare_rf(
         set_datadir(tmp_dir)
 
         compiled_schedule = qcompile(
-            schedule_with_measurement_q2,
-            load_legacy_transmon_config,
+            schedule_with_measurement,
+            load_example_transmon_config,
             load_example_qblox_hardware_config,
         )
         prog = compiled_schedule["compiled_instructions"]
 
-        qcm.prepare(prog["qcm_rf0"])
-        qrm.prepare(prog["qrm_rf0"])
+        qcm.prepare(prog["qcm0"])
+        qrm.prepare(prog["qrm0"])
 
     # Assert
     qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
@@ -617,20 +617,20 @@ def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
 
 
 def test_retrieve_acquisition_qrm_rf(
-    schedule_with_measurement_q2,
-    load_legacy_transmon_config,
+    schedule_with_measurement,
+    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qrm_rf,
 ):
     # Arrange
-    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm0", "1234")
 
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
         compiled_schedule = qcompile(
-            schedule_with_measurement_q2,
-            load_legacy_transmon_config,
+            schedule_with_measurement,
+            load_example_transmon_config,
             load_example_qblox_hardware_config,
         )
         prog = compiled_schedule["compiled_instructions"]
@@ -707,8 +707,8 @@ def test_start_qcm_qrm(
 
 
 def test_start_qcm_qrm_rf(
-    schedule_with_measurement_q2,
-    load_legacy_transmon_config,
+    schedule_with_measurement,
+    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qcm_rf,
     make_qrm_rf,
@@ -722,14 +722,14 @@ def test_start_qcm_qrm_rf(
         set_datadir(tmp_dir)
 
         compiled_schedule = qcompile(
-            schedule_with_measurement_q2,
-            load_legacy_transmon_config,
+            schedule_with_measurement,
+            load_example_transmon_config,
             load_example_qblox_hardware_config,
         )
         prog = compiled_schedule["compiled_instructions"]
 
-        qcm_rf.prepare(prog["qcm_rf0"])
-        qrm_rf.prepare(prog["qrm_rf0"])
+        qcm_rf.prepare(prog["qcm0"])
+        qrm_rf.prepare(prog["qrm0"])
 
         qcm_rf.start()
         qrm_rf.start()
