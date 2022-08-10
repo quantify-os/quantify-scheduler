@@ -577,7 +577,7 @@ def convert_hw_config_to_portclock_configs_spec(
 
     Furthermore, we scan for ``"latency_correction"`` defined at sequencer or
     portclock_configs level and store under ``"port:clock"`` under toplevel
-    "latency_corrections" key.
+    ``"latency_corrections"`` key.
 
     Parameters
     ----------
