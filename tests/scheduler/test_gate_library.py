@@ -24,6 +24,7 @@ from quantify_scheduler.operations.gate_library import (
 )
 from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.schedules.schedule import CompiledSchedule
+from quantify_core.data.handling import set_datadir
 
 
 def test_schedule_add_schedulables() -> None:
@@ -234,6 +235,11 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
 
 
 def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
+    """SpectroscopyPulse can be compiled to the device layer and to qblox instructions.
+
+    Verify that the device representation and the hardware instructions contain
+    plausible content.
+    """
     schedule = Schedule(name="Two Spectroscopy Pulses", repetitions=1)
 
     label1 = "Spectroscopy pulse 1"
@@ -257,7 +263,6 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    # TODO: retrieve the device config from mock setup file?
     quantum_device = set_up_basic_mock_nv_setup()
     set_standard_params_basic_nv(quantum_device)
 
@@ -277,13 +282,7 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     duration_pulse_1 = schedule_device.operations[spec_pulse_str].data["pulse_info"][0]["duration"]
     assert schedule_device.schedulables[label2].data['abs_time'] == pytest.approx(0 + duration_pulse_1)
 
-
-    ########## Hardware compilation ##########
-
-    from quantify_core.data.handling import set_datadir
     set_datadir(tmp_test_data_dir)
-
-    # TODO: retrieve the device config from elsewhere?
     hardware_cfg = quantum_device.generate_hardware_config()
     assert not "compiled_instructions" in schedule_device.data
     schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
