@@ -7,6 +7,7 @@ Unreleased
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
 * Compilation - Call `determine_absolute_timing` in `qcompile` when no `device_cfg` supplied. (!436)
+* Compilation - Decrease test usage of deprecated transmon_test_config.json / add_pulse_information_transmon (!450)
 * Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 * QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. The `Edge` has been added as an abstract base class for edges to be added to a device. (!389)
 * Qblox backend - Fix for supplying negative NCO phase (!393)
@@ -30,14 +31,18 @@ Unreleased
 * DRAG Pulse - Removed an extra G_amp factor from the Q component (derivative pulse). (#298, !406)
 * Docs - Fix API reference pages on read-the-docs (#303, !413)
 * Docs - Pin sphinx to 5.0.2 due to crash in napoleon (!437)
+* Docs - Unpin sphinx >=5.1.1 (!445)
+* Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 * Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
 * Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
+* Schedules - Make `AcquisitionMetadata` a serializable class (!446)
 * JSON utilities - Add JSON serialization/deserialization methods based on __getstate__/__setstate__
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
 * Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
     - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings (see https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation)
+* Qblox backend - Strictly requires v0.7.x of the qblox-instruments package (!449)
 
 Merged branches and closed issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

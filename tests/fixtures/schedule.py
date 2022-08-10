@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Dict, Optional, Callable, List
+from typing import Any, Callable, Generator, Dict, List, Optional
 
 import numpy as np
 import pytest
@@ -34,45 +34,31 @@ ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.js
 
 
 @pytest.fixture
-def load_example_transmon_config() -> Dict[str, Any]:
+def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, None]:
     """
     Circuit to device level compilation for the add_pulse_info_transmon compilation
     backend.
     """
-
-    def _load_example_transmon_config():
-        return DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-
-    yield _load_example_transmon_config
+    yield DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
 
 @pytest.fixture
-def load_legacy_transmon_config() -> Dict[str, Any]:
+def load_legacy_transmon_config() -> Generator[Dict[str, Any], None, None]:
     """
     Loads the configuration for `add_pulse_information_transmon`.
     To be removed after 0.7.0 when this functionality is phased out.
     """
-
-    def _load_example_transmon_config():
-        return dict(DEVICE_CONFIG)
-
-    yield _load_example_transmon_config
+    yield dict(DEVICE_CONFIG)
 
 
 @pytest.fixture
-def load_example_qblox_hardware_config() -> Dict[str, Any]:
-    def _load_example_qblox_hardware_config():
-        return dict(QBLOX_HARDWARE_MAPPING)
-
-    yield _load_example_qblox_hardware_config
+def load_example_qblox_hardware_config() -> Generator[Dict[str, Any], None, None]:
+    yield dict(QBLOX_HARDWARE_MAPPING)
 
 
 @pytest.fixture
-def load_example_zhinst_hardware_config() -> Dict[str, Any]:
-    def _load_example_zhinst_hardware_config():
-        return dict(ZHINST_HARDWARE_MAPPING)
-
-    yield _load_example_zhinst_hardware_config
+def load_example_zhinst_hardware_config() -> Generator[Dict[str, Any], None, None]:
+    yield dict(ZHINST_HARDWARE_MAPPING)
 
 
 @pytest.fixture
@@ -84,9 +70,7 @@ def create_schedule_with_pulse_info(
     ) -> Schedule:
         _schedule = schedule if schedule is not None else deepcopy(basic_schedule)
         _device_config = (
-            device_config
-            if device_config is not None
-            else load_example_transmon_config()
+            device_config if device_config is not None else load_example_transmon_config
         )
         _schedule = device_compile(_schedule, _device_config)
         return _schedule
@@ -177,7 +161,7 @@ def compiled_two_qubit_t1_schedule(load_example_transmon_config):
     """
     a schedule performing T1 on two-qubits simultaneously
     """
-    device_config = load_example_transmon_config()
+    device_config = load_example_transmon_config
 
     q0, q1 = ("q0", "q1")
     repetitions = 1024
