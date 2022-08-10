@@ -228,7 +228,7 @@ class SpectroscopyPulseMW(InstrumentChannel): # SpectroscopyPulse
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=0.1,
             unit="W",
             #vals=Numbers(min_value=0, max_value=1e-2, allow_nan=True),
         )
