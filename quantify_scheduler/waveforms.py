@@ -393,56 +393,6 @@ def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarra
     return mod_I + 1j * mod_Q
 
 
-def hermite(
-    t: np.ndarray,
-    duration: float,
-    amplitude: float,
-    phase: float,
-    pi2_pulse: bool = False,
-    center: Optional[float] = None,
-    duration_over_T = 6,
-) -> np.ndarray:
-    """Generates a hermite pulse for single qubit rotations in NV centers.
-
-    A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
-    See H.K.C. Beukers MSc Thesis (2019), Appendix A.2.
-
-    Parameters
-    ----------
-    t
-        Times at which to evaluate the function.
-    duration
-        Duration of the pulse in seconds.
-    amplitude
-        Amplitude of the pulse.
-    phase
-        Phase of the pulse in degrees.
-    pi2_pulse
-        if True, the pulse will be pi/2 otherwise pi pulse
-    center
-        Optional: time after which the pulse center occurs. If ``None``, it is
-        automatically set to duration/2.
-    duration_over_T
-        Ratio of the pulse duration and the characteristic time of the hermite
-        polynomial. Increasing this number will compress the pulse. By default, 6.
-
-    Returns
-    -------
-    :
-        complex waveform
-
-    """
-    return skewed_hermite(
-        t=t,
-        duration=duration,
-        amplitude=amplitude,
-        phase=phase,
-        pi2_pulse=pi2_pulse,
-        center=center,
-        duration_over_T=duration_over_T,
-        skewness=0,
-    )
-
 def skewed_hermite(
     t: np.ndarray,
     duration: float,
@@ -457,7 +407,8 @@ def skewed_hermite(
 
     The skew parameter is a first order amplitude correction to the hermite pulse (see
     :func:`hermite`). It increases the fidelity of the performed gates.
-    See H.K.C.Beukers MSc Thesis (2019), section 4.2.
+    See H.K.C.Beukers MSc Thesis (2019), section 4.2. To get a "standard" hermite
+    pulse, use ``skewness=0``.
 
     The hermite factors are taken from equation 44 and 45 of
     :cite:t:`Warren_NMR_pulse_shapes_1984`.

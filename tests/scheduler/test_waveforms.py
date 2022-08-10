@@ -14,7 +14,6 @@ from quantify_scheduler.waveforms import (
     square,
     staircase,
     sudden_net_zero,
-    hermite,
     skewed_hermite,
 )
 
@@ -211,18 +210,12 @@ def hermite_kwargs():
     return kwargs
 
 
-def test_skewed_hermite_compatibility(hermite_kwargs):
-    """Hermite pulse creates same waveform as the skewed hermite pulse with 0 skewness.
-    """
-    del hermite_kwargs["skewness"]
-    assert (hermite(**hermite_kwargs) == skewed_hermite(skewness=0, **hermite_kwargs)).all()
-
 def test_hermite_real(hermite_kwargs):
     """Hermite pulse is real if skewness and phase are 0.
     """
-    del hermite_kwargs["skewness"]
-    hermite_kwargs["phase"] = 0
-    assert (hermite(**hermite_kwargs).imag == 0).all()
+    hermite_kwargs["skewness"] = 0.0
+    hermite_kwargs["phase"] = 0.0
+    assert (skewed_hermite(**hermite_kwargs).imag == 0).all()
 
 def test_hermite_amp_linear_scaling(hermite_kwargs):
     """Hermite pulse scales linearly with the amplitude.
