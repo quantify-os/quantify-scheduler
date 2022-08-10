@@ -102,7 +102,11 @@ def nv_spec_pulse_mw(
     clock: str,
     port: str,
 ):
-    """Generate hermite pulse for spectroscopy experiment without phi rotation.
+    """Generate hermite pulse for spectroscopy experiment.
+
+    This is a simplified version of the SkewedHermitePulse. It is not skewed. It also
+    sets the phase to 0. This means that no rotation about the z-axis is applied on the
+    qubit.
 
     Parameters
     ----------
