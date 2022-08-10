@@ -22,10 +22,8 @@ from quantify_scheduler.operations.gate_library import (
     Y,
     SpectroscopyPulse,
 )
-from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.compilation import device_compile, hardware_compile
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
 def test_schedule_add_schedulables() -> None:
@@ -290,6 +288,7 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     assert not "compiled_instructions" in schedule_device.data
     schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
 
+    assert isinstance(schedule_hardware, CompiledSchedule)
     assert "compiled_instructions" in schedule_hardware.data
 
     # TODO: what to test here to ensure that compiled instructions are correct?
