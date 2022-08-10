@@ -22,7 +22,7 @@ from quantify_scheduler.operations.gate_library import (
     SpectroscopyPulse,
 )
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.compilation import device_compile
+from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
@@ -237,8 +237,35 @@ def get_nv_device_config():
     device_config = quantum_device.generate_device_config().dict()
     return device_config
 
+def get_hardware_config():
+    mapping_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
 
-def test_pulse_compilation_spec_pulse_microwave():
+        "cluster0": {
+            # QCM-RF for microwave control
+            # TODO: why is this module1 and not module0 (taken from quantify-scheduler docs)
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "line_gain_db": 0,
+                    "lo_name": "lo0",
+                    "seq0": {
+                        "clock": "qe0.spec",
+                        "interm_freq": 200000000.0,
+                        # "mixer_amp_ratio": 0.9999,
+                        # "mixer_phase_error_deg": -4.2,
+                        "port": "qe0:mw",
+                    },
+                },
+            },
+            "instrument_type": "Cluster",
+            "ref": "internal",
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
+    }
+    return mapping_config
+
+def test_pulse_compilation_spec_pulse_microwave(tmp_test_data_dir):
     schedule = Schedule(name="Two Spectroscopy Pulses", repetitions=1)
 
     label1 = "Spectroscopy pulse 1"
@@ -275,5 +302,24 @@ def test_pulse_compilation_spec_pulse_microwave():
     # Timing info has been added
     assert 'abs_time' in schedule_device.schedulables[label1].data.keys()
     assert 'abs_time' in schedule_device.schedulables[label2].data.keys()
-    assert not schedule_device.schedulables[label1].data['abs_time'] is None
-    assert not schedule_device.schedulables[label2].data['abs_time'] is None
+    assert schedule_device.schedulables[label1].data['abs_time'] == 0
+    duration_pulse_1 = schedule_device.operations[spec_pulse_str].data["pulse_info"][0]["duration"]
+    assert schedule_device.schedulables[label2].data['abs_time'] == pytest.approx(0 + duration_pulse_1)
+
+
+    ########## Hardware compilation ##########
+
+    from quantify_core.data.handling import set_datadir
+    set_datadir(tmp_test_data_dir)
+
+    # TODO: retrieve the device config from elsewhere?
+    hardware_cfg = get_hardware_config()
+    assert not "compiled_instructions" in schedule_device.data
+    schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
+
+    # TODO: why are compiled_instructions also added to schedule_device? Is that desired behaviour?
+    assert "compiled_instructions" in schedule_device.data
+
+    assert "compiled_instructions" in schedule_hardware.data
+
+    # TODO: what to test here to ensure that compiled instructions are correct?
