@@ -77,9 +77,9 @@ class ClocksFrequencies(InstrumentChannel):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+            vals=Numbers(min_value=0, max_value=1e15, allow_nan=True),
         )
-        """Resonance frequency of the spin conserving transition from ground
+        """Resonance frequency of the spin-conserving transition from ground
         state |g> to excited state |e> for singlet spin state |0> electrons
         :cite:t:`DOHERTY20131`."""
 
@@ -89,9 +89,9 @@ class ClocksFrequencies(InstrumentChannel):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+            vals=Numbers(min_value=0, max_value=1e15, allow_nan=True),
         )
-        """Resonance frequency of the spin conserving transition from ground
+        """Resonance frequency of the spin-conserving transition from ground
         state |g> to excited state |e> for triplet spin state |1> electrons
         :cite:t:`DOHERTY20131`."""
 
@@ -228,7 +228,7 @@ class SpectroscopyPulseMW(InstrumentChannel): # SpectroscopyPulse
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=0.1,
+            initial_value=float("nan"),
             unit="W",
             #vals=Numbers(min_value=0, max_value=1e-2, allow_nan=True),
         )

@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule, Schedulable
+from quantify_scheduler.device_under_test.mock_setup import set_standard_params_basic_nv, set_up_basic_mock_nv_setup
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -229,43 +230,7 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
     assert obj != operation
 
 
-def get_nv_device_config():
-
-    qe0 = BasicElectronicNVElement("qe0")
-    quantum_device = QuantumDevice(name="quantum_device")
-    quantum_device.add_element(qe0)
-    device_config = quantum_device.generate_device_config().dict()
-    return device_config
-
-def get_hardware_config():
-    mapping_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-
-        "cluster0": {
-            # QCM-RF for microwave control
-            # TODO: why is this module1 and not module0 (taken from quantify-scheduler docs)
-            "cluster0_module1": {
-                "instrument_type": "QCM_RF",
-                "complex_output_0": {
-                    "line_gain_db": 0,
-                    "lo_name": "lo0",
-                    "seq0": {
-                        "clock": "qe0.spec",
-                        "interm_freq": 200000000.0,
-                        # "mixer_amp_ratio": 0.9999,
-                        # "mixer_phase_error_deg": -4.2,
-                        "port": "qe0:mw",
-                    },
-                },
-            },
-            "instrument_type": "Cluster",
-            "ref": "internal",
-        },
-        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
-    }
-    return mapping_config
-
-def test_pulse_compilation_spec_pulse_microwave(tmp_test_data_dir):
+def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     schedule = Schedule(name="Two Spectroscopy Pulses", repetitions=1)
 
     label1 = "Spectroscopy pulse 1"
@@ -281,7 +246,7 @@ def test_pulse_compilation_spec_pulse_microwave(tmp_test_data_dir):
     assert schedule.operations[spec_pulse_str]["pulse_info"] == []
 
     # Operation is added twice to schedulables and has no timing information yet.
-    assert label1 in schedule.schedulables # TODO: test type
+    assert label1 in schedule.schedulables
     assert label2 in schedule.schedulables
     assert 'abs_time' not in schedule.schedulables[label1].data.keys() or schedule.schedulables[label1].data['abs_time'] is None
     assert 'abs_time' not in schedule.schedulables[label2].data.keys() or schedule.schedulables[label2].data['abs_time'] is None
@@ -290,7 +255,10 @@ def test_pulse_compilation_spec_pulse_microwave(tmp_test_data_dir):
     schedule.plot_circuit_diagram()
 
     # TODO: retrieve the device config from mock setup file?
-    dev_cfg = get_nv_device_config()
+    quantum_device = set_up_basic_mock_nv_setup()
+    set_standard_params_basic_nv(quantum_device)
+
+    dev_cfg = quantum_device.generate_device_config()
     schedule_device = device_compile(schedule, dev_cfg)
 
     # The gate_info remains unchanged, but the pulse info has been added
@@ -313,12 +281,9 @@ def test_pulse_compilation_spec_pulse_microwave(tmp_test_data_dir):
     set_datadir(tmp_test_data_dir)
 
     # TODO: retrieve the device config from elsewhere?
-    hardware_cfg = get_hardware_config()
+    hardware_cfg = quantum_device.generate_hardware_config()
     assert not "compiled_instructions" in schedule_device.data
     schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
-
-    # TODO: why are compiled_instructions also added to schedule_device? Is that desired behaviour?
-    assert "compiled_instructions" in schedule_device.data
 
     assert "compiled_instructions" in schedule_hardware.data
 
