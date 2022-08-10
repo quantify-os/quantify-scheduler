@@ -4,6 +4,7 @@ Changelog
 
 Unreleased
 ----------
+* NV centers: Outline for tutorial. First operation 'SpectroscopyPulse' with qblox compilation.
 * Support MyST notebooks
 * Operations - Rxy theta rotations now fall into the domain of [-180 to 180) degrees.
 * Compilation - Added `acq_protocol` optional parameter to the `Measure` gate. (!386)
