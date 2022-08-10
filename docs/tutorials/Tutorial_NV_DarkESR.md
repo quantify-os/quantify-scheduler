@@ -145,7 +145,7 @@ schedule = dark_esr_schedule(qubit_name=qubit_name)
 
 The schedule defines one iteration of the Dark ESR experiment. But now we want to execute it for many different frequencies. We will loop over a frequency parameter in a measurement function.
 
-## Measurment function
+## Measurement function
 
 ```{warning}
 Write some text and break up block into smaller parts. Or move into measurement module. And display here.
