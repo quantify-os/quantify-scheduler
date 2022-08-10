@@ -47,6 +47,8 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     to_grid_time,
 )
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
@@ -470,7 +472,7 @@ def mixed_schedule_with_acquisition():
             )
         )
 
-        sched.add(Measure("q0", reset_clock_phase=reset_clock_phase))
+        sched.add(Measure("q0"))
         # Clocks need to be manually added at this stage.
         sched.add_resources([ClockResource("q0.01", freq=5e9)])
         return sched
@@ -982,37 +984,11 @@ def test_compile_simple_with_acq(dummy_pulsars, mixed_schedule_with_acquisition)
     assert uploaded_waveforms is not None
 
 
-# @pytest.mark.parametrize(
-#     "reset_clock_phase",
-#     [(True, False)],
-# )
-# def test_compile_measurement_with_clock_phase_reset(
-#     reset_clock_phase,
-# ):
-#     tmp_dir = tempfile.TemporaryDirectory()
-#     set_datadir(tmp_dir.name)
-#     schedule = Schedule("Test schedule")
-#     schedule.add(X90("q0"))
-#     schedule.add(Measure("q0", reset_clock_phase=reset_clock_phase))
-#     compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
-#     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
-#     with open(qrm0_seq0_json) as file:
-#         program = json.load(file)["program"]
-#     reset_counts = program.count(" reset_ph ")
-#     expected_counts = 2 if reset_clock_phase else 1
-#     assert reset_counts == expected_counts, (
-#         f"Expected qasm program to contain `reset_ph`-instruction 2 times, but found "
-#         f"{reset_counts} times instead."
-#     )
-
-
 @pytest.mark.parametrize(
     "reset_clock_phase",
     [(True, False)],
 )
-def test_compile_acq_measurement_with_clock_phase_reset(
-    reset_clock_phase,
-):
+def test_compile_acq_measurement_with_clock_phase_reset(reset_clock_phase, mock_setup):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     schedule = Schedule("Test schedule")
@@ -1025,15 +1001,18 @@ def test_compile_acq_measurement_with_clock_phase_reset(
         schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(
-                q0, acq_index=i, acq_channel=0, reset_clock_phase=reset_clock_phase
-            ),
+            Measure(q0, acq_index=i, acq_channel=0),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
         )
 
-    compiled_schedule = qcompile(schedule, DEVICE_CFG, HARDWARE_CFG)
+    device_cfg = mock_setup["quantum_device"].generate_device_config()
+    device_cfg.elements.get("q0").get("measure").factory_kwargs[
+        "reset_clock_phase"
+    ] = reset_clock_phase
+
+    compiled_schedule = qcompile(schedule, device_cfg, HARDWARE_CFG)
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
     with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
@@ -1244,10 +1223,16 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 # --------- Test compilation functions ---------
 @pytest.mark.parametrize("reset_clock_phase", [True, False])
 def test_assign_pulse_and_acq_info_to_devices(
-    mixed_schedule_with_acquisition, reset_clock_phase
+    mixed_schedule_with_acquisition, reset_clock_phase, mock_setup
 ):
     sched = mixed_schedule_with_acquisition(reset_clock_phase)
-    sched_with_pulse_info = device_compile(sched, DEVICE_CFG)
+
+    device_cfg = mock_setup["quantum_device"].generate_device_config()
+    device_cfg.elements.get("q0").get("measure").factory_kwargs[
+        "reset_clock_phase"
+    ] = reset_clock_phase
+
+    sched_with_pulse_info = device_compile(sched, device_cfg)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, HARDWARE_CFG

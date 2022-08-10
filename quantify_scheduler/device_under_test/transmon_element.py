@@ -195,7 +195,8 @@ class DispersiveMeasurement(InstrumentChannel):
 
         self.add_parameter(
             "acq_delay",
-            docstring="Delay between the start of the readout pulse and the start of the acquisition.",
+            docstring="Delay between the start of the readout pulse and the start "
+            "of the acquisition.",
             initial_value=0,
             unit="s",
             parameter_class=ManualParameter,
@@ -211,8 +212,9 @@ class DispersiveMeasurement(InstrumentChannel):
         )
         self.add_parameter(
             "reset_clock_phase",
-            docstring="The phase of the measurement clock will be reset by the control hardware "
-            "at the start of each measurement if ``reset_clock_phase=True``.",
+            docstring="The phase of the measurement clock will be reset by the "
+            "control hardware at the start of each measurement if "
+            "``reset_clock_phase=True``.",
             initial_value=True,
             parameter_class=ManualParameter,
             vals=validators.Bool(),
@@ -326,7 +328,8 @@ class BasicTransmonElement(DeviceElement):
 
 @deprecated(
     "0.8",
-    "Consider replacing with BasicTransmonElement or implementing a custom device element.",
+    "Consider replacing with BasicTransmonElement or implementing a custom device "
+    "element.",
 )
 class TransmonElement(DeviceElement):
     """

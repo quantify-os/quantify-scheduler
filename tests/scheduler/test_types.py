@@ -310,7 +310,7 @@ def test_sched_timing_table(tmp_test_data_dir, reset_clock_phase):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
-            Measure(qubit, reset_clock_phase=reset_clock_phase),
+            Measure(qubit),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",

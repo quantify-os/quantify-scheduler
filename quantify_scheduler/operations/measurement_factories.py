@@ -63,7 +63,7 @@ def dispersive_measurement(
     else:
         # here we need to add support for SoftSquarePulse
         raise NotImplementedError(
-            f'Invalid pulse_type "{pulse_op}" specified as argument to '
+            f'Invalid pulse_type "{pulse_type}" specified as argument to '
             + "dispersive_measurement. Currently dispersive_measurement only"
             + ' allows "SquarePulse". Please correct your device config.'
         )

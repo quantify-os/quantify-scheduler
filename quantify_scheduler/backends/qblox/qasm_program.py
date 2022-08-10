@@ -360,7 +360,6 @@ class QASMProgram:
                 f"{voltage_path1} V is set as amplitude for the Q channel for "
                 f"{repr(operation)}"
             )
-
         awg_gain_path0_immediate = self.expand_from_normalised_range(
             voltage_path0 / max_awg_output_voltage,
             constants.IMMEDIATE_SZ_GAIN,
