@@ -90,7 +90,7 @@ def test_get_info_by_uuid_are_unique(
     schedule = Schedule("my-schedule")
     schedule.add(X90("q0"))
     schedule.add(X90("q0"))
-    schedule_with_pulse_info = device_compile(schedule, load_example_transmon_config())
+    schedule_with_pulse_info = device_compile(schedule, load_example_transmon_config)
 
     operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
@@ -111,7 +111,7 @@ def test_get_acq_info_by_uuid(
     load_example_transmon_config,
 ):
     # Arrange
-    device_config = load_example_transmon_config()
+    device_config = load_example_transmon_config
     schedule = device_compile(schedule_with_measurement, device_config)
 
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
@@ -180,7 +180,7 @@ def test_get_port_timeline_sorted(
         init_duration=1e-5,
     )
 
-    schedule = device_compile(schedule, load_example_transmon_config())
+    schedule = device_compile(schedule, load_example_transmon_config)
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info = schedule.operations[reset_operation_id]["pulse_info"][0]
@@ -234,7 +234,7 @@ def test_get_port_timeline_are_unique(
     schedule.add(X90("q0"))
     schedule.add(X90("q1"))
 
-    schedule = device_compile(schedule, load_example_transmon_config())
+    schedule = device_compile(schedule, load_example_transmon_config)
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info_q0 = schedule.operations[reset_operation_id]["pulse_info"][0]
@@ -274,7 +274,7 @@ def test_get_port_timeline_with_duplicate_op(
     schedule.add(X90_q0)
     schedule.add(X90_q0)
 
-    schedule = device_compile(schedule, load_example_transmon_config())
+    schedule = device_compile(schedule, load_example_transmon_config)
 
     X90_q0_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     X90_q0_pulse_info = schedule.operations[X90_q0_operation_id]["pulse_info"][0]
@@ -298,7 +298,7 @@ def test_get_port_timeline_with_acquisition(
     load_example_transmon_config,
 ):
     # Arrange
-    device_config = load_example_transmon_config()
+    device_config = load_example_transmon_config
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
 

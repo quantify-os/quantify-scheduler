@@ -170,7 +170,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     .. rubric:: Configuration specification
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/transmon_cfg.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/transmon_cfg.json
 
     """
     # pylint: enable=line-too-long
@@ -445,7 +445,7 @@ def qcompile(
 
     .. rubric:: Configuration specification
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/transmon_cfg.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/transmon_cfg.json
 
     .. todo::
 

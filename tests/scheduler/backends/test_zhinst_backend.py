@@ -74,7 +74,7 @@ def make_schedule(create_schedule_with_pulse_info):
 def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_config):
     def _create_test_compile_datastructure():
         schedule = make_schedule()
-        hardware_config = load_example_zhinst_hardware_config()
+        hardware_config = load_example_zhinst_hardware_config
         timing_table = schedule.timing_table.data
 
         # information is added on what output channel is used for every pulse and acq.
@@ -192,7 +192,7 @@ def test_compile_hardware_hdawg4_successfully(
     load_example_zhinst_hardware_config: Dict[str, Any],
 ) -> None:
 
-    hdawg_hardware_cfg = load_example_zhinst_hardware_config()
+    hdawg_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     (q0, q1) = ("q0", "q1")
     schedule = Schedule("test")
@@ -264,7 +264,7 @@ def test_compile_hardware_uhfqa_successfully(
     make_schedule,
     load_example_zhinst_hardware_config: Dict[str, Any],
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     schedule = make_schedule()
     settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
@@ -338,7 +338,7 @@ def test_hdawg4_sequence(
     load_example_zhinst_hardware_config,
     make_schedule,
 ) -> None:
-    hdawg_hardware_cfg = load_example_zhinst_hardware_config()
+    hdawg_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = make_schedule()
@@ -606,7 +606,7 @@ def test_uhfqa_sequence1(
     make_schedule,
     load_example_zhinst_hardware_config,
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = make_schedule()
@@ -653,7 +653,7 @@ def test_uhfqa_sequence2_trace_acquisition(
     create_schedule_with_pulse_info,
     load_example_zhinst_hardware_config,
 ):
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = trace_schedules.trace_schedule(
@@ -711,7 +711,7 @@ def test_uhfqa_sequence3_spectroscopy(
     create_schedule_with_pulse_info,
     load_example_zhinst_hardware_config,
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     ro_acquisition_delay = -40e-9
@@ -776,7 +776,7 @@ def test_uhfqa_sequence3_spectroscopy(
 def test__extract_port_clock_channelmapping_hdawg(
     load_example_zhinst_hardware_config,
 ) -> None:
-    hardware_config = load_example_zhinst_hardware_config()
+    hardware_config = load_example_zhinst_hardware_config
 
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
@@ -794,7 +794,7 @@ def test__extract_port_clock_channelmapping_hdawg(
 def test__extract_latencies(
     load_example_zhinst_hardware_config,
 ) -> None:
-    hardware_config = load_example_zhinst_hardware_config()
+    hardware_config = load_example_zhinst_hardware_config
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,
