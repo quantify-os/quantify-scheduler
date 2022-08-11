@@ -282,7 +282,9 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     duration_pulse_1 = schedule_device.operations[spec_pulse_str].data["pulse_info"][0]["duration"]
     assert schedule_device.schedulables[label2].data['abs_time'] == pytest.approx(0 + duration_pulse_1)
 
+    # need to set so that compiled instructions are written into datadir
     set_datadir(tmp_test_data_dir)
+
     hardware_cfg = quantum_device.generate_hardware_config()
     assert not "compiled_instructions" in schedule_device.data
     schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
