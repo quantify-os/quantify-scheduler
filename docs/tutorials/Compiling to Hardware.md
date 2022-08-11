@@ -1,10 +1,12 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
+
+---
 (sec-tutorial-compiling)=
 
 # Tutorial: Compiling to Hardware
-
-```{jupyter-kernel}
-  :id: Compiling to Hardware
-```
 
 ```{seealso}
 The complete source code of this tutorial can be found in
@@ -22,7 +24,7 @@ In this notebook we will define an example schedule, demonstrate how to compile 
 
 We start by defining an example schedule.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.pulse_library import SquarePulse
@@ -64,7 +66,7 @@ In this configuration, we include:
 In the QCM-RF output's settings, {code}`interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
 In this case, the internal LO frequency is not specified but is automatically calculated by the backend, such that the relation {math}`\text{clock} = \text{LO} + \text{IF}` is respected.
 
-```{jupyter-execute}
+```{code-block} python
 
 hardware_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -114,7 +116,7 @@ We can perform each of these steps via {func}`~quantify_scheduler.compilation.de
 
 We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.py.html#data-directory).
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_core.data import handling as dh
 from quantify_scheduler import Schedule
@@ -126,7 +128,38 @@ dh.set_datadir(
 
 ```
 
-```{jupyter-execute}
+```{code-cell} python
+---
+tags: [hide-cell]
+---
+
+hardware_cfg = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+        "ref": "internal",
+        "instrument_type": "Cluster",
+        "cluster0_module2": {
+            "instrument_type": "QCM_RF",
+            "complex_output_0": {
+                "lo_freq": None,
+                "dc_mixer_offset_I": -0.00552,
+                "dc_mixer_offset_Q": -0.00556,
+                "portclock_configs": [
+                    {
+                        "mixer_amp_ratio": 0.9998,
+                        "mixer_phase_error_deg": -4.1,
+                        "port": "q0:res",
+                        "clock": "q0.ro",
+                        "interm_freq": 50e6,
+                    }
+                ],
+            },
+        },
+    },
+}
+```
+
+```{code-cell} ipython3
 
 from quantify_scheduler.compilation import determine_absolute_timing, hardware_compile
 
@@ -138,7 +171,7 @@ compiled_sched = hardware_compile(sched, hardware_cfg=hardware_cfg)
 
 The cell above compiles the schedule, returning a {class}`~quantify_scheduler.schedules.schedule.CompiledSchedule` object. This class differs from {class}`~quantify_scheduler.schedules.schedule.Schedule` in that it is immutable and contains the {attr}`~quantify_scheduler.schedules.schedule.CompiledSchedule.compiled_instructions` attribute.  We inspect these instructions below.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 compiled_sched.compiled_instructions
 
@@ -154,7 +187,7 @@ Now that we have compiled the schedule, we are almost ready to execute it with o
 
 We start by connecting to the control instrument.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from qblox_instruments import Cluster, ClusterType
 
@@ -167,7 +200,7 @@ cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF})
 
 And we attach these instruments to the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` via the appropriate {class}`~quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase` component wrapper class.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
@@ -188,7 +221,7 @@ The experiment can now be conducted using the methods of {class}`~quantify_sched
 
 Additionally, the {meth}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.wait_done` method is useful to wait for the experiment to finish and assure the synchronicity of the python script.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # Set the qcodes parameters and upload the schedule program
 ic.prepare(compiled_sched)

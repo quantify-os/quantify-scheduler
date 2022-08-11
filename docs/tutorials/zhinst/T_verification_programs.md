@@ -1,11 +1,12 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
+
+---
 (hardware-verfication-tutorial)=
 
 # Tutorial: Zhinst hardware verification
-
-```{jupyter-kernel}
-  :id: tutorial_zhinst-hardware-verification
-
-```
 
 ``````{seealso}
 The complete source code of this tutorial can be found in
@@ -14,15 +15,18 @@ The complete source code of this tutorial can be found in
 
 {jupyter-download-script}`download as .py <tutorial_zhinst-hardware-verification>`
 
-```{jupyter-execute}
-:hide-code:
+``````
+
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+---
 
 # Make output easier to read
 from rich import pretty
 
 pretty.install()
 ```
-``````
 
 ## Introduction
 
@@ -52,15 +56,8 @@ Improvements to this tutorial will include adding instructions on how to connect
 
 In this tutorial we make use of the example configuration file that contains an HDAWG, a UHFQA and a few local oscillators. This same file is also used for testing purposes in the CI.
 
-```{jupyter-execute}
-
-from quantify_scheduler.schemas.examples import utils
-
-# load here to avoid loading every time a fixture is used
-transmon_device_cfg = utils.load_json_example_scheme("transmon_test_config.json")
-zhinst_hardware_cfg = utils.load_json_example_scheme("zhinst_test_mapping.json")
-
-zhinst_hardware_cfg
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_test_mapping.json
+:language: JSON
 ```
 ``````
 
@@ -89,7 +86,7 @@ Additionally, depending on the overlap between the pulse and the integration win
 
 We start by manually recreating the {func}`~quantify_scheduler.schedules.verification.awg_staircase_sched`, a schedule in which (modulated) square pulses are played on an HDAWG and the UHFQA is triggered subsequently to observe the result of that schedule.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # import statements required to make a schedule
 
@@ -103,7 +100,7 @@ from quantify_scheduler.resources import ClockResource
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 pulse_amps = np.linspace(0.05, 0.9, 3)
 repetitions = 1024
@@ -165,9 +162,13 @@ sched
 
 Now that we have generated the schedule we can compile it and verify if the hardware output is correct.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.schemas.examples import utils
+
+transmon_device_cfg = utils.load_json_example_scheme("transmon_test_config.json")
+zhinst_hardware_cfg = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 comp_sched = qcompile(
     schedule=sched, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
@@ -180,7 +181,7 @@ comp_sched = qcompile(
 
 The {attr}`.ScheduleBase.timing_table` can be used after the absolute timing has been determined. It gives an overview of all operations in the schedule at the quantum-device level.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # Pandas dataframes do not render correctly in the sphinx documentation environment. See issue #238.
 comp_sched.timing_table
@@ -194,7 +195,7 @@ The {attr}`.CompiledSchedule.hardware_timing_table` is populated during the hard
 
 The "waveform_id" key can be used to find the numerical waveforms in {attr}`.CompiledSchedule.hardware_waveform_dict`.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 comp_sched.hardware_timing_table
 
@@ -203,7 +204,7 @@ comp_sched.hardware_timing_table
 
 ##### The hardware waveform dict
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 comp_sched.hardware_waveform_dict
 
@@ -214,7 +215,7 @@ comp_sched.hardware_waveform_dict
 
 The compiled instructions can be found in the `compiled_instructions` of the compiled schedule.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 comp_sched.compiled_instructions
 
@@ -223,7 +224,7 @@ comp_sched.compiled_instructions
 
 The setting for the Zurich Instruments instruments are stored as a {class}`~.ZIDeviceConfig`, of which the settings_builder contains the {class}`~.backends.zhinst.settings.ZISettingsBuilder` containing both the settings to set on all the nodes in the Zurich Instruments drivers as well as the compiled `seqc` instructions.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # the .as_dict method can be used to generate a "readable" overview of the settings.
 hdawg_settings_dict = (
@@ -238,7 +239,7 @@ hdawg_settings_dict
 The compiler source string for each awg channel can be printed to see the instructions the ZI hardware will execute.
 The clock-cycles are tracked by the assembler backend and can be compared to the hardware_timing_table.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 awg_index = 0
 print(hdawg_settings_dict["compiler/sourcestring"][awg_index])
@@ -246,7 +247,7 @@ print(hdawg_settings_dict["compiler/sourcestring"][awg_index])
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # the .as_dict method can be used to generate a "readable" overview of the settings.
 uhfqa_settings_dict = (
@@ -258,7 +259,7 @@ uhfqa_settings_dict
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 awg_index = 0
 print(uhfqa_settings_dict["compiler/sourcestring"][awg_index])
@@ -325,7 +326,7 @@ Additionally, depending on the overlap between the pulse and the integration win
 
 {func}`~quantify_scheduler.schedules.verification.acquisition_staircase_sched`
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 

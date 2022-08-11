@@ -24,4 +24,6 @@ zhinst-toolkit==0.1.5
 rich[jupyter]
 
 # Tmp fixes
+funcparserlib==1.0.0a0 # https://github.com/vlasovskikh/funcparserlib/issues/69
+Jinja2==3.0.3 # due to old sphinx incompatibility with newer API of Jinja2. See #304 of quantify-core
 nbclient<0.6 # Required by myst-nb 0.16.0 (via jupyter-cache) for Read-the-Docs to build

@@ -1,11 +1,12 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
 
+---
 (sec-tutorial-sched-pulse)=
 
 # Tutorial: Schedules and Pulses
-
-```{jupyter-kernel}
-  :id: Schedules and Pulses
-```
 
 ```{seealso}
 The complete source code of this tutorial can be found in
@@ -19,7 +20,7 @@ The complete source code of this tutorial can be found in
 
 The main data structure that describes an experiment in the `quantify_scheduler` is the Schedule. We will show how the Schedule works through an example.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler import Schedule
 
@@ -36,7 +37,7 @@ While it is possible to define a pulse completely from scratch, we will be using
 
 We will add a square pulse from the pulse library to the schedule.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.operations import pulse_library
 
@@ -51,7 +52,7 @@ sched
 
 You may have noticed that we passed a {code}`port` and a {code}`clock` to the pulse. The {code}`port` specifies the physical location on the quantum chip to which we are sending the pulses, whilst the {code}`clock` tracks the frequency of the signal (see {ref}`sec-user-guide-ports-clocks`). This clock frequency has not yet been defined, so prior to any compilation step this clock needs to be added to the schedule as a resource.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.resources import ClockResource
 
@@ -67,7 +68,7 @@ sched
 
 Note that these plots are interactive and modulation is not shown by default.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler import compilation
 from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_plotly
@@ -82,7 +83,7 @@ pulse_diagram_plotly(sched)
 
 What we see in the pulse diagram is only a flat line, corresponding to our single square pulse. To make our schedule more interesting, we should add more pulses to it. We will add another square pulse, but with a 500 ns delay.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 sched.add(
     pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro"),
@@ -100,7 +101,7 @@ We can see that {code}`rel_time=500e-9` schedules the pulse 500 ns shifted relat
 
 Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can choose to instead specify it relative to the beginning. This is done by passing {code}`ref_pt="start"`.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 sched.add(
     pulse_library.DRAGPulse(
@@ -126,7 +127,7 @@ We see that we added a DRAG pulse to the schedule. Two things stand out:
 
 In an experiment, often the need arises to vary one of the parameters of a schedule programmatically. Currently, the canonical way of achieving this is by defining a function that returns a generated schedule. We will use this to generate a pulse train, where we can specify the timing parameters separately.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.resources import BasebandClockResource
 

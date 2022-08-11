@@ -35,7 +35,7 @@ sys.path.insert(0, package_path)
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    "myst_parser",
+    "myst_nb",
     "sphinx.ext.autodoc",  # auto document docstrings
     "sphinx.ext.napoleon",  # autodoc understands numpy docstrings
     # load after napoleon, improved compatibility with type hints annotations
@@ -257,6 +257,7 @@ autoapi_options = [
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
     "autosectionlabel.*",
+    "mystnb.unknown_mime_type",
 ]
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass

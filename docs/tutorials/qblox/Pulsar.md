@@ -1,10 +1,17 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
+
+---
 (sec-qblox-pulsar)=
 
 # Pulsar QCM/QRM
 
-```{jupyter-execute}
-:hide-code:
-:hide-output:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+---
 
 # in the hidden cells we include some code that checks for correctness of the examples
 from tempfile import TemporaryDirectory
@@ -23,9 +30,12 @@ set_datadir(temp_dir.name)
 
 Each device in the setup can be individually configured using the entry in the config. For instance:
 
-```{jupyter-execute}
-:hide-output:
-:linenos:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 mapping_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -58,9 +68,10 @@ mapping_config = {
 }
 ```
 
-```{jupyter-execute}
-:hide-code:
-:hide-output:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+---
 
 test_sched = Schedule("test_sched")
 test_sched.add(
@@ -124,10 +135,11 @@ Some users may have a custom Qblox downconverter module operating at 4.4 GHz.
 In order to use it with this backend, we should specify a {code}`"downconverter": True` entry in the outputs that are connected to this module, as exemplified below.
 The result is that the downconversion stage will be taken into account when calculating the IF or LO frequency (whichever was undefined) during compilation, such that the signal reaching the target port is at the desired clock frequency.
 
-```{jupyter-execute}
-:hide-output:
-:emphasize-lines: 7
-:linenos:
+```{code-block} python
+---
+emphasize-lines: 7
+linenos: true
+---
 
 mapping_config_rf = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -179,9 +191,12 @@ to the port-clock configuration in order to set the amplitude and phase correcti
 In order to use the backend without an LO, we simply remove the {code}`"lo_name"` and all other related parameters. This includes the
 mixer correction parameters as well as the frequencies.
 
-```{jupyter-execute}
-:hide-output:
-:linenos:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 mapping_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -208,9 +223,12 @@ mapping_config = {
 }
 ```
 
-```{jupyter-execute}
-:hide-output:
-:hide-code:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 hardware_compile(test_sched, mapping_config)
 ```
@@ -219,9 +237,12 @@ hardware_compile(test_sched, mapping_config)
 
 It is possible to do frequency multiplexing of the signals by adding multiple port-clock configurations to the same output.
 
-```{jupyter-execute}
-:hide-output:
-:linenos:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 mapping_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -252,9 +273,12 @@ mapping_config = {
 }
 ```
 
-```{jupyter-execute}
-:hide-output:
-:hide-code:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 test_sched = Schedule("test_sched")
 test_sched.add(
@@ -282,9 +306,12 @@ In order to do this, instead of {code}`"complex_output_X"`, we use {code}`"real_
 
 The resulting config looks like:
 
-```{jupyter-execute}
-:hide-output:
-:linenos:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 mapping_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -319,9 +346,12 @@ mapping_config = {
 }
 ```
 
-```{jupyter-execute}
-:hide-code:
-:hide-output:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  number_source_lines: true
+---
 
 test_sched = Schedule("test_sched")
 test_sched.add(
@@ -344,10 +374,10 @@ When using real outputs, the backend automatically maps the signals to the corre
 When using real mode, we highly recommend using it in combination with the instrument coordinator as the outputs need to be configured correctly in order for this to function.
 ```
 
-```{jupyter-execute}
-:hide-code:
-:hide-output:
-:raises: ValueError
+```{code-cell} ipython3
+---
+tags: [hide-cell,raises-exception]
+---
 
 test_sched.add(
     pulse_library.DRAGPulse(
@@ -367,9 +397,12 @@ The Qblox backend contains some intelligence that allows it to generate certain 
 
 In order to enable the advanced capabilities we need to add line {code}`"instruction_generated_pulses_enabled": True` to the port-clock configuration.
 
-```{jupyter-execute}
-:hide-output:
-:linenos:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 mapping_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -389,9 +422,10 @@ mapping_config = {
 }
 ```
 
-```{jupyter-execute}
-:hide-code:
-:hide-output:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+---
 
 test_sched = Schedule("test_sched")
 test_sched.add(

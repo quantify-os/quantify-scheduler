@@ -1,11 +1,12 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
 
+---
 (sec-tutorial-ops-qubits)=
 
 # Tutorial: Operations and Qubits
-
-> ```{jupyter-kernel}
->   :id: Operations and Qubits
-> ```
 
 ```{seealso}
 The complete source code of this tutorial can be found in
@@ -33,7 +34,7 @@ Many of the gates used in the circuit layer description are defined in
 Operations are instantiated by providing them with the name of the qubit(s) on which
 they operate:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X90
 
@@ -50,7 +51,7 @@ Let's investigate the different components present in the circuit-level descript
 the operation. As an example, we create a 45 degree rotation operation over the
 x-axis.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from pprint import pprint
 from quantify_scheduler.operations.gate_library import Rxy
@@ -72,7 +73,7 @@ The entries present above are documented in the `operation` schema.
 Generally, these schemas are only important when defining custom operations, which is
 not part of this tutorial. This schema can be inspected via:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 import importlib.resources
 import json
@@ -107,7 +108,7 @@ We create this experiment using the
 {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>` description.
 This allows defining the Bell schedule as:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 import numpy as np
 from quantify_scheduler import Schedule
@@ -146,7 +147,7 @@ We can directly visualize the created schedule on the
 {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 This visualization shows every operation on a line representing the different qubits.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 %matplotlib inline
 import matplotlib.pyplot as plt
@@ -167,23 +168,27 @@ corresponding pulse shapes.
 Therefore, trying to run {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` will raise an error which
 signifies no {code}`pulse_info` is present in the schedule:
 
-> ```{jupyter-execute}
-> :raises:
->
-> sched.plot_pulse_diagram()
->
->
-> ```
+```{code-cell} ipython3
+---
+tags: [raises-exception]
+---
+
+sched.plot_pulse_diagram()
+
+
+```
 
 And similarly for the {code}`timing_table`:
 
-> ```{jupyter-execute}
-> :raises:
->
-> sched.timing_table
->
->
-> ```
+```{code-cell} ipython3
+---
+tags: [raises-exception]
+---
+
+sched.timing_table
+
+
+```
 
 ## Device configuration
 
@@ -196,7 +201,7 @@ To start this section, we will unpack the structure of the device configuration.
 Here we will use an example device configuration for a transmon-based system that is used in the
 `quantify-scheduler` test suite.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
@@ -213,7 +218,7 @@ list(device_cfg.dict())
 Before explaining how this can be used to compile schedules, let us first investigate
 the contents of the device configuration.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 device_cfg.backend
 
@@ -225,7 +230,7 @@ pulse information to the gates. In other words, it specifies how to interpret th
 qubit parameters present in the device configuration and achieve the required gates.
 Let us briefly investigate the backend function:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
@@ -237,7 +242,7 @@ help(import_python_object_from_string(device_cfg.backend))
 The {ref}`device configuration <sec-device-config>` also contains the
 parameters required by the backend for all qubits and edges.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 print(list(device_cfg.elements))
 print(list(device_cfg.edges))
@@ -248,7 +253,7 @@ print(list(device_cfg.clocks))
 
 For every qubit and edge we can investigate the contained parameters.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 print(device_cfg.elements["q0"])
 print(device_cfg.elements["q0"]["Rxy"].factory_kwargs)
@@ -256,14 +261,14 @@ print(device_cfg.elements["q0"]["Rxy"].factory_kwargs)
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 print(device_cfg.edges)
 
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 print(device_cfg.clocks)
 
@@ -273,7 +278,7 @@ print(device_cfg.clocks)
 
 Lastly, the complete example device configuration (also see {class}`~quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig`):
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 pprint(example_transmon_cfg)
 
@@ -288,7 +293,7 @@ The {func}`~quantify_scheduler.compilation.device_compile` function takes care o
 on the configuration file, as discussed above.
 It also determines the timing of the different pulses in the schedule. Also see {ref}`Device and Hardware compilation combined`.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.compilation import device_compile
 
@@ -299,7 +304,7 @@ pulse_sched = device_compile(sched, device_cfg)
 
 Now that the timings have been determined, we can show the first few rows of the {code}`timing_table`:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 pulse_sched.timing_table.hide(slice(11, None), axis="index").hide(
     "waveform_op_id", axis="columns"
@@ -311,7 +316,7 @@ pulse_sched.timing_table.hide(slice(11, None), axis="index").hide(
 And since all pulse information has been determined, we can show the pulse diagram as
 well:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 f, ax = pulse_sched.plot_pulse_diagram()
 ax.set_xlim(0.4005e-3, 0.4006e-3)
@@ -335,7 +340,7 @@ Currently, `quantify_scheduler` contains the
 {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class
 to represent a fixed-frequency transmon qubit connected to a feedline. We show their interaction below:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
@@ -355,7 +360,7 @@ dut, dut.components()
 
 The different transmon properties can be set through attributes of the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class instance, e.g.:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 qubit.clock_freqs.f01(6e9)
 
@@ -371,7 +376,7 @@ The device configuration is now simply obtained using {code}`dut.generate_device
 In order for this command to provide a correct device configuration, the different
 parameters need to be specified in the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` and {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 pprint(dut.generate_device_config())
 
@@ -387,7 +392,7 @@ such as the Chevron experiment.
 In this experiment, we want to vary the length and amplitude of a square pulse between
 X gates on a pair of qubits.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
@@ -420,7 +425,7 @@ sched.add_resources([ClockResource("q0.01", 6.02e9)])  # Manually add the pulse 
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 fig, ax = sched.plot_circuit_diagram()
 ax.set_xlim(-0.5, 9.5)
@@ -446,7 +451,7 @@ Rather than first using {func}`~quantify_scheduler.compilation.device_compile` a
 {func}`~quantify_scheduler.compilation.hardware_compile`, the two function calls can be combined using
 {func}`~quantify_scheduler.compilation.qcompile`.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -471,7 +476,7 @@ compiled_sched = qcompile(
 So, finally, we can show the timing table associated to the chevron schedule and plot
 its pulse diagram:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
     "waveform_op_id", axis="columns"
@@ -480,7 +485,7 @@ compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 f, ax = compiled_sched.plot_pulse_diagram()
 ax.set_xlim(200e-6, 200.4e-6)

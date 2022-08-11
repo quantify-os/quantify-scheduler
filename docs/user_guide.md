@@ -1,13 +1,18 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
+
+---
 (sec-user-guide)=
 
 # User guide
 
-```{jupyter-kernel}
-  :id: Scheduler getting started
-```
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+---
 
 # Make output easier to read
 from rich import pretty
@@ -33,8 +38,10 @@ We support a similar flexibility in the timing constraints, one can either expli
 The most convenient way to interact with a {class}`.Schedule` is through the {mod}`quantify_scheduler` API.
 In the following example, we will create a function to generate a {class}`.Schedule` for a a [Bell experiment](https://en.wikipedia.org/wiki/Bell%27s_theorem) and visualize one instance of such a circuit.
 
-```{jupyter-execute}
-:hide-output:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+---
 
 # import the Schedule class and some basic operations.
 from quantify_scheduler import Schedule
@@ -68,7 +75,7 @@ sched = bell_schedule(
 
 ```
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # import the circuit visualizer
 from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
@@ -147,7 +154,7 @@ A {class}`.Schedule` containing operations can be visualized using as a circuit 
 
 Alternatively, one can plot the waveforms in schedules using {func}`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_matplotlib`:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
 from quantify_scheduler.compilation import determine_absolute_timing
@@ -298,40 +305,20 @@ To do this, it contains information on what control electronics to compile to an
 Similar to the device configuration file, the hardware configuration file can be written down manually as JSON or be code generated.
 
 (user-guide-example-qblox-config)=
-
-``````{admonition} Example Qblox hardware configuration file
+````{admonition} Example Qblox hardware configuration file
 :class: dropdown
-
-```{jupyter-execute}
-:hide-code:
-
-from pathlib import Path
-import json
-import quantify_scheduler.schemas.examples as examples
-
-path = Path(examples.__file__).parent / "qblox_test_mapping.json"
-json_data = json.loads(path.read_text())
-json_data
+```{literalinclude} ../quantify_scheduler/schemas/examples/qblox_test_mapping.json
+:language: JSON
 ```
-``````
+````
 
 (user-guide-example-zhinst-config)=
-
-``````{admonition} Example Zurich Instruments hardware configuration file
+````{admonition} Example Zurich Instruments hardware configuration file
 :class: dropdown
-
-```{jupyter-execute}
-:hide-code:
-
-from pathlib import Path
-import json
-import quantify_scheduler.schemas.examples as examples
-
-path = Path(examples.__file__).parent / "zhinst_test_mapping.json"
-json_data = json.loads(path.read_text())
-json_data
+```{literalinclude} ../quantify_scheduler/schemas/examples/zhinst_test_mapping.json
+:language: JSON
 ```
-``````
+````
 
 
 ## Execution
@@ -404,7 +391,7 @@ In terms of settables and gettables to use with the {class}`~quantify_core.measu
 
 We represent the settable as a {class}`qcodes.instrument.parameter.ManualParameter`:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from qcodes.instrument.parameter import ManualParameter
 
@@ -416,7 +403,7 @@ To execute the schedule with the right parameters, the {code}`ScheduleGettable` 
 
 For the {math}`T_1` experiment, quantify-scheduler provides a schedule generating function as part of the {mod}`quantify_scheduler.schedules.timedomain_schedules`: the {func}`quantify_scheduler.schedules.timedomain_schedules.t1_sched`.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.schedules.timedomain_schedules import t1_sched
 schedule_function = t1_sched
@@ -426,7 +413,7 @@ schedule_function = t1_sched
 Inspecting the {func}`quantify_scheduler.schedules.timedomain_schedules.t1_sched`, we find that we need to provide the times {math}`\tau`, the name of the qubit, and the number of times we want to repeat the schedule.
 Rather than specifying the values of the delay times, we pass the parameter {code}`tau`.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 qubit_name = "q0"
 sched_kwargs = {
@@ -442,7 +429,7 @@ This flexibility allows the user to create template schedules that can then be m
 Similar to how the schedule keyword arguments are evaluated for every call to {code}`ScheduleGettable.get`, the device config and hardware config files are re-generated from the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` for every iteration.
 This ensures that if a calibration parameter is changed on the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, the compilation will be affected as expected.
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 device = QuantumDevice(name="quantum_sample")
@@ -450,13 +437,13 @@ device = QuantumDevice(name="quantum_sample")
 
 These ingredients can then be combined to perform the experiment:
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 from quantify_core.measurement import MeasurementControl
 meas_ctrl = MeasurementControl("meas_ctrl")
 ```
 
-```python
+```{code-block} python
 t1_gettable = ScheduleGettable(
     device=device,
     schedule_function=schedule_function,
@@ -472,7 +459,7 @@ dataset = meas_ctrl.run(label)
 
 and the resulting dataset can be analyzed using
 
-```{jupyter-execute}
+```{code-cell} ipython3
 
 # from quantify_core.analysis.t1_analysis import T1Analysis
 # analysis = T1Analysis(label=label).run()

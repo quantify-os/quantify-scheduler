@@ -1,9 +1,17 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
+
+---
 (sec-qblox-cluster)=
 
 # Cluster
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+---
 
 # in the hidden cells we include some code that checks for correctness of the examples
 from tempfile import TemporaryDirectory
@@ -26,9 +34,12 @@ Since the cluster modules behave similarly, we recommend first familiarizing you
 
 We start by looking at an example config for a single cluster:
 
-```{jupyter-execute}
-:hide-output:
-:linenos:
+```{code-cell} ipython3
+---
+tags: [hide-output]
+mystnb:
+  number_source_lines: true
+---
 
 mapping_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -67,9 +78,12 @@ mapping_config = {
 }
 ```
 
-```{jupyter-execute}
-:hide-code:
-:hide-output:
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  number_source_lines: true
+---
 
 # Validate mapping_config
 
