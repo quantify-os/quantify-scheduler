@@ -2,6 +2,20 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+* Compilation - Compilation is now a graph. (#305, !407)
+
+Merged branches and closed issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Docs - Support for myst-nb added (#301, !407)
+# Docs - Add pin on nbclient<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)
+* Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
+
+
 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 ------------------------------------------------------------------------------------
 

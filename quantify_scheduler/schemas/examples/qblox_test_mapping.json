@@ -62,6 +62,57 @@
                 ]
             }
         },
+        "cluster0_module10": {
+            "instrument_type": "QCM",
+            "real_output_0": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "q0:fl",
+                        "clock": "cl0.baseband"
+                    }
+                ]
+            },
+            "real_output_1": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "q1:fl",
+                        "clock": "cl0.baseband"
+                    }
+                ]
+            },
+            "real_output_2": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "q2:fl",
+                        "clock": "cl0.baseband"
+                    }
+                ]
+            },
+            "real_output_3": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "q3:fl",
+                        "clock": "cl0.baseband"
+                    }
+                ]
+            }
+        },
+        "cluster0_module12": {
+            "instrument_type": "QCM",
+            "real_output_0": {
+                "line_gain_db": 0,
+                "portclock_configs": [
+                    {
+                        "port": "q4:fl",
+                        "clock": "cl0.baseband"
+                    }
+                ]
+            }
+        },
         "cluster0_module4": {
             "instrument_type": "QRM_RF",
             "complex_output_0": {

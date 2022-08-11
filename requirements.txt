@@ -4,6 +4,7 @@ columnar
 dataclasses-json
 fastjsonschema
 matplotlib
+networkx
 numpy
 orjson
 pandas
@@ -23,3 +24,4 @@ zhinst-toolkit==0.1.5
 rich[jupyter]
 
 # Tmp fixes
+nbclient<0.6 # Required by myst-nb 0.16.0 (via jupyter-cache) for Read-the-Docs to build
