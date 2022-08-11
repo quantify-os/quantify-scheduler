@@ -1,0 +1,23 @@
+{
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "cluster0_module6": {
+            "instrument_type": "QCM_RF",
+            "complex_output_0": {
+                "line_gain_db": 0,
+                "lo_freq": null,
+                "dc_mixer_offset_I": 0.0,
+                "dc_mixer_offset_Q": 0.0,
+                "seq0": {
+                    "interm_freq": 200000000.0,
+                    "mixer_amp_ratio": 0.9999,
+                    "mixer_phase_error_deg": -4.2,
+                    "port": "qe0:mw",
+                    "clock": "qe0.spec"
+                }
+            }
+        }
+    }
+}

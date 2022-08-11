@@ -1,6 +1,10 @@
 
 from typing import Dict
+import os
+
 from quantify_core.measurement.control import MeasurementControl
+from quantify_core.utilities import general
+
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import (
     BasicElectronicNVElement,
@@ -48,28 +52,6 @@ def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
     qe0.clock_freqs.f01.set(3.592e9)
     qe0.clock_freqs.spec.set(2.2e9)
 
-    qblox_hardware_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            # QCM-RF for microwave control
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "cluster0_module6": {
-                "instrument_type": "QCM_RF",
-                "complex_output_0": {
-                    "line_gain_db": 0,
-                    "lo_freq": None,
-                    "dc_mixer_offset_I": 0.0,
-                    "dc_mixer_offset_Q": 0.0,
-                    "seq0": {
-                        "interm_freq": 200.0e6,
-                        "mixer_amp_ratio": 0.9999,
-                        "mixer_phase_error_deg": -4.2,
-                        "port": "qe0:mw",
-                        "clock": "qe0.spec",
-                    },
-                },
-            },
-        },
-    }
+    abs_path = os.path.abspath("quantify_scheduler/schemas/examples/qblox_test_mapping_nv_centers.json")
+    qblox_hardware_config = general.load_json_safe(abs_path)
     mock_nv_device.hardware_config.set(qblox_hardware_config)
