@@ -11,9 +11,7 @@ kernelspec:
 ```{seealso}
 The complete source code of this tutorial can be found in
 
-{jupyter-download-notebook}`Schedules and Pulses`
-
-{jupyter-download-script}`Schedules and Pulses`
+{nb-download}`Schedules and Pulses.ipynb`
 ```
 
 ## The Schedule

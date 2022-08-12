@@ -11,9 +11,7 @@ kernelspec:
 ```{seealso}
 The complete source code of this tutorial can be found in
 
-{jupyter-download-notebook}`Compiling to Hardware`
-
-{jupyter-download-script}`Compiling to Hardware`
+{nb-download}`Compiling to Hardware.ipynb`
 ```
 
 Compilation allows converting the schedules introduced in {ref}`sec-tutorial-sched-pulse` into a set of instructions that can be executed on the control hardware.

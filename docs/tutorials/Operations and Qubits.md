@@ -11,9 +11,7 @@ kernelspec:
 ```{seealso}
 The complete source code of this tutorial can be found in
 
-{jupyter-download-notebook}`Operations and Qubits`
-
-{jupyter-download-script}`Operations and Qubits`
+{nb-download}`Operations and Qubits.ipynb`
 ```
 
 ## Gates, measurements and qubits

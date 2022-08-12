@@ -11,9 +11,7 @@ kernelspec:
 ``````{seealso}
 The complete source code of this tutorial can be found in
 
-{jupyter-download-notebook}`download as .ipynb <tutorial_zhinst-hardware-verification>`
-
-{jupyter-download-script}`download as .py <tutorial_zhinst-hardware-verification>`
+{nb-download}`T_verification_programs.ipynb`
 
 ``````
 
