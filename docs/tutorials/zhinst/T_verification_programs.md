@@ -17,7 +17,8 @@ The complete source code of this tutorial can be found in
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
 ---
 
 # Make output easier to read

@@ -10,7 +10,8 @@ kernelspec:
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
 ---
 
 # in the hidden cells we include some code that checks for correctness of the examples
@@ -36,9 +37,9 @@ We start by looking at an example config for a single cluster:
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
   number_source_lines: true
+  remove_code_outputs: true
 ---
 
 mapping_config = {
@@ -80,9 +81,9 @@ mapping_config = {
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
 mystnb:
-  number_source_lines: true
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 # Validate mapping_config

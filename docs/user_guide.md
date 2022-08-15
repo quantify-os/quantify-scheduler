@@ -11,7 +11,8 @@ kernelspec:
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
 ---
 
 # Make output easier to read
@@ -40,7 +41,8 @@ In the following example, we will create a function to generate a {class}`.Sched
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
+mystnb:
+  remove_code_outputs: true
 ---
 
 # import the Schedule class and some basic operations.

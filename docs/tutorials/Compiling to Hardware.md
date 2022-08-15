@@ -128,7 +128,9 @@ dh.set_datadir(
 
 ```{code-cell} python
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 hardware_cfg = {

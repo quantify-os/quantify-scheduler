@@ -13,9 +13,8 @@ that describes your experimental setup. An example of such a config:
 
 ```{code-cell} ipython3
 ---
-tags: [hide-input]
 mystnb:
-  number_source_lines: true
+  remove_code_source: true
 ---
 
 import json

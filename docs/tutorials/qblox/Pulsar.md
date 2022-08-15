@@ -10,7 +10,9 @@ kernelspec:
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 # in the hidden cells we include some code that checks for correctness of the examples
@@ -32,8 +34,8 @@ Each device in the setup can be individually configured using the entry in the c
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
+  remove_code_outputs: true
   number_source_lines: true
 ---
 
@@ -70,7 +72,9 @@ mapping_config = {
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 test_sched = Schedule("test_sched")
@@ -193,9 +197,9 @@ mixer correction parameters as well as the frequencies.
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
   number_source_lines: true
+  remove_code_outputs: true
 ---
 
 mapping_config = {
@@ -225,9 +229,9 @@ mapping_config = {
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
-  number_source_lines: true
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 hardware_compile(test_sched, mapping_config)
@@ -239,9 +243,9 @@ It is possible to do frequency multiplexing of the signals by adding multiple po
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
   number_source_lines: true
+  remove_code_outputs: true
 ---
 
 mapping_config = {
@@ -275,9 +279,9 @@ mapping_config = {
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
-  number_source_lines: true
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 test_sched = Schedule("test_sched")
@@ -308,9 +312,9 @@ The resulting config looks like:
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
   number_source_lines: true
+  remove_code_outputs: true
 ---
 
 mapping_config = {
@@ -348,9 +352,9 @@ mapping_config = {
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
 mystnb:
-  number_source_lines: true
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 test_sched = Schedule("test_sched")
@@ -376,7 +380,10 @@ When using real mode, we highly recommend using it in combination with the instr
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell,raises-exception]
+tags: [raises-exception]
+mystnb:
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 test_sched.add(
@@ -399,9 +406,9 @@ In order to enable the advanced capabilities we need to add line {code}`"instruc
 
 ```{code-cell} ipython3
 ---
-tags: [hide-output]
 mystnb:
   number_source_lines: true
+  remove_code_outputs: true
 ---
 
 mapping_config = {
@@ -424,7 +431,9 @@ mapping_config = {
 
 ```{code-cell} ipython3
 ---
-tags: [hide-cell]
+mystnb:
+  remove_code_source: true
+  remove_code_outputs: true
 ---
 
 test_sched = Schedule("test_sched")

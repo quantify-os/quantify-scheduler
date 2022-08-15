@@ -6,8 +6,11 @@ kernelspec:
 ---
 
 
-```{code-cell}
-:tags: [hide-input]
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_source: true
+---
 
 # Make output easier to read
 from rich import pretty
