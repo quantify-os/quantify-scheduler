@@ -28,6 +28,8 @@ from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.resources import ClockResource
 
 ARRAY_DECIMAL_PRECISION = 16
 
@@ -381,7 +383,9 @@ def test_hdawg4_sequence(
 
 
 # pylint: disable=too-many-arguments
-@pytest.mark.parametrize("channelgrouping,enabled_channels", [(0, [0, 1]), (1, [0])])
+@pytest.mark.parametrize(
+    "channelgrouping,enabled_channels", [(0, [0, 1, 2, 3]), (1, [0])]
+)
 def test__program_hdawg4_channelgrouping(
     mocker,
     create_typical_timing_table,
@@ -777,6 +781,8 @@ def test__extract_port_clock_channelmapping_hdawg(
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
         "q1:mw-q1.01": "ic_hdawg0.awg1",
+        "q2:mw-q2.01": "ic_hdawg0.awg2",
+        "q3:mw-q3.01": "ic_hdawg0.awg3",
         "q0:res-q0.ro": "ic_uhfqa0.awg0",
     }
     generated_dict = zhinst_backend._extract_port_clock_channelmapping(
@@ -792,8 +798,10 @@ def test__extract_latencies(
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,
-        "q0:res-q0.ro": 0,
+        "q0:res-q0.ro": 0.0,
         "q1:mw-q1.01": 190e-9,
+        "q2:mw-q2.01": 9.5e-08,
+        "q3:mw-q3.01": 9.5e-08,
     }
     generated_dict = zhinst_backend._extract_latencies(hardware_cfg=hardware_config)
 
@@ -1131,3 +1139,37 @@ def test_acquisition_staircase_right_acq_channel(tmp_test_data_dir):
             expected_zeros_array,
             decimal=ARRAY_DECIMAL_PRECISION,
         )
+
+
+def test_too_long_acquisition_raises_readable_exception():
+    sched = Schedule(name="Too long acquisition schedule", repetitions=1024)
+
+    # these are kind of magic names that are known to exist in the default config.
+    port = "q0:res"
+    clock = "q0.ro"
+
+    # this should not be required.
+    sched.add_resource(ClockResource(name=clock, freq=5e9))
+
+    sched.add(
+        SSBIntegrationComplex(
+            duration=2.4e-6,  # this is longer than the allowed 4096 samples.
+            port=port,
+            clock=clock,
+            acq_index=0,
+            acq_channel=0,
+        ),
+    )
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+
+    # Act
+    with pytest.raises(ValueError) as exc_info:
+        _ = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+
+    # assert that the name of the offending operation is in the exception message.
+    assert "SSBIntegrationComplex(" in str(exc_info.value)
+
+    # assert that the number of samples we are trying to set is in the exception message
+    assert "4320 samples" in str(exc_info.value)

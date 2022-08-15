@@ -12,6 +12,11 @@ from qcodes.utils import validators
 
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    SimpleNodeConfig,
+    SerialCompilationConfig,
+)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
 
@@ -84,7 +89,75 @@ class QuantumDevice(Instrument):
             "quantum-device layer to a hardware backend.",
             parameter_class=ManualParameter,
             vals=validators.Dict(),
+            initial_value=None,
         )
+
+    def generate_compilation_config(self) -> CompilationConfig:
+        """
+        Generates a compilation config for use with a
+        :class:`~.graph_compilation.QuantifyCompiler`.
+        """
+
+        # Part that is always the same
+        dev_cfg = self.generate_device_config()
+        compilation_passes = [
+            SimpleNodeConfig(
+                name="circuit_to_device",
+                compilation_func=dev_cfg.backend,
+                compilation_options=dev_cfg,
+            ),
+            SimpleNodeConfig(
+                name="determine_absolute_timing",
+                compilation_func="quantify_scheduler.compilation."
+                + "determine_absolute_timing",
+            ),
+        ]
+
+        # If statements to support the different (currently unstructured) hardware
+        # configs.
+        hardware_config = self.generate_hardware_config()
+        if hardware_config is None:
+            backend_name = "Device compiler"
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        ):
+            backend_name = "Qblox compiler"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="qblox_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+        ):
+            backend_name = "Zhinst compiler"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="zhinst_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+
+        else:
+            backend_name = "Custom compiler"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="custom_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+
+        compilation_config = SerialCompilationConfig(
+            name=backend_name, compilation_passes=compilation_passes
+        )
+
+        return compilation_config
 
     def generate_hardware_config(self) -> Dict[str, Any]:
         """

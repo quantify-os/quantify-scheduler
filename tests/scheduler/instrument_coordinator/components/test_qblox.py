@@ -59,6 +59,8 @@ def make_cluster_component(mocker):
                 "2": ClusterType.CLUSTER_QCM_RF,
                 "3": ClusterType.CLUSTER_QRM,
                 "4": ClusterType.CLUSTER_QRM_RF,
+                "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0-q3
+                "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
         )
         nonlocal cluster_component

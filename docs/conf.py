@@ -35,6 +35,7 @@ sys.path.insert(0, package_path)
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    "myst_nb",
     "sphinx.ext.autodoc",  # auto document docstrings
     "sphinx.ext.napoleon",  # autodoc understands numpy docstrings
     # load after napoleon, improved compatibility with type hints annotations
@@ -338,7 +339,7 @@ import pydantic
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 
-notebook_to_jupyter_sphinx_always_rebuild = True
+notebook_to_jupyter_sphinx_always_rebuild = False
 
 # Enable nitpicky mode - warns about all references where the target cannot be found
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky

@@ -5,8 +5,12 @@ import logging
 import warnings
 from copy import deepcopy
 from typing import Literal, Optional, Union
-
+from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.backends.graph_compilation import (
+    SimpleNodeConfig,
+    SerialCompilationConfig,
+)
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.json_utils import load_json_schema, validate_json
@@ -27,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def determine_absolute_timing(
-    schedule: Schedule, time_unit: Literal["physical", "ideal"] = "physical"
+    schedule: Schedule, time_unit: Literal["physical", "ideal", None] = "physical"
 ) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
@@ -46,9 +50,10 @@ def determine_absolute_timing(
         The schedule for which to determine timings.
     time_unit
         Whether to use physical units to determine the absolute time or ideal time.
-        When :code:`time_unit == 'physical'` the duration attribute is used.
-        When :code:`time_unit == 'ideal'` the duration attribute is ignored and treated
+        When :code:`time_unit == "physical"` the duration attribute is used.
+        When :code:`time_unit == "ideal"` the duration attribute is ignored and treated
         as if it is :code:`1`.
+        When :code:`time_unit == None` it will revert to :code:`"physical"`.
 
     Returns
     -------
@@ -56,9 +61,12 @@ def determine_absolute_timing(
         a new schedule object where the absolute time for each operation has been
         determined.
     """
-    if len(schedule.schedulables) == 0:
-        raise ValueError("schedule '{}' contains no schedulables".format(schedule.name))
 
+    if len(schedule.schedulables) == 0:
+        raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
+
+    if time_unit is None:
+        time_unit = "physical"
     valid_time_units = ("physical", "ideal")
     if time_unit not in valid_time_units:
         raise ValueError(
@@ -97,9 +105,7 @@ def determine_absolute_timing(
                 t0 = ref_schedulable["abs_time"] + duration_ref_op
             else:
                 raise NotImplementedError(
-                    'Timing "{}" not supported by backend'.format(
-                        ref_schedulable["abs_time"]
-                    )
+                    f'Timing "{ref_schedulable["abs_time"]}" not supported by backend.'
                 )
 
             duration_new_op = curr_op.duration if time_unit == "physical" else 1
@@ -122,7 +128,7 @@ def determine_absolute_timing(
 
 def _find_edge(device_cfg, q0, q1, op_name):
     try:
-        edge_cfg = device_cfg["edges"]["{}-{}".format(q0, q1)]
+        edge_cfg = device_cfg["edges"][f"{q0}-{q1}"]
     except KeyError as e:
         raise ValueError(
             f"Attempting operation '{op_name}' on qubits {q0} and {q1} which lack a"
@@ -403,6 +409,11 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
     return True
 
 
+@deprecated(
+    "0.9.0",
+    "Use the `QuantifyCompiler.compile` method instead. "
+    "See the user guide section on compilers for details.",
+)
 def qcompile(
     schedule: Schedule,
     device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
@@ -440,18 +451,88 @@ def qcompile(
 
         Add a schema for the hardware config.
     """
+
+    def _construct_compilation_config_from_dev_hw_cfg(device_config, hardware_config):
+
+        compilation_passes = []
+
+        if isinstance(device_config, DeviceCompilationConfig):
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="circuit_to_device",
+                    compilation_func=device_config.backend,
+                    compilation_options=device_config,
+                )
+            )
+        elif isinstance(device_config, dict):
+            # this is a deprecated config format. only legacy support here.
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="add_pulse_information_transmon",
+                    compilation_func=device_config["backend"],
+                    compilation_options=device_config,
+                )
+            )
+        else:
+            # this is to support compiling when no device config is supplied
+            pass
+
+        compilation_passes.append(
+            SimpleNodeConfig(
+                name="determine_absolute_timing",
+                compilation_func="quantify_scheduler.compilation.determine_absolute_timing",
+            )
+        )
+
+        # If statements to support the different (currently unstructured) hardware
+        # configs.
+        if hardware_config is None:
+            backend_name = "Device compilation"
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        ):
+            backend_name = "Qblox backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="qblox_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+        ):
+            backend_name = "Zhinst backend"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="zhinst_hardware_compile",
+                    compilation_func=hardware_config["backend"],
+                    compilation_options=hardware_config,
+                )
+            )
+
+        else:
+            raise NotImplementedError(
+                f"Hardware backend {hardware_config['backend']} not recognized"
+            )
+
+        compilation_config = SerialCompilationConfig(
+            name=backend_name, compilation_passes=compilation_passes
+        )
+        return compilation_config
+
+    compilation_config = _construct_compilation_config_from_dev_hw_cfg(
+        device_cfg, hardware_cfg
+    )
+
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    if device_cfg is not None:
-        schedule = device_compile(schedule=schedule, device_cfg=device_cfg)
-    else:
-        schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")
-
-    if hardware_cfg is not None:
-        compiled_schedule = hardware_compile(schedule, hardware_cfg=hardware_cfg)
-    else:
-        compiled_schedule = CompiledSchedule(schedule)
+    backend_class = import_python_object_from_string(compilation_config.backend)
+    backend = backend_class(name=compilation_config.name)
+    compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
 
     return compiled_schedule
 
