@@ -374,6 +374,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.Resource"),
     ("py:class", "quantify_scheduler.Resource"),
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
+    ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [
