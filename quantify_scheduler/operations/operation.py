@@ -100,7 +100,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     def __str__(self) -> str:
         """
         Returns a concise string representation which can be evaluated into a new
-        instance using `eval(str(operation))` only when the data dictionary has
+        instance using :code:`eval(str(operation))` only when the data dictionary has
         not been modified.
 
         This representation is guaranteed to be unique.
