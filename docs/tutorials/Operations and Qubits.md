@@ -3,6 +3,8 @@ file_format: mystnb
 kernelspec:
     name: python3
 
+mystnb:
+  execution_timeout: 120
 ---
 (sec-tutorial-ops-qubits)=
 
@@ -315,7 +317,6 @@ And since all pulse information has been determined, we can show the pulse diagr
 well:
 
 ```{code-cell} ipython3
-
 f, ax = pulse_sched.plot_pulse_diagram()
 ax.set_xlim(0.4005e-3, 0.4006e-3)
 
