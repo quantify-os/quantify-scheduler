@@ -51,7 +51,7 @@ class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
     .. admonition:: Examples
         :class: dropdown
 
-        .. include:: ../../../../examples/structure.DataStructure.py.rst
+        .. include:: ../../../../examples/structure.DataStructure.rst
     """
 
     class Config:  # pylint: disable=too-few-public-methods,missing-class-docstring

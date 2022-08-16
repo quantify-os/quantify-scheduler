@@ -93,7 +93,7 @@ bibtex_reference_style = "author_year"
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
+source_suffix = [".rst", ".md"]
 
 # The master toctree document.
 master_doc = "index"
@@ -257,6 +257,7 @@ autoapi_options = [
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
     "autosectionlabel.*",
+    "mystnb.unknown_mime_type",
 ]
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
@@ -373,6 +374,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.Resource"),
     ("py:class", "quantify_scheduler.Resource"),
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
+    ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [
