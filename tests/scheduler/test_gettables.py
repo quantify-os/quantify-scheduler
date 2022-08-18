@@ -37,9 +37,11 @@ from quantify_scheduler.schedules.trace_schedules import trace_schedule
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
-def test_process_acquired_data(mock_setup, num_channels: int, real_imag: bool):
+def test_process_acquired_data(
+    mock_setup_basic_transmon, num_channels: int, real_imag: bool
+):
     # arrange
-    quantum_device = mock_setup["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     acq_metadata = AcquisitionMetadata(
         acq_protocol="ssb_integration_complex",
         bin_mode=BinMode.AVERAGE,
@@ -63,9 +65,11 @@ def test_process_acquired_data(mock_setup, num_channels: int, real_imag: bool):
     assert len(processed_data) == 2 * num_channels
 
 
-def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, mocker):
-    meas_ctrl = mock_setup["meas_ctrl"]
-    quantum_device = mock_setup["quantum_device"]
+def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
+    mock_setup_basic_transmon, mocker
+):
+    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     qubit = quantum_device.get_element("q0")
 
@@ -73,14 +77,14 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
     ro_freq = ManualParameter("ro_freq", initial_value=5e9, unit="Hz")
 
     schedule_kwargs = {
-        "pulse_amp": qubit.ro_pulse_amp,
-        "pulse_duration": qubit.ro_pulse_duration,
+        "pulse_amp": qubit.measure.pulse_amp(),
+        "pulse_duration": qubit.measure.pulse_duration(),
         "frequency": ro_freq,
-        "acquisition_delay": qubit.ro_acq_delay,
-        "integration_time": qubit.ro_acq_integration_time,
-        "port": qubit.ro_port,
-        "clock": qubit.ro_clock,
-        "init_duration": qubit.init_duration,
+        "acquisition_delay": qubit.measure.acq_delay(),
+        "integration_time": qubit.measure.integration_time(),
+        "port": qubit.ports.readout(),
+        "clock": qubit.name + ".ro",
+        "init_duration": qubit.reset.duration(),
     }
 
     # Prepare the mock data the spectroscopy schedule
@@ -97,7 +101,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
     acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
 
     mocker.patch.object(
-        mock_setup["instrument_coordinator"],
+        mock_setup_basic_transmon["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -127,9 +131,9 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, moc
 
 
 # test a batched case
-def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
-    meas_ctrl = mock_setup["meas_ctrl"]
-    quantum_device = mock_setup["quantum_device"]
+def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, mocker):
+    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     qubit = quantum_device.get_element("q0")
 
@@ -157,7 +161,7 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
     )
 
     mocker.patch.object(
-        mock_setup["instrument_coordinator"],
+        mock_setup_basic_transmon["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -185,9 +189,11 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
 
 
 # test a batched case
-def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
-    meas_ctrl = mock_setup["meas_ctrl"]
-    quantum_device = mock_setup["quantum_device"]
+def test_ScheduleGettableSingleChannel_append_readout_cal(
+    mock_setup_basic_transmon, mocker
+):
+    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     repetitions = 256
     qubit = quantum_device.get_element("q0")
@@ -217,7 +223,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
     )
 
     mocker.patch.object(
-        mock_setup["instrument_coordinator"],
+        mock_setup_basic_transmon["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -246,9 +252,11 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
     np.testing.assert_array_equal(dset.y0 + 1j * dset.y1, data)
 
 
-def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
-    meas_ctrl = mock_setup["meas_ctrl"]
-    quantum_device = mock_setup["quantum_device"]
+def test_ScheduleGettableSingleChannel_trace_acquisition(
+    mock_setup_basic_transmon, mocker
+):
+    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     # q0 is a  device element from the test setup has all the right params
     device_element = quantum_device.get_element("q0")
 
@@ -256,15 +264,15 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     sample_par.batched = True
 
     schedule_kwargs = {
-        "pulse_amp": device_element.measure.pulse_amp,
-        "pulse_duration": device_element.measure.duration,  ### <-- left here
-        "pulse_delay": device_element.ro_pulse_delay,
-        "frequency": device_element.ro_freq,
-        "acquisition_delay": device_element.ro_acq_delay,
-        "integration_time": device_element.ro_acq_integration_time,
-        "port": device_element.ro_port,
-        "clock": device_element.ro_clock,
-        "init_duration": device_element.init_duration,
+        "pulse_amp": device_element.measure.pulse_amp(),
+        "pulse_duration": device_element.measure.pulse_duration(),
+        "pulse_delay": 2e-9,
+        "frequency": device_element.clock_freqs.readout(),
+        "acquisition_delay": device_element.measure.acq_delay(),
+        "integration_time": device_element.measure.integration_time(),
+        "port": device_element.ports.readout(),
+        "clock": device_element.name + ".ro",
+        "init_duration": device_element.reset.duration(),
     }
 
     sched_gettable = ScheduleGettable(
@@ -274,7 +282,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
         batched=True,
     )
 
-    sample_times = np.arange(0, device_element.ro_acq_integration_time(), 1 / 1e9)
+    sample_times = np.arange(0, device_element.measure.integration_time(), 1 / 1e9)
     exp_trace = np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(35))
 
     exp_data = {
@@ -285,7 +293,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     }
 
     mocker.patch.object(
-        mock_setup["instrument_coordinator"],
+        mock_setup_basic_transmon["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=exp_data,
     )
@@ -303,9 +311,9 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
-def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
+def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker):
     schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
-    quantum_device = mock_setup["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     # Prepare the mock data the t1 schedule
     acq_metadata = AcquisitionMetadata(
@@ -320,7 +328,7 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
     acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
 
     mocker.patch.object(
-        mock_setup["instrument_coordinator"],
+        mock_setup_basic_transmon["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -349,7 +357,12 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
         sched = Schedule.from_json(zf.read("schedule.json").decode())
         snap = json.loads(zf.read("snapshot.json").decode())
 
-    assert snap["instruments"]["q0"]["parameters"]["init_duration"]["value"] == 0.0002
+    assert (
+        snap["instruments"]["q0"]["submodules"]["reset"]["parameters"]["duration"][
+            "value"
+        ]
+        == 0.0002
+    )
     assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
     assert gettable._compiled_schedule == qcompile(
         sched, device_cfg=dev_cfg, hardware_cfg=hw_cfg

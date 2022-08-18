@@ -59,7 +59,7 @@ def tmp_test_data_dir(tmp_path_factory):
 
 # pylint: disable=redefined-outer-name
 @pytest.fixture(scope="module", autouse=False)
-def mock_setup(tmp_test_data_dir):
+def mock_setup(tmp_test_data_dir, mock_setup_basic_transmon):
     """
     Returns a mock setup.
 
@@ -74,7 +74,7 @@ def mock_setup(tmp_test_data_dir):
     set_datadir(tmp_test_data_dir)
 
     # moved to a separate module to allow using the mock_setup in tutorials.
-    mock_setup = set_up_mock_transmon_setup_legacy()
+    mock_setup = mock_setup_basic_transmon
 
     mock_instruments = {
         "meas_ctrl": mock_setup["meas_ctrl"],

@@ -81,7 +81,7 @@ def set_up_mock_transmon_setup_legacy() -> Dict:
     # rational of the dict format is that this function is historically used as part
     # of a fixture and by providing this dict, a cleanup instruments function can
     # iterate over these keys to close all individual instruments and avoid
-    # statefull behavior in the tests.
+    # stateful behavior in the tests.
     return {
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,
@@ -118,7 +118,6 @@ def set_up_mock_transmon_setup() -> Dict:
 
     q0 = BasicTransmonElement("q0")
     q1 = BasicTransmonElement("q1")
-
     q2 = BasicTransmonElement("q2")
     q3 = BasicTransmonElement("q3")
     q4 = BasicTransmonElement("q4")
@@ -153,7 +152,7 @@ def set_up_mock_transmon_setup() -> Dict:
     # rationale of the dict format is that this function is historically used as part
     # of a fixture and by providing this dict, a cleanup instruments function can
     # iterate over these keys to close all individual instruments and avoid
-    # statefull behavior in the tests.
+    # stateful behavior in the tests.
     return {
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,

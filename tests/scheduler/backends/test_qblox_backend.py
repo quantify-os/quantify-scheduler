@@ -857,7 +857,7 @@ def test_compile_simple(
 
 
 def test_compile_cluster(
-    mock_setup,
+    mock_setup_basic_transmon,
     cluster_only_schedule,
     load_example_qblox_hardware_config,
 ):
@@ -865,7 +865,7 @@ def test_compile_cluster(
     set_datadir(tmp_dir.name)
     qcompile(
         cluster_only_schedule,
-        mock_setup["quantum_device"].generate_device_config(),
+        mock_setup_basic_transmon["quantum_device"].generate_device_config(),
         load_example_qblox_hardware_config,
     )
 
@@ -953,7 +953,10 @@ def test_compile_measure(
     ],
 )
 def test_compile_clock_operations(
-    mock_setup, hardware_cfg_baseband, operation: Operation, instruction_to_check: str
+    mock_setup_basic_transmon,
+    hardware_cfg_baseband,
+    operation: Operation,
+    instruction_to_check: str,
 ):
     # mock_setup should arrange this but is not working here
     tmp_dir = tempfile.TemporaryDirectory()
@@ -967,7 +970,7 @@ def test_compile_clock_operations(
 
     compiled_sched = qcompile(
         schedule=sched,
-        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        device_cfg=mock_setup_basic_transmon["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg_baseband,
     )
 
@@ -981,15 +984,33 @@ def test_compile_clock_operations(
 
 
 def test_compile_cz_gate(
-    mock_setup, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
+    mock_setup_basic_transmon, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
 ):
     # mock_setup should arrange this but is not working here
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    q0 = quantum_device.get_element("q0")
+    q1 = quantum_device.get_element("q1")
+
+    q0.rxy.amp180(0.45)
+    q0.clock_freqs.f01(7.3e9)
+    q0.clock_freqs.f12(7.0e9)
+    q0.clock_freqs.readout(8.0e9)
+    q0.measure.acq_delay(100e-9)
+
+    q1.rxy.amp180(0.325)
+    q1.clock_freqs.f01(7.25e9)
+    q1.clock_freqs.f12(6.89e9)
+    q1.clock_freqs.readout(8.3e9)
+    q1.measure.acq_delay(100e-9)
+
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+
     compiled_sched = qcompile(
         schedule=two_qubit_gate_schedule,
-        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        device_cfg=device_cfg,
         hardware_cfg=hardware_cfg_two_qubit_gate,
     )
 
@@ -1300,7 +1321,7 @@ def test_container_prepare(
 
 
 def test_determine_scope_mode_acquisition_sequencer(
-    mock_setup, load_example_qblox_hardware_config
+    mock_setup_basic_transmon, load_example_qblox_hardware_config
 ):
     # mock_setup should arrange this but is not working here
     tmp_dir = tempfile.TemporaryDirectory()
@@ -1313,7 +1334,9 @@ def test_determine_scope_mode_acquisition_sequencer(
 
     hardware_cfg = load_example_qblox_hardware_config
     sched = qcompile(
-        sched, mock_setup["quantum_device"].generate_device_config(), hardware_cfg
+        sched,
+        mock_setup_basic_transmon["quantum_device"].generate_device_config(),
+        hardware_cfg,
     )
 
     assert hardware_cfg["qrm0"]["instrument_type"] == "Pulsar_QRM"
@@ -2030,7 +2053,9 @@ def test_convert_hw_config_to_portclock_configs_spec(
         hardware_compile(sched, old_config)
 
 
-def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_corrections):
+def test_apply_latency_corrections_valid(
+    mock_setup_basic_transmon, hardware_cfg_latency_corrections
+):
     """
     This test function checks that:
     Latency correction is set for the correct portclock key
@@ -2052,7 +2077,7 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
     hardware_cfg = hardware_cfg_latency_corrections
     compiled_sched = qcompile(
         schedule=sched,
-        device_cfg=mock_setup["quantum_device"].generate_device_config(),
+        device_cfg=mock_setup_basic_transmon["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
 
@@ -2083,7 +2108,7 @@ def test_apply_latency_corrections_valid(mock_setup, hardware_cfg_latency_correc
 
 
 def test_apply_latency_corrections_warning(
-    mock_setup, hardware_cfg_latency_corrections, caplog
+    mock_setup_basic_transmon, hardware_cfg_latency_corrections, caplog
 ):
     """
     Checks if warning is raised for a latency correction
@@ -2106,7 +2131,9 @@ def test_apply_latency_corrections_warning(
     ):
         qcompile(
             schedule=sched,
-            device_cfg=mock_setup["quantum_device"].generate_device_config(),
+            device_cfg=mock_setup_basic_transmon[
+                "quantum_device"
+            ].generate_device_config(),
             hardware_cfg=hardware_cfg_latency_corrections,
         )
     assert any(warning in mssg for mssg in caplog.messages)
