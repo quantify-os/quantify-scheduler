@@ -13,6 +13,7 @@
 - Docs - Add pin on nbclient\<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)
 - Docs - Added documentation and unit tests for the Rxy, X, X90, Y and Y90 unitaries (#349)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
+- Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420)
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 

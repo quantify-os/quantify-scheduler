@@ -3,6 +3,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=too-many-locals
 # pylint: disable=invalid-name
+# pylint: disable=unused-argument
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
@@ -19,6 +20,7 @@ from qcodes.instrument.parameter import ManualParameter
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
@@ -30,6 +32,7 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
+    rabi_sched,
     readout_calibration_sched,
     t1_sched,
 )
@@ -402,3 +405,61 @@ def _reshape_array_into_acq_return_type(
                 }
                 acquisitions.update(acqs)
     return acquisitions
+
+
+def test_profiling(mock_setup, mocker):
+    quantum_device = mock_setup["quantum_device"]
+    qubit = quantum_device.get_component("q0")
+
+    schedule_kwargs = {
+        "pulse_amp": qubit.ro_pulse_amp,
+        "pulse_duration": qubit.ro_pulse_duration,
+        "frequency": qubit.ro_freq,
+        "qubit": "q0",
+    }
+    prof_gettable = ProfiledScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=rabi_sched,
+        schedule_kwargs=schedule_kwargs,
+    )
+
+    prof_gettable.initialize()
+    instr_coordinator = (
+        prof_gettable.quantum_device.instr_instrument_coordinator.get_instr()
+    )
+    instr_coordinator.start()
+    instr_coordinator.wait_done()
+    instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+    prof_gettable.close()
+
+    log = prof_gettable.log_profile()
+
+    # Test if all steps have been measured and have a value > 0
+    assert log["schedule"][0] == 0.05153792
+    verif_keys = [
+        "schedule",
+        "_compile",
+        "prepare",
+        "start",
+        "wait_done",
+        "retrieve_acquisition",
+        "stop",
+    ]
+    for x in verif_keys:
+        assert len(log[x]) >= 1
+        assert [k > 0 for k in log[x]]
+
+    # test plot function
+    prof_gettable.plot_profile()
+    assert prof_gettable.plot
+
+    # test logging to json
+    obj = {"test": ["test"]}
+    file = "test"
+
+    def wrapper(obj, fp, indent, separators):
+        json.dumps(obj=obj, indent=indent, separators=separators)
+
+    with mocker.patch("json.dump", wraps=wrapper):
+        prof_gettable.log_profile(obj=obj, path=file, indent=4, separators=(",", ": "))

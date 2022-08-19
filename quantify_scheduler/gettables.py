@@ -163,6 +163,17 @@ class ScheduleGettable:
         """Acquire and return data"""
         return self.get()
 
+    def _compile(self, sched):
+        """Compile schedule, separated to allow for profiling compilation duration."""
+        compilation_config = self.quantum_device.generate_compilation_config()
+
+        # made into a private variable for debugging and future caching functionality
+        backend_class = import_python_object_from_string(compilation_config.backend)
+        self._backend = backend_class(name=compilation_config.name)
+        self._compiled_schedule = self._backend.compile(
+            schedule=sched, config=compilation_config
+        )
+
     def initialize(self):
         """
         This generates the schedule and uploads the compiled instructions to the
@@ -176,15 +187,7 @@ class ScheduleGettable:
             **self._evaluated_sched_kwargs,
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
-
-        compilation_config = self.quantum_device.generate_compilation_config()
-
-        # made into a private variable for debugging and future caching functionality
-        backend_class = import_python_object_from_string(compilation_config.backend)
-        self._backend = backend_class(name=compilation_config.name)
-        self._compiled_schedule = self._backend.compile(
-            schedule=sched, config=compilation_config
-        )
+        self._compile(sched)
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(self._compiled_schedule)

@@ -489,6 +489,43 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         )
         return styled_timing_table
 
+    def get_schedule_duration(self):
+        """
+        Method to find the duration of the schedule.
+
+        Returns
+        -------
+        schedule_duration : float
+            Duration of current schedule
+
+        """
+        schedule_duration = 0
+
+        # find last timestamp
+        for schedulable in self.schedulables.values():
+            timestamp = schedulable["abs_time"]
+            operation_repr = schedulable["operation_repr"]
+
+            # find duration of last operation
+            operation = self.data["operation_dict"][operation_repr]
+            pulses_end_times = [
+                pulse.get("duration") + pulse.get("t0")
+                for pulse in operation.data["pulse_info"]
+            ]
+            acquisitions_end_times = [
+                acquisition.get("duration") + acquisition.get("t0")
+                for acquisition in operation.data["acquisition_info"]
+            ]
+            final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
+            tmp_time = timestamp + final_op_len
+
+            # keep track of longest found schedule
+            if tmp_time > schedule_duration:
+                schedule_duration = tmp_time
+
+        schedule_duration *= self.repetitions
+        return schedule_duration
+
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
@@ -758,14 +795,12 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 # pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
-    A schedule that contains compiled instructions.
-
-    These instructions are ready for execution using the
-    :class:`~.InstrumentCoordinator`.
+    A schedule that contains compiled instructions ready for execution using
+    the :class:`~.InstrumentCoordinator`.
 
     The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
-    that it is considered immutable (no new operations or resources can be added),
-    and that it contains :attr:`~.compiled_instructions`.
+    that it is considered immutable (no new operations or resources can be added), and
+    that it contains :attr:`~.compiled_instructions`.
 
     .. tip::
 
