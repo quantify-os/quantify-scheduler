@@ -165,10 +165,13 @@ class ScheduleGettable:
 
     def _compile(self, sched):
         """Compile schedule, separated to allow for profiling compilation duration."""
-        self._compiled_schedule = qcompile(
-            schedule=sched,
-            device_cfg=self.quantum_device.generate_device_config(),
-            hardware_cfg=self.quantum_device.generate_hardware_config(),
+        compilation_config = self.quantum_device.generate_compilation_config()
+
+        # made into a private variable for debugging and future caching functionality
+        backend_class = import_python_object_from_string(compilation_config.backend)
+        self._backend = backend_class(name=compilation_config.name)
+        self._compiled_schedule = self._backend.compile(
+            schedule=sched, config=compilation_config
         )
 
     def initialize(self):
@@ -184,15 +187,7 @@ class ScheduleGettable:
             **self._evaluated_sched_kwargs,
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
-
-        compilation_config = self.quantum_device.generate_compilation_config()
-
-        # made into a private variable for debugging and future caching functionality
-        backend_class = import_python_object_from_string(compilation_config.backend)
-        self._backend = backend_class(name=compilation_config.name)
-        self._compiled_schedule = self._backend.compile(
-            schedule=sched, config=compilation_config
-        )
+        self._compile(sched)
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(self._compiled_schedule)
