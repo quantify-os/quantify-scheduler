@@ -64,14 +64,9 @@ def hardware_compile(
 
     if hw_config_keys != converted_hw_config_keys:
         warnings.warn(
-            "The provided hardware config adheres to a specification "
-            "that is now deprecated. Please learn about the new "
-            "Qblox hardware config specification at:\n"
-            "https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/"
-            "Qblox-backend:-Dynamic-Sequencer-Allocation \n"
-            "You may upgrade an old config to the new specification using the "
-            "'quantify_scheduler.backends.qblox.helpers."
-            "convert_hw_config_to_portclock_configs_spec' function.",
+            "The provided hardware config adheres to a specification that is deprecated"
+            ". See https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.8.0/"
+            "tutorials/qblox/recent.html",
             DeprecationWarning,
         )
         hardware_cfg = converted_hw_config
