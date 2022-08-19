@@ -37,11 +37,9 @@ from quantify_scheduler.schedules.trace_schedules import trace_schedule
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
-def test_process_acquired_data(
-    mock_setup_basic_transmon, num_channels: int, real_imag: bool
-):
+def test_process_acquired_data(mock_setup, num_channels: int, real_imag: bool):
     # arrange
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     acq_metadata = AcquisitionMetadata(
         acq_protocol="ssb_integration_complex",
         bin_mode=BinMode.AVERAGE,
@@ -65,11 +63,9 @@ def test_process_acquired_data(
     assert len(processed_data) == 2 * num_channels
 
 
-def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
-    mock_setup_basic_transmon, mocker
-):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
 
     qubit = quantum_device.get_element("q0")
 
@@ -101,7 +97,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -131,9 +127,9 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
 
 
 # test a batched case
-def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, mocker):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
 
     qubit = quantum_device.get_element("q0")
 
@@ -161,7 +157,7 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
     )
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -189,11 +185,9 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
 
 
 # test a batched case
-def test_ScheduleGettableSingleChannel_append_readout_cal(
-    mock_setup_basic_transmon, mocker
-):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+def test_ScheduleGettableSingleChannel_append_readout_cal(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
 
     repetitions = 256
     qubit = quantum_device.get_element("q0")
@@ -223,7 +217,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
     )
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -252,11 +246,9 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
     np.testing.assert_array_equal(dset.y0 + 1j * dset.y1, data)
 
 
-def test_ScheduleGettableSingleChannel_trace_acquisition(
-    mock_setup_basic_transmon, mocker
-):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+def test_ScheduleGettableSingleChannel_trace_acquisition(mock_setup, mocker):
+    meas_ctrl = mock_setup["meas_ctrl"]
+    quantum_device = mock_setup["quantum_device"]
     # q0 is a  device element from the test setup has all the right params
     device_element = quantum_device.get_element("q0")
 
@@ -293,7 +285,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(
     }
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=exp_data,
     )
@@ -311,9 +303,9 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
-def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker):
+def test_ScheduleGettable_generate_diagnostic(mock_setup, mocker):
     schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
 
     # Prepare the mock data the t1 schedule
     acq_metadata = AcquisitionMetadata(
@@ -328,7 +320,7 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
     acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )

@@ -131,7 +131,7 @@ def test_distortion_correct_pulse(
     ],
 )
 def test_apply_distortion_corrections(  # pylint: disable=unused-argument disable=too-many-arguments
-    mock_setup_basic_transmon,
+    mock_setup,
     hardware_cfg_distortion_corrections,
     filter_coefficients,
     two_qubit_gate_schedule,
@@ -140,7 +140,7 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
 ):
     compiled_sched = qcompile(
         schedule=two_qubit_gate_schedule,
-        device_cfg=mock_setup_basic_transmon["quantum_device"].generate_device_config(),
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg_distortion_corrections,
     )
 

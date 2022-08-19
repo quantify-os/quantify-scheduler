@@ -344,7 +344,7 @@ class TestWeightedAcquisitionStrategy:
 
 
 def test_trace_acquisition_measurement_control(
-    mock_setup_basic_transmon, mocker, make_cluster_component
+    mock_setup, mocker, make_cluster_component
 ):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -363,13 +363,13 @@ def test_trace_acquisition_measurement_control(
     }
 
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    q2 = mock_setup_basic_transmon["q2"]
+    q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(7404000000.0)
 
@@ -416,7 +416,7 @@ def test_trace_acquisition_measurement_control(
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, PulsarType.PULSAR_QRM],
 )
 def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-locals
-    mocker, mock_setup_basic_transmon, make_cluster_component, make_qrm_component, module_under_test
+    mocker, mock_setup, make_cluster_component, make_qrm_component, module_under_test
 ):
     hardware_cfgs = {}
     hardware_cfgs[ClusterType.CLUSTER_QRM_RF] = {
@@ -459,7 +459,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     }
     hardware_cfg = hardware_cfgs[module_under_test]
 
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator = mock_setup["instrument_coordinator"]
 
     if isinstance(module_under_test, ClusterType):
         name = "cluster0"
@@ -483,10 +483,10 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     except ValueError:
         ic_component.instrument.reset()
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    q2 = mock_setup_basic_transmon["q2"]
+    q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(
         7.404e9 if module_under_test is ClusterType.CLUSTER_QRM_RF else 3e8

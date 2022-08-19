@@ -60,7 +60,7 @@ def test_compile_transmon_example_program():
     _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
-def test_compile_basic_transmon_example_program(mock_setup_basic_transmon):
+def test_compile_basic_transmon_example_program(mock_setup):
     """
     Test if compilation using the BasicTransmonElement reproduces old behaviour.
     """
@@ -82,13 +82,13 @@ def test_compile_basic_transmon_example_program(mock_setup_basic_transmon):
     sched.add(Measure(q2, q3), label="M_q2_q3")
 
     # test that all these operations compile correctly.
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     _ = compile_circuit_to_device(
         sched, device_cfg=quantum_device.generate_device_config()
     )
 
 
-def test_compile_asymmetric_gate(mock_setup_basic_transmon):
+def test_compile_asymmetric_gate(mock_setup):
     """
     Test if compilation fails when performing an asymmetric operation and the
     correct edge defining the parent-child device element connection is missing from
@@ -108,7 +108,7 @@ def test_compile_asymmetric_gate(mock_setup_basic_transmon):
     sched.add(Measure(q2, q3), label="M_q2_q3")
 
     # test that all these operations compile correctly.
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
 
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device(
