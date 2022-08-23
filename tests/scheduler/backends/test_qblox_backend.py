@@ -451,27 +451,24 @@ def pulse_only_schedule_with_operation_timing():
 
 @pytest.fixture
 def mixed_schedule_with_acquisition():
-    def _mixed_schedule_with_acquisition(reset_clock_phase=True):
-        sched = Schedule("mixed_schedule_with_acquisition")
-        sched.add(Reset("q0"))
-        sched.add(
-            DRAGPulse(
-                G_amp=0.7,
-                D_amp=-0.2,
-                phase=90,
-                port="q0:mw",
-                duration=20e-9,
-                clock="q0.01",
-                t0=4e-9,
-            )
+    sched = Schedule("mixed_schedule_with_acquisition")
+    sched.add(Reset("q0"))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.7,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
         )
+    )
 
-        sched.add(Measure("q0"))
-        # Clocks need to be manually added at this stage.
-        sched.add_resources([ClockResource("q0.01", freq=5e9)])
-        return sched
-
-    return _mixed_schedule_with_acquisition
+    sched.add(Measure("q0"))
+    # Clocks need to be manually added at this stage.
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    return sched
 
 
 @pytest.fixture
@@ -1037,7 +1034,7 @@ def test_compile_simple_with_acq(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     full_program = qcompile(
-        mixed_schedule_with_acquisition(),
+        mixed_schedule_with_acquisition,
         load_example_transmon_config,
         load_example_qblox_hardware_config,
     )
@@ -1102,7 +1099,7 @@ def test_acquisitions_back_to_back(
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    sched = copy.deepcopy(mixed_schedule_with_acquisition())
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
     meas_op = sched.add(Measure("q0"))
     # add another one too quickly
     sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
@@ -1139,7 +1136,7 @@ def test_compile_with_repetitions(
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
-    schedule = mixed_schedule_with_acquisition()
+    schedule = mixed_schedule_with_acquisition
     schedule.repetitions = 10
     full_program = qcompile(
         schedule,
@@ -1322,7 +1319,7 @@ def test_assign_pulse_and_acq_info_to_devices(
     mock_setup,
     load_example_qblox_hardware_config,
 ):
-    sched = mixed_schedule_with_acquisition(reset_clock_phase)
+    sched = mixed_schedule_with_acquisition
 
     device_cfg = mock_setup["quantum_device"].generate_device_config()
     device_cfg.elements.get("q0").get("measure").factory_kwargs[
