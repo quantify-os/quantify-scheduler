@@ -648,7 +648,7 @@ def test_retrieve_acquisition_qrm_rf(
 
 def test_retrieve_acquisition_cluster(
     make_schedule_with_measurement,
-    load_legacy_transmon_config,
+    load_train_transmon_config,
     load_example_qblox_hardware_config,
     make_cluster_component,
 ):
@@ -661,7 +661,7 @@ def test_retrieve_acquisition_cluster(
         set_datadir(tmp_dir)
         compiled_schedule = qcompile(
             make_schedule_with_measurement("q4"),
-            load_legacy_transmon_config,
+            load_train_transmon_config,
             load_example_qblox_hardware_config,
         )
         prog = compiled_schedule["compiled_instructions"]

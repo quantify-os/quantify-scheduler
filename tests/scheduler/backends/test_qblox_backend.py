@@ -1589,14 +1589,14 @@ def test_assign_frequencies_baseband_downconverter(
 
 
 def test_assign_frequencies_rf(
-    load_legacy_transmon_config, load_example_qblox_hardware_config
+    load_example_transmon_config, load_example_qblox_hardware_config
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
-    sched.add(X("q2"))
-    sched.add(X("q3"))
+    sched.add(X("q0"))
+    sched.add(X("q1"))
 
     hardware_cfg = load_example_qblox_hardware_config
     if0 = hardware_cfg["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
@@ -1613,23 +1613,18 @@ def test_assign_frequencies_rf(
     assert lo0 is None
     assert lo1 is not None
 
-    device_cfg = load_legacy_transmon_config
-    q2_clock_freq = device_cfg["qubits"]["q2"]["params"]["mw_freq"]
-    q3_clock_freq = device_cfg["qubits"]["q3"]["params"]["mw_freq"]
+    device_cfg = load_example_transmon_config
+    q0_clock_freq = device_cfg.clocks["q0.01"]
+    q1_clock_freq = device_cfg.clocks["q1.01"]
 
-    if0 = hardware_cfg["qcm_rf0"]["complex_output_0"]["portclock_configs"][0][
-        "interm_freq"
-    ]
-    lo1 = hardware_cfg["qcm_rf0"]["complex_output_1"]["lo_freq"]
-
-    lo0 = q2_clock_freq - if0
-    if1 = q3_clock_freq - lo1
+    lo0 = q0_clock_freq - if0
+    if1 = q1_clock_freq - lo1
 
     compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
     compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm_rf0"]
-    assert qcm_program["settings"]["lo0_freq"] == lo0
-    assert qcm_program["settings"]["lo1_freq"] == lo1
+    qcm_program = compiled_instructions["qcm0"]
+    assert compiled_instructions["generic"]["lo0.frequency"] == lo0
+    assert compiled_instructions["generic"]["lo1.frequency"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
 
 
@@ -1639,15 +1634,15 @@ def test_assign_frequencies_rf(
 def test_assign_frequencies_rf_downconverter(
     downconverter_freq_0,
     downconverter_freq_1,
-    load_legacy_transmon_config,
+    load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
-    sched.add(X("q2"))
-    sched.add(X("q3"))
+    sched.add(X("q0"))
+    sched.add(X("q1"))
 
     hardware_cfg = load_example_qblox_hardware_config.copy()
     hardware_cfg["qcm_rf0"]["complex_output_0"][
@@ -1674,13 +1669,13 @@ def test_assign_frequencies_rf_downconverter(
     assert lo0 is None, "LO frequency already set for channel 0 in hardware config"
     assert lo1 is not None, "LO frequency must be set for channel 1 in hardware config"
 
-    device_cfg = load_legacy_transmon_config
+    device_cfg = load_example_transmon_config
     compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
     compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm_rf0"]
+    qcm_program = compiled_instructions["qcm0"]
 
-    q2_clock_freq = device_cfg["qubits"]["q2"]["params"]["mw_freq"]
-    q3_clock_freq = device_cfg["qubits"]["q3"]["params"]["mw_freq"]
+    q0_clock_freq = device_cfg.elements["q0"]["params"]["mw_freq"]
+    q1_clock_freq = device_cfg.elements["q1"]["params"]["mw_freq"]
 
     actual_lo0 = qcm_program["settings"]["lo0_freq"]
     actual_lo1 = qcm_program["settings"]["lo1_freq"]
@@ -1694,8 +1689,8 @@ def test_assign_frequencies_rf_downconverter(
         status = "without"
 
     else:
-        expected_lo0 = downconverter_freq_0 - q2_clock_freq - if0
-        expected_if1 = downconverter_freq_1 - q3_clock_freq - lo1
+        expected_lo0 = downconverter_freq_0 - q0_clock_freq - if0
+        expected_if1 = downconverter_freq_1 - q1_clock_freq - lo1
         status = "after"
 
     assert expected_lo0 == actual_lo0, (
@@ -1712,19 +1707,19 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
-def test_markers(load_legacy_transmon_config, load_example_qblox_hardware_config):
+def test_markers(load_example_transmon_config, load_example_qblox_hardware_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     # Test for baseband
     sched = Schedule("gate_experiment")
     sched.add(X("q0"))
-    sched.add(X("q2"))
+    sched.add(X("q1"))
     sched.add(Measure("q0"))
-    sched.add(Measure("q2"))
+    sched.add(Measure("q1"))
 
     compiled_schedule = qcompile(
-        sched, load_legacy_transmon_config, load_example_qblox_hardware_config
+        sched, load_example_transmon_config, load_example_qblox_hardware_config
     )
     program = compiled_schedule["compiled_instructions"]
 
@@ -1929,7 +1924,7 @@ def test_acq_declaration_dict_bin_avg_mode(
 
 
 def test_convert_hw_config_to_portclock_configs_spec(
-    make_basic_multi_qubit_schedule, load_legacy_transmon_config
+    make_basic_multi_qubit_schedule, load_example_transmon_config
 ):
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -2037,8 +2032,8 @@ def test_convert_hw_config_to_portclock_configs_spec(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
-    sched = device_compile(sched, load_legacy_transmon_config)
+    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
+    sched = device_compile(sched, load_example_transmon_config)
     with pytest.warns(
         DeprecationWarning,
         match=r"hardware config adheres to a specification that is deprecated",
