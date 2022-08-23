@@ -1144,7 +1144,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @staticmethod
     def downconvert_clock(downconverter_freq: float, clock_freq: float):
-        """ "
+        """
         Downconverts clock frequency.
 
         Parameters
@@ -1160,7 +1160,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             When downconverter frequency is negative.
         ValueError
             When downconverter frequency is less than the clock frequency.
-        ------
         """
 
         if downconverter_freq == 0:

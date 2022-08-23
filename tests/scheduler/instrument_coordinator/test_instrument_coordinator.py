@@ -21,6 +21,7 @@ from quantify_scheduler.instrument_coordinator import (
     ZIInstrumentCoordinator,
 )
 from quantify_scheduler.instrument_coordinator.components import base as base_component
+from quantify_scheduler.gettables_profiled import ProfiledInstrumentCoordinator
 
 
 class MyICC(base_component.InstrumentCoordinatorComponentBase):
@@ -381,3 +382,33 @@ def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_comp
     last_sched = instrument_coordinator.last_schedule
 
     assert last_sched == compiled_sched
+
+
+def test_profiled_instrument_coordinator(mock_setup, dummy_components):
+    component1 = dummy_components.pop(0)
+    test_sched = Schedule(name="test_schedule")
+    args = {"dev0": {"foo": 0}}
+    test_sched["compiled_instructions"] = args
+    compiled_sched = CompiledSchedule(test_sched)
+
+    parent_ic = InstrumentCoordinator("IC")
+    instr_coordinator = ProfiledInstrumentCoordinator("d0", parent_ic)
+    instr_coordinator.add_component(component1)
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    instr_coordinator.wait_done()
+    instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    verif_keys = [
+        "schedule",
+        "prepare",
+        "add_component",
+        "start",
+        "wait_done",
+        "retrieve_acquisition",
+        "stop",
+    ]
+    for key in verif_keys:
+        assert key in instr_coordinator.profile
+        assert (x > 0 for x in instr_coordinator.profile[key])
