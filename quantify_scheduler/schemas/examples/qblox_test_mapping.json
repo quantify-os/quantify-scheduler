@@ -161,6 +161,8 @@
             "lo_name": "lo1",
             "dc_mixer_offset_I": -0.054,
             "dc_mixer_offset_Q": -0.034,
+            "input_gain_I": 2,
+            "input_gain_Q": 3,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9997,
