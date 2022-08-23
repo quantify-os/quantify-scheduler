@@ -1655,21 +1655,21 @@ class QbloxRFModule(QbloxBaseModule):
             The attenuation values are out of range.
         """
 
-        output_label = "complex_input_0"
+        output_label = "complex_output_0"
         if output_label in self.hw_mapping:
-            settings.in0_att = self._validate_extract_bounded_int(
+            self._settings.in0_att = self._validate_extract_bounded_int(
                 "input_att_I",
-                hw_mapping[output_label],
+                self.hw_mapping[output_label],
                 self.static_hw_properties.valid_input_att
             )
-            settings.out0_att = self._validate_extract_bounded_int(
+            self._settings.out0_att = self._validate_extract_bounded_int(
                 "output_att_I",
-                hw_mapping[output_label],
+                self.hw_mapping[output_label],
                 self.static_hw_properties.valid_output_att
             )
-            settings.out1_att = self._validate_extract_bounded_int(
+            self._settings.out1_att = self._validate_extract_bounded_int(
                 "output_att_Q",
-                hw_mapping[output_label],
+                self.hw_mapping[output_label],
                 self.static_hw_properties.valid_output_att
             )
 

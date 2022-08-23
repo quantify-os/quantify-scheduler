@@ -145,6 +145,8 @@
         },
         "complex_output_1": {
             "lo_name": "lo1",
+            "dc_mixer_offset_I": 0.2345,
+            "dc_mixer_offset_Q": 1.337,
             "portclock_configs": [
                 {
                     "port": "q1:mw",
@@ -199,6 +201,8 @@
         "complex_output_0": {
             "dc_mixer_offset_I": -0.045,
             "dc_mixer_offset_Q": -0.035,
+            "output_att_I": 4,
+            "output_att_Q": 6,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9996,
@@ -227,6 +231,8 @@
             "lo_freq": 7.2e9,
             "dc_mixer_offset_I": -0.046,
             "dc_mixer_offset_Q": -0.036,
+            "input_att_I": 2,
+            "output_att_I": 4,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9999,

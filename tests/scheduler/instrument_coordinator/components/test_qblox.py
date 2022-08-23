@@ -244,6 +244,9 @@ def make_qcm_rf(mocker):
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+        mocker.patch(
+            "qblox_instruments.scpi.pulsar_qcm.PulsarQcm._set_reference_source"
+        )
 
         close_instruments([name])
         qcm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QCM_RF)
@@ -283,6 +286,9 @@ def make_qrm_rf(mocker):
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
+        mocker.patch(
+            "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
+        )
 
         close_instruments([name])
         qrm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QRM_RF)
@@ -552,6 +558,92 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     "set_reference_source, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],
 )
+def test_configure_qrm_rf_settings(
+    mocker,
+    schedule_with_measurement_q2,
+    load_legacy_transmon_config,
+    load_example_qblox_hardware_config,
+    make_qrm_rf,
+    set_reference_source,
+    force_set_parameters,
+):
+    # Arrange
+    qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+    mocker.patch.object(qrm.instrument.parameters["out0_att"], "set")
+    mocker.patch.object(qrm.instrument.parameters["in0_att"], "set")
+
+    if set_reference_source:
+        qrm.instrument.reference_source("external")
+        qrm.instrument._set_reference_source.reset_mock()
+
+    # Act
+    qrm.force_set_parameters(force_set_parameters)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2,
+            load_legacy_transmon_config,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qrm.prepare(prog["qrm_rf0"])
+
+    # Assert
+    qrm.instrument.parameters["out0_att"].set.assert_any_call(
+        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["output_att_I"])
+    qrm.instrument.parameters["in0_att"].set.assert_any_call(
+        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["input_att_I"])
+
+@pytest.mark.parametrize(
+    "set_reference_source, force_set_parameters",
+    [(False, False), (False, True), (True, False), (True, True)],
+)
+def test_configure_qcm_rf_settings(
+    mocker,
+    schedule_with_measurement_q2,
+    load_legacy_transmon_config,
+    load_example_qblox_hardware_config,
+    make_qcm_rf,
+    set_reference_source,
+    force_set_parameters,
+):
+    # Arrange
+    qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    mocker.patch.object(qcm.instrument.parameters["out0_att"], "set")
+    mocker.patch.object(qcm.instrument.parameters["out1_att"], "set")
+
+    if set_reference_source:
+        qcm.instrument.reference_source("external")
+        qcm.instrument._set_reference_source.reset_mock()
+
+    # Act
+    qcm.force_set_parameters(force_set_parameters)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2,
+            load_legacy_transmon_config,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qcm.prepare(prog["qcm_rf0"])
+
+    # Assert
+    qcm.instrument.parameters["out0_att"].set.assert_any_call(
+        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"]["output_att_I"])
+    qcm.instrument.parameters["out1_att"].set.assert_any_call(
+        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"]["output_att_Q"])
+
+@pytest.mark.parametrize(
+    "set_reference_source, force_set_parameters",
+    [(False, False), (False, True), (True, False), (True, True)],
+)
 def test_configure_qrm_settings(
     mocker,
     schedule_with_measurement,
@@ -596,6 +688,55 @@ def test_configure_qrm_settings(
         load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["input_gain_I"])
     qrm.instrument.parameters["in1_gain"].set.assert_any_call(
         load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["input_gain_Q"])
+
+@pytest.mark.parametrize(
+    "set_reference_source, force_set_parameters",
+    [(False, False), (False, True), (True, False), (True, True)],
+)
+def test_configure_qcm_settings(
+    mocker,
+    schedule_with_measurement,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
+    make_qcm_component,
+    set_reference_source,
+    force_set_parameters,
+):
+    # Arrange
+    qcm: qblox.PulsarQRMComponent = make_qcm_component("qcm0", "1234")
+    mocker.patch.object(qcm.instrument.parameters["out0_offset"], "set")
+    mocker.patch.object(qcm.instrument.parameters["out1_offset"], "set")
+    mocker.patch.object(qcm.instrument.parameters["out2_offset"], "set")
+    mocker.patch.object(qcm.instrument.parameters["out3_offset"], "set")
+
+    if set_reference_source:
+        qcm.instrument.reference_source("external")
+        qcm.instrument._set_reference_source.reset_mock()
+
+    # Act
+    qcm.force_set_parameters(force_set_parameters)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement,
+            load_example_transmon_config,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qcm.prepare(prog["qcm0"])
+
+    # Assert
+    qcm.instrument.parameters["out0_offset"].set.assert_any_call(
+        load_example_qblox_hardware_config["qcm0"]["complex_output_0"]["dc_mixer_offset_I"])
+    qcm.instrument.parameters["out1_offset"].set.assert_any_call(
+        load_example_qblox_hardware_config["qcm0"]["complex_output_0"]["dc_mixer_offset_Q"])
+    qcm.instrument.parameters["out2_offset"].set.assert_any_call(
+        load_example_qblox_hardware_config["qcm0"]["complex_output_1"]["dc_mixer_offset_I"])
+    qcm.instrument.parameters["out3_offset"].set.assert_any_call(
+        load_example_qblox_hardware_config["qcm0"]["complex_output_1"]["dc_mixer_offset_Q"])
 
 @pytest.mark.parametrize(
     "sequencer_status",
