@@ -1142,6 +1142,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
 
+    @abstractmethod
+    def assign_attenuation(self):
+        """
+        An abstract method that should be overridden. Meant to assign
+        attenuation settings from the hardware configuration if there is any.
+
+        Raises
+        ------
+        ValueError
+            The attenuation values are out of range.
+        """
+
     @staticmethod
     def downconvert_clock(downconverter_freq: float, clock_freq: float):
         """
@@ -1186,36 +1198,83 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
-        self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
+        self._settings = self._configure_mixer_offsets_gains(self._settings, self.hw_mapping)
         self.sequencers = self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
+        self.assign_attenuation()
 
-    def _configure_mixer_offsets(
+    def _validate_extract_bounded_int(
+            self, param_name: str, cfg: Dict[str, Any], hw_property: BoundedInt
+    ) -> Union[int, None]:
+        """
+        Helper function for the validation and extraction of gain/attenuation
+        settings from hardware config to settings.
+
+        Parameters
+        ----------
+        param_name
+            The name of the parameter which is the key in cfg.
+        cfg
+            The dictionary which containts the value under the param_name
+            optionally.
+        hw_property
+            The hardware configuration which specifies the limits for that
+            specific hardware parameter.
+
+        Returns
+        -------
+        :
+            The value for that parameter name if it is there.
+
+        Raises
+        ------
+        ValueError
+            If the gain or attenuation is out of range.
+        """
+
+        if param_name not in cfg:
+            return None
+
+        value = cfg[param_name]
+
+        if not hw_property.is_valid(value):
+            raise ValueError(
+                f"Attempting to set {param_name} of {self.name} to "
+                f"{value} dB. {param_name} has to be between "
+                f"{hw_property.min_val} and {hw_property.max_val} "
+                f"with {hw_property.step_size} steps "
+                f"between available values!"
+            )
+
+        return value
+
+    def _configure_mixer_offsets_gains(
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
         """
-        We configure the mixer offsets after initializing the settings such we can
+        We configure the mixer offsets, gains, attenuations after initializing the settings such we can
         account for the differences in the hardware. e.g. the V vs mV encountered here.
 
         Parameters
         ----------
         settings
-            The settings dataclass to which to add the dc offsets.
+            The settings dataclass to which to add the dc offsets, gains.
         hw_mapping
             The hardware configuration.
 
         Returns
         -------
         :
-            The settings dataclass after adding the normalized offsets
+            The settings dataclass after adding the normalized offsets, gains.
 
         Raises
         ------
         ValueError
-            An offset was used outside of the allowed range.
+            An offset was used outside of the allowed range,
+            or the input gain is out of allowed range.
         """
 
         def calc_from_units_volt(
@@ -1263,6 +1322,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
                 settings.offset_ch0_path1 = calc_from_units_volt(
                     "dc_mixer_offset_Q", output_cfg
+                )
+                settings.in0_gain = self._validate_extract_bounded_int(
+                    "input_gain_I",
+                    hw_mapping[output_label],
+                    self.static_hw_properties.valid_input_gain
+                )
+                settings.in1_gain = self._validate_extract_bounded_int(
+                    "input_gain_Q",
+                    hw_mapping[output_label],
+                    self.static_hw_properties.valid_input_gain
                 )
             else:
                 settings.offset_ch1_path0 = calc_from_units_volt(
@@ -1477,6 +1546,13 @@ class QbloxBasebandModule(QbloxBaseModule):
         if if_freq != 0 and if_freq is not None:
             sequencer.settings.nco_en = True
 
+    def assign_attenuation(self):
+        """
+        Meant to assign attenuation settings from the hardware configuration if there is any.
+        For baseband modules there is no attenuation parameters currently.
+        """
+        pass
+
 
 class QbloxRFModule(QbloxBaseModule):
     """
@@ -1568,6 +1644,34 @@ class QbloxRFModule(QbloxBaseModule):
 
             if lo_freq is not None:
                 sequencer.frequency = clock_freq - lo_freq
+
+    def assign_attenuation(self):
+        """
+        Meant to assign attenuation settings from the hardware configuration.
+
+        Raises
+        ------
+        ValueError
+            The attenuation values are out of range.
+        """
+
+        output_label = "complex_input_0"
+        if output_label in self.hw_mapping:
+            settings.in0_att = self._validate_extract_bounded_int(
+                "input_att_I",
+                hw_mapping[output_label],
+                self.static_hw_properties.valid_input_att
+            )
+            settings.out0_att = self._validate_extract_bounded_int(
+                "output_att_I",
+                hw_mapping[output_label],
+                self.static_hw_properties.valid_output_att
+            )
+            settings.out1_att = self._validate_extract_bounded_int(
+                "output_att_Q",
+                hw_mapping[output_label],
+                self.static_hw_properties.valid_output_att
+            )
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):

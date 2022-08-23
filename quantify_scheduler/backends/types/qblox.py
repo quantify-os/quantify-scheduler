@@ -25,6 +25,25 @@ class BoundedParameter:
 
 
 @dataclass(frozen=True)
+class BoundedInt:
+    """Specifies a certain integer parameter with a fixed min, steps and steps size."""
+
+    min_val: int
+    """Min value allowed."""
+    step_size: int
+    """Size of the steps between the allowed values."""
+    steps: int
+    """Number of allowed values."""
+
+    def is_valid(self, val: int) -> bool:
+        return (self.min_val <= val) and ((val - self.min_val) % self.step_size == 0) \
+            and ((val - self.min_val) / self.step_size <= (self.steps - 1))
+
+    @property
+    def max_val(self) -> int:
+        return self.min_val + self.step_size * self.steps
+
+@dataclass(frozen=True)
 class MarkerConfiguration:
     """Specifies the marker configuration set during the execution of the sequencer
     program."""
@@ -57,6 +76,12 @@ class StaticHardwareProperties:
     calibration."""
     valid_ios: List[str]
     """Specifies the complex/real output identifiers supported by this device."""
+    valid_input_gain: BoundedInt = BoundedInt(min_val=-6, step_size=1, steps=33)
+    """Specifies possible values for input gain."""
+    valid_input_att: BoundedInt = BoundedInt(min_val=0, step_size=2, steps=16)
+    """Specifies possible values for input attenuation."""
+    valid_output_att: BoundedInt = BoundedInt(min_val=0, step_size=2, steps=31)
+    """Specifies possible values for output attenuation."""
 
 
 @dataclass(frozen=True)
