@@ -91,8 +91,8 @@ class Resource(UserDict):
 
     def __str__(self) -> str:
         """
-        Returns a concise string represenation which can be evaluated into a new
-        instance using `eval(str(operation))` only when the data dictionary has
+        Returns a concise string representation which can be evaluated into a new
+        instance using :code:`eval(str(operation))` only when the data dictionary has
         not been modified.
 
         This representation is guaranteed to be unique.
@@ -103,7 +103,7 @@ class Resource(UserDict):
         """
         Returns the string representation  of this instance.
 
-        This represenation can always be evalued to create a new instance.
+        This representation can always be evaluated to create a new instance.
 
         .. code-block::
 

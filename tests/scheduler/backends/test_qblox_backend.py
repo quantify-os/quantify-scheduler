@@ -654,6 +654,11 @@ def test_find_all_port_clock_combinations(load_example_qblox_hardware_config):
         ("q5:mw", "q5.01"),
         ("q4:res", "q4.ro"),
         ("q5:res", "q5.ro"),
+        ("q0:fl", "cl0.baseband"),
+        ("q1:fl", "cl0.baseband"),
+        ("q2:fl", "cl0.baseband"),
+        ("q3:fl", "cl0.baseband"),
+        ("q4:fl", "cl0.baseband"),
     }
     assert portclocks == answer
 
@@ -663,7 +668,7 @@ def test_generate_port_clock_to_device_map(load_example_qblox_hardware_config):
         load_example_qblox_hardware_config
     )
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 13
+    assert len(portclock_map.keys()) == 18
 
 
 # --------- Test classes and member methods ---------
@@ -2097,7 +2102,10 @@ def test_convert_hw_config_to_portclock_configs_spec(
 
     sched = make_basic_multi_qubit_schedule(["q0", "q1", "q2"])
     sched = device_compile(sched, load_legacy_transmon_config)
-    with pytest.warns(DeprecationWarning, match=r"Qblox hardware config spec"):
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"hardware config adheres to a specification that is deprecated",
+    ):
         hardware_compile(sched, old_config)
 
 

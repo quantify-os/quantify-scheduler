@@ -28,8 +28,8 @@ from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
@@ -155,9 +155,24 @@ class ScheduleGettable:
         # the quantum device object containing setup configuration information
         self.quantum_device = quantum_device
 
+        # The backend used for compilation. Available as a private variable
+        # to facilitate debugging. Will be assigned upon compilation in self.initialize
+        self._backend = None
+
     def __call__(self) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
         """Acquire and return data"""
         return self.get()
+
+    def _compile(self, sched):
+        """Compile schedule, separated to allow for profiling compilation duration."""
+        compilation_config = self.quantum_device.generate_compilation_config()
+
+        # made into a private variable for debugging and future caching functionality
+        backend_class = import_python_object_from_string(compilation_config.backend)
+        self._backend = backend_class(name=compilation_config.name)
+        self._compiled_schedule = self._backend.compile(
+            schedule=sched, config=compilation_config
+        )
 
     def initialize(self):
         """
@@ -172,12 +187,7 @@ class ScheduleGettable:
             **self._evaluated_sched_kwargs,
             repetitions=self.quantum_device.cfg_sched_repetitions(),
         )
-
-        self._compiled_schedule = qcompile(
-            schedule=sched,
-            device_cfg=self.quantum_device.generate_device_config(),
-            hardware_cfg=self.quantum_device.generate_hardware_config(),
-        )
+        self._compile(sched)
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(self._compiled_schedule)

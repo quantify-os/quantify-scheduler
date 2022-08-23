@@ -110,9 +110,9 @@ class X(Rxy):
 
     .. math::
 
-        X = \sigma_x = \begin{bmatrix}
-             0 & 1 \\
-             1 & 0 \\ \end{bmatrix}
+        X180 = R_{X180} = \begin{bmatrix}
+             0 & -i \\
+             -i & 0 \\ \end{bmatrix}
 
     """
 
@@ -137,8 +137,18 @@ class X(Rxy):
 
 
 class X90(Rxy):
-    """
+    r"""
     A single qubit rotation of 90 degrees around the X-axis.
+
+    It is identical to the Rxy gate with theta=90 and phi=0
+
+    Defined by the unitary:
+
+    .. math::
+        X90 = R_{X90} = \frac{1}{\sqrt{2}}\begin{bmatrix}
+                1 & -i \\
+                -i & 1 \\ \end{bmatrix}
+
     """
 
     def __init__(self, qubit: str, data: Optional[dict] = None):
@@ -168,12 +178,14 @@ class Y(Rxy):
     r"""
     A single qubit rotation of 180 degrees around the Y-axis.
 
+    It is identical to the Rxy gate with theta=180 and phi=90
+
+    Defined by the unitary: 
 
     .. math::
-
-        \mathsf Y = \sigma_y = \begin{bmatrix}
-             0 & -i \\
-             i & 0 \end{bmatrix}
+        Y180 = R_{Y180} = \begin{bmatrix}
+             0 & -1 \\
+             1 & 0 \\ \end{bmatrix}
 
     """
 
@@ -203,8 +215,19 @@ class Y(Rxy):
 
 
 class Y90(Rxy):
-    """
+    r"""
     A single qubit rotation of 90 degrees around the Y-axis.
+
+    It is identical to the Rxy gate with theta=90 and phi=90
+
+    Defined by the unitary: 
+
+    .. math::
+
+        Y90 = R_{Y90} = \frac{1}{\sqrt{2}}\begin{bmatrix}
+                1 & -1 \\
+                1 & 1 \\ \end{bmatrix}
+
     """
 
     def __init__(self, qubit: str, data: Optional[dict] = None):
@@ -231,7 +254,7 @@ class Y90(Rxy):
         """
         Returns a concise string representation
         which can be evaluated into a new instance
-        using `eval(str(operation))` only when the
+        using :code:`eval(str(operation))` only when the
         data dictionary has not been modified.
 
         This representation is guaranteed to be
