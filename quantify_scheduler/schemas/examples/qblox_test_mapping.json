@@ -65,7 +65,6 @@
         "cluster0_module10": {
             "instrument_type": "QCM",
             "real_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q0:fl",
@@ -74,7 +73,6 @@
                 ]
             },
             "real_output_1": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q1:fl",
@@ -83,7 +81,6 @@
                 ]
             },
             "real_output_2": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q2:fl",
@@ -92,7 +89,6 @@
                 ]
             },
             "real_output_3": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q3:fl",
@@ -104,7 +100,6 @@
         "cluster0_module12": {
             "instrument_type": "QCM",
             "real_output_0": {
-                "line_gain_db": 0,
                 "portclock_configs": [
                     {
                         "port": "q4:fl",
@@ -201,8 +196,7 @@
         "complex_output_0": {
             "dc_mixer_offset_I": -0.045,
             "dc_mixer_offset_Q": -0.035,
-            "output_att_I": 4,
-            "output_att_Q": 6,
+            "output_att": 4,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9996,
@@ -215,6 +209,7 @@
         },
         "complex_output_1": {
             "lo_freq": 5e9,
+            "output_att": 6,
             "portclock_configs": [
                 {
                     "port": "q3:mw",
@@ -231,8 +226,8 @@
             "lo_freq": 7.2e9,
             "dc_mixer_offset_I": -0.046,
             "dc_mixer_offset_Q": -0.036,
-            "input_att_I": 2,
-            "output_att_I": 4,
+            "input_att": 2,
+            "output_att": 4,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9999,

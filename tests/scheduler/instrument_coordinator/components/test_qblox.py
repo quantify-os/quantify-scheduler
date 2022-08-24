@@ -594,12 +594,10 @@ def test_configure_qrm_rf_settings(
 
     # Assert
     qrm.instrument.parameters["out0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"][
-            "output_att_I"
-        ]
+        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["output_att"]
     )
     qrm.instrument.parameters["in0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["input_att_I"]
+        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["input_att"]
     )
 
 
@@ -642,14 +640,10 @@ def test_configure_qcm_rf_settings(
 
     # Assert
     qcm.instrument.parameters["out0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"][
-            "output_att_I"
-        ]
+        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"]["output_att"]
     )
     qcm.instrument.parameters["out1_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"][
-            "output_att_Q"
-        ]
+        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_1"]["output_att"]
     )
 
 

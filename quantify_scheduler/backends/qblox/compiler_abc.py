@@ -1209,7 +1209,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self.assign_attenuation()
 
     def _validate_extract_bounded_int(
-        self, param_name: str, cfg: Dict[str, Any], hw_property: BoundedInt
+        self, label: str, param_name: str, cfg: Dict[str, Any], hw_property: BoundedInt
     ) -> Union[int, None]:
         """
         Helper function for the validation and extraction of gain/attenuation
@@ -1217,8 +1217,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
+        label
+            The name of the label which is the key in cfg.
         param_name
-            The name of the parameter which is the key in cfg.
+            The name of the parameter which is the key in cfg[label].
         cfg
             The dictionary which containts the value under the param_name
             optionally.
@@ -1237,14 +1239,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             If the gain or attenuation is out of range.
         """
 
-        if param_name not in cfg:
+        if label not in cfg:
+            return None
+        if param_name not in cfg[label]:
             return None
 
-        value = cfg[param_name]
+        value = cfg[label][param_name]
 
         if not hw_property.is_valid(value):
             raise ValueError(
-                f"Attempting to set {param_name} of {self.name} to "
+                f"Attempting to set {label}.{param_name} of {self.name} to "
                 f"{value} dB. {param_name} has to be between "
                 f"{hw_property.min_val} and {hw_property.max_val} "
                 f"with {hw_property.step_size} steps "
@@ -1325,16 +1329,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 settings.offset_ch0_path1 = calc_from_units_volt(
                     "dc_mixer_offset_Q", output_cfg
                 )
-                settings.in0_gain = self._validate_extract_bounded_int(
-                    "input_gain_I",
-                    hw_mapping[output_label],
-                    self.static_hw_properties.valid_input_gain,
-                )
-                settings.in1_gain = self._validate_extract_bounded_int(
-                    "input_gain_Q",
-                    hw_mapping[output_label],
-                    self.static_hw_properties.valid_input_gain,
-                )
             else:
                 settings.offset_ch1_path0 = calc_from_units_volt(
                     "dc_mixer_offset_I", output_cfg
@@ -1342,6 +1336,33 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 settings.offset_ch1_path1 = calc_from_units_volt(
                     "dc_mixer_offset_Q", output_cfg
                 )
+
+        if "complex_output_0" in hw_mapping:
+            settings.in0_gain = self._validate_extract_bounded_int(
+                "complex_output_0",
+                "input_gain_I",
+                hw_mapping,
+                self.static_hw_properties.valid_input_gain,
+            )
+            settings.in1_gain = self._validate_extract_bounded_int(
+                "complex_output_0",
+                "input_gain_Q",
+                hw_mapping,
+                self.static_hw_properties.valid_input_gain,
+            )
+        else:
+            settings.in0_gain = self._validate_extract_bounded_int(
+                "real_output_0",
+                "input_gain",
+                hw_mapping,
+                self.static_hw_properties.valid_input_gain,
+            )
+            settings.in1_gain = self._validate_extract_bounded_int(
+                "real_output_1",
+                "input_gain",
+                hw_mapping,
+                self.static_hw_properties.valid_input_gain,
+            )
 
         return settings
 
@@ -1657,21 +1678,44 @@ class QbloxRFModule(QbloxBaseModule):
             The attenuation values are out of range.
         """
 
-        output_label = "complex_output_0"
-        if output_label in self.hw_mapping:
+        if "complex_output_0" in self.hw_mapping:
             self._settings.in0_att = self._validate_extract_bounded_int(
-                "input_att_I",
-                self.hw_mapping[output_label],
+                "complex_output_0",
+                "input_att",
+                self.hw_mapping,
                 self.static_hw_properties.valid_input_att,
             )
             self._settings.out0_att = self._validate_extract_bounded_int(
-                "output_att_I",
-                self.hw_mapping[output_label],
+                "complex_output_0",
+                "output_att",
+                self.hw_mapping,
                 self.static_hw_properties.valid_output_att,
             )
+        else:
+            self._settings.in0_att = self._validate_extract_bounded_int(
+                "real_output_0",
+                "input_att",
+                self.hw_mapping,
+                self.static_hw_properties.valid_input_att,
+            )
+            self._settings.out0_att = self._validate_extract_bounded_int(
+                "real_output_0",
+                "output_att",
+                self.hw_mapping,
+                self.static_hw_properties.valid_output_att,
+            )
+        if "complex_output_1" in self.hw_mapping:
             self._settings.out1_att = self._validate_extract_bounded_int(
-                "output_att_Q",
-                self.hw_mapping[output_label],
+                "complex_output_1",
+                "output_att",
+                self.hw_mapping,
+                self.static_hw_properties.valid_output_att,
+            )
+        else:
+            self._settings.out1_att = self._validate_extract_bounded_int(
+                "real_output_1",
+                "output_att",
+                self.hw_mapping,
                 self.static_hw_properties.valid_output_att,
             )
 
