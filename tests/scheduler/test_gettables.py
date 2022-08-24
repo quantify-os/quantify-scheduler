@@ -18,6 +18,7 @@ import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
@@ -413,13 +414,14 @@ def _reshape_array_into_acq_return_type(
 
 
 def test_profiling(mock_setup, mocker):
+    set_standard_params_transmon(mock_setup)
     quantum_device = mock_setup["quantum_device"]
-    qubit = quantum_device.get_component("q0")
+    qubit = mock_setup["q0"]
 
     schedule_kwargs = {
-        "pulse_amp": qubit.ro_pulse_amp,
-        "pulse_duration": qubit.ro_pulse_duration,
-        "frequency": qubit.ro_freq,
+        "pulse_amp": qubit.measure.pulse_amp(),
+        "pulse_duration": qubit.measure.pulse_duration(),
+        "frequency": qubit.clock_freqs.readout(),
         "qubit": "q0",
     }
     prof_gettable = ProfiledScheduleGettable(
@@ -441,7 +443,7 @@ def test_profiling(mock_setup, mocker):
     log = prof_gettable.log_profile()
 
     # Test if all steps have been measured and have a value > 0
-    assert log["schedule"][0] == 0.05153792
+    assert log["schedule"][0] == 0.051558400000000004
     verif_keys = [
         "schedule",
         "_compile",
