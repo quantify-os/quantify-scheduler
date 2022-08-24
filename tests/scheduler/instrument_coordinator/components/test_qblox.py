@@ -30,7 +30,7 @@ from qblox_instruments import (
 )
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
-
+from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.instrument_coordinator.components import qblox
 
@@ -648,10 +648,19 @@ def test_retrieve_acquisition_qrm_rf(
 
 def test_retrieve_acquisition_cluster(
     make_schedule_with_measurement,
-    load_train_transmon_config,
+    mock_setup,
     load_example_qblox_hardware_config,
     make_cluster_component,
 ):
+    q4 = mock_setup["q4"]
+    q4.clock_freqs.f01.set(5040000000)
+    q4.rxy.amp180(0.2)
+    q4.clock_freqs.f12(5.41e9)
+    q4.clock_freqs.readout(6950000000)
+    q4.measure.acq_delay(1.2e-07)
+
+    device_cfg = mock_setup["quantum_device"].generate_device_config()
+
     # Arrange
     cluster_name = "cluster0"
     cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
@@ -661,7 +670,7 @@ def test_retrieve_acquisition_cluster(
         set_datadir(tmp_dir)
         compiled_schedule = qcompile(
             make_schedule_with_measurement("q4"),
-            load_train_transmon_config,
+            device_cfg,
             load_example_qblox_hardware_config,
         )
         prog = compiled_schedule["compiled_instructions"]

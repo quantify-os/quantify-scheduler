@@ -26,7 +26,9 @@ from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-i
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
-
+from quantify_scheduler.backends.circuit_to_device import (
+    DeviceCompilationConfig,
+)
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -81,6 +83,7 @@ from quantify_scheduler.schedules.timedomain_schedules import (
 )
 
 from tests.fixtures.mock_setup import close_instruments
+
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
@@ -665,50 +668,115 @@ def test_portclocks(
 ):
 
     device_config = {
-        "backend": "quantify_scheduler.compilation.add_pulse_information_transmon",
+        "backend": "quantify_scheduler.backends.circuit_to_device"
+        + ".compile_circuit_to_device",
+        "clocks": {
+            "q4.01": 6020000000.0,
+            "q4.12": 7040000000.0,
+            "q4.ro": 6900000000.0,
+            "q5.01": 6020000000.0,
+            "q5.12": 7040000000.0,
+            "q5.ro": 6900000000.0,
+        },
         "edges": {},
-        "qubits": {
+        "elements": {
             "q4": {
-                "params": {
-                    "acquisition": "SSBIntegrationComplex",
-                    "init_duration": 0.0002,
-                    "mw_amp180": 0.25,
-                    "mw_duration": 1.6e-08,
-                    "mw_ef_amp180": 0.87,
-                    "mw_freq": 6.02e9,
-                    "mw_motzoi": 0.45,
+                "reset": {
+                    "factory_func": "quantify_scheduler.operations.pulse_library.IdlePulse",
+                    "factory_kwargs": {"duration": 0.0002},
                 },
-                "resources": {
-                    "clock_01": "q4.01",
-                    "clock_12": "q4.12",
-                    "clock_ro": "q4.ro",
-                    "port_flux": "q4:fl",
-                    "port_mw": "q4:mw",
-                    "port_ro": "q4:res",
+                "Rxy": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "pulse_factories.rxy_drag_pulse",
+                    "gate_info_factory_kwargs": ["theta", "phi"],
+                    "factory_kwargs": {
+                        "amp180": 0.32,
+                        "motzoi": 0.45,
+                        "port": "q4:mw",
+                        "clock": "q4.01",
+                        "duration": 2e-08,
+                    },
+                },
+                "Z": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "pulse_library.SoftSquarePulse",
+                    "factory_kwargs": {
+                        "amp": 0.23,
+                        "duration": 4e-09,
+                        "port": "q4:fl",
+                        "clock": "cl0.baseband",
+                    },
+                },
+                "measure": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "measurement_factories.dispersive_measurement",
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
+                    "factory_kwargs": {
+                        "port": "q4:res",
+                        "clock": "q4.ro",
+                        "pulse_type": "SquarePulse",
+                        "pulse_amp": 0.25,
+                        "pulse_duration": 1.6e-07,
+                        "acq_delay": 1.2e-07,
+                        "acq_duration": 3e-07,
+                        "acq_channel": 0,
+                    },
                 },
             },
             "q5": {
-                "params": {
-                    "acquisition": "SSBIntegrationComplex",
-                    "init_duration": 0.0002,
-                    "mw_amp180": 0.25,
-                    "mw_duration": 2e-08,
-                    "mw_ef_amp180": 0.67,
-                    "mw_freq": 5.02e9,
-                    "mw_motzoi": 0.45,
+                "reset": {
+                    "factory_func": "quantify_scheduler.operations.pulse_library.IdlePulse",
+                    "factory_kwargs": {"duration": 0.0002},
                 },
-                "resources": {
-                    "clock_01": "q5.01",
-                    "clock_12": "q5.12",
-                    "clock_ro": "q5.ro",
-                    "port_flux": "q5:fl",
-                    "port_mw": "q5:mw",
-                    "port_ro": "q5:res",
+                "Rxy": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "pulse_factories.rxy_drag_pulse",
+                    "gate_info_factory_kwargs": ["theta", "phi"],
+                    "factory_kwargs": {
+                        "amp180": 0.32,
+                        "motzoi": 0.45,
+                        "port": "q5:mw",
+                        "clock": "q5.01",
+                        "duration": 2e-08,
+                    },
+                },
+                "Z": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "pulse_library.SoftSquarePulse",
+                    "factory_kwargs": {
+                        "amp": 0.23,
+                        "duration": 4e-09,
+                        "port": "q5:fl",
+                        "clock": "cl0.baseband",
+                    },
+                },
+                "measure": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "measurement_factories.dispersive_measurement",
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
+                    "factory_kwargs": {
+                        "port": "q5:res",
+                        "clock": "q5.ro",
+                        "pulse_type": "SquarePulse",
+                        "pulse_amp": 0.25,
+                        "pulse_duration": 1.6e-07,
+                        "acq_delay": 1.2e-07,
+                        "acq_duration": 3e-07,
+                        "acq_channel": 0,
+                    },
                 },
             },
         },
     }
-
+    device_config = DeviceCompilationConfig.parse_obj(device_config)
     sched = make_basic_multi_qubit_schedule(["q4", "q5"])
     sched = device_compile(sched, device_config)
 
@@ -1588,15 +1656,13 @@ def test_assign_frequencies_baseband_downconverter(
     )
 
 
-def test_assign_frequencies_rf(
-    load_example_transmon_config, load_example_qblox_hardware_config
-):
+def test_assign_frequencies_rf(mock_setup, load_example_qblox_hardware_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
-    sched.add(X("q0"))
-    sched.add(X("q1"))
+    sched.add(X("q2"))
+    sched.add(X("q3"))
 
     hardware_cfg = load_example_qblox_hardware_config
     if0 = hardware_cfg["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
@@ -1613,18 +1679,30 @@ def test_assign_frequencies_rf(
     assert lo0 is None
     assert lo1 is not None
 
-    device_cfg = load_example_transmon_config
-    q0_clock_freq = device_cfg.clocks["q0.01"]
-    q1_clock_freq = device_cfg.clocks["q1.01"]
+    quantum_device = mock_setup["quantum_device"]
 
-    lo0 = q0_clock_freq - if0
-    if1 = q1_clock_freq - lo1
+    q2 = quantum_device.get_element("q2")
+    q3 = quantum_device.get_element("q3")
+    q2.clock_freqs.f01.set(6.02e9)
+    q3.clock_freqs.f01.set(5.02e9)
+
+    q2.rxy.amp180(0.213)
+    q3.rxy.amp180(0.215)
+
+    device_cfg = quantum_device.generate_device_config()
+
+    q2_clock_freq = device_cfg.clocks["q2.01"]
+    q3_clock_freq = device_cfg.clocks["q3.01"]
+
+    lo0 = q2_clock_freq - if0
+    if1 = q3_clock_freq - lo1
 
     compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
     compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm0"]
-    assert compiled_instructions["generic"]["lo0.frequency"] == lo0
-    assert compiled_instructions["generic"]["lo1.frequency"] == lo1
+    qcm_program = compiled_instructions["qcm_rf0"]
+
+    assert qcm_program["settings"]["lo0_freq"] == lo0
+    assert qcm_program["settings"]["lo1_freq"] == lo1
     assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
 
 
@@ -1634,15 +1712,15 @@ def test_assign_frequencies_rf(
 def test_assign_frequencies_rf_downconverter(
     downconverter_freq_0,
     downconverter_freq_1,
-    load_example_transmon_config,
+    mock_setup,
     load_example_qblox_hardware_config,
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
-    sched.add(X("q0"))
-    sched.add(X("q1"))
+    sched.add(X("q2"))
+    sched.add(X("q3"))
 
     hardware_cfg = load_example_qblox_hardware_config.copy()
     hardware_cfg["qcm_rf0"]["complex_output_0"][
@@ -1669,13 +1747,24 @@ def test_assign_frequencies_rf_downconverter(
     assert lo0 is None, "LO frequency already set for channel 0 in hardware config"
     assert lo1 is not None, "LO frequency must be set for channel 1 in hardware config"
 
-    device_cfg = load_example_transmon_config
+    quantum_device = mock_setup["quantum_device"]
+
+    q2 = quantum_device.get_element("q2")
+    q3 = quantum_device.get_element("q3")
+    q2.clock_freqs.f01.set(6.02e9)
+    q3.clock_freqs.f01.set(5.02e9)
+
+    q2.rxy.amp180(0.213)
+    q3.rxy.amp180(0.215)
+
+    device_cfg = quantum_device.generate_device_config()
+
     compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
     compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm0"]
+    qcm_program = compiled_instructions["qcm_rf0"]
 
-    q0_clock_freq = device_cfg.elements["q0"]["params"]["mw_freq"]
-    q1_clock_freq = device_cfg.elements["q1"]["params"]["mw_freq"]
+    q2_clock_freq = device_cfg.clocks["q2.01"]
+    q3_clock_freq = device_cfg.clocks["q3.01"]
 
     actual_lo0 = qcm_program["settings"]["lo0_freq"]
     actual_lo1 = qcm_program["settings"]["lo1_freq"]
@@ -1689,8 +1778,8 @@ def test_assign_frequencies_rf_downconverter(
         status = "without"
 
     else:
-        expected_lo0 = downconverter_freq_0 - q0_clock_freq - if0
-        expected_if1 = downconverter_freq_1 - q1_clock_freq - lo1
+        expected_lo0 = downconverter_freq_0 - q2_clock_freq - if0
+        expected_if1 = downconverter_freq_1 - q3_clock_freq - lo1
         status = "after"
 
     assert expected_lo0 == actual_lo0, (
@@ -1707,20 +1796,38 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
-def test_markers(load_example_transmon_config, load_example_qblox_hardware_config):
+def test_markers(mock_setup, load_example_qblox_hardware_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
     # Test for baseband
     sched = Schedule("gate_experiment")
     sched.add(X("q0"))
-    sched.add(X("q1"))
+    sched.add(X("q2"))
     sched.add(Measure("q0"))
-    sched.add(Measure("q1"))
+    sched.add(Measure("q2"))
 
-    compiled_schedule = qcompile(
-        sched, load_example_transmon_config, load_example_qblox_hardware_config
-    )
+    quantum_device = mock_setup["quantum_device"]
+
+    q0 = quantum_device.get_element("q0")
+    q2 = quantum_device.get_element("q2")
+
+    q0.rxy.amp180(0.213)
+    q2.rxy.amp180(0.215)
+
+    q0.clock_freqs.f01(7.3e9)
+    q0.clock_freqs.f12(7.0e9)
+    q0.clock_freqs.readout(8.0e9)
+    q0.measure.acq_delay(100e-9)
+
+    q2.clock_freqs.f01(7.3e9)
+    q2.clock_freqs.f12(7.0e9)
+    q2.clock_freqs.readout(8.0e9)
+    q2.measure.acq_delay(100e-9)
+
+    device_cfg = quantum_device.generate_device_config()
+
+    compiled_schedule = qcompile(sched, device_cfg, load_example_qblox_hardware_config)
     program = compiled_schedule["compiled_instructions"]
 
     def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
