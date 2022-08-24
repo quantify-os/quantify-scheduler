@@ -358,7 +358,6 @@ class TransmonElement(DeviceElement):
             The name of the transmon element.
 
         """
-        raise Warning()
         super().__init__(name, **kwargs)
         # pylint: disable=fixme
         # TODO: create DeviceElement parent class and make instrument_coordinator

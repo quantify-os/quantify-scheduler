@@ -336,7 +336,6 @@ class QuantumDevice(Instrument):
 
     @deprecated("0.8", "Consider replacing with get_element.")
     def get_component(self, name: str) -> Instrument:
-        raise Warning()
         return self.get_element(name=name)
 
     @deprecated("0.8", "Consider replacing with add_element.")

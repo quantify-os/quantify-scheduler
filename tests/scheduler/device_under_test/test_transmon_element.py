@@ -6,7 +6,6 @@ import pytest
 
 from quantify_scheduler.compilation import validate_config
 from quantify_scheduler.device_under_test.transmon_element import (
-    # TransmonElement,
     BasicTransmonElement,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice

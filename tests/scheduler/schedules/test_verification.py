@@ -87,10 +87,10 @@ def test_acq_staircase_comp_qblox(
 def test_acq_staircase_comp_zhinst(
     gen_acquisition_staircase_sched,
     load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    load_example_zhinst_hardware_config,
 ):
     device_cfg = load_example_transmon_config
-    hw_cfg = load_example_qblox_hardware_config
+    hw_cfg = load_example_zhinst_hardware_config
     _ = qcompile(
         gen_acquisition_staircase_sched[0],
         device_cfg=device_cfg,

@@ -682,7 +682,8 @@ def test_portclocks(
         "elements": {
             "q4": {
                 "reset": {
-                    "factory_func": "quantify_scheduler.operations.pulse_library.IdlePulse",
+                    "factory_func": "quantify_scheduler.operations"
+                    ".pulse_library.IdlePulse",
                     "factory_kwargs": {"duration": 0.0002},
                 },
                 "Rxy": {
