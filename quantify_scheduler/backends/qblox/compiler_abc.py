@@ -1678,46 +1678,24 @@ class QbloxRFModule(QbloxBaseModule):
             The attenuation values are out of range.
         """
 
-        if "complex_output_0" in self.hw_mapping:
-            self._settings.in0_att = self._validate_extract_bounded_int(
-                "complex_output_0",
-                "input_att",
-                self.hw_mapping,
-                self.static_hw_properties.valid_input_att,
-            )
-            self._settings.out0_att = self._validate_extract_bounded_int(
-                "complex_output_0",
-                "output_att",
-                self.hw_mapping,
-                self.static_hw_properties.valid_output_att,
-            )
-        else:
-            self._settings.in0_att = self._validate_extract_bounded_int(
-                "real_output_0",
-                "input_att",
-                self.hw_mapping,
-                self.static_hw_properties.valid_input_att,
-            )
-            self._settings.out0_att = self._validate_extract_bounded_int(
-                "real_output_0",
-                "output_att",
-                self.hw_mapping,
-                self.static_hw_properties.valid_output_att,
-            )
-        if "complex_output_1" in self.hw_mapping:
-            self._settings.out1_att = self._validate_extract_bounded_int(
-                "complex_output_1",
-                "output_att",
-                self.hw_mapping,
-                self.static_hw_properties.valid_output_att,
-            )
-        else:
-            self._settings.out1_att = self._validate_extract_bounded_int(
-                "real_output_1",
-                "output_att",
-                self.hw_mapping,
-                self.static_hw_properties.valid_output_att,
-            )
+        self._settings.in0_att = self._validate_extract_bounded_int(
+            "complex_output_0",
+            "input_att",
+            self.hw_mapping,
+            self.static_hw_properties.valid_input_att,
+        )
+        self._settings.out0_att = self._validate_extract_bounded_int(
+            "complex_output_0",
+            "output_att",
+            self.hw_mapping,
+            self.static_hw_properties.valid_output_att,
+        )
+        self._settings.out1_att = self._validate_extract_bounded_int(
+            "complex_output_1",
+            "output_att",
+            self.hw_mapping,
+            self.static_hw_properties.valid_output_att,
+        )
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):

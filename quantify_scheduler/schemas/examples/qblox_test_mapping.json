@@ -190,6 +190,34 @@
             ]
         }
     },
+    "qrm2": {
+        "instrument_type": "Pulsar_QRM",
+        "ref": "external",
+        "real_output_0": {
+            "input_gain": 1,
+            "portclock_configs": [
+                {
+                    "mixer_amp_ratio": 0.9997,
+                    "mixer_phase_error_deg": -4.0,
+                    "port": "q0:fl",
+                    "clock": "cl0.baseband",
+                    "interm_freq": null
+                }
+            ]
+        },
+        "real_output_1": {
+            "input_gain": 3,
+            "portclock_configs": [
+                {
+                    "mixer_amp_ratio": 0.9997,
+                    "mixer_phase_error_deg": -4.0,
+                    "port": "q1:fl",
+                    "clock": "cl0.baseband",
+                    "interm_freq": null
+                }
+            ]
+        }
+    },
     "qcm_rf0": {
         "instrument_type": "Pulsar_QCM_RF",
         "ref": "internal",

@@ -651,6 +651,52 @@ def test_configure_qcm_rf_settings(
     "set_reference_source, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],
 )
+def test_configure_qrm_real_settings(
+    mocker,
+    schedule_with_measurement,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
+    make_qrm_component,
+    set_reference_source,
+    force_set_parameters,
+):
+    # Arrange
+    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm2", "1234")
+    mocker.patch.object(qrm.instrument.parameters["in0_gain"], "set")
+    mocker.patch.object(qrm.instrument.parameters["in1_gain"], "set")
+
+    if set_reference_source:
+        qrm.instrument.reference_source("external")
+        qrm.instrument._set_reference_source.reset_mock()
+
+    # Act
+    qrm.force_set_parameters(force_set_parameters)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement,
+            load_example_transmon_config,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qrm.prepare(prog["qrm2"])
+
+    # Assert
+    qrm.instrument.parameters["in0_gain"].set.assert_any_call(
+        load_example_qblox_hardware_config["qrm2"]["real_output_0"]["input_gain"]
+    )
+    qrm.instrument.parameters["in1_gain"].set.assert_any_call(
+        load_example_qblox_hardware_config["qrm2"]["real_output_1"]["input_gain"]
+    )
+
+
+@pytest.mark.parametrize(
+    "set_reference_source, force_set_parameters",
+    [(False, False), (False, True), (True, False), (True, True)],
+)
 def test_configure_qrm_settings(
     mocker,
     schedule_with_measurement,
