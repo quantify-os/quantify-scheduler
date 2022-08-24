@@ -36,12 +36,16 @@ class BoundedInt:
     """Number of allowed values."""
 
     def is_valid(self, val: int) -> bool:
-        return (self.min_val <= val) and ((val - self.min_val) % self.step_size == 0) \
+        return (
+            (self.min_val <= val)
+            and ((val - self.min_val) % self.step_size == 0)
             and ((val - self.min_val) / self.step_size <= (self.steps - 1))
+        )
 
     @property
     def max_val(self) -> int:
         return self.min_val + self.step_size * self.steps
+
 
 @dataclass(frozen=True)
 class MarkerConfiguration:

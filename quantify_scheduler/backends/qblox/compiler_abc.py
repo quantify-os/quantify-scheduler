@@ -1198,7 +1198,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
-        self._settings = self._configure_mixer_offsets_gains(self._settings, self.hw_mapping)
+        self._settings = self._configure_mixer_offsets_gains(
+            self._settings, self.hw_mapping
+        )
         self.sequencers = self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
@@ -1207,7 +1209,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self.assign_attenuation()
 
     def _validate_extract_bounded_int(
-            self, param_name: str, cfg: Dict[str, Any], hw_property: BoundedInt
+        self, param_name: str, cfg: Dict[str, Any], hw_property: BoundedInt
     ) -> Union[int, None]:
         """
         Helper function for the validation and extraction of gain/attenuation
@@ -1326,12 +1328,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 settings.in0_gain = self._validate_extract_bounded_int(
                     "input_gain_I",
                     hw_mapping[output_label],
-                    self.static_hw_properties.valid_input_gain
+                    self.static_hw_properties.valid_input_gain,
                 )
                 settings.in1_gain = self._validate_extract_bounded_int(
                     "input_gain_Q",
                     hw_mapping[output_label],
-                    self.static_hw_properties.valid_input_gain
+                    self.static_hw_properties.valid_input_gain,
                 )
             else:
                 settings.offset_ch1_path0 = calc_from_units_volt(
@@ -1660,17 +1662,17 @@ class QbloxRFModule(QbloxBaseModule):
             self._settings.in0_att = self._validate_extract_bounded_int(
                 "input_att_I",
                 self.hw_mapping[output_label],
-                self.static_hw_properties.valid_input_att
+                self.static_hw_properties.valid_input_att,
             )
             self._settings.out0_att = self._validate_extract_bounded_int(
                 "output_att_I",
                 self.hw_mapping[output_label],
-                self.static_hw_properties.valid_output_att
+                self.static_hw_properties.valid_output_att,
             )
             self._settings.out1_att = self._validate_extract_bounded_int(
                 "output_att_Q",
                 self.hw_mapping[output_label],
-                self.static_hw_properties.valid_output_att
+                self.static_hw_properties.valid_output_att,
             )
 
     @classmethod

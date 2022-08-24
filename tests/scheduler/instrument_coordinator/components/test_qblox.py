@@ -554,6 +554,7 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
         ' name "idontexist".'
     )
 
+
 @pytest.mark.parametrize(
     "set_reference_source, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],
@@ -593,9 +594,14 @@ def test_configure_qrm_rf_settings(
 
     # Assert
     qrm.instrument.parameters["out0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["output_att_I"])
+        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"][
+            "output_att_I"
+        ]
+    )
     qrm.instrument.parameters["in0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["input_att_I"])
+        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["input_att_I"]
+    )
+
 
 @pytest.mark.parametrize(
     "set_reference_source, force_set_parameters",
@@ -636,9 +642,16 @@ def test_configure_qcm_rf_settings(
 
     # Assert
     qcm.instrument.parameters["out0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"]["output_att_I"])
+        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"][
+            "output_att_I"
+        ]
+    )
     qcm.instrument.parameters["out1_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"]["output_att_Q"])
+        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"][
+            "output_att_Q"
+        ]
+    )
+
 
 @pytest.mark.parametrize(
     "set_reference_source, force_set_parameters",
@@ -681,13 +694,22 @@ def test_configure_qrm_settings(
 
     # Assert
     qrm.instrument.parameters["out0_offset"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["dc_mixer_offset_I"])
+        load_example_qblox_hardware_config["qrm0"]["complex_output_0"][
+            "dc_mixer_offset_I"
+        ]
+    )
     qrm.instrument.parameters["out1_offset"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["dc_mixer_offset_Q"])
+        load_example_qblox_hardware_config["qrm0"]["complex_output_0"][
+            "dc_mixer_offset_Q"
+        ]
+    )
     qrm.instrument.parameters["in0_gain"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["input_gain_I"])
+        load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["input_gain_I"]
+    )
     qrm.instrument.parameters["in1_gain"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["input_gain_Q"])
+        load_example_qblox_hardware_config["qrm0"]["complex_output_0"]["input_gain_Q"]
+    )
+
 
 @pytest.mark.parametrize(
     "set_reference_source, force_set_parameters",
@@ -730,13 +752,26 @@ def test_configure_qcm_settings(
 
     # Assert
     qcm.instrument.parameters["out0_offset"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm0"]["complex_output_0"]["dc_mixer_offset_I"])
+        load_example_qblox_hardware_config["qcm0"]["complex_output_0"][
+            "dc_mixer_offset_I"
+        ]
+    )
     qcm.instrument.parameters["out1_offset"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm0"]["complex_output_0"]["dc_mixer_offset_Q"])
+        load_example_qblox_hardware_config["qcm0"]["complex_output_0"][
+            "dc_mixer_offset_Q"
+        ]
+    )
     qcm.instrument.parameters["out2_offset"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm0"]["complex_output_1"]["dc_mixer_offset_I"])
+        load_example_qblox_hardware_config["qcm0"]["complex_output_1"][
+            "dc_mixer_offset_I"
+        ]
+    )
     qcm.instrument.parameters["out3_offset"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm0"]["complex_output_1"]["dc_mixer_offset_Q"])
+        load_example_qblox_hardware_config["qcm0"]["complex_output_1"][
+            "dc_mixer_offset_Q"
+        ]
+    )
+
 
 @pytest.mark.parametrize(
     "sequencer_status",
