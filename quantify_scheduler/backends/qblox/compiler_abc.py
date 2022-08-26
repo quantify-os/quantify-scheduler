@@ -1147,11 +1147,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         An abstract method that should be overridden. Meant to assign
         attenuation settings from the hardware configuration if there is any.
-
-        Raises
-        ------
-        ValueError
-            The attenuation values are out of range.
         """
 
     @staticmethod
@@ -1208,55 +1203,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             self.assign_frequencies(seq)
         self.assign_attenuation()
 
-    def _validate_extract_bounded_int(
-        self, label: str, param_name: str, cfg: Dict[str, Any], hw_property: BoundedInt
-    ) -> Union[int, None]:
-        """
-        Helper function for the validation and extraction of gain/attenuation
-        settings from hardware config to settings.
-
-        Parameters
-        ----------
-        label
-            The name of the label which is the key in cfg.
-        param_name
-            The name of the parameter which is the key in cfg[label].
-        cfg
-            The dictionary which containts the value under the param_name
-            optionally.
-        hw_property
-            The hardware configuration which specifies the limits for that
-            specific hardware parameter.
-
-        Returns
-        -------
-        :
-            The value for that parameter name if it is there.
-
-        Raises
-        ------
-        ValueError
-            If the gain or attenuation is out of range.
-        """
-
-        if label not in cfg:
-            return None
-        if param_name not in cfg[label]:
-            return None
-
-        value = cfg[label][param_name]
-
-        if not hw_property.is_valid(value):
-            raise ValueError(
-                f"Attempting to set {label}.{param_name} of {self.name} to "
-                f"{value} dB. {param_name} has to be between "
-                f"{hw_property.min_val} and {hw_property.max_val} "
-                f"with {hw_property.step_size} steps "
-                f"between available values!"
-            )
-
-        return value
-
     def _configure_mixer_offsets_gains(
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
@@ -1279,8 +1225,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Raises
         ------
         ValueError
-            An offset was used outside of the allowed range,
-            or the input gain is out of allowed range.
+            An offset was used outside of the allowed range.
         """
 
         def calc_from_units_volt(
@@ -1338,31 +1283,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
         if "complex_output_0" in hw_mapping:
-            settings.in0_gain = self._validate_extract_bounded_int(
-                "complex_output_0",
-                "input_gain_I",
-                hw_mapping,
-                self.static_hw_properties.valid_input_gain,
-            )
-            settings.in1_gain = self._validate_extract_bounded_int(
-                "complex_output_0",
-                "input_gain_Q",
-                hw_mapping,
-                self.static_hw_properties.valid_input_gain,
-            )
+            complex_output_0 = hw_mapping["complex_output_0"]
+            settings.in0_gain = \
+                complex_output_0.get("input_gain_I", None)
+            settings.in1_gain = \
+                complex_output_0.get("input_gain_Q", None)
         else:
-            settings.in0_gain = self._validate_extract_bounded_int(
-                "real_output_0",
-                "input_gain",
-                hw_mapping,
-                self.static_hw_properties.valid_input_gain,
-            )
-            settings.in1_gain = self._validate_extract_bounded_int(
-                "real_output_1",
-                "input_gain",
-                hw_mapping,
-                self.static_hw_properties.valid_input_gain,
-            )
+            settings.in0_gain = \
+                hw_mapping.get("real_output_0", {}).get("input_gain", None)
+            settings.in1_gain = \
+                hw_mapping.get("real_output_1", {}).get("input_gain", None)
 
         return settings
 
@@ -1671,31 +1601,13 @@ class QbloxRFModule(QbloxBaseModule):
     def assign_attenuation(self):
         """
         Meant to assign attenuation settings from the hardware configuration.
-
-        Raises
-        ------
-        ValueError
-            The attenuation values are out of range.
         """
-
-        self._settings.in0_att = self._validate_extract_bounded_int(
-            "complex_output_0",
-            "input_att",
-            self.hw_mapping,
-            self.static_hw_properties.valid_input_att,
-        )
-        self._settings.out0_att = self._validate_extract_bounded_int(
-            "complex_output_0",
-            "output_att",
-            self.hw_mapping,
-            self.static_hw_properties.valid_output_att,
-        )
-        self._settings.out1_att = self._validate_extract_bounded_int(
-            "complex_output_1",
-            "output_att",
-            self.hw_mapping,
-            self.static_hw_properties.valid_output_att,
-        )
+        self._settings.in0_att = \
+            self.hw_mapping.get("complex_output_0", {}).get("input_att", None)
+        self._settings.out0_att = \
+            self.hw_mapping.get("complex_output_0", {}).get("output_att", None)
+        self._settings.out1_att = \
+            self.hw_mapping.get("complex_output_1", {}).get("output_att", None)
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
