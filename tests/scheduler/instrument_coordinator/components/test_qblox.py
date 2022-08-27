@@ -554,99 +554,6 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
         ' name "idontexist".'
     )
 
-
-@pytest.mark.parametrize(
-    "set_reference_source, force_set_parameters",
-    [(False, False), (False, True), (True, False), (True, True)],
-)
-def test_configure_qrm_rf_settings(
-    mocker,
-    schedule_with_measurement_q2,
-    load_legacy_transmon_config,
-    load_example_qblox_hardware_config,
-    make_qrm_rf,
-    set_reference_source,
-    force_set_parameters,
-):
-    # Arrange
-    qrm: qblox.PulsarQRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
-    mocker.patch.object(qrm.instrument.parameters["out0_att"], "set")
-    mocker.patch.object(qrm.instrument.parameters["in0_att"], "set")
-
-    if set_reference_source:
-        qrm.instrument.reference_source("external")
-        qrm.instrument._set_reference_source.reset_mock()
-
-    # Act
-    qrm.force_set_parameters(force_set_parameters)
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-
-        compiled_schedule = qcompile(
-            schedule_with_measurement_q2,
-            load_legacy_transmon_config,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qrm.prepare(prog["qrm_rf0"])
-
-    # Assert
-    qrm.instrument.parameters["out0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["output_att"]
-    )
-    qrm.instrument.parameters["in0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qrm_rf0"]["complex_output_0"]["input_att"]
-    )
-
-
-@pytest.mark.parametrize(
-    "set_reference_source, force_set_parameters",
-    [(False, False), (False, True), (True, False), (True, True)],
-)
-def test_configure_qcm_rf_settings(
-    mocker,
-    schedule_with_measurement_q2,
-    load_legacy_transmon_config,
-    load_example_qblox_hardware_config,
-    make_qcm_rf,
-    set_reference_source,
-    force_set_parameters,
-):
-    # Arrange
-    qcm: qblox.PulsarQCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    mocker.patch.object(qcm.instrument.parameters["out0_att"], "set")
-    mocker.patch.object(qcm.instrument.parameters["out1_att"], "set")
-
-    if set_reference_source:
-        qcm.instrument.reference_source("external")
-        qcm.instrument._set_reference_source.reset_mock()
-
-    # Act
-    qcm.force_set_parameters(force_set_parameters)
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-
-        compiled_schedule = qcompile(
-            schedule_with_measurement_q2,
-            load_legacy_transmon_config,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qcm.prepare(prog["qcm_rf0"])
-
-    # Assert
-    qcm.instrument.parameters["out0_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_0"]["output_att"]
-    )
-    qcm.instrument.parameters["out1_att"].set.assert_any_call(
-        load_example_qblox_hardware_config["qcm_rf0"]["complex_output_1"]["output_att"]
-    )
-
-
 @pytest.mark.parametrize(
     "set_reference_source, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],
@@ -957,6 +864,45 @@ def test_retrieve_acquisition_cluster(
 
     # Assert
     assert acq is not None
+
+@pytest.mark.parametrize("force_set_parameters", [False, True])
+def test_configure_qcm_rf_settings(
+    mocker,
+    make_basic_schedule,
+    load_legacy_transmon_config,
+    load_example_qblox_hardware_config,
+    make_cluster_component,
+    force_set_parameters,
+):
+    # Arrange
+    cluster_name = "cluster0"
+    cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
+    mocker.patch.object(cluster._cluster_modules["cluster0_module2"].instrument.parameters["out0_att"], "set")
+    mocker.patch.object(cluster._cluster_modules["cluster0_module2"].instrument.parameters["out1_att"], "set")
+
+    cluster.force_set_parameters(force_set_parameters)
+    cluster.instrument.reference_source("internal")  # Put it in a known state
+
+    sched = make_basic_schedule("q5")
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            sched, load_legacy_transmon_config, load_example_qblox_hardware_config
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        cluster.prepare(prog[cluster_name])
+
+    # Assert
+    cluster._cluster_modules["cluster0_module2"].instrument.parameters["out0_att"].set.assert_any_call(
+        load_example_qblox_hardware_config["cluster0"]["cluster0_module2"]["complex_output_0"]["output_att"]
+    )
+    cluster._cluster_modules["cluster0_module2"].instrument.parameters["out1_att"].set.assert_any_call(
+        load_example_qblox_hardware_config["cluster0"]["cluster0_module2"]["complex_output_1"]["output_att"]
+    )
 
 
 def test_start_qcm_qrm(
