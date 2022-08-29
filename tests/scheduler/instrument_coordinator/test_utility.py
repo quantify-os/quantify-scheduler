@@ -68,6 +68,14 @@ def test_search_settable_param_fail(mock_instrument, parameter_name):
         )
 
 
+@pytest.mark.parametrize("parameter_name", ["missing.ch_foo.bar"])
+def test_search_settable_param_fail_wrong_nesting(mock_instrument, parameter_name):
+    with pytest.raises(ValueError):
+        utility.search_settable_param(
+            instrument=mock_instrument, nested_parameter_name=parameter_name
+        )
+
+
 class CallCounter:
     def __init__(self, wrap_func):
         self.count: int = 0
