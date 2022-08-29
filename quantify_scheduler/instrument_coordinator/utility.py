@@ -51,7 +51,7 @@ def search_settable_param(
             root_param.functions,
         ]
         root_param = _search_next_level(child_parameter_name, root_attr_dicts_list)
-        if not root_param:
+        if root_param is None:
             break
 
     if not (isinstance(root_param, Parameter) or callable(root_param)):
