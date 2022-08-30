@@ -134,7 +134,7 @@
         "q5": {
             "resources": {
                 "port_mw": "q5:mw",
-                "port_ro": "q5:res",
+                "port_ro": "q5:ro",
                 "port_flux": "q5:fl",
                 "clock_01": "q5.01",
                 "clock_12": "q5.12",

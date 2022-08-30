@@ -1284,15 +1284,15 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         if "complex_output_0" in hw_mapping:
             complex_output_0 = hw_mapping["complex_output_0"]
-            settings.in0_gain = \
-                complex_output_0.get("input_gain_I", None)
-            settings.in1_gain = \
-                complex_output_0.get("input_gain_Q", None)
+            settings.in0_gain = complex_output_0.get("input_gain_I", None)
+            settings.in1_gain = complex_output_0.get("input_gain_Q", None)
         else:
-            settings.in0_gain = \
-                hw_mapping.get("real_output_0", {}).get("input_gain", None)
-            settings.in1_gain = \
-                hw_mapping.get("real_output_1", {}).get("input_gain", None)
+            settings.in0_gain = hw_mapping.get("real_output_0", {}).get(
+                "input_gain", None
+            )
+            settings.in1_gain = hw_mapping.get("real_output_1", {}).get(
+                "input_gain", None
+            )
 
         return settings
 
@@ -1602,12 +1602,15 @@ class QbloxRFModule(QbloxBaseModule):
         """
         Meant to assign attenuation settings from the hardware configuration.
         """
-        self._settings.in0_att = \
-            self.hw_mapping.get("complex_output_0", {}).get("input_att", None)
-        self._settings.out0_att = \
-            self.hw_mapping.get("complex_output_0", {}).get("output_att", None)
-        self._settings.out1_att = \
-            self.hw_mapping.get("complex_output_1", {}).get("output_att", None)
+        self._settings.in0_att = self.hw_mapping.get("complex_output_0", {}).get(
+            "input_att", None
+        )
+        self._settings.out0_att = self.hw_mapping.get("complex_output_0", {}).get(
+            "output_att", None
+        )
+        self._settings.out1_att = self.hw_mapping.get("complex_output_1", {}).get(
+            "output_att", None
+        )
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
