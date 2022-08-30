@@ -146,7 +146,11 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         # Use local import to void Error('Operation' from partially initialized module
         # 'quantify_scheduler')
         # pylint: disable=import-outside-toplevel
-        from quantify_scheduler import Schedulable, resources
+        from quantify_scheduler import resources
+        from quantify_scheduler.schedules.schedule import (
+            AcquisitionMetadata,
+            Schedulable,
+        )
         from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
             acquisition_library,
             gate_library,
@@ -160,7 +164,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
-        self.classes.update({"Schedulable": Schedulable})
+        self.classes.update({c.__name__: c for c in [AcquisitionMetadata, Schedulable]})
 
     def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -176,6 +180,17 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         :
             The deserialized result.
         """
+        # If "deserialization_type" is present in `obj` it means the object was
+        # serialized using `__getstate__` and should be deserialized using
+        # `__setstate__`.
+        if "deserialization_type" in obj:
+            class_type: Type = self.classes[obj["deserialization_type"]]
+            new_obj = class_type.__new__(class_type)
+            new_obj.__setstate__(obj)
+            return new_obj
+
+        # Otherwise, check if serialization happened using `repr` and deserialize
+        # accordingly.
         for key in obj:
             value = obj[key]
             if isinstance(value, str):
@@ -253,7 +268,9 @@ class ScheduleJSONEncoder(json.JSONEncoder):
     def default(self, o):
         """
         Overloads the json.JSONEncoder default method that returns a serializable
-        object.
+        object. It will try 3 different serialization methods which are, in order,
+        check if the object is to be serialized to a string using repr. If not, try
+        to use `__getstate__`. Finally, try to serialize the `__dict__` property.
         """
         # Use local import to void Error('Operation' from partially initialized module
         # 'quantify_scheduler')
@@ -265,6 +282,8 @@ class ScheduleJSONEncoder(json.JSONEncoder):
 
         if isinstance(o, (Operation, resources.Resource, Schedulable)):
             return repr(o)
+        if hasattr(o, "__getstate__"):
+            return o.__getstate__()
         if hasattr(o, "__dict__"):
             return o.__dict__
 

@@ -94,7 +94,7 @@ def test_rxy_is_valid() -> None:
 
 def is__repr__equal(obj: Operation) -> None:
     """
-    Asserts that evaulating the representation
+    Asserts that evaluating the representation
     of a thing is identical to the thing
     itself.
     """
@@ -293,3 +293,54 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     assert "compiled_instructions" in schedule_hardware.data
 
     # TODO: what to test here to ensure that compiled instructions are correct?
+
+
+def test_rotation_unitaries() -> None:
+    # Set the tolerance in terms of machine precision, one machine epsilon by default
+    # Could be increased to allow for less pretty computations with more round-off
+    # error.
+
+    atol = 1 * np.finfo(np.complex128).eps
+    # Test Rxy for all angles:
+    # The tests are written in form: target, desired
+    np.testing.assert_allclose(
+        Rxy(theta=0, phi=0, qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) * np.array([[1, 0], [0, 1]]),
+        atol=atol,
+    )
+    np.testing.assert_allclose(
+        Rxy(theta=90, phi=0, qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1, -1j], [-1j, 1]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        Rxy(theta=-90, phi=90, qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1, 1], [-1, 1]]),
+        atol=atol,
+    )
+
+    # Test for the X180, X90, Y180 and Y90 gates which are derived from Rxy
+    np.testing.assert_allclose(
+        X(qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) * np.array([[0, 1j], [1j, 0]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        X90(qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1, -1j], [-1j, 1]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        Y(qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) * np.array([[0, 1], [-1, 0]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        Y90(qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1, -1], [1, 1]]),
+        atol=atol,
+    )

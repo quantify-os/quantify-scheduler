@@ -33,6 +33,15 @@ def search_settable_param(
     root_param = instrument
     split_params = nested_parameter_name.split(".")
 
+    def _search_next_level(child_parameter_name, root_attr_dicts_list):
+        for root_attr_dict in root_attr_dicts_list:
+            if callable(child_parameter_name):
+                return child_parameter_name
+            if child_parameter_name in root_attr_dict:
+                return root_attr_dict.get(child_parameter_name)
+
+        return None
+
     # Search for the parameter within the parameter, function
     # or submodule delegate_attrs_dict of the instrument
     for child_parameter_name in split_params:
@@ -41,11 +50,9 @@ def search_settable_param(
             root_param.submodules,
             root_param.functions,
         ]
-        for root_attr_dict in root_attr_dicts_list:
-            if child_parameter_name in root_attr_dict:
-                root_param = root_attr_dict.get(child_parameter_name)
-            if callable(child_parameter_name):
-                root_param = child_parameter_name
+        root_param = _search_next_level(child_parameter_name, root_attr_dicts_list)
+        if root_param is None:
+            break
 
     if not (isinstance(root_param, Parameter) or callable(root_param)):
         raise ValueError(

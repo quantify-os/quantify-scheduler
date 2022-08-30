@@ -107,7 +107,7 @@ class DeviceCompilationConfig(DataStructure):
 
 
 def compile_circuit_to_device(
-    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
+    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict, None]
 ) -> Schedule:
     """
     Adds the information required to represent operations on the quantum-device
@@ -126,6 +126,14 @@ def compile_circuit_to_device(
 
     """
     if not isinstance(device_cfg, DeviceCompilationConfig):
+        # this is a special case to be supported to enable compilation for schedules
+        # that are defined completely at the quantum-device layer and require no
+        # circuit to device compilation.
+        # A better solution would be to omit skip this compile call in a backend,
+        # but this is supported for backwards compatibility reasons.
+        if device_cfg is None:
+            return schedule
+
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
     # to prevent the original input schedule from being modified.

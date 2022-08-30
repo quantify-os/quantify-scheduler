@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from zhinst.toolkit.helpers import Waveform
 
+
 from quantify_scheduler import enums
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
@@ -1718,6 +1719,18 @@ def construct_waveform_table(
                 instrument_info=instrument_info,
                 is_pulse=not row.is_acquisition,
             )
+
+            if len(corr_wf) > 4096:
+
+                raise ValueError(
+                    f"Attempting to set an integration weight of {len(corr_wf)} samples"
+                    " (>4096) corresponding to an integration time of "
+                    f"{len(corr_wf)/instrument_info.sample_rate*1e6} us. "
+                    "Please double check that your schedule does not contain any "
+                    "acquisitions with a duration longer than "
+                    f"{4096/instrument_info.sample_rate*1e6:.2f} us.\n"
+                    f'Offending operation: "{row["operation"]}"'
+                )
 
             numerical_wf_dict[row["waveform_id"]] = corr_wf
 

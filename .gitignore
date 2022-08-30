@@ -54,9 +54,6 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 docs/build_errors.log
-# Docs auto-generated files with the notebook_to_jupyter_sphinx sphinx extension
-*.rst.ipynb
-*.py.rst
 
 
 # PyBuilder
@@ -67,8 +64,6 @@ target/
 
 # We save the %script for Jupyter Notebooks used for jupyter sphinx conversion
 *.rst.ipynb
-# .rst files for tutorials are auto generated in the build process and therefore ignored
-docs/tutorials/*.rst
 
 
 # pyenv

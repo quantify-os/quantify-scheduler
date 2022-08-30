@@ -12,20 +12,24 @@ import pytest
 from qcodes import Instrument
 
 from quantify_core.data.handling import get_datadir, set_datadir
-from quantify_core.measurement.control import MeasurementControl
 
+from quantify_scheduler.device_under_test.mock_setup import (
+    set_up_mock_transmon_setup,
+    set_up_mock_transmon_setup_legacy,
+    set_standard_params_transmon,
+)
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import (
-    TransmonElement,
-    BasicTransmonElement,
-)
-from quantify_scheduler.device_under_test.composite_square_edge import (
-    CompositeSquareEdge,
-)
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.schemas.examples import utils
+
+# Test hardware mappings. Note, these will change as we are updating our hardware
+# mapping for the graph based compilation.
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
+ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
-def _cleanup_instruments(instrument_names):
+def close_instruments(instrument_names: List[str]):
+    """Close all instruments in the list of names supplied."""
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()
@@ -58,67 +62,124 @@ def tmp_test_data_dir(tmp_path_factory):
 def mock_setup(tmp_test_data_dir):
     """
     Returns a mock setup.
-    """
 
+    This mock setup is created using the :code:`set_up_mock_transmon_setup_legacy`
+    function from the .device_under_test.mock_setup module.
+
+    """
+    # The name of this function is not so good, and could be more specific. Moreover,
+    # this it supports a legacy object to use in the tests. We should not use
+    # this fixture in future tests and phase it out at some point.
+    # The preferred alternative is the mock_setup_basic_transmon.
     set_datadir(tmp_test_data_dir)
 
-    # importing from init_mock will execute all the code in the module which
-    # will instantiate all the instruments in the mock setup.
-    meas_ctrl = MeasurementControl("meas_ctrl")
-    instrument_coordinator = InstrumentCoordinator(
-        name="instrument_coordinator", add_default_generic_icc=False
-    )
-
-    q0 = TransmonElement("q0")  # pylint: disable=invalid-name
-    q1 = TransmonElement("q1")  # pylint: disable=invalid-name
-    q2 = BasicTransmonElement("q2")  # pylint: disable=invalid-name
-    q3 = BasicTransmonElement("q3")  # pylint: disable=invalid-name
-
-    edge_q2_q3 = CompositeSquareEdge(
-        parent_element_name=q2.name, child_element_name=q3.name
-    )
-
-    q0.ro_pulse_amp(0.08)
-    q0.ro_freq(8.1e9)
-    q0.freq_01(5.8e9)
-    q0.freq_12(5.45e9)
-    q0.mw_amp180(0.314)
-    q0.mw_pulse_duration(20e-9)
-    q0.ro_pulse_delay(20e-9)
-    q0.ro_acq_delay(20e-9)
-
-    q1.ro_freq(8.64e9)
-    q1.freq_01(6.4e9)
-    q1.freq_12(5.05e9)
-
-    edge_q2_q3.cz.q2_phase_correction(44)
-    edge_q2_q3.cz.q3_phase_correction(63)
-
-    quantum_device = QuantumDevice(name="quantum_device")
-    quantum_device.add_element(q0)
-    quantum_device.add_element(q1)
-    quantum_device.add_element(q2)
-    quantum_device.add_element(q3)
-    quantum_device.add_edge(edge_q2_q3)
-
-    quantum_device.instr_measurement_control(meas_ctrl.name)
-    quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
+    # moved to a separate module to allow using the mock_setup in tutorials.
+    mock_setup = set_up_mock_transmon_setup_legacy()
 
     mock_instruments = {
-        "meas_ctrl": meas_ctrl,
-        "instrument_coordinator": instrument_coordinator,
-        "q0": q0,
-        "q1": q1,
-        "q2": q2,
-        "q3": q3,
-        "q2-q3": edge_q2_q3,
-        "quantum_device": quantum_device,
+        "meas_ctrl": mock_setup["meas_ctrl"],
+        "instrument_coordinator": mock_setup["instrument_coordinator"],
+        "q0": mock_setup["q0"],
+        "q1": mock_setup["q1"],
+        "q2": mock_setup["q2"],
+        "q3": mock_setup["q3"],
+        "q4": mock_setup["q4"],
+        "q2-q3": mock_setup["q2-q3"],
+        "quantum_device": mock_setup["quantum_device"],
     }
+
     yield mock_instruments
 
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
-    _cleanup_instruments(mock_instruments.keys())
+    # N.B. the keys need to correspond to the names of the instruments otherwise
+    # they do not close correctly. Watch out with edges (e.g., q0-q2)
+    close_instruments(mock_instruments.keys())
+
+
+# pylint: disable=redefined-outer-name
+@pytest.fixture(scope="module", autouse=False)
+def mock_setup_basic_transmon(tmp_test_data_dir):
+    """
+    Returns a mock setup for a basic 5-qubit transmon device.
+
+    This mock setup is created using the :code:`set_up_mock_transmon_setup`
+    function from the .device_under_test.mock_setup module.
+    """
+
+    set_datadir(tmp_test_data_dir)
+
+    # moved to a separate module to allow using the mock_setup in tutorials.
+    mock_setup = set_up_mock_transmon_setup()
+
+    mock_instruments = {
+        "meas_ctrl": mock_setup["meas_ctrl"],
+        "instrument_coordinator": mock_setup["instrument_coordinator"],
+        "q0": mock_setup["q0"],
+        "q1": mock_setup["q1"],
+        "q2": mock_setup["q2"],
+        "q3": mock_setup["q3"],
+        "q4": mock_setup["q4"],
+        "q0-q2": mock_setup["q0-q2"],
+        "q1-q2": mock_setup["q1-q2"],
+        "q2-q3": mock_setup["q2-q3"],
+        "q2-q4": mock_setup["q2-q4"],
+        "quantum_device": mock_setup["quantum_device"],
+    }
+
+    yield mock_instruments
+
+    # NB only close the instruments this fixture is responsible for to avoid
+    # hard to debug side effects
+    # they do not close correctly. Watch out with edges (e.g., q0-q2)
+    # N.B. the keys need to correspond to the names of the instruments otherwise
+    close_instruments(mock_instruments)
+
+
+@pytest.fixture(scope="function", autouse=False)
+def device_compile_config_basic_transmon(mock_setup_basic_transmon):
+    """
+    A config generated from a quantum device with 5 transmon qubits
+    connected in a star configuration.
+
+    The mock setup has no hardware attached to it.
+    """
+    # N.B. how this fixture produces the hardware config can change in the future
+    # as long as it keeps doing what is described in this docstring.
+
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+
+
+@pytest.fixture(scope="function", autouse=False)
+def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon):
+    """
+    A config for a quantum device with 5 transmon qubits connected in a star
+    configuration controlled using Zurich Instruments Hardware.
+    """
+    # N.B. how this fixture produces the hardware config will change in the future
+    # as we separate the config up into a more fine grained config. For now it uses
+    # the old JSON files to load settings from.
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup_basic_transmon["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
+
+    # add the hardware config here
+    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+
+
+@pytest.fixture(scope="function", autouse=False)
+def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon):
+    """
+    A config for a quantum device with 5 transmon qubits connected in a star
+    configuration controlled using Qblox Hardware.
+    """
+    # N.B. how this fixture produces the hardware config will change in the future
+    # as we separate the config up into a more fine grained config. For now it uses
+    # the old JSON files to load settings from.
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup_basic_transmon["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
+
+    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function")
@@ -137,4 +198,4 @@ def mock_setup_basic_transmon_elements(element_names: List[str]):
     mock_instruments = {"quantum_device": quantum_device, **elements}
     yield mock_instruments
 
-    _cleanup_instruments(mock_instruments)
+    close_instruments(mock_instruments)

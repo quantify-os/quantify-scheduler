@@ -9,7 +9,7 @@ import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-from dataclasses import dataclass
+import dataclasses
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from uuid import uuid4
 
@@ -66,7 +66,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     **JSON schema of a valid Schedule**
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/schedule.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/schedule.json
 
     """
     # pylint: enable=line-too-long
@@ -489,6 +489,43 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         )
         return styled_timing_table
 
+    def get_schedule_duration(self):
+        """
+        Method to find the duration of the schedule.
+
+        Returns
+        -------
+        schedule_duration : float
+            Duration of current schedule
+
+        """
+        schedule_duration = 0
+
+        # find last timestamp
+        for schedulable in self.schedulables.values():
+            timestamp = schedulable["abs_time"]
+            operation_repr = schedulable["operation_repr"]
+
+            # find duration of last operation
+            operation = self.data["operation_dict"][operation_repr]
+            pulses_end_times = [
+                pulse.get("duration") + pulse.get("t0")
+                for pulse in operation.data["pulse_info"]
+            ]
+            acquisitions_end_times = [
+                acquisition.get("duration") + acquisition.get("t0")
+                for acquisition in operation.data["acquisition_info"]
+            ]
+            final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
+            tmp_time = timestamp + final_op_len
+
+            # keep track of longest found schedule
+            if tmp_time > schedule_duration:
+                schedule_duration = tmp_time
+
+        schedule_duration *= self.repetitions
+        return schedule_duration
+
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
@@ -758,14 +795,12 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 # pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
-    A schedule that contains compiled instructions.
-
-    These instructions are ready for execution using the
-    :class:`~.InstrumentCoordinator`.
+    A schedule that contains compiled instructions ready for execution using
+    the :class:`~.InstrumentCoordinator`.
 
     The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
-    that it is considered immutable (no new operations or resources can be added),
-    and that it contains :attr:`~.compiled_instructions`.
+    that it is considered immutable (no new operations or resources can be added), and
+    that it contains :attr:`~.compiled_instructions`.
 
     .. tip::
 
@@ -870,7 +905,7 @@ class CompiledSchedule(ScheduleBase):
         return self._hardware_waveform_dict
 
 
-@dataclass
+@dataclasses.dataclass
 class AcquisitionMetadata:
     """
     Class to provide a description of the shape and type of data that a schedule will
@@ -891,3 +926,33 @@ class AcquisitionMetadata:
     acq_indices: Dict[int, List[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
+
+    def __getstate__(self):
+        data = dataclasses.asdict(self)
+        data["acq_return_type"] = str(self.acq_return_type)
+        return {"deserialization_type": self.__class__.__name__, "data": data}
+
+    def __setstate__(self, state):
+        return_types = {str(t): t for t in [complex, float, int, bool, str, np.ndarray]}
+
+        if state["data"]["acq_return_type"] in return_types:
+            state["data"]["acq_return_type"] = return_types[
+                state["data"]["acq_return_type"]
+            ]
+        else:
+            raise ValueError(
+                f"AcquisitionMetaData setstate got unknown "
+                f"type: {state['data']['acq_return_type']}"
+            )
+
+        for binmode in enums.BinMode:
+            if state["data"]["bin_mode"] == binmode.value:
+                state["data"]["bin_mode"] = binmode
+                break
+        else:
+            raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
+
+        state["data"]["acq_indices"] = {
+            int(k): v for k, v in state["data"]["acq_indices"].items()
+        }
+        self.__init__(**state["data"])

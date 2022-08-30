@@ -54,7 +54,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     **JSON schema of a valid Operation**
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/operation.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/operation.json
 
 
     .. note::
@@ -100,7 +100,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     def __str__(self) -> str:
         """
         Returns a concise string representation which can be evaluated into a new
-        instance using `eval(str(operation))` only when the data dictionary has
+        instance using :code:`eval(str(operation))` only when the data dictionary has
         not been modified.
 
         This representation is guaranteed to be unique.

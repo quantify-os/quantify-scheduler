@@ -52,7 +52,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config)
 
 
 class TestPulsedSpecSchedule(_CompilesAllBackends):
@@ -102,4 +102,4 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
 
     def test_compiles_device_cfg_only(self, load_example_transmon_config):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config())
+        qcompile(self.uncomp_sched, load_example_transmon_config)
