@@ -136,7 +136,14 @@ def test_operation_duration_composite_pulse() -> None:
             clock="cl:01",
             port="p.01",
         ),
-        SkewedHermitePulse(duration=2e-6, amplitude=0.05, skewness=-0.2, phase=90., port="qe0.mw", clock="qe0.spec"),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test_pulse_is_valid(operation: Operation) -> None:
@@ -202,7 +209,14 @@ def test_decompose_long_square_pulse() -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(duration=2e-6, amplitude=0.05, skewness=-0.2, phase=90., port="qe0.mw", clock="qe0.spec"),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test__repr__(operation: Operation) -> None:
@@ -221,7 +235,14 @@ def test__repr__(operation: Operation) -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(duration=2e-6, amplitude=0.05, skewness=-0.2, phase=90., port="qe0.mw", clock="qe0.spec"),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test__str__(operation: Operation) -> None:
@@ -240,7 +261,14 @@ def test__str__(operation: Operation) -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(duration=2e-6, amplitude=0.05, skewness=-0.2, phase=90., port="qe0.mw", clock="qe0.spec"),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test_deserialize(operation: Operation) -> None:
@@ -266,7 +294,14 @@ def test_deserialize(operation: Operation) -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(duration=2e-6, amplitude=0.05, skewness=-0.2, phase=90., port="qe0.mw", clock="qe0.spec"),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:

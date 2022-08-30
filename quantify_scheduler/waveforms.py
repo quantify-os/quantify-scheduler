@@ -401,7 +401,7 @@ def skewed_hermite(
     phase: float,
     pi2_pulse: bool = False,
     center: Optional[float] = None,
-    duration_over_T: float = 6.,
+    duration_over_T: float = 6.0,
 ) -> np.ndarray:
     """Generates a skewed hermite pulse for single qubit rotations in NV centers.
 
@@ -451,7 +451,7 @@ def skewed_hermite(
     t_hermite = duration / duration_over_T
     hermite_factor = PI2_HERMITE_FACTOR if pi2_pulse else PI_HERMITE_FACTOR
     if center is None:
-        center = duration / 2.
+        center = duration / 2.0
 
     # normalize time array for easier evaluation
     center_total = center + t[0]

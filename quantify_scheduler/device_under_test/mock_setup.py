@@ -23,6 +23,7 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
 )
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
+
 def set_up_mock_transmon_setup_legacy() -> Dict:
     """
     Sets up a system containing 5 transmon qubits. In this legacy setup only qubits
@@ -264,6 +265,8 @@ def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
     qe0.clock_freqs.f01.set(3.592e9)
     qe0.clock_freqs.spec.set(2.2e9)
 
-    abs_path = os.path.abspath("quantify_scheduler/schemas/examples/qblox_test_mapping_nv_centers.json")
+    abs_path = os.path.abspath(
+        "quantify_scheduler/schemas/examples/qblox_test_mapping_nv_centers.json"
+    )
     qblox_hardware_config = general.load_json_safe(abs_path)
     mock_nv_device.hardware_config.set(qblox_hardware_config)

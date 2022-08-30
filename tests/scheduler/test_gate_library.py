@@ -9,7 +9,10 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule, Schedulable
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_basic_nv, set_up_basic_mock_nv_setup
+from quantify_scheduler.device_under_test.mock_setup import (
+    set_standard_params_basic_nv,
+    set_up_basic_mock_nv_setup,
+)
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -257,8 +260,14 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     # Operation is added twice to schedulables and has no timing information yet.
     assert label1 in schedule.schedulables
     assert label2 in schedule.schedulables
-    assert 'abs_time' not in schedule.schedulables[label1].data.keys() or schedule.schedulables[label1].data['abs_time'] is None
-    assert 'abs_time' not in schedule.schedulables[label2].data.keys() or schedule.schedulables[label2].data['abs_time'] is None
+    assert (
+        "abs_time" not in schedule.schedulables[label1].data.keys()
+        or schedule.schedulables[label1].data["abs_time"] is None
+    )
+    assert (
+        "abs_time" not in schedule.schedulables[label2].data.keys()
+        or schedule.schedulables[label2].data["abs_time"] is None
+    )
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
@@ -272,15 +281,22 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     # The gate_info remains unchanged, but the pulse info has been added
     assert spec_pulse_str in schedule_device.operations
     assert "gate_info" in schedule_device.operations[spec_pulse_str]
-    assert schedule_device.operations[spec_pulse_str]["gate_info"] == schedule.operations[spec_pulse_str]["gate_info"]
+    assert (
+        schedule_device.operations[spec_pulse_str]["gate_info"]
+        == schedule.operations[spec_pulse_str]["gate_info"]
+    )
     assert not schedule_device.operations[spec_pulse_str]["pulse_info"] == []
 
     # Timing info has been added
-    assert 'abs_time' in schedule_device.schedulables[label1].data.keys()
-    assert 'abs_time' in schedule_device.schedulables[label2].data.keys()
-    assert schedule_device.schedulables[label1].data['abs_time'] == 0
-    duration_pulse_1 = schedule_device.operations[spec_pulse_str].data["pulse_info"][0]["duration"]
-    assert schedule_device.schedulables[label2].data['abs_time'] == pytest.approx(0 + duration_pulse_1)
+    assert "abs_time" in schedule_device.schedulables[label1].data.keys()
+    assert "abs_time" in schedule_device.schedulables[label2].data.keys()
+    assert schedule_device.schedulables[label1].data["abs_time"] == 0
+    duration_pulse_1 = schedule_device.operations[spec_pulse_str].data["pulse_info"][0][
+        "duration"
+    ]
+    assert schedule_device.schedulables[label2].data["abs_time"] == pytest.approx(
+        0 + duration_pulse_1
+    )
 
     # need to set so that compiled instructions are written into datadir
     set_datadir(tmp_test_data_dir)

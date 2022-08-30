@@ -19,6 +19,7 @@ from quantify_scheduler.backends.circuit_to_device import (
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 
+
 class Ports(InstrumentChannel):
     """
     Submodule containing the ports.
@@ -35,6 +36,7 @@ class Ports(InstrumentChannel):
         )
         """Name of the element's microwave port."""
 
+
 class ClocksFrequencies(InstrumentChannel):
     """
     Submodule containing the clock frequencies specifying the transitions to address.
@@ -43,7 +45,7 @@ class ClocksFrequencies(InstrumentChannel):
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.f01= ManualParameter(
+        self.f01 = ManualParameter(
             name="f01",
             label="Microwave frequency in resonance with |0> -> |1> transition.",
             unit="Hz",
@@ -55,7 +57,7 @@ class ClocksFrequencies(InstrumentChannel):
         negatively charged diamond NV center from |0> to |1> :cite:t:`DOHERTY20131`.
         """
 
-        self.spec= ManualParameter(
+        self.spec = ManualParameter(
             name="spec",
             label="Spectroscopy frequency",
             unit="Hz",
@@ -67,9 +69,9 @@ class ClocksFrequencies(InstrumentChannel):
         properties of the device element."""
 
 
-class SpectroscopyPulseMW(InstrumentChannel): # SpectroscopyPulse
-    """Submodule containing parameters run a spectroscopy pulse in the microwave range.
-    """
+class SpectroscopyPulseMW(InstrumentChannel):  # SpectroscopyPulse
+    """Submodule containing parameters run a spectroscopy pulse in the microwave range."""
+
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
@@ -78,7 +80,7 @@ class SpectroscopyPulseMW(InstrumentChannel): # SpectroscopyPulse
             instrument=self,
             initial_value=float("nan"),
             unit="W",
-            #vals=Numbers(min_value=0, max_value=1e-2, allow_nan=True),
+            # vals=Numbers(min_value=0, max_value=1e-2, allow_nan=True),
         )
         """Microwave amplitude for spin state manipulation"""
 
@@ -92,7 +94,6 @@ class SpectroscopyPulseMW(InstrumentChannel): # SpectroscopyPulse
         """Duration of the MW pulse."""
 
 
-
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing a single fixed-frequency transmon qubit coupled to a
@@ -102,7 +103,9 @@ class BasicElectronicNVElement(DeviceElement):
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
-        self.add_submodule("spectroscopy_pulse", SpectroscopyPulseMW(self, "spectroscopy_pulse"))
+        self.add_submodule(
+            "spectroscopy_pulse", SpectroscopyPulseMW(self, "spectroscopy_pulse")
+        )
         self.add_submodule("ports", Ports(self, "ports"))
         self.add_submodule("clock_freqs", ClocksFrequencies(self, "clock_freqs"))
 
