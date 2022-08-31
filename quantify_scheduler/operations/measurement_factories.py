@@ -33,7 +33,7 @@ def dispersive_measurement(
     acq_protocol_default: Literal[
         "SSBIntegrationComplex", "Trace"
     ] = "SSBIntegrationComplex",
-    reset_clock_phase: bool = None,
+    reset_clock_phase: bool = True,
 ) -> Operation:
     """
     Generator function for a standard dispersive measurement.

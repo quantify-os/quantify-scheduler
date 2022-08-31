@@ -431,7 +431,8 @@ def test_sched_hardware_waveform_dict(
     hardware_timing_table = compiled_schedule.hardware_timing_table
     hardware_waveform_dict = compiled_schedule.hardware_waveform_dict
 
-    for waveform_id in hardware_timing_table.data.waveform_id:
+    waveform_ids = hardware_timing_table.data.waveform_id
+    for waveform_id in waveform_ids:
         if "Reset" in waveform_id:
             # Ignore the reset operation because it will return None
             continue
