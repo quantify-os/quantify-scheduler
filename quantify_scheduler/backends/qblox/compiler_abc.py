@@ -1207,8 +1207,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
         """
-        We configure the mixer offsets, gains, attenuations after initializing the settings such we can
-        account for the differences in the hardware. e.g. the V vs mV encountered here.
+        We configure the mixer offsets, gains, attenuations
+        after initializing the settings such we can account for
+        the differences in the hardware. e.g. the V vs mV encountered here.
 
         Parameters
         ----------
@@ -1501,10 +1502,9 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_attenuation(self):
         """
-        Meant to assign attenuation settings from the hardware configuration if there is any.
-        For baseband modules there is no attenuation parameters currently.
+        Meant to assign attenuation settings from the hardware configuration, if there
+        is any. For baseband modules there is no attenuation parameters currently.
         """
-        pass
 
 
 class QbloxRFModule(QbloxBaseModule):
