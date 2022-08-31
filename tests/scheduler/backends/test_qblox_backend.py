@@ -45,7 +45,8 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     to_grid_time,
 )
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+
+# from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
@@ -1053,7 +1054,10 @@ def test_compile_simple_with_acq(
     [True, False],
 )
 def test_compile_acq_measurement_with_clock_phase_reset(
-    reset_clock_phase, load_example_qblox_hardware_config, load_example_transmon_config
+    mock_setup,
+    load_example_qblox_hardware_config,
+    load_example_transmon_config,
+    reset_clock_phase,
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
@@ -1077,6 +1081,10 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     device_cfg.elements.get("q0").get("measure").factory_kwargs[
         "reset_clock_phase"
     ] = reset_clock_phase
+
+    #   should be replaced by below when mock_setup is updated
+    # mock_setup["q0"].measure.reset_clock_phase(reset_clock_phase)
+    # device_cgf = mock_setup["quantum_device"].generate_device_config()
 
     compiled_schedule = qcompile(
         schedule, device_cfg, load_example_qblox_hardware_config
@@ -1314,10 +1322,10 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 # --------- Test compilation functions ---------
 @pytest.mark.parametrize("reset_clock_phase", [True, False])
 def test_assign_pulse_and_acq_info_to_devices(
-    mixed_schedule_with_acquisition,
-    reset_clock_phase,
     mock_setup,
+    mixed_schedule_with_acquisition,
     load_example_qblox_hardware_config,
+    reset_clock_phase,
 ):
     sched = mixed_schedule_with_acquisition
 
