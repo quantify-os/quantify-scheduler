@@ -413,6 +413,9 @@ def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_puls
     assert start0_x90 == 0.0
     assert start0_measure == 20e-9
 
+    assert start1_measure == 0.0
+    assert start1_x90 == 4.2e-07
+
 
 def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_info):
     # Arrange
