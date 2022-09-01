@@ -2,16 +2,10 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import inspect
-import json
-from pathlib import Path
-
-import quantify_scheduler.schemas.examples as es
 import quantify_scheduler.visualization.pulse_diagram as plsd
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy
-
 
 # Proper verification of this, probably requires some horrible selenium malarkey
 def test_pulse_diagram_plotly(load_example_transmon_config) -> None:

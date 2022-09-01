@@ -14,7 +14,6 @@ from quantify_scheduler.schedules.verification import (
     awg_staircase_sched,
     multiplexing_staircase_sched,
 )
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture(scope="module", autouse=False)

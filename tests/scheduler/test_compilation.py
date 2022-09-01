@@ -9,7 +9,6 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.compilation import (
-    add_pulse_information_transmon,
     determine_absolute_timing,
     device_compile,
     qcompile,

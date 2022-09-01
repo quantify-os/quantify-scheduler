@@ -15,7 +15,6 @@ from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
     get_acq_uuid,
-    get_operation_end,
     get_operation_start,
     get_port_timeline,
     get_pulse_info_by_uuid,

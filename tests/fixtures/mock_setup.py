@@ -15,7 +15,6 @@ from quantify_core.data.handling import get_datadir, set_datadir
 
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_mock_transmon_setup,
-    set_up_mock_transmon_setup_legacy,
     set_standard_params_transmon,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
