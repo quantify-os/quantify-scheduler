@@ -31,6 +31,9 @@ from qblox_instruments import (
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.mock_setup import (
+    set_standard_params_transmon,
+)
 from quantify_scheduler.instrument_coordinator.components import qblox
 
 from tests.fixtures.mock_setup import close_instruments
@@ -444,8 +447,8 @@ def test_prepare_ref_source_cluster(
 
 
 def test_prepare_rf(
-    schedule_with_measurement,
-    load_example_transmon_config,
+    mock_setup,
+    schedule_with_measurement_q2,
     load_example_qblox_hardware_config,
     make_qcm_rf,
     make_qrm_rf,
@@ -454,23 +457,135 @@ def test_prepare_rf(
     qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
+    set_standard_params_transmon(mock_setup)
+    mock_setup["q2"].clock_freqs.readout(7.5e9)
+    mock_setup["q2"].clock_freqs.f01(7.33e9)
+
+    device_config = mock_setup["quantum_device"].generate_device_config()
     # Act
     with tempfile.TemporaryDirectory() as tmp_dir:
         set_datadir(tmp_dir)
 
         compiled_schedule = qcompile(
-            schedule_with_measurement,
-            load_example_transmon_config,
+            schedule_with_measurement_q2,
+            device_config,
             load_example_qblox_hardware_config,
         )
         prog = compiled_schedule["compiled_instructions"]
 
-        qcm.prepare(prog["qcm0"])
-        qrm.prepare(prog["qrm0"])
+        qcm.prepare(prog["qcm_rf0"])
+        qrm.prepare(prog["qrm_rf0"])
 
     # Assert
     qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+
+
+def test_retrieve_acquisition_qrm_rf(
+    mock_setup,
+    schedule_with_measurement_q2,
+    load_example_qblox_hardware_config,
+    make_qrm_rf,
+):
+    # Arrange
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+
+    set_standard_params_transmon(mock_setup)
+    mock_setup["q2"].clock_freqs.readout(7.3e9)
+    device_config = mock_setup["quantum_device"].generate_device_config()
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2,
+            device_config,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+        prog = dict(prog)
+
+        qrm_rf.prepare(prog[qrm_rf.instrument.name])
+        qrm_rf.start()
+        acq = qrm_rf.retrieve_acquisition()
+
+    # Assert
+    assert len(acq[(0, 0)]) == 2
+
+
+def test_retrieve_acquisition_cluster(
+    make_schedule_with_measurement,
+    mock_setup,
+    load_example_qblox_hardware_config,
+    make_cluster_component,
+):
+    q4 = mock_setup["q4"]
+    q4.clock_freqs.f01.set(5040000000)
+    q4.rxy.amp180(0.2)
+    q4.clock_freqs.f12(5.41e9)
+    q4.clock_freqs.readout(6950000000)
+    q4.measure.acq_delay(1.2e-07)
+
+    device_cfg = mock_setup["quantum_device"].generate_device_config()
+
+    # Arrange
+    cluster_name = "cluster0"
+    cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+        compiled_schedule = qcompile(
+            make_schedule_with_measurement("q4"),
+            device_cfg,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+        prog = dict(prog)
+
+        cluster.prepare(prog[cluster_name])
+        cluster.start()
+        acq = cluster.retrieve_acquisition()
+
+    # Assert
+    assert acq is not None
+
+
+def test_start_qcm_qrm_rf(
+    mock_setup,
+    schedule_with_measurement_q2,
+    load_example_qblox_hardware_config,
+    make_qcm_rf,
+    make_qrm_rf,
+):
+    # Arrange
+    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+
+    set_standard_params_transmon(mock_setup)
+    mock_setup["q2"].clock_freqs.readout(7.3e9)
+    device_config = mock_setup["quantum_device"].generate_device_config()
+
+    # Act
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set_datadir(tmp_dir)
+
+        compiled_schedule = qcompile(
+            schedule_with_measurement_q2,
+            device_config,
+            load_example_qblox_hardware_config,
+        )
+        prog = compiled_schedule["compiled_instructions"]
+
+        qcm_rf.prepare(prog["qcm_rf0"])
+        qrm_rf.prepare(prog["qrm_rf0"])
+
+        qcm_rf.start()
+        qrm_rf.start()
+
+    # Assert
+    qcm_rf.instrument.start_sequencer.assert_called()
+    qrm_rf.instrument.start_sequencer.assert_called()
 
 
 def test_prepare_exception_qcm(close_all_instruments, make_qcm_component):
@@ -617,70 +732,74 @@ def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
     assert qcm_rf.retrieve_acquisition() is None
 
 
-def test_retrieve_acquisition_qrm_rf(
-    schedule_with_measurement,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
-    make_qrm_rf,
-):
-    # Arrange
-    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm0", "1234")
+# def test_retrieve_acquisition_qrm_rf(
+#     mock_setup,
+#     schedule_with_measurement_q2,
+#     load_example_qblox_hardware_config,
+#     make_qrm_rf,
+# ):
+#     # Arrange
+#     qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-        compiled_schedule = qcompile(
-            schedule_with_measurement,
-            load_example_transmon_config,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
-        prog = dict(prog)
+#     set_standard_params_transmon(mock_setup)
+#     mock_setup["q2"].clock_freqs.readout(7.3e9)
+#     device_config = mock_setup["quantum_device"].generate_device_config()
 
-        qrm_rf.prepare(prog[qrm_rf.instrument.name])
-        qrm_rf.start()
-        acq = qrm_rf.retrieve_acquisition()
+#     # Act
+#     with tempfile.TemporaryDirectory() as tmp_dir:
+#         set_datadir(tmp_dir)
+#         compiled_schedule = qcompile(
+#             schedule_with_measurement_q2,
+#             device_config,
+#             load_example_qblox_hardware_config,
+#         )
+#         prog = compiled_schedule["compiled_instructions"]
+#         prog = dict(prog)
 
-    # Assert
-    assert len(acq[(0, 0)]) == 2
+#         qrm_rf.prepare(prog[qrm_rf.instrument.name])
+#         qrm_rf.start()
+#         acq = qrm_rf.retrieve_acquisition()
+
+#     # Assert
+#     assert len(acq[(0, 0)]) == 2
 
 
-def test_retrieve_acquisition_cluster(
-    make_schedule_with_measurement,
-    mock_setup,
-    load_example_qblox_hardware_config,
-    make_cluster_component,
-):
-    q4 = mock_setup["q4"]
-    q4.clock_freqs.f01.set(5040000000)
-    q4.rxy.amp180(0.2)
-    q4.clock_freqs.f12(5.41e9)
-    q4.clock_freqs.readout(6950000000)
-    q4.measure.acq_delay(1.2e-07)
+# def test_retrieve_acquisition_cluster(
+#     make_schedule_with_measurement,
+#     mock_setup,
+#     load_example_qblox_hardware_config,
+#     make_cluster_component,
+# ):
+#     q4 = mock_setup["q4"]
+#     q4.clock_freqs.f01.set(5040000000)
+#     q4.rxy.amp180(0.2)
+#     q4.clock_freqs.f12(5.41e9)
+#     q4.clock_freqs.readout(6950000000)
+#     q4.measure.acq_delay(1.2e-07)
 
-    device_cfg = mock_setup["quantum_device"].generate_device_config()
+#     device_cfg = mock_setup["quantum_device"].generate_device_config()
 
-    # Arrange
-    cluster_name = "cluster0"
-    cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
+#     # Arrange
+#     cluster_name = "cluster0"
+#     cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
 
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-        compiled_schedule = qcompile(
-            make_schedule_with_measurement("q4"),
-            device_cfg,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
-        prog = dict(prog)
+#     # Act
+#     with tempfile.TemporaryDirectory() as tmp_dir:
+#         set_datadir(tmp_dir)
+#         compiled_schedule = qcompile(
+#             make_schedule_with_measurement("q4"),
+#             device_cfg,
+#             load_example_qblox_hardware_config,
+#         )
+#         prog = compiled_schedule["compiled_instructions"]
+#         prog = dict(prog)
 
-        cluster.prepare(prog[cluster_name])
-        cluster.start()
-        acq = cluster.retrieve_acquisition()
+#         cluster.prepare(prog[cluster_name])
+#         cluster.start()
+#         acq = cluster.retrieve_acquisition()
 
-    # Assert
-    assert acq is not None
+#     # Assert
+#     assert acq is not None
 
 
 def test_start_qcm_qrm(
@@ -716,37 +835,41 @@ def test_start_qcm_qrm(
     qrm.instrument.start_sequencer.assert_called()
 
 
-def test_start_qcm_qrm_rf(
-    schedule_with_measurement,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
-    make_qcm_rf,
-    make_qrm_rf,
-):
-    # Arrange
-    qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
-    qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+# def test_start_qcm_qrm_rf(
+#     mock_setup,
+#     schedule_with_measurement_q2,
+#     load_example_qblox_hardware_config,
+#     make_qcm_rf,
+#     make_qrm_rf,
+# ):
+#     # Arrange
+#     qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+#     qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
+#     set_standard_params_transmon(mock_setup)
+#     mock_setup["q2"].clock_freqs.readout(7.3e9)
+#     device_config = mock_setup["quantum_device"].generate_device_config()
 
-        compiled_schedule = qcompile(
-            schedule_with_measurement,
-            load_example_transmon_config,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
+#     # Act
+#     with tempfile.TemporaryDirectory() as tmp_dir:
+#         set_datadir(tmp_dir)
 
-        qcm_rf.prepare(prog["qcm0"])
-        qrm_rf.prepare(prog["qrm0"])
+#         compiled_schedule = qcompile(
+#             schedule_with_measurement_q2,
+#             device_config,
+#             load_example_qblox_hardware_config,
+#         )
+#         prog = compiled_schedule["compiled_instructions"]
 
-        qcm_rf.start()
-        qrm_rf.start()
+#         qcm_rf.prepare(prog["qcm_rf0"])
+#         qrm_rf.prepare(prog["qrm_rf0"])
 
-    # Assert
-    qcm_rf.instrument.start_sequencer.assert_called()
-    qrm_rf.instrument.start_sequencer.assert_called()
+#         qcm_rf.start()
+#         qrm_rf.start()
+
+#     # Assert
+#     qcm_rf.instrument.start_sequencer.assert_called()
+#     qrm_rf.instrument.start_sequencer.assert_called()
 
 
 def test_stop_qcm_qrm(close_all_instruments, make_qcm_component, make_qrm_component):
