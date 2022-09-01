@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import numpy as np
 from pytest import approx
-import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
