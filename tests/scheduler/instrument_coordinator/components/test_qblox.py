@@ -459,7 +459,7 @@ def test_prepare_rf(
 
     set_standard_params_transmon(mock_setup)
     mock_setup["q2"].clock_freqs.readout(7.5e9)
-    mock_setup["q2"].clock_freqs.f01(7.33e9)
+    mock_setup["q2"].clock_freqs.f01(6.03e9)
 
     device_config = mock_setup["quantum_device"].generate_device_config()
     # Act
@@ -564,6 +564,8 @@ def test_start_qcm_qrm_rf(
 
     set_standard_params_transmon(mock_setup)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
+    mock_setup["q2"].clock_freqs.f01(6.03e9)
+
     device_config = mock_setup["quantum_device"].generate_device_config()
 
     # Act
