@@ -271,11 +271,11 @@ class RFModuleSettings(BaseModuleSettings):
     """The frequency of Output 1 (O1) LO. If left `None`, the parameter will not be set.
     """
     out0_att: Union[int, None] = None
-    """The attenuation of output 0."""
+    """The attenuation of Output 0."""
     out1_att: Union[int, None] = None
-    """The attenuation of output 1."""
+    """The attenuation of Output 1."""
     in0_att: Union[int, None] = None
-    """The attenuation of input 0."""
+    """The attenuation of Input 0."""
 
     @classmethod
     def extract_settings_from_mapping(

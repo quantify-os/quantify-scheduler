@@ -1,32 +1,32 @@
 Recent interface changes
 ========================
 
-Unreleased: Qblox input/output gain/attenuation hardware config parameters
---------------------------------------------------------------------------
+Unreleased: Setting input/output gain and attenuation parameters
+----------------------------------------------------------------
 
 This change makes quantify-scheduler be able to set input/output gain/attenuation parameters through the hardware configuration for Qblox hardware.
 Note, that not every combination of input/output gain/attenuation 0/1 is possible.
 The following parameters are possible for each device type.
 
-- QRM Baseband
+- QRM (baseband)
 
   - ``input_gain_I`` (for ``complex_output_0``) or ``input_gain`` (for ``real_output_0``)
 
   - ``input_gain_Q`` (for ``complex_output_0``) or ``input_gain`` (for ``real_output_1``)
 
-- QRM RF
+- QRM-RF
 
   - ``output_att`` (for ``complex_output_0``)
 
   - ``input_att`` (for ``complex_output_0``)
 
-- QCM RF:
+- QCM-RF
 
   - ``output_att`` (for ``complex_output_0``)
 
   - ``output_att`` (for ``complex_output_1``)
 
-See ``quantify_scheduler/schemas/examples/qblox_test_mapping.json`` for concrete examples.
+See ``quantify_scheduler/schemas/examples/qblox_test_mapping.json`` for concrete examples (see :ref:`sec-qblox-how-to-configure`).
 
 0.8.0: Dynamic Sequencer Allocation
 -----------------------------------

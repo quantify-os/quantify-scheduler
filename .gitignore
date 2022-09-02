@@ -113,6 +113,3 @@ tmp_disasm.q1asm
 
 # Always include json schemas
 !**/schemas/*.json
-
-# Vim temporary editing swapfiles
-.*.swp

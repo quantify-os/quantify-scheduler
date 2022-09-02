@@ -9,7 +9,7 @@
 
 ### Merged branches and closed issues
 
-- Compilation - Added input/output gain/attenuation configurable hardware parameter (!458)
+- Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Docs - Support for myst-nb added (#301, !407)
 - Docs - Sources are converted from restructured text format to MyST markdown. (!452)
 - Docs - Add pin on nbclient\<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)

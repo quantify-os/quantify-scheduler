@@ -1193,7 +1193,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
-        self._settings = self._configure_mixer_offsets_gains(
+        self._settings = self._configure_mixer_offsets_and_gains(
             self._settings, self.hw_mapping
         )
         self.sequencers = self._construct_sequencers()
@@ -1203,7 +1203,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             self.assign_frequencies(seq)
         self.assign_attenuation()
 
-    def _configure_mixer_offsets_gains(
+    def _configure_mixer_offsets_and_gains(
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
         """
@@ -1214,14 +1214,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Parameters
         ----------
         settings
-            The settings dataclass to which to add the dc offsets, gains.
+            The settings dataclass to which to add the dc offsets and gains.
         hw_mapping
             The hardware configuration.
 
         Returns
         -------
         :
-            The settings dataclass after adding the normalized offsets, gains.
+            The settings dataclass after adding the normalized offsets and gains.
 
         Raises
         ------
@@ -1283,8 +1283,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     "dc_mixer_offset_Q", output_cfg
                 )
 
-        if "complex_output_0" in hw_mapping:
-            complex_output_0 = hw_mapping["complex_output_0"]
+        complex_output_0 = hw_mapping.get("complex_output_0", None)
+        if complex_output_0 is not None:
             settings.in0_gain = complex_output_0.get("input_gain_I", None)
             settings.in1_gain = complex_output_0.get("input_gain_Q", None)
         else:
@@ -1600,7 +1600,7 @@ class QbloxRFModule(QbloxBaseModule):
 
     def assign_attenuation(self):
         """
-        Meant to assign attenuation settings from the hardware configuration.
+        Assigns attenuation settings from the hardware configuration.
         """
         self._settings.in0_att = self.hw_mapping.get("complex_output_0", {}).get(
             "input_att", None

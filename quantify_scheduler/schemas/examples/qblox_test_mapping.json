@@ -1,9 +1,7 @@
 {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "latency_corrections": {
-        "q4:mw-q4.01": 8e-9,
-        "q5:mw-q5.01": 4e-9,
-        "q6:mw-q6.01": 4e-9
+        "q4:mw-q4.01": 8e-9
     },
     "distortion_corrections": {
         "q0:fl-cl0.baseband": {
@@ -131,35 +129,8 @@
                     }
                 ]
             }
-        }
-    },
-    "cluster1": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster1_module2": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "output_att": 4,
-                "portclock_configs": [
-                    {
-                        "port": "q5:mw",
-                        "clock": "q5.01",
-                        "interm_freq": 50e6
-                    }
-                ]
-            },
-            "complex_output_1": {
-                "output_att": 6,
-                "portclock_configs": [
-                    {
-                        "port": "q6:mw",
-                        "clock": "q6.01",
-                        "interm_freq": 50e6
-                    }
-                ]
-            }
         },
-        "cluster1_module4": {
+        "cluster0_module5": {
             "instrument_type": "QRM_RF",
             "complex_output_0": {
                 "output_att": 12,

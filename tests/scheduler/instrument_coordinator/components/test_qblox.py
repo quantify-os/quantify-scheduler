@@ -61,6 +61,7 @@ def make_cluster_component(mocker):
                 "2": ClusterType.CLUSTER_QCM_RF,
                 "3": ClusterType.CLUSTER_QRM,
                 "4": ClusterType.CLUSTER_QRM_RF,
+                "5": ClusterType.CLUSTER_QRM_RF,
                 "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0-q3
                 "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
@@ -559,7 +560,7 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     "set_reference_source, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],
 )
-def test_configure_qrm_real_settings(
+def test_configure_qrm_real_output_settings(
     mocker,
     tmp_test_data_dir,
     schedule_with_measurement,
@@ -685,7 +686,6 @@ def test_configure_qcm_settings(
         qcm.instrument.reference_source("external")
         qcm.instrument._set_reference_source.reset_mock()
 
-    # Act
     qcm.force_set_parameters(force_set_parameters)
 
     # Act
@@ -880,10 +880,10 @@ def test_configure_rf_settings(
     force_set_parameters,
 ):
     # Arrange
-    cluster_name = "cluster1"
+    cluster_name = "cluster0"
     cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
 
-    qcm_rf_module = "cluster1_module2"
+    qcm_rf_module = "cluster0_module2"
     mocker.patch.object(
         cluster._cluster_modules[qcm_rf_module].instrument.parameters["out0_att"], "set"
     )
@@ -891,7 +891,7 @@ def test_configure_rf_settings(
         cluster._cluster_modules[qcm_rf_module].instrument.parameters["out1_att"], "set"
     )
 
-    qrm_rf_module = "cluster1_module4"
+    qrm_rf_module = "cluster0_module5"
     mocker.patch.object(
         cluster._cluster_modules[qrm_rf_module].instrument.parameters["out0_att"], "set"
     )
