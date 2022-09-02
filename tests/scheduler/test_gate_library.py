@@ -274,6 +274,7 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
 
     quantum_device = set_up_basic_mock_nv_setup()
     set_standard_params_basic_nv(quantum_device)
+    pulse_duration = quantum_device.get_element("qe0").spectroscopy_pulse.duration.get()
 
     dev_cfg = quantum_device.generate_device_config()
     schedule_device = device_compile(schedule, dev_cfg)
@@ -308,7 +309,11 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     assert isinstance(schedule_hardware, CompiledSchedule)
     assert "compiled_instructions" in schedule_hardware.data
 
-    # TODO: what to test here to ensure that compiled instructions are correct?
+    schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
+    schedule_hardware.timing_table.data.loc[1, "duration"] == pulse_duration
+    schedule_hardware.timing_table.data.loc[1, "abs_time"] == pulse_duration
+    schedule_hardware.timing_table.data.loc[0, "is_acquisition"] == False
+    schedule_hardware.timing_table.data.loc[1, "is_acquisition"] == False
 
 
 def test_rotation_unitaries() -> None:
