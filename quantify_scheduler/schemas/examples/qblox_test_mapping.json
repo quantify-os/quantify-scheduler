@@ -121,21 +121,14 @@
         "cluster0_module4": {
             "instrument_type": "QRM_RF",
             "complex_output_0": {
+                "output_att": 12,
+                "input_att": 10,
                 "portclock_configs": [
                     {
                         "port": "q5:res",
                         "clock": "q5.ro",
                         "interm_freq": 50e6
-                    }
-                ]
-            }
-        },
-        "cluster0_module5": {
-            "instrument_type": "QRM_RF",
-            "complex_output_0": {
-                "output_att": 12,
-                "input_att": 10,
-                "portclock_configs": [
+                    },
                     {
                         "port": "q5:mw",
                         "clock": "q5.01",

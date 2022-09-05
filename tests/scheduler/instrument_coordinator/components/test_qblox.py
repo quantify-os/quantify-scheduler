@@ -54,7 +54,6 @@ def make_cluster_component(mocker):
                 "2": ClusterType.CLUSTER_QCM_RF,
                 "3": ClusterType.CLUSTER_QRM,
                 "4": ClusterType.CLUSTER_QRM_RF,
-                "5": ClusterType.CLUSTER_QRM_RF,
                 "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0-q3
                 "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
@@ -486,7 +485,7 @@ def test_prepare_cluster_rf(
     mocker.patch.object(qcm_rf.parameters["out0_att"], "set")
     mocker.patch.object(qcm_rf.parameters["out1_att"], "set")
 
-    qrm_rf = ic_cluster.instrument.module5
+    qrm_rf = ic_cluster.instrument.module4
     mocker.patch.object(qrm_rf.parameters["out0_att"], "set")
     mocker.patch.object(qrm_rf.parameters["in0_att"], "set")
 
@@ -497,7 +496,6 @@ def test_prepare_cluster_rf(
 
     # Act
     set_datadir(tmp_test_data_dir)
-
     hardware_cfg = load_example_qblox_hardware_config
 
     compiled_schedule = qcompile(sched, load_legacy_transmon_config, hardware_cfg)
