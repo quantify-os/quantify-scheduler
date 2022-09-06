@@ -9,6 +9,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 from typing import Any, Dict, Tuple
+from unittest import TestCase
 
 import json
 import zipfile
@@ -16,7 +17,6 @@ import zipfile
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
-from unittest import TestCase
 
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
