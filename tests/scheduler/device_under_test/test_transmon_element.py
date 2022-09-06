@@ -24,7 +24,6 @@ pytestmark = pytest.mark.usefixtures("close_all_instruments")
 def q0() -> BasicTransmonElement:
     coordinator = InstrumentCoordinator("ic")
     q0 = BasicTransmonElement("q0")
-    # q0.instrument_coordinator(coordinator.name)
 
     # Transmon element is returned
     yield q0
@@ -62,12 +61,6 @@ def test_generate_device_config(q0: BasicTransmonElement):
 
     dev_cfg = quantum_device.generate_device_config()
     assert isinstance(dev_cfg, DeviceCompilationConfig)
-
-
-# def test_find_coordinator(q0: TransmonElement):
-
-#     coordinator = q0.instrument_coordinator.get_instr()
-#     assert coordinator.name == "ic"
 
 
 @pytest.fixture

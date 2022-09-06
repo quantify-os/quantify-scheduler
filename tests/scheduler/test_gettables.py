@@ -16,6 +16,7 @@ import zipfile
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
+from unittest import TestCase
 
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
@@ -443,7 +444,7 @@ def test_profiling(mock_setup, mocker):
     log = prof_gettable.log_profile()
 
     # Test if all steps have been measured and have a value > 0
-    assert log["schedule"][0] == 0.051558400000000004
+    TestCase().assertAlmostEqual(log["schedule"][0], 0.0515584)
     verif_keys = [
         "schedule",
         "_compile",
