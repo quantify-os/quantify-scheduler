@@ -29,14 +29,12 @@ from qblox_instruments import (
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
-from quantify_scheduler.compilation import qcompile, device_compile
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
 from tests.fixtures.mock_setup import close_instruments
-
-from quantify_scheduler.backends.circuit_to_device import (
-    DeviceCompilationConfig,
-)
 
 
 @pytest.fixture
@@ -474,8 +472,7 @@ def test_prepare_qcm_qrm(
 def test_prepare_cluster_rf(
     mocker,
     tmp_test_data_dir,
-    make_basic_multi_qubit_schedule,
-    load_legacy_transmon_config,
+    make_basic_schedule,
     load_example_qblox_hardware_config,
     make_cluster_component,
     force_set_parameters,
@@ -483,119 +480,6 @@ def test_prepare_cluster_rf(
     # Arrange
     cluster_name = "cluster0"
     ic_cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
-
-    device_config = {
-        "backend": "quantify_scheduler.backends.circuit_to_device"
-        + ".compile_circuit_to_device",
-        "clocks": {
-            "q4.01": 6020000000.0,
-            "q4.12": 7040000000.0,
-            "q4.ro": 6900000000.0,
-            "q5.01": 6020000000.0,
-            "q5.12": 7040000000.0,
-            "q5.ro": 6900000000.0,
-        },
-        "edges": {},
-        "elements": {
-            "q4": {
-                "reset": {
-                    "factory_func": "quantify_scheduler.operations"
-                    ".pulse_library.IdlePulse",
-                    "factory_kwargs": {"duration": 0.0002},
-                },
-                "Rxy": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_factories.rxy_drag_pulse",
-                    "gate_info_factory_kwargs": ["theta", "phi"],
-                    "factory_kwargs": {
-                        "amp180": 0.32,
-                        "motzoi": 0.45,
-                        "port": "q4:mw",
-                        "clock": "q4.01",
-                        "duration": 2e-08,
-                    },
-                },
-                "Z": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_library.SoftSquarePulse",
-                    "factory_kwargs": {
-                        "amp": 0.23,
-                        "duration": 4e-09,
-                        "port": "q4:fl",
-                        "clock": "cl0.baseband",
-                    },
-                },
-                "measure": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": [
-                        "acq_index",
-                        "bin_mode",
-                        "acq_protocol",
-                    ],
-                    "factory_kwargs": {
-                        "port": "q4:res",
-                        "clock": "q4.ro",
-                        "pulse_type": "SquarePulse",
-                        "pulse_amp": 0.25,
-                        "pulse_duration": 1.6e-07,
-                        "acq_delay": 1.2e-07,
-                        "acq_duration": 3e-07,
-                        "acq_channel": 0,
-                    },
-                },
-            },
-            "q5": {
-                "reset": {
-                    "factory_func": "quantify_scheduler.operations.pulse_library.IdlePulse",
-                    "factory_kwargs": {"duration": 0.0002},
-                },
-                "Rxy": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_factories.rxy_drag_pulse",
-                    "gate_info_factory_kwargs": ["theta", "phi"],
-                    "factory_kwargs": {
-                        "amp180": 0.32,
-                        "motzoi": 0.45,
-                        "port": "q5:mw",
-                        "clock": "q5.01",
-                        "duration": 2e-08,
-                    },
-                },
-                "Z": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_library.SoftSquarePulse",
-                    "factory_kwargs": {
-                        "amp": 0.23,
-                        "duration": 4e-09,
-                        "port": "q5:fl",
-                        "clock": "cl0.baseband",
-                    },
-                },
-                "measure": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": [
-                        "acq_index",
-                        "bin_mode",
-                        "acq_protocol",
-                    ],
-                    "factory_kwargs": {
-                        "port": "q5:res",
-                        "clock": "q5.ro",
-                        "pulse_type": "SquarePulse",
-                        "pulse_amp": 0.25,
-                        "pulse_duration": 1.6e-07,
-                        "acq_delay": 1.2e-07,
-                        "acq_duration": 3e-07,
-                        "acq_channel": 0,
-                    },
-                },
-            },
-        },
-    }
-
-    device_config = DeviceCompilationConfig.parse_obj(device_config)
 
     qcm_rf = ic_cluster.instrument.module2
     mocker.patch.object(qcm_rf.parameters["out0_att"], "set")
@@ -608,17 +492,28 @@ def test_prepare_cluster_rf(
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
 
-    sched = make_basic_multi_qubit_schedule(["q4", "q5"])
-    sched = device_compile(sched, device_config)
+    quantum_device = QuantumDevice(name="quantum_device")
+    q5 = BasicTransmonElement("q5")
+    quantum_device.add_element(q5)
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(6.33e9)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(8.5e9)
+    q5.measure.acq_delay(100e-9)
+
+    sched = make_basic_schedule("q5")
 
     # Act
     set_datadir(tmp_test_data_dir)
+
     hardware_cfg = load_example_qblox_hardware_config
-
-    compiled_schedule = qcompile(sched, load_legacy_transmon_config, hardware_cfg)
+    compiled_schedule = qcompile(
+        sched, quantum_device.generate_device_config(), hardware_cfg
+    )
     compiled_schedule_before_prepare = deepcopy(compiled_schedule)
-    prog = compiled_schedule["compiled_instructions"]
 
+    prog = compiled_schedule["compiled_instructions"]
     ic_cluster.prepare(prog[cluster_name])
 
     # Assert
