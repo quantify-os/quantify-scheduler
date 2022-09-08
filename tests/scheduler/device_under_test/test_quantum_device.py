@@ -82,7 +82,7 @@ def test_mc() -> QuantumDevice:
     test_mc.close()
 
 
-def test_adding_non_component_raises(dev, test_mc):
+def test_adding_non_element_raises(dev, test_mc):
 
     with pytest.raises(TypeError):
         dev.add_element(test_mc)
