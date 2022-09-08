@@ -302,6 +302,29 @@ In the given example, we added a second port-clock configuration to output 0. No
 We note that it is a requirement of the backend that each combination of a port and a clock is unique, i.e. it is possible to use the same port or clock multiple times in the hardware config but the combination of a port with a certain clock can only occur once.
 ```
 
+## Gain and attenuation
+
+For QRM modules you can set the gain parameters in decibels. It is possible to add the following to `complex_output_0`.
+The parameters `input_gain_I` and `input_gain_Q` correspond to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in0-gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in1-gain) respectively.
+
+```{code-block} python
+:linenos: true
+
+mapping_config = {
+    ...
+    "qrm0": {
+        "instrument_type": "Pulsar_QRM",
+        "complex_output_0": {
+            "input_gain_I": 2,
+            "input_gain_Q": 3,
+            ...
+        },
+    },
+}
+```
+
+See [Qblox Instruments qcm_qrm](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html) documentation for allowed values.
+
 ## Real mode
 
 For the baseband modules, it is also possible to use the backend to generate signals for the outputs individually rather than using IQ pairs.
