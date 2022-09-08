@@ -39,8 +39,8 @@ def test_qubit_name(q0: BasicTransmonElement):
 def test_generate_config(q0: BasicTransmonElement):
     # test that setting some values updates the correct values in the configuration
     # set some values
-    q0.measure.pulse_type.set("SquarePulse")
-    q0.measure.pulse_duration.set(400e-9)
+    q0.measure.pulse_type("SquarePulse")
+    q0.measure.pulse_duration(400e-9)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q0)
