@@ -663,138 +663,6 @@ def test_generate_port_clock_to_device_map(load_example_qblox_hardware_config):
 
 
 # --------- Test classes and member methods ---------
-def test_portclocks(
-    make_basic_multi_qubit_schedule, load_example_qblox_hardware_config
-):
-
-    device_config = {
-        "backend": "quantify_scheduler.backends.circuit_to_device"
-        + ".compile_circuit_to_device",
-        "clocks": {
-            "q4.01": 6020000000.0,
-            "q4.12": 7040000000.0,
-            "q4.ro": 6900000000.0,
-            "q5.01": 6020000000.0,
-            "q5.12": 7040000000.0,
-            "q5.ro": 6900000000.0,
-        },
-        "edges": {},
-        "elements": {
-            "q4": {
-                "reset": {
-                    "factory_func": "quantify_scheduler.operations"
-                    ".pulse_library.IdlePulse",
-                    "factory_kwargs": {"duration": 0.0002},
-                },
-                "Rxy": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_factories.rxy_drag_pulse",
-                    "gate_info_factory_kwargs": ["theta", "phi"],
-                    "factory_kwargs": {
-                        "amp180": 0.32,
-                        "motzoi": 0.45,
-                        "port": "q4:mw",
-                        "clock": "q4.01",
-                        "duration": 2e-08,
-                    },
-                },
-                "Z": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_library.SoftSquarePulse",
-                    "factory_kwargs": {
-                        "amp": 0.23,
-                        "duration": 4e-09,
-                        "port": "q4:fl",
-                        "clock": "cl0.baseband",
-                    },
-                },
-                "measure": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": [
-                        "acq_index",
-                        "bin_mode",
-                        "acq_protocol",
-                    ],
-                    "factory_kwargs": {
-                        "port": "q4:res",
-                        "clock": "q4.ro",
-                        "pulse_type": "SquarePulse",
-                        "pulse_amp": 0.25,
-                        "pulse_duration": 1.6e-07,
-                        "acq_delay": 1.2e-07,
-                        "acq_duration": 3e-07,
-                        "acq_channel": 0,
-                    },
-                },
-            },
-            "q5": {
-                "reset": {
-                    "factory_func": "quantify_scheduler.operations.pulse_library.IdlePulse",
-                    "factory_kwargs": {"duration": 0.0002},
-                },
-                "Rxy": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_factories.rxy_drag_pulse",
-                    "gate_info_factory_kwargs": ["theta", "phi"],
-                    "factory_kwargs": {
-                        "amp180": 0.32,
-                        "motzoi": 0.45,
-                        "port": "q5:mw",
-                        "clock": "q5.01",
-                        "duration": 2e-08,
-                    },
-                },
-                "Z": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "pulse_library.SoftSquarePulse",
-                    "factory_kwargs": {
-                        "amp": 0.23,
-                        "duration": 4e-09,
-                        "port": "q5:fl",
-                        "clock": "cl0.baseband",
-                    },
-                },
-                "measure": {
-                    "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
-                    "gate_info_factory_kwargs": [
-                        "acq_index",
-                        "bin_mode",
-                        "acq_protocol",
-                    ],
-                    "factory_kwargs": {
-                        "port": "q5:res",
-                        "clock": "q5.ro",
-                        "pulse_type": "SquarePulse",
-                        "pulse_amp": 0.25,
-                        "pulse_duration": 1.6e-07,
-                        "acq_delay": 1.2e-07,
-                        "acq_duration": 3e-07,
-                        "acq_channel": 0,
-                    },
-                },
-            },
-        },
-    }
-    device_config = DeviceCompilationConfig.parse_obj(device_config)
-    sched = make_basic_multi_qubit_schedule(["q4", "q5"])
-    sched = device_compile(sched, device_config)
-
-    hardware_cfg = load_example_qblox_hardware_config
-    container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg
-    )
-
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=hardware_cfg,
-        device_compilers=container.instrument_compilers,
-    )
-
-    compilers = container.instrument_compilers["cluster0"].instrument_compilers
-    assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
 
 
 def test_construct_sequencers(
@@ -911,6 +779,34 @@ def test_construct_sequencers_excess_error(
         + "number of sequencers."
         in str(exc.value)
     )
+
+
+def test_portclocks(
+    mock_setup_basic_transmon,
+    make_basic_multi_qubit_schedule,
+    load_example_qblox_hardware_config,
+):
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    device_config = quantum_device.generate_device_config()
+
+    sched = make_basic_multi_qubit_schedule(["q3", "q4"])
+    sched = device_compile(sched, device_config)
+
+    hardware_cfg = load_example_qblox_hardware_config
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
+        sched, hardware_cfg
+    )
+
+    assign_pulse_and_acq_info_to_devices(
+        schedule=sched,
+        hardware_cfg=hardware_cfg,
+        device_compilers=container.instrument_compilers,
+    )
+
+    compilers = container.instrument_compilers["cluster0"].instrument_compilers
+    assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
+    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
 
 
 def test_compile_simple(
