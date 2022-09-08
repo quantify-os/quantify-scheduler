@@ -90,8 +90,8 @@ def mock_setup_basic_transmon(tmp_test_data_dir):
 
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
-    # they do not close correctly. Watch out with edges (e.g., q0-q2)
     # N.B. the keys need to correspond to the names of the instruments otherwise
+    # they do not close correctly. Watch out with edges (e.g., q0-q2)
     close_instruments(mock_instruments)
 
 
