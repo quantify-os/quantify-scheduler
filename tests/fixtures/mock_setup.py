@@ -57,43 +57,43 @@ def tmp_test_data_dir(tmp_path_factory):
 
 
 # pylint: disable=redefined-outer-name
-@pytest.fixture(scope="module", autouse=False)
-def mock_setup(tmp_test_data_dir, mock_setup_basic_transmon):
-    """
-    Returns a mock setup.
+# @pytest.fixture(scope="module", autouse=False)
+# def mock_setup(tmp_test_data_dir, mock_setup_basic_transmon):
+#     """
+#     Returns a mock setup.
 
-    This mock setup is created using the :code:`set_up_mock_transmon_setup_legacy`
-    function from the .device_under_test.mock_setup module.
+#     This mock setup is created using the :code:`set_up_mock_transmon_setup_legacy`
+#     function from the .device_under_test.mock_setup module.
 
-    """
-    # The name of this function is not so good, and could be more specific. Moreover,
-    # this it supports a legacy object to use in the tests. We should not use
-    # this fixture in future tests and phase it out at some point.
-    # The preferred alternative is the mock_setup_basic_transmon.
-    set_datadir(tmp_test_data_dir)
+#     """
+#     # The name of this function is not so good, and could be more specific. Moreover,
+#     # this it supports a legacy object to use in the tests. We should not use
+#     # this fixture in future tests and phase it out at some point.
+#     # The preferred alternative is the mock_setup_basic_transmon.
+#     set_datadir(tmp_test_data_dir)
 
-    # moved to a separate module to allow using the mock_setup in tutorials.
-    mock_setup = mock_setup_basic_transmon
+#     # moved to a separate module to allow using the mock_setup in tutorials.
+#     mock_setup = mock_setup_basic_transmon
 
-    mock_instruments = {
-        "meas_ctrl": mock_setup["meas_ctrl"],
-        "instrument_coordinator": mock_setup["instrument_coordinator"],
-        "q0": mock_setup["q0"],
-        "q1": mock_setup["q1"],
-        "q2": mock_setup["q2"],
-        "q3": mock_setup["q3"],
-        "q4": mock_setup["q4"],
-        "q2-q3": mock_setup["q2-q3"],
-        "quantum_device": mock_setup["quantum_device"],
-    }
+#     mock_instruments = {
+#         "meas_ctrl": mock_setup["meas_ctrl"],
+#         "instrument_coordinator": mock_setup["instrument_coordinator"],
+#         "q0": mock_setup["q0"],
+#         "q1": mock_setup["q1"],
+#         "q2": mock_setup["q2"],
+#         "q3": mock_setup["q3"],
+#         "q4": mock_setup["q4"],
+#         "q2-q3": mock_setup["q2-q3"],
+#         "quantum_device": mock_setup["quantum_device"],
+#     }
 
-    yield mock_instruments
+#     yield mock_instruments
 
-    # NB only close the instruments this fixture is responsible for to avoid
-    # hard to debug side effects
-    # N.B. the keys need to correspond to the names of the instruments otherwise
-    # they do not close correctly. Watch out with edges (e.g., q0-q2)
-    close_instruments(mock_instruments.keys())
+#     # NB only close the instruments this fixture is responsible for to avoid
+#     # hard to debug side effects
+#     # N.B. the keys need to correspond to the names of the instruments otherwise
+#     # they do not close correctly. Watch out with edges (e.g., q0-q2)
+#     close_instruments(mock_instruments.keys())
 
 
 # pylint: disable=redefined-outer-name
