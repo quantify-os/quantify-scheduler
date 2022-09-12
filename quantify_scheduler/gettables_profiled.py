@@ -117,7 +117,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         prof_ic = Instrument.find_instrument("profiled_ic")
         Instrument.close(prof_ic)
 
-    def log_profile(
+    def log_profile(  # pylint: disable=too-many-arguments
         self,
         obj=None,
         path="profiling_logs",
