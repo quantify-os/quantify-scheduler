@@ -7,6 +7,7 @@ Code to set up a mock setup for use in tutorials and testing.
 
 from typing import Dict
 import os
+from qcodes import Instrument
 
 from quantify_core.utilities import general
 from quantify_core.measurement.control import MeasurementControl
@@ -239,13 +240,25 @@ def set_up_basic_mock_nv_setup() -> QuantumDevice:
         name="instrument_coordinator", add_default_generic_icc=False
     )
 
-    q0 = BasicElectronicNVElement("qe0")
+    qe0 = BasicElectronicNVElement("qe0")
     quantum_device = QuantumDevice(name="quantum_device")
-    quantum_device.add_element(q0)
+    quantum_device.add_element(qe0)
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
     return quantum_device
+
+
+def close_mock_nv_setup(mock_nv_device: QuantumDevice) -> None:
+    """Tears down all instruments that are set up in :func:`set_up_basic_mock_nv_setup`."""
+
+    ic_name = mock_nv_device.instr_instrument_coordinator.get()
+    mc_name = mock_nv_device.instr_measurement_control.get()
+    Instrument.find_instrument(ic_name).close()
+    Instrument.find_instrument(mc_name).close()
+
+    mock_nv_device.get_element("qe0").close()
+    mock_nv_device.close()
 
 
 def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:

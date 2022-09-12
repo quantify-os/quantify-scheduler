@@ -5,6 +5,7 @@ from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVEle
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
     set_standard_params_basic_nv,
+    close_mock_nv_setup,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
@@ -50,10 +51,17 @@ def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
 
 
 def test_mock_setup():
+    # test that everything works once
     mock_nv_device = set_up_basic_mock_nv_setup()
     assert isinstance(mock_nv_device, QuantumDevice)
-    mock_nv_device = set_standard_params_basic_nv(mock_nv_device)
-    # close_mock_nv_setup(mock_nv_device)
+    set_standard_params_basic_nv(mock_nv_device)
+    close_mock_nv_setup(mock_nv_device)
+
+    # test that tear-down closes all instruments by re-executing
+    mock_nv_device = set_up_basic_mock_nv_setup()
+    assert isinstance(mock_nv_device, QuantumDevice)
+    set_standard_params_basic_nv(mock_nv_device)
+    close_mock_nv_setup(mock_nv_device)
 
 
 @pytest.fixture
