@@ -441,6 +441,7 @@ def skewed_hermite(
 
     """
 
+    # Hermite factors are taken from paper cited in docstring.
     PI_HERMITE_FACTOR = 0.956
     PI2_HERMITE_FACTOR = 0.667
 
