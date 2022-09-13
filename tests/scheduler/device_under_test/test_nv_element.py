@@ -20,7 +20,7 @@ pytestmark = pytest.mark.usefixtures("close_all_instruments")
 
 @pytest.fixture
 def electronic_q0() -> BasicElectronicNVElement:
-    electronic_q0 = BasicElectronicNVElement("q0")
+    electronic_q0 = BasicElectronicNVElement("qe0")
 
     # Electronic NV element is returned
     yield electronic_q0
@@ -29,7 +29,7 @@ def electronic_q0() -> BasicElectronicNVElement:
 
 
 def test_qubit_name(electronic_q0: BasicElectronicNVElement):
-    assert electronic_q0.name == "q0"
+    assert electronic_q0.name == "qe0"
 
 
 def test_generate_config(electronic_q0: BasicElectronicNVElement):
@@ -38,11 +38,12 @@ def test_generate_config(electronic_q0: BasicElectronicNVElement):
     electronic_q0.spectroscopy_pulse.amplitude(1.0)
     electronic_q0.spectroscopy_pulse.duration(10e-6)
 
-    q_cfg = electronic_q0.generate_config()
+    dev_cfg = electronic_q0.generate_device_config()
 
     # assert values in right place in config.
-    assert q_cfg["q0"]["spectroscopy_pulse"].factory_kwargs["duration"] == 10e-6
-    assert q_cfg["q0"]["spectroscopy_pulse"].factory_kwargs["amplitude"] == 1.0
+    cfg_spec_pulse = dev_cfg.elements["qe0"]["spectroscopy_pulse"]
+    assert cfg_spec_pulse.factory_kwargs["duration"] == 10e-6
+    assert cfg_spec_pulse.factory_kwargs["amplitude"] == 1.0
 
 
 def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
