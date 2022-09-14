@@ -36,6 +36,4 @@ scanpydoc >=0.7.1, <=0.7.3 # ensures latest typing_extensions is used in sphinx 
 rich[jupyter]
 jupytext
 
-# Prospector
-prospector
 prospector[with_mypy]
