@@ -818,7 +818,7 @@ class _QRMAcquisitionManager:
         return formatted_acquisitions
 
     def _store_scope_acquisition(self):
-        sequencer_index = self.seq_name_to_idx_map.get(self.scope_mode_sequencer)
+        sequencer_index = self.scope_mode_sequencer
 
         if sequencer_index is None:
             return
