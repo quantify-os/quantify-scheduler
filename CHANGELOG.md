@@ -5,6 +5,7 @@
 ### Breaking changes
 
 - Compilation - Compilation is now a graph. (#305, !407)
+- Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 
 ### Merged branches and closed issues
 
