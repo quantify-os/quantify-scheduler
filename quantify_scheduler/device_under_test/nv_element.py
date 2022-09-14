@@ -1,3 +1,9 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+"""
+Device elements for NV centers. Currently only for the electronic qubit,
+but could be extended for other qubits (eg. carbon qubit).
+"""
 from cgitb import reset
 from typing import Dict, Any
 from numpy import power
