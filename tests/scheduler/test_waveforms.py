@@ -193,6 +193,7 @@ def test_modulate() -> None:
         mod_wf.imag, np.sin(2 * np.pi * (f - 2) * (t / fs) + (np.pi / 2)), decimal=1
     )
 
+
 @pytest.fixture
 def hermite_kwargs():
     """Define 'random' keyword arguments for skewed hermite pulses"""
@@ -205,28 +206,30 @@ def hermite_kwargs():
         "skewness": -0.7,
         "pi2_pulse": True,
         "center": None,
-        "duration_over_T": 6.,
+        "duration_over_T": 6.0,
     }
     return kwargs
 
 
 def test_hermite_real(hermite_kwargs):
-    """Hermite pulse is real if skewness and phase are 0.
-    """
+    """Hermite pulse is real if skewness and phase are 0."""
     hermite_kwargs["skewness"] = 0.0
     hermite_kwargs["phase"] = 0.0
     assert (skewed_hermite(**hermite_kwargs).imag == 0).all()
 
+
 def test_hermite_amp_linear_scaling(hermite_kwargs):
-    """Hermite pulse scales linearly with the amplitude.
-    """
+    """Hermite pulse scales linearly with the amplitude."""
     del hermite_kwargs["amplitude"]
     approx = np.frompyfunc(pytest.approx, 1, 1)
-    assert (2*skewed_hermite(amplitude=0.032, **hermite_kwargs) == approx(skewed_hermite(amplitude=0.064, **hermite_kwargs))).all()
+    assert (
+        2 * skewed_hermite(amplitude=0.032, **hermite_kwargs)
+        == approx(skewed_hermite(amplitude=0.064, **hermite_kwargs))
+    ).all()
+
 
 def test_hermite_duration_scaling(hermite_kwargs):
-    """When time and duration are scaled by a factor, the result stays unchanged.
-    """
+    """When time and duration are scaled by a factor, the result stays unchanged."""
     dur = hermite_kwargs["duration"]
     del hermite_kwargs["duration"]
     t = hermite_kwargs["t"]
@@ -240,17 +243,13 @@ def test_hermite_duration_scaling(hermite_kwargs):
 
     scaling = 2.7
 
-    assert (
+    assert skewed_hermite(
+        t=t, duration=dur, skewness=skewness, **hermite_kwargs
+    ) == pytest.approx(
         skewed_hermite(
-            t=t,
-            duration=dur,
-            skewness=skewness,
+            t=scaling * t,
+            duration=scaling * dur,
+            skewness=scaling * skewness,
             **hermite_kwargs
-        ) ==
-        pytest.approx(skewed_hermite(
-            t=scaling*t,
-            duration=scaling*dur,
-            skewness=scaling*skewness,
-            **hermite_kwargs)
         )
     )
