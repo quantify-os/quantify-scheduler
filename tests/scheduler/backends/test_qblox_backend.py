@@ -53,7 +53,10 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    MarkerConfiguration,
+)
 
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
@@ -1733,8 +1736,7 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
     compiled_schedule = qcompile(sched, device_cfg, load_example_qblox_hardware_config)
     program = compiled_schedule["compiled_instructions"]
 
-    def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
-        mrk_config = device_compiler.static_hw_properties.marker_configuration
+    def _confirm_correct_markers(device_program, mrk_config, is_rf=False):
         answers = (
             mrk_config.init,
             mrk_config.start,
@@ -1751,10 +1753,20 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
             for match, answer in zip(matches, answers):
                 assert match == answer
 
-    _confirm_correct_markers(program["qcm0"], QcmModule)
-    _confirm_correct_markers(program["qrm0"], QrmModule)
-    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule, is_rf=True)
-    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule, is_rf=True)
+    _confirm_correct_markers(program["qcm0"],
+        MarkerConfiguration(init=None, start=15, end=0)
+    )
+    _confirm_correct_markers(program["qrm0"],
+        MarkerConfiguration(init=None, start=3, end=0)
+    )
+    _confirm_correct_markers(program["qcm_rf0"],
+        MarkerConfiguration(init=3, start=15, end=0),
+        is_rf=True
+    )
+    _confirm_correct_markers(program["qrm_rf0"],
+        MarkerConfiguration(init=3, start=3, end=0),
+        is_rf=True
+    )
 
 
 def test_pulsar_rf_extract_from_mapping(load_example_qblox_hardware_config):
