@@ -36,11 +36,6 @@ scanpydoc >=0.7.1, <=0.7.3 # ensures latest typing_extensions is used in sphinx 
 rich[jupyter]
 jupytext
 
-# scheduler-only
-
-cachecontrol # see issue quantify-scheduler#129
-lockfile # see issue quantify-scheduler#129
-
 # Prospector
 prospector
 prospector[with_mypy]
