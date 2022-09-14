@@ -11,6 +11,7 @@
 from typing import Any, Dict, Tuple
 
 import json
+import os
 import zipfile
 
 import numpy as np
@@ -407,7 +408,7 @@ def _reshape_array_into_acq_return_type(
     return acquisitions
 
 
-def test_profiling(mock_setup, mocker):
+def test_profiling(mock_setup, tmp_test_data_dir):
     quantum_device = mock_setup["quantum_device"]
     qubit = quantum_device.get_component("q0")
 
@@ -433,10 +434,8 @@ def test_profiling(mock_setup, mocker):
     instr_coordinator.stop()
     prof_gettable.close()
 
-    log = prof_gettable.log_profile()
-
     # Test if all steps have been measured and have a value > 0
-    assert log["schedule"][0] == 0.05153792
+    log = prof_gettable.log_profile()
     verif_keys = [
         "schedule",
         "_compile",
@@ -446,20 +445,22 @@ def test_profiling(mock_setup, mocker):
         "retrieve_acquisition",
         "stop",
     ]
-    for x in verif_keys:
-        assert len(log[x]) >= 1
-        assert [k > 0 for k in log[x]]
+    for key in verif_keys:
+        assert len(log[key]) > 0
+        assert [value > 0 for value in log[key]]
 
-    # test plot function
-    prof_gettable.plot_profile()
-    assert prof_gettable.plot
-
-    # test logging to json
+    # Test logging to json
     obj = {"test": ["test"]}
-    file = "test"
+    path = tmp_test_data_dir
+    filename = "test"
+    prof_gettable.log_profile(
+        obj=obj, path=path, filename=filename, indent=4, separators=(",", ": ")
+    )
+    assert os.path.getsize(os.path.join(path, filename)) > 0
 
-    def wrapper(obj, fp, indent, separators):
-        json.dumps(obj=obj, indent=indent, separators=separators)
-
-    with mocker.patch("json.dump", wraps=wrapper):
-        prof_gettable.log_profile(obj=obj, path=file, indent=4, separators=(",", ": "))
+    # Test plot function
+    path = tmp_test_data_dir
+    filename = "average_runtimes.pdf"
+    prof_gettable.plot_profile(path=path)
+    assert prof_gettable.plot is not None
+    assert os.path.getsize(os.path.join(path, filename)) > 0

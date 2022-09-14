@@ -117,24 +117,30 @@ class ProfiledScheduleGettable(ScheduleGettable):
         prof_ic = Instrument.find_instrument("profiled_ic")
         Instrument.close(prof_ic)
 
-    def log_profile(self, obj=None, path=None, indent: int = 4, separators=None):
+    def log_profile(  # pylint: disable=too-many-arguments
+        self,
+        obj=None,
+        path="profiling_logs",
+        filename=None,
+        indent: int = 4,
+        separators=None,
+    ):
         """Store profiling logs to json file."""
         if not obj:
             obj = self.profile
         if not separators:
             separators = (",", ": ")
-        folder_name = "profiling_logs"
-        if path:
-            if not os.path.exists(folder_name):
-                os.makedirs(folder_name)
+        if filename:
+            if not os.path.exists(path):
+                os.makedirs(path)
 
-            write_path = os.path.join(folder_name, path)
-            with open(write_path, "w", encoding="utf-8") as file:
+            file_path = os.path.join(path, filename)
+            with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(obj, file, indent=indent, separators=separators)
 
         return self.profile
 
-    def plot_profile(self, plot_name="average_runtimes.pdf"):
+    def plot_profile(self, path=None, filename="average_runtimes.pdf"):
         """Create barplot of accumulated profiling data."""
         profile = self.profile
         time_ax = list(profile.keys())
@@ -155,4 +161,6 @@ class ProfiledScheduleGettable(ScheduleGettable):
         self.plot = (fig, ax)
         plt.ylabel("runtime [s]")
         plt.title("Average runtimes")
-        fig.savefig(plot_name)
+
+        file_path = os.path.join(path, filename) if path else filename
+        fig.savefig(file_path)
