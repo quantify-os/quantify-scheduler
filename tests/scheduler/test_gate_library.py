@@ -10,8 +10,9 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule, Schedulable
 from quantify_scheduler.device_under_test.mock_setup import (
-    set_standard_params_basic_nv,
     set_up_basic_mock_nv_setup,
+    set_standard_params_basic_nv,
+    close_mock_nv_setup,
 )
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -314,6 +315,8 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     schedule_hardware.timing_table.data.loc[1, "abs_time"] == pulse_duration
     schedule_hardware.timing_table.data.loc[0, "is_acquisition"] == False
     schedule_hardware.timing_table.data.loc[1, "is_acquisition"] == False
+
+    close_mock_nv_setup(quantum_device)
 
 
 def test_rotation_unitaries() -> None:

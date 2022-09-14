@@ -230,6 +230,8 @@ def set_standard_params_transmon(mock_setup):
 def set_up_basic_mock_nv_setup() -> QuantumDevice:
     """Sets up a system containing 1 electronic qubit in an NV center.
 
+    After usage, close all instruments again with :func:`close_mock_nv_setup`.
+
     Returns
     -------
         QuantumDevice containing a qubit "qe0", MeasurementControl and
