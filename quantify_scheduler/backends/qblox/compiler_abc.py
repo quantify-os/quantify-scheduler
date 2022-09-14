@@ -1012,32 +1012,33 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         portclock_output_map: Dict[Tuple, str] = {}
 
         def _update_marker_start(
-            static_hw_properties: StaticHardwareProperties) -> StaticHardwareProperties:
+            static_hw_properties: StaticHardwareProperties,
+        ) -> StaticHardwareProperties:
             """Update marker configuration to only turn on for outputs which are used."""
             marker_start_config = 0
             marker_start_output_configuration = {
-                    "complex_output_0": 0b0011,
-                    "complex_output_1": 0b1100,
-                    "real_output_0": 0b0001,
-                    "real_output_1": 0b0010,
-                    "real_output_2": 0b0100,
-                    "real_output_3": 0b1000,
+                "complex_output_0": 0b0011,
+                "complex_output_1": 0b1100,
+                "real_output_0": 0b0001,
+                "real_output_1": 0b0010,
+                "real_output_2": 0b0100,
+                "real_output_3": 0b1000,
             }
             for output_label, marker in marker_start_output_configuration.items():
                 if output_label in self.hw_mapping.keys():
                     marker_start_config |= marker
             return StaticHardwareProperties(
-                    static_hw_properties.instrument_type,
-                    static_hw_properties.max_sequencers,
-                    static_hw_properties.max_awg_output_voltage,
-                    MarkerConfiguration(
-                        init=static_hw_properties.marker_configuration.init,
-                        start=marker_start_config,
-                        end=static_hw_properties.marker_configuration.end
-                    ),
-                    static_hw_properties.mixer_dc_offset_range,
-                    static_hw_properties.valid_ios
-                )
+                static_hw_properties.instrument_type,
+                static_hw_properties.max_sequencers,
+                static_hw_properties.max_awg_output_voltage,
+                MarkerConfiguration(
+                    init=static_hw_properties.marker_configuration.init,
+                    start=marker_start_config,
+                    end=static_hw_properties.marker_configuration.end,
+                ),
+                static_hw_properties.mixer_dc_offset_range,
+                static_hw_properties.valid_ios,
+            )
 
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
@@ -1071,7 +1072,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         parent=self,
                         index=seq_idx,
                         portclock=portclock,
-                        static_hw_properties=_update_marker_start(self.static_hw_properties),
+                        static_hw_properties=_update_marker_start(
+                            self.static_hw_properties
+                        ),
                         connected_outputs=connected_outputs,
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,
