@@ -57,7 +57,7 @@ def tmp_test_data_dir(tmp_path_factory):
 
 
 # pylint: disable=redefined-outer-name
-@pytest.fixture(scope="module", autouse=False)
+@pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_transmon(tmp_test_data_dir):
     """
     Returns a mock setup for a basic 5-qubit transmon device.
