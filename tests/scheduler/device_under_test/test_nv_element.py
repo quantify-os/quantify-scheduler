@@ -5,7 +5,7 @@ from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVEle
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
     set_standard_params_basic_nv,
-    close_mock_nv_setup,
+    close_mock_setup,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
@@ -51,18 +51,21 @@ def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
     assert isinstance(dev_cfg, DeviceCompilationConfig)
 
 
-def test_mock_setup():
+def test_mock_mv_setup():
     # test that everything works once
-    mock_nv_device = set_up_basic_mock_nv_setup()
-    assert isinstance(mock_nv_device, QuantumDevice)
-    set_standard_params_basic_nv(mock_nv_device)
-    close_mock_nv_setup(mock_nv_device)
+    mock_nv_setup = set_up_basic_mock_nv_setup()
+    assert isinstance(mock_nv_setup, dict)
+    set_standard_params_basic_nv(mock_nv_setup)
+    for instr in mock_nv_setup.values():
+        instr.close()
 
     # test that tear-down closes all instruments by re-executing
-    mock_nv_device = set_up_basic_mock_nv_setup()
-    assert isinstance(mock_nv_device, QuantumDevice)
-    set_standard_params_basic_nv(mock_nv_device)
-    close_mock_nv_setup(mock_nv_device)
+    mock_nv_setup = set_up_basic_mock_nv_setup()
+    assert isinstance(mock_nv_setup, dict)
+    set_standard_params_basic_nv(mock_nv_setup)
+    close_mock_setup(mock_nv_setup)
+    for instr in mock_nv_setup.values():
+        instr.close()
 
 
 @pytest.fixture
@@ -84,4 +87,5 @@ def test_generate_device_config_part_of_device(
     electronic_q0: BasicElectronicNVElement, dev: QuantumDevice
 ):
     dev.add_component(electronic_q0)
-    _ = dev.generate_device_config()
+    dev_cfg = dev.generate_device_config()
+    assert "qe0" in dev_cfg.elements

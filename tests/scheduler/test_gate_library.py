@@ -12,7 +12,7 @@ from quantify_scheduler import Operation, Schedule, Schedulable
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
     set_standard_params_basic_nv,
-    close_mock_nv_setup,
+    close_mock_setup,
 )
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -273,8 +273,9 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    quantum_device = set_up_basic_mock_nv_setup()
-    set_standard_params_basic_nv(quantum_device)
+    mock_nv_setup = set_up_basic_mock_nv_setup()
+    set_standard_params_basic_nv(mock_nv_setup)
+    quantum_device = mock_nv_setup["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").spectroscopy_pulse.duration.get()
 
     dev_cfg = quantum_device.generate_device_config()
@@ -316,7 +317,7 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     schedule_hardware.timing_table.data.loc[0, "is_acquisition"] == False
     schedule_hardware.timing_table.data.loc[1, "is_acquisition"] == False
 
-    close_mock_nv_setup(quantum_device)
+    close_mock_setup(mock_nv_setup)
 
 
 def test_rotation_unitaries() -> None:

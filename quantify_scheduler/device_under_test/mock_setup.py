@@ -158,10 +158,10 @@ def set_up_mock_transmon_setup() -> Dict:
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
-    # rationale of the dict format is that this function is historically used as part
-    # of a fixture and by providing this dict, a cleanup instruments function can
-    # iterate over these keys to close all individual instruments and avoid
-    # statefull behavior in the tests.
+    # Rationale of the dict format is that all instruments can be cleaned up by
+    # iterating over the values and calling close. It also avoids that the instruments
+    # get garbage-collected while their name is still recorded and used to refer to the
+    # instruments.
     return {
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,
@@ -227,15 +227,15 @@ def set_standard_params_transmon(mock_setup):
     q4.measure.acq_delay(100e-9)
 
 
-def set_up_basic_mock_nv_setup() -> QuantumDevice:
+def set_up_basic_mock_nv_setup() -> Dict:
     """Sets up a system containing 1 electronic qubit in an NV center.
 
-    After usage, close all instruments again with :func:`close_mock_nv_setup`.
+    After usage, close all instruments by calling :func:`close_mock_setup`.
 
     Returns
     -------
-        QuantumDevice containing a qubit "qe0", MeasurementControl and
-        InstrumentCoordinator.
+        All instruments created. Containing a "quantum_device", electronic qubit "qe0",
+        "meas_ctrl" and "instrument_coordinator".
     """
 
     meas_ctrl = MeasurementControl("meas_ctrl")
@@ -249,19 +249,31 @@ def set_up_basic_mock_nv_setup() -> QuantumDevice:
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
-    return quantum_device
+    # Rationale of the dict format is that all instruments can be cleaned up by
+    # iterating over the values and calling close. It also avoids that the instruments
+    # get garbage-collected while their name is still recorded and used to refer to the
+    # instruments.
+    return {
+        "meas_ctrl": meas_ctrl,
+        "instrument_coordinator": instrument_coordinator,
+        "qe0": qe0,
+        "quantum_device": quantum_device,
+    }
 
 
-def close_mock_nv_setup(mock_nv_device: QuantumDevice) -> None:
-    """Tears down all instruments that are set up in :func:`set_up_basic_mock_nv_setup`."""
+def close_mock_setup(mock_setup: Dict):
+    """Takes a dictionary with a mock setup and closes all instruments.
 
-    ic_name = mock_nv_device.instr_instrument_coordinator.get()
-    mc_name = mock_nv_device.instr_measurement_control.get()
-    Instrument.find_instrument(ic_name).close()
-    Instrument.find_instrument(mc_name).close()
+    This function should be called once the mock setup is not needed anymore. It avoids
+    stateful behaviour and is particularly important in automated tests.
 
-    mock_nv_device.get_element("qe0").close()
-    mock_nv_device.close()
+    Parameters
+    ----------
+    mock_setup
+        mock setup as returned by the functions "set_up_..."
+    """
+    for instr in mock_setup.values():
+        instr.close()
 
 
 def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
@@ -276,7 +288,8 @@ def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
     experiments.
     """
 
-    qe0 = mock_nv_device.get_element("qe0")
+    quantum_device = mock_nv_device["quantum_device"]
+    qe0 = quantum_device.get_element("qe0")
     qe0.spectroscopy_pulse.amplitude.set(0.1)
     qe0.clock_freqs.f01.set(3.592e9)
     qe0.clock_freqs.spec.set(2.2e9)
@@ -284,4 +297,4 @@ def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
     qblox_hardware_config = load_json_example_scheme(
         "qblox_test_mapping_nv_centers.json"
     )
-    mock_nv_device.hardware_config.set(qblox_hardware_config)
+    quantum_device.hardware_config.set(qblox_hardware_config)
