@@ -446,7 +446,7 @@ class Sequencer:
 
         Notes
         -----
-        The final dictionary to be included in the json that is uploaded to the pulsar
+        The final dictionary to be included in the json that is uploaded to the module
         is of the form:
 
         .. code-block::
@@ -485,7 +485,7 @@ class Sequencer:
 
         Notes
         -----
-        The final dictionary to be included in the json that is uploaded to the pulsar
+        The final dictionary to be included in the json that is uploaded to the module
         is of the form:
 
         .. code-block::
@@ -554,7 +554,7 @@ class Sequencer:
             acquisition_infos
         )
 
-        # initialize an empty dictionary for the format required by pulsar
+        # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
 
@@ -1075,7 +1075,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def distribute_data(self):
         """
-        Distributes the pulses and acquisitions assigned to this pulsar over the
+        Distributes the pulses and acquisitions assigned to this module over the
         different sequencers based on their portclocks. Raises an exception in case
         the device does not support acquisitions.
         """
@@ -1317,7 +1317,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
-        Performs the actual compilation steps for this pulsar, by calling the sequencer
+        Performs the actual compilation steps for this module, by calling the sequencer
         level compilation functions and combining them into a single dictionary. The
         compiled program has a settings key, and keys for every sequencer.
 
@@ -1329,7 +1329,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Returns
         -------
         :
-            The compiled program corresponding to this pulsar. It contains an entry for
+            The compiled program corresponding to this module. It contains an entry for
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """

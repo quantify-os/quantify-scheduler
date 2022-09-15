@@ -882,7 +882,7 @@ def test_store_scope_acquisition(make_qrm_component):
     acq_manager = qblox._QRMAcquisitionManager(
         qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
-    acq_manager.scope_mode_sequencer = "seq0"
+    acq_manager.scope_mode_sequencer = 0
 
     # Act
     acq_manager._store_scope_acquisition()
