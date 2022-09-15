@@ -304,7 +304,7 @@ We note that it is a requirement of the backend that each combination of a port 
 
 ## Gain and attenuation
 
-For QRM modules you can set the gain parameters in decibels. It is possible to add the following to `complex_output_0`.
+For QRM modules you can set the gain parameters in dB. It is possible to add the following to `complex_output_0`.
 The parameters `input_gain_I` and `input_gain_Q` correspond to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in0-gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in1-gain) respectively.
 
 ```{code-block} python
@@ -323,7 +323,7 @@ mapping_config = {
 }
 ```
 
-See [Qblox Instruments qcm_qrm](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html) documentation for allowed values.
+See [Qblox Instruments: Pulsar QRM parameters](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-parameters) documentation for allowed values.
 
 ## Real mode
 
