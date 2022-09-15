@@ -15,8 +15,8 @@ from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
     get_acq_uuid,
-    get_operation_end,
     get_operation_start,
+    get_operation_end,
     get_port_timeline,
     get_pulse_info_by_uuid,
     get_pulse_uuid,
@@ -405,14 +405,15 @@ def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_puls
     start0_measure = get_operation_start(schedule0, timeslot_index=1)
 
     start1_measure = get_operation_start(schedule1, timeslot_index=0)
-    start1_x90 = get_operation_start(schedule0, timeslot_index=1)
+    start1_x90 = get_operation_start(schedule1, timeslot_index=1)
 
     # Assert
     assert start_empty == 0.0
     assert start0_x90 == 0.0
     assert start0_measure == 20e-9
+
     assert start1_measure == 0.0
-    assert start1_x90 == 20e-9
+    assert start1_x90 == 4.2e-07
 
 
 def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_info):
@@ -450,34 +451,33 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
     assert end1_x90 == approx(ro_acquisition_delay + ro_integration_time + mw_duration)
 
 
-def test_get_schedule_time_offset(
-    empty_schedule: Schedule,
-    basic_schedule: Schedule,
-    schedule_with_measurement: Schedule,
+def test_schedule_timing_table(
+    load_example_transmon_config,
     create_schedule_with_pulse_info,
 ):
-    # Arrange
-    _basic_schedule = create_schedule_with_pulse_info(basic_schedule)
-    _schedule_with_measurement = create_schedule_with_pulse_info(
-        schedule_with_measurement
-    )
-    init_duration = 200e-6
+    device_cfg = load_example_transmon_config
 
-    # Act
-    offset0 = get_schedule_time_offset(
-        empty_schedule, get_port_timeline(empty_schedule)
-    )
-    offset1 = get_schedule_time_offset(
-        _basic_schedule, get_port_timeline(_basic_schedule)
-    )
-    offset2 = get_schedule_time_offset(
-        _schedule_with_measurement, get_port_timeline(_schedule_with_measurement)
-    )
+    schedule = Schedule("test_schedule_timing_table")
+    schedule.add(Reset("q0"))
+    schedule.add(X90("q0"))
+    schedule.add(Measure("q0"))
+    schedule = device_compile(schedule, device_cfg)
 
-    # Assert
-    assert offset0 == 0.0
-    assert offset1 == 0.0
-    assert offset2 == init_duration
+    q0 = device_cfg.elements["q0"]
+    X90_duration = q0["Rxy"].factory_kwargs["duration"]
+    measure_acq_delay = q0["measure"].factory_kwargs["acq_delay"]
+    reset_duration = q0["reset"].factory_kwargs["duration"]
+
+    expected_abs_timing = [
+        0.0,
+        reset_duration,
+        reset_duration + X90_duration,
+        reset_duration + X90_duration + measure_acq_delay,
+    ]
+
+    actual_abs_timing = schedule.timing_table.data.abs_time
+
+    assert all(expected_abs_timing == actual_abs_timing)
 
 
 def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedule):

@@ -384,7 +384,7 @@ def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_comp
     assert last_sched == compiled_sched
 
 
-def test_profiled_instrument_coordinator(mock_setup, dummy_components):
+def test_profiled_instrument_coordinator(mock_setup_basic_transmon, dummy_components):
     component1 = dummy_components.pop(0)
     test_sched = Schedule(name="test_schedule")
     args = {"dev0": {"foo": 0}}
