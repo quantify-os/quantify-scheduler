@@ -416,7 +416,11 @@ def test_trace_acquisition_measurement_control(
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, PulsarType.PULSAR_QRM],
 )
 def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-locals
-    mocker, mock_setup_basic_transmon, make_cluster_component, make_qrm_component, module_under_test
+    mocker,
+    mock_setup_basic_transmon,
+    make_cluster_component,
+    make_qrm_component,
+    module_under_test,
 ):
     hardware_cfgs = {}
     hardware_cfgs[ClusterType.CLUSTER_QRM_RF] = {

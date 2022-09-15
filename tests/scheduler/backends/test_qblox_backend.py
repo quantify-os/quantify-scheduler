@@ -26,9 +26,7 @@ from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-i
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends.circuit_to_device import (
-    DeviceCompilationConfig,
-)
+
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox import (
     compiler_container,
