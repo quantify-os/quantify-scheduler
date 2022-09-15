@@ -304,8 +304,10 @@ We note that it is a requirement of the backend that each combination of a port 
 
 ## Gain and attenuation
 
-For QRM modules you can set the gain parameters in dB. It is possible to add the following to `complex_output_0`.
+For QRM, QRF-RF and QCM-RF modules you can set the gain and attenuation parameters in dB. See the example below for the possible gain and attenuation parameters for each module type.
 The parameters `input_gain_I` and `input_gain_Q` correspond to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in0-gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in1-gain) respectively.
+The parameters `output_att` and `input_att` for QRM-RF correspond to the qcodes parameters [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#cluster-qrm-rf-module-out0-att) and [in0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#cluster-qrm-rf-module-in0-att) respectively.
+The parameters `output_att`s for QCM-RF correspond to the qcodes parameters [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#cluster-qcm-rf-module-out0-att) and [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#cluster-qcm-rf-module-out1-att).
 
 ```{code-block} python
 :linenos: true
@@ -320,10 +322,29 @@ mapping_config = {
             ...
         },
     },
+    "qrm_rf0": {
+        "instrument_type": "QRM_RF",
+        "complex_output_0": {
+            "output_att": 12,
+            "input_att": 10,
+            ...
+        },
+    },
+    "qcm_rf0": {
+        "instrument_type": "QCM_RF",
+        "complex_output_0": {
+            "output_att": 4,
+            ...
+        },
+        "complex_output_1": {
+            "output_att": 6,
+            ...
+        },
+    },
 }
 ```
 
-See [Qblox Instruments: Pulsar QRM parameters](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-parameters) documentation for allowed values.
+See [Qblox Instruments: QCM-QRM](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html) documentation for allowed values.
 
 ## Real mode
 
