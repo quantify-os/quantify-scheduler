@@ -14,7 +14,6 @@ from quantify_scheduler.schedules.verification import (
     awg_staircase_sched,
     multiplexing_staircase_sched,
 )
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture(scope="module", autouse=False)
@@ -63,16 +62,20 @@ def test_acquisition_staircase_amps(gen_acquisition_staircase_sched):
     assert_array_equal(np.array(amps), sched_kwargs["readout_pulse_amps"])
 
 
-def test_acq_staircase_comp_transmon(gen_acquisition_staircase_sched):
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+def test_acq_staircase_comp_transmon(
+    gen_acquisition_staircase_sched, load_example_transmon_config
+):
+    device_cfg = load_example_transmon_config
     _ = qcompile(gen_acquisition_staircase_sched[0], device_cfg=device_cfg)
 
 
-def test_acq_staircase_comp_qblox(gen_acquisition_staircase_sched):
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("qblox_test_mapping.json")
+def test_acq_staircase_comp_qblox(
+    gen_acquisition_staircase_sched,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
+):
+    device_cfg = load_example_transmon_config
+    hw_cfg = load_example_qblox_hardware_config
     _ = qcompile(
         gen_acquisition_staircase_sched[0],
         device_cfg=device_cfg,
@@ -80,10 +83,13 @@ def test_acq_staircase_comp_qblox(gen_acquisition_staircase_sched):
     )
 
 
-def test_acq_staircase_comp_zhinst(gen_acquisition_staircase_sched):
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+def test_acq_staircase_comp_zhinst(
+    gen_acquisition_staircase_sched,
+    load_example_transmon_config,
+    load_example_zhinst_hardware_config,
+):
+    device_cfg = load_example_transmon_config
+    hw_cfg = load_example_zhinst_hardware_config
     _ = qcompile(
         gen_acquisition_staircase_sched[0],
         device_cfg=device_cfg,
@@ -130,23 +136,33 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
     assert_array_equal(np.array(amps), sched_kwargs["pulse_amps"])
 
 
-def test_awg_staircase_comp_transmon(gen_awg_staircase_sched):
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+def test_awg_staircase_comp_transmon(
+    gen_awg_staircase_sched,
+    load_example_transmon_config,
+):
+    device_cfg = load_example_transmon_config
     _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg)
 
 
-def test_awg_staircase_comp_qblox(gen_awg_staircase_sched):
+def test_awg_staircase_comp_qblox(
+    gen_awg_staircase_sched,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
+):
 
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("qblox_test_mapping.json")
+    device_cfg = load_example_transmon_config
+    hw_cfg = load_example_qblox_hardware_config
     _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
 
-def test_awg_staircase_comp_zhinst(gen_awg_staircase_sched):
+def test_awg_staircase_comp_zhinst(
+    gen_awg_staircase_sched,
+    load_example_transmon_config,
+    load_example_zhinst_hardware_config,
+):
 
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+    device_cfg = load_example_transmon_config
+    hw_cfg = load_example_zhinst_hardware_config
     _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
 
 
@@ -172,16 +188,20 @@ def gen_multiplexing_staircase_sched(tmp_test_data_dir):
     return sched, sched_kwargs
 
 
-def test_multiplex_staircase_comp_transmon(gen_multiplexing_staircase_sched):
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+def test_multiplex_staircase_comp_transmon(
+    gen_multiplexing_staircase_sched, load_example_transmon_config
+):
+    device_cfg = load_example_transmon_config
     _ = qcompile(gen_multiplexing_staircase_sched[0], device_cfg=device_cfg)
 
 
-def test_multiplex_staircase_comp_qblox(gen_multiplexing_staircase_sched):
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("qblox_test_mapping.json")
+def test_multiplex_staircase_comp_qblox(
+    gen_multiplexing_staircase_sched,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
+):
+    device_cfg = load_example_transmon_config
+    hw_cfg = load_example_qblox_hardware_config
     _ = qcompile(
         gen_multiplexing_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg
     )
