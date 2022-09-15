@@ -207,7 +207,7 @@ def hermite_kwargs():
         "skewness": -0.7,
         "pi2_pulse": True,
         "center": None,
-        "duration_over_T": 6.0,
+        "duration_over_char_time": 6.0,
     }
     return kwargs
 
