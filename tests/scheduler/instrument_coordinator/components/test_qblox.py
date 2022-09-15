@@ -481,44 +481,6 @@ def test_prepare_rf(
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
 
-def test_retrieve_acquisition_cluster(
-    make_schedule_with_measurement,
-    mock_setup_basic_transmon,
-    load_example_qblox_hardware_config,
-    make_cluster_component,
-):
-    q4 = mock_setup_basic_transmon["q4"]
-    q4.clock_freqs.f01.set(5040000000)
-    q4.rxy.amp180(0.2)
-    q4.clock_freqs.f12(5.41e9)
-    q4.clock_freqs.readout(6950000000)
-    q4.measure.acq_delay(1.2e-07)
-
-    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
-
-    # Arrange
-    cluster_name = "cluster0"
-    cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
-
-    # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
-        compiled_schedule = qcompile(
-            make_schedule_with_measurement("q4"),
-            device_cfg,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
-        prog = dict(prog)
-
-        cluster.prepare(prog[cluster_name])
-        cluster.start()
-        acq = cluster.retrieve_acquisition()
-
-    # Assert
-    assert acq is not None
-
-
 def test_prepare_exception_qcm(close_all_instruments, make_qcm_component):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
