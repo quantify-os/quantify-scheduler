@@ -6,10 +6,7 @@ Code to set up a mock setup for use in tutorials and testing.
 """
 
 from typing import Dict
-import os
-from qcodes import Instrument
 
-from quantify_core.utilities import general
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import (

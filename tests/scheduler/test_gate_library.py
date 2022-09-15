@@ -2,6 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+# pylint: disable=redefined-outer-name
 from typing import Any
 from unittest import TestCase
 
@@ -311,11 +312,11 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     assert isinstance(schedule_hardware, CompiledSchedule)
     assert "compiled_instructions" in schedule_hardware.data
 
-    schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
-    schedule_hardware.timing_table.data.loc[1, "duration"] == pulse_duration
-    schedule_hardware.timing_table.data.loc[1, "abs_time"] == pulse_duration
-    schedule_hardware.timing_table.data.loc[0, "is_acquisition"] == False
-    schedule_hardware.timing_table.data.loc[1, "is_acquisition"] == False
+    assert schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
+    assert schedule_hardware.timing_table.data.loc[1, "duration"] == pulse_duration
+    assert schedule_hardware.timing_table.data.loc[1, "abs_time"] == pulse_duration
+    assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
+    assert schedule_hardware.timing_table.data.loc[1, "is_acquisition"] is False
 
     close_mock_setup(mock_nv_setup)
 

@@ -1,6 +1,6 @@
+# pylint: disable=redefined-outer-name
 import pytest
 
-from quantify_scheduler.compilation import validate_config
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
@@ -20,12 +20,12 @@ pytestmark = pytest.mark.usefixtures("close_all_instruments")
 
 @pytest.fixture
 def electronic_q0() -> BasicElectronicNVElement:
-    electronic_q0 = BasicElectronicNVElement("qe0")
+    q0 = BasicElectronicNVElement("qe0")
 
     # Electronic NV element is returned
-    yield electronic_q0
+    yield q0
     # after the test, teardown...
-    electronic_q0.close()
+    q0.close()
 
 
 def test_qubit_name(electronic_q0: BasicElectronicNVElement):
@@ -70,11 +70,11 @@ def test_mock_mv_setup():
 
 @pytest.fixture
 def dev() -> QuantumDevice:
-    dev = QuantumDevice("dev")
+    device = QuantumDevice("dev")
     coordinator = InstrumentCoordinator("ic")
-    dev.instr_instrument_coordinator(coordinator.name)
-    yield dev
-    dev.close()
+    device.instr_instrument_coordinator(coordinator.name)
+    yield device
+    device.close()
     coordinator.close()
 
 

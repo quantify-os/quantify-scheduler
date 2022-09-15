@@ -4,16 +4,11 @@
 Device elements for NV centers. Currently only for the electronic qubit,
 but could be extended for other qubits (eg. carbon qubit).
 """
-from cgitb import reset
 from typing import Dict, Any
-from numpy import power
 
-from qcodes.instrument.base import Instrument
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
-from quantify_core.utilities import deprecated
 from qcodes.instrument.parameter import (
-    InstrumentRefParameter,
     ManualParameter,
     Parameter,
 )
@@ -45,7 +40,7 @@ class Ports(InstrumentChannel):
 
 class ClocksFrequencies(InstrumentChannel):
     """
-    Submodule containing the clock frequencies specifying the transitions to address.
+    Submodule with clock frequencies specifying the transitions to address.
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -76,7 +71,7 @@ class ClocksFrequencies(InstrumentChannel):
 
 
 class SpectroscopyPulseMW(InstrumentChannel):  # SpectroscopyPulse
-    """Submodule containing parameters run a spectroscopy pulse in the microwave range."""
+    """Submodule with parameters run a spectroscopy pulse in the microwave range."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
