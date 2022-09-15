@@ -21,6 +21,7 @@ from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
+# pylint: disable=too-few-public-methods
 class Ports(InstrumentChannel):
     """
     Submodule containing the ports.
@@ -38,6 +39,7 @@ class Ports(InstrumentChannel):
         """Name of the element's microwave port."""
 
 
+# pylint: disable=too-few-public-methods
 class ClocksFrequencies(InstrumentChannel):
     """
     Submodule with clock frequencies specifying the transitions to address.
@@ -70,6 +72,7 @@ class ClocksFrequencies(InstrumentChannel):
         properties of the device element."""
 
 
+# pylint: disable=too-few-public-methods
 class SpectroscopyPulseMW(InstrumentChannel):  # SpectroscopyPulse
     """Submodule with parameters run a spectroscopy pulse in the microwave range."""
 
@@ -95,6 +98,7 @@ class SpectroscopyPulseMW(InstrumentChannel):  # SpectroscopyPulse
         """Duration of the MW pulse."""
 
 
+# pylint: disable=too-few-public-methods
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing a single fixed-frequency transmon qubit coupled to a

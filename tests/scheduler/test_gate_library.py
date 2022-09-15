@@ -8,6 +8,7 @@ from unittest import TestCase
 
 import numpy as np
 import pytest
+from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import Operation, Schedule, Schedulable
 from quantify_scheduler.device_under_test.mock_setup import (
@@ -29,7 +30,6 @@ from quantify_scheduler.operations.gate_library import (
 )
 from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.schedules.schedule import CompiledSchedule
-from quantify_core.data.handling import set_datadir
 
 
 def test_schedule_add_schedulables() -> None:

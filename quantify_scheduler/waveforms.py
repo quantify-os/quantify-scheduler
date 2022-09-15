@@ -393,6 +393,8 @@ def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarra
     return mod_I + 1j * mod_Q
 
 
+# pylint: disable=too-many-locals
+# pylint: disable=invalid-name
 def skewed_hermite(
     t: np.ndarray,
     duration: float,
@@ -401,7 +403,7 @@ def skewed_hermite(
     phase: float,
     pi2_pulse: bool = False,
     center: Optional[float] = None,
-    duration_over_T: float = 6.0,
+    duration_over_char_time: float = 6.0,
 ) -> np.ndarray:
     """Generates a skewed hermite pulse for single qubit rotations in NV centers.
 
@@ -430,7 +432,7 @@ def skewed_hermite(
     center
         Optional: time after which the pulse center occurs. If ``None``, it is
         automatically set to duration/2.
-    duration_over_T
+    duration_over_char_time
         Ratio of the pulse duration and the characteristic time of the hermite
         polynomial. Increasing this number will compress the pulse. By default, 6.
 
@@ -449,7 +451,7 @@ def skewed_hermite(
     #   - characteristic time of hermite polynomial
     #   - hermite factor
     #   - center position of pulse
-    t_hermite = duration / duration_over_T
+    t_hermite = duration / duration_over_char_time
     hermite_factor = PI2_HERMITE_FACTOR if pi2_pulse else PI_HERMITE_FACTOR
     if center is None:
         center = duration / 2.0
