@@ -272,6 +272,7 @@ class Sequencer:
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
         downconverter_freq: float = 0,
+        mixing: bool = False,
     ):
         """
         Constructor for the sequencer compiler.
@@ -295,6 +296,9 @@ class Sequencer:
         downconverter_freq
             Frequency of the external downconverter if one is being used.
             Defaults to 0, in which case no downconverter is being used.
+        mixing
+            Boolean flag for IQ mixing.
+            Defaults to False meaning no IQ mixing is applied.
         """
         self.parent = parent
         self.index = index
@@ -304,6 +308,7 @@ class Sequencer:
         self.acquisitions: List[IOperationStrategy] = []
         self.associated_ext_lo: str = lo_name
         self.downconverter_freq: float = downconverter_freq
+        self.mixing: bool = mixing
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -1022,6 +1027,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             lo_name = io_cfg.get("lo_name", None)
             downconverter_freq = io_cfg.get("downconverter_freq", 0)
+            mixing = io_cfg.get("mixing", False)
 
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
                 "portclock_configs", []
@@ -1047,6 +1053,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
+                        mixing=mixing,
                         downconverter_freq=downconverter_freq,
                     )
                     sequencers[new_seq.name] = new_seq
@@ -1426,10 +1433,10 @@ class QbloxBasebandModule(QbloxBaseModule):
         r"""
         Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
-        For each sequencer, the following relation is obeyed:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
+        For each sequencer, the following relation is obeyed
+        (if mixing is set to True) :math:`f_{RF} = f_{LO} + f_{IF}`.
 
-        In this step it is thus expected that either the IF and/or the LO frequency has
+        If mixing is True it is thus expected that either the IF and/or the LO frequency has
         been set during instantiation. Otherwise an error is thrown. If the frequency
         is overconstraint (i.e. multiple values are somehow specified) an error is
         thrown during assignment.
@@ -1450,6 +1457,10 @@ class QbloxBasebandModule(QbloxBaseModule):
         )
         if lo_compiler is None:
             sequencer.frequency = clock_freq
+            return
+
+        if sequencer.mixing is False:
+            sequencer.settings.nco_en = True
             return
 
         if_freq = sequencer.frequency
