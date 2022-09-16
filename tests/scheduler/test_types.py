@@ -429,13 +429,17 @@ def test_sched_hardware_waveform_dict(
         load_example_zhinst_hardware_config,
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
+
+    # filter out operations that are not waveforms such as Reset and ClockPhaseReset, that
+    # have port = None.
+    mask = compiled_schedule.hardware_timing_table.data.port.apply(
+        lambda port: port is not None
+    )
+    hardware_timing_table = hardware_timing_table.data[mask]
     hardware_waveform_dict = compiled_schedule.hardware_waveform_dict
 
-    waveform_ids = hardware_timing_table.data.waveform_id
+    waveform_ids = hardware_timing_table.waveform_id
     for waveform_id in waveform_ids:
-        if "Reset" in waveform_id:
-            # Ignore the reset operation because it will return None
-            continue
         assert isinstance(hardware_waveform_dict.get(waveform_id), np.ndarray)
 
 
