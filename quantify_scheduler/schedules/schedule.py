@@ -666,8 +666,8 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     This operation is currently represented by an operation ID.
 
     Schedulables can contain an arbitrary number of timing constraints to determine the
-    timing. Multiple different constraints are currently resolved by delaying the
-    element until after all timing constraints have been met, to aid compatibility.
+    timing. Multiple different constraints are currently resolved by delaying the element
+    until after all timing constraints have been met, to aid compatibility.
     To specify an exact timing between two schedulables, please ensure to only specify
     exactly one timing constraint.
     """
@@ -685,7 +685,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         operation_repr
             The operation which is to be executed by this schedulable
         schedule
-            The schedule to which the schedulable is added. This allows ``Schedulable``
+            The schedule to which the schedulable is added. This allows schedulable
             to find other elements on the schedule
         """
         super().__init__()

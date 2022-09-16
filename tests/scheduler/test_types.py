@@ -290,7 +290,7 @@ def test_t1_sched_circuit_diagram(t1_schedule):
     Tests that the test schedule can be visualized
     """
     # will only test that a figure is created and runs without errors
-    _ = t1_schedule.plot_circuit_diagram_mpl()
+    _ = t1_schedule.plot_circuit_diagram()
 
 
 def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
@@ -303,7 +303,7 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
     comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
 
     # will only test that a figure is created and runs without errors
-    _ = comp_sched.plot_pulse_diagram_mpl()
+    _ = comp_sched.plot_pulse_diagram()
 
 
 @pytest.mark.parametrize("reset_clock_phase", (True, False))

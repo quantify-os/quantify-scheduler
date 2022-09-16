@@ -5,6 +5,7 @@
 ### Breaking changes
 
 - Compilation - Compilation is now a graph. (#305, !407)
+- Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 
 ### Merged branches and closed issues
 
@@ -12,8 +13,8 @@
 - Docs - Sources are converted from restructured text format to MyST markdown. (!452)
 - Docs - Add pin on nbclient\<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)
 - Docs - Added documentation and unit tests for the Rxy, X, X90, Y and Y90 unitaries (#349)
-- Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407)
-- Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420)
+- Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
+- Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420, !469)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
 - Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
