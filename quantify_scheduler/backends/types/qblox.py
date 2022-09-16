@@ -11,6 +11,7 @@ from dataclasses_json import DataClassJsonMixin
 
 from quantify_scheduler.backends.qblox import constants
 
+import dataclasses
 
 @dataclass(frozen=True)
 class BoundedParameter:
@@ -36,6 +37,10 @@ class MarkerConfiguration:
     """
     end: Optional[int]
     """Setting set in the footer at the end of the program."""
+    output_map: Dict[str, int] = dataclasses.field(default_factory=dict)
+    """A mapping from output name to marker setting.
+    Specifies which marker bit needs to be set at start if the
+    output in string contains a pulse."""
 
 
 @dataclass(frozen=True)

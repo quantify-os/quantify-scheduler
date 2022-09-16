@@ -46,6 +46,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
+import dataclasses
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -234,6 +235,20 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
         portclocks_used.update(self._acquisitions.keys())
+        return portclocks_used
+
+    @property
+    def _portclocks_with_pulses(self) -> Set[Tuple[str, str]]:
+        """
+        All the port-clock combinations associated with at least one pulse.
+        Returns
+        -------
+        :
+            A set containing all the port-clock combinations that are used by this
+            InstrumentCompiler.
+        """
+        portclocks_used = set()
+        portclocks_used.update(self._pulses.keys())
         return portclocks_used
 
     @abstractmethod
@@ -1008,37 +1023,37 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
+        # Figure out which outputs need to be turned on.
+        marker_start_config = self.static_hw_properties.marker_configuration.start
+        for io, io_cfg in self.hw_mapping.items():
+            if (not isinstance(io_cfg, dict) or
+                io not in self.static_hw_properties.valid_ios
+            ):
+                continue
+
+            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
+                "portclock_configs", []
+            )
+            if not portclock_configs:
+                continue
+
+            for target in portclock_configs:
+                portclock = (target["port"], target["clock"])
+                if portclock in self._portclocks_with_pulses:
+                    output_map = self.static_hw_properties.marker_configuration.output_map
+                    if io in output_map:
+                        marker_start_config |= output_map[io]
+        updated_static_hw_properties = dataclasses.replace(self.static_hw_properties,
+            marker_configuration=MarkerConfiguration(
+                    init=self.static_hw_properties.marker_configuration.init,
+                    start=marker_start_config,
+                    end=self.static_hw_properties.marker_configuration.end,
+                )
+        )
+
+        # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
         portclock_output_map: Dict[Tuple, str] = {}
-
-        def _update_marker_start(
-            static_hw_properties: StaticHardwareProperties,
-        ) -> StaticHardwareProperties:
-            """Update marker configuration to only turn on for outputs which are used."""
-            marker_start_config = 0
-            marker_start_output_configuration = {
-                "complex_output_0": 0b0011,
-                "complex_output_1": 0b1100,
-                "real_output_0": 0b0001,
-                "real_output_1": 0b0010,
-                "real_output_2": 0b0100,
-                "real_output_3": 0b1000,
-            }
-            for output_label, marker in marker_start_output_configuration.items():
-                if output_label in self.hw_mapping.keys():
-                    marker_start_config |= marker
-            return StaticHardwareProperties(
-                static_hw_properties.instrument_type,
-                static_hw_properties.max_sequencers,
-                static_hw_properties.max_awg_output_voltage,
-                MarkerConfiguration(
-                    init=static_hw_properties.marker_configuration.init,
-                    start=marker_start_config,
-                    end=static_hw_properties.marker_configuration.end,
-                ),
-                static_hw_properties.mixer_dc_offset_range,
-                static_hw_properties.valid_ios,
-            )
 
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
@@ -1072,9 +1087,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         parent=self,
                         index=seq_idx,
                         portclock=portclock,
-                        static_hw_properties=_update_marker_start(
-                            self.static_hw_properties
-                        ),
+                        static_hw_properties=updated_static_hw_properties,
                         connected_outputs=connected_outputs,
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,
