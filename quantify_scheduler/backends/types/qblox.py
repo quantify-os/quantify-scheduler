@@ -13,6 +13,7 @@ from quantify_scheduler.backends.qblox import constants
 
 import dataclasses
 
+
 @dataclass(frozen=True)
 class BoundedParameter:
     """Specifies a certain parameter with a fixed max and min in a certain unit."""

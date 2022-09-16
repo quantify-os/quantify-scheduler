@@ -1026,8 +1026,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         # Figure out which outputs need to be turned on.
         marker_start_config = self.static_hw_properties.marker_configuration.start
         for io, io_cfg in self.hw_mapping.items():
-            if (not isinstance(io_cfg, dict) or
-                io not in self.static_hw_properties.valid_ios
+            if (
+                not isinstance(io_cfg, dict)
+                or io not in self.static_hw_properties.valid_ios
             ):
                 continue
 
@@ -1040,15 +1041,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             for target in portclock_configs:
                 portclock = (target["port"], target["clock"])
                 if portclock in self._portclocks_with_pulses:
-                    output_map = self.static_hw_properties.marker_configuration.output_map
+                    output_map = (
+                        self.static_hw_properties.marker_configuration.output_map
+                    )
                     if io in output_map:
                         marker_start_config |= output_map[io]
-        updated_static_hw_properties = dataclasses.replace(self.static_hw_properties,
+        updated_static_hw_properties = dataclasses.replace(
+            self.static_hw_properties,
             marker_configuration=MarkerConfiguration(
-                    init=self.static_hw_properties.marker_configuration.init,
-                    start=marker_start_config,
-                    end=self.static_hw_properties.marker_configuration.end,
-                )
+                init=self.static_hw_properties.marker_configuration.init,
+                start=marker_start_config,
+                end=self.static_hw_properties.marker_configuration.end,
+            ),
         )
 
         # Setup each sequencer.
