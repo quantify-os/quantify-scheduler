@@ -430,8 +430,8 @@ def test_sched_hardware_waveform_dict(
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
 
-    # filter out operations that are not waveforms such as Reset and ClockPhaseReset, that
-    # have port = None.
+    # filter out operations that are not waveforms such as Reset and ClockPhaseReset,
+    # that have port = None.
     mask = compiled_schedule.hardware_timing_table.data.port.apply(
         lambda port: port is not None
     )

@@ -66,7 +66,7 @@ from quantify_scheduler.compilation import (
 
 from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -82,13 +82,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-
-from quantify_scheduler.device_under_test.transmon_element import (
-    BasicTransmonElement,
-)
-from quantify_core.measurement import Gettable, MeasurementControl
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 from tests.fixtures.mock_setup import close_instruments
 
@@ -1034,7 +1027,6 @@ def test_compile_simple_with_acq(
 def test_compile_acq_measurement_with_clock_phase_reset(
     mock_setup_basic_transmon,
     load_example_qblox_hardware_config,
-    load_example_transmon_config,
     reset_clock_phase,
 ):
     set_standard_params_transmon(mock_setup_basic_transmon)
@@ -1068,8 +1060,8 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     reset_counts = program.count(" reset_ph ")
     expected_counts = (1 + len(times)) if reset_clock_phase else 1
     assert reset_counts == expected_counts, (
-        f"Expected qasm program to contain `reset_ph`-instruction {expected_counts} times, "
-        f"but found {reset_counts} times instead."
+        f"Expected qasm program to contain `reset_ph`-instruction {expected_counts} "
+        f"times, but found {reset_counts} times instead."
     )
 
 
