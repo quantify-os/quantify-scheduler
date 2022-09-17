@@ -54,7 +54,6 @@ extensions = [
     # however the smart_resolver seems to fail for external packages like `zhinst`
     "scanpydoc.elegant_typehints",
     "sphinxcontrib.bibtex",
-    "quantify_core.sphinx_extensions.notebook_to_jupyter_sphinx",
     "autoapi.extension",
 ]
 
@@ -339,8 +338,6 @@ import pydantic
 #     from my_expensive_to_import_module import BlaClass # Potential circular import
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
-
-notebook_to_jupyter_sphinx_always_rebuild = False
 
 # Enable nitpicky mode - warns about all references where the target cannot be found
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
