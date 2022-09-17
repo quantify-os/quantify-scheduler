@@ -315,7 +315,9 @@ def test_get_port_timeline_with_acquisition(
     acq_operation_id = list(schedule.schedulables.values())[2]["operation_repr"]
     acq_operation = schedule.operations[acq_operation_id]
 
-    ro_pulse_info = acq_operation["pulse_info"][0]
+    # Acquisition consists of a reset_clock_phase instruction
+    # and a readout-pulse. We select here the actual readout-pulse.
+    ro_pulse_info = acq_operation["pulse_info"][1]
     ro_pulse_id = get_pulse_uuid(ro_pulse_info)
 
     acq_info = acq_operation["acquisition_info"][0]
@@ -471,6 +473,7 @@ def test_schedule_timing_table(
     expected_abs_timing = [
         0.0,
         reset_duration,
+        reset_duration + X90_duration,
         reset_duration + X90_duration,
         reset_duration + X90_duration + measure_acq_delay,
     ]

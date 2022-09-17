@@ -1032,11 +1032,12 @@ def test_compile_simple_with_acq(
     [True, False],
 )
 def test_compile_acq_measurement_with_clock_phase_reset(
-    mock_setup,
+    mock_setup_basic_transmon,
     load_example_qblox_hardware_config,
     load_example_transmon_config,
     reset_clock_phase,
 ):
+    set_standard_params_transmon(mock_setup_basic_transmon)
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     schedule = Schedule("Test schedule")
@@ -1055,14 +1056,8 @@ def test_compile_acq_measurement_with_clock_phase_reset(
             label=f"Measurement {q0}{i}",
         )
 
-    device_cfg = load_example_transmon_config
-    device_cfg.elements.get("q0").get("measure").factory_kwargs[
-        "reset_clock_phase"
-    ] = reset_clock_phase
-
-    #   should be replaced by below when mock_setup is updated
-    # mock_setup["q0"].measure.reset_clock_phase(reset_clock_phase)
-    # device_cgf = mock_setup["quantum_device"].generate_device_config()
+    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
 
     compiled_schedule = qcompile(
         schedule, device_cfg, load_example_qblox_hardware_config
@@ -1300,17 +1295,15 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 # --------- Test compilation functions ---------
 @pytest.mark.parametrize("reset_clock_phase", [True, False])
 def test_assign_pulse_and_acq_info_to_devices(
-    mock_setup,
+    mock_setup_basic_transmon,
     mixed_schedule_with_acquisition,
     load_example_qblox_hardware_config,
     reset_clock_phase,
 ):
     sched = mixed_schedule_with_acquisition
 
-    device_cfg = mock_setup["quantum_device"].generate_device_config()
-    device_cfg.elements.get("q0").get("measure").factory_kwargs[
-        "reset_clock_phase"
-    ] = reset_clock_phase
+    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
 
     sched_with_pulse_info = device_compile(sched, device_cfg)
 
