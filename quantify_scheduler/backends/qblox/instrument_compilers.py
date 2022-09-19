@@ -173,7 +173,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
         max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(
             init=0b0011,
-            start=0b0000,
+            start=0b1100,
             end=0b0000,
             output_map={
                 "complex_output_0": 0b0001,
@@ -198,7 +198,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
         max_awg_output_voltage=0.25,
         marker_configuration=MarkerConfiguration(
             init=0b0011,
-            start=0b0000,
+            start=0b1100,
             end=0b0000,
             output_map={
                 "complex_output_0": 0b0001,
