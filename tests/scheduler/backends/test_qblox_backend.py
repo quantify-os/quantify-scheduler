@@ -641,6 +641,7 @@ def test_find_all_port_clock_combinations(load_example_qblox_hardware_config):
         ("q3:mw", "q3.01"),
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
+        ("q6:mw", "q6.01"),
         ("q4:res", "q4.ro"),
         ("q5:res", "q5.ro"),
         ("q0:fl", "cl0.baseband"),
@@ -657,7 +658,7 @@ def test_generate_port_clock_to_device_map(load_example_qblox_hardware_config):
         load_example_qblox_hardware_config
     )
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 18
+    assert len(portclock_map.keys()) == 19
 
 
 # --------- Test classes and member methods ---------
@@ -804,7 +805,10 @@ def test_portclocks(
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
     assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
+    assert compilers["cluster0_module2"].portclocks == [
+        ("q5:mw", "q5.01"),
+        ("q6:mw", "q6.01"),
+    ]
 
 
 def test_compile_simple(
