@@ -550,6 +550,7 @@ def test_prepare_cluster_rf(
 
 
 def test_prepare_rf(
+    close_all_instruments,
     mock_setup_basic_transmon,
     schedule_with_measurement_q2,
     load_example_qblox_hardware_config,
