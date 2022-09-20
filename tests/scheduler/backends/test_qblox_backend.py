@@ -662,75 +662,6 @@ def test_generate_port_clock_to_device_map(load_example_qblox_hardware_config):
 
 
 # --------- Test classes and member methods ---------
-def test_portclocks(
-    make_basic_multi_qubit_schedule, load_example_qblox_hardware_config
-):
-
-    device_config = {
-        "backend": "quantify_scheduler.compilation.add_pulse_information_transmon",
-        "edges": {},
-        "qubits": {
-            "q4": {
-                "params": {
-                    "acquisition": "SSBIntegrationComplex",
-                    "init_duration": 0.0002,
-                    "mw_amp180": 0.25,
-                    "mw_duration": 1.6e-08,
-                    "mw_ef_amp180": 0.87,
-                    "mw_freq": 6.02e9,
-                    "mw_motzoi": 0.45,
-                },
-                "resources": {
-                    "clock_01": "q4.01",
-                    "clock_12": "q4.12",
-                    "clock_ro": "q4.ro",
-                    "port_flux": "q4:fl",
-                    "port_mw": "q4:mw",
-                    "port_ro": "q4:res",
-                },
-            },
-            "q5": {
-                "params": {
-                    "acquisition": "SSBIntegrationComplex",
-                    "init_duration": 0.0002,
-                    "mw_amp180": 0.25,
-                    "mw_duration": 2e-08,
-                    "mw_ef_amp180": 0.67,
-                    "mw_freq": 5.02e9,
-                    "mw_motzoi": 0.45,
-                },
-                "resources": {
-                    "clock_01": "q5.01",
-                    "clock_12": "q5.12",
-                    "clock_ro": "q5.ro",
-                    "port_flux": "q5:fl",
-                    "port_mw": "q5:mw",
-                    "port_ro": "q5:res",
-                },
-            },
-        },
-    }
-
-    sched = make_basic_multi_qubit_schedule(["q4", "q5"])
-    sched = device_compile(sched, device_config)
-
-    hardware_cfg = load_example_qblox_hardware_config
-    container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg
-    )
-
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=hardware_cfg,
-        device_compilers=container.instrument_compilers,
-    )
-
-    compilers = container.instrument_compilers["cluster0"].instrument_compilers
-    assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [
-        ("q5:mw", "q5.01"),
-        ("q6:mw", "q6.01"),
-    ]
 
 
 def test_construct_sequencers(
@@ -874,7 +805,7 @@ def test_portclocks(
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
     assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01")]
+    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01"), ("q6:mw", "q6.01")]
 
 
 def test_compile_simple(
