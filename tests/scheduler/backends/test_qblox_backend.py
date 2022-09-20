@@ -805,7 +805,10 @@ def test_portclocks(
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
     assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [("q5:mw", "q5.01"), ("q6:mw", "q6.01")]
+    assert compilers["cluster0_module2"].portclocks == [
+        ("q5:mw", "q5.01"),
+        ("q6:mw", "q6.01"),
+    ]
 
 
 def test_compile_simple(
