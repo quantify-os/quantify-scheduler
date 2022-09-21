@@ -1763,7 +1763,7 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
         program["qcm_rf0"], MarkerConfiguration(init=3, start=13, end=0), is_rf=True
     )
     _confirm_correct_markers(
-        program["qrm_rf0"], MarkerConfiguration(init=3, start=13, end=0), is_rf=True
+        program["qrm_rf0"], MarkerConfiguration(init=3, start=15, end=0), is_rf=True
     )
 
 
