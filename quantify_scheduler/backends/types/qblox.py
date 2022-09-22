@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
+from dataclasses import field as dataclasses_field
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple, Union, List
 
 from dataclasses_json import DataClassJsonMixin
 
 from quantify_scheduler.backends.qblox import constants
-
-import dataclasses
 
 
 @dataclass(frozen=True)
@@ -38,7 +37,7 @@ class MarkerConfiguration:
     """
     end: Optional[int]
     """Setting set in the footer at the end of the program."""
-    output_map: Dict[str, int] = dataclasses.field(default_factory=dict)
+    output_map: Dict[str, int] = dataclasses_field(default_factory=dict)
     """A mapping from output name to marker setting.
     Specifies which marker bit needs to be set at start if the
     output in string contains a pulse."""

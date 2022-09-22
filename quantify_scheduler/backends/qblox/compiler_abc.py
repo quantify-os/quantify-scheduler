@@ -12,6 +12,7 @@ from functools import partial
 from os import makedirs, path
 from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
 
+import dataclasses
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -46,7 +47,6 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
-import dataclasses
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
