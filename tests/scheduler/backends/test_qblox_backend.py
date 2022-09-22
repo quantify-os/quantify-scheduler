@@ -1754,16 +1754,20 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
                 assert match == answer
 
     _confirm_correct_markers(
-        program["qcm0"], MarkerConfiguration(init=None, start=15, end=0)
+        program["qcm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
     )
     _confirm_correct_markers(
-        program["qrm0"], MarkerConfiguration(init=None, start=15, end=0)
+        program["qrm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
     )
     _confirm_correct_markers(
-        program["qcm_rf0"], MarkerConfiguration(init=3, start=13, end=0), is_rf=True
+        program["qcm_rf0"],
+        MarkerConfiguration(init=0b0011, start=0b1101, end=0),
+        is_rf=True,
     )
     _confirm_correct_markers(
-        program["qrm_rf0"], MarkerConfiguration(init=3, start=15, end=0), is_rf=True
+        program["qrm_rf0"],
+        MarkerConfiguration(init=0b0011, start=0b1111, end=0),
+        is_rf=True,
     )
 
 
