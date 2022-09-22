@@ -450,12 +450,17 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
             protocol = acq_protocol["protocol"]
             bin_mode = acq_protocol["bin_mode"]
             acq_return_type = acq_protocol["acq_return_type"]
+            acq_duration = acq_protocol["duration"]
 
         # test limitation: all acquisition protocols in a schedule must be of
         # the same kind
-        assert acq_protocol["protocol"] == protocol
-        assert acq_protocol["bin_mode"] == bin_mode
-        assert acq_protocol["acq_return_type"] == acq_return_type
+        if (
+            acq_protocol["protocol"] != protocol
+            or acq_protocol["bin_mode"] != bin_mode
+            or acq_protocol["acq_return_type"] != acq_return_type
+            or acq_protocol["duration"] != acq_duration
+        ):
+            raise RuntimeError("Acquisition protocols are not of the same kind. ")
 
         # add the individual channel
         if acq_protocol["acq_channel"] not in acq_indices.keys():
@@ -463,12 +468,13 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
 
         acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
-    # combine the information in the acq metada dataclass.
+    # combine the information in the acq metadata dataclass.
     acq_metadata = AcquisitionMetadata(
         acq_protocol=protocol,
         bin_mode=bin_mode,
         acq_indices=acq_indices,
         acq_return_type=acq_return_type,
+        acq_duration=acq_duration,
     )
     return acq_metadata
 

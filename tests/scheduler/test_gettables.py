@@ -53,6 +53,7 @@ def test_process_acquired_data(
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={i: [0] for i in range(num_channels)},
+        acq_duration=1e-6,
     )
     mock_data = {AcquisitionIndexing(i, 0): (4815, 162342) for i in range(num_channels)}
     gettable = ScheduleGettable(
@@ -100,6 +101,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={0: [0]},
+        acq_duration=1e-6,
     )
 
     data = 1 * np.exp(1j * np.deg2rad(45))
@@ -327,6 +329,7 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={0: range(50)},
+        acq_duration=1e-6,
     )
 
     data = np.ones(50) * np.exp(1j * np.deg2rad(45))

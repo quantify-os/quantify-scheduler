@@ -789,14 +789,23 @@ class _QRMAcquisitionManager:
             acquisition_function: Callable = protocol_to_function_mapping[
                 acq_metadata.acq_protocol
             ]
-
+            sample_size = int(
+                round(acq_metadata.acq_duration * constants.SAMPLING_RATE)
+            )
+            if sample_size < 0 or sample_size > constants.MAX_SAMPLE_SIZE:
+                raise ValueError(
+                    f"Attempting to retrieve {sample_size} samples from QRM. "
+                    f"A QRM can return {constants.MAX_SAMPLE_SIZE} samples per time."
+                )
             # retrieve the raw data from the qrm sequencer module
             acquisitions = self.instrument.get_acquisitions(seq_idx)
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 # the acquisition_function retrieves the right part of the acquisitions
                 # data structure returned by the qrm
                 i_vals, q_vals = acquisition_function(
-                    acquisitions=acquisitions, acq_channel=acq_channel
+                    acquisitions=acquisitions,
+                    acq_channel=acq_channel,
+                    sample_size=sample_size,
                 )
 
                 # the Qblox compilation backend verifies that the
@@ -872,7 +881,7 @@ class _QRMAcquisitionManager:
         return ch_and_idx
 
     def _get_scope_data(
-        self, acquisitions: dict, acq_channel: int = 0
+        self, acquisitions: dict, sample_size: int, acq_channel: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the scope mode acquisition associated with an `acq_channel`.
@@ -881,6 +890,8 @@ class _QRMAcquisitionManager:
         ----------
         acq_channel
             The acq_channel to get the scope mode acquisition for.
+        sample_size
+            The number of samples to return.
 
         Returns
         -------
@@ -898,12 +909,12 @@ class _QRMAcquisitionManager:
                     f"acq_channel={acq_channel}  was out-of-range."
                 )
         # NB hardware already divides by avg_count for scope mode
-        scope_data_i = np.array(scope_data["path0"]["data"])
-        scope_data_q = np.array(scope_data["path1"]["data"])
+        scope_data_i = np.array(scope_data["path0"]["data"][:sample_size])
+        scope_data_q = np.array(scope_data["path1"]["data"][:sample_size])
         return scope_data_i, scope_data_q
 
     def _get_integration_data(
-        self, acquisitions: dict, acq_channel: int = 0
+        self, acquisitions: dict, sample_size: int, acq_channel: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
@@ -914,6 +925,8 @@ class _QRMAcquisitionManager:
             The acquisitions dict as returned by the sequencer.
         acq_channel
             The `acq_channel` from which to get the data.
+        sample_size
+            The number of samples to return.
 
         Returns
         -------
@@ -926,14 +939,14 @@ class _QRMAcquisitionManager:
         bin_data = self._get_bin_data(acquisitions, acq_channel)
 
         i_data, q_data = (
-            np.array(bin_data["integration"]["path0"]),
-            np.array(bin_data["integration"]["path1"]),
+            np.array(bin_data["integration"]["path0"][:sample_size]),
+            np.array(bin_data["integration"]["path1"][:sample_size]),
         )
 
         return i_data, q_data
 
     def _get_integration_amplitude_data(
-        self, acquisitions: dict, acq_channel: int = 0
+        self, acquisitions: dict, sample_size: int, acq_channel: int = 0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Gets the integration data but normalized to the integration time (number of
@@ -947,6 +960,8 @@ class _QRMAcquisitionManager:
             The acquisitions dict as returned by the sequencer.
         acq_channel
             The `acq_channel` from which to get the data.
+        sample_size
+            The number of samples to return.
 
         Returns
         -------
@@ -961,13 +976,13 @@ class _QRMAcquisitionManager:
                 " but it is `None`."
             )
         compensated_data_i, compensated_data_q = self._get_integration_data(
-            acquisitions=acquisitions, acq_channel=acq_channel
+            acquisitions=acquisitions, acq_channel=acq_channel, sample_size=sample_size
         )
         compensated_data_i, compensated_data_q = (
             compensated_data_i / self.integration_length_acq,
             compensated_data_q / self.integration_length_acq,
         )
-        return compensated_data_i, compensated_data_q
+        return compensated_data_i[:sample_size], compensated_data_q[:sample_size]
 
     def _get_threshold_data(
         self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0

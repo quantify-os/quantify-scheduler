@@ -369,17 +369,18 @@ def test_trace_acquisition_measurement_control(
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
+    acq_duration = 5e-6  # retrieve 5000 samples
     q2 = mock_setup_basic_transmon["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(7404000000.0)
+    q2.measure.integration_time(acq_duration)
 
     sample_param = ManualParameter("sample", label="Sample time", unit="s")
     sample_param.batched = True
 
-    sample_size = 16384  # Trace acquisition will always return 16384 samples
     sampling_rate = constants.SAMPLING_RATE
     sample_times = np.arange(
-        start=0, stop=sample_size / sampling_rate, step=1 / sampling_rate
+        start=0, stop=acq_duration, step=1 / sampling_rate
     )
 
     sched_gettable = ScheduleGettable(
@@ -405,8 +406,7 @@ def test_trace_acquisition_measurement_control(
         except:
             pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
             raise
-
-    assert dataset.sizes == {"dim_0": sample_size}
+    assert dataset.sizes == {"dim_0": acq_duration * sampling_rate}
 
     instr_coordinator.remove_component(ic_cluster0.name)
 

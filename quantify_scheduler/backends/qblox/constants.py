@@ -58,3 +58,4 @@ NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
 GENERIC_IC_COMPONENT_NAME: str = "generic"
 """Default name for the generic instrument coordinator component."""
+MAX_SAMPLE_SIZE: int = 16384
