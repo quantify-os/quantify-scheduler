@@ -1046,6 +1046,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     )
                     if io in output_map:
                         marker_start_config |= output_map[io]
+
         updated_static_hw_properties = dataclasses.replace(
             self.static_hw_properties,
             marker_configuration=MarkerConfiguration(
