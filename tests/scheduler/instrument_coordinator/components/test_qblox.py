@@ -825,8 +825,9 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
     acq_manager = qblox._QRMAcquisitionManager(
         qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
     )
+    acq_manager.integration_length_acq[0] = 10
     data = acq_manager._get_integration_data(
-        mock_acquisition_data, sample_size=2000, acq_channel=0
+        mock_acquisition_data, acq_channel=0, seq_idx=0
     )
     np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
     np.testing.assert_array_equal(data[1], np.array([0.0] * 10))

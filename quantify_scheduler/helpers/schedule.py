@@ -450,7 +450,6 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
             protocol = acq_protocol["protocol"]
             bin_mode = acq_protocol["bin_mode"]
             acq_return_type = acq_protocol["acq_return_type"]
-            acq_duration = acq_protocol["duration"]
 
         # test limitation: all acquisition protocols in a schedule must be of
         # the same kind
@@ -458,7 +457,6 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
             acq_protocol["protocol"] != protocol
             or acq_protocol["bin_mode"] != bin_mode
             or acq_protocol["acq_return_type"] != acq_return_type
-            or acq_protocol["duration"] != acq_duration
         ):
             raise RuntimeError("Acquisition protocols are not of the same kind. ")
 
@@ -474,7 +472,6 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
         bin_mode=bin_mode,
         acq_indices=acq_indices,
         acq_return_type=acq_return_type,
-        acq_duration=acq_duration,
     )
     return acq_metadata
 

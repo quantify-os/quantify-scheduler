@@ -926,9 +926,6 @@ class AcquisitionMetadata:
     acq_indices: Dict[int, List[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
-    acq_duration: float
-    """ A float specifying the duration of the acquisition. Used to truncate the number
-    of samples returned if necessary. """
 
     def __getstate__(self):
         data = dataclasses.asdict(self)

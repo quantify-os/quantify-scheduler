@@ -411,7 +411,6 @@ def test_acquisition_metadata():
             bin_mode=binmode,
             acq_return_type=complex,
             acq_indices={0: [0]},
-            acq_duration=1e-6,
         )
         # test whether the copy function works correctly
         metadata_copy = copy.copy(metadata)
@@ -425,7 +424,6 @@ def test_acquisition_metadata():
             bin_mode=enums.BinMode.AVERAGE,
             acq_return_type=return_type,
             acq_indices={0: [0]},
-            acq_duration=1e-6,
         )
         # test whether the copy function works correctly
         metadata_copy = copy.copy(metadata)
@@ -447,7 +445,6 @@ def test_acquisition_metadata():
         bin_mode=enums.BinMode.AVERAGE,
         acq_return_type=type,
         acq_indices={0: [0]},
-        acq_duration=1e-6,
     )
     with pytest.raises(ValueError):
         copy.copy(metadata2)
@@ -458,7 +455,6 @@ def test_acquisition_metadata():
         bin_mode="forget",
         acq_return_type=complex,
         acq_indices={0: [0]},
-        acq_duration=1e-6,
     )
     with pytest.raises(ValueError):
         copy.copy(metadata3)
