@@ -1257,8 +1257,8 @@ def test_assign_pulse_and_acq_info_to_devices(
         load_example_qblox_hardware_config,
     )
     qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+    assert len(qrm._pulses[list(qrm._portclocks_with_data)[0]]) == 1
+    assert len(qrm._acquisitions[list(qrm._portclocks_with_data)[0]]) == 1
 
 
 def test_container_prepare(

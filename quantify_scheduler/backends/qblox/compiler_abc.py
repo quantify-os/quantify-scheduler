@@ -221,7 +221,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
-    def portclocks_with_data(self) -> Set[Tuple[str, str]]:
+    def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
         """
         All the port-clock combinations associated with at least one pulse and/or
         acquisition.
@@ -1085,7 +1085,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             for target in portclock_configs:
                 portclock = (target["port"], target["clock"])
 
-                if portclock in self.portclocks_with_data:
+                if portclock in self._portclocks_with_data:
                     connected_outputs = helpers.output_name_to_outputs(io)
                     seq_idx = len(sequencers)
                     new_seq = Sequencer(
