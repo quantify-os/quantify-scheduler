@@ -12,6 +12,7 @@ from functools import partial
 from os import makedirs, path
 from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
 
+import dataclasses
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -40,6 +41,7 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
     StaticHardwareProperties,
+    MarkerConfiguration,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
@@ -219,7 +221,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
-    def portclocks_with_data(self) -> Set[Tuple[str, str]]:
+    def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
         """
         All the port-clock combinations associated with at least one pulse and/or
         acquisition.
@@ -233,6 +235,20 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
         portclocks_used.update(self._acquisitions.keys())
+        return portclocks_used
+
+    @property
+    def _portclocks_with_pulses(self) -> Set[Tuple[str, str]]:
+        """
+        All the port-clock combinations associated with at least one pulse.
+        Returns
+        -------
+        :
+            A set containing all the port-clock combinations that are used by this
+            InstrumentCompiler.
+        """
+        portclocks_used = set()
+        portclocks_used.update(self._pulses.keys())
         return portclocks_used
 
     @abstractmethod
@@ -1007,6 +1023,40 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
+        # Figure out which outputs need to be turned on.
+        marker_start_config = self.static_hw_properties.marker_configuration.start
+        for io, io_cfg in self.hw_mapping.items():
+            if (
+                not isinstance(io_cfg, dict)
+                or io not in self.static_hw_properties.valid_ios
+            ):
+                continue
+
+            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
+                "portclock_configs", []
+            )
+            if not portclock_configs:
+                continue
+
+            for target in portclock_configs:
+                portclock = (target["port"], target["clock"])
+                if portclock in self._portclocks_with_pulses:
+                    output_map = (
+                        self.static_hw_properties.marker_configuration.output_map
+                    )
+                    if io in output_map:
+                        marker_start_config |= output_map[io]
+
+        updated_static_hw_properties = dataclasses.replace(
+            self.static_hw_properties,
+            marker_configuration=MarkerConfiguration(
+                init=self.static_hw_properties.marker_configuration.init,
+                start=marker_start_config,
+                end=self.static_hw_properties.marker_configuration.end,
+            ),
+        )
+
+        # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
         portclock_output_map: Dict[Tuple, str] = {}
 
@@ -1035,14 +1085,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             for target in portclock_configs:
                 portclock = (target["port"], target["clock"])
 
-                if portclock in self.portclocks_with_data:
+                if portclock in self._portclocks_with_data:
                     connected_outputs = helpers.output_name_to_outputs(io)
                     seq_idx = len(sequencers)
                     new_seq = Sequencer(
                         parent=self,
                         index=seq_idx,
                         portclock=portclock,
-                        static_hw_properties=self.static_hw_properties,
+                        static_hw_properties=updated_static_hw_properties,
                         connected_outputs=connected_outputs,
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,

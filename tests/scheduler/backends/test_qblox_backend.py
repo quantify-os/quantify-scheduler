@@ -53,7 +53,10 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    MarkerConfiguration,
+)
 
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
@@ -1254,8 +1257,8 @@ def test_assign_pulse_and_acq_info_to_devices(
         load_example_qblox_hardware_config,
     )
     qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+    assert len(qrm._pulses[list(qrm._portclocks_with_data)[0]]) == 1
+    assert len(qrm._acquisitions[list(qrm._portclocks_with_data)[0]]) == 1
 
 
 def test_container_prepare(
@@ -1733,8 +1736,7 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
     compiled_schedule = qcompile(sched, device_cfg, load_example_qblox_hardware_config)
     program = compiled_schedule["compiled_instructions"]
 
-    def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
-        mrk_config = device_compiler.static_hw_properties.marker_configuration
+    def _confirm_correct_markers(device_program, mrk_config, is_rf=False):
         answers = (
             mrk_config.init,
             mrk_config.start,
@@ -1751,10 +1753,22 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
             for match, answer in zip(matches, answers):
                 assert match == answer
 
-    _confirm_correct_markers(program["qcm0"], QcmModule)
-    _confirm_correct_markers(program["qrm0"], QrmModule)
-    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule, is_rf=True)
-    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule, is_rf=True)
+    _confirm_correct_markers(
+        program["qcm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
+    )
+    _confirm_correct_markers(
+        program["qrm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
+    )
+    _confirm_correct_markers(
+        program["qcm_rf0"],
+        MarkerConfiguration(init=0b0011, start=0b1101, end=0),
+        is_rf=True,
+    )
+    _confirm_correct_markers(
+        program["qrm_rf0"],
+        MarkerConfiguration(init=0b0011, start=0b1111, end=0),
+        is_rf=True,
+    )
 
 
 def test_pulsar_rf_extract_from_mapping(load_example_qblox_hardware_config):

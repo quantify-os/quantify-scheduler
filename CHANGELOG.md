@@ -6,6 +6,7 @@
 
 - Compilation - Compilation is now a graph. (#305, !407)
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
+- Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
 
 ### Merged branches and closed issues
 
