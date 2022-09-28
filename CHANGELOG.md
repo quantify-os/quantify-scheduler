@@ -7,6 +7,7 @@
 - Compilation - Compilation is now a graph. (#305, !407)
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 - Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
+- Disallow "\_" in DeviceElement names to comply with qcodes versions 0.34 and up. Also enforces "\_" as the separator between device elements in edge names.  (#300, !473)
 
 ### Merged branches and closed issues
 
@@ -19,7 +20,8 @@
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 - Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420, !469)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
-- Changed hyphens into underscores in order for DeviceElement names to comply with qcodes versions 0.34 and up. (#300)
+
+
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
 ### Breaking changes
