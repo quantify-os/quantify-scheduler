@@ -19,7 +19,9 @@ import tempfile
 from typing import Dict, Generator
 
 import numpy as np
+
 import pytest
+from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
@@ -218,6 +220,37 @@ def hardware_cfg_latency_corrections():
     return {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+            },
+        },
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_latency_corrections_invalid():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        # None is not a valid key for the latency corrections
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None},
         "qcm0": {
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
@@ -2063,6 +2096,39 @@ def test_convert_hw_config_to_portclock_configs_spec(
         match=r"hardware config adheres to a specification that is deprecated",
     ):
         hardware_compile(sched, old_config)
+
+
+def test_apply_latency_corrections_invalid_raises(
+    mock_setup_basic_transmon, hardware_cfg_latency_corrections_invalid
+):
+    """
+    This test function checks that:
+    Providing an invalid latency correction specification raises an exception
+    when compiling.
+    """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("Single Gate Experiment on Two Qubits")
+    sched.add(X("q0"))
+    sched.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
+    hardware_cfg = copy.deepcopy(hardware_cfg_latency_corrections_invalid)
+    hardware_cfg["latency_corrections"]["q1:mw-q1.01"] = None
+    with pytest.raises(ValidationError):
+        _ = qcompile(
+            schedule=sched,
+            device_cfg=mock_setup_basic_transmon[
+                "quantum_device"
+            ].generate_device_config(),
+            hardware_cfg=hardware_cfg,
+        )
 
 
 def test_apply_latency_corrections_valid(

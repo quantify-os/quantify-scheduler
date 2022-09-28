@@ -10,6 +10,7 @@
 
 ### Merged branches and closed issues
 
+- Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Docs - Support for myst-nb added (#301, !407)
 - Docs - Sources are converted from restructured text format to MyST markdown. (!452)
