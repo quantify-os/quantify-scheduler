@@ -962,7 +962,7 @@ def test_compile_cz_gate(
 
     set_standard_params_transmon(mock_setup_basic_transmon)
 
-    edge_q2_q3 = mock_setup_basic_transmon["q2-q3"]
+    edge_q2_q3 = mock_setup_basic_transmon["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)
 

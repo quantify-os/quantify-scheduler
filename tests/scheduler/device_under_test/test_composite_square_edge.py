@@ -31,7 +31,7 @@ def edge_q2b_q3b():
 def test_generate_edge_config(edge_q2b_q3b):
     # Setup
     expected_edge_cfg = {
-        "q2b-q3b": {
+        "q2b_q3b": {
             "CZ": OperationCompilationConfig(
                 factory_func="quantify_scheduler.operations."
                 + "pulse_factories.composite_square_pulse",
@@ -49,7 +49,7 @@ def test_generate_edge_config(edge_q2b_q3b):
         }
     }
 
-    expected_cz_dict = expected_edge_cfg["q2b-q3b"]["CZ"].dict()
+    expected_cz_dict = expected_edge_cfg["q2b_q3b"]["CZ"].dict()
 
     edge_q2b_q3b.cz.square_amp(expected_cz_dict["factory_kwargs"]["square_amp"])
     edge_q2b_q3b.cz.square_duration(

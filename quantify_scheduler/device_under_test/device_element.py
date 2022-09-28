@@ -12,7 +12,13 @@ class DeviceElement(Instrument):
     device element from the quantum-circuit to the quantum-device layer.
     """
 
-    pass
+    def __init__(self, name: str, **kwargs) -> None:
+        if "-" in name or "_" in name:
+            raise ValueError(
+                f"Invalid DeviceElement name '{name}'. Hyphens and "
+                f"underscores are not allowed due to naming conventions"
+            )
+        super().__init__(name, **kwargs)
 
     def generate_device_config(self) -> DeviceCompilationConfig:
         """
