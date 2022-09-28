@@ -125,7 +125,7 @@ def test_missing_edge(load_example_transmon_config):
     sched.add(operation=CZ(qC=q0, qT=q1))
     with pytest.raises(
         ConfigKeyError,
-        match=('edge "q0-q1" is not present in the configuration file'),
+        match=('edge "q0_q1" is not present in the configuration file'),
     ):
         qcompile(sched, device_cfg=bad_cfg)
 
