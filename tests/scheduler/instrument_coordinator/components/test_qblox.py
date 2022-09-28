@@ -99,6 +99,7 @@ def make_qcm_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQCMComponent:
+
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -239,6 +240,7 @@ def make_qcm_rf(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QCMRFComponent:
+
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -277,6 +279,7 @@ def make_qrm_rf(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QRMRFComponent:
+
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")

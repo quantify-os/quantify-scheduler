@@ -307,6 +307,7 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
 
 
 def test_sched_timing_table(tmp_test_data_dir):
+
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
     times = [0, 10e-6, 30e-6]

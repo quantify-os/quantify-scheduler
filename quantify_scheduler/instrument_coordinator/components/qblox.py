@@ -750,7 +750,9 @@ class _QRMAcquisitionManager:
         self.acquisition_metadata: AcquisitionMetadata = acquisition_metadata
 
         self.scope_mode_sequencer: Optional[str] = None
-        self.integration_length_acq: list[int] = [0] * number_of_sequencers
+        self.integration_length_acq: list[int] = [
+            0 for x in range(number_of_sequencers)
+        ]
         self.seq_name_to_idx_map = {
             f"seq{idx}": idx for idx in range(number_of_sequencers)
         }
