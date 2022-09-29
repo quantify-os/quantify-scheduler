@@ -19,7 +19,9 @@ import tempfile
 from typing import Dict, Generator
 
 import numpy as np
+
 import pytest
+from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
@@ -53,7 +55,10 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    MarkerConfiguration,
+)
 
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
@@ -215,6 +220,37 @@ def hardware_cfg_latency_corrections():
     return {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "complex_output_0": {
+                "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+            },
+        },
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_latency_corrections_invalid():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        # None is not a valid key for the latency corrections
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None},
         "qcm0": {
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
@@ -962,7 +998,7 @@ def test_compile_cz_gate(
 
     set_standard_params_transmon(mock_setup_basic_transmon)
 
-    edge_q2_q3 = mock_setup_basic_transmon["q2-q3"]
+    edge_q2_q3 = mock_setup_basic_transmon["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)
 
@@ -1254,8 +1290,8 @@ def test_assign_pulse_and_acq_info_to_devices(
         load_example_qblox_hardware_config,
     )
     qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm.portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm.portclocks_with_data)[0]]) == 1
+    assert len(qrm._pulses[list(qrm._portclocks_with_data)[0]]) == 1
+    assert len(qrm._acquisitions[list(qrm._portclocks_with_data)[0]]) == 1
 
 
 def test_container_prepare(
@@ -1733,8 +1769,7 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
     compiled_schedule = qcompile(sched, device_cfg, load_example_qblox_hardware_config)
     program = compiled_schedule["compiled_instructions"]
 
-    def _confirm_correct_markers(device_program, device_compiler, is_rf=False):
-        mrk_config = device_compiler.static_hw_properties.marker_configuration
+    def _confirm_correct_markers(device_program, mrk_config, is_rf=False):
         answers = (
             mrk_config.init,
             mrk_config.start,
@@ -1751,10 +1786,22 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
             for match, answer in zip(matches, answers):
                 assert match == answer
 
-    _confirm_correct_markers(program["qcm0"], QcmModule)
-    _confirm_correct_markers(program["qrm0"], QrmModule)
-    _confirm_correct_markers(program["qcm_rf0"], QcmRfModule, is_rf=True)
-    _confirm_correct_markers(program["qrm_rf0"], QrmRfModule, is_rf=True)
+    _confirm_correct_markers(
+        program["qcm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
+    )
+    _confirm_correct_markers(
+        program["qrm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
+    )
+    _confirm_correct_markers(
+        program["qcm_rf0"],
+        MarkerConfiguration(init=0b0011, start=0b1101, end=0),
+        is_rf=True,
+    )
+    _confirm_correct_markers(
+        program["qrm_rf0"],
+        MarkerConfiguration(init=0b0011, start=0b1111, end=0),
+        is_rf=True,
+    )
 
 
 def test_pulsar_rf_extract_from_mapping(load_example_qblox_hardware_config):
@@ -2049,6 +2096,39 @@ def test_convert_hw_config_to_portclock_configs_spec(
         match=r"hardware config adheres to a specification that is deprecated",
     ):
         hardware_compile(sched, old_config)
+
+
+def test_apply_latency_corrections_invalid_raises(
+    mock_setup_basic_transmon, hardware_cfg_latency_corrections_invalid
+):
+    """
+    This test function checks that:
+    Providing an invalid latency correction specification raises an exception
+    when compiling.
+    """
+    # mock_setup should arrange this but is not working here
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+
+    sched = Schedule("Single Gate Experiment on Two Qubits")
+    sched.add(X("q0"))
+    sched.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add_resources([ClockResource("q0.01", freq=5e9)])
+    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+
+    hardware_cfg = copy.deepcopy(hardware_cfg_latency_corrections_invalid)
+    hardware_cfg["latency_corrections"]["q1:mw-q1.01"] = None
+    with pytest.raises(ValidationError):
+        _ = qcompile(
+            schedule=sched,
+            device_cfg=mock_setup_basic_transmon[
+                "quantum_device"
+            ].generate_device_config(),
+            hardware_cfg=hardware_cfg,
+        )
 
 
 def test_apply_latency_corrections_valid(

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dataclasses_field
 from typing import Any, Dict, Optional, Tuple, Union, List
 
 from dataclasses_json import DataClassJsonMixin
@@ -36,6 +37,10 @@ class MarkerConfiguration:
     """
     end: Optional[int]
     """Setting set in the footer at the end of the program."""
+    output_map: Dict[str, int] = dataclasses_field(default_factory=dict)
+    """A mapping from output name to marker setting.
+    Specifies which marker bit needs to be set at start if the
+    output (as a string ex. `complex_output_0`) contains a pulse."""
 
 
 @dataclass(frozen=True)
