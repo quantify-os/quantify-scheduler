@@ -1,29 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (2022-03-11)
 
 ### Breaking changes
 
 - Compilation - Compilation is now a graph. (#305, !407)
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 - Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
-- Disallow "\_" in DeviceElement names to comply with qcodes versions 0.34 and up. Also enforces "\_" as the separator between device elements in edge names.  (#300, !473)
-- Deprecate the use of the data argument for Operations, Resources and Schedulables (!455)
+- Operations - Move to `qcodes` 0.34+ (#300, !473)
+  : - Disallow "\_" in `DeviceElement` names to comply with qcodes version 0.34
+    - Enforces "\_" as the separator between device elements in `Edge` names
+- Operations, Resources, and Schedulables - Deprecate the use of the data argument (!455)
 
 ### Merged branches and closed issues
 
-- Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
-- Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Docs - Support for myst-nb added (#301, !407)
 - Docs - Sources are converted from restructured text format to MyST markdown. (!452)
 - Docs - Add pin on nbclient\<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)
 - Docs - Added documentation and unit tests for the Rxy, X, X90, Y and Y90 unitaries (#349)
-- Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 - Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420, !469)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
 - JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
-- JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
-
+- JSON utilities - Extend the capabilities of the ``__getstate__/__setstate__`` json serializer (!445, #248)
+- Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
+- Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
+- Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
@@ -74,16 +75,6 @@
 - Qblox ICCs - Fix `ClusterComponent.prepare` mutating the schedule (!443)
 - Schedules - Revert rename of `trace_schedule` done in !432 and rename new schedule using gates to `trace_schedule_circuit_layer` (!442)
 - Schedules - Make `AcquisitionMetadata` a serializable class (!446)
-- JSON utilities - Add JSON serialization/deserialization methods based on \_\_getstate\_\_/\_\_setstate\_\_
-- Documentation - Sources are converted from restructured text format to MyST markdown. (!452)
-
-### Breaking changes
-
-- Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
-  : - For each instrument, the output dictionary now contains a `portclock_configs` key, which is a list of dictionaries containing the different port-clock combinations and the associated settings (see <https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/Qblox-backend:-Dynamic-Sequencer-Allocation>)
-- Qblox backend - Strictly requires v0.7.x of the qblox-instruments package (!449)
-
-### Merged branches and closed issues
 
 ## 0.7.0 Support for qblox-instruments v0.6.0, new BasicTransmonElement, change for triggers in Zhinst backend (2022-04-11)
 
