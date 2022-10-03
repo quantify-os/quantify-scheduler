@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections import UserDict
 from typing import Optional
+import warnings
 
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 
@@ -37,6 +38,13 @@ class Resource(UserDict):
         self.data["name"] = name
 
         if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
             self.data.update(data)
 
     @classmethod
@@ -99,21 +107,11 @@ class Resource(UserDict):
         """
         return f"{self.__class__.__name__}(name='{self.name}')"
 
-    def __repr__(self) -> str:
-        """
-        Returns the string representation  of this instance.
+    def __getstate__(self):
+        return {"deserialization_type": self.__class__.__name__, "data": self.data}
 
-        This representation can always be evaluated to create a new instance.
-
-        .. code-block::
-
-            eval(repr(operation))
-
-        Returns
-        -------
-        :
-        """
-        return f"{str(self)[:-1]}, data={self.data})"
+    def __setstate__(self, state):
+        self.data = state["data"]
 
 
 class ClockResource(Resource):
@@ -137,13 +135,23 @@ class ClockResource(Resource):
             the starting phase of the clock in deg
         """
         if data is None:
-            data = {
+            super().__init__(name)
+
+            self.data = {
                 "name": name,
                 "type": str(self.__class__.__name__),
                 "freq": freq,
                 "phase": phase,
             }
-        super().__init__(data["name"], data=data)
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(data["name"], data=data)
 
     def __str__(self) -> str:
         freq = self.data["freq"]
@@ -170,10 +178,20 @@ class BasebandClockResource(Resource):
             the name of this clock
         """
         if data is None:
-            data = {
+            super().__init__(name)
+
+            self.data = {
                 "name": name,
                 "type": str(self.__class__.__name__),
                 "freq": 0,
                 "phase": 0,
             }
-        super().__init__(data["name"], data=data)
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(data["name"], data=data)

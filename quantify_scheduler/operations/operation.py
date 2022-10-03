@@ -11,8 +11,11 @@ from copy import deepcopy
 from enum import Enum
 from pydoc import locate
 from typing import Any, Dict
+import warnings
 
 import numpy as np
+
+from quantify_core.utilities import deprecated
 
 from quantify_scheduler import enums
 from quantify_scheduler.helpers.collections import make_hash
@@ -79,6 +82,13 @@ class Operation(JSONSchemaValMixin, UserDict):
         self._duration: float = 0
 
         if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
             self.data.update(data)
             self._deserialize()
             self._update()
@@ -107,23 +117,15 @@ class Operation(JSONSchemaValMixin, UserDict):
         """
         return f"{self.__class__.__name__}(name='{self.name}')"
 
-    def __repr__(self) -> str:
-        """
-        Returns the string representation  of this instance.
+    def __getstate__(self):
+        return {
+            "deserialization_type": self.__class__.__name__,
+            "data": self.data,
+        }
 
-        This representation can always be evaluated to create a new instance.
-
-        .. code-block::
-
-            eval(repr(operation))
-
-        Returns
-        -------
-        :
-        """
-        _data = self._serialize()
-        data_str = f"{str(self)[:-1]}, data={_data})"
-        return data_str
+    def __setstate__(self, state):
+        self.data = state["data"]
+        self._update()
 
     def _update(self) -> None:
         """Update the Operation's internals."""
@@ -259,44 +261,12 @@ class Operation(JSONSchemaValMixin, UserDict):
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
         self._update()
 
-    def _serialize(self) -> Dict[str, Any]:
-        """
-        Serializes the data dictionary.
-
-        Returns
-        -------
-        :
-        """
-        _data = deepcopy(self.data)
-        if "unitary" in _data["gate_info"] and isinstance(
-            _data["gate_info"]["unitary"], (np.generic, np.ndarray)
-        ):
-            _data["gate_info"]["unitary"] = np.array2string(
-                _data["gate_info"]["unitary"], separator=", ", precision=9
-            )
-
-        for acq_info in _data["acquisition_info"]:
-            if "bin_mode" in acq_info and isinstance(
-                acq_info["bin_mode"], enums.BinMode
-            ):
-                acq_info["bin_mode"] = acq_info["bin_mode"].value
-
-            # types lead to problems when serialized without casting to string first
-            if "<class " in str(acq_info["acq_return_type"]):
-                acq_info["acq_return_type"] = str(acq_info["acq_return_type"])
-
-            for waveform in acq_info["waveforms"]:
-                if "t" in waveform:
-                    waveform["t"] = np.array2string(
-                        waveform["t"], separator=", ", precision=9
-                    )
-                if "weights" in waveform:
-                    waveform["weights"] = np.array2string(
-                        waveform["weights"], separator=", ", precision=9
-                    )
-
-        return _data
-
+    @deprecated(
+        "0.13.0",
+        "Deserialization is handled by the "
+        "`json_utils.ScheduleJSONDecoder` class together with the"
+        "`Operation.__set_state__` method.",
+    )
     def _deserialize(self) -> None:
         """Deserializes the data dictionary."""
         if "unitary" in self.data["gate_info"] and isinstance(
