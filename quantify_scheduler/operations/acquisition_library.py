@@ -4,6 +4,7 @@
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
 from typing import Any, Dict, List, Optional, Union
+import warnings
 
 import numpy as np
 
@@ -73,31 +74,42 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
-
         if data is None:
             if not isinstance(duration, float):
                 duration = float(duration)
             if isinstance(bin_mode, str):
                 bin_mode = BinMode(bin_mode)
 
-            data = {
-                "name": "Trace",
-                "acquisition_info": [
-                    {
-                        "waveforms": [],
-                        "duration": duration,
-                        "t0": t0,
-                        "port": port,
-                        "clock": clock,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "protocol": "trace",
-                        "acq_return_type": np.ndarray,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="Trace")
+            self.data.update(
+                {
+                    "name": "Trace",
+                    "acquisition_info": [
+                        {
+                            "waveforms": [],
+                            "duration": duration,
+                            "t0": t0,
+                            "port": port,
+                            "clock": clock,
+                            "acq_channel": acq_channel,
+                            "acq_index": acq_index,
+                            "bin_mode": bin_mode,
+                            "protocol": "trace",
+                            "acq_return_type": np.ndarray,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -190,30 +202,47 @@ class WeightedIntegratedComplex(
             raise NotImplementedError("Non-zero phase not yet implemented")
 
         if data is None:
-            data = {
-                "name": "WeightedIntegrationComplex",
-                "acquisition_info": [
-                    {
-                        "waveforms": [waveform_a, waveform_b],
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                        "duration": duration,
-                        "phase": phase,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "protocol": "weighted_integrated_complex",
-                        "acq_return_type": complex,
-                    }
-                ],
-            }
-        # certain fields are required in the acquisition data
-        if "acq_return_type" not in data["acquisition_info"][0]:
-            data["acquisition_info"][0]["acq_return_type"] = complex
-            data["acquisition_info"][0]["protocol"] = "weighted_integrated_complex"
+            super().__init__(name="WeightedIntegrationComplex")
+            self.data.update(
+                {
+                    "name": "WeightedIntegrationComplex",
+                    "acquisition_info": [
+                        {
+                            "waveforms": [waveform_a, waveform_b],
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                            "duration": duration,
+                            "phase": phase,
+                            "acq_channel": acq_channel,
+                            "acq_index": acq_index,
+                            "bin_mode": bin_mode,
+                            "protocol": "weighted_integrated_complex",
+                            "acq_return_type": complex,
+                        }
+                    ],
+                }
+            )
+            self._update()
+            # certain fields are required in the acquisition data
+            if "acq_return_type" not in self.data["acquisition_info"][0]:
+                self.data["acquisition_info"][0]["acq_return_type"] = complex
+                self.data["acquisition_info"][0][
+                    "protocol"
+                ] = "weighted_integrated_complex"
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            if "acq_return_type" not in data["acquisition_info"][0]:
+                data["acquisition_info"][0]["acq_return_type"] = complex
+                data["acquisition_info"][0]["protocol"] = "weighted_integrated_complex"
 
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -302,30 +331,44 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
             raise NotImplementedError("Non-zero phase not yet implemented")
 
         if data is None:
-            data = {
-                "name": "SSBIntegrationComplex",
-                "acquisition_info": [
-                    {
-                        "waveforms": [waveform_i, waveform_q],
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                        "duration": duration,
-                        "phase": phase,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "acq_return_type": complex,
-                        "protocol": "ssb_integration_complex",
-                    }
-                ],
-            }
-        # certain fields are required in the acquisition data
-        if "acq_return_type" not in data["acquisition_info"][0]:
-            data["acquisition_info"][0]["acq_return_type"] = complex
-            data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
-
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="SSBIntegrationComplex")
+            self.data.update(
+                {
+                    "name": "SSBIntegrationComplex",
+                    "acquisition_info": [
+                        {
+                            "waveforms": [waveform_i, waveform_q],
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                            "duration": duration,
+                            "phase": phase,
+                            "acq_channel": acq_channel,
+                            "acq_index": acq_index,
+                            "bin_mode": bin_mode,
+                            "acq_return_type": complex,
+                            "protocol": "ssb_integration_complex",
+                        }
+                    ],
+                }
+            )
+            self._update()
+            # certain fields are required in the acquisition data
+            if "acq_return_type" not in self.data["acquisition_info"][0]:
+                self.data["acquisition_info"][0]["acq_return_type"] = complex
+                self.data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            if "acq_return_type" not in data["acquisition_info"][0]:
+                data["acquisition_info"][0]["acq_return_type"] = complex
+                data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -433,6 +476,14 @@ class NumericalWeightedIntegrationComplex(
             "interpolation": interpolation,
         }
         duration = t[-1] - t[0]
+        if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
         super().__init__(
             waveforms_a,
             waveforms_b,
@@ -446,6 +497,7 @@ class NumericalWeightedIntegrationComplex(
             t0,
             data,
         )
+        self._update()
         self.data["name"] = "NumericalWeightedIntegrationComplex"
 
     def __str__(self) -> str:

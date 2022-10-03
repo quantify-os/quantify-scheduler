@@ -3,6 +3,7 @@
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
 from typing import Literal, Optional, Tuple, Union
+import warnings
 
 import numpy as np
 
@@ -56,7 +57,6 @@ class Rxy(Operation):
         theta = (theta + 180) % 360 - 180
 
         phi = phi % 360
-
         if data is None:
             tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
             plot_func = "quantify_scheduler.visualization.circuit_diagram.gate_box"
@@ -77,21 +77,31 @@ class Rxy(Operation):
                     ],
                 ]
             )
-
-            data = {
-                "name": f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')",
-                "gate_info": {
-                    "unitary": unitary,
-                    "tex": tex,
-                    "plot_func": plot_func,
-                    "qubits": [qubit],
-                    "operation_type": "Rxy",
-                    "theta": theta,
-                    "phi": phi,
-                },
-            }
-
-        super().__init__(data["name"], data=data)
+            super().__init__(f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')")
+            self.data.update(
+                {
+                    "name": f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')",
+                    "gate_info": {
+                        "unitary": unitary,
+                        "tex": tex,
+                        "plot_func": plot_func,
+                        "qubits": [qubit],
+                        "operation_type": "Rxy",
+                        "theta": theta,
+                        "phi": phi,
+                    },
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
@@ -127,6 +137,14 @@ class X(Rxy):
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
+        if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
         super().__init__(theta=180, phi=0, qubit=qubit, data=data)
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
@@ -164,6 +182,14 @@ class X90(Rxy):
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
+        if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
         super().__init__(theta=90.0, phi=0.0, qubit=qubit, data=data)
         self.qubit = qubit
         self.data["name"] = f"X_90 {qubit}"
@@ -205,6 +231,14 @@ class Y(Rxy):
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
+        if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
         super().__init__(theta=180.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi}$"
@@ -246,6 +280,14 @@ class Y90(Rxy):
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
+        if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
         super().__init__(theta=90.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
@@ -303,20 +345,32 @@ class CNOT(Operation):
         """
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
-            data = {
-                "name": f"CNOT ({qC}, {qT})",
-                "gate_info": {
-                    "unitary": np.array(
-                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
-                    ),
-                    "tex": r"CNOT",
-                    "plot_func": plot_func,
-                    "qubits": [qC, qT],
-                    "symmetric": False,
-                    "operation_type": "CNOT",
-                },
-            }
-        super().__init__(data["name"], data=data)
+            super().__init__(f"CNOT ({qC}, {qT})")
+            self.data.update(
+                {
+                    "name": f"CNOT ({qC}, {qT})",
+                    "gate_info": {
+                        "unitary": np.array(
+                            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
+                        ),
+                        "tex": r"CNOT",
+                        "plot_func": plot_func,
+                        "qubits": [qC, qT],
+                        "symmetric": False,
+                        "operation_type": "CNOT",
+                    },
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
@@ -364,20 +418,32 @@ class CZ(Operation):
         """
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cz"
-            data = {
-                "name": f"CZ ({qC}, {qT})",
-                "gate_info": {
-                    "unitary": np.array(
-                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-                    ),
-                    "tex": r"CZ",
-                    "plot_func": plot_func,
-                    "qubits": [qC, qT],
-                    "symmetric": True,
-                    "operation_type": "CZ",
-                },
-            }
-        super().__init__(data["name"], data=data)
+            super().__init__(f"CZ ({qC}, {qT})")
+            self.data.update(
+                {
+                    "name": f"CZ ({qC}, {qT})",
+                    "gate_info": {
+                        "unitary": np.array(
+                            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
+                        ),
+                        "tex": r"CZ",
+                        "plot_func": plot_func,
+                        "qubits": [qC, qT],
+                        "symmetric": True,
+                        "operation_type": "CZ",
+                    },
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
@@ -429,18 +495,30 @@ class Reset(Operation):
             overwritten using the contents of data.
         """
         if data is None:
+            super().__init__(f"Reset {', '.join(qubits)}")
             plot_func = "quantify_scheduler.visualization.circuit_diagram.reset"
-            data = {
-                "name": f"Reset {', '.join(qubits)}",
-                "gate_info": {
-                    "unitary": None,
-                    "tex": r"$|0\rangle$",
-                    "plot_func": plot_func,
-                    "qubits": list(qubits),
-                    "operation_type": "reset",
-                },
-            }
-        super().__init__(data["name"], data=data)
+            self.data.update(
+                {
+                    "name": f"Reset {', '.join(qubits)}",
+                    "gate_info": {
+                        "unitary": None,
+                        "tex": r"$|0\rangle$",
+                        "plot_func": plot_func,
+                        "qubits": list(qubits),
+                        "operation_type": "reset",
+                    },
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
@@ -512,36 +590,50 @@ class Measure(Operation):
                 acq_index = 0
         else:
             if isinstance(acq_index, int):
-                acq_index = (acq_index,) * len(qubits)
+                acq_index = [
+                    acq_index,
+                ] * len(qubits)
             elif acq_index is None:
                 # defaults to writing the result of all qubits to acq_index 0.
                 # note that this will result in averaging data together if multiple
                 # measurements are present in the same schedule (#262)
-                acq_index = tuple(0 for i in range(len(qubits)))
+                acq_index = list(0 for i in range(len(qubits)))
 
             # defaults to mapping qubits to channels dependent on the order of the
             # arguments. note that this will result in mislabeling data if not all
             # measurements in an experiment contain the same order of qubits (#262)
             if acq_channel is None:
-                acq_channel = tuple(i for i in range(len(qubits)))
+                acq_channel = list(i for i in range(len(qubits)))
 
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
-            data = {
-                "name": f"Measure {', '.join(qubits)}",
-                "gate_info": {
-                    "unitary": None,
-                    "plot_func": plot_func,
-                    "tex": r"$\langle0|$",
-                    "qubits": list(qubits),
-                    "acq_channel": acq_channel,
-                    "acq_index": acq_index,
-                    "acq_protocol": acq_protocol,
-                    "bin_mode": bin_mode,
-                    "operation_type": "measure",
-                },
-            }
-        super().__init__(data["name"], data=data)
+            super().__init__(f"Measure {', '.join(qubits)}")
+            self.data.update(
+                {
+                    "name": f"Measure {', '.join(qubits)}",
+                    "gate_info": {
+                        "unitary": None,
+                        "plot_func": plot_func,
+                        "tex": r"$\langle0|$",
+                        "qubits": list(qubits),
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "acq_protocol": acq_protocol,
+                        "bin_mode": bin_mode,
+                        "operation_type": "measure",
+                    },
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
