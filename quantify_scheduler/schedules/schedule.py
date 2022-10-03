@@ -690,6 +690,13 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         """
         super().__init__()
         if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
             self.data = data
             return
 
@@ -763,33 +770,11 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     def __str__(self):
         return str(self.data["name"])
 
-    def __repr__(self) -> str:
-        """
-        Returns the string representation  of this instance.
-
-        This representation can always be evaluated to create a new instance.
-
-        .. code-block::
-
-            eval(repr(operation))
-
-        Returns
-        -------
-        :
-        """
-        cls = f"{self.__class__.__name__}"
-        return (
-            f"{cls}(name='{self.data['name']}', "
-            f"operation_repr='', "
-            f"schedule='', "
-            f"data={self.data})"
-        )
-
     def __getstate__(self):
-        return self.data
+        return {"deserialization_type": self.__class__.__name__, "data": self.data}
 
     def __setstate__(self, state):
-        self.data = state
+        self.data = state["data"]
 
 
 # pylint: disable=too-many-ancestors
@@ -929,29 +914,9 @@ class AcquisitionMetadata:
 
     def __getstate__(self):
         data = dataclasses.asdict(self)
-        data["acq_return_type"] = str(self.acq_return_type)
         return {"deserialization_type": self.__class__.__name__, "data": data}
 
     def __setstate__(self, state):
-        return_types = {str(t): t for t in [complex, float, int, bool, str, np.ndarray]}
-
-        if state["data"]["acq_return_type"] in return_types:
-            state["data"]["acq_return_type"] = return_types[
-                state["data"]["acq_return_type"]
-            ]
-        else:
-            raise ValueError(
-                f"AcquisitionMetaData setstate got unknown "
-                f"type: {state['data']['acq_return_type']}"
-            )
-
-        for binmode in enums.BinMode:
-            if state["data"]["bin_mode"] == binmode.value:
-                state["data"]["bin_mode"] = binmode
-                break
-        else:
-            raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
-
         state["data"]["acq_indices"] = {
             int(k): v for k, v in state["data"]["acq_indices"].items()
         }

@@ -84,10 +84,10 @@ def set_up_mock_transmon_setup() -> Dict:
         "q2": q2,
         "q3": q3,
         "q4": q4,
-        "q0-q2": edge_q0_q2,
-        "q1-q2": edge_q1_q2,
-        "q2-q3": edge_q2_q3,
-        "q2-q4": edge_q2_q4,
+        "q0_q2": edge_q0_q2,
+        "q1_q2": edge_q1_q2,
+        "q2_q3": edge_q2_q3,
+        "q2_q4": edge_q2_q4,
         "quantum_device": quantum_device,
     }
 

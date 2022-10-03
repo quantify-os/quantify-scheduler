@@ -133,7 +133,7 @@
         }
     },
     "edges": {
-        "q0-q1": {
+        "q0_q1": {
             "resource_map": {
                 "q0": "q0:fl",
                 "q1": "q1:fl"
@@ -146,7 +146,7 @@
                 "phase_correction_target": 0
             }
         },
-        "q2-q0": {
+        "q2_q0": {
             "resource_map": {
                 "q2": "q2:fl",
                 "q0": "q0:fl"

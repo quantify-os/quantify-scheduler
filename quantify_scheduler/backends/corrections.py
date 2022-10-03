@@ -11,9 +11,33 @@ from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.pulse_library import NumericalPulse
+from quantify_scheduler.structure import DataStructure
 
 
 logger = logging.getLogger(__name__)
+
+# pylint: disable=too-few-public-methods
+class LatencyCorrections(DataStructure):
+    """
+    A datastructure containing the information required to correct for latencies
+    on signals specified by port-clock combinations.
+
+    Note, if the port-clock combination of a signal is not specified in the latency
+    corrections, no correction will be applied.
+
+    Parameters
+    ----------
+    latencies
+        A dictionary specifying the latencies to be corrected for.
+        Keys are port-clocks combinations specifying the signal for which latency
+        should be corrected, e.g., `port=q0:mw` and `clock=q0.01` will have the
+        string ``"q0:mw-q0.01"`` as a key.
+        Values are latencies of the signal to be corrected for in seconds, e.g.,
+        if a signal has a latency of 120e-9, the signal will be shifted by
+        -120 ns to correct for this latency.
+    """
+
+    latencies: Dict[str, float]
 
 
 def distortion_correct_pulse(  # pylint: disable=too-many-arguments

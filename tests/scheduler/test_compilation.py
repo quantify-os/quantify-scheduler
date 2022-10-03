@@ -125,7 +125,7 @@ def test_missing_edge(load_example_transmon_config):
     sched.add(operation=CZ(qC=q0, qT=q1))
     with pytest.raises(
         ConfigKeyError,
-        match=('edge "q0-q1" is not present in the configuration file'),
+        match=('edge "q0_q1" is not present in the configuration file'),
     ):
         qcompile(sched, device_cfg=bad_cfg)
 
@@ -151,7 +151,8 @@ def test_bad_gate(load_example_transmon_config):
                     "operation_type": "bad",
                 }
             }
-            super().__init__("bad ({})".format(q), data=data)
+            super().__init__("bad ({})".format(q))
+            self.data.update(data)
 
     sched = Schedule("Bell experiment")
     sched.add(Reset("q0"))
@@ -184,8 +185,10 @@ def test_pulse_and_clock(load_example_transmon_config):
 
 def test_resource_resolution(load_example_transmon_config):
     sched = Schedule("resource_resolution")
-    qcm0_s0 = Resource("qcm0.s0", {"name": "qcm0.s0", "type": "qcm"})
-    qrm0_s0 = Resource("qrm0.s0", {"name": "qrm0.s0", "type": "qrm"})
+    qcm0_s0 = Resource("qcm0.s0")
+    qcm0_s0["type"] = "qcm"
+    qrm0_s0 = Resource("qrm0.s0")
+    qrm0_s0["type"] = "qrm"
 
     sched.add(Rxy(90, 0, "q0"))
     sched.add(SquarePulse(0.6, 20e-9, "q0:mw_ch", clock=BasebandClockResource.IDENTITY))

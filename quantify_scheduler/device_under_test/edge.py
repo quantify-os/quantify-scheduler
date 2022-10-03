@@ -16,7 +16,7 @@ class Edge(Instrument):
     """
 
     def __init__(self, parent_element_name: str, child_element_name: str):
-        edge_name = f"{parent_element_name}-{child_element_name}"
+        edge_name = f"{parent_element_name}_{child_element_name}"
         self._parent_element_name = parent_element_name
         self._child_element_name = child_element_name
         super().__init__(name=edge_name)
