@@ -8,7 +8,7 @@
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 - Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
 - Operations - Move to `qcodes` 0.34+ (#300, !473)
-  : - Disallow "\_" in `DeviceElement` names to comply with qcodes version 0.34
+    - Disallow "\_" in `DeviceElement` names to comply with qcodes version 0.34
     - Enforces "\_" as the separator between device elements in `Edge` names
 - Operations, Resources, and Schedulables - Deprecate the use of the data argument (!455)
 
@@ -32,7 +32,7 @@
 
 - Operations - Pin `qcodes` package to \<0.34.0 due to breaking `Edge` naming (#300, !409)
 - Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
-  : - For each instrument, the config now contains a `portclock_configs` entry, a list with a dictionary of settings per port-clock combination
+    - For each instrument, the config now contains a `portclock_configs` entry, a list with a dictionary of settings per port-clock combination
     - See <https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.8.0/tutorials/qblox/recent.html>
 - Qblox backend - Strictly requires v0.7.x of the `qblox-instruments` package (!449)
 - Zhinst backend - Strictly requires v21.8.20515 of the `zhinst` package (!387)
@@ -54,10 +54,10 @@
 - JSON utilities - Add JSON serialization/deserialization methods based on `__getstate__`/`__setstate__` (!444)
 - Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
 - Operations - Introduce basic CZ-gate via `CompositeSquareEdge` (utilizing `quantify_scheduler.operations.pulse_factories.composite_square_pulse`) (!411)
-  : - Replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation
+    - Replaces the incomplete `SuddenNetZeroEdge` basic CZ-gate implementation
 - Operations - Rxy theta rotations now fall into the domain of \[-180 to 180) degrees. (!433)
 - QuantumDevice - Added implementation for `edges` in the quantum device config in order to support two qubit operations. (!389)
-  : - The `Edge` has been added as an abstract base class for edges to be added to a device.
+    - The `Edge` has been added as an abstract base class for edges to be added to a device.
 - Qblox backend - Only add clocks to the schedule that are actually being used, avoids trying to assign frequencies for unused clocks (#278, !371)
 - Qblox backend - Fix for supplying negative NCO phase (!393)
 - Qblox backend - Fix compilation of ShiftClockPhase (!404, broken by merge of !328)
@@ -170,14 +170,14 @@
 - Operations - Resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
 - Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
 - Zhinst backend - Large parts of the Zhinst backend have been rewritten. This should resolve a range of issues. (!263)
-  : - Calculation of the timelines for different operations now makes using of a timing table, improving code readability and debugability.
+    - Calculation of the timelines for different operations now makes using of a timing table, improving code readability and debugability.
     - Timing issues related to triggering should be resolved (#218)
     - The backend can now always use the same hardware configuration file (#214)
     - Acquisition is now done using the StartQA instruction (#213)
     - error handling in the Zhinst backend has been improved catching several exceptions at compile time of the schedule instead of manifesting in unexpected results during runtime.
     - Local oscillators through the ZI backend uses the GenericInstrumentCoordinatorComponent. Configures other parameters other than frequency. (!283, #204)
 - Qblox backend - only check major and minor version when checking compatibility with the qblox_instruments package (!290)
-  : - Added support for the Qblox Downconverter (!297)
+    - Added support for the Qblox Downconverter (!297)
     - Added workaround for staircase_amplitude. (!292)
     - Fix looped acquisition integration time, fix acquire index offset by one (!291)
     - Qblox instruments version == 0.5.3 (!289)
@@ -196,7 +196,7 @@
 
 - InstrumentCoordinator - `last_schedule` is now a property (!252).
 - Structure - We have refactored the Operation and Schedule classes out of the types module and moved the different operation libraries (acquisition_library, gate_library, and pulse_library) (#217, !256).
-  : - `quantify_scheduler.types.Operation` -> `quantify_scheduler.operations.operation.Operation`, the import `quantify_scheduler.Operation` still works.
+    - `quantify_scheduler.types.Operation` -> `quantify_scheduler.operations.operation.Operation`, the import `quantify_scheduler.Operation` still works.
     - `quantify_scheduler.types.Schedule` -> `quantify_scheduler.schedules.schedule.Schedule`, the import `quantify_scheduler.Schedule` still works.
     - `quantify_scheduler.types.CompiledSchedule` -> `quantify_scheduler.schedules.schedule.CompiledSchedule`
     - `quantify_scheduler.types.ScheduleBase` -> `quantify_scheduler.schedules.schedule.ScheduleBase`
