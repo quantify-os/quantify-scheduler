@@ -2,6 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+import json
 from typing import Any
 from unittest import TestCase
 
@@ -9,6 +10,7 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule, Schedulable
+from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -86,15 +88,18 @@ def test_rxy_is_valid() -> None:
     assert Operation.is_valid(rxy_q5)
 
 
-def is__repr__equal(obj: Operation) -> None:
+def is__repr__equal(operation: Operation) -> None:
     """
     Asserts that evaluating the representation
     of a thing is identical to the thing
     itself.
     """
-    # eval should be avoided for security reasons.
-    # However, it is impossible to test this property using the safer ast.literal_eval
-    assert eval(repr(obj)) == obj
+    # Arrange
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    assert obj == operation
 
 
 def is__str__equal(obj: Any) -> None:
@@ -169,10 +174,10 @@ def test__str__(operation: Operation) -> None:
 )
 def test_deserialize(operation: Operation) -> None:
     # Arrange
-    operation_repr: str = repr(operation)
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
     # Act
-    obj = eval(operation_repr)
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
 
     # Assert
     if (
@@ -214,7 +219,10 @@ def test_deserialize(operation: Operation) -> None:
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
     # Arrange
-    obj = eval(repr(operation))
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
     assert obj == operation
 
     # Act

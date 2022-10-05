@@ -6,9 +6,13 @@
 
 - Compilation - Compilation is now a graph. (#305, !407)
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
+- Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
+- Disallow "\_" in DeviceElement names to comply with qcodes versions 0.34 and up. Also enforces "\_" as the separator between device elements in edge names.  (#300, !473)
+- Deprecate the use of the data argument for Operations, Resources and Schedulables (!455)
 
 ### Merged branches and closed issues
 
+- Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Docs - Support for myst-nb added (#301, !407)
 - Docs - Sources are converted from restructured text format to MyST markdown. (!452)
@@ -17,6 +21,9 @@
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 - Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420, !469)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
+- JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
+- JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
+
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 

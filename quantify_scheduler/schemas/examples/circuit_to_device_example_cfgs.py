@@ -89,7 +89,7 @@ example_transmon_cfg = {
         },
     },
     "edges": {
-        "q0-q1": {
+        "q0_q1": {
             "CZ": {
                 "factory_func": "quantify_scheduler.operations."
                 + "pulse_factories.composite_square_pulse",

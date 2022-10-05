@@ -126,13 +126,13 @@ def determine_absolute_timing(
     return schedule
 
 
-def _find_edge(device_cfg, q0, q1, op_name):
+def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
     try:
-        edge_cfg = device_cfg["edges"][f"{q0}-{q1}"]
+        edge_cfg = device_cfg["edges"][f"{parent_element_name}_{child_element_name}"]
     except KeyError as e:
         raise ValueError(
-            f"Attempting operation '{op_name}' on qubits {q0} and {q1} which lack a"
-            " connective edge."
+            f"Attempting operation '{op_name}' on qubits {parent_element_name} "
+            f"and {child_element_name} which lack a connective edge."
         ) from e
     return edge_cfg
 

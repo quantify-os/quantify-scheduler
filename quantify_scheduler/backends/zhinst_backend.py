@@ -16,6 +16,7 @@ from zhinst.toolkit.helpers import Waveform
 
 
 from quantify_scheduler import enums
+from quantify_scheduler.backends.corrections import LatencyCorrections
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
@@ -756,6 +757,12 @@ def compile_backend(
     """
 
     _validate_schedule(schedule)
+
+    if "latency_corrections" in hardware_cfg.keys():
+        # Important: currently only used to validate the input, should also be
+        # used for storing the latency corrections
+        # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
+        LatencyCorrections(latencies=hardware_cfg["latency_corrections"])
 
     ################################################
     # Timing table manipulation

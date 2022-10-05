@@ -7,12 +7,14 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from textwrap import dedent
 from typing import Any, Dict, List
 from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 from quantify_core.data.handling import set_datadir
 from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
@@ -32,6 +34,14 @@ from quantify_scheduler.operations.acquisition_library import SSBIntegrationComp
 from quantify_scheduler.resources import ClockResource
 
 ARRAY_DECIMAL_PRECISION = 16
+
+
+@pytest.fixture
+def zhinst_hw_config_invalid_latencies(load_example_zhinst_hardware_config):
+    hw_config = deepcopy(load_example_zhinst_hardware_config)
+    hw_config["latency_corrections"] = {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None}
+
+    yield hw_config
 
 
 def test__determine_measurement_fixpoint_correction():
@@ -332,6 +342,19 @@ def test_compile_hardware_uhfqa_successfully(
     # intermodulation_frequency = 150e6
 
     # assert device_configs["lo0"] == ro_freq - intermodulation_frequency
+
+
+def test_compile_invalid_latencies_raises(
+    make_schedule,
+    zhinst_hw_config_invalid_latencies,
+) -> None:
+    hardware_cfg = zhinst_hw_config_invalid_latencies
+    # Arrange
+    schedule = make_schedule()
+
+    # should raise a pydantic validation error
+    with pytest.raises(ValidationError):
+        _ = zhinst_backend.compile_backend(schedule, hardware_cfg)
 
 
 def test_hdawg4_sequence(

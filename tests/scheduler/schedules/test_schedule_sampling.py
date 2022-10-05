@@ -52,15 +52,8 @@ def test_sample_schedule() -> None:
 
 def test_sample_modulated_waveform() -> None:
     schedule = Schedule("test")
-    clock0 = BasebandClockResource(
-        name="clock0",
-        data={
-            "name": "clock0",
-            "type": "BasebandClockResource",
-            "freq": 0.15e9,
-            "phase": 0,
-        },
-    )
+    clock0 = BasebandClockResource("clock0")
+    clock0["freq"] = 0.15e9
     schedule.add_resource(clock0)
 
     square_pulse_op = SquarePulse(amp=0.2, duration=3e-9, port="SDP", clock="clock0")
