@@ -589,6 +589,11 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._set_parameter(
                 self.instrument, "out1_offset", settings.offset_ch0_path1
             )
+        # configure gain
+        if settings.in0_gain is not None:
+            self._set_parameter(self.instrument, "in0_gain", settings.in0_gain)
+        if settings.in1_gain is not None:
+            self._set_parameter(self.instrument, "in1_gain", settings.in1_gain)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -646,6 +651,11 @@ class QCMRFComponent(QCMComponent):
             self._set_parameter(
                 self.instrument, "out1_offset_path1", settings.offset_ch1_path1
             )
+        # configure attenuation
+        if settings.out0_att is not None:
+            self._set_parameter(self.instrument, "out0_att", settings.out0_att)
+        if settings.out1_att is not None:
+            self._set_parameter(self.instrument, "out1_att", settings.out1_att)
 
 
 class QRMRFComponent(QRMComponent):
@@ -683,6 +693,11 @@ class QRMRFComponent(QRMComponent):
             self._set_parameter(
                 self.instrument, "out0_offset_path1", settings.offset_ch0_path1
             )
+        # configure gain and attenuation
+        if settings.out0_att is not None:
+            self._set_parameter(self.instrument, "out0_att", settings.out0_att)
+        if settings.in0_att is not None:
+            self._set_parameter(self.instrument, "in0_att", settings.in0_att)
 
 
 class PulsarQCMComponent(QCMComponent):

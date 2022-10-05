@@ -188,6 +188,10 @@ class BaseModuleSettings(DataClassJsonMixin):
     """The DC offset on path 0 of channel 1."""
     offset_ch1_path1: Union[float, None] = None
     """The DC offset on path 1 of channel 1."""
+    in0_gain: Union[int, None] = None
+    """The gain of input 0."""
+    in1_gain: Union[int, None] = None
+    """The gain of input 1."""
 
 
 @dataclass
@@ -266,6 +270,12 @@ class RFModuleSettings(BaseModuleSettings):
     lo1_freq: Union[float, None] = None
     """The frequency of Output 1 (O1) LO. If left `None`, the parameter will not be set.
     """
+    out0_att: Union[int, None] = None
+    """The attenuation of Output 0."""
+    out1_att: Union[int, None] = None
+    """The attenuation of Output 1."""
+    in0_att: Union[int, None] = None
+    """The attenuation of Input 0."""
 
     @classmethod
     def extract_settings_from_mapping(

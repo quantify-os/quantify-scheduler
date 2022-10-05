@@ -1142,6 +1142,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
 
+    @abstractmethod
+    def assign_attenuation(self):
+        """
+        An abstract method that should be overridden. Meant to assign
+        attenuation settings from the hardware configuration if there is any.
+        """
+
     @staticmethod
     def downconvert_clock(downconverter_freq: float, clock_freq: float):
         """
@@ -1186,31 +1193,35 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
-        self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
+        self._settings = self._configure_mixer_offsets_and_gains(
+            self._settings, self.hw_mapping
+        )
         self.sequencers = self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
+        self.assign_attenuation()
 
-    def _configure_mixer_offsets(
+    def _configure_mixer_offsets_and_gains(
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
         """
-        We configure the mixer offsets after initializing the settings such we can
-        account for the differences in the hardware. e.g. the V vs mV encountered here.
+        We configure the mixer offsets, gains, attenuations
+        after initializing the settings such we can account for
+        the differences in the hardware. e.g. the V vs mV encountered here.
 
         Parameters
         ----------
         settings
-            The settings dataclass to which to add the dc offsets.
+            The settings dataclass to which to add the dc offsets and gains.
         hw_mapping
             The hardware configuration.
 
         Returns
         -------
         :
-            The settings dataclass after adding the normalized offsets
+            The settings dataclass after adding the normalized offsets and gains.
 
         Raises
         ------
@@ -1271,6 +1282,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 settings.offset_ch1_path1 = calc_from_units_volt(
                     "dc_mixer_offset_Q", output_cfg
                 )
+
+        complex_output_0 = hw_mapping.get("complex_output_0", None)
+        if complex_output_0 is not None:
+            settings.in0_gain = complex_output_0.get("input_gain_I", None)
+            settings.in1_gain = complex_output_0.get("input_gain_Q", None)
+        else:
+            settings.in0_gain = hw_mapping.get("real_output_0", {}).get(
+                "input_gain", None
+            )
+            settings.in1_gain = hw_mapping.get("real_output_1", {}).get(
+                "input_gain", None
+            )
 
         return settings
 
@@ -1477,6 +1500,12 @@ class QbloxBasebandModule(QbloxBaseModule):
         if if_freq != 0 and if_freq is not None:
             sequencer.settings.nco_en = True
 
+    def assign_attenuation(self):
+        """
+        Meant to assign attenuation settings from the hardware configuration, if there
+        is any. For baseband modules there is no attenuation parameters currently.
+        """
+
 
 class QbloxRFModule(QbloxBaseModule):
     """
@@ -1568,6 +1597,20 @@ class QbloxRFModule(QbloxBaseModule):
 
             if lo_freq is not None:
                 sequencer.frequency = clock_freq - lo_freq
+
+    def assign_attenuation(self):
+        """
+        Assigns attenuation settings from the hardware configuration.
+        """
+        self._settings.in0_att = self.hw_mapping.get("complex_output_0", {}).get(
+            "input_att", None
+        )
+        self._settings.out0_att = self.hw_mapping.get("complex_output_0", {}).get(
+            "output_att", None
+        )
+        self._settings.out1_att = self.hw_mapping.get("complex_output_1", {}).get(
+            "output_att", None
+        )
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):
