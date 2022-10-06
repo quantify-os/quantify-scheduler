@@ -3,7 +3,7 @@
 ## 0.9.0 (2022-03-11)
 
 ### Breaking changes
-- 
+
 - Deprecated methods removed:
   - `QuantumDevice`
     - `components` => `elements`
