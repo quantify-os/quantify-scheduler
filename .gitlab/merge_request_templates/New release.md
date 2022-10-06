@@ -23,16 +23,16 @@
 1. [ ] Commit pip frozen requirements for future reference:
     - Go to the `Test (py3.9, Linux)` pipeline job and download the `artifacts` (right side "Job artifacts" `-->` "Download").
     - Unzip, get the `frozen-requirements.txt`.
-    - Paste it in `frozen-requirements` directory.
+    - Paste it in `frozen_requirements` directory.
     - Rename it, commit & push:
 
       ```bash
       NEW_VERSION=$(python setup.py --version)
       echo $NEW_VERSION
 
-      mv frozen-requirements/frozen-requirements.txt frozen-requirements/frozen-requirements-$NEW_VERSION.txt
+      mv frozen_requirements/frozen-requirements.txt frozen_requirements/frozen-requirements-$NEW_VERSION.txt
 
-      git add ./frozen_requirements/frozen-requirements-$NEW_VERSION.txt
+      git add frozen_requirements/frozen-requirements-$NEW_VERSION.txt
       git commit -m "Add pip frozen requirements for $NEW_VERSION"
       git push
       ```
