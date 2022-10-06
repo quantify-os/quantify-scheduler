@@ -30,7 +30,7 @@
       NEW_VERSION=$(python setup.py --version)
       echo $NEW_VERSION
 
-      mv frozen-requirements.txt frozen-requirements-$NEW_VERSION.txt
+      mv frozen-requirements/frozen-requirements.txt frozen-requirements/frozen-requirements-$NEW_VERSION.txt
 
       git add ./frozen_requirements/frozen-requirements-$NEW_VERSION.txt
       git commit -m "Add pip frozen requirements for $NEW_VERSION"
