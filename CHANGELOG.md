@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.0 (2022-03-11)
+## 0.9.0 (2022-10-06)
 
 ### Breaking changes
 
@@ -13,8 +13,6 @@
   - `ScheduleBase`
     - `plot_circuit_diagram_mpl` -> `plot_circuit_diagram`
     - `plot_pulse_diagram_mpl` -> `plot_pulse_diagram`  
-
-
 - Compilation - Compilation is now a graph. (#305, !407)
 - Operations - Move to `qcodes` >=0.34 (#300, !473)
     - Disallow `"_"` in `DeviceElement` names to comply with qcodes version 0.34
