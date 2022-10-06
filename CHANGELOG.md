@@ -14,9 +14,10 @@
     - `plot_circuit_diagram_mpl` -> `plot_circuit_diagram`
     - `plot_pulse_diagram_mpl` -> `plot_pulse_diagram`  
 - Compilation - Compilation is now a graph. (#305, !407)
-- Operations - Move to `qcodes` >=0.34 (#300, !473)
+- Operations - Allow moving to `qcodes` >=0.34 (#300, !473)
     - Disallow `"_"` in `DeviceElement` names to comply with qcodes version 0.34
     - Enforces `"_"` as the separator between device elements in `Edge` names
+    - Note: We are still on `qcodes` 0.33 due to pin in `quantify-core` package requirements
 - Operations, Resources, and Schedulables - Deprecate the use of the `data` argument (!455)
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 - Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
