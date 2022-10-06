@@ -12,6 +12,7 @@
 - [Edgar Reehuis](mailto:ereehuis@qblox.com)
 - [Gabor Oszkar Denes](mailto:gdenes@qblox.com)
 - [Gijs Vermarien](mailto:gijs@orangeqs.com)
+- [Hiresh Jadoenathmissier](mailto:hiresh@orangeqs.com)
 - [Jordy Gloudemans](mailto:jgloudemans@qblox.com)
 - [Jules van Oven](mailto:jules@qblox.com)
 - [Kelvin Loh](mailto:kelvin@orangeqs.com)

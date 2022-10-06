@@ -3,14 +3,23 @@
 ## 0.9.0 (2022-03-11)
 
 ### Breaking changes
-
+- 
+- Deprecated methods removed:
+  - `QuantumDevice`
+    - `components` => `elements`
+    - `get_component` => `get_element`
+    - `add_component` => `add_element`
+    - `remove_component` => `remove_element`
+  - `ScheduleBase`
+    - `plot_circuit_diagram_mpl` => `plot_circuit_diagram`
+    - `plot_pulse_diagram_mpl` => `plot_pulse_diagram`
 - Compilation - Compilation is now a graph. (#305, !407)
-- Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
-- Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
-- Operations - Move to `qcodes` 0.34+ (#300, !473)
+- Operations - Move to `qcodes` >=0.34 (#300, !473)
     - Disallow "\_" in `DeviceElement` names to comply with qcodes version 0.34
     - Enforces "\_" as the separator between device elements in `Edge` names
-- Operations, Resources, and Schedulables - Deprecate the use of the data argument (!455)
+- Operations, Resources, and Schedulables - Deprecate the use of the `data` argument (!455)
+- Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
+- Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
 
 ### Merged branches and closed issues
 
@@ -20,7 +29,7 @@
 - Docs - Added documentation and unit tests for the Rxy, X, X90, Y and Y90 unitaries (#349)
 - Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420, !469)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
-- JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
+- JSON utilities - Remove `repr` based serialization/deserialization methods (!445, #248)
 - JSON utilities - Extend the capabilities of the ``__getstate__/__setstate__`` json serializer (!445, #248)
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
