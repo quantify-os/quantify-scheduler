@@ -17,19 +17,20 @@
 
 - Compilation - Compilation is now a graph. (#305, !407)
 - Operations - Move to `qcodes` >=0.34 (#300, !473)
-    - Disallow "\_" in `DeviceElement` names to comply with qcodes version 0.34
-    - Enforces "\_" as the separator between device elements in `Edge` names
+    - Disallow `"_"` in `DeviceElement` names to comply with qcodes version 0.34
+    - Enforces `"_"` as the separator between device elements in `Edge` names
 - Operations, Resources, and Schedulables - Deprecate the use of the `data` argument (!455)
 - Qblox ICCs - Hotfix for storing scope acquisition (broken by !432) (!470)
 - Qblox ICCs - Only activate markers and LOs of used outputs to prevent noise (!474)
 
 ### Merged branches and closed issues
 
-- Docs - Support for myst-nb added (#301, !407)
+- Docs - Support for `myst-nb` added (#301, !407)
 - Docs - Sources are converted from restructured text format to MyST markdown. (!452)
-- Docs - Add pin on nbclient\<0.6 for Read-the-Docs to build; Remove various old temp requirement pins (!477)
+- Docs - Add pin on `nbclient<0.6` for Read-the-Docs to build; Remove various old temp requirement pins (!477)
 - Docs - Added documentation and unit tests for the Rxy, X, X90, Y and Y90 unitaries (#349)
-- Gettables - Added a ProfiledScheduleGettable for profiling execution times of schedule steps. (!420, !469)
+- Gettables - Added a `ProfiledScheduleGettable` for profiling execution times of schedule steps. (!420, !469)
+  - Please note: Setup in need of refactoring so interface is subject to change (see #320)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
 - JSON utilities - Remove `repr` based serialization/deserialization methods (!445, #248)
 - JSON utilities - Extend the capabilities of the ``__getstate__/__setstate__`` json serializer (!445, #248)
