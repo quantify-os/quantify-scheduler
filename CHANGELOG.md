@@ -6,13 +6,15 @@
 
 - Deprecated methods removed:
   - `QuantumDevice`
-    - `components` => `elements`
-    - `get_component` => `get_element`
-    - `add_component` => `add_element`
-    - `remove_component` => `remove_element`
+    - `components` -> `elements`
+    - `get_component` -> `get_element`
+    - `add_component` -> `add_element`
+    - `remove_component` -> `remove_element`
   - `ScheduleBase`
-    - `plot_circuit_diagram_mpl` => `plot_circuit_diagram`
-    - `plot_pulse_diagram_mpl` => `plot_pulse_diagram`
+    - `plot_circuit_diagram_mpl` -> `plot_circuit_diagram`
+    - `plot_pulse_diagram_mpl` -> `plot_pulse_diagram`  
+
+
 - Compilation - Compilation is now a graph. (#305, !407)
 - Operations - Move to `qcodes` >=0.34 (#300, !473)
     - Disallow "\_" in `DeviceElement` names to comply with qcodes version 0.34
