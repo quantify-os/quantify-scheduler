@@ -40,6 +40,7 @@
 1. [ ] Create tag for bumped version:
     - Merge this MR into `main`.
     - Create tag via GitLab from `main` using the bumped version number (https://gitlab.com/quantify-os/quantify-scheduler/-/tags/new).
+      - Do not add any description. 
 
     <!-- - Future TODO: finish automation of this step in `.gitlab-ci.yml`. -->
     <!-- 1. [ ] Run **one** of the major/minor/patch version bump (manual) jobs in the CI pipeline of the MR. -->
@@ -52,7 +53,9 @@
         - `Hidden`=False
         - `Privacy Level`=Public
    - [ ] Change both the `Default version` and `Default branch` of the docs to the tag that was released [over here](https://readthedocs.com/dashboard/quantify-quantify-scheduler/advanced/).
-   - [ ] Make sure the docs build.
+   - [ ] Make sure the docs build and check on RTD.
+      - Manually rebuild `latest` by hitting `Build version:` [over here](https://readthedocs.com/projects/quantify-quantify-scheduler/builds/).
+      - Check both the `latest` and the new version links on RTD work by clicking through to Changelog (hit Ctrl+F5).
 
 1. [ ] Create [new release on GitLab](https://gitlab.com/quantify-os/quantify-scheduler/-/releases).
     - Meaningful title
