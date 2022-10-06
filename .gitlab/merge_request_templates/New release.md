@@ -5,8 +5,7 @@
 
 1. CI pipeline:
     - [ ] Automated pipeline passes.
-    - [ ] `Test (py3.8, Windows, manual)` passes (trigger manually!).
-    - [ ] `Test (py3.10, Windows, manual)` passes (trigger manually!).
+    - [ ] All `Test (py3.x, Windows, manual)` pass (trigger manually!).
 
 1. [ ] Bump version and commit & push:
    ```bash
