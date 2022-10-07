@@ -272,7 +272,7 @@ class Sequencer:
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
         downconverter_freq: float = 0,
-        mixing: bool = False,
+        mixing: bool = True,
     ):
         """
         Constructor for the sequencer compiler.
@@ -298,7 +298,7 @@ class Sequencer:
             Defaults to 0, in which case no downconverter is being used.
         mixing
             Boolean flag for IQ mixing.
-            Defaults to False meaning no IQ mixing is applied.
+            Defaults to True  meaning IQ mixing is applied.
         """
         self.parent = parent
         self.index = index
@@ -1027,7 +1027,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             lo_name = io_cfg.get("lo_name", None)
             downconverter_freq = io_cfg.get("downconverter_freq", 0)
-            mixing = io_cfg.get("mixing", False)
+            mixing = io_cfg.get("mixing", True)
 
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
                 "portclock_configs", []
@@ -1436,10 +1436,16 @@ class QbloxBasebandModule(QbloxBaseModule):
         For each sequencer, the following relation is obeyed
         (if mixing is set to True) :math:`f_{RF} = f_{LO} + f_{IF}`.
 
-        If mixing is True it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown. If the frequency
-        is overconstraint (i.e. multiple values are somehow specified) an error is
-        thrown during assignment.
+        If mixing is True it is thus expected that either the IF and/or the
+        LO frequency has been set during instantiation.
+        Otherwise, an error is thrown. If the frequency is overconstraint
+        (i.e. multiple values are somehow specified) an error is thrown during
+        assignment.
+
+        If mixing is False (For example when the LO is used to drive an external
+        device) the relation :math:`f_{RF} = f_{LO}` is upheld.
+        In this case this function only serves to turn on the NCO, and the LO
+        is given the same frequency as the clock.
 
         Raises
         ------
@@ -1459,7 +1465,8 @@ class QbloxBasebandModule(QbloxBaseModule):
             sequencer.frequency = clock_freq
             return
 
-        if sequencer.mixing is False:
+        if not sequencer.mixing:
+            lo_compiler.frequency = clock_freq
             sequencer.settings.nco_en = True
             return
 

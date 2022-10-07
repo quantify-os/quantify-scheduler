@@ -419,7 +419,7 @@ class SequencerSettings(DataClassJsonMixin):
         settings = cls(
             nco_en=nco_en,
             sync_en=True,
-            mixing=False,
+            mixing=True,
             connected_outputs=connected_outputs,
             modulation_freq=modulation_freq,
             mixer_corr_gain_ratio=mixer_amp_ratio,

@@ -17,7 +17,7 @@ import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
-from quantify_scheduler import waveforms
+from quantify_scheduler import waveforms, Schedule
 
 from quantify_scheduler.enums import BinMode
 
@@ -32,6 +32,8 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
 )
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
 
 from tests.fixtures.mock_setup import close_instruments
@@ -540,3 +542,62 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     assert tuple(map(type, acquired_data)) == (np.ndarray, np.ndarray)
 
     instr_coordinator.remove_component(ic_component.name)
+
+
+def test_mixing_flag(mock_setup_basic_transmon, make_cluster_component):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "lo_name": "lo0",
+                    "mixing": True,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+    }
+
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test mixing flag")
+    schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:res", clock="q0.ro"))
+    schedule.add_resource(ClockResource(name="q0.ro", freq=70e6))
+
+    # Generate compiled schedule where mixing is true
+    compiled_sched_mixing_true = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+    # Change mixing to false, set new LO freq and generate new compiled schedule
+    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"]["mixing"] = False
+    compiled_sched_mixing_false = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+
+    # Assert LO freq got set to 20e6 if mixing is true.
+    assert (
+        compiled_sched_mixing_true.compiled_instructions["generic"]["lo0.frequency"]
+        == 20e6
+    )
+    # Assert LO freq got set to 70e6 if mixing is false.
+    assert (
+        compiled_sched_mixing_false.compiled_instructions["generic"]["lo0.frequency"]
+        == 70e6
+    )
+    instr_coordinator.remove_component("ic_cluster0")

@@ -112,7 +112,7 @@ Now we are ready to proceed to the compilation stage. This will be done in two s
 
 We can perform each of these steps via {func}`~quantify_scheduler.compilation.determine_absolute_timing` and {func}`~quantify_scheduler.compilation.hardware_compile`, respectively.
 
-We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.py.html#data-directory).
+We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.html#data-directory).
 
 ```{code-cell} ipython3
 
