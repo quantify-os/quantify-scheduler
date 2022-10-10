@@ -101,8 +101,7 @@ class SpectroscopyPulseMW(InstrumentChannel):  # SpectroscopyPulse
 # pylint: disable=too-few-public-methods
 class BasicElectronicNVElement(DeviceElement):
     """
-    A device element representing a single fixed-frequency transmon qubit coupled to a
-    readout resonator.
+    A device element representing an electronic qubit in an NV center.
     """
 
     def __init__(self, name: str, **kwargs):
