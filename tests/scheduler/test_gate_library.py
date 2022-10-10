@@ -11,11 +11,6 @@ import pytest
 from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import Operation, Schedule, Schedulable
-from quantify_scheduler.device_under_test.mock_setup import (
-    set_up_basic_mock_nv_setup,
-    set_standard_params_basic_nv,
-    close_mock_setup,
-)
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -239,7 +234,7 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
     assert obj != operation
 
 
-def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
+def test_compilation_spectroscopy_pulse(tmp_test_data_dir, mock_setup_basic_nv):
     """SpectroscopyPulse can be compiled to the device layer and to qblox instructions.
 
     Verify that the device representation and the hardware instructions contain
@@ -274,8 +269,7 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    mock_nv_setup = set_up_basic_mock_nv_setup()
-    set_standard_params_basic_nv(mock_nv_setup)
+    mock_nv_setup = mock_setup_basic_nv
     quantum_device = mock_nv_setup["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").spectroscopy_pulse.duration.get()
 
@@ -317,8 +311,6 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir):
     assert schedule_hardware.timing_table.data.loc[1, "abs_time"] == pulse_duration
     assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
     assert schedule_hardware.timing_table.data.loc[1, "is_acquisition"] is False
-
-    close_mock_setup(mock_nv_setup)
 
 
 def test_rotation_unitaries() -> None:

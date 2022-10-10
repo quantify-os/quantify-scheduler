@@ -6,7 +6,7 @@ import os
 import shutil
 import pathlib
 
-from typing import List
+from typing import Any, Dict, List, Union
 
 import pytest
 from qcodes import Instrument
@@ -14,6 +14,8 @@ from qcodes import Instrument
 from quantify_core.data.handling import get_datadir, set_datadir
 
 from quantify_scheduler.device_under_test.mock_setup import (
+    set_standard_params_basic_nv,
+    set_up_basic_mock_nv_setup,
     set_up_mock_transmon_setup,
     set_standard_params_transmon,
 )
@@ -27,8 +29,14 @@ QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
-def close_instruments(instrument_names: List[str]):
-    """Close all instruments in the list of names supplied."""
+def close_instruments(instrument_names: Union[List[str], Dict[str, Any]]):
+    """Close all instruments in the list of names supplied.
+
+    Parameters
+    ----------
+    instrument_names
+        List of instrument names or dict, where keys correspond to instrument names.
+    """
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()
@@ -93,6 +101,18 @@ def mock_setup_basic_transmon(tmp_test_data_dir):
     # N.B. the keys need to correspond to the names of the instruments otherwise
     # they do not close correctly. Watch out with edges (e.g., q0_q2)
     close_instruments(mock_instruments)
+
+
+@pytest.fixture(scope="function", autouse=False)
+def mock_setup_basic_nv(tmp_test_data_dir):
+    """
+    Returns a mock setup for a basic 1-qubit NV-center device.
+    """
+    set_datadir(tmp_test_data_dir)
+    mock_setup = set_up_basic_mock_nv_setup()
+    set_standard_params_basic_nv(mock_setup)
+    yield mock_setup
+    close_instruments(mock_setup)
 
 
 @pytest.fixture(scope="function", autouse=False)

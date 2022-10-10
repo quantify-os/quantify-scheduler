@@ -5,7 +5,7 @@
 Code to set up a mock setup for use in tutorials and testing.
 """
 
-from typing import Dict
+from typing import Any, Dict
 
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -149,7 +149,7 @@ def set_standard_params_transmon(mock_setup):
 def set_up_basic_mock_nv_setup() -> Dict:
     """Sets up a system containing 1 electronic qubit in an NV center.
 
-    After usage, close all instruments by calling :func:`close_mock_setup`.
+    After usage, close all instruments.
 
     Returns
     -------
@@ -180,22 +180,7 @@ def set_up_basic_mock_nv_setup() -> Dict:
     }
 
 
-def close_mock_setup(mock_setup: Dict):
-    """Takes a dictionary with a mock setup and closes all instruments.
-
-    This function should be called once the mock setup is not needed anymore. It avoids
-    stateful behaviour and is particularly important in automated tests.
-
-    Parameters
-    ----------
-    mock_setup
-        mock setup as returned by the functions "set_up_..."
-    """
-    for instr in mock_setup.values():
-        instr.close()
-
-
-def set_standard_params_basic_nv(mock_nv_device: QuantumDevice) -> None:
+def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
     """
     Sets somewhat standard parameters to the mock setup generated above.
     These parameters serve so that the quantum-device is capable of generating

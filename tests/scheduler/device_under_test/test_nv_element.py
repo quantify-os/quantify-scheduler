@@ -1,11 +1,11 @@
 # pylint: disable=redefined-outer-name
 import pytest
+from qcodes import Instrument
 
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
     set_standard_params_basic_nv,
-    close_mock_setup,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
@@ -60,13 +60,15 @@ def test_mock_mv_setup():
     mock_nv_setup = set_up_basic_mock_nv_setup()
     assert isinstance(mock_nv_setup, dict)
     set_standard_params_basic_nv(mock_nv_setup)
-    close_mock_setup(mock_nv_setup)
+    for key in mock_nv_setup:
+        Instrument.find_instrument(key).close()
 
     # test that tear-down closes all instruments by re-executing
     mock_nv_setup = set_up_basic_mock_nv_setup()
     assert isinstance(mock_nv_setup, dict)
     set_standard_params_basic_nv(mock_nv_setup)
-    close_mock_setup(mock_nv_setup)
+    for key in mock_nv_setup:
+        Instrument.find_instrument(key).close()
 
 
 @pytest.fixture
