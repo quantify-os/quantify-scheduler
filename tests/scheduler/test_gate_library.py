@@ -20,7 +20,7 @@ from quantify_scheduler.operations.gate_library import (
     Rxy,
     X,
     Y,
-    SpectroscopyPulse,
+    SpectroscopyOperation,
 )
 from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.schedules.schedule import CompiledSchedule
@@ -79,7 +79,7 @@ def test_rxy_angle_modulo() -> None:
         CZ("q0", "q1"),
         CNOT("q0", "q6"),
         Measure("q0", "q9"),
-        SpectroscopyPulse("q0"),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test_gate_is_valid(operation: Operation) -> None:
@@ -126,7 +126,7 @@ def is__str__equal(obj: Any) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
-        SpectroscopyPulse("q0"),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test__repr__(operation: Operation) -> None:
@@ -149,7 +149,7 @@ def test__repr__(operation: Operation) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
-        SpectroscopyPulse("q0"),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test__str__(operation: Operation) -> None:
@@ -172,7 +172,7 @@ def test__str__(operation: Operation) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),
         Measure("q0", "q6", acq_index=92),
-        SpectroscopyPulse("q0"),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test_deserialize(operation: Operation) -> None:
@@ -218,7 +218,7 @@ def test_deserialize(operation: Operation) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),
         Measure("q0", "q6", acq_index=92),
-        SpectroscopyPulse("q0"),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
@@ -234,7 +234,7 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
 
 
 def test_compilation_spectroscopy_operation(mock_setup_basic_nv):
-    """SpectroscopyPulse can be compiled to the device layer and to qblox instructions.
+    """SpectroscopyOperation can be compiled to the device layer and to qblox instructions.
 
     Verify that the device representation and the hardware instructions contain
     plausible content.
@@ -243,12 +243,12 @@ def test_compilation_spectroscopy_operation(mock_setup_basic_nv):
 
     label1 = "Spectroscopy pulse 1"
     label2 = "Spectroscopy pulse 2"
-    _ = schedule.add(SpectroscopyPulse("qe0"), label=label1)
-    _ = schedule.add(SpectroscopyPulse("qe0"), label=label2)
+    _ = schedule.add(SpectroscopyOperation("qe0"), label=label1)
+    _ = schedule.add(SpectroscopyOperation("qe0"), label=label2)
 
-    # SpectroscopyPulse is added to the operations.
+    # SpectroscopyOperation is added to the operations.
     # It has "gate_info", but no "pulse_info" yet.
-    spec_pulse_str = str(SpectroscopyPulse("qe0"))
+    spec_pulse_str = str(SpectroscopyOperation("qe0"))
     assert spec_pulse_str in schedule.operations
     assert "gate_info" in schedule.operations[spec_pulse_str]
     assert schedule.operations[spec_pulse_str]["pulse_info"] == []

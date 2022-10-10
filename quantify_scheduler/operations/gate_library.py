@@ -558,7 +558,7 @@ class Measure(Operation):
         )
 
 
-class SpectroscopyPulse(Operation):
+class SpectroscopyOperation(Operation):
     """Spectroscopy pulse with a certain frequency.
 
     The frequency of the spectroscopy pulse is taken from a clock of the device element
