@@ -8,7 +8,6 @@ from unittest import TestCase
 
 import numpy as np
 import pytest
-from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import Operation, Schedule, Schedulable
 from quantify_scheduler.operations.gate_library import (
