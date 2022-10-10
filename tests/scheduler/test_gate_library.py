@@ -234,7 +234,7 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
     assert obj != operation
 
 
-def test_compilation_spectroscopy_pulse(tmp_test_data_dir, mock_setup_basic_nv):
+def test_compilation_spectroscopy_pulse(mock_setup_basic_nv):
     """SpectroscopyPulse can be compiled to the device layer and to qblox instructions.
 
     Verify that the device representation and the hardware instructions contain
@@ -295,9 +295,6 @@ def test_compilation_spectroscopy_pulse(tmp_test_data_dir, mock_setup_basic_nv):
     assert schedule_device.schedulables[label2].data["abs_time"] == pytest.approx(
         0 + duration_pulse_1
     )
-
-    # need to set so that compiled instructions are written into datadir
-    set_datadir(tmp_test_data_dir)
 
     hardware_cfg = quantum_device.generate_hardware_config()
     assert not "compiled_instructions" in schedule_device.data
