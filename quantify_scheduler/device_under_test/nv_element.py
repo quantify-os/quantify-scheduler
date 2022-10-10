@@ -40,7 +40,7 @@ class Ports(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class ClocksFrequencies(InstrumentChannel):
+class ClockFrequencies(InstrumentChannel):
     """
     Submodule with clock frequencies specifying the transitions to address.
     """
@@ -111,7 +111,7 @@ class BasicElectronicNVElement(DeviceElement):
             "spectroscopy_pulse", SpectroscopyPulseMW(self, "spectroscopy_pulse")
         )
         self.add_submodule("ports", Ports(self, "ports"))
-        self.add_submodule("clock_freqs", ClocksFrequencies(self, "clock_freqs"))
+        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
