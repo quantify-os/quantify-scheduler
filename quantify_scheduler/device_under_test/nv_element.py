@@ -73,7 +73,7 @@ class ClockFrequencies(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class SpectroscopyPulseMW(InstrumentChannel):  # SpectroscopyPulse
+class SpectroscopyOperation(InstrumentChannel):
     """Submodule with parameters run a spectroscopy pulse in the microwave range."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -108,7 +108,8 @@ class BasicElectronicNVElement(DeviceElement):
         super().__init__(name, **kwargs)
 
         self.add_submodule(
-            "spectroscopy_pulse", SpectroscopyPulseMW(self, "spectroscopy_pulse")
+            "spectroscopy_operation",
+            SpectroscopyOperation(self, "spectroscopy_operation"),
         )
         self.add_submodule("ports", Ports(self, "ports"))
         self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
@@ -122,12 +123,12 @@ class BasicElectronicNVElement(DeviceElement):
         """
         qubit_config = {
             f"{self.name}": {
-                "spectroscopy_pulse": OperationCompilationConfig(
+                "spectroscopy_operation": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
                     + "pulse_factories.nv_spec_pulse_mw",
                     factory_kwargs={
-                        "duration": self.spectroscopy_pulse.duration(),
-                        "amplitude": self.spectroscopy_pulse.amplitude(),
+                        "duration": self.spectroscopy_operation.duration(),
+                        "amplitude": self.spectroscopy_operation.amplitude(),
                         "port": self.ports.microwave(),
                         "clock": f"{self.name}.spec",
                     },

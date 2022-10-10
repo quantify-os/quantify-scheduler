@@ -233,7 +233,7 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
     assert obj != operation
 
 
-def test_compilation_spectroscopy_pulse(mock_setup_basic_nv):
+def test_compilation_spectroscopy_operation(mock_setup_basic_nv):
     """SpectroscopyPulse can be compiled to the device layer and to qblox instructions.
 
     Verify that the device representation and the hardware instructions contain
@@ -270,7 +270,9 @@ def test_compilation_spectroscopy_pulse(mock_setup_basic_nv):
 
     mock_nv_setup = mock_setup_basic_nv
     quantum_device = mock_nv_setup["quantum_device"]
-    pulse_duration = quantum_device.get_element("qe0").spectroscopy_pulse.duration.get()
+    pulse_duration = quantum_device.get_element(
+        "qe0"
+    ).spectroscopy_operation.duration.get()
 
     dev_cfg = quantum_device.generate_device_config()
     schedule_device = device_compile(schedule, dev_cfg)

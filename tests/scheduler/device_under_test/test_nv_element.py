@@ -37,13 +37,13 @@ def test_qubit_name(electronic_q0: BasicElectronicNVElement):
 def test_generate_config(electronic_q0: BasicElectronicNVElement):
     """Setting values updates the correct values in the configuration."""
     # set some values
-    electronic_q0.spectroscopy_pulse.amplitude(1.0)
-    electronic_q0.spectroscopy_pulse.duration(10e-6)
+    electronic_q0.spectroscopy_operation.amplitude(1.0)
+    electronic_q0.spectroscopy_operation.duration(10e-6)
 
     dev_cfg = electronic_q0.generate_device_config()
 
     # assert values in right place in config.
-    cfg_spec_pulse = dev_cfg.elements["qe0"]["spectroscopy_pulse"]
+    cfg_spec_pulse = dev_cfg.elements["qe0"]["spectroscopy_operation"]
     assert cfg_spec_pulse.factory_kwargs["duration"] == 10e-6
     assert cfg_spec_pulse.factory_kwargs["amplitude"] == 1.0
 

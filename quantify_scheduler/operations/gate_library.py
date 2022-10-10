@@ -589,7 +589,7 @@ class SpectroscopyPulse(Operation):
                     ".circuit_diagram.pulse_modulated",
                     "tex": r"Spectroscopy pulse",
                     "qubits": [qubit],
-                    "operation_type": "spectroscopy_pulse",
+                    "operation_type": "spectroscopy_operation",
                 },
             }
         super().__init__(data["name"], data=data)
