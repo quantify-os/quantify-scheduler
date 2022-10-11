@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 from typing import Dict, Any
 
-from qcodes.instrument.base import Instrument
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
 from quantify_core.utilities import deprecated

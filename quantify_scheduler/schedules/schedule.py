@@ -184,47 +184,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         return sched
 
-    def plot_circuit_diagram_mpl(
-        self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None
-    ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
-        """
-        Creates a circuit diagram visualization of the schedule using matplotlib.
-
-        The circuit diagram visualization visualizes the schedule at the quantum circuit
-        layer.
-        This visualization provides no timing information, only showing the order of
-        operations.
-        Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations for
-        which no information is specified at the gate level are visualized using an
-        icon (e.g., a stylized wavy pulse) depending on the information specified at
-        the quantum device layer.
-
-        Alias of :func:`.circuit_diagram.circuit_diagram_matplotlib`.
-
-        Parameters
-        ----------
-        schedule
-            the schedule to render.
-        figsize
-            matplotlib figsize.
-        ax
-            Axis handle to use for plotting.
-
-        Returns
-        -------
-        fig
-            matplotlib figure object.
-        ax
-            matplotlib axis object.
-        """
-        warnings.warn(
-            "`plot_circuit_diagram_mpl` will be removed from this module in "
-            "quantify-scheduler >= 0.6.0.\n"
-            "Instead, use `plot_circuit_diagram`",
-            DeprecationWarning,
-        )
-        return self.plot_circuit_diagram(figsize, ax, "mpl")
-
     def plot_circuit_diagram(
         self,
         figsize: Tuple[int, int] = None,
@@ -273,49 +232,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         raise ValueError(
             f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
-        )
-
-    # pylint: disable=too-many-arguments
-    def plot_pulse_diagram_mpl(
-        self,
-        port_list: Optional[List[str]] = None,
-        sampling_rate: float = 1e9,
-        modulation: Literal["off", "if", "clock"] = "off",
-        modulation_if: float = 0.0,
-        ax: Optional[Axes] = None,
-    ) -> Tuple[Figure, Axes]:
-        """
-        Creates a visualization of all the pulses in a schedule using matplotlib.
-
-        The pulse diagram visualizes the schedule at the quantum device layer.
-        For this visualization to work, all operations need to have the information
-        present (e.g., pulse info) to represent these on the quantum-circuit level and
-        requires the absolute timing to have been determined.
-        This information is typically added when the quantum-device level compilation is
-        performed.
-
-        Alias of :func:`.pulse_diagram.pulse_diagram_matplotlib`.
-
-        port_list :
-            A list of ports to show. if set to `None` will use the first
-            8 ports it encounters in the sequence.
-        modulation :
-            Determines if modulation is included in the visualization.
-        modulation_if :
-            Modulation frequency used when modulation is set to "if".
-        sampling_rate :
-            The time resolution used to sample the schedule in Hz.
-        ax:
-            Axis onto which to plot.
-        """
-        warnings.warn(
-            "`plot_pulse_diagram_mpl` will be removed from this module in "
-            "quantify-scheduler >= 0.6.0.\n"
-            "Instead, use `plot_pulse_diagram`",
-            DeprecationWarning,
-        )
-        return self.plot_pulse_diagram(
-            port_list, sampling_rate, modulation, modulation_if, "mpl", {"ax": ax}
         )
 
     # pylint: disable=too-many-arguments
@@ -690,6 +606,13 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         """
         super().__init__()
         if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
             self.data = data
             return
 
@@ -763,33 +686,11 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     def __str__(self):
         return str(self.data["name"])
 
-    def __repr__(self) -> str:
-        """
-        Returns the string representation  of this instance.
-
-        This representation can always be evaluated to create a new instance.
-
-        .. code-block::
-
-            eval(repr(operation))
-
-        Returns
-        -------
-        :
-        """
-        cls = f"{self.__class__.__name__}"
-        return (
-            f"{cls}(name='{self.data['name']}', "
-            f"operation_repr='', "
-            f"schedule='', "
-            f"data={self.data})"
-        )
-
     def __getstate__(self):
-        return self.data
+        return {"deserialization_type": self.__class__.__name__, "data": self.data}
 
     def __setstate__(self, state):
-        self.data = state
+        self.data = state["data"]
 
 
 # pylint: disable=too-many-ancestors
@@ -929,29 +830,9 @@ class AcquisitionMetadata:
 
     def __getstate__(self):
         data = dataclasses.asdict(self)
-        data["acq_return_type"] = str(self.acq_return_type)
         return {"deserialization_type": self.__class__.__name__, "data": data}
 
     def __setstate__(self, state):
-        return_types = {str(t): t for t in [complex, float, int, bool, str, np.ndarray]}
-
-        if state["data"]["acq_return_type"] in return_types:
-            state["data"]["acq_return_type"] = return_types[
-                state["data"]["acq_return_type"]
-            ]
-        else:
-            raise ValueError(
-                f"AcquisitionMetaData setstate got unknown "
-                f"type: {state['data']['acq_return_type']}"
-            )
-
-        for binmode in enums.BinMode:
-            if state["data"]["bin_mode"] == binmode.value:
-                state["data"]["bin_mode"] = binmode
-                break
-        else:
-            raise ValueError(f"Unknown binmode: {state['data']['bin_mode']}")
-
         state["data"]["acq_indices"] = {
             int(k): v for k, v in state["data"]["acq_indices"].items()
         }

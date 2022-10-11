@@ -4,10 +4,12 @@
 # pylint: disable=eval-used
 from unittest import TestCase
 
+import json
 import pytest
 
 import numpy as np
 from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
@@ -220,7 +222,12 @@ def test_decompose_long_square_pulse() -> None:
     ],
 )
 def test__repr__(operation: Operation) -> None:
-    assert eval(repr(operation)) == operation
+    # Arrange
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    assert obj == operation
 
 
 @pytest.mark.parametrize(
@@ -273,10 +280,10 @@ def test__str__(operation: Operation) -> None:
 )
 def test_deserialize(operation: Operation) -> None:
     # Arrange
-    operation_repr: str = repr(operation)
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
     # Act
-    obj = eval(operation_repr)
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
 
     # Assert
     TestCase().assertDictEqual(obj.data, operation.data)
@@ -306,7 +313,11 @@ def test_deserialize(operation: Operation) -> None:
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
     # Arrange
-    obj = eval(repr(operation))
+    # Arrange
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
     assert obj == operation
 
     # Act

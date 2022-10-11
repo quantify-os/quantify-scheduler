@@ -9,8 +9,6 @@ sphinx>=5.1.1
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-bibtex
 jupyter_sphinx>=0.4.0
-myst-parser
-myst-nb
 sphinx-jsonschema
 sphinx-autobuild
 sphinx-togglebutton
@@ -38,11 +36,4 @@ scanpydoc >=0.7.1, <=0.7.3 # ensures latest typing_extensions is used in sphinx 
 rich[jupyter]
 jupytext
 
-# scheduler-only
-
-cachecontrol # see issue quantify-scheduler#129
-lockfile # see issue quantify-scheduler#129
-
-# Prospector
-prospector
 prospector[with_mypy]

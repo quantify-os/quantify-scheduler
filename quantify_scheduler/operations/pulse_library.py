@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from typing import List, Optional, Dict, Any, Union
+import warnings
 
 import numpy as np
 from numpy.typing import NDArray
@@ -36,20 +37,32 @@ class ShiftClockPhase(Operation):
             overwritten using the contents of data.
         """
         if data is None:
-            data = {
-                "name": "ShiftClockPhase",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "t0": t0,
-                        "phase": phase,
-                        "clock": clock,
-                        "port": None,
-                        "duration": 0,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="ShiftClockPhase")
+            self.data.update(
+                {
+                    "name": "ShiftClockPhase",
+                    "pulse_info": [
+                        {
+                            "wf_func": None,
+                            "t0": t0,
+                            "phase": phase,
+                            "clock": clock,
+                            "port": None,
+                            "duration": 0,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -77,21 +90,32 @@ class IdlePulse(Operation):
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.
         """
-
         if data is None:
-            data = {
-                "name": "Idle",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "t0": 0,
-                        "duration": duration,
-                        "clock": BasebandClockResource.IDENTITY,
-                        "port": None,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="Idle")
+            self.data.update(
+                {
+                    "name": "Idle",
+                    "pulse_info": [
+                        {
+                            "wf_func": None,
+                            "t0": 0,
+                            "duration": duration,
+                            "clock": BasebandClockResource.IDENTITY,
+                            "port": None,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -150,21 +174,33 @@ class RampPulse(Operation):
             overwritten using the contents of data.
         """
         if data is None:
-            data = {
-                "name": "RampPulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.ramp",
-                        "amp": amp,
-                        "duration": duration,
-                        "offset": offset,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="RampPulse")
+            self.data.update(
+                {
+                    "name": "RampPulse",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.ramp",
+                            "amp": amp,
+                            "duration": duration,
+                            "offset": offset,
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -214,22 +250,35 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
             overwritten using the contents of data.
         """
         if data is None:
-            data = {
-                "name": "StaircasePulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.staircase",
-                        "start_amp": start_amp,
-                        "final_amp": final_amp,
-                        "num_steps": num_steps,
-                        "duration": duration,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="StaircasePulse")
+
+            self.data.update(
+                {
+                    "name": "StaircasePulse",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.staircase",
+                            "start_amp": start_amp,
+                            "final_amp": final_amp,
+                            "num_steps": num_steps,
+                            "duration": duration,
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -273,10 +322,6 @@ class SquarePulse(Operation):
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
-        data
-            The operation's dictionary, by default None
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
         """
         if phase != 0:
             # Because of how clock interfaces were changed.
@@ -285,21 +330,33 @@ class SquarePulse(Operation):
             raise NotImplementedError
 
         if data is None:
-            data = {
-                "name": "ModSquarePulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.square",
-                        "amp": amp,
-                        "duration": duration,
-                        "phase": phase,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="ModSquarePulse")
+            self.data.update(
+                {
+                    "name": "ModSquarePulse",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.square",
+                            "amp": amp,
+                            "duration": duration,
+                            "phase": phase,
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -359,26 +416,38 @@ class SuddenNetZeroPulse(Operation):
         duration = t_pulse + t_phi + t_integral_correction
 
         if data is None:
-            data = {
-                "name": "SuddenNetZeroPulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.sudden_net_zero",
-                        "amp_A": amp_A,
-                        "amp_B": amp_B,
-                        "net_zero_A_scale": net_zero_A_scale,
-                        "t_pulse": t_pulse,
-                        "t_phi": t_phi,
-                        "t_integral_correction": t_integral_correction,
-                        "duration": duration,
-                        "phase": 0,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="SuddenNetZeroPulse")
+            self.data.update(
+                {
+                    "name": "SuddenNetZeroPulse",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.sudden_net_zero",
+                            "amp_A": amp_A,
+                            "amp_B": amp_B,
+                            "net_zero_A_scale": net_zero_A_scale,
+                            "t_pulse": t_pulse,
+                            "t_phi": t_phi,
+                            "t_integral_correction": t_integral_correction,
+                            "duration": duration,
+                            "phase": 0,
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -472,20 +541,32 @@ class SoftSquarePulse(Operation):
             overwritten using the contents of data.
         """
         if data is None:
-            data = {
-                "name": "SoftSquarePulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.soft_square",
-                        "amp": amp,
-                        "duration": duration,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="SoftSquarePulse")
+            self.data.update(
+                {
+                    "name": "SoftSquarePulse",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.soft_square",
+                            "amp": amp,
+                            "duration": duration,
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -506,6 +587,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         start_freq: float,
         end_freq: float,
         t0: float = 0,
+        data: Optional[dict] = None,
     ):
         """
         Constructor for a chirp pulse.
@@ -528,22 +610,35 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         t0
             Shift of the start time with respect to the start of the operation.
         """
-        data = {
-            "name": "ChirpPulse",
-            "pulse_info": [
+        if data is None:
+            super().__init__(name="ChirpPulse")
+            self.data.update(
                 {
-                    "wf_func": "quantify_scheduler.waveforms.chirp",
-                    "amp": amp,
-                    "duration": duration,
-                    "start_freq": start_freq,
-                    "end_freq": end_freq,
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
+                    "name": "ChirpPulse",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.chirp",
+                            "amp": amp,
+                            "duration": duration,
+                            "start_freq": start_freq,
+                            "end_freq": end_freq,
+                            "t0": t0,
+                            "clock": clock,
+                            "port": port,
+                        }
+                    ],
                 }
-            ],
-        }
-        super().__init__(name=data["name"], data=data)
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -601,23 +696,35 @@ class DRAGPulse(Operation):
         """
 
         if data is None:
-            data = {
-                "name": "DRAG",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.drag",
-                        "G_amp": G_amp,
-                        "D_amp": D_amp,
-                        "duration": duration,
-                        "phase": phase,
-                        "nr_sigma": 4,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="DRAG")
+            self.data.update(
+                {
+                    "name": "DRAG",
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.drag",
+                            "G_amp": G_amp,
+                            "D_amp": D_amp,
+                            "duration": duration,
+                            "phase": phase,
+                            "nr_sigma": 4,
+                            "clock": clock,
+                            "port": port,
+                            "t0": t0,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]
@@ -708,6 +815,15 @@ def create_dc_compensation_pulse(
             + "be specified, not both. Both amp and duration were passed."
         )
 
+    if data is not None:
+        warnings.warn(
+            "Support for the data argument will be dropped in"
+            "quantify-scheduler >= 0.13.0.\n"
+            "Please consider updating the data "
+            "dictionary after initialization.",
+            DeprecationWarning,
+        )
+
     return SquarePulse(
         amp=c_amp,
         duration=c_duration,
@@ -753,19 +869,31 @@ class WindowOperation(Operation):
 
         """
         if data is None:
-            data = {
-                "name": "WindowOperation",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "window_name": window_name,
-                        "duration": duration,
-                        "t0": t0,
-                        "port": None,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="WindowOperation")
+            self.data.update(
+                {
+                    "name": "WindowOperation",
+                    "pulse_info": [
+                        {
+                            "wf_func": None,
+                            "window_name": window_name,
+                            "duration": duration,
+                            "t0": t0,
+                            "port": None,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     @property
     def window_name(self) -> str:
@@ -834,23 +962,34 @@ class NumericalPulse(Operation):
         duration = t_samples[-1] - t_samples[0]
         samples, t_samples = map(make_list_from_array, [samples, t_samples])
         if data is None:
-            data = {
-                "name": "NumericalPulse",
-                "pulse_info": [
-                    {  # pylint: disable=line-too-long
-                        "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
-                        "samples": samples,
-                        "t_samples": t_samples,
-                        "duration": duration,
-                        "interpolation": interpolation,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
-            }
-
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="NumericalPulse")
+            self.data.update(
+                {
+                    "name": "NumericalPulse",
+                    "pulse_info": [
+                        {  # pylint: disable=line-too-long
+                            "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
+                            "samples": samples,
+                            "t_samples": t_samples,
+                            "duration": duration,
+                            "interpolation": interpolation,
+                            "clock": clock,
+                            "port": port,
+                            "t0": t0,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         """Provides a string representation of the Pulse."""
