@@ -92,6 +92,6 @@ def test_generate_device_config_part_of_device(
     electronic_q0: BasicElectronicNVElement, dev: QuantumDevice
 ):
     """Device config contains entry for a device element."""
-    dev.add_component(electronic_q0)
+    dev.add_element(electronic_q0)
     dev_cfg = dev.generate_device_config()
     assert "qe0" in dev_cfg.elements
