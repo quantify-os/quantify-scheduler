@@ -857,7 +857,9 @@ class Sequencer:
         return file_path
 
     def compile(
-        self, repetitions: int = 1, dump_to_file: bool = False
+        self,
+        sequence_to_file: bool,
+        repetitions: int = 1,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
@@ -866,7 +868,10 @@ class Sequencer:
 
         Parameters
         ----------
-        repetitions:
+        sequence_to_file
+            Dump waveforms and program dict to JSON file, filename stored in
+            `Sequencer.settings.seq_fn`.
+        repetitions
             Number of times execution the schedule is repeated.
 
         Returns
@@ -898,20 +903,20 @@ class Sequencer:
             repetitions=repetitions,
         )
 
-        wf_and_pr_dict = self._generate_waveforms_and_program_dict(
+        wf_and_prog = self._generate_waveforms_and_program_dict(
             qasm_program, awg_dict, weights_dict, acq_declaration_dict
         )
 
-        if dump_to_file:
-            self._dump_waveforms_and_program_json(
-                wf_and_pr_dict=wf_and_pr_dict, label=f"{self.port}_{self.clock}"
+        self.update_settings()
+
+        self._settings.sequence = wf_and_prog
+        if sequence_to_file:
+            self._settings.seq_fn = self._dump_waveforms_and_program_json(
+                wf_and_pr_dict=wf_and_prog, label=f"{self.port}_{self.clock}"
             )
 
-        self.update_settings()
-        self.settings.sequence = wf_and_pr_dict
-        settings_dict = self.settings.to_dict()
-
-        return settings_dict
+        seq_settings = self._settings.to_dict()
+        return seq_settings
 
 
 class QbloxBaseModule(ControlDeviceCompiler, ABC):
@@ -1394,7 +1399,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         self._settings.scope_mode_sequencer = scope_acq_seq
 
-    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+    def compile(
+        self, repetitions: int = 1, sequence_to_file: Optional[bool] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
         level compilation functions and combining them into a single dictionary. The
@@ -1413,8 +1420,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             and an empty program is compiled, None is returned instead.
         """
         program = {}
+
+        if sequence_to_file is None:
+            sequence_to_file = self.hw_mapping.get("sequence_to_file", True)
+
         for seq_name, seq in self.sequencers.items():
-            seq_program = seq.compile(repetitions=repetitions)
+            seq_program = seq.compile(
+                sequence_to_file=sequence_to_file, repetitions=repetitions
+            )
             if seq_program is not None:
                 program[seq_name] = seq_program
 

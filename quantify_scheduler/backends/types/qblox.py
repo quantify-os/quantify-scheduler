@@ -372,8 +372,11 @@ class SequencerSettings(DataClassJsonMixin):
     paths of the mixer."""
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
-    sequence: Dict[str, Any] = None
-    """TODO: docstring"""
+    sequence: Optional[Dict[str, Any]] = None
+    """JSON compatible dictionary holding the waveforms and program for the
+    sequencer."""
+    seq_fn: Optional[str] = None
+    """Filename of JSON file containing a dump of the waveforms and program."""
 
     @classmethod
     def initialize_from_config_dict(
