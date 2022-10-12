@@ -7,7 +7,10 @@ import warnings
 from typing import Any, Dict
 
 from quantify_scheduler import CompiledSchedule, Schedule
-from quantify_scheduler.backends.corrections import apply_distortion_corrections
+from quantify_scheduler.backends.corrections import (
+    apply_distortion_corrections,
+    LatencyCorrections,
+)
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
@@ -38,9 +41,16 @@ def hardware_compile(
     :
         The compiled schedule.
     """
+
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
     )
+
+    if "latency_corrections" in converted_hw_config.keys():
+        # Important: currently only used to validate the input, should also be
+        # used for storing the latency corrections
+        # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
+        LatencyCorrections(latencies=converted_hw_config["latency_corrections"])
 
     # Directly comparing dictionaries that contain numpy arrays raises a
     # ValueError. It is however sufficient to compare all the keys of nested
@@ -64,14 +74,9 @@ def hardware_compile(
 
     if hw_config_keys != converted_hw_config_keys:
         warnings.warn(
-            "The provided hardware config adheres to a specification "
-            "that is now deprecated. Please learn about the new "
-            "Qblox hardware config specification at:\n"
-            "https://gitlab.com/quantify-os/quantify-scheduler/-/wikis/"
-            "Qblox-backend:-Dynamic-Sequencer-Allocation \n"
-            "You may upgrade an old config to the new specification using the "
-            "'quantify_scheduler.backends.qblox.helpers."
-            "convert_hw_config_to_portclock_configs_spec' function.",
+            "The provided hardware config adheres to a specification that is deprecated"
+            ". See https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.8.0/"
+            "tutorials/qblox/recent.html",
             DeprecationWarning,
         )
         hardware_cfg = converted_hw_config

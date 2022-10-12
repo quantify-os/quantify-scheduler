@@ -4,13 +4,13 @@
 
 from setuptools import find_packages, setup
 
-with open("README.rst") as readme_file:
+with open("README.md", encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-with open("AUTHORS.rst") as authors_file:
+with open("AUTHORS.md") as authors_file:
     authors = authors_file.read()
 
-with open("CHANGELOG.rst") as history_file:
+with open("CHANGELOG.md") as history_file:
     history = history_file.read()
 
 with open("requirements.txt") as installation_requirements_file:
@@ -22,7 +22,7 @@ with open("requirements_setup.txt") as setup_requirements_file:
 with open("requirements_dev.txt") as test_requirements_file:
     test_requirements = test_requirements_file.read().splitlines()
 
-version = "0.7.0"
+version = "0.9.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",
@@ -43,6 +43,7 @@ setup(
     install_requires=requirements,
     license="BSD-3 license",
     long_description=readme + "\n\n" + authors + "\n\n" + history,
+    long_description_content_type="text/markdown",
     include_package_data=True,
     keywords="quantify-scheduler",
     name="quantify-scheduler",

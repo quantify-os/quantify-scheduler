@@ -35,6 +35,7 @@ sys.path.insert(0, package_path)
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    "myst_nb",
     "sphinx.ext.autodoc",  # auto document docstrings
     "sphinx.ext.napoleon",  # autodoc understands numpy docstrings
     # load after napoleon, improved compatibility with type hints annotations
@@ -53,7 +54,6 @@ extensions = [
     # however the smart_resolver seems to fail for external packages like `zhinst`
     "scanpydoc.elegant_typehints",
     "sphinxcontrib.bibtex",
-    "quantify_core.sphinx_extensions.notebook_to_jupyter_sphinx",
     "autoapi.extension",
 ]
 
@@ -92,7 +92,7 @@ bibtex_reference_style = "author_year"
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
+source_suffix = [".rst", ".md"]
 
 # The master toctree document.
 master_doc = "index"
@@ -256,6 +256,7 @@ autoapi_options = [
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
     "autosectionlabel.*",
+    "mystnb.unknown_mime_type",
 ]
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
@@ -338,8 +339,6 @@ import pydantic
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 
-notebook_to_jupyter_sphinx_always_rebuild = True
-
 # Enable nitpicky mode - warns about all references where the target cannot be found
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
 
@@ -372,6 +371,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.Resource"),
     ("py:class", "quantify_scheduler.Resource"),
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
+    ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [

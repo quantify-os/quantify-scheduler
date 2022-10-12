@@ -6,18 +6,20 @@ from __future__ import annotations
 
 from collections import UserDict
 from typing import Optional
+import warnings
 
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 
 
 class Resource(UserDict):
+    # pylint: disable=line-too-long
     """
     A resource corresponds to a physical resource such as a port or a clock.
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/resource.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/resource.json
 
     """
-
+    # pylint: enable=line-too-long
     def __init__(self, name: str, data: Optional[dict] = None) -> None:
         """
         Create a new instance of Resource.
@@ -36,6 +38,13 @@ class Resource(UserDict):
         self.data["name"] = name
 
         if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
             self.data.update(data)
 
     @classmethod
@@ -90,29 +99,19 @@ class Resource(UserDict):
 
     def __str__(self) -> str:
         """
-        Returns a concise string represenation which can be evaluated into a new
-        instance using `eval(str(operation))` only when the data dictionary has
+        Returns a concise string representation which can be evaluated into a new
+        instance using :code:`eval(str(operation))` only when the data dictionary has
         not been modified.
 
         This representation is guaranteed to be unique.
         """
         return f"{self.__class__.__name__}(name='{self.name}')"
 
-    def __repr__(self) -> str:
-        """
-        Returns the string representation  of this instance.
+    def __getstate__(self):
+        return {"deserialization_type": self.__class__.__name__, "data": self.data}
 
-        This represenation can always be evalued to create a new instance.
-
-        .. code-block::
-
-            eval(repr(operation))
-
-        Returns
-        -------
-        :
-        """
-        return f"{str(self)[:-1]}, data={self.data})"
+    def __setstate__(self, state):
+        self.data = state["data"]
 
 
 class ClockResource(Resource):
@@ -136,13 +135,23 @@ class ClockResource(Resource):
             the starting phase of the clock in deg
         """
         if data is None:
-            data = {
+            super().__init__(name)
+
+            self.data = {
                 "name": name,
                 "type": str(self.__class__.__name__),
                 "freq": freq,
                 "phase": phase,
             }
-        super().__init__(data["name"], data=data)
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(data["name"], data=data)
 
     def __str__(self) -> str:
         freq = self.data["freq"]
@@ -169,10 +178,20 @@ class BasebandClockResource(Resource):
             the name of this clock
         """
         if data is None:
-            data = {
+            super().__init__(name)
+
+            self.data = {
                 "name": name,
                 "type": str(self.__class__.__name__),
                 "freq": 0,
                 "phase": 0,
             }
-        super().__init__(data["name"], data=data)
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(data["name"], data=data)

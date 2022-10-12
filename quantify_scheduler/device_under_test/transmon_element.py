@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 from typing import Dict, Any
 
-from qcodes.instrument.base import Instrument
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
 from quantify_core.utilities import deprecated
@@ -195,11 +194,16 @@ class DispersiveMeasurement(InstrumentChannel):
 
         self.add_parameter(
             "acq_delay",
-            docstring="Delay between the start of the readout pulse and the start of the acquisition.",
-            initial_value=0,
+            docstring="Delay between the start of the readout pulse and the start of "
+            + "the acquisition. Note that some hardware backends do not support "
+            "starting a pulse and the acquisition in the same clock cycle making 0 "
+            "delay an invalid value.",
+            initial_value=0,  # float("nan"),
             unit="s",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            # in principle the values should be a few 100 ns but the validator is here
+            # only to protect against silly typos that lead to out of memory errors.
+            vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
         self.add_parameter(
             "integration_time",
@@ -207,7 +211,9 @@ class DispersiveMeasurement(InstrumentChannel):
             initial_value=1e-6,
             unit="s",
             parameter_class=ManualParameter,
-            vals=validators.Numbers(min_value=0, max_value=1),
+            # in principle the values should be a few us but the validator is here
+            # only to protect against silly typos that lead to out of memory errors.
+            vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
 
         ro_acq_weight_type_validator = validators.Enum("SSB")

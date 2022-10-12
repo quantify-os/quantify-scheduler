@@ -577,6 +577,11 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self._set_parameter(
                 self.instrument, "out1_offset", settings.offset_ch0_path1
             )
+        # configure gain
+        if settings.in0_gain is not None:
+            self._set_parameter(self.instrument, "in0_gain", settings.in0_gain)
+        if settings.in1_gain is not None:
+            self._set_parameter(self.instrument, "in1_gain", settings.in1_gain)
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -640,6 +645,11 @@ class QCMRFComponent(QCMComponent):
             self._set_parameter(
                 self.instrument, "out1_offset_path1", settings.offset_ch1_path1
             )
+        # configure attenuation
+        if settings.out0_att is not None:
+            self._set_parameter(self.instrument, "out0_att", settings.out0_att)
+        if settings.out1_att is not None:
+            self._set_parameter(self.instrument, "out1_att", settings.out1_att)
 
 
 class QRMRFComponent(QRMComponent):
@@ -658,6 +668,13 @@ class QRMRFComponent(QRMComponent):
         settings
             The settings to configure it to.
         """
+        if settings.scope_mode_sequencer is not None:
+            self._set_parameter(
+                self.instrument,
+                "scope_acq_sequencer_select",
+                settings.scope_mode_sequencer,
+            )
+
         if settings.lo0_freq is not None:
             self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
@@ -670,6 +687,11 @@ class QRMRFComponent(QRMComponent):
             self._set_parameter(
                 self.instrument, "out0_offset_path1", settings.offset_ch0_path1
             )
+        # configure gain and attenuation
+        if settings.out0_att is not None:
+            self._set_parameter(self.instrument, "out0_att", settings.out0_att)
+        if settings.in0_att is not None:
+            self._set_parameter(self.instrument, "in0_att", settings.in0_att)
 
 
 class PulsarQCMComponent(QCMComponent):
@@ -805,7 +827,7 @@ class _QRMAcquisitionManager:
         return formatted_acquisitions
 
     def _store_scope_acquisition(self):
-        sequencer_index = self.seq_name_to_idx_map.get(self.scope_mode_sequencer)
+        sequencer_index = self.scope_mode_sequencer
 
         if sequencer_index is None:
             return
@@ -1088,15 +1110,16 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         options
             The compiled instructions to configure the cluster to.
         """
-        settings = options.pop("settings")
-        self._configure_cmm_settings(settings=settings)
         for name, comp_options in options.items():
-            if name not in self._cluster_modules:
+            if name == "settings":
+                self._configure_cmm_settings(settings=comp_options)
+            elif name in self._cluster_modules:
+                self._cluster_modules[name].prepare(comp_options)
+            else:
                 raise KeyError(
                     f"Attempting to prepare module {name} of cluster {self.name}, while"
                     f" module has not been added to the cluster component."
                 )
-            self._cluster_modules[name].prepare(comp_options)
 
     def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
         """

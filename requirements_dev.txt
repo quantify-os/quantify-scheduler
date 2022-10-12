@@ -5,7 +5,7 @@ bump2version==0.5.11
 wheel==0.33.6
 watchdog==0.9.0
 coverage
-sphinx==5.0.2 # sphinx 5.1.0 + sphinx-autoapi 1.8.4 crashes on site-packages/sphinx/ext/napoleon/docstring.py", line 303, in _consume_inline_attribute
+sphinx>=5.1.1
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-bibtex
 jupyter_sphinx>=0.4.0
@@ -14,6 +14,8 @@ sphinx-autobuild
 sphinx-togglebutton
 sphinx-autodoc-typehints==1.12.0 # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
 sphinx-autoapi
+myst-parser
+myst-nb
 twine==1.14.0
 pytest
 pytest-runner
@@ -21,7 +23,6 @@ pytest-cov
 pytest-mpl
 pytest-mock
 pytest-xdist # run parallel tests
-pygments==2.6.1
 
 black
 mypy
@@ -32,16 +33,7 @@ pre-commit-hooks # common hooks for git repos
 isort>=5.10.0 # sort python imports
 
 scanpydoc >=0.7.1, <=0.7.3 # ensures latest typing_extensions is used in sphinx (https://github.com/theislab/scanpydoc/issues/31)
-docutils<0.17 # pinned due to issue #175 (quantify-core)
 rich[jupyter]
 jupytext
 
-# scheduler-only
-
-cachecontrol # see issue quantify-scheduler#129
-lockfile # see issue quantify-scheduler#129
-pytest-mpl
-
-# Prospector
-prospector
 prospector[with_mypy]

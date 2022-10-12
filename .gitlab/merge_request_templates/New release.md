@@ -1,11 +1,11 @@
 ## Checklist for a new release
 
-1. [ ] Review `CHANGELOG.rst` and `AUTHORS.rst` have been updated.  
-1. [ ] Review deprecation warnings that can be cleaned up now.
+1. [ ] Review `CHANGELOG.md` and `AUTHORS.md` have been updated.  
+1. [ ] Review `@deprecated` and `DeprecationWarnings` that can be cleaned up now.
 
 1. CI pipeline:
     - [ ] Automated pipeline passes.
-    - [ ] `test-win-3.8.9-manual` passes (trigger manually!).
+    - [ ] All `Test (py3.x, Windows, manual)` pass (trigger manually!).
 
 1. [ ] Bump version and commit & push:
    ```bash
@@ -21,18 +21,18 @@
    ```
    
 1. [ ] Commit pip frozen requirements for future reference:
-    - Go to the `test-unix-3.8` pipeline job and download the `artifacts` (right side "Job artifacts" `-->` "Download").
+    - Go to the `Test (py3.9, Linux)` pipeline job and download the `artifacts` (right side "Job artifacts" `-->` "Download").
     - Unzip, get the `frozen-requirements.txt`.
-    - Paste it in `frozen-requirements` directory.
+    - Paste it in `frozen_requirements` directory.
     - Rename it, commit & push:
 
       ```bash
       NEW_VERSION=$(python setup.py --version)
       echo $NEW_VERSION
 
-      mv frozen-requirements.txt frozen-requirements-$NEW_VERSION.txt
+      mv frozen_requirements/frozen-requirements.txt frozen_requirements/frozen-requirements-$NEW_VERSION.txt
 
-      git add ./frozen_requirements/frozen-requirements-$NEW_VERSION.txt
+      git add frozen_requirements/frozen-requirements-$NEW_VERSION.txt
       git commit -m "Add pip frozen requirements for $NEW_VERSION"
       git push
       ```
@@ -40,6 +40,7 @@
 1. [ ] Create tag for bumped version:
     - Merge this MR into `main`.
     - Create tag via GitLab from `main` using the bumped version number (https://gitlab.com/quantify-os/quantify-scheduler/-/tags/new).
+      - Do not add any description. 
 
     <!-- - Future TODO: finish automation of this step in `.gitlab-ci.yml`. -->
     <!-- 1. [ ] Run **one** of the major/minor/patch version bump (manual) jobs in the CI pipeline of the MR. -->
@@ -52,7 +53,9 @@
         - `Hidden`=False
         - `Privacy Level`=Public
    - [ ] Change both the `Default version` and `Default branch` of the docs to the tag that was released [over here](https://readthedocs.com/dashboard/quantify-quantify-scheduler/advanced/).
-   - [ ] Make sure the docs build.
+   - [ ] Make sure the docs build and check on RTD.
+      - Manually rebuild `latest` by hitting `Build version:` [over here](https://readthedocs.com/projects/quantify-quantify-scheduler/builds/).
+      - Check both the `latest` and the new version links on RTD work by clicking through to Changelog (hit Ctrl+F5).
 
 1. [ ] Create [new release on GitLab](https://gitlab.com/quantify-os/quantify-scheduler/-/releases).
     - Meaningful title

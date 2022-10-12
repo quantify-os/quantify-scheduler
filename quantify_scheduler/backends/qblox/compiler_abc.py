@@ -12,6 +12,7 @@ from functools import partial
 from os import makedirs, path
 from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
 
+import dataclasses
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -40,6 +41,7 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
     StaticHardwareProperties,
+    MarkerConfiguration,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
@@ -219,7 +221,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         self._acquisitions[(port, clock)].append(acq_info)
 
     @property
-    def portclocks_with_data(self) -> Set[Tuple[str, str]]:
+    def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
         """
         All the port-clock combinations associated with at least one pulse and/or
         acquisition.
@@ -233,6 +235,20 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         portclocks_used = set()
         portclocks_used.update(self._pulses.keys())
         portclocks_used.update(self._acquisitions.keys())
+        return portclocks_used
+
+    @property
+    def _portclocks_with_pulses(self) -> Set[Tuple[str, str]]:
+        """
+        All the port-clock combinations associated with at least one pulse.
+        Returns
+        -------
+        :
+            A set containing all the port-clock combinations that are used by this
+            InstrumentCompiler.
+        """
+        portclocks_used = set()
+        portclocks_used.update(self._pulses.keys())
         return portclocks_used
 
     @abstractmethod
@@ -264,7 +280,7 @@ class Sequencer:
     def __init__(
         self,
         parent: QbloxBaseModule,
-        name: str,
+        index: int,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
@@ -280,8 +296,8 @@ class Sequencer:
         ----------
         parent
             A reference to the parent instrument this sequencer belongs to.
-        name
-            Name of the sequencer. This is supposed to match ``"seq{index}"``.
+        index
+            Index of the sequencer.
         portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
@@ -297,7 +313,7 @@ class Sequencer:
             Defaults to 0, in which case no downconverter is being used.
         """
         self.parent = parent
-        self._name = name
+        self.index = index
         self.port = portclock[0]
         self.clock = portclock[1]
         self.pulses: List[IOperationStrategy] = []
@@ -385,7 +401,7 @@ class Sequencer:
         :
             The name.
         """
-        return self._name
+        return f"seq{self.index}"
 
     @property
     def has_data(self) -> bool:
@@ -431,7 +447,7 @@ class Sequencer:
         if self._settings.modulation_freq != freq:
             if self._settings.modulation_freq is not None:
                 raise ValueError(
-                    f"Attempting to set the modulation frequency of {self._name} of "
+                    f"Attempting to set the modulation frequency of {self.name} of "
                     f"{self.parent.name} to {freq}, while it has previously been set "
                     f"to {self._settings.modulation_freq}."
                 )
@@ -446,7 +462,7 @@ class Sequencer:
 
         Notes
         -----
-        The final dictionary to be included in the json that is uploaded to the pulsar
+        The final dictionary to be included in the json that is uploaded to the module
         is of the form:
 
         .. code-block::
@@ -485,7 +501,7 @@ class Sequencer:
 
         Notes
         -----
-        The final dictionary to be included in the json that is uploaded to the pulsar
+        The final dictionary to be included in the json that is uploaded to the module
         is of the form:
 
         .. code-block::
@@ -554,7 +570,7 @@ class Sequencer:
             acquisition_infos
         )
 
-        # initialize an empty dictionary for the format required by pulsar
+        # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
 
@@ -1013,6 +1029,40 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
+        # Figure out which outputs need to be turned on.
+        marker_start_config = self.static_hw_properties.marker_configuration.start
+        for io, io_cfg in self.hw_mapping.items():
+            if (
+                not isinstance(io_cfg, dict)
+                or io not in self.static_hw_properties.valid_ios
+            ):
+                continue
+
+            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
+                "portclock_configs", []
+            )
+            if not portclock_configs:
+                continue
+
+            for target in portclock_configs:
+                portclock = (target["port"], target["clock"])
+                if portclock in self._portclocks_with_pulses:
+                    output_map = (
+                        self.static_hw_properties.marker_configuration.output_map
+                    )
+                    if io in output_map:
+                        marker_start_config |= output_map[io]
+
+        updated_static_hw_properties = dataclasses.replace(
+            self.static_hw_properties,
+            marker_configuration=MarkerConfiguration(
+                init=self.static_hw_properties.marker_configuration.init,
+                start=marker_start_config,
+                end=self.static_hw_properties.marker_configuration.end,
+            ),
+        )
+
+        # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
         portclock_output_map: Dict[Tuple, str] = {}
 
@@ -1041,20 +1091,21 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             for target in portclock_configs:
                 portclock = (target["port"], target["clock"])
 
-                if portclock in self.portclocks_with_data:
+                if portclock in self._portclocks_with_data:
                     connected_outputs = helpers.output_name_to_outputs(io)
-                    seq_name = f"seq{len(sequencers)}"
-                    sequencers[seq_name] = Sequencer(
+                    seq_idx = len(sequencers)
+                    new_seq = Sequencer(
                         parent=self,
-                        name=seq_name,
+                        index=seq_idx,
                         portclock=portclock,
-                        static_hw_properties=self.static_hw_properties,
+                        static_hw_properties=updated_static_hw_properties,
                         connected_outputs=connected_outputs,
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
                         downconverter_freq=downconverter_freq,
                     )
+                    sequencers[new_seq.name] = new_seq
 
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_output_map:
@@ -1080,7 +1131,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def distribute_data(self):
         """
-        Distributes the pulses and acquisitions assigned to this pulsar over the
+        Distributes the pulses and acquisitions assigned to this module over the
         different sequencers based on their portclocks. Raises an exception in case
         the device does not support acquisitions.
         """
@@ -1147,9 +1198,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
 
+    @abstractmethod
+    def assign_attenuation(self):
+        """
+        An abstract method that should be overridden. Meant to assign
+        attenuation settings from the hardware configuration if there is any.
+        """
+
     @staticmethod
     def downconvert_clock(downconverter_freq: float, clock_freq: float):
-        """ "
+        """
         Downconverts clock frequency.
 
         Parameters
@@ -1165,7 +1223,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             When downconverter frequency is negative.
         ValueError
             When downconverter frequency is less than the clock frequency.
-        ------
         """
 
         if downconverter_freq == 0:
@@ -1192,31 +1249,35 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
-        self._settings = self._configure_mixer_offsets(self._settings, self.hw_mapping)
+        self._settings = self._configure_mixer_offsets_and_gains(
+            self._settings, self.hw_mapping
+        )
         self.sequencers = self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
+        self.assign_attenuation()
 
-    def _configure_mixer_offsets(
+    def _configure_mixer_offsets_and_gains(
         self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
     ) -> BaseModuleSettings:
         """
-        We configure the mixer offsets after initializing the settings such we can
-        account for the differences in the hardware. e.g. the V vs mV encountered here.
+        We configure the mixer offsets, gains, attenuations
+        after initializing the settings such we can account for
+        the differences in the hardware. e.g. the V vs mV encountered here.
 
         Parameters
         ----------
         settings
-            The settings dataclass to which to add the dc offsets.
+            The settings dataclass to which to add the dc offsets and gains.
         hw_mapping
             The hardware configuration.
 
         Returns
         -------
         :
-            The settings dataclass after adding the normalized offsets
+            The settings dataclass after adding the normalized offsets and gains.
 
         Raises
         ------
@@ -1278,6 +1339,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     "dc_mixer_offset_Q", output_cfg
                 )
 
+        complex_output_0 = hw_mapping.get("complex_output_0", None)
+        if complex_output_0 is not None:
+            settings.in0_gain = complex_output_0.get("input_gain_I", None)
+            settings.in1_gain = complex_output_0.get("input_gain_Q", None)
+        else:
+            settings.in0_gain = hw_mapping.get("real_output_0", {}).get(
+                "input_gain", None
+            )
+            settings.in1_gain = hw_mapping.get("real_output_1", {}).get(
+                "input_gain", None
+            )
+
         return settings
 
     @abstractmethod
@@ -1305,6 +1378,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         scope_acq_seq = None
         for seq in self.sequencers.values():
             op_infos = [acq.operation_info for acq in seq.acquisitions]
+
             has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:
                 if scope_acq_seq is not None:
@@ -1316,13 +1390,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         "only one port and clock combination has to "
                         "perform raw trace acquisition per instrument."
                     )
-                scope_acq_seq = seq.name
+                scope_acq_seq = seq.index
 
         self._settings.scope_mode_sequencer = scope_acq_seq
 
     def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
-        Performs the actual compilation steps for this pulsar, by calling the sequencer
+        Performs the actual compilation steps for this module, by calling the sequencer
         level compilation functions and combining them into a single dictionary. The
         compiled program has a settings key, and keys for every sequencer.
 
@@ -1334,7 +1408,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Returns
         -------
         :
-            The compiled program corresponding to this pulsar. It contains an entry for
+            The compiled program corresponding to this module. It contains an entry for
             every sequencer and general "settings". If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
@@ -1482,6 +1556,12 @@ class QbloxBasebandModule(QbloxBaseModule):
         if if_freq != 0 and if_freq is not None:
             sequencer.settings.nco_en = True
 
+    def assign_attenuation(self):
+        """
+        Meant to assign attenuation settings from the hardware configuration, if there
+        is any. For baseband modules there is no attenuation parameters currently.
+        """
+
 
 class QbloxRFModule(QbloxBaseModule):
     """
@@ -1573,6 +1653,20 @@ class QbloxRFModule(QbloxBaseModule):
 
             if lo_freq is not None:
                 sequencer.frequency = clock_freq - lo_freq
+
+    def assign_attenuation(self):
+        """
+        Assigns attenuation settings from the hardware configuration.
+        """
+        self._settings.in0_att = self.hw_mapping.get("complex_output_0", {}).get(
+            "input_att", None
+        )
+        self._settings.out0_att = self.hw_mapping.get("complex_output_0", {}).get(
+            "output_att", None
+        )
+        self._settings.out1_att = self.hw_mapping.get("complex_output_1", {}).get(
+            "output_att", None
+        )
 
     @classmethod
     def _validate_output_mode(cls, sequencer: Sequencer):

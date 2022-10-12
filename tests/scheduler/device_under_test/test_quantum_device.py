@@ -3,12 +3,13 @@
 
 import pytest
 from quantify_scheduler.compilation import validate_config
+from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
-def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
+def test_QuantumDevice_generate_device_config(mock_setup_basic_transmon: dict) -> None:
 
-    quantum_device = mock_setup["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     # N.B. the validation of the generated config is happening inside the
     # device object itself using the pydantic dataclass. Invoking the function
@@ -17,12 +18,14 @@ def test_QuantumDevice_generate_device_config(mock_setup: dict) -> None:
 
     assert {"q0", "q1", "q2", "q3"} <= set(dev_cfg.elements.keys())
     # Ensure that we also check that the edges are being configured
-    assert "q2-q3" in dev_cfg.edges
+    assert "q2_q3" in dev_cfg.edges
 
 
-def test_QuantumDevice_generate_hardware_config(mock_setup: dict) -> None:
+def test_QuantumDevice_generate_hardware_config(
+    mock_setup_basic_transmon: dict,
+) -> None:
 
-    quantum_device = mock_setup["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     mock_hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -80,7 +83,14 @@ def test_mc() -> QuantumDevice:
     test_mc.close()
 
 
-def test_adding_non_component_raises(dev, test_mc):
+def test_adding_non_element_raises(dev, test_mc):
 
     with pytest.raises(TypeError):
-        dev.add_component(test_mc)
+        dev.add_element(test_mc)
+
+
+def test_invalid_device_element_name():
+
+    invalid_name = "q_0"
+    with pytest.raises(ValueError):
+        DeviceElement(invalid_name)

@@ -9,7 +9,7 @@ import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-from dataclasses import dataclass
+import dataclasses
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from uuid import uuid4
 
@@ -66,7 +66,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     **JSON schema of a valid Schedule**
 
-    .. jsonschema:: /builds/quantify-os/quantify-scheduler/quantify_scheduler/schemas/schedule.json
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/schedule.json
 
     """
     # pylint: enable=line-too-long
@@ -184,47 +184,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         return sched
 
-    def plot_circuit_diagram_mpl(
-        self, figsize: Tuple[int, int] = None, ax: Optional[Axes] = None
-    ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
-        """
-        Creates a circuit diagram visualization of the schedule using matplotlib.
-
-        The circuit diagram visualization visualizes the schedule at the quantum circuit
-        layer.
-        This visualization provides no timing information, only showing the order of
-        operations.
-        Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations for
-        which no information is specified at the gate level are visualized using an
-        icon (e.g., a stylized wavy pulse) depending on the information specified at
-        the quantum device layer.
-
-        Alias of :func:`.circuit_diagram.circuit_diagram_matplotlib`.
-
-        Parameters
-        ----------
-        schedule
-            the schedule to render.
-        figsize
-            matplotlib figsize.
-        ax
-            Axis handle to use for plotting.
-
-        Returns
-        -------
-        fig
-            matplotlib figure object.
-        ax
-            matplotlib axis object.
-        """
-        warnings.warn(
-            "`plot_circuit_diagram_mpl` will be removed from this module in "
-            "quantify-scheduler >= 0.6.0.\n"
-            "Instead, use `plot_circuit_diagram`",
-            DeprecationWarning,
-        )
-        return self.plot_circuit_diagram(figsize, ax, "mpl")
-
     def plot_circuit_diagram(
         self,
         figsize: Tuple[int, int] = None,
@@ -273,49 +232,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         raise ValueError(
             f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
-        )
-
-    # pylint: disable=too-many-arguments
-    def plot_pulse_diagram_mpl(
-        self,
-        port_list: Optional[List[str]] = None,
-        sampling_rate: float = 1e9,
-        modulation: Literal["off", "if", "clock"] = "off",
-        modulation_if: float = 0.0,
-        ax: Optional[Axes] = None,
-    ) -> Tuple[Figure, Axes]:
-        """
-        Creates a visualization of all the pulses in a schedule using matplotlib.
-
-        The pulse diagram visualizes the schedule at the quantum device layer.
-        For this visualization to work, all operations need to have the information
-        present (e.g., pulse info) to represent these on the quantum-circuit level and
-        requires the absolute timing to have been determined.
-        This information is typically added when the quantum-device level compilation is
-        performed.
-
-        Alias of :func:`.pulse_diagram.pulse_diagram_matplotlib`.
-
-        port_list :
-            A list of ports to show. if set to `None` will use the first
-            8 ports it encounters in the sequence.
-        modulation :
-            Determines if modulation is included in the visualization.
-        modulation_if :
-            Modulation frequency used when modulation is set to "if".
-        sampling_rate :
-            The time resolution used to sample the schedule in Hz.
-        ax:
-            Axis onto which to plot.
-        """
-        warnings.warn(
-            "`plot_pulse_diagram_mpl` will be removed from this module in "
-            "quantify-scheduler >= 0.6.0.\n"
-            "Instead, use `plot_pulse_diagram`",
-            DeprecationWarning,
-        )
-        return self.plot_pulse_diagram(
-            port_list, sampling_rate, modulation, modulation_if, "mpl", {"ax": ax}
         )
 
     # pylint: disable=too-many-arguments
@@ -489,6 +405,43 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         )
         return styled_timing_table
 
+    def get_schedule_duration(self):
+        """
+        Method to find the duration of the schedule.
+
+        Returns
+        -------
+        schedule_duration : float
+            Duration of current schedule
+
+        """
+        schedule_duration = 0
+
+        # find last timestamp
+        for schedulable in self.schedulables.values():
+            timestamp = schedulable["abs_time"]
+            operation_repr = schedulable["operation_repr"]
+
+            # find duration of last operation
+            operation = self.data["operation_dict"][operation_repr]
+            pulses_end_times = [
+                pulse.get("duration") + pulse.get("t0")
+                for pulse in operation.data["pulse_info"]
+            ]
+            acquisitions_end_times = [
+                acquisition.get("duration") + acquisition.get("t0")
+                for acquisition in operation.data["acquisition_info"]
+            ]
+            final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
+            tmp_time = timestamp + final_op_len
+
+            # keep track of longest found schedule
+            if tmp_time > schedule_duration:
+                schedule_duration = tmp_time
+
+        schedule_duration *= self.repetitions
+        return schedule_duration
+
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
@@ -629,7 +582,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     This operation is currently represented by an operation ID.
 
     Schedulables can contain an arbitrary number of timing constraints to determine the
-    timing. Multiple different contraints are currently resolved by delaying the element
+    timing. Multiple different constraints are currently resolved by delaying the element
     until after all timing constraints have been met, to aid compatibility.
     To specify an exact timing between two schedulables, please ensure to only specify
     exactly one timing constraint.
@@ -648,11 +601,18 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         operation_repr
             The operation which is to be executed by this schedulable
         schedule
-            The schedule to which the schedulable is added. This allows to scheduable to
-            find other elements on the schedule
+            The schedule to which the schedulable is added. This allows schedulable
+            to find other elements on the schedule
         """
         super().__init__()
         if data is not None:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
             self.data = data
             return
 
@@ -726,46 +686,22 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     def __str__(self):
         return str(self.data["name"])
 
-    def __repr__(self) -> str:
-        """
-        Returns the string representation  of this instance.
-
-        This represenation can always be evalued to create a new instance.
-
-        .. code-block::
-
-            eval(repr(operation))
-
-        Returns
-        -------
-        :
-        """
-        cls = f"{self.__class__.__name__}"
-        return (
-            f"{cls}(name='{self.data['name']}', "
-            f"operation_repr='', "
-            f"schedule='', "
-            f"data={self.data})"
-        )
-
     def __getstate__(self):
-        return self.data
+        return {"deserialization_type": self.__class__.__name__, "data": self.data}
 
     def __setstate__(self, state):
-        self.data = state
+        self.data = state["data"]
 
 
 # pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
-    A schedule that contains compiled instructions.
-
-    These instructions are ready for execution using the
-    :class:`~.InstrumentCoordinator`.
+    A schedule that contains compiled instructions ready for execution using
+    the :class:`~.InstrumentCoordinator`.
 
     The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
-    that it is considered immutable (no new operations or resources can be added),
-    and that it contains :attr:`~.compiled_instructions`.
+    that it is considered immutable (no new operations or resources can be added), and
+    that it contains :attr:`~.compiled_instructions`.
 
     .. tip::
 
@@ -870,7 +806,7 @@ class CompiledSchedule(ScheduleBase):
         return self._hardware_waveform_dict
 
 
-@dataclass
+@dataclasses.dataclass
 class AcquisitionMetadata:
     """
     Class to provide a description of the shape and type of data that a schedule will
@@ -891,3 +827,13 @@ class AcquisitionMetadata:
     acq_indices: Dict[int, List[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
+
+    def __getstate__(self):
+        data = dataclasses.asdict(self)
+        return {"deserialization_type": self.__class__.__name__, "data": data}
+
+    def __setstate__(self, state):
+        state["data"]["acq_indices"] = {
+            int(k): v for k, v in state["data"]["acq_indices"].items()
+        }
+        self.__init__(**state["data"])

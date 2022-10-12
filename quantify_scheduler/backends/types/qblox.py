@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dataclasses_field
 from typing import Any, Dict, Optional, Tuple, Union, List
 
 from dataclasses_json import DataClassJsonMixin
@@ -36,6 +37,10 @@ class MarkerConfiguration:
     """
     end: Optional[int]
     """Setting set in the footer at the end of the program."""
+    output_map: Dict[str, int] = dataclasses_field(default_factory=dict)
+    """A mapping from output name to marker setting.
+    Specifies which marker bit needs to be set at start if the
+    output (as a string ex. `complex_output_0`) contains a pulse."""
 
 
 @dataclass(frozen=True)
@@ -175,8 +180,8 @@ class LOSettings(DataClassJsonMixin):
 class BaseModuleSettings(DataClassJsonMixin):
     """Shared settings between all the Qblox modules."""
 
-    scope_mode_sequencer: Optional[str] = None
-    """The name of the sequencer that triggers scope mode Acquisitions. Only a single
+    scope_mode_sequencer: Optional[int] = None
+    """The index of the sequencer that triggers scope mode Acquisitions. Only a single
     sequencer can perform trace acquisition. This setting gets set as a QCoDeS parameter
     on the driver as well as used for internal checks. Having multiple sequencers
     perform trace acquisition will result in an exception being raised."""
@@ -188,6 +193,10 @@ class BaseModuleSettings(DataClassJsonMixin):
     """The DC offset on path 0 of channel 1."""
     offset_ch1_path1: Union[float, None] = None
     """The DC offset on path 1 of channel 1."""
+    in0_gain: Union[int, None] = None
+    """The gain of input 0."""
+    in1_gain: Union[int, None] = None
+    """The gain of input 1."""
 
 
 @dataclass
@@ -266,6 +275,12 @@ class RFModuleSettings(BaseModuleSettings):
     lo1_freq: Union[float, None] = None
     """The frequency of Output 1 (O1) LO. If left `None`, the parameter will not be set.
     """
+    out0_att: Union[int, None] = None
+    """The attenuation of Output 0."""
+    out1_att: Union[int, None] = None
+    """The attenuation of Output 1."""
+    in0_att: Union[int, None] = None
+    """The attenuation of Input 0."""
 
     @classmethod
     def extract_settings_from_mapping(

@@ -7,12 +7,14 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from textwrap import dedent
 from typing import Any, Dict, List
 from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 from quantify_core.data.handling import set_datadir
 from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
@@ -28,8 +30,18 @@ from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.resources import ClockResource
 
 ARRAY_DECIMAL_PRECISION = 16
+
+
+@pytest.fixture
+def zhinst_hw_config_invalid_latencies(load_example_zhinst_hardware_config):
+    hw_config = deepcopy(load_example_zhinst_hardware_config)
+    hw_config["latency_corrections"] = {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None}
+
+    yield hw_config
 
 
 def test__determine_measurement_fixpoint_correction():
@@ -72,7 +84,7 @@ def make_schedule(create_schedule_with_pulse_info):
 def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_config):
     def _create_test_compile_datastructure():
         schedule = make_schedule()
-        hardware_config = load_example_zhinst_hardware_config()
+        hardware_config = load_example_zhinst_hardware_config
         timing_table = schedule.timing_table.data
 
         # information is added on what output channel is used for every pulse and acq.
@@ -190,7 +202,7 @@ def test_compile_hardware_hdawg4_successfully(
     load_example_zhinst_hardware_config: Dict[str, Any],
 ) -> None:
 
-    hdawg_hardware_cfg = load_example_zhinst_hardware_config()
+    hdawg_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     (q0, q1) = ("q0", "q1")
     schedule = Schedule("test")
@@ -262,7 +274,7 @@ def test_compile_hardware_uhfqa_successfully(
     make_schedule,
     load_example_zhinst_hardware_config: Dict[str, Any],
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     schedule = make_schedule()
     settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
@@ -332,11 +344,24 @@ def test_compile_hardware_uhfqa_successfully(
     # assert device_configs["lo0"] == ro_freq - intermodulation_frequency
 
 
+def test_compile_invalid_latencies_raises(
+    make_schedule,
+    zhinst_hw_config_invalid_latencies,
+) -> None:
+    hardware_cfg = zhinst_hw_config_invalid_latencies
+    # Arrange
+    schedule = make_schedule()
+
+    # should raise a pydantic validation error
+    with pytest.raises(ValidationError):
+        _ = zhinst_backend.compile_backend(schedule, hardware_cfg)
+
+
 def test_hdawg4_sequence(
     load_example_zhinst_hardware_config,
     make_schedule,
 ) -> None:
-    hdawg_hardware_cfg = load_example_zhinst_hardware_config()
+    hdawg_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = make_schedule()
@@ -381,7 +406,9 @@ def test_hdawg4_sequence(
 
 
 # pylint: disable=too-many-arguments
-@pytest.mark.parametrize("channelgrouping,enabled_channels", [(0, [0, 1]), (1, [0])])
+@pytest.mark.parametrize(
+    "channelgrouping,enabled_channels", [(0, [0, 1, 2, 3]), (1, [0])]
+)
 def test__program_hdawg4_channelgrouping(
     mocker,
     create_typical_timing_table,
@@ -602,7 +629,7 @@ def test_uhfqa_sequence1(
     make_schedule,
     load_example_zhinst_hardware_config,
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = make_schedule()
@@ -649,7 +676,7 @@ def test_uhfqa_sequence2_trace_acquisition(
     create_schedule_with_pulse_info,
     load_example_zhinst_hardware_config,
 ):
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = trace_schedules.trace_schedule(
@@ -707,7 +734,7 @@ def test_uhfqa_sequence3_spectroscopy(
     create_schedule_with_pulse_info,
     load_example_zhinst_hardware_config,
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config()
+    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     ro_acquisition_delay = -40e-9
@@ -772,11 +799,13 @@ def test_uhfqa_sequence3_spectroscopy(
 def test__extract_port_clock_channelmapping_hdawg(
     load_example_zhinst_hardware_config,
 ) -> None:
-    hardware_config = load_example_zhinst_hardware_config()
+    hardware_config = load_example_zhinst_hardware_config
 
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
         "q1:mw-q1.01": "ic_hdawg0.awg1",
+        "q2:mw-q2.01": "ic_hdawg0.awg2",
+        "q3:mw-q3.01": "ic_hdawg0.awg3",
         "q0:res-q0.ro": "ic_uhfqa0.awg0",
     }
     generated_dict = zhinst_backend._extract_port_clock_channelmapping(
@@ -788,12 +817,14 @@ def test__extract_port_clock_channelmapping_hdawg(
 def test__extract_latencies(
     load_example_zhinst_hardware_config,
 ) -> None:
-    hardware_config = load_example_zhinst_hardware_config()
+    hardware_config = load_example_zhinst_hardware_config
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,
-        "q0:res-q0.ro": 0,
+        "q0:res-q0.ro": 0.0,
         "q1:mw-q1.01": 190e-9,
+        "q2:mw-q2.01": 9.5e-08,
+        "q3:mw-q3.01": 9.5e-08,
     }
     generated_dict = zhinst_backend._extract_latencies(hardware_cfg=hardware_config)
 
@@ -1131,3 +1162,37 @@ def test_acquisition_staircase_right_acq_channel(tmp_test_data_dir):
             expected_zeros_array,
             decimal=ARRAY_DECIMAL_PRECISION,
         )
+
+
+def test_too_long_acquisition_raises_readable_exception():
+    sched = Schedule(name="Too long acquisition schedule", repetitions=1024)
+
+    # these are kind of magic names that are known to exist in the default config.
+    port = "q0:res"
+    clock = "q0.ro"
+
+    # this should not be required.
+    sched.add_resource(ClockResource(name=clock, freq=5e9))
+
+    sched.add(
+        SSBIntegrationComplex(
+            duration=2.4e-6,  # this is longer than the allowed 4096 samples.
+            port=port,
+            clock=clock,
+            acq_index=0,
+            acq_channel=0,
+        ),
+    )
+
+    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+
+    # Act
+    with pytest.raises(ValueError) as exc_info:
+        _ = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+
+    # assert that the name of the offending operation is in the exception message.
+    assert "SSBIntegrationComplex(" in str(exc_info.value)
+
+    # assert that the number of samples we are trying to set is in the exception message
+    assert "4320 samples" in str(exc_info.value)

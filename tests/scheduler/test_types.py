@@ -3,6 +3,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+import copy
 import json
 
 import numpy as np
@@ -10,7 +11,13 @@ import pandas as pd
 import pytest
 from quantify_core.data.handling import set_datadir
 
-from quantify_scheduler import CompiledSchedule, Operation, Schedule
+from quantify_scheduler import enums, json_utils, Operation
+from quantify_scheduler.json_utils import ScheduleJSONDecoder
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionMetadata,
+    CompiledSchedule,
+    Schedule,
+)
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
@@ -210,8 +217,10 @@ def test_operation_duration():
 
 
 def test___repr__():
-    operation = Operation("test", {"gate_info": {"clock": "q0.01"}})
-    assert eval(repr(operation)) == operation
+    operation = Operation("test")
+    operation["gate_info"] = {"clock": "q0.01"}
+    obj = ScheduleJSONDecoder().decode_dict(operation.__getstate__())
+    assert obj == operation
 
 
 def test___str__():
@@ -243,7 +252,6 @@ def test_schedule_from_json():
     assert schedule.data == result.data
 
 
-@pytest.mark.xfail(reason="json serialization issue for schedules", strict=True)
 def test_spec_schedule_from_json():
     # Arrange
     schedule = heterodyne_spec_sched(
@@ -284,7 +292,7 @@ def test_t1_sched_circuit_diagram(t1_schedule):
     Tests that the test schedule can be visualized
     """
     # will only test that a figure is created and runs without errors
-    _ = t1_schedule.plot_circuit_diagram_mpl()
+    _ = t1_schedule.plot_circuit_diagram()
 
 
 def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
@@ -297,7 +305,7 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
     comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
 
     # will only test that a figure is created and runs without errors
-    _ = comp_sched.plot_pulse_diagram_mpl()
+    _ = comp_sched.plot_pulse_diagram()
 
 
 def test_sched_timing_table(tmp_test_data_dir):
@@ -364,8 +372,8 @@ def test_sched_hardware_timing_table(
     # assert that files properly compile
     compiled_schedule = qcompile(
         t1_schedule,  # pylint: disable=no-member
-        load_example_transmon_config(),
-        load_example_zhinst_hardware_config(),
+        load_example_transmon_config,
+        load_example_zhinst_hardware_config,
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
     columns_of_hw_timing_table = hardware_timing_table.columns
@@ -385,8 +393,8 @@ def test_sched_hardware_waveform_dict(
     # assert that files properly compile
     compiled_schedule = qcompile(
         t1_schedule,  # pylint: disable=no-member
-        load_example_transmon_config(),
-        load_example_zhinst_hardware_config(),
+        load_example_transmon_config,
+        load_example_zhinst_hardware_config,
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
     hardware_waveform_dict = compiled_schedule.hardware_waveform_dict
@@ -396,3 +404,40 @@ def test_sched_hardware_waveform_dict(
             # Ignore the reset operation because it will return None
             continue
         assert isinstance(hardware_waveform_dict.get(waveform_id), np.ndarray)
+
+
+def test_acquisition_metadata():
+    metadata = None
+    for binmode in enums.BinMode:
+        metadata = AcquisitionMetadata(
+            acq_protocol="ssb_integration_complex",
+            bin_mode=binmode,
+            acq_return_type=complex,
+            acq_indices={0: [0]},
+        )
+        # test whether the copy function works correctly
+        metadata_copy = copy.copy(metadata)
+        assert metadata_copy == metadata
+        assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+        assert isinstance(metadata_copy.acq_return_type, type)
+
+    for return_type in complex, float, int, bool, str, np.ndarray:
+        metadata = AcquisitionMetadata(
+            acq_protocol="ssb_integration_complex",
+            bin_mode=enums.BinMode.AVERAGE,
+            acq_return_type=return_type,
+            acq_indices={0: [0]},
+        )
+        # test whether the copy function works correctly
+        metadata_copy = copy.copy(metadata)
+        assert metadata_copy == metadata
+        assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+        assert isinstance(metadata_copy.acq_return_type, type)
+
+    # Test that json serialization works correctly
+    serialized = json.dumps(metadata, cls=json_utils.ScheduleJSONEncoder)
+    # Test that json deserialization works correctly
+    metadata_copy = json.loads(serialized, cls=json_utils.ScheduleJSONDecoder)
+    assert metadata_copy == metadata
+    assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+    assert isinstance(metadata_copy.acq_return_type, type)
