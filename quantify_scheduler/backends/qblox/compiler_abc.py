@@ -617,12 +617,6 @@ class Sequencer:
 
         return acq_declaration_dict
 
-    def update_settings(self):
-        """
-        Updates the sequencer settings to set all parameters that are determined by the
-        compiler.
-        """
-
     # pylint: disable=too-many-locals
     def generate_qasm_program(
         self,
@@ -906,8 +900,6 @@ class Sequencer:
         wf_and_prog = self._generate_waveforms_and_program_dict(
             qasm_program, awg_dict, weights_dict, acq_declaration_dict
         )
-
-        self.update_settings()
 
         self._settings.sequence = wf_and_prog
         if sequence_to_file:
@@ -1358,13 +1350,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         return settings
 
-    @abstractmethod
-    def update_settings(self):
-        """
-        Updates the settings to set all parameters that are determined by the
-        compiler.
-        """
-
     def _determine_scope_mode_acquisition_sequencer(self) -> None:
         """
         Finds which sequencer has to perform raw trace acquisitions and adds it to the
@@ -1435,11 +1420,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             return None
 
         self._settings.hardware_averages = repetitions
-        self.update_settings()
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
             # Add both acquisition metadata (a summary) and acq_mapping
-
             program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
@@ -1497,12 +1480,6 @@ class QbloxBasebandModule(QbloxBaseModule):
     def settings_type(self) -> type:
         """The settings type used by baseband-type devices."""
         return PulsarSettings if self.is_pulsar else BasebandModuleSettings
-
-    def update_settings(self):
-        """
-        Updates the settings to set all parameters that are determined by the
-        compiler.
-        """
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
@@ -1586,12 +1563,6 @@ class QbloxRFModule(QbloxBaseModule):
     def settings_type(self) -> type:
         """The settings type used by RF-type devices"""
         return PulsarRFSettings if self.is_pulsar else RFModuleSettings
-
-    def update_settings(self):
-        """
-        Updates the settings to set all parameters that are determined by the
-        compiler.
-        """
 
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
