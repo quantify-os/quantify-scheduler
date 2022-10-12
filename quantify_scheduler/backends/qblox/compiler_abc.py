@@ -902,6 +902,7 @@ class Sequencer:
         )
 
         self._settings.sequence = wf_and_prog
+        self._settings.seq_fn = None
         if sequence_to_file:
             self._settings.seq_fn = self._dump_waveforms_and_program_json(
                 wf_and_pr_dict=wf_and_prog, label=f"{self.port}_{self.clock}"
@@ -1385,7 +1386,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings.scope_mode_sequencer = scope_acq_seq
 
     def compile(
-        self, repetitions: int = 1, sequence_to_file: Optional[bool] = None
+        self,
+        sequence_to_file: Optional[bool] = None,
+        repetitions: int = 1,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
@@ -1394,6 +1397,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
+        sequence_to_file
+            Dump waveforms and program dict to JSON file, filename stored in
+            `Sequencer.settings.seq_fn`.
         repetitions
             Number of times execution the schedule is repeated.
 
