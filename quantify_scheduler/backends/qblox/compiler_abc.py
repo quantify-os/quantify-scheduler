@@ -852,8 +852,8 @@ class Sequencer:
 
     def compile(
         self,
-        sequence_to_file: bool,
         repetitions: int = 1,
+        sequence_to_file: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
@@ -862,11 +862,11 @@ class Sequencer:
 
         Parameters
         ----------
+        repetitions
+            Number of times execution the schedule is repeated.
         sequence_to_file
             Dump waveforms and program dict to JSON file, filename stored in
             `Sequencer.settings.seq_fn`.
-        repetitions
-            Number of times execution the schedule is repeated.
 
         Returns
         -------
@@ -1387,8 +1387,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def compile(
         self,
-        sequence_to_file: Optional[bool] = None,
         repetitions: int = 1,
+        sequence_to_file: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
@@ -1397,11 +1397,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
+        repetitions
+            Number of times execution the schedule is repeated.
         sequence_to_file
             Dump waveforms and program dict to JSON file, filename stored in
             `Sequencer.settings.seq_fn`.
-        repetitions
-            Number of times execution the schedule is repeated.
 
         Returns
         -------
@@ -1417,7 +1417,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(
-                sequence_to_file=sequence_to_file, repetitions=repetitions
+                repetitions=repetitions, sequence_to_file=sequence_to_file
             )
             if seq_program is not None:
                 program[seq_name] = seq_program

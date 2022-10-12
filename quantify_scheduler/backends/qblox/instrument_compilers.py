@@ -339,7 +339,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         sequence_to_file = self.hw_mapping.get("sequence_to_file", None)
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(
-                sequence_to_file=sequence_to_file, repetitions=repetitions
+                repetitions=repetitions, sequence_to_file=sequence_to_file
             )
             if instrument_program is not None and len(instrument_program) > 0:
                 program[compiler.name] = instrument_program

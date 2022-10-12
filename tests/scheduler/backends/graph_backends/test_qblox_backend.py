@@ -1,3 +1,9 @@
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=missing-module-docstring
+
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
 """
 Testing focused on the backend for qblox hardware.
 This stage should test from the top level down to the hardware instructions.
