@@ -6,7 +6,7 @@ but could be extended for other qubits (eg. carbon qubit).
 """
 from typing import Dict, Any
 
-from qcodes.instrument import InstrumentChannel
+from qcodes.instrument import InstrumentModule
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import (
     ManualParameter,
@@ -22,7 +22,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
 # pylint: disable=too-few-public-methods
-class Ports(InstrumentChannel):
+class Ports(InstrumentModule):
     """
     Submodule containing the ports.
     """
@@ -40,7 +40,7 @@ class Ports(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class ClockFrequencies(InstrumentChannel):
+class ClockFrequencies(InstrumentModule):
     """
     Submodule with clock frequencies specifying the transitions to address.
     """
@@ -73,7 +73,7 @@ class ClockFrequencies(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class SpectroscopyOperation(InstrumentChannel):
+class SpectroscopyOperation(InstrumentModule):
     """Submodule with parameters run a spectroscopy pulse in the microwave range."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -96,6 +96,34 @@ class SpectroscopyOperation(InstrumentChannel):
             vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
         """Duration of the MW pulse."""
+
+
+class _Reset(InstrumentModule):
+    """
+    Submodule containing parameters to run the spinpump laser with a square pulse
+    to reset the NV.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.amplitude = ManualParameter(
+            name="amplitude",
+            instrument=self,
+            initial_value=0.1,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
+        """Amplitude of charge reset pulse"""
+
+        self.duration = ManualParameter(
+            name="duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
+        )
+        """Duration of the charge set pulse."""
 
 
 # pylint: disable=too-few-public-methods
