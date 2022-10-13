@@ -52,7 +52,7 @@
         - `Active`=True
         - `Hidden`=False
         - `Privacy Level`=Public
-   - [ ] Change both the `Default version` and `Default branch` of the docs to the tag that was released [over here](https://readthedocs.com/dashboard/quantify-quantify-scheduler/advanced/).
+   - [ ] Change both the `Default version` and `Default branch` of the docs to the tag that was released [over here](https://readthedocs.com/dashboard/quantify-quantify-scheduler/advanced/). Hit Save!
    - [ ] Make sure the docs build and check on RTD.
       - Manually rebuild `latest` by hitting `Build version:` [over here](https://readthedocs.com/projects/quantify-quantify-scheduler/builds/).
       - Check both the `latest` and the new version links on RTD work by clicking through to Changelog (hit Ctrl+F5).
