@@ -85,7 +85,6 @@ class _SpectroscopyOperation(InstrumentModule):
             instrument=self,
             initial_value=float("nan"),
             unit="W",
-            # vals=Numbers(min_value=0, max_value=1e-2, allow_nan=True),
         )
         """Microwave amplitude for spin state manipulation"""
 
