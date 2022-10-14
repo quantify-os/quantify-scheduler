@@ -98,7 +98,6 @@ class _SpectroscopyOperation(InstrumentModule):
         """Duration of the MW pulse."""
 
 
-# pylint: disable=too-few-public-methods
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
