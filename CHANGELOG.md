@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+
+### Merged branches and closed issues
+
+- NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
+
 ## 0.9.0 (2022-10-06)
 
 ### Breaking changes

@@ -8,7 +8,7 @@ These functions are intended to be used to generate waveforms defined in the
 Examples of waveforms that are too advanced are flux pulses that require knowledge of
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from scipy import signal, interpolate
@@ -354,6 +354,96 @@ def rotate_wave(wave: np.ndarray, phase: float) -> np.ndarray:
 
     rot = (np.cos(angle) + 1.0j * np.sin(angle)) * wave
     return rot
+
+
+def skewed_hermite(
+    t: np.ndarray,
+    duration: float,
+    amplitude: float,
+    skewness: float,
+    phase: float,
+    pi2_pulse: bool = False,
+    center: Optional[float] = None,
+    duration_over_char_time: float = 6.0,
+) -> np.ndarray:
+    """Generates a skewed hermite pulse for single qubit rotations in NV centers.
+
+    A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
+    See :cite:t:`Beukers_MSc_2019`, Appendix A.2.
+
+    The skew parameter is a first order amplitude correction to the hermite pulse. It
+    increases the fidelity of the performed gates.
+    See :cite:t:`Beukers_MSc_2019`, section 4.2. To get a "standard" hermite
+    pulse, use ``skewness=0``.
+
+    The hermite factors are taken from equation 44 and 45 of
+    :cite:t:`Warren_NMR_pulse_shapes_1984`.
+
+    Parameters
+    ----------
+    t
+        Times at which to evaluate the function.
+    duration
+        Duration of the pulse in seconds.
+    amplitude
+        Amplitude of the pulse.
+    skewness
+        Skewness in the frequency space
+    phase
+        Phase of the pulse in degrees.
+    pi2_pulse
+        if True, the pulse will be pi/2 otherwise pi pulse
+    center
+        Optional: time after which the pulse center occurs. If ``None``, it is
+        automatically set to duration/2.
+    duration_over_char_time
+        Ratio of the pulse duration and the characteristic time of the hermite
+        polynomial. Increasing this number will compress the pulse. By default, 6.
+
+    Returns
+    -------
+    :
+        complex skewed waveform
+
+    """
+    # pylint: disable=too-many-locals
+    # pylint: disable=invalid-name
+
+    # Hermite factors are taken from paper cited in docstring.
+    PI_HERMITE_FACTOR = 0.956
+    PI2_HERMITE_FACTOR = 0.667
+
+    # Determine parameters based on switches:
+    #   - characteristic time of hermite polynomial
+    #   - hermite factor
+    #   - center position of pulse
+    t_hermite = duration / duration_over_char_time
+    hermite_factor = PI2_HERMITE_FACTOR if pi2_pulse else PI_HERMITE_FACTOR
+    if center is None:
+        center = duration / 2.0
+
+    # normalize time array for easier evaluation
+    center_total = center + t[0]
+    normalized_time = (t - center_total) / t_hermite
+
+    # Hermite pulse with zero skewness
+    h_t = (1 - hermite_factor * normalized_time**2) * np.exp(-(normalized_time**2))
+
+    # I and Q components
+    I = amplitude * h_t
+    Q = (
+        amplitude
+        * (skewness / np.pi)
+        * (normalized_time / t_hermite)
+        * (hermite_factor + 1 - hermite_factor * normalized_time**2)
+        * np.exp(-(normalized_time**2))
+    )
+    hermite = I + 1j * Q
+
+    # Rotate pulse to get correct phase
+    rotated_hermite = rotate_wave(hermite, phase)
+
+    return rotated_hermite
 
 
 def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarray:

@@ -995,3 +995,71 @@ class NumericalPulse(Operation):
         """Provides a string representation of the Pulse."""
         pulse_info = self.data["pulse_info"][0]
         return self._get_signature(pulse_info)
+
+
+class SkewedHermitePulse(Operation):
+    # pylint: disable=line-too-long, too-many-ancestors
+    """
+    Hermite pulse intended for single qubit gates in diamond based systems.
+
+    The waveform is generated using :func:`~quantify_scheduler.waveforms.skewed_hermite`.
+    """
+
+    def __init__(
+        self,
+        duration: float,
+        amplitude: float,
+        skewness: float,
+        phase: float,
+        port: str,
+        clock: str,
+        t0: float = 0,
+        data: Optional[dict] = None,
+    ):
+        """
+        Create a new instance of SkewedHermitePulse.
+
+        Parameters
+        ----------
+        duration
+            The pulse duration in seconds.
+        amplitude
+            Amplitude of the hermite pulse.
+        skewness
+            Skewness in the frequency space.
+        phase
+            Phase of the pulse in degrees.
+        clock
+            Clock used to modulate the pulse.
+        port
+            Port of the pulse, must be capable of carrying a complex waveform.
+        t0
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule. By default 0.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+
+        if data is None:
+            data = {
+                "name": "hermite",
+                "pulse_info": [
+                    {
+                        "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
+                        "duration": duration,
+                        "amplitude": amplitude,
+                        "skewness": skewness,
+                        "phase": phase,
+                        "clock": clock,
+                        "port": port,
+                        "t0": t0,
+                    }
+                ],
+            }
+        super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
