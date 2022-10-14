@@ -369,11 +369,11 @@ def skewed_hermite(
     """Generates a skewed hermite pulse for single qubit rotations in NV centers.
 
     A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
-    See :cite:t:`Beukers`, Appendix A.2.
+    See :cite:t:`Beukers_MSc_2019`, Appendix A.2.
 
     The skew parameter is a first order amplitude correction to the hermite pulse. It
     increases the fidelity of the performed gates.
-    See :cite:t:`Beukers`, section 4.2. To get a "standard" hermite
+    See :cite:t:`Beukers_MSc_2019`, section 4.2. To get a "standard" hermite
     pulse, use ``skewness=0``.
 
     The hermite factors are taken from equation 44 and 45 of
