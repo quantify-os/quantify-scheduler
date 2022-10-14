@@ -5,6 +5,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+import json
 from unittest import TestCase
 
 import numpy as np
@@ -19,6 +20,7 @@ from quantify_scheduler.operations.acquisition_library import (
 )
 from quantify_scheduler.operations.gate_library import X90
 from quantify_scheduler.operations.pulse_library import DRAGPulse
+from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
 
 
 def test_ssb_integration_complex():
@@ -105,7 +107,12 @@ def test_trace():
     ],
 )
 def test__repr__(operation: Operation):
-    assert eval(repr(operation)) == operation
+    # Arrange
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    assert obj == operation
 
 
 @pytest.mark.parametrize(
@@ -158,10 +165,10 @@ def test__str__(operation: Operation):
 )
 def test_deserialize(operation: Operation):
     # Arrange
-    operation_repr: str = repr(operation)
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
     # Act
-    obj = eval(operation_repr)
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
 
     # Assert
     if isinstance(operation, NumericalWeightedIntegrationComplex):
@@ -207,7 +214,10 @@ def test_deserialize(operation: Operation):
 )
 def test__repr__modify_not_equal(operation: Operation):
     # Arrange
-    obj = eval(repr(operation))
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
     assert obj == operation
 
     # Act

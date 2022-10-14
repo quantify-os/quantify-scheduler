@@ -241,14 +241,14 @@ def _compile_single_qubit(operation, qubit, operation_type, device_cfg):
 
 def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
     parent_qubit, child_qubit = qubits
-    edge = f"{parent_qubit}-{child_qubit}"
+    edge = f"{parent_qubit}_{child_qubit}"
 
     symmetric_operation = operation.get("gate_info", {}).get("symmetric", False)
 
     if symmetric_operation:
         possible_permutations = permutations(qubits, 2)
         operable_edges = {
-            f"{permutation[0]}-{permutation[1]}"
+            f"{permutation[0]}_{permutation[1]}"
             for permutation in possible_permutations
         }
         valid_edge_list = list(operable_edges.intersection(device_cfg.edges))

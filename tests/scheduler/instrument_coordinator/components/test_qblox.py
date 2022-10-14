@@ -3,18 +3,16 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=redefined-outer-name
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 # pylint: disable=unused-argument
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
-import inspect
-import json
 import logging
 import tempfile
 from copy import deepcopy
 from operator import countOf
-from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -30,10 +28,13 @@ from qblox_instruments import (
 )
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
+
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_transmon,
 )
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
 from tests.fixtures.mock_setup import close_instruments
@@ -49,11 +50,7 @@ def make_cluster_component(mocker):
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.ClusterComponent:
 
-        mocker.patch("qblox_instruments.native.cluster.Cluster.arm_sequencer")
-        mocker.patch("qblox_instruments.native.cluster.Cluster.start_sequencer")
-        mocker.patch("qblox_instruments.native.cluster.Cluster.stop_sequencer")
-
-        close_instruments([name])
+        close_instruments([f"ic_{name}", name])
         cluster = Cluster(
             name=name,
             dummy_cfg={
@@ -61,7 +58,7 @@ def make_cluster_component(mocker):
                 "2": ClusterType.CLUSTER_QCM_RF,
                 "3": ClusterType.CLUSTER_QRM,
                 "4": ClusterType.CLUSTER_QRM_RF,
-                "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0-q3
+                "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0_q3
                 "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
         )
@@ -70,9 +67,19 @@ def make_cluster_component(mocker):
 
         mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
 
-        for component in cluster_component._cluster_modules.values():
+        for comp in cluster_component._cluster_modules.values():
+            instrument = comp.instrument_channel
             mocker.patch.object(
-                component.instrument_channel,
+                instrument, "arm_sequencer", wraps=instrument.arm_sequencer
+            )
+            mocker.patch.object(
+                instrument, "start_sequencer", wraps=instrument.start_sequencer
+            )
+            mocker.patch.object(
+                instrument, "stop_sequencer", wraps=instrument.stop_sequencer
+            )
+            mocker.patch.object(
+                instrument,
                 "get_sequencer_state",
                 return_value=SequencerState(
                     sequencer_status, sequencer_flags if sequencer_flags else []
@@ -84,8 +91,8 @@ def make_cluster_component(mocker):
     yield _make_cluster_component
 
     if cluster_component:
-        for component in cluster_component._cluster_modules.values():
-            component.close()
+        for comp in cluster_component._cluster_modules.values():
+            comp.close()
         cluster_component.close()
 
 
@@ -107,7 +114,7 @@ def make_qcm_component(mocker):
             "qblox_instruments.scpi.pulsar_qcm.PulsarQcm._set_reference_source"
         )
 
-        close_instruments([name])
+        close_instruments([f"ic_{name}", name])
         qcm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QCM)
         qcm._serial = serial
 
@@ -154,7 +161,7 @@ def make_qrm_component(mocker):
                 "qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition"
             )
 
-        close_instruments([name])
+        close_instruments([f"ic_{name}", name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
         qrm._serial = serial
 
@@ -362,7 +369,9 @@ def test_initialize_cluster_component(make_cluster_component):
     "set_reference_source, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],
 )
-def test_prepare(
+def test_prepare_qcm_qrm(
+    mocker,
+    tmp_test_data_dir,
     schedule_with_measurement,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
@@ -372,81 +381,176 @@ def test_prepare(
     force_set_parameters,
 ):
     # Arrange
-    qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
+    qcm0: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
+    qrm0: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
+    qrm2: qblox.PulsarQRMComponent = make_qrm_component("qrm2", "1234")
 
+    mocker.patch.object(qcm0.instrument.parameters["out0_offset"], "set")
+    mocker.patch.object(qcm0.instrument.parameters["out1_offset"], "set")
+    mocker.patch.object(qcm0.instrument.parameters["out2_offset"], "set")
+    mocker.patch.object(qcm0.instrument.parameters["out3_offset"], "set")
+
+    mocker.patch.object(qrm0.instrument.parameters["out0_offset"], "set")
+    mocker.patch.object(qrm0.instrument.parameters["out1_offset"], "set")
+    mocker.patch.object(qrm0.instrument.parameters["in0_gain"], "set")
+    mocker.patch.object(qrm0.instrument.parameters["in1_gain"], "set")
+
+    mocker.patch.object(qrm2.instrument.parameters["in0_gain"], "set")
+    mocker.patch.object(qrm2.instrument.parameters["in1_gain"], "set")
+
+    hardware_cfg = load_example_qblox_hardware_config
     if set_reference_source:
-        qcm.instrument.reference_source("internal")
-        qcm.instrument._set_reference_source.reset_mock()
+        qcm0.instrument.reference_source(hardware_cfg[qcm0.instrument.name]["ref"])
+        qcm0.instrument._set_reference_source.reset_mock()
 
-        qrm.instrument.reference_source("external")
-        qrm.instrument._set_reference_source.reset_mock()
+        qrm0.instrument.reference_source(hardware_cfg[qrm0.instrument.name]["ref"])
+        qrm0.instrument._set_reference_source.reset_mock()
+
+        qrm2.instrument.reference_source(hardware_cfg[qrm2.instrument.name]["ref"])
+        qrm2.instrument._set_reference_source.reset_mock()
+
+    qcm0.force_set_parameters(force_set_parameters)
+    qrm0.force_set_parameters(force_set_parameters)
+    qrm2.force_set_parameters(force_set_parameters)
 
     # Act
-    qcm.force_set_parameters(force_set_parameters)
-    qrm.force_set_parameters(force_set_parameters)
+    set_datadir(tmp_test_data_dir)
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
+    compiled_schedule = qcompile(
+        schedule_with_measurement,
+        load_example_transmon_config,
+        hardware_cfg,
+    )
+    prog = compiled_schedule["compiled_instructions"]
 
-        compiled_schedule = qcompile(
-            schedule_with_measurement,
-            load_example_transmon_config,
-            load_example_qblox_hardware_config,
-        )
-        prog = compiled_schedule["compiled_instructions"]
-
-        qcm.prepare(prog["qcm0"])
-        qrm.prepare(prog["qrm0"])
+    qcm0.prepare(prog[qcm0.instrument.name])
+    qrm0.prepare(prog[qrm0.instrument.name])
+    qrm2.prepare(prog[qrm2.instrument.name])
 
     # Assert
-    if not set_reference_source:
-        qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-        qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-    else:
+    qcm0.instrument.arm_sequencer.assert_called_with(sequencer=1)
+    qrm0.instrument.arm_sequencer.assert_called_with(sequencer=1)
+    qrm2.instrument.arm_sequencer.assert_called_with(sequencer=1)
+
+    if set_reference_source:
         if force_set_parameters:
-            qcm.instrument._set_reference_source.assert_called()
-            qrm.instrument._set_reference_source.assert_called()
+            qcm0.instrument._set_reference_source.assert_called()
+            qrm0.instrument._set_reference_source.assert_called()
+            qrm2.instrument._set_reference_source.assert_called()
         else:
-            qcm.instrument._set_reference_source.assert_not_called()
-            qrm.instrument._set_reference_source.assert_not_called()
+            qcm0.instrument._set_reference_source.assert_not_called()
+            qrm0.instrument._set_reference_source.assert_not_called()
+            qrm2.instrument._set_reference_source.assert_not_called()
+
+    for (qcodes_param, hw_config_param) in [
+        ("out0_offset", ["complex_output_0", "dc_mixer_offset_I"]),
+        ("out1_offset", ["complex_output_0", "dc_mixer_offset_Q"]),
+        ("out2_offset", ["complex_output_1", "dc_mixer_offset_I"]),
+        ("out3_offset", ["complex_output_1", "dc_mixer_offset_Q"]),
+    ]:
+        qcm0.instrument.parameters[qcodes_param].set.assert_any_call(
+            hardware_cfg[qcm0.instrument.name][hw_config_param[0]][hw_config_param[1]]
+        )
+
+    for (qcodes_param, hw_config_param) in [
+        ("out0_offset", ["complex_output_0", "dc_mixer_offset_I"]),
+        ("out1_offset", ["complex_output_0", "dc_mixer_offset_Q"]),
+        ("in0_gain", ["complex_output_0", "input_gain_I"]),
+        ("in1_gain", ["complex_output_0", "input_gain_Q"]),
+    ]:
+        qrm0.instrument.parameters[qcodes_param].set.assert_any_call(
+            hardware_cfg[qrm0.instrument.name][hw_config_param[0]][hw_config_param[1]]
+        )
+
+    for (qcodes_param, hw_config_param) in [
+        ("in0_gain", ["real_output_0", "input_gain"]),
+        ("in1_gain", ["real_output_1", "input_gain"]),
+    ]:
+        qrm2.instrument.parameters[qcodes_param].set.assert_any_call(
+            hardware_cfg[qrm2.instrument.name][hw_config_param[0]][hw_config_param[1]]
+        )
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
-def test_prepare_ref_source_cluster(
+def test_prepare_cluster_rf(
+    mocker,
+    tmp_test_data_dir,
     make_basic_schedule,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_cluster_component,
     force_set_parameters,
 ):
     # Arrange
     cluster_name = "cluster0"
-    cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
+    ic_cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
 
-    cluster.force_set_parameters(force_set_parameters)
-    cluster.instrument.reference_source("internal")  # Put it in a known state
+    qcm_rf = ic_cluster.instrument.module2
+    mocker.patch.object(qcm_rf.parameters["out0_att"], "set")
+    mocker.patch.object(qcm_rf.parameters["out1_att"], "set")
 
-    sched = make_basic_schedule("q0")
+    qrm_rf = ic_cluster.instrument.module4
+    mocker.patch.object(qrm_rf.parameters["out0_att"], "set")
+    mocker.patch.object(qrm_rf.parameters["in0_att"], "set")
+
+    ic_cluster.force_set_parameters(force_set_parameters)
+    ic_cluster.instrument.reference_source("internal")  # Put it in a known state
+
+    quantum_device = QuantumDevice(name="quantum_device")
+    q5 = BasicTransmonElement("q5")
+    quantum_device.add_element(q5)
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(6.33e9)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(8.5e9)
+    q5.measure.acq_delay(100e-9)
+
+    sched = make_basic_schedule("q5")
 
     # Act
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        set_datadir(tmp_dir)
+    set_datadir(tmp_test_data_dir)
 
-        compiled_schedule = qcompile(
-            sched, load_example_transmon_config, load_example_qblox_hardware_config
-        )
-        compiled_schedule2 = deepcopy(compiled_schedule)
-        prog = compiled_schedule["compiled_instructions"]
+    hardware_cfg = load_example_qblox_hardware_config
+    compiled_schedule = qcompile(
+        sched, quantum_device.generate_device_config(), hardware_cfg
+    )
+    compiled_schedule_before_prepare = deepcopy(compiled_schedule)
 
-        cluster.prepare(prog[cluster_name])
+    prog = compiled_schedule["compiled_instructions"]
+    ic_cluster.prepare(prog[cluster_name])
+
+    # Assert
+    assert compiled_schedule == compiled_schedule_before_prepare
+
+    qcm_rf.arm_sequencer.assert_called_with(sequencer=0)
+    qrm_rf.arm_sequencer.assert_called_with(sequencer=0)
 
     # Assert it's only set in initialization
-    cluster.instrument.reference_source.assert_called_once()
-    assert compiled_schedule == compiled_schedule2
+    ic_cluster.instrument.reference_source.assert_called_once()
+
+    for (qcodes_param, hw_config_param) in [
+        ("out0_att", ["complex_output_0", "output_att"]),
+        ("out1_att", ["complex_output_1", "output_att"]),
+    ]:
+        qcm_rf.parameters[qcodes_param].set.assert_any_call(
+            hardware_cfg[cluster_name][qcm_rf.name][hw_config_param[0]][
+                hw_config_param[1]
+            ]
+        )
+
+    for (qcodes_param, hw_config_param) in [
+        ("out0_att", ["complex_output_0", "output_att"]),
+        ("in0_att", ["complex_output_0", "input_att"]),
+    ]:
+        qrm_rf.parameters[qcodes_param].set.assert_any_call(
+            hardware_cfg[cluster_name][qrm_rf.name][hw_config_param[0]][
+                hw_config_param[1]
+            ]
+        )
 
 
 def test_prepare_rf(
+    close_all_instruments,
     mock_setup_basic_transmon,
     schedule_with_measurement_q2,
     load_example_qblox_hardware_config,
@@ -803,7 +907,8 @@ def test_stop_cluster(close_all_instruments, make_cluster_component):
     cluster.stop()
 
     # Assert
-    cluster.instrument.stop_sequencer.assert_called()
+    for comp in cluster._cluster_modules.values():
+        comp.instrument.stop_sequencer.assert_called()
 
 
 # ------------------- _QRMAcquisitionManager -------------------

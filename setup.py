@@ -22,7 +22,7 @@ with open("requirements_setup.txt") as setup_requirements_file:
 with open("requirements_dev.txt") as test_requirements_file:
     test_requirements = test_requirements_file.read().splitlines()
 
-version = "0.8.0"
+version = "0.9.0"
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",
@@ -43,6 +43,7 @@ setup(
     install_requires=requirements,
     license="BSD-3 license",
     long_description=readme + "\n\n" + authors + "\n\n" + history,
+    long_description_content_type="text/markdown",
     include_package_data=True,
     keywords="quantify-scheduler",
     name="quantify-scheduler",

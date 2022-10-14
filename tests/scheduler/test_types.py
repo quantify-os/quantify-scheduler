@@ -12,6 +12,7 @@ import pytest
 from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import enums, json_utils, Operation
+from quantify_scheduler.json_utils import ScheduleJSONDecoder
 from quantify_scheduler.schedules.schedule import (
     AcquisitionMetadata,
     CompiledSchedule,
@@ -216,8 +217,10 @@ def test_operation_duration():
 
 
 def test___repr__():
-    operation = Operation("test", {"gate_info": {"clock": "q0.01"}})
-    assert eval(repr(operation)) == operation
+    operation = Operation("test")
+    operation["gate_info"] = {"clock": "q0.01"}
+    obj = ScheduleJSONDecoder().decode_dict(operation.__getstate__())
+    assert obj == operation
 
 
 def test___str__():
@@ -249,7 +252,6 @@ def test_schedule_from_json():
     assert schedule.data == result.data
 
 
-@pytest.mark.xfail(reason="json serialization issue for schedules", strict=True)
 def test_spec_schedule_from_json():
     # Arrange
     schedule = heterodyne_spec_sched(
@@ -478,23 +480,3 @@ def test_acquisition_metadata():
     assert metadata_copy == metadata
     assert isinstance(metadata_copy.bin_mode, enums.BinMode)
     assert isinstance(metadata_copy.acq_return_type, type)
-
-    # An unknown return type should raise an error
-    metadata2 = AcquisitionMetadata(
-        acq_protocol="ssb_integration_complex",
-        bin_mode=enums.BinMode.AVERAGE,
-        acq_return_type=type,
-        acq_indices={0: [0]},
-    )
-    with pytest.raises(ValueError):
-        copy.copy(metadata2)
-
-    # An unknown binmode type should raise an error
-    metadata3 = AcquisitionMetadata(
-        acq_protocol="ssb_integration_complex",
-        bin_mode="forget",
-        acq_return_type=complex,
-        acq_indices={0: [0]},
-    )
-    with pytest.raises(ValueError):
-        copy.copy(metadata3)
