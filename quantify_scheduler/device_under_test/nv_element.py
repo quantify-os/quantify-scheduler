@@ -39,6 +39,14 @@ class _Ports(InstrumentModule):
         )
         """Name of the element's microwave port."""
 
+        self.optical_output = Parameter(
+            name="optical_output",
+            instrument=self,
+            initial_cache_value=f"{parent.name}:opt_out",
+            set_cmd=False,
+        )
+        """Name of the element's optical output port."""
+
 
 # pylint: disable=too-few-public-methods
 class _ClockFrequencies(InstrumentModule):
@@ -72,6 +80,16 @@ class _ClockFrequencies(InstrumentModule):
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
+
+        self.ge1 = ManualParameter(
+            name="ge1",
+            label="f_{ge1}",
+            unit="Hz",
+            instrument=self,
+            initial_value=15e9,  # float("nan"),
+            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+        )
+        """."""
 
 
 # pylint: disable=too-few-public-methods
@@ -114,16 +132,16 @@ class _Reset(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=-0.5,
+            initial_value=0.5,
             unit="V",
-            vals=validators.Numbers(min_value=-1.5, max_value=0),
+            vals=validators.Numbers(min_value=0, max_value=2.5),
         )
         """Amplitude of spin-pump pulse"""
 
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=20e-6,
+            initial_value=50e-6,
             unit="s",
             vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
         )
@@ -166,6 +184,16 @@ class BasicElectronicNVElement(DeviceElement):
                         "clock": f"{self.name}.spec",
                     },
                 ),
+                "reset": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_library.SquarePulse",
+                    factory_kwargs={
+                        "duration": self.reset.duration(),
+                        "amp": self.reset.amplitude(),
+                        "port": self.ports.optical_output(),
+                        "clock": f"{self.name}.ge1",
+                    },
+                ),
             }
         }
         return qubit_config
@@ -188,6 +216,7 @@ class BasicElectronicNVElement(DeviceElement):
             "clocks": {
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.spec": self.clock_freqs.spec(),
+                f"{self.name}.ge1": self.clock_freqs.ge1(),
             },
             "edges": {},
         }

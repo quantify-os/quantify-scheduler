@@ -2,17 +2,17 @@
 import pytest
 from qcodes import Instrument
 
-from quantify_scheduler.backends.circuit_to_device import (
-    DeviceCompilationConfig,
-)
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
     set_standard_params_basic_nv,
 )
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
+)
+from quantify_scheduler.backends.circuit_to_device import (
+    DeviceCompilationConfig,
 )
 
 pytestmark = pytest.mark.usefixtures("close_all_instruments")
