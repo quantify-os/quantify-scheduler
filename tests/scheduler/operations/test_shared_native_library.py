@@ -1,8 +1,8 @@
 import pytest
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.compilation import device_compile, hardware_compile
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
