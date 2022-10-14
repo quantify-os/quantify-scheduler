@@ -22,7 +22,7 @@ class SpectroscopyOperation(Operation):
         Parameters
         ----------
         qubit
-            The target qubit
+            The target qubit.
         data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
