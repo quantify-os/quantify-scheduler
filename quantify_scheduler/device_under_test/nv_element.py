@@ -22,7 +22,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
 # pylint: disable=too-few-public-methods
-class Ports(InstrumentModule):
+class _Ports(InstrumentModule):
     """
     Submodule containing the ports.
     """
@@ -32,6 +32,7 @@ class Ports(InstrumentModule):
 
         self.microwave = Parameter(
             name="microwave",
+            label="Name of microwave port",
             instrument=self,
             initial_cache_value=f"{parent.name}:mw",
             set_cmd=False,
@@ -40,7 +41,7 @@ class Ports(InstrumentModule):
 
 
 # pylint: disable=too-few-public-methods
-class ClockFrequencies(InstrumentModule):
+class _ClockFrequencies(InstrumentModule):
     """
     Submodule with clock frequencies specifying the transitions to address.
     """
@@ -50,14 +51,15 @@ class ClockFrequencies(InstrumentModule):
 
         self.f01 = ManualParameter(
             name="f01",
-            label="Microwave frequency in resonance with |0> -> |1> transition.",
+            label="Microwave frequency in resonance with transition between 0 and 1.",
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
-        negatively charged diamond NV center from |0> to |1> :cite:t:`DOHERTY20131`.
+        negatively charged diamond NV center from the 0-state to 1-state
+        :cite:t:`DOHERTY20131`.
         """
 
         self.spec = ManualParameter(
@@ -73,23 +75,25 @@ class ClockFrequencies(InstrumentModule):
 
 
 # pylint: disable=too-few-public-methods
-class SpectroscopyOperation(InstrumentModule):
-    """Submodule with parameters run a spectroscopy pulse in the microwave range."""
+class _SpectroscopyOperation(InstrumentModule):
+    """Submodule with parameters to convert the SpectroscopyOperation into a microwave
+    pulse with a certain amplitude and duration for spin-state manipulation."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
+            label="Amplitude of spectroscopy pulse",
             instrument=self,
             initial_value=float("nan"),
             unit="W",
-            # vals=Numbers(min_value=0, max_value=1e-2, allow_nan=True),
         )
-        """Microwave amplitude for spin state manipulation"""
+        """Amplitude of spectroscopy pulse"""
 
         self.duration = ManualParameter(
             name="duration",
+            label="Duration of spectroscopy pulse",
             instrument=self,
             initial_value=15e-6,
             unit="s",
@@ -137,10 +141,10 @@ class BasicElectronicNVElement(DeviceElement):
 
         self.add_submodule(
             "spectroscopy_operation",
-            SpectroscopyOperation(self, "spectroscopy_operation"),
+            _SpectroscopyOperation(self, "spectroscopy_operation"),
         )
-        self.add_submodule("ports", Ports(self, "ports"))
-        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
+        self.add_submodule("ports", _Ports(self, "ports"))
+        self.add_submodule("clock_freqs", _ClockFrequencies(self, "clock_freqs"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """

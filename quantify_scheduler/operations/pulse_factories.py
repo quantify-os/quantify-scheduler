@@ -101,7 +101,7 @@ def nv_spec_pulse_mw(
     amplitude: float,
     clock: str,
     port: str,
-):
+) -> pulse_library.SkewedHermitePulse:
     """Generate hermite pulse for spectroscopy experiment.
 
     This is a simplified version of the SkewedHermitePulse. It is not skewed. It also

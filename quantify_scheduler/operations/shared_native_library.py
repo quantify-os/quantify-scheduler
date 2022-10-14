@@ -6,10 +6,11 @@ from .operation import Operation
 
 
 class SpectroscopyOperation(Operation):
-    """Spectroscopy pulse with a certain frequency.
+    """Spectroscopy operation to find energy between computational basis states.
 
-    The frequency of the spectroscopy pulse is taken from a clock of the device element
-    that is determined during the compilation.
+    Spectroscopy operations can be supported by various qubit types, but not all of
+    them. They are typically translated into a spectroscopy pulse by the quantum
+    device. The frequency is taken from a clock of the device element.
     """
 
     def __init__(
@@ -21,7 +22,7 @@ class SpectroscopyOperation(Operation):
         Parameters
         ----------
         qubit
-            The target qubit
+            The target qubit.
         data
             The operation's dictionary, by default None
             Note: if the data parameter is not None all other parameters are
@@ -29,12 +30,12 @@ class SpectroscopyOperation(Operation):
         """
         if data is None:
             data = {
-                "name": f"Microwave spectroscopy pulse {qubit}",
+                "name": f"Spectroscopy operation {qubit}",
                 "gate_info": {
                     "unitary": None,
                     "plot_func": "quantify_scheduler.visualization"
                     ".circuit_diagram.pulse_modulated",
-                    "tex": r"Spectroscopy pulse",
+                    "tex": r"Spectroscopy operation",
                     "qubits": [qubit],
                     "operation_type": "spectroscopy_operation",
                 },

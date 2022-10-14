@@ -1,12 +1,14 @@
 import pytest
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.compilation import device_compile, hardware_compile
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
-def test_compilation_spectroscopy_operation(mock_setup_basic_nv):
+def test_compilation_spectroscopy_operation_qblox_hardware(
+    mock_setup_basic_nv_qblox_hardware,
+):
     """SpectroscopyOperation can be compiled to the device layer and to qblox
     instructions.
 
@@ -42,8 +44,7 @@ def test_compilation_spectroscopy_operation(mock_setup_basic_nv):
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    mock_nv_setup = mock_setup_basic_nv
-    quantum_device = mock_nv_setup["quantum_device"]
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element(
         "qe0"
     ).spectroscopy_operation.duration.get()

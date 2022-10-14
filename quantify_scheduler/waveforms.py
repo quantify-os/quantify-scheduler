@@ -356,45 +356,6 @@ def rotate_wave(wave: np.ndarray, phase: float) -> np.ndarray:
     return rot
 
 
-def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarray:
-    """
-    Apply single sideband (SSB) modulation to a waveform.
-
-    The frequency convention we adhere to is:
-
-        freq_base + freq_mod = freq_signal
-
-    Parameters
-    ----------
-    t :
-        Times at which to determine the modulation.
-    wave :
-        Complex waveform, real component corresponds to I, imaginary component to Q.
-    freq_mod :
-        Modulation frequency in Hz.
-
-
-    Returns
-    -------
-    :
-        modulated waveform.
-
-
-    .. note::
-
-        Pulse modulation is generally not included when specifying waveform envelopes
-        as there are many hardware backends include this capability.
-    """
-    cos_mod = np.cos(2 * np.pi * freq_mod * t)
-    sin_mod = np.sin(2 * np.pi * freq_mod * t)
-    mod_I = cos_mod * wave.real + sin_mod * wave.imag
-    mod_Q = -sin_mod * wave.real + cos_mod * wave.imag
-
-    return mod_I + 1j * mod_Q
-
-
-# pylint: disable=too-many-locals
-# pylint: disable=invalid-name
 def skewed_hermite(
     t: np.ndarray,
     duration: float,
@@ -407,9 +368,12 @@ def skewed_hermite(
 ) -> np.ndarray:
     """Generates a skewed hermite pulse for single qubit rotations in NV centers.
 
-    The skew parameter is a first order amplitude correction to the hermite pulse (see
-    :func:`hermite`). It increases the fidelity of the performed gates.
-    See H.K.C.Beukers MSc Thesis (2019), section 4.2. To get a "standard" hermite
+    A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
+    See :cite:t:`Beukers_MSc_2019`, Appendix A.2.
+
+    The skew parameter is a first order amplitude correction to the hermite pulse. It
+    increases the fidelity of the performed gates.
+    See :cite:t:`Beukers_MSc_2019`, section 4.2. To get a "standard" hermite
     pulse, use ``skewness=0``.
 
     The hermite factors are taken from equation 44 and 45 of
@@ -442,6 +406,8 @@ def skewed_hermite(
         complex skewed waveform
 
     """
+    # pylint: disable=too-many-locals
+    # pylint: disable=invalid-name
 
     # Hermite factors are taken from paper cited in docstring.
     PI_HERMITE_FACTOR = 0.956
@@ -478,3 +444,40 @@ def skewed_hermite(
     rotated_hermite = rotate_wave(hermite, phase)
 
     return rotated_hermite
+
+
+def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarray:
+    """
+    Apply single sideband (SSB) modulation to a waveform.
+
+    The frequency convention we adhere to is:
+
+        freq_base + freq_mod = freq_signal
+
+    Parameters
+    ----------
+    t :
+        Times at which to determine the modulation.
+    wave :
+        Complex waveform, real component corresponds to I, imaginary component to Q.
+    freq_mod :
+        Modulation frequency in Hz.
+
+
+    Returns
+    -------
+    :
+        modulated waveform.
+
+
+    .. note::
+
+        Pulse modulation is generally not included when specifying waveform envelopes
+        as there are many hardware backends include this capability.
+    """
+    cos_mod = np.cos(2 * np.pi * freq_mod * t)
+    sin_mod = np.sin(2 * np.pi * freq_mod * t)
+    mod_I = cos_mod * wave.real + sin_mod * wave.imag
+    mod_Q = -sin_mod * wave.real + cos_mod * wave.imag
+
+    return mod_I + 1j * mod_Q

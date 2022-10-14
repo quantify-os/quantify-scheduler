@@ -116,6 +116,20 @@ def mock_setup_basic_nv(tmp_test_data_dir):
 
 
 @pytest.fixture(scope="function", autouse=False)
+def mock_setup_basic_nv_qblox_hardware(mock_setup_basic_nv):
+    """
+    Returns a mock setup for a basic 1-qubit NV-center device with qblox hardware
+    config.
+    """
+
+    mock_setup_basic_nv["quantum_device"].hardware_config.set(
+        utils.load_json_example_scheme("qblox_test_mapping_nv_centers.json")
+    )
+
+    yield mock_setup_basic_nv
+
+
+@pytest.fixture(scope="function", autouse=False)
 def device_compile_config_basic_transmon(mock_setup_basic_transmon):
     """
     A config generated from a quantum device with 5 transmon qubits
