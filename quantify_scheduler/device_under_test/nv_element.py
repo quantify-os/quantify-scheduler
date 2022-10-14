@@ -6,7 +6,7 @@ but could be extended for other qubits (eg. carbon qubit).
 """
 from typing import Dict, Any
 
-from qcodes.instrument import InstrumentChannel
+from qcodes.instrument import InstrumentModule
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import (
     ManualParameter,
@@ -22,7 +22,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
 # pylint: disable=too-few-public-methods
-class _Ports(InstrumentChannel):
+class _Ports(InstrumentModule):
     """
     Submodule containing the ports.
     """
@@ -40,7 +40,7 @@ class _Ports(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class _ClockFrequencies(InstrumentChannel):
+class _ClockFrequencies(InstrumentModule):
     """
     Submodule with clock frequencies specifying the transitions to address.
     """
@@ -73,7 +73,7 @@ class _ClockFrequencies(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class _SpectroscopyOperation(InstrumentChannel):
+class _SpectroscopyOperation(InstrumentModule):
     """Submodule with parameters run a spectroscopy pulse in the microwave range."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
