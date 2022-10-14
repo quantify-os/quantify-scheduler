@@ -74,7 +74,8 @@ class _ClockFrequencies(InstrumentModule):
 
 # pylint: disable=too-few-public-methods
 class _SpectroscopyOperation(InstrumentModule):
-    """Submodule with parameters run a spectroscopy pulse in the microwave range."""
+    """Submodule with parameters to convert the SpectroscopyOperation into a microwave
+    pulse with a certain amplitude and duration."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
