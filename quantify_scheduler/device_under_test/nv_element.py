@@ -76,21 +76,23 @@ class _ClockFrequencies(InstrumentModule):
 # pylint: disable=too-few-public-methods
 class _SpectroscopyOperation(InstrumentModule):
     """Submodule with parameters to convert the SpectroscopyOperation into a microwave
-    pulse with a certain amplitude and duration."""
+    pulse with a certain amplitude and duration for spin-state manipulation."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
+            label="Amplitude of spectroscopy pulse",
             instrument=self,
             initial_value=float("nan"),
             unit="W",
         )
-        """Microwave amplitude for spin state manipulation"""
+        """Amplitude of spectroscopy pulse"""
 
         self.duration = ManualParameter(
             name="duration",
+            label="Duration of spectroscopy pulse",
             instrument=self,
             initial_value=15e-6,
             unit="s",
