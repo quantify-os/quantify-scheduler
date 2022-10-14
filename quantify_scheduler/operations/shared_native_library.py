@@ -30,12 +30,12 @@ class SpectroscopyOperation(Operation):
         """
         if data is None:
             data = {
-                "name": f"Microwave spectroscopy pulse {qubit}",
+                "name": f"Spectroscopy operation {qubit}",
                 "gate_info": {
                     "unitary": None,
                     "plot_func": "quantify_scheduler.visualization"
                     ".circuit_diagram.pulse_modulated",
-                    "tex": r"Spectroscopy pulse",
+                    "tex": r"Spectroscopy operation",
                     "qubits": [qubit],
                     "operation_type": "spectroscopy_operation",
                 },
