@@ -393,8 +393,6 @@ def modulate_wave(t: np.ndarray, wave: np.ndarray, freq_mod: float) -> np.ndarra
     return mod_I + 1j * mod_Q
 
 
-# pylint: disable=too-many-locals
-# pylint: disable=invalid-name
 def skewed_hermite(
     t: np.ndarray,
     duration: float,
@@ -445,6 +443,8 @@ def skewed_hermite(
         complex skewed waveform
 
     """
+    # pylint: disable=too-many-locals
+    # pylint: disable=invalid-name
 
     # Hermite factors are taken from paper cited in docstring.
     PI_HERMITE_FACTOR = 0.956
