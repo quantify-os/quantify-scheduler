@@ -6,10 +6,11 @@ from .operation import Operation
 
 
 class SpectroscopyOperation(Operation):
-    """Spectroscopy pulse with a certain frequency.
+    """Spectroscopy operation to find energy between |0> and |1> states.
 
-    The frequency of the spectroscopy pulse is taken from a clock of the device element
-    that is determined during the compilation.
+    Spectroscopy operations can be supported by various qubit types, but not all of
+    them. They are typically translated into a spectroscopy pulse by the quantum
+    device. The frequency is taken from a clock of the device element.
     """
 
     def __init__(
