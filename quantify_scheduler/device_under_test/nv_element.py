@@ -51,14 +51,15 @@ class _ClockFrequencies(InstrumentModule):
 
         self.f01 = ManualParameter(
             name="f01",
-            label="Microwave frequency in resonance with |0> -> |1> transition.",
+            label="Microwave frequency in resonance with transition between 0 and 1.",
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
-        negatively charged diamond NV center from |0> to |1> :cite:t:`DOHERTY20131`.
+        negatively charged diamond NV center from the 0-state to 1-state
+        :cite:t:`DOHERTY20131`.
         """
 
         self.spec = ManualParameter(
