@@ -20,7 +20,6 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
     CompositeSquareEdge,
 )
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 def set_up_mock_transmon_setup() -> Dict:
