@@ -22,7 +22,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
 # pylint: disable=too-few-public-methods
-class Ports(InstrumentChannel):
+class _Ports(InstrumentChannel):
     """
     Submodule containing the ports.
     """
@@ -40,7 +40,7 @@ class Ports(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class ClockFrequencies(InstrumentChannel):
+class _ClockFrequencies(InstrumentChannel):
     """
     Submodule with clock frequencies specifying the transitions to address.
     """
@@ -73,7 +73,7 @@ class ClockFrequencies(InstrumentChannel):
 
 
 # pylint: disable=too-few-public-methods
-class SpectroscopyOperation(InstrumentChannel):
+class _SpectroscopyOperation(InstrumentChannel):
     """Submodule with parameters run a spectroscopy pulse in the microwave range."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -109,10 +109,10 @@ class BasicElectronicNVElement(DeviceElement):
 
         self.add_submodule(
             "spectroscopy_operation",
-            SpectroscopyOperation(self, "spectroscopy_operation"),
+            _SpectroscopyOperation(self, "spectroscopy_operation"),
         )
-        self.add_submodule("ports", Ports(self, "ports"))
-        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
+        self.add_submodule("ports", _Ports(self, "ports"))
+        self.add_submodule("clock_freqs", _ClockFrequencies(self, "clock_freqs"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
