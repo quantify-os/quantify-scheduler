@@ -32,6 +32,7 @@ class _Ports(InstrumentModule):
 
         self.microwave = Parameter(
             name="microwave",
+            label="Name of microwave port",
             instrument=self,
             initial_cache_value=f"{parent.name}:mw",
             set_cmd=False,
