@@ -137,7 +137,7 @@ class _Reset(InstrumentModule):
             unit="V",
             vals=validators.Numbers(min_value=0, max_value=2.5),
         )
-        """Amplitude of spin-pump pulse"""
+        """Amplitude of reset pulse"""
 
         self.duration = ManualParameter(
             name="duration",
@@ -146,7 +146,7 @@ class _Reset(InstrumentModule):
             unit="s",
             vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
         )
-        """Amplitude of spin-pump pulse"""
+        """Duration of reset pulse"""
 
 
 # pylint: disable=too-few-public-methods

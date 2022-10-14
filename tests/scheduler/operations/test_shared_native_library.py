@@ -98,26 +98,12 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     label = "reset pulse"
 
     _ = schedule.add(Reset("qe0"), label=label)
-
-    # Reset is added to the operations.
-    # It has "gate_info", but no "pulse_info" yet.
     reset_str = str(Reset("qe0"))
-    assert reset_str in schedule.operations
-    assert "gate_info" in schedule.operations[reset_str]
-    assert schedule.operations[reset_str]["pulse_info"] == []
-
-    # Operation is added twice to schedulables and has no timing information yet.
-    assert label in schedule.schedulables
-    assert (
-        "abs_time" not in schedule.schedulables[label].data.keys()
-        or schedule.schedulables[label].data["abs_time"] is None
-    )
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    mock_nv_setup = mock_setup_basic_nv_qblox_hardware
-    quantum_device = mock_nv_setup["quantum_device"]
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").reset.duration.get()
 
     dev_cfg = quantum_device.generate_device_config()
