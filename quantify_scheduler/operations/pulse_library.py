@@ -1002,7 +1002,7 @@ class SkewedHermitePulse(Operation):
     """
     Hermite pulse intended for single qubit gates in diamond based systems.
 
-    The waveform is generated using :func:`qutech_diamond_control.operations.waveforms.hermite` .
+    The waveform is generated using :func:`~quantify_scheduler.waveforms.skewed_hermite`.
     """
 
     def __init__(
