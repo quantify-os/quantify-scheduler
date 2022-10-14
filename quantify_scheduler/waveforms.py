@@ -407,8 +407,11 @@ def skewed_hermite(
 ) -> np.ndarray:
     """Generates a skewed hermite pulse for single qubit rotations in NV centers.
 
-    The skew parameter is a first order amplitude correction to the hermite pulse (see
-    :func:`hermite`). It increases the fidelity of the performed gates.
+    A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
+    See H.K.C. Beukers MSc Thesis (2019), Appendix A.2.
+
+    The skew parameter is a first order amplitude correction to the hermite pulse. It
+    increases the fidelity of the performed gates.
     See H.K.C.Beukers MSc Thesis (2019), section 4.2. To get a "standard" hermite
     pulse, use ``skewness=0``.
 
