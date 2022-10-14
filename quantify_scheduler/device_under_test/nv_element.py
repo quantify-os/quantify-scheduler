@@ -105,7 +105,7 @@ class _SpectroscopyOperation(InstrumentModule):
 class _Reset(InstrumentModule):
     """
     Submodule containing parameters to run the spinpump laser with a square pulse
-    to reset the NV.
+    to reset the NV to the $\ket{0}$ state.
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -114,11 +114,11 @@ class _Reset(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=0.1,
+            initial_value=-0.5,
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=validators.Numbers(min_value=-1.5, max_value=0),
         )
-        """Amplitude of charge reset pulse"""
+        """Amplitude of spin-pump pulse"""
 
         self.duration = ManualParameter(
             name="duration",
@@ -127,7 +127,7 @@ class _Reset(InstrumentModule):
             unit="s",
             vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
         )
-        """Duration of the charge set pulse."""
+        """Amplitude of spin-pump pulse"""
 
 
 # pylint: disable=too-few-public-methods
@@ -145,6 +145,7 @@ class BasicElectronicNVElement(DeviceElement):
         )
         self.add_submodule("ports", _Ports(self, "ports"))
         self.add_submodule("clock_freqs", _ClockFrequencies(self, "clock_freqs"))
+        self.add_submodule("reset", _Reset(self, "reset"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
