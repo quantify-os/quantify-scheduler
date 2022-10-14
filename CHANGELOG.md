@@ -2,7 +2,7 @@
 
 ### Merged branches and closed issues
 
-- Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
+- QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 
 ## 0.9.0 (2022-10-06)
