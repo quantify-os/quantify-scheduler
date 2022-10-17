@@ -39,13 +39,14 @@ class _Ports(InstrumentModule):
         )
         """Name of the element's microwave port."""
 
-        self.optical_output = Parameter(
-            name="optical_output",
+        self.optical_in = Parameter(
+            name="optical_input",
             instrument=self,
-            initial_cache_value=f"{parent.name}:opt_out",
+            initial_cache_value=f"{parent.name}:opt_in",
             set_cmd=False,
         )
-        """Name of the element's optical output port."""
+        """From perspective of device element, this port is the input of the optical
+        pulse (laser frequency) to distinguish from the optical output port."""
 
 
 # pylint: disable=too-few-public-methods
@@ -89,7 +90,8 @@ class _ClockFrequencies(InstrumentModule):
             initial_value=15e9,  # float("nan"),
             vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
         )
-        """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, or E_1,2 states"""
+        """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, or
+        E_1,2 states"""
 
 
 # pylint: disable=too-few-public-methods
@@ -190,7 +192,7 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_kwargs={
                         "duration": self.reset.duration(),
                         "amp": self.reset.amplitude(),
-                        "port": self.ports.optical_output(),
+                        "port": self.ports.optical_input(),
                         "clock": f"{self.name}.ge1",
                     },
                 ),
