@@ -458,7 +458,12 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
             or acq_protocol["bin_mode"] != bin_mode
             or acq_protocol["acq_return_type"] != acq_return_type
         ):
-            raise RuntimeError("Acquisition protocols are not of the same kind. ")
+            raise RuntimeError(
+                "Acquisition protocols or bin mode or acquisition return type are not"
+                " of the same kind. "
+                f"Expected protocol: {acquisition_protocols[0]}. "
+                f"Offending: {i}, {acq_protocol} \n"
+            )
 
         # add the individual channel
         if acq_protocol["acq_channel"] not in acq_indices.keys():

@@ -446,8 +446,8 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    meas0 = Measure("q0", acq_protocol="Trace")
-    meas1 = Measure("q1")
+    meas0 = Measure("q0", acq_protocol="SSBIntegrationComplex")
+    meas1 = Measure("q1", acq_protocol="Trace")
     schedule.add(meas0)
     schedule.add(meas1)
     readout_clock0 = ClockResource(name="q0.ro", freq=50e6)
@@ -476,8 +476,8 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
 
     # Assert intended behaviour
     assert len(data) == 2
-    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0].size == 5000
-    assert math.isnan(data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0][0])
+    assert data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0].size == 3000
+    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
 
     instr_coordinator.remove_component("ic_cluster0")
 
