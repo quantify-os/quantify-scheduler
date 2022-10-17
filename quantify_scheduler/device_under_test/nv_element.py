@@ -40,13 +40,13 @@ class _Ports(InstrumentModule):
         """Name of the element's microwave port."""
 
         self.optical_in = Parameter(
-            name="optical_input",
+            name="optical_control",
             instrument=self,
-            initial_cache_value=f"{parent.name}:opt_in",
+            initial_cache_value=f"{parent.name}:opt_cont",
             set_cmd=False,
         )
-        """From perspective of device element, this port is the input of the optical
-        pulse (laser frequency) to distinguish from the optical output port."""
+        """From perspective of device element, this port is used to control the optical
+        pulses compared to the 'optical readout port'. """
 
 
 # pylint: disable=too-few-public-methods
@@ -192,7 +192,7 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_kwargs={
                         "duration": self.reset.duration(),
                         "amp": self.reset.amplitude(),
-                        "port": self.ports.optical_input(),
+                        "port": self.ports.optical_control(),
                         "clock": f"{self.name}.ge1",
                     },
                 ),

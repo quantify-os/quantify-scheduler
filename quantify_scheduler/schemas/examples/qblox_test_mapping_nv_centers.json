@@ -26,7 +26,7 @@
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {
-                        "port": "qe0:opt_in",
+                        "port": "qe0:opt_cont",
                         "clock": "qe0.ge1",
                         "interm_freq": 200e6,
                         "instruction_generated_pulses_enabled": true
