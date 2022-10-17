@@ -89,8 +89,7 @@ class _ClockFrequencies(InstrumentModule):
             initial_value=15e9,  # float("nan"),
             vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
         )
-        """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, 
-        or E_1,2 states"""
+        """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, or E_1,2 states"""
 
 
 # pylint: disable=too-few-public-methods
