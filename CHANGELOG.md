@@ -1,9 +1,13 @@
 # Changelog
 
+## Unreleased
+
 ### Breaking changes
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
 
 ### Merged branches and closed issues
+
+- NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 
 ## 0.9.0 (2022-10-06)
 
