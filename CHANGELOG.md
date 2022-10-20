@@ -23,7 +23,7 @@
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
 - JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
 - JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
-
+- QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 

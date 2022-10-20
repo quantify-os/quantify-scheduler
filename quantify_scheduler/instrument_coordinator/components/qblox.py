@@ -907,6 +907,10 @@ class _QRMAcquisitionManager:
 
         Parameters
         ----------
+        acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_duration
+            The duration of the acquisition, used to truncate the data.
         acq_channel
             The acq_channel to get the scope mode acquisition for.
 
@@ -931,7 +935,10 @@ class _QRMAcquisitionManager:
         return scope_data_i, scope_data_q
 
     def _get_integration_data(
-        self, acquisitions: dict, acq_channel: int = 0
+        self,
+        acquisitions: dict,
+        acq_duration: int = constants.MAX_SAMPLE_SIZE_ACQUISITIONS,
+        acq_channel: int = 0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
@@ -940,6 +947,8 @@ class _QRMAcquisitionManager:
         ----------
         acquisitions
             The acquisitions dict as returned by the sequencer.
+        acq_duration
+            Not used in this function.
         acq_channel
             The `acq_channel` from which to get the data.
 
@@ -973,6 +982,8 @@ class _QRMAcquisitionManager:
         ----------
         acquisitions
             The acquisitions dict as returned by the sequencer.
+        acq_duration
+            The duration of the acquisition, used to truncate the data.
         acq_channel
             The `acq_channel` from which to get the data.
 
