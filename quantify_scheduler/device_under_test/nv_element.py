@@ -322,6 +322,7 @@ class BasicElectronicNVElement(DeviceElement):
             "clocks": {
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.spec": self.clock_freqs.spec(),
+                f"{self.name}.ge0": self.clock_freqs.ge0(),
                 f"{self.name}.ge1": self.clock_freqs.ge1(),
             },
             "edges": {},
