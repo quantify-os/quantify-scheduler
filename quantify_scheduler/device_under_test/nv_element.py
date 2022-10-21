@@ -39,14 +39,13 @@ class _Ports(InstrumentModule):
         )
         """Name of the element's microwave port."""
 
-        self.optical_in = Parameter(
+        self.optical_control = Parameter(
             name="optical_control",
             instrument=self,
-            initial_cache_value=f"{parent.name}:opt_cont",
+            initial_cache_value=f"{parent.name}:optical_control",
             set_cmd=False,
         )
-        """From perspective of device element, this port is used to control the optical
-        pulses compared to the 'optical readout port'. """
+        """Port to control the device elemnt with optical pulses."""
 
 
 # pylint: disable=too-few-public-methods
@@ -122,7 +121,7 @@ class _SpectroscopyOperation(InstrumentModule):
         """Duration of the MW pulse."""
 
 
-class _Reset(InstrumentModule):
+class ResetSpinpump(InstrumentModule):
     """
     Submodule containing parameters to run the spinpump laser with a square pulse
     to reset the NV to the $\ket{0}$ state.
@@ -165,7 +164,7 @@ class BasicElectronicNVElement(DeviceElement):
         )
         self.add_submodule("ports", _Ports(self, "ports"))
         self.add_submodule("clock_freqs", _ClockFrequencies(self, "clock_freqs"))
-        self.add_submodule("reset", _Reset(self, "reset"))
+        self.add_submodule("reset", ResetSpinpump(self, "reset"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
