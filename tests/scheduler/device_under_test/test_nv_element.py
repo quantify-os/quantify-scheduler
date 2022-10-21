@@ -46,9 +46,9 @@ def test_generate_config(electronic_q0: BasicElectronicNVElement):
     dev_cfg = electronic_q0.generate_device_config()
 
     # assert values in right place in config.
-    cfg_spec_pulse = dev_cfg.elements["qe0"]["spectroscopy_operation"]
-    assert cfg_spec_pulse.factory_kwargs["duration"] == 10e-6
-    assert cfg_spec_pulse.factory_kwargs["amplitude"] == 1.0
+    cfg_spec = dev_cfg.elements["qe0"]["spectroscopy_operation"]
+    assert cfg_spec.factory_kwargs["duration"] == 10e-6
+    assert cfg_spec.factory_kwargs["amplitude"] == 1.0
     cfg_reset = dev_cfg.elements["qe0"]["reset"]
     assert cfg_reset.factory_kwargs["duration"] == 10e-6
     assert cfg_reset.factory_kwargs["amp"] == 1.0
