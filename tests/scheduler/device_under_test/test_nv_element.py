@@ -49,9 +49,9 @@ def test_generate_config(electronic_q0: BasicElectronicNVElement):
     cfg_spec_pulse = dev_cfg.elements["qe0"]["spectroscopy_operation"]
     assert cfg_spec_pulse.factory_kwargs["duration"] == 10e-6
     assert cfg_spec_pulse.factory_kwargs["amplitude"] == 1.0
-    cfg_spec_pulse = dev_cfg.elements["qe0"]["reset"]
-    assert cfg_spec_pulse.factory_kwargs["duration"] == 10e-6
-    assert cfg_spec_pulse.factory_kwargs["amp"] == 1.0
+    cfg_reset = dev_cfg.elements["qe0"]["reset"]
+    assert cfg_reset.factory_kwargs["duration"] == 10e-6
+    assert cfg_reset.factory_kwargs["amp"] == 1.0
 
 
 def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
