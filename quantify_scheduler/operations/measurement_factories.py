@@ -117,6 +117,7 @@ def optical_measurement(
     bin_mode: Union[BinMode, None] = BinMode.APPEND,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
 ) -> Operation:
+    # pylint: disable=too-many-locals
     """Generator function for a standard optical measurement.
 
     An optical measurement generates a square pulse in the optical range and uses the

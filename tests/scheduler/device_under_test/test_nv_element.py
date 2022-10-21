@@ -35,7 +35,7 @@ def test_qubit_name(electronic_q0: BasicElectronicNVElement):
 
 
 def test_generate_config_spectroscopy(electronic_q0: BasicElectronicNVElement):
-    """Setting values updates the correct values in the configuration."""
+    """Setting values updates the correct values in the config."""
     # Set values for spectroscopy
     electronic_q0.spectroscopy_operation.amplitude(1.0)
     electronic_q0.spectroscopy_operation.duration(10e-6)
@@ -50,6 +50,7 @@ def test_generate_config_spectroscopy(electronic_q0: BasicElectronicNVElement):
 
 
 def test_generate_config_reset(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
     # Set values for reset
     electronic_q0.reset.amplitude(1.0)
     electronic_q0.reset.duration(10e-6)
@@ -64,6 +65,7 @@ def test_generate_config_reset(electronic_q0: BasicElectronicNVElement):
 
 
 def test_generate_config_measure(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
     # Set values for measure
     electronic_q0.measure.pulse_amplitude(1.0)
     electronic_q0.measure.pulse_duration(300e-6)

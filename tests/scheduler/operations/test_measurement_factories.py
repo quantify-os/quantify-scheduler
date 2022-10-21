@@ -5,9 +5,15 @@ import numpy as np
 
 from quantify_scheduler.operations.measurement_factories import optical_measurement
 
+# pylint: disable=redefined-outer-name
+
 
 @pytest.fixture
 def default_kwargs_optical_measurement():
+    """Default keyword arguments for optical_measurement function.
+
+    Missing are ``'acq_delay'`` and ``'acq_protocol'``.
+    """
     return {
         "pulse_amplitude": 0.23,
         "pulse_duration": 100e-6,
@@ -23,6 +29,8 @@ def default_kwargs_optical_measurement():
 
 
 def assert_square_pulse_equal(pulse_info: Dict, optical_meas_args: Dict):
+    """Assert that info of square pulse is equal to arguments used as input to
+    optical_meas_args."""
     assert isinstance(pulse_info, dict)
     assert pulse_info["amp"] == optical_meas_args["pulse_amplitude"]
     assert pulse_info["duration"] == optical_meas_args["pulse_duration"]
@@ -39,25 +47,26 @@ def assert_square_pulse_equal(pulse_info: Dict, optical_meas_args: Dict):
 def test_optical_measurement_trigger_count(
     default_kwargs_optical_measurement, acq_delay
 ):
+    """optical_measurement factory works well with TriggerCount protocol"""
     # Arrange
     kwargs = default_kwargs_optical_measurement
     kwargs["acq_delay"] = acq_delay
     kwargs["acq_protocol"] = "TriggerCount"
 
     # Act
-    op = optical_measurement(**kwargs)
+    operation = optical_measurement(**kwargs)
 
     # Assert
-    assert op.valid_acquisition
-    assert op.valid_pulse
-    assert len(op.data["pulse_info"]) == 1
-    assert len(op.data["acquisition_info"]) == 1
+    assert operation.valid_acquisition
+    assert operation.valid_pulse
+    assert len(operation.data["pulse_info"]) == 1
+    assert len(operation.data["acquisition_info"]) == 1
 
-    square_pulse_info = op.data["pulse_info"][0]
+    square_pulse_info = operation.data["pulse_info"][0]
     assert_square_pulse_equal(square_pulse_info, kwargs)
 
-    assert isinstance(op.data["acquisition_info"][0], dict)
-    trigger_count_info = op.data["acquisition_info"][0]
+    assert isinstance(operation.data["acquisition_info"][0], dict)
+    trigger_count_info = operation.data["acquisition_info"][0]
     assert trigger_count_info["duration"] == kwargs["acq_duration"]
     assert trigger_count_info["port"] == kwargs["acq_port"]
     assert trigger_count_info["clock"] == kwargs["acq_clock"]
@@ -73,25 +82,26 @@ def test_optical_measurement_trigger_count(
 
 @pytest.mark.parametrize("acq_delay", [-50e-6, 0, 52e-5])
 def test_optical_measurement_trace(default_kwargs_optical_measurement, acq_delay):
+    """optical_measurement factory works well with Trace protocol"""
     # Arrange
     kwargs = default_kwargs_optical_measurement
     kwargs["acq_delay"] = acq_delay
     kwargs["acq_protocol"] = "Trace"
 
     # Act
-    op = optical_measurement(**kwargs)
+    operation = optical_measurement(**kwargs)
 
     # Assert
-    assert op.valid_acquisition
-    assert op.valid_pulse
-    assert len(op.data["pulse_info"]) == 1
-    assert len(op.data["acquisition_info"]) == 1
+    assert operation.valid_acquisition
+    assert operation.valid_pulse
+    assert len(operation.data["pulse_info"]) == 1
+    assert len(operation.data["acquisition_info"]) == 1
 
-    square_pulse_info = op.data["pulse_info"][0]
+    square_pulse_info = operation.data["pulse_info"][0]
     assert_square_pulse_equal(square_pulse_info, kwargs)
 
-    assert isinstance(op.data["acquisition_info"][0], dict)
-    trace_info = op.data["acquisition_info"][0]
+    assert isinstance(operation.data["acquisition_info"][0], dict)
+    trace_info = operation.data["acquisition_info"][0]
     assert trace_info["duration"] == kwargs["acq_duration"]
     assert trace_info["port"] == kwargs["acq_port"]
     assert trace_info["clock"] == kwargs["acq_clock"]
