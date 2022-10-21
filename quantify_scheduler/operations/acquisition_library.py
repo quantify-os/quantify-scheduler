@@ -529,3 +529,75 @@ class NumericalWeightedIntegrationComplex(
 
     def __repr__(self) -> str:
         return str(self)
+
+
+class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
+    """Trigger counting acquisition protocol returning an integer."""
+
+    def __init__(
+        self,
+        port: str,
+        clock: str,
+        duration: float,
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        t0: float = 0,
+    ) -> None:
+        """
+        Creates a new instance of TriggerCount, trigger counting
+        acquisition protocol, returning an integer.
+
+        The trigger acquisition mode is used to measure how
+        many times the trigger level is surpassed. The level is set
+        in the hardware configuration.
+
+        Parameters
+        ----------
+        port
+            The acquisition port.
+        clock
+            The clock used to demodulate the acquisition.
+        duration
+            The acquisition duration in seconds.
+        acq_channel
+            The data channel in which the acquisition is stored, by default 0.
+            Describes the "where" information of the measurement, which typically
+            corresponds to a qubit idx.
+        acq_index
+            The data register in which the acquisition is stored, by default 0.
+            Describes the "when" information of the measurement, used to label or
+            tag individual measurements in a large circuit. Typically corresponds
+            to the setpoints of a schedule (e.g., tau in a T1 experiment).
+        bin_mode
+            Describes what is done when data is written to a register that already
+            contains a value. Options are "append" which appends the result to the
+            list or "average" which stores the count value of the
+            new result and the old register value, by default BinMode.APPEND
+        t0
+            The acquisition start time in seconds, by default 0
+        """
+
+        data = {
+            "name": "TriggerCount",
+            "acquisition_info": [
+                {
+                    "waveforms": [],
+                    "t0": t0,
+                    "clock": clock,
+                    "port": port,
+                    "duration": duration,
+                    "acq_channel": acq_channel,
+                    "acq_index": acq_index,
+                    "bin_mode": bin_mode,
+                    "acq_return_type": int,
+                    "protocol": "trigger_count",
+                }
+            ],
+        }
+        super().__init__(name=data["name"], data=data)
+        self._update()
+
+    def __str__(self) -> str:
+        acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
