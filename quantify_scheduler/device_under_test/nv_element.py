@@ -22,7 +22,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
 # pylint: disable=too-few-public-methods
-class _Ports(InstrumentModule):
+class Ports(InstrumentModule):
     """
     Submodule containing the ports.
     """
@@ -41,7 +41,7 @@ class _Ports(InstrumentModule):
 
 
 # pylint: disable=too-few-public-methods
-class _ClockFrequencies(InstrumentModule):
+class ClockFrequencies(InstrumentModule):
     """
     Submodule with clock frequencies specifying the transitions to address.
     """
@@ -75,7 +75,7 @@ class _ClockFrequencies(InstrumentModule):
 
 
 # pylint: disable=too-few-public-methods
-class _SpectroscopyOperation(InstrumentModule):
+class SpectroscopyOperationHermiteMW(InstrumentModule):
     """Submodule with parameters to convert the SpectroscopyOperation into a microwave
     pulse with a certain amplitude and duration for spin-state manipulation."""
 
@@ -112,10 +112,10 @@ class BasicElectronicNVElement(DeviceElement):
 
         self.add_submodule(
             "spectroscopy_operation",
-            _SpectroscopyOperation(self, "spectroscopy_operation"),
+            SpectroscopyOperationHermiteMW(self, "spectroscopy_operation"),
         )
-        self.add_submodule("ports", _Ports(self, "ports"))
-        self.add_submodule("clock_freqs", _ClockFrequencies(self, "clock_freqs"))
+        self.add_submodule("ports", Ports(self, "ports"))
+        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
