@@ -933,7 +933,8 @@ class _QRMAcquisitionManager:
         scope_data_i = np.array(scope_data["path0"]["data"][:acq_duration])
         scope_data_q = np.array(scope_data["path1"]["data"][:acq_duration])
         return scope_data_i, scope_data_q
-
+        
+    # pylint: disable=unused-argument
     def _get_integration_data(
         self,
         acquisitions: dict,
