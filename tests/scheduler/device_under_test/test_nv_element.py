@@ -39,6 +39,9 @@ def test_generate_config_spectroscopy(electronic_q0: BasicElectronicNVElement):
     # Set values for spectroscopy
     electronic_q0.spectroscopy_operation.amplitude(1.0)
     electronic_q0.spectroscopy_operation.duration(10e-6)
+    # set some values for reset
+    electronic_q0.reset.amplitude(1.0)
+    electronic_q0.reset.duration(10e-6)
 
     # Get device config
     dev_cfg = electronic_q0.generate_device_config()

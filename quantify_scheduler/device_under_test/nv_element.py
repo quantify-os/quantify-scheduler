@@ -41,6 +41,7 @@ class Ports(InstrumentModule):
 
         self.optical_control = Parameter(
             name="optical_control",
+            label="Name of optical control port",
             instrument=self,
             initial_cache_value=f"{parent.name}:optical_control",
             set_cmd=False,
