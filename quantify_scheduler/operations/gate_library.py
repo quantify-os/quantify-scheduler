@@ -604,7 +604,14 @@ class Measure(Operation):
             # measurements in an experiment contain the same order of qubits (#262)
             if acq_channel is None:
                 acq_channel = list(i for i in range(len(qubits)))
-
+            else:
+                warnings.warn(
+                    "`acq_channel` keyword argument does not have any effect if specified here"
+                    "and should be set in the device layer. See `BasicTransmonElement.measure.acq_channel`"
+                    "for more info on how to set it. This keyword argument will be removed in "
+                    "quantify-scheduler >= 0.12.0.",
+                    DeprecationWarning,
+                )
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
             super().__init__(f"Measure {', '.join(qubits)}")
