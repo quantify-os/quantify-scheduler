@@ -9,6 +9,7 @@
 
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
+- NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 
 ## 0.9.0 (2022-10-06)
 
