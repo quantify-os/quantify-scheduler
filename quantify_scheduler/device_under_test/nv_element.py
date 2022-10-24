@@ -39,6 +39,15 @@ class Ports(InstrumentModule):
         )
         """Name of the element's microwave port."""
 
+        self.optical_control = Parameter(
+            name="optical_control",
+            label="Name of optical control port",
+            instrument=self,
+            initial_cache_value=f"{parent.name}:optical_control",
+            set_cmd=False,
+        )
+        """Port to control the device element with optical pulses."""
+
 
 # pylint: disable=too-few-public-methods
 class ClockFrequencies(InstrumentModule):
@@ -73,6 +82,17 @@ class ClockFrequencies(InstrumentModule):
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
 
+        self.ge1 = ManualParameter(
+            name="ge1",
+            label="f_{ge1}",
+            unit="Hz",
+            instrument=self,
+            initial_value=15e9,  # float("nan"),
+            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+        )
+        """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, or
+        E_1,2 states"""
+
 
 # pylint: disable=too-few-public-methods
 class SpectroscopyOperationHermiteMW(InstrumentModule):
@@ -102,6 +122,35 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
         """Duration of the MW pulse."""
 
 
+class ResetSpinpump(InstrumentModule):
+    """
+    Submodule containing parameters to run the spinpump laser with a square pulse
+    to reset the NV to the $\ket{0}$ state.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.amplitude = ManualParameter(
+            name="amplitude",
+            instrument=self,
+            initial_value=0.5,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=2.5),
+        )
+        """Amplitude of reset pulse"""
+
+        self.duration = ManualParameter(
+            name="duration",
+            instrument=self,
+            initial_value=50e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
+        )
+        """Duration of reset pulse"""
+
+
+# pylint: disable=too-few-public-methods
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
@@ -116,6 +165,7 @@ class BasicElectronicNVElement(DeviceElement):
         )
         self.add_submodule("ports", Ports(self, "ports"))
         self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
+        self.add_submodule("reset", ResetSpinpump(self, "reset"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
@@ -134,6 +184,16 @@ class BasicElectronicNVElement(DeviceElement):
                         "amplitude": self.spectroscopy_operation.amplitude(),
                         "port": self.ports.microwave(),
                         "clock": f"{self.name}.spec",
+                    },
+                ),
+                "reset": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_library.SquarePulse",
+                    factory_kwargs={
+                        "duration": self.reset.duration(),
+                        "amp": self.reset.amplitude(),
+                        "port": self.ports.optical_control(),
+                        "clock": f"{self.name}.ge1",
                     },
                 ),
             }
@@ -158,6 +218,7 @@ class BasicElectronicNVElement(DeviceElement):
             "clocks": {
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.spec": self.clock_freqs.spec(),
+                f"{self.name}.ge1": self.clock_freqs.ge1(),
             },
             "edges": {},
         }

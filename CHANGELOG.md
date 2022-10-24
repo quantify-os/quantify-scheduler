@@ -8,6 +8,7 @@
 ### Merged branches and closed issues
 
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
+- NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 
 ## 0.9.0 (2022-10-06)
 
