@@ -5,12 +5,16 @@
 Code to set up a mock setup for use in tutorials and testing.
 """
 
-from typing import Dict
+from typing import Any, Dict
+
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import (
     TransmonElement,
     BasicTransmonElement,
+)
+from quantify_scheduler.device_under_test.nv_element import (
+    BasicElectronicNVElement,
 )
 from quantify_scheduler.device_under_test.composite_square_edge import (
     CompositeSquareEdge,
@@ -72,10 +76,10 @@ def set_up_mock_transmon_setup() -> Dict:
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
-    # rationale of the dict format is that this function is historically used as part
-    # of a fixture and by providing this dict, a cleanup instruments function can
-    # iterate over these keys to close all individual instruments and avoid
-    # stateful behavior in the tests.
+    # Rationale of the dict format is that all instruments can be cleaned up by
+    # iterating over the values and calling close. It also avoids that the instruments
+    # get garbage-collected while their name is still recorded and used to refer to the
+    # instruments.
     return {
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,
@@ -139,3 +143,56 @@ def set_standard_params_transmon(mock_setup):
     q4.clock_freqs.f12(5.41e9)
     q4.clock_freqs.readout(9.1e9)
     q4.measure.acq_delay(100e-9)
+
+
+def set_up_basic_mock_nv_setup() -> Dict:
+    """Sets up a system containing 1 electronic qubit in an NV center.
+
+    After usage, close all instruments.
+
+    Returns
+    -------
+        All instruments created. Containing a "quantum_device", electronic qubit "qe0",
+        "meas_ctrl" and "instrument_coordinator".
+    """
+
+    meas_ctrl = MeasurementControl("meas_ctrl")
+    instrument_coordinator = InstrumentCoordinator(
+        name="instrument_coordinator", add_default_generic_icc=False
+    )
+
+    qe0 = BasicElectronicNVElement("qe0")
+    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device.add_element(qe0)
+    quantum_device.instr_measurement_control(meas_ctrl.name)
+    quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
+
+    # Rationale of the dict format is that all instruments can be cleaned up by
+    # iterating over the values and calling close. It also avoids that the instruments
+    # get garbage-collected while their name is still recorded and used to refer to the
+    # instruments.
+    return {
+        "meas_ctrl": meas_ctrl,
+        "instrument_coordinator": instrument_coordinator,
+        "qe0": qe0,
+        "quantum_device": quantum_device,
+    }
+
+
+def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
+    """
+    Sets somewhat standard parameters to the mock setup generated above.
+    These parameters serve so that the quantum-device is capable of generating
+    a configuration that can be used for compiling schedules.
+
+    In normal use, unknown parameters are set as 'nan' values, forcing the user to
+    set these. However for testing purposes it can be useful to set some semi-random
+    values. The values here are chosen to reflect typical values as used in practical
+    experiments.
+    """
+
+    quantum_device = mock_nv_device["quantum_device"]
+    qe0 = quantum_device.get_element("qe0")
+    qe0.spectroscopy_operation.amplitude.set(0.1)
+    qe0.clock_freqs.f01.set(3.592e9)
+    qe0.clock_freqs.spec.set(2.2e9)

@@ -156,6 +156,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             acquisition_library,
             gate_library,
             pulse_library,
+            shared_native_library,
         )
 
         self._modules: List[ModuleType] = [
@@ -164,6 +165,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             gate_library,
             pulse_library,
             acquisition_library,
+            shared_native_library,
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
