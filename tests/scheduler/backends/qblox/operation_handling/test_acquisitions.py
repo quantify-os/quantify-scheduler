@@ -9,6 +9,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for acquisitions module."""
+import math
 import pprint
 from typing import Dict, Any
 
@@ -17,21 +18,23 @@ import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
-from quantify_scheduler import waveforms
+from quantify_scheduler import waveforms, Schedule
+from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 
 from quantify_scheduler.enums import BinMode
-
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
+    AcquisitionIndexing,
 )
+from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
 
 from tests.fixtures.mock_setup import close_instruments
@@ -369,18 +372,17 @@ def test_trace_acquisition_measurement_control(
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
+    acq_duration = 5e-6  # retrieve 5000 samples
     q2 = mock_setup_basic_transmon["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(7404000000.0)
+    q2.measure.integration_time(acq_duration)
 
     sample_param = ManualParameter("sample", label="Sample time", unit="s")
     sample_param.batched = True
 
-    sample_size = 16384  # Trace acquisition will always return 16384 samples
     sampling_rate = constants.SAMPLING_RATE
-    sample_times = np.arange(
-        start=0, stop=sample_size / sampling_rate, step=1 / sampling_rate
-    )
+    sample_times = np.arange(start=0, stop=acq_duration, step=1 / sampling_rate)
 
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
@@ -405,10 +407,79 @@ def test_trace_acquisition_measurement_control(
         except:
             pprint.pprint(sched_gettable.compiled_schedule.compiled_instructions)
             raise
-
-    assert dataset.sizes == {"dim_0": sample_size}
+    assert dataset.sizes == {"dim_0": acq_duration * sampling_rate}
 
     instr_coordinator.remove_component(ic_cluster0.name)
+
+
+def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup_basic_transmon["q0"]
+    q1 = mock_setup_basic_transmon["q1"]
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    meas0 = Measure("q0", acq_protocol="SSBIntegrationComplex")
+    meas1 = Measure("q1", acq_protocol="Trace")
+    schedule.add(meas0)
+    schedule.add(meas1)
+    readout_clock0 = ClockResource(name="q0.ro", freq=50e6)
+    readout_clock1 = ClockResource(name="q1.ro", freq=50e6)
+    schedule.add_resource(readout_clock0)
+    schedule.add_resource(readout_clock1)
+
+    # Change acq delay, duration and channel
+    q0.measure.acq_delay(1e-6)
+    q1.measure.acq_delay(1e-6)
+    q1.measure.acq_channel(1)
+    q0.measure.integration_time(5e-6)
+    q1.measure.integration_time(3e-6)
+
+    # Generate compiled schedule
+    compiled_sched = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert len(data) == 2
+    assert data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0].size == 3000
+    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
+
+    instr_coordinator.remove_component("ic_cluster0")
 
 
 @pytest.mark.parametrize(
