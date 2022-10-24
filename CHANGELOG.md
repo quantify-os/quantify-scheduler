@@ -44,7 +44,7 @@
 - JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
 - JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
 - QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
-- Compilation: Added Deprecation Warning for `acq_channel` Keyword in Measure (!491)
+- Gate Library - Added Deprecation Warning for `acq_channel` Keyword in Measure (!491)
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
