@@ -4,16 +4,19 @@
 # pylint: disable=eval-used
 from unittest import TestCase
 
+import json
 import pytest
 
 import numpy as np
 from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     ShiftClockPhase,
     RampPulse,
+    SkewedHermitePulse,
     SoftSquarePulse,
     SquarePulse,
     create_dc_compensation_pulse,
@@ -135,6 +138,14 @@ def test_operation_duration_composite_pulse() -> None:
             clock="cl:01",
             port="p.01",
         ),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test_pulse_is_valid(operation: Operation) -> None:
@@ -200,10 +211,23 @@ def test_decompose_long_square_pulse() -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test__repr__(operation: Operation) -> None:
-    assert eval(repr(operation)) == operation
+    # Arrange
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    assert obj == operation
 
 
 @pytest.mark.parametrize(
@@ -218,6 +242,14 @@ def test__repr__(operation: Operation) -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test__str__(operation: Operation) -> None:
@@ -236,14 +268,22 @@ def test__str__(operation: Operation) -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test_deserialize(operation: Operation) -> None:
     # Arrange
-    operation_repr: str = repr(operation)
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
     # Act
-    obj = eval(operation_repr)
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
 
     # Assert
     TestCase().assertDictEqual(obj.data, operation.data)
@@ -261,11 +301,23 @@ def test_deserialize(operation: Operation) -> None:
             np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
         ),
         DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
+        SkewedHermitePulse(
+            duration=2e-6,
+            amplitude=0.05,
+            skewness=-0.2,
+            phase=90.0,
+            port="qe0.mw",
+            clock="qe0.spec",
+        ),
     ],
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
     # Arrange
-    obj = eval(repr(operation))
+    # Arrange
+    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+    # Act
+    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
     assert obj == operation
 
     # Act

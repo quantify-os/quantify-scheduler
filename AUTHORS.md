@@ -8,6 +8,7 @@
 - Christian Dickel \<<mailto:christiandickel8@gmail.com>>
 - Damaz de Jong \<<mailto:ddejong@qblox.com>>
 - Damien Crielaard \<<mailto:dcrielaard@qblox.com>>
+- David Vos \<<mailto:dvos@qblox.com>>
 - Diogo Valada \<<mailto:dvalada@qblox.com>>
 - Edgar Reehuis \<<mailto:ereehuis@qblox.com>>
 - Gabor Oszkar Denes \<<mailto:gdenes@qblox.com>>

@@ -5,6 +5,16 @@
 from enum import Enum, unique
 
 
+class StrEnum(Enum):
+    """
+    This class functions to include explicit string serialization without adding `str`
+    as a base class.
+    """
+
+    def __str__(self):
+        return self.value
+
+
 @unique
 class SignalModeType(str, Enum):
 
@@ -55,7 +65,7 @@ class ModulationModeType(str, Enum):
 
 
 @unique
-class BinMode(str, Enum):
+class BinMode(StrEnum):
 
     """
     The acquisition protocol bin mode enum type.

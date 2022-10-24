@@ -6,7 +6,7 @@ import os
 import shutil
 import pathlib
 
-from typing import List
+from typing import Any, Dict, List, Union
 
 import pytest
 from qcodes import Instrument
@@ -14,6 +14,8 @@ from qcodes import Instrument
 from quantify_core.data.handling import get_datadir, set_datadir
 
 from quantify_scheduler.device_under_test.mock_setup import (
+    set_standard_params_basic_nv,
+    set_up_basic_mock_nv_setup,
     set_up_mock_transmon_setup,
     set_standard_params_transmon,
 )
@@ -27,8 +29,14 @@ QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
-def close_instruments(instrument_names: List[str]):
-    """Close all instruments in the list of names supplied."""
+def close_instruments(instrument_names: Union[List[str], Dict[str, Any]]):
+    """Close all instruments in the list of names supplied.
+
+    Parameters
+    ----------
+    instrument_names
+        List of instrument names or dict, where keys correspond to instrument names.
+    """
     for name in instrument_names:
         try:
             Instrument.find_instrument(name).close()
@@ -79,10 +87,10 @@ def mock_setup_basic_transmon(tmp_test_data_dir):
         "q2": mock_setup["q2"],
         "q3": mock_setup["q3"],
         "q4": mock_setup["q4"],
-        "q0-q2": mock_setup["q0-q2"],
-        "q1-q2": mock_setup["q1-q2"],
-        "q2-q3": mock_setup["q2-q3"],
-        "q2-q4": mock_setup["q2-q4"],
+        "q0_q2": mock_setup["q0_q2"],
+        "q1_q2": mock_setup["q1_q2"],
+        "q2_q3": mock_setup["q2_q3"],
+        "q2_q4": mock_setup["q2_q4"],
         "quantum_device": mock_setup["quantum_device"],
     }
 
@@ -91,8 +99,34 @@ def mock_setup_basic_transmon(tmp_test_data_dir):
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
     # N.B. the keys need to correspond to the names of the instruments otherwise
-    # they do not close correctly. Watch out with edges (e.g., q0-q2)
+    # they do not close correctly. Watch out with edges (e.g., q0_q2)
     close_instruments(mock_instruments)
+
+
+@pytest.fixture(scope="function", autouse=False)
+def mock_setup_basic_nv(tmp_test_data_dir):
+    """
+    Returns a mock setup for a basic 1-qubit NV-center device.
+    """
+    set_datadir(tmp_test_data_dir)
+    mock_setup = set_up_basic_mock_nv_setup()
+    set_standard_params_basic_nv(mock_setup)
+    yield mock_setup
+    close_instruments(mock_setup)
+
+
+@pytest.fixture(scope="function", autouse=False)
+def mock_setup_basic_nv_qblox_hardware(mock_setup_basic_nv):
+    """
+    Returns a mock setup for a basic 1-qubit NV-center device with qblox hardware
+    config.
+    """
+
+    mock_setup_basic_nv["quantum_device"].hardware_config.set(
+        utils.load_json_example_scheme("qblox_test_mapping_nv_centers.json")
+    )
+
+    yield mock_setup_basic_nv
 
 
 @pytest.fixture(scope="function", autouse=False)

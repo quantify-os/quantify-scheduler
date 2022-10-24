@@ -3,18 +3,18 @@
 """Module containing quantify JSON utilities."""
 from __future__ import annotations
 
-import ast
 import functools
 import json
 import pathlib
-import re
 import sys
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Type, Union
 
 import fastjsonschema
+import numpy as np
 
 from quantify_scheduler.helpers import inspect as inspect_helpers
+from quantify_scheduler import enums
 
 current_python_version = sys.version_info
 
@@ -152,19 +152,40 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             Schedulable,
         )
         from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
+            operation,
             acquisition_library,
             gate_library,
             pulse_library,
+            shared_native_library,
         )
 
         self._modules: List[ModuleType] = [
+            enums,
+            operation,
             gate_library,
             pulse_library,
             acquisition_library,
+            shared_native_library,
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
         self.classes.update({c.__name__: c for c in [AcquisitionMetadata, Schedulable]})
+        self.classes.update(
+            {
+                t.__name__: t
+                for t in [
+                    complex,
+                    float,
+                    int,
+                    bool,
+                    str,
+                    np.ndarray,
+                    np.complex128,
+                    np.int32,
+                    np.int64,
+                ]
+            }
+        )
 
     def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -185,59 +206,16 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         # `__setstate__`.
         if "deserialization_type" in obj:
             class_type: Type = self.classes[obj["deserialization_type"]]
+            if "mode" in obj and obj["mode"] == "__init__":
+                if class_type == np.ndarray:
+                    return np.array(obj["data"])
+                return class_type(obj["data"])
+            if "mode" in obj and obj["mode"] == "type":
+                return class_type
             new_obj = class_type.__new__(class_type)
             new_obj.__setstate__(obj)
             return new_obj
-
-        # Otherwise, check if serialization happened using `repr` and deserialize
-        # accordingly.
-        for key in obj:
-            value = obj[key]
-            if isinstance(value, str):
-                # Check if the string has a signature of a constructor
-                # example: Reset('q0', data={...})
-                if not re.match(r"^(\w+)\(.*\)$", value):
-                    return obj
-                obj[key] = self.decode_quantify_type(value)
         return obj
-
-    def decode_quantify_type(self, obj: str) -> object:
-        """
-        Returns the deserialized result of a possible known type stored in the
-        :class:`~.ScheduleJSONDecoder` .classes property.
-
-        For better security the usage of `eval` has been replaced in favour of
-        :func:`ast.literal_eval`.
-
-        Parameters
-        ----------
-        obj
-            The value of dictionary pair to deserialize.
-
-        Returns
-        -------
-        :
-            The decoded result.
-        """
-        kwargs = dict()
-        args = list()
-        ast_tree = ast.parse(obj)
-        class_name: str = ""
-        for node in ast.walk(ast_tree):
-            if isinstance(node, ast.Load):
-                break
-            if isinstance(node, ast.Call):
-                class_name = node.func.id
-            elif isinstance(node, ast.Constant):
-                args.append(node.value)
-            elif isinstance(node, ast.keyword):
-                kwargs[node.arg] = ast.literal_eval(node.value)
-
-        if class_name not in self.classes:
-            return obj
-
-        class_type: type = self.classes[class_name]
-        return class_type(*args, **kwargs)
 
     def custom_object_hook(self, obj: object) -> object:
         """
@@ -272,18 +250,32 @@ class ScheduleJSONEncoder(json.JSONEncoder):
         check if the object is to be serialized to a string using repr. If not, try
         to use `__getstate__`. Finally, try to serialize the `__dict__` property.
         """
-        # Use local import to void Error('Operation' from partially initialized module
-        # 'quantify_scheduler')
-        from quantify_scheduler import (  # pylint: disable=import-outside-toplevel
-            Operation,
-            Schedulable,
-            resources,
-        )
-
-        if isinstance(o, (Operation, resources.Resource, Schedulable)):
-            return repr(o)
         if hasattr(o, "__getstate__"):
             return o.__getstate__()
+        if isinstance(o, (complex, np.int32, np.complex128, np.int64, enums.BinMode)):
+            return {
+                "deserialization_type": type(o).__name__,
+                "mode": "__init__",
+                "data": str(o),
+            }
+        if isinstance(o, (np.ndarray,)):
+            return {
+                "deserialization_type": type(o).__name__,
+                "mode": "__init__",
+                "data": list(o),
+            }
+        if o in [
+            complex,
+            float,
+            int,
+            bool,
+            str,
+            np.ndarray,
+            np.complex128,
+            np.int32,
+            np.int64,
+        ]:
+            return {"deserialization_type": o.__name__, "mode": "type"}
         if hasattr(o, "__dict__"):
             return o.__dict__
 

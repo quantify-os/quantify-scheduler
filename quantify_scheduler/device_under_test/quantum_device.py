@@ -10,7 +10,6 @@ from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
-from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
@@ -328,20 +327,3 @@ class QuantumDevice(Instrument):
         """
 
         self.edges().remove(edge_name)  # list gets updated in place
-
-    @property
-    @deprecated("0.8", "Consider replacing with elements")
-    def components(self):
-        return self.elements
-
-    @deprecated("0.8", "Consider replacing with get_element.")
-    def get_component(self, name: str) -> Instrument:
-        return self.get_element(name=name)
-
-    @deprecated("0.8", "Consider replacing with add_element.")
-    def add_component(self, component: DeviceElement) -> None:
-        self.add_element(element=component)
-
-    @deprecated("0.8", "Consider replacing with remove_element.")
-    def remove_component(self, name: str) -> None:
-        self.remove_element(name=name)
