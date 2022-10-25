@@ -604,10 +604,6 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             self.instrument[f"sequencer{seq_idx}"], "demod_en_acq", settings.nco_en
         )
 
-        self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
-        )
-
 
 class QCMRFComponent(QCMComponent):
     """
