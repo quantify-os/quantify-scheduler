@@ -474,6 +474,7 @@ def test_prepare_qcm_qrm(
 @pytest.mark.parametrize("force_set_parameters", [False, True])
 def test_prepare_cluster_rf(
     mocker,
+    mock_setup_basic_transmon,
     tmp_test_data_dir,
     make_basic_schedule,
     load_example_qblox_hardware_config,
@@ -495,7 +496,7 @@ def test_prepare_cluster_rf(
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
 
-    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     q5 = BasicTransmonElement("q5")
     quantum_device.add_element(q5)
 
@@ -933,6 +934,7 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
     acq_manager = qblox._QRMAcquisitionManager(
         qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
     )
+    acq_manager.acq_duration[0] = 10
     data = acq_manager._get_integration_data(mock_acquisition_data, acq_channel=0)
     np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
     np.testing.assert_array_equal(data[1], np.array([0.0] * 10))

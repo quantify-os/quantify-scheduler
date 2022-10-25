@@ -642,7 +642,6 @@ class Measure(Operation):
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
-
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
             f"acq_channel={acq_channel}, acq_index={acq_index}, "

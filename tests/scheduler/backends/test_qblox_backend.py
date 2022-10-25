@@ -46,6 +46,9 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     to_grid_time,
 )
+
+# from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
@@ -492,6 +495,7 @@ def mixed_schedule_with_acquisition():
             t0=4e-9,
         )
     )
+
     sched.add(Measure("q0"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
@@ -948,7 +952,10 @@ def test_compile_measure(
     [
         (IdlePulse(duration=64e-9), "wait       64"),
         (Reset("q1"), "wait       65532"),
-        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+        (
+            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
+            "set_ph_delta  199,399,6249",
+        ),
     ],
 )
 def test_compile_clock_operations(
@@ -1043,6 +1050,51 @@ def test_compile_simple_with_acq(
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
+
+@pytest.mark.parametrize(
+    "reset_clock_phase",
+    [True, False],
+)
+def test_compile_acq_measurement_with_clock_phase_reset(
+    mock_setup_basic_transmon,
+    load_example_qblox_hardware_config,
+    reset_clock_phase,
+):
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    schedule = Schedule("Test schedule")
+
+    q0, q1 = "q0", "q1"
+    times = np.arange(0, 60e-6, 3e-6)
+    for i, tau in enumerate(times):
+        schedule.add(Reset(q0, q1), label=f"Reset {i}")
+        schedule.add(X(q0), label=f"pi {i} {q0}")
+        schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
+
+        schedule.add(
+            Measure(q0, acq_index=i, acq_channel=0),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {q0}{i}",
+        )
+
+    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+
+    compiled_schedule = qcompile(
+        schedule, device_cfg, load_example_qblox_hardware_config
+    )
+    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
+    with open(qrm0_seq0_json) as file:
+        program = json.load(file)["program"]
+    reset_counts = program.count(" reset_ph ")
+    expected_counts = (1 + len(times)) if reset_clock_phase else 1
+    assert reset_counts == expected_counts, (
+        f"Expected qasm program to contain `reset_ph`-instruction {expected_counts} "
+        f"times, but found {reset_counts} times instead."
+    )
 
 
 def test_acquisitions_back_to_back(
@@ -1266,14 +1318,19 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 
 
 # --------- Test compilation functions ---------
+@pytest.mark.parametrize("reset_clock_phase", [True, False])
 def test_assign_pulse_and_acq_info_to_devices(
+    mock_setup_basic_transmon,
     mixed_schedule_with_acquisition,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
+    reset_clock_phase,
 ):
-    sched_with_pulse_info = device_compile(
-        mixed_schedule_with_acquisition, load_example_transmon_config
-    )
+    sched = mixed_schedule_with_acquisition
+
+    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+
+    sched_with_pulse_info = device_compile(sched, device_cfg)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, load_example_qblox_hardware_config
@@ -1284,8 +1341,19 @@ def test_assign_pulse_and_acq_info_to_devices(
         load_example_qblox_hardware_config,
     )
     qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm._portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm._portclocks_with_data)[0]]) == 1
+    expected_num_of_pulses = 1 if reset_clock_phase is False else 2
+    actual_num_of_pulses = len(qrm._pulses[list(qrm._portclocks_with_data)[0]])
+    actual_num_of_acquisitions = len(
+        qrm._acquisitions[list(qrm._portclocks_with_data)[0]]
+    )
+    assert actual_num_of_pulses == expected_num_of_pulses, (
+        f"Expected {expected_num_of_pulses} number of pulses, but found "
+        f"{actual_num_of_pulses} instead."
+    )
+    assert actual_num_of_acquisitions == 1, (
+        f"Expected 1 number of acquisitions, but found {actual_num_of_acquisitions} "
+        "instead."
+    )
 
 
 def test_container_prepare(
