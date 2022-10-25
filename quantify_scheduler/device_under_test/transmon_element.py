@@ -215,6 +215,15 @@ class DispersiveMeasurement(InstrumentChannel):
             # only to protect against silly typos that lead to out of memory errors.
             vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
+        self.add_parameter(
+            "reset_clock_phase",
+            docstring="The phase of the measurement clock will be reset by the "
+            "control hardware at the start of each measurement if "
+            "``reset_clock_phase=True``.",
+            initial_value=True,
+            parameter_class=ManualParameter,
+            vals=validators.Bool(),
+        )
 
         ro_acq_weight_type_validator = validators.Enum("SSB")
         self.add_parameter(
@@ -287,6 +296,7 @@ class BasicTransmonElement(DeviceElement):
                         "acq_duration": self.measure.integration_time(),
                         "acq_channel": self.measure.acq_channel(),
                         "acq_protocol_default": "SSBIntegrationComplex",
+                        "reset_clock_phase": self.measure.reset_clock_phase(),
                     },
                     gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),
@@ -323,7 +333,8 @@ class BasicTransmonElement(DeviceElement):
 
 @deprecated(
     "0.8",
-    "Consider replacing with BasicTransmonElement or implementing a custom device element.",
+    "Consider replacing with BasicTransmonElement or implementing a custom device "
+    "element.",
 )
 class TransmonElement(DeviceElement):
     """
