@@ -94,3 +94,42 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     )
 
     return composite_pulse
+
+
+def nv_spec_pulse_mw(
+    duration: float,
+    amplitude: float,
+    clock: str,
+    port: str,
+) -> pulse_library.SkewedHermitePulse:
+    """Generate hermite pulse for spectroscopy experiment.
+
+    This is a simplified version of the SkewedHermitePulse. It is not skewed. It also
+    sets the phase to 0. This means that no rotation about the z-axis is applied on the
+    qubit.
+
+    Parameters
+    ----------
+    duration
+        Pulse duration in seconds
+    amplitude
+        Amplitude of the hermite pulse
+    skewness
+        Skewness of hermite pulse
+    clock
+        Name of clock for frequency modulation of hermite pulse
+    port
+        Name of port where hermite pulse is applied
+
+    Returns
+    -------
+        Hermite pulse operation
+    """
+    return pulse_library.SkewedHermitePulse(
+        duration=duration,
+        amplitude=amplitude,
+        skewness=0,
+        phase=0,
+        clock=clock,
+        port=port,
+    )

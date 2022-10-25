@@ -2,6 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+# pylint: disable=redefined-outer-name
 import json
 from typing import Any
 from unittest import TestCase
@@ -22,6 +23,7 @@ from quantify_scheduler.operations.gate_library import (
     X,
     Y,
 )
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 
 
 def test_schedule_add_schedulables() -> None:
@@ -77,6 +79,7 @@ def test_rxy_angle_modulo() -> None:
         CZ("q0", "q1"),
         CNOT("q0", "q6"),
         Measure("q0", "q9"),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test_gate_is_valid(operation: Operation) -> None:
@@ -126,6 +129,7 @@ def is__str__equal(obj: Any) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test__repr__(operation: Operation) -> None:
@@ -148,6 +152,7 @@ def test__repr__(operation: Operation) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test__str__(operation: Operation) -> None:
@@ -170,6 +175,7 @@ def test__str__(operation: Operation) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),
         Measure("q0", "q6", acq_index=92),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test_deserialize(operation: Operation) -> None:
@@ -215,6 +221,7 @@ def test_deserialize(operation: Operation) -> None:
         Measure("q0"),
         Measure("q0", "q6", acq_channel=4),
         Measure("q0", "q6", acq_index=92),
+        SpectroscopyOperation("q0"),
     ],
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
