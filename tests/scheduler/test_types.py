@@ -308,7 +308,12 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
     _ = comp_sched.plot_pulse_diagram()
 
 
-def test_sched_timing_table(tmp_test_data_dir):
+@pytest.mark.parametrize("reset_clock_phase", (True, False))
+def test_sched_timing_table(
+    tmp_test_data_dir,
+    reset_clock_phase,
+    load_example_transmon_config,
+):
 
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
@@ -317,14 +322,20 @@ def test_sched_timing_table(tmp_test_data_dir):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
-            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
+            Measure(qubit),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {i}",
         )
 
     with pytest.raises(ValueError):
         _ = schedule.timing_table
 
     set_datadir(tmp_test_data_dir)
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
+    device_cfg.elements.get("q0").get("measure").factory_kwargs[
+        "reset_clock_phase"
+    ] = reset_clock_phase
     comp_sched = qcompile(schedule, device_cfg=device_cfg)
     # will only test that a figure is created and runs without errors
     timing_table = comp_sched.timing_table
@@ -340,11 +351,31 @@ def test_sched_timing_table(tmp_test_data_dir):
         "wf_idx",
     }
 
-    assert len(timing_table.data) == 12
+    expected_len_timing_table_data = 15 if reset_clock_phase else 12
+    assert len(timing_table.data) == expected_len_timing_table_data
 
-    np.testing.assert_almost_equal(
-        actual=np.array(timing_table.data["abs_time"]),
-        desired=np.array(
+    if reset_clock_phase:
+        desired_timing = np.array(
+            [
+                0,
+                200e-6,
+                200e-6,
+                200e-6,
+                200e-6 + 120e-9,  # acq delay
+                200e-6 + 420e-9,
+                400e-6 + 420e-9,
+                410e-6 + 420e-9,
+                410e-6 + 420e-9,
+                410e-6 + 540e-9,
+                410e-6 + 840e-9,
+                610e-6 + 840e-9,
+                640e-6 + 840e-9,
+                640e-6 + 840e-9,
+                640e-6 + 960e-9,
+            ]
+        )
+    else:
+        desired_timing = np.array(
             [
                 0,
                 200e-6,
@@ -359,7 +390,10 @@ def test_sched_timing_table(tmp_test_data_dir):
                 640e-6 + 840e-9,
                 640e-6 + 960e-9,
             ]
-        ),
+        )
+    np.testing.assert_almost_equal(
+        actual=np.array(timing_table.data["abs_time"]),
+        desired=desired_timing,
         decimal=10,
     )
 
@@ -397,12 +431,17 @@ def test_sched_hardware_waveform_dict(
         load_example_zhinst_hardware_config,
     )
     hardware_timing_table = compiled_schedule.hardware_timing_table
+
+    # filter out operations that are not waveforms such as Reset and ClockPhaseReset,
+    # that have port = None.
+    mask = compiled_schedule.hardware_timing_table.data.port.apply(
+        lambda port: port is not None
+    )
+    hardware_timing_table = hardware_timing_table.data[mask]
     hardware_waveform_dict = compiled_schedule.hardware_waveform_dict
 
-    for waveform_id in hardware_timing_table.data.waveform_id:
-        if "Reset" in waveform_id:
-            # Ignore the reset operation because it will return None
-            continue
+    waveform_ids = hardware_timing_table.waveform_id
+    for waveform_id in waveform_ids:
         assert isinstance(hardware_waveform_dict.get(waveform_id), np.ndarray)
 
 

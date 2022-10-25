@@ -589,16 +589,16 @@ def test__get_instruction_list(create_typical_timing_table):
     ]
     uhfqa0awg0_expected_list = [
         zhinst.Wave(
-            waveform_id=timing_table.waveform_id[2],
-            abs_time=timing_table.abs_time[2],
-            duration=timing_table.duration[2],
-            clock_cycle_start=timing_table.clock_cycle_start[2],
-        ),
-        zhinst.Acquisition(
             waveform_id=timing_table.waveform_id[3],
             abs_time=timing_table.abs_time[3],
             duration=timing_table.duration[3],
             clock_cycle_start=timing_table.clock_cycle_start[3],
+        ),
+        zhinst.Acquisition(
+            waveform_id=timing_table.waveform_id[4],
+            abs_time=timing_table.abs_time[4],
+            duration=timing_table.duration[4],
+            clock_cycle_start=timing_table.clock_cycle_start[4],
         ),
     ]
 
