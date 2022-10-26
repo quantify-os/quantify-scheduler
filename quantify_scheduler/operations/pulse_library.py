@@ -20,7 +20,7 @@ class ShiftClockPhase(Operation):
     """An operation that shifts the phase of a clock by a specified amount."""
 
     def __init__(
-        self, phase: float, clock: str, t0: float = 0, data: Optional[dict] = None
+        self, phase_shift: float, clock: str, t0: float = 0, data: Optional[dict] = None
     ):
         """
         Create a new instance of ShiftClockPhase.
@@ -45,10 +45,59 @@ class ShiftClockPhase(Operation):
                         {
                             "wf_func": None,
                             "t0": t0,
-                            "phase": phase,
+                            "phase_shift": phase_shift,
                             "clock": clock,
                             "port": None,
                             "duration": 0,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
+class ResetClockPhase(Operation):
+    """An operation that resets the phase of a clock."""
+
+    def __init__(self, clock: str, t0: float = 0, data: Optional[dict] = None):
+        """
+        Create a new instance of ResetClockPhase.
+
+        Parameters
+        ----------
+        clock
+            The clock of which to reset the phase.
+        data
+            The operation's dictionary, by default None
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            super().__init__(name="ResetClockPhase")
+            self.data.update(
+                {
+                    "name": "ResetClockPhase",
+                    "pulse_info": [
+                        {
+                            "wf_func": None,
+                            "clock": clock,
+                            "t0": t0,
+                            "duration": 0,
+                            "port": None,
+                            "reset_clock_phase": True,
                         }
                     ],
                 }
