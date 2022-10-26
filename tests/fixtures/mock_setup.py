@@ -44,6 +44,17 @@ def close_instruments(instrument_names: Union[List[str], Dict[str, Any]]):
             pass
 
 
+@pytest.fixture(scope="function", autouse=True)
+def close_all_instruments_at_start():
+    """
+    This fixture closes all instruments at the start of each test to prevent unexpected
+    KeyError from qcodes.Instrument, e.g.'Another instrument has the name: q5', that may
+    arise when a previous test already created an instance of an Instrument with that
+    name.
+    """
+    Instrument.close_all()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def tmp_test_data_dir(tmp_path_factory):
     """

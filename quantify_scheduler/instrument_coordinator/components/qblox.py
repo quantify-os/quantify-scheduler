@@ -295,16 +295,16 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             self.instrument[f"sequencer{seq_idx}"], "sync_en", settings.sync_en
         )
 
-        nco_en: bool = settings.nco_en
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", nco_en
+            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", settings.nco_en
         )
-        if nco_en:
+        if settings.nco_en:
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
                 "nco_freq",
                 settings.modulation_freq,
             )
+
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "mixer_corr_phase_offset_degree",
@@ -323,6 +323,10 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
                 self._get_channel_map_parameter_name(output_index=output_idx),
                 connected,
             )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
+        )
 
     @staticmethod
     def _get_channel_map_parameter_name(output_index: int) -> str:
@@ -398,6 +402,7 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 settings_entry
             )
             self._configure_global_settings(module_settings)
+
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"], "sync_en", False
@@ -412,16 +417,8 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                     f'with name "{seq_name}".'
                 )
 
-            if "settings" in seq_cfg:
-                seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
-                self._configure_sequencer_settings(
-                    seq_idx=seq_idx, settings=seq_settings
-                )
-
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
-                "sequence",
-                seq_cfg["seq_fn"],
+            self._configure_sequencer_settings(
+                seq_idx=seq_idx, settings=SequencerSettings.from_dict(seq_cfg)
             )
 
         self._arm_all_sequencers_in_program(program)
@@ -550,16 +547,9 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                     f"Invalid program. Attempting to access non-existing sequencer "
                     f'with name "{seq_name}".'
                 )
-            if "settings" in seq_cfg:
-                seq_settings = SequencerSettings.from_dict(seq_cfg["settings"])
-                self._configure_sequencer_settings(
-                    seq_idx=seq_idx, settings=seq_settings
-                )
 
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
-                "sequence",
-                seq_cfg["seq_fn"],
+            self._configure_sequencer_settings(
+                seq_idx=seq_idx, settings=SequencerSettings.from_dict(seq_cfg)
             )
 
         self._arm_all_sequencers_in_program(program)
