@@ -101,7 +101,7 @@ def hardware_cfg_baseband():
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
             "complex_output_0": {
-                "mixing": True,
+                "mix_lo": True,
                 "lo_name": "lo0",
                 "portclock_configs": [
                     {

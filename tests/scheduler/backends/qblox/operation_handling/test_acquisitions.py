@@ -613,7 +613,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     instr_coordinator.remove_component(ic_component.name)
 
 
-def test_mixing_flag(mock_setup_basic_transmon, make_cluster_component):
+def test_mix_lo_flag(mock_setup_basic_transmon, make_cluster_component):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -623,7 +623,7 @@ def test_mixing_flag(mock_setup_basic_transmon, make_cluster_component):
                 "instrument_type": "QCM",
                 "complex_output_0": {
                     "lo_name": "lo0",
-                    "mixing": True,
+                    "mix_lo": True,
                     "portclock_configs": [
                         {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
                     ],
@@ -641,32 +641,32 @@ def test_mixing_flag(mock_setup_basic_transmon, make_cluster_component):
     quantum_device.hardware_config(hardware_cfg)
 
     # Define experiment schedule
-    schedule = Schedule("test mixing flag")
+    schedule = Schedule("test mix_lo flag")
     schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:res", clock="q0.ro"))
     schedule.add_resource(ClockResource(name="q0.ro", freq=70e6))
 
-    # Generate compiled schedule where mixing is true
-    compiled_sched_mixing_true = qcompile(
+    # Generate compiled schedule where mix_lo is true
+    compiled_sched_mix_lo_true = qcompile(
         schedule=schedule,
         device_cfg=quantum_device.generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
-    # Change mixing to false, set new LO freq and generate new compiled schedule
-    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"]["mixing"] = False
-    compiled_sched_mixing_false = qcompile(
+    # Change mix_lo to false, set new LO freq and generate new compiled schedule
+    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"]["mix_lo"] = False
+    compiled_sched_mix_lo_false = qcompile(
         schedule=schedule,
         device_cfg=quantum_device.generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
 
-    # Assert LO freq got set to 20e6 if mixing is true.
+    # Assert LO freq got set to 20e6 if mix_lo is true.
     assert (
-        compiled_sched_mixing_true.compiled_instructions["generic"]["lo0.frequency"]
+        compiled_sched_mix_lo_true.compiled_instructions["generic"]["lo0.frequency"]
         == 20e6
     )
-    # Assert LO freq got set to 70e6 if mixing is false.
+    # Assert LO freq got set to 70e6 if mix_lo is false.
     assert (
-        compiled_sched_mixing_false.compiled_instructions["generic"]["lo0.frequency"]
+        compiled_sched_mix_lo_false.compiled_instructions["generic"]["lo0.frequency"]
         == 70e6
     )
     instr_coordinator.remove_component("ic_cluster0")
