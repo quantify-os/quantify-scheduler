@@ -49,6 +49,8 @@
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
+- QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
+- QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
