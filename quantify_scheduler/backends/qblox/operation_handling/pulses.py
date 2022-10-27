@@ -136,7 +136,6 @@ class GenericPulseStrategy(PulseStrategyPartial):
         )
         waveform_data, amp_real, amp_imag = normalize_waveform_data(waveform_data)
         self.waveform_len = len(waveform_data)
-
         _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
         _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
 
@@ -353,7 +352,6 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         offset_param_label = (
             "offset_awg_path1" if self.output_mode == "imag" else "offset_awg_path0"
         )
-
         start_amp_immediate = qasm_program.expand_from_normalised_range(
             start_amp / qasm_program.static_hw_properties.max_awg_output_voltage,
             constants.IMMEDIATE_SZ_OFFSET,

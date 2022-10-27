@@ -474,6 +474,7 @@ def test_prepare_qcm_qrm(
 @pytest.mark.parametrize("force_set_parameters", [False, True])
 def test_prepare_cluster_rf(
     mocker,
+    mock_setup_basic_transmon,
     tmp_test_data_dir,
     make_basic_schedule,
     load_example_qblox_hardware_config,
@@ -495,7 +496,7 @@ def test_prepare_cluster_rf(
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
 
-    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     q5 = BasicTransmonElement("q5")
     quantum_device.add_element(q5)
 

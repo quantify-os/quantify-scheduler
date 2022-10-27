@@ -23,6 +23,7 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     SoftSquarePulse,
     SquarePulse,
+    ResetClockPhase,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
@@ -368,6 +369,7 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
             )
 
             op.add_pulse(pulse)
+
         elif op_type == "reset":
             # Initialization through relaxation
             qubits = op["gate_info"]["qubits"]

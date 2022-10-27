@@ -9,6 +9,9 @@
 
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
+- QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
+- Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
+- Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
 
 ## 0.9.0 (2022-10-06)
 
@@ -41,8 +44,11 @@
 - Gettables - Added a `ProfiledScheduleGettable` for profiling execution times of schedule steps. (!420, !469)
   - Please note: Setup in need of refactoring so interface is subject to change (see #320)
 - Instrument Coordinator - Small fix for `search_settable_param` when scheduler is searching for qcodes parameters (!461)
-- JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
-- JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
+- JSON utilities - Remove `repr` based serialization/deserialization methods (!445, #248)
+- JSON utilities - Extend the capabilities of the ``__getstate__/__setstate__`` json serializer (!445, #248)
+- Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
+- Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
+- Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 - QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
 - QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
 

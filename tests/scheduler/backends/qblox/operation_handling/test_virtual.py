@@ -75,12 +75,12 @@ class TestIdleStrategy:
 class TestNcoPhaseShiftStrategy:
     def test_constructor(self):
         virtual.NcoPhaseShiftStrategy(
-            types.OpInfo(name="", data={"phase": 123.456}, timing=0)
+            types.OpInfo(name="", data={"phase_shift": 123.456}, timing=0)
         )
 
     def test_operation_info_property(self):
         # arrange
-        op_info = types.OpInfo(name="", data={"phase": 123.456}, timing=0)
+        op_info = types.OpInfo(name="", data={"phase_shift": 123.456}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act
@@ -91,14 +91,14 @@ class TestNcoPhaseShiftStrategy:
 
     def test_generate_data(self):
         # arrange
-        op_info = types.OpInfo(name="", data={"phase": 123.456}, timing=0)
+        op_info = types.OpInfo(name="", data={"phase_shift": 123.456}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act and assert
         _assert_none_data(strategy)
 
     @pytest.mark.parametrize(
-        "phase, answer",
+        "phase_shift, answer",
         [
             (0.0, ("set_ph_delta", "0,0,0")),
             (360, ("set_ph_delta", "0,0,0")),
@@ -110,18 +110,24 @@ class TestNcoPhaseShiftStrategy:
         ],
     )
     def test_generate_qasm_program(
-        self, phase: float, answer: Tuple[str, str], empty_qasm_program_qcm: QASMProgram
+        self,
+        phase_shift: float,
+        answer: Tuple[str, str],
+        empty_qasm_program_qcm: QASMProgram,
     ):
         def extract_instruction_and_args(qasm_prog: QASMProgram) -> Tuple[str, str]:
             return qasm_prog.instructions[0][1], qasm_prog.instructions[0][2]
 
         # arrange
         qasm = empty_qasm_program_qcm
-        op_info = types.OpInfo(name="", data={"phase": phase}, timing=0)
+        op_info = types.OpInfo(name="", data={"phase_shift": phase_shift}, timing=0)
         strategy = virtual.NcoPhaseShiftStrategy(op_info)
 
         # act
         strategy.insert_qasm(qasm)
 
         # assert
-        assert extract_instruction_and_args(qasm) == answer
+        if phase_shift == 0.0:
+            assert qasm.instructions == []
+        else:
+            assert extract_instruction_and_args(qasm) == answer

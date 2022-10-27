@@ -80,14 +80,14 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     # And at the same time apply clock phase corrections
     composite_pulse.add_pulse(
         pulse_library.ShiftClockPhase(
-            phase=virt_z_parent_qubit_phase,
+            phase_shift=virt_z_parent_qubit_phase,
             clock=virt_z_parent_qubit_clock,
             t0=t0,
         )
     )
     composite_pulse.add_pulse(
         pulse_library.ShiftClockPhase(
-            phase=virt_z_child_qubit_phase,
+            phase_shift=virt_z_child_qubit_phase,
             clock=virt_z_child_qubit_clock,
             t0=t0,
         )

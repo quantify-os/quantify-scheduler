@@ -473,7 +473,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         repetitions
             The amount of times the schedule will be repeated, by default 1
         data
-            A dictionary containing a pre-existing schedule., by default None
+            A dictionary containing a pre-existing schedule, by default None
         """
 
         # validate the input data to ensure it is valid schedule data
@@ -578,7 +578,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     """
     This class represents an element on a schedule. All elements on a schedule are
     schedulables. A schedulable contains all information regarding the timing of this
-    element as well as the operation being executing by this element.
+    element as well as the operation being executed by this element.
     This operation is currently represented by an operation ID.
 
     Schedulables can contain an arbitrary number of timing constraints to determine the

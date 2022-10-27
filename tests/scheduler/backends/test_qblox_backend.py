@@ -13,7 +13,6 @@ import json
 import logging
 import os
 import re
-import shutil
 import tempfile
 
 from typing import Dict, Generator
@@ -47,6 +46,9 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     to_grid_time,
 )
+
+# from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
@@ -494,6 +496,7 @@ def mixed_schedule_with_acquisition():
             t0=4e-9,
         )
     )
+
     sched.add(Measure("q0"))
     # Clocks need to be manually added at this stage.
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
@@ -889,10 +892,7 @@ def test_compile_no_device_cfg(load_example_qblox_hardware_config):
         schedule=sched, hardware_cfg=load_example_qblox_hardware_config
     )
 
-    seq_fn = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
-    with open(seq_fn) as file:
-        wf_and_prog = json.load(file)
-
+    wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
     assert "play" in wf_and_prog["program"]
 
 
@@ -926,9 +926,7 @@ def test_compile_identical_pulses(
         load_example_qblox_hardware_config,
     )
 
-    seq_fn = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
-    with open(seq_fn) as file:
-        prog = json.load(file)
+    prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
     assert len(prog["waveforms"]) == 2
 
 
@@ -939,16 +937,15 @@ def test_compile_measure(
 ):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
+
     full_program = qcompile(
         duplicate_measure_schedule,
         load_example_transmon_config,
         load_example_qblox_hardware_config,
     )
-    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
+    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"]
 
-    with open(qrm0_seq0_json) as file:
-        wf_and_prog = json.load(file)
-    assert len(wf_and_prog["weights"]) == 0
+    assert len(qrm0_seq0_json["weights"]) == 0
 
 
 @pytest.mark.parametrize(
@@ -956,7 +953,10 @@ def test_compile_measure(
     [
         (IdlePulse(duration=64e-9), "wait       64"),
         (Reset("q1"), "wait       65532"),
-        (ShiftClockPhase(clock="q1.01", phase=180.0), "set_ph_delta  199,399,6249"),
+        (
+            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
+            "set_ph_delta  199,399,6249",
+        ),
     ],
 )
 def test_compile_clock_operations(
@@ -981,10 +981,9 @@ def test_compile_clock_operations(
         hardware_cfg=hardware_cfg_baseband,
     )
 
-    filename = compiled_sched.compiled_instructions["qcm0"]["seq0"]["seq_fn"]
-    with open(filename, "r") as file:
-        program_lines = json.load(file)["program"].splitlines()
-
+    program_lines = compiled_sched.compiled_instructions["qcm0"]["seq0"]["sequence"][
+        "program"
+    ].splitlines()
     assert any(instruction_to_check in line for line in program_lines), "\n".join(
         line for line in program_lines
     )
@@ -1014,9 +1013,9 @@ def test_compile_cz_gate(
 
     program_lines = {}
     for seq in ["seq0", "seq1", "seq2"]:
-        filename = compiled_sched.compiled_instructions["qcm0"][seq]["seq_fn"]
-        with open(filename, "r") as file:
-            program_lines[seq] = json.load(file)["program"].splitlines()
+        program_lines[seq] = compiled_sched.compiled_instructions["qcm0"][seq][
+            "sequence"
+        ]["program"].splitlines()
 
     assert any(
         "play          0,1,4" in line for line in program_lines["seq0"]
@@ -1045,13 +1044,58 @@ def test_compile_simple_with_acq(
         load_example_qblox_hardware_config,
     )
 
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
+
+@pytest.mark.parametrize(
+    "reset_clock_phase",
+    [True, False],
+)
+def test_compile_acq_measurement_with_clock_phase_reset(
+    mock_setup_basic_transmon,
+    load_example_qblox_hardware_config,
+    reset_clock_phase,
+):
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    tmp_dir = tempfile.TemporaryDirectory()
+    set_datadir(tmp_dir.name)
+    schedule = Schedule("Test schedule")
+
+    q0, q1 = "q0", "q1"
+    times = np.arange(0, 60e-6, 3e-6)
+    for i, tau in enumerate(times):
+        schedule.add(Reset(q0, q1), label=f"Reset {i}")
+        schedule.add(X(q0), label=f"pi {i} {q0}")
+        schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
+
+        schedule.add(
+            Measure(q0, acq_index=i, acq_channel=0),
+            ref_pt="start",
+            rel_time=tau,
+            label=f"Measurement {q0}{i}",
+        )
+
+    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+
+    compiled_schedule = qcompile(
+        schedule, device_cfg, load_example_qblox_hardware_config
+    )
+    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
+    with open(qrm0_seq0_json) as file:
+        program = json.load(file)["program"]
+    reset_counts = program.count(" reset_ph ")
+    expected_counts = (1 + len(times)) if reset_clock_phase else 1
+    assert reset_counts == expected_counts, (
+        f"Expected qasm program to contain `reset_ph`-instruction {expected_counts} "
+        f"times, but found {reset_counts} times instead."
+    )
 
 
 def test_acquisitions_back_to_back(
@@ -1085,7 +1129,7 @@ def test_compile_with_rel_time(
         load_example_qblox_hardware_config,
     )
 
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
@@ -1099,16 +1143,16 @@ def test_compile_with_repetitions(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     mixed_schedule_with_acquisition.repetitions = 10
+
     full_program = qcompile(
         mixed_schedule_with_acquisition,
         load_example_transmon_config,
         load_example_qblox_hardware_config,
     )
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["seq_fn"]
 
-    with open(qcm0_seq0_json) as file:
-        wf_and_prog = json.load(file)
-    program_from_json = wf_and_prog["program"]
+    program_from_json = full_program["compiled_instructions"]["qcm0"]["seq0"][
+        "sequence"
+    ]["program"]
     move_line = program_from_json.split("\n")[5]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
@@ -1143,11 +1187,13 @@ def test_qasm_hook(pulse_only_schedule, load_example_transmon_config):
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     sched.repetitions = 11
+
     full_program = qcompile(sched, load_example_transmon_config, hw_config)
-    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
-    with open(qrm0_seq0_json) as file:
-        program = json.load(file)["program"]
+    program = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"][
+        "program"
+    ]
     program_lines = program.splitlines()
+
     assert program_lines[1].strip() == q1asm_instructions.NOP
 
 
@@ -1180,9 +1226,9 @@ def test_real_mode_pulses(
     )
 
     for output in range(4):
-        filename = full_program.compiled_instructions["qcm0"][f"seq{output}"]["seq_fn"]
-        with open(filename, "r") as file:
-            seq_instructions = json.load(file)
+        seq_instructions = full_program.compiled_instructions["qcm0"][f"seq{output}"][
+            "sequence"
+        ]
 
         for value in seq_instructions["waveforms"].values():
             waveform_data, seq_path = value["data"], value["index"]
@@ -1273,14 +1319,19 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 
 
 # --------- Test compilation functions ---------
+@pytest.mark.parametrize("reset_clock_phase", [True, False])
 def test_assign_pulse_and_acq_info_to_devices(
+    mock_setup_basic_transmon,
     mixed_schedule_with_acquisition,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
+    reset_clock_phase,
 ):
-    sched_with_pulse_info = device_compile(
-        mixed_schedule_with_acquisition, load_example_transmon_config
-    )
+    sched = mixed_schedule_with_acquisition
+
+    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+
+    sched_with_pulse_info = device_compile(sched, device_cfg)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, load_example_qblox_hardware_config
@@ -1291,8 +1342,19 @@ def test_assign_pulse_and_acq_info_to_devices(
         load_example_qblox_hardware_config,
     )
     qrm = container.instrument_compilers["qrm0"]
-    assert len(qrm._pulses[list(qrm._portclocks_with_data)[0]]) == 1
-    assert len(qrm._acquisitions[list(qrm._portclocks_with_data)[0]]) == 1
+    expected_num_of_pulses = 1 if reset_clock_phase is False else 2
+    actual_num_of_pulses = len(qrm._pulses[list(qrm._portclocks_with_data)[0]])
+    actual_num_of_acquisitions = len(
+        qrm._acquisitions[list(qrm._portclocks_with_data)[0]]
+    )
+    assert actual_num_of_pulses == expected_num_of_pulses, (
+        f"Expected {expected_num_of_pulses} number of pulses, but found "
+        f"{actual_num_of_pulses} instead."
+    )
+    assert actual_num_of_acquisitions == 1, (
+        f"Expected 1 number of acquisitions, but found {actual_num_of_acquisitions} "
+        "instead."
+    )
 
 
 def test_container_prepare(
@@ -1509,7 +1571,7 @@ def test_assign_frequencies_baseband(
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
-    assert compiled_instructions["qcm0"]["seq1"]["settings"]["modulation_freq"] == if1
+    assert compiled_instructions["qcm0"]["seq1"]["modulation_freq"] == if1
 
 
 @pytest.mark.parametrize(
@@ -1572,7 +1634,7 @@ def test_assign_frequencies_baseband_downconverter(
         actual_lo0 = generic_ic_program[f"{io0_lo_name}.frequency"]
 
         expected_if1 = q1_clock_freq - lo1
-        actual_if1 = qcm_program["seq1"]["settings"]["modulation_freq"]
+        actual_if1 = qcm_program["seq1"]["modulation_freq"]
 
         status = "without"
     else:
@@ -1580,7 +1642,7 @@ def test_assign_frequencies_baseband_downconverter(
         actual_lo0 = generic_ic_program[f"{io0_lo_name}.frequency"]
 
         expected_if1 = downconverter_freq_1 - q1_clock_freq - lo1
-        actual_if1 = qcm_program["seq1"]["settings"]["modulation_freq"]
+        actual_if1 = qcm_program["seq1"]["modulation_freq"]
 
         status = "after"
 
@@ -1643,7 +1705,7 @@ def test_assign_frequencies_rf(
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["settings"]["modulation_freq"] == if1
+    assert qcm_program["seq1"]["modulation_freq"] == if1
 
 
 @pytest.mark.parametrize(
@@ -1708,7 +1770,7 @@ def test_assign_frequencies_rf_downconverter(
 
     actual_lo0 = qcm_program["settings"]["lo0_freq"]
     actual_lo1 = qcm_program["settings"]["lo1_freq"]
-    actual_if1 = qcm_program["seq1"]["settings"]["modulation_freq"]
+    actual_if1 = qcm_program["seq1"]["modulation_freq"]
 
     expected_lo1 = lo1
 
@@ -1716,7 +1778,6 @@ def test_assign_frequencies_rf_downconverter(
         expected_lo0 = q2_clock_freq - if0
         expected_if1 = q3_clock_freq - lo1
         status = "without"
-
     else:
         expected_lo0 = downconverter_freq_0 - q2_clock_freq - if0
         expected_if1 = downconverter_freq_1 - q3_clock_freq - lo1
@@ -1776,16 +1837,15 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
             mrk_config.start,
             mrk_config.end,
         )
-        with open(device_program["seq0"]["seq_fn"]) as file:
-            qasm = json.load(file)["program"]
+        qasm = device_program["seq0"]["sequence"]["program"]
 
-            matches = re.findall(r"set\_mrk +\d+", qasm)
-            matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
-            if not is_rf:
-                matches = [None, *matches]
+        matches = re.findall(r"set\_mrk +\d+", qasm)
+        matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
+        if not is_rf:
+            matches = [None, *matches]
 
-            for match, answer in zip(matches, answers):
-                assert match == answer
+        for match, answer in zip(matches, answers):
+            assert match == answer
 
     _confirm_correct_markers(
         program["qcm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
@@ -1831,7 +1891,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 
     # test the program for the qcm
     qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
-        "seq_fn"
+        "sequence"
     ]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
@@ -1840,7 +1900,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 
     # test the program for the qrm
     qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
-        "seq_fn"
+        "sequence"
     ]
     qrm0.sequencer0.sequence(qrm0_seq0_json)
     qrm0.arm_sequencer(0)
@@ -1864,10 +1924,10 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
         qrm0=dummy_pulsars["qrm0"],
     )
 
-    with open(
-        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
-    ) as file:
-        qrm0_seq_instructions = json.load(file)
+    qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
+        "seq0"
+    ]["sequence"]
+
     baseline_assembly = os.path.join(
         quantify_scheduler.__path__[0],
         "..",
@@ -1877,10 +1937,8 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     )
 
     if REGENERATE_REF_FILES:
-        shutil.copy(
-            compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
-            baseline_assembly,
-        )
+        with open(baseline_assembly, "w", encoding="utf-8") as file:
+            json.dump(qrm0_seq_instructions, file)
 
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
@@ -1907,10 +1965,9 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
         qrm0=dummy_pulsars["qrm0"],
     )
 
-    with open(
-        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
-    ) as file:
-        qrm0_seq_instructions = json.load(file)
+    qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
+        "seq0"
+    ]["sequence"]
 
     baseline_assembly = os.path.join(
         quantify_scheduler.__path__[0],
@@ -1921,10 +1978,8 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     )
 
     if REGENERATE_REF_FILES:
-        shutil.copy(
-            compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"],
-            baseline_assembly,
-        )
+        with open(baseline_assembly, "w", encoding="utf-8") as file:
+            json.dump(qrm0_seq_instructions, file)
 
     with open(baseline_assembly) as file:
         baseline_qrm0_seq_instructions = json.load(file)
@@ -1947,10 +2002,9 @@ def test_acq_declaration_dict_append_mode(
         ssro_sched, load_example_transmon_config, load_example_qblox_hardware_config
     )
 
-    with open(
-        compiled_ssro_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
-    ) as file:
-        qrm0_seq_instructions = json.load(file)
+    qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
+        "seq0"
+    ]["sequence"]
 
     acquisitions = qrm0_seq_instructions["acquisitions"]
     # the only key corresponds to channel 0
@@ -1969,10 +2023,9 @@ def test_acq_declaration_dict_bin_avg_mode(
         allxy, load_example_transmon_config, load_example_qblox_hardware_config
     )
 
-    with open(
-        compiled_allxy_sched["compiled_instructions"]["qrm0"]["seq0"]["seq_fn"]
-    ) as file:
-        qrm0_seq_instructions = json.load(file)
+    qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
+        "seq0"
+    ]["sequence"]
 
     acquisitions = qrm0_seq_instructions["acquisitions"]
 
@@ -2173,14 +2226,11 @@ def test_apply_latency_corrections_valid(
             compiled_data = compiled_data.get(instrument)
             config_data = config_data.get(instrument)
 
-        filename = compiled_data["seq0"]["seq_fn"]
-
         port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
         clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
         latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
 
-        with open(filename, "r") as file:
-            program_lines = json.load(file)["program"].splitlines()
+        program_lines = compiled_data["seq0"]["sequence"]["program"].splitlines()
         assert any(
             f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
             for line in program_lines
