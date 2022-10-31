@@ -94,6 +94,17 @@ class ClockFrequencies(InstrumentModule):
         E_1,2 states"""
 
 
+        self.green_laser_freq= ManualParameter(
+            name="green_laser_freq",
+            label="Frequency of green laser",
+            unit="Hz",
+            instrument=self,
+            initial_value=16e9,
+            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+        )
+        """Frequency of the green laser for manipulation of the NVs charge state."""
+
+
 # pylint: disable=too-few-public-methods
 class SpectroscopyOperationHermiteMW(InstrumentModule):
     """Submodule with parameters to convert the SpectroscopyOperation into a microwave
@@ -149,8 +160,33 @@ class ResetSpinpump(InstrumentModule):
         )
         """Duration of reset pulse"""
 
+class ChargeReset(InstrumentModule):
+    """
+    Submodule containing parameters to run a green laser square pulse to reset the NV in
+    its negatively charged state.
+    """
 
-# pylint: disable=too-few-public-methods
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.amplitude = ManualParameter(
+            name="amplitude",
+            instrument=self,
+            initial_value=0.1,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
+        """Amplitude of charge reset pulse"""
+
+        self.duration = ManualParameter(
+            name="duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
+        )
+        """Duration of the charge set pulse."""
+
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
@@ -166,6 +202,7 @@ class BasicElectronicNVElement(DeviceElement):
         self.add_submodule("ports", Ports(self, "ports"))
         self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
         self.add_submodule("reset", ResetSpinpump(self, "reset"))
+        self.add_submodule("charge_reset", ChargeReset(self, "charge_reset"))
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
@@ -196,6 +233,16 @@ class BasicElectronicNVElement(DeviceElement):
                         "clock": f"{self.name}.ge1",
                     },
                 ),
+                "charge_reset": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_library.SquarePulse",
+                    factory_kwargs={
+                        "duration": self.charge_reset.duration(),
+                        "amp": self.charge_reset.amplitude(),
+                        "port": self.ports.optical_control(),
+                        "clock": f"{self.name}.green_laser_freq",
+                    },
+                ),
             }
         }
         return qubit_config
@@ -219,6 +266,7 @@ class BasicElectronicNVElement(DeviceElement):
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.spec": self.clock_freqs.spec(),
                 f"{self.name}.ge1": self.clock_freqs.ge1(),
+                f"{self.name}.green_laser_freq": self.clock_freqs.green_laser_freq(),
             },
             "edges": {},
         }

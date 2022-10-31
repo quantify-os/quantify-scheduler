@@ -1,0 +1,53 @@
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+# pylint: disable=invalid-name
+"""NV center specific gateset for use with the quantify_scheduler."""
+from typing import Literal, Optional, Tuple, Union
+
+import numpy as np
+
+from .operation import Operation
+from ..enums import BinMode
+
+
+class ChargeReset(Operation):
+    r"""
+    Reset a NV to its negative charge state NV$^-$.
+
+    .. note::
+
+        Strictly speaking this is not a gate as it can not
+        be described by a unitary.
+    """
+
+    def __init__(self, *qubits: str, data: Optional[dict] = None):
+        """
+        Create a new instance of ChargeReset operation that is used to initialize the
+        charge state of an NV center.
+
+        Parameters
+        ----------
+        qubit
+            The qubit to reset. NB one or more qubits can be specified, e.g.,
+            :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
+        data
+            The operation's dictionary, by default :code:`None`.
+            Note: if the data parameter is not :code:`None` all other parameters are
+            overwritten using the contents of data.
+        """
+        if data is None:
+            data = {
+                "name": f"ChargeReset {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": "quantify_scheduler.visualization.circuit_diagram.reset",
+                    "tex": r"$NV^-$",
+                    "qubits": list(qubits),
+                    "operation_type": "charge_reset",
+                },
+            }
+        super().__init__(data["name"], data=data)
+
+    def __str__(self) -> str:
+        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
+        return f'{self.__class__.__name__}({",".join(qubits)})'
