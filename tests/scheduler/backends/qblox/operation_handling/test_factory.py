@@ -104,11 +104,11 @@ def test_get_operation_strategy(
 ):
     # arrange
     instruction_generated_pulses_enabled = True
-    output_mode = "complex"
+    io_mode = "complex"
 
     # act
     obj = factory.get_operation_strategy(
-        op_info, instruction_generated_pulses_enabled, output_mode
+        op_info, instruction_generated_pulses_enabled, io_mode
     )
 
     # assert
@@ -128,11 +128,11 @@ def test_get_operation_strategy_no_instr_gen(
 ):
     # arrange
     instruction_generated_pulses_enabled = False
-    output_mode = "complex"
+    io_mode = "complex"
 
     # act
     obj = factory.get_operation_strategy(
-        op_info, instruction_generated_pulses_enabled, output_mode
+        op_info, instruction_generated_pulses_enabled, io_mode
     )
 
     # assert
@@ -142,7 +142,7 @@ def test_get_operation_strategy_no_instr_gen(
 def test_invalid_protocol_exception():
     # arrange
     instruction_generated_pulses_enabled = True
-    output_mode = "complex"
+    io_mode = "complex"
     op_info = OpInfo(
         name="",
         data={
@@ -160,7 +160,7 @@ def test_invalid_protocol_exception():
     # act
     with pytest.raises(ValueError) as exc:
         factory.get_operation_strategy(
-            op_info, instruction_generated_pulses_enabled, output_mode
+            op_info, instruction_generated_pulses_enabled, io_mode
         )
 
     # assert
@@ -177,7 +177,7 @@ def test_invalid_protocol_exception():
 def test_trace_append_exception():
     # arrange
     instruction_generated_pulses_enabled = True
-    output_mode = "complex"
+    io_mode = "complex"
     op_info = OpInfo(
         name="",
         data={
@@ -195,7 +195,7 @@ def test_trace_append_exception():
     # act
     with pytest.raises(ValueError) as exc:
         factory.get_operation_strategy(
-            op_info, instruction_generated_pulses_enabled, output_mode
+            op_info, instruction_generated_pulses_enabled, io_mode
         )
 
     # assert

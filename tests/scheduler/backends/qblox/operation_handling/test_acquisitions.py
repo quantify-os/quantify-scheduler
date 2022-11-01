@@ -10,6 +10,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for acquisitions module."""
 import math
+import pprint
 from typing import Dict, Any
 
 import pytest
@@ -19,6 +20,8 @@ from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import constants
@@ -28,7 +31,12 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.operations.gate_library import Measure
+from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.instrument_coordinator.components.generic import (
+    GenericInstrumentCoordinatorComponent,
+)
+from quantify_scheduler.operations.gate_library import Measure, X, Rxy
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     AcquisitionIndexing,
@@ -478,6 +486,128 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
     assert len(data) == 2
     assert data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0].size == 3000
     assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:mw", "clock": "q0.01"},
+                    ],
+                },
+                "real_input_0": {
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro"},
+                    ],
+                },
+            },
+        },
+    }
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup_basic_transmon["q0"]
+    q1 = mock_setup_basic_transmon["q1"]
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
+    schedule.add(Measure("q1", acq_protocol="SSBIntegrationComplex"))
+    schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
+    schedule.add_resource(ClockResource(name="q0.01", freq=50e6))
+
+    # Change acq delay
+    q0.measure.acq_delay(1e-6)
+
+    # Generate compiled schedule
+    compiled_sched = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    #TODO: assert stuff
+
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:mw", "clock": "q0.01", "interm_freq": 20e6},
+                    ],
+                },
+                "complex_input_0": {
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro"},
+                    ],
+                },
+            },
+        },
+    }
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup_basic_transmon["q0"]
+    q1 = mock_setup_basic_transmon["q1"]
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    #schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01")) TODO: change pulse to complex
+    schedule.add(Measure("q1", acq_protocol="SSBIntegrationComplex"))
+    schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
+    schedule.add_resource(ClockResource(name="q0.01", freq=50e6))
+
+    # Change acq delay
+    q0.measure.acq_delay(1e-6)
+
+    # Generate compiled schedule
+    compiled_sched = qcompile(
+        schedule=schedule,
+        device_cfg=quantum_device.generate_device_config(),
+        hardware_cfg=hardware_cfg,
+    )
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    #TODO: assert stuff
+
 
     instr_coordinator.remove_component("ic_cluster0")
 

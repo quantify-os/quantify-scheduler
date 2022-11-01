@@ -4,7 +4,7 @@
 import re
 from copy import deepcopy
 from collections import UserDict
-from typing import Any, Dict, Iterable, List, Literal, Tuple, Union
+from typing import Any, Dict, Iterable, List, Literal, Tuple, Union, Optional
 
 import numpy as np
 
@@ -201,7 +201,7 @@ def add_to_wf_dict_if_unique(
     return wf_dict, uuid, index
 
 
-def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
+def output_name_to_outputs(name: str) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
     """
     Finds the output path index associated with the output names specified in the
     config.
@@ -222,6 +222,8 @@ def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     :
         A tuple containing the indices of the physical (real) outputs.
     """
+    if "output" not in name:
+        return None
     return {
         "complex_output_0": (0, 1),
         "complex_output_1": (2, 3),
@@ -232,8 +234,38 @@ def output_name_to_outputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     }[name]
 
 
-def output_mode_from_outputs(
-    outputs: Union[Tuple[int], Tuple[int, int]]
+def input_name_to_inputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
+    """
+    Finds the output path index associated with the output names specified in the
+    config.
+
+    For the baseband modules, these indices correspond directly to a physical output (
+    e.g. index 0 corresponds to output 1 etc.).
+
+    For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
+    respectively, and 1 and 3 to path1 of those outputs.
+
+    Parameters
+    ----------
+    name
+        name of the output channel. e.g. 'complex_output_0'.
+
+    Returns
+    -------
+    :
+        A tuple containing the indices of the physical (real) outputs.
+    """
+    if "input" not in name:
+        return None
+    return {
+        "complex_input_0": (0, 1),
+        "real_input_0": (0,),
+        "real_input_1": (1,),
+    }[name]
+
+
+def io_mode_from_ios(
+    io: Union[Tuple[int], Tuple[int, int]]
 ) -> Literal["complex", "real", "imag"]:
     """
     Takes the specified outputs to use and extracts a "sequencer mode" from it.
@@ -246,8 +278,8 @@ def output_mode_from_outputs(
 
     Parameters
     ----------
-    outputs
-        The outputs the sequencer is supposed to use. Note that the outputs start from
+    io
+        The io the sequencer is supposed to use. Note that the outputs start from
         0, but the labels on the front panel start counting from 1. So the mapping
         differs n-1.
 
@@ -261,23 +293,21 @@ def output_mode_from_outputs(
     RuntimeError
         The amount of outputs is more than 2, which is impossible for one sequencer.
     """
-    if len(outputs) > 2:
-        raise RuntimeError(
-            f"Too many outputs specified for this channel. Given: {outputs}."
-        )
+    if len(io) > 2:
+        raise RuntimeError(f"Too many outputs specified for this channel. Given: {io}.")
 
-    if len(outputs) == 2:
+    if len(io) == 2:
         assert (
-            outputs[0] - outputs[1]
+            io[0] - io[1]
         ) ** 2 == 1, "Attempting to use two outputs that are not next to each other."
-        if 1 in outputs:
-            assert 2 not in outputs, (
+        if 1 in io:
+            assert 2 not in io, (
                 "Attempting to use output 1 and output 2 (2 and 3 on front panel) "
                 "together, but they belong to different pairs."
             )
         return "complex"
 
-    output = outputs[0]
+    output = io[0]
     mode = "real" if output % 2 == 0 else "imag"
     return mode
 

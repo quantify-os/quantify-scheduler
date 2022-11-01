@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class PulseStrategyPartial(IOperationStrategy):
     """Contains the logic shared between all the pulses."""
 
-    def __init__(self, operation_info: types.OpInfo, output_mode: str):
+    def __init__(self, operation_info: types.OpInfo, io_mode: str):
         """
         Constructor.
 
@@ -34,12 +34,12 @@ class PulseStrategyPartial(IOperationStrategy):
         ----------
         operation_info
             The operation info that corresponds to this pulse.
-        output_mode
+        io_mode
             Either "real", "imag" or complex depending on whether the signal affects
             only path0, path1 or both.
         """
         self._pulse_info: types.OpInfo = operation_info
-        self.output_mode = output_mode
+        self.io_mode = io_mode
 
     @property
     def operation_info(self) -> types.OpInfo:
@@ -53,7 +53,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
     pulse shape and no optimizations are done.
     """
 
-    def __init__(self, operation_info: types.OpInfo, output_mode: str):
+    def __init__(self, operation_info: types.OpInfo, io_mode: str):
         """
         Constructor for this strategy.
 
@@ -61,11 +61,11 @@ class GenericPulseStrategy(PulseStrategyPartial):
         ----------
         operation_info
             The operation info that corresponds to this pulse.
-        output_mode
+        io_mode
             Either "real", "imag" or "complex" depending on whether the signal affects
             only path0, path1 or both, respectively.
         """
-        super().__init__(operation_info, output_mode)
+        super().__init__(operation_info, io_mode)
 
         self.amplitude_path0: Optional[float] = None
         self.amplitude_path1: Optional[float] = None
@@ -97,9 +97,9 @@ class GenericPulseStrategy(PulseStrategyPartial):
             Q_\\text{IF} \\end{bmatrix}
 
         In real mode, :math:`I_\\text{IF}` can be produced on either
-        path0 (``output_mode == "real"``) or path1 (``output_mode == "imag"``).
+        path0 (``io_mode == "real"``) or path1 (``io_mode == "imag"``).
 
-        For ``output_mode == imag``, the real-valued input (:math:`I`) on path0 is
+        For ``io_mode == imag``, the real-valued input (:math:`I`) on path0 is
         swapped with imaginary input (:math:`Q`) on path1. We multiply :math:`Q` by -1
         (via ``amp_imag``) to undo the 90-degree phase shift resulting from swapping the
         NCO input paths.
@@ -127,7 +127,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         Raises
         ------
         ValueError
-            Data is complex (has an imaginary component), but the output_mode is not set
+            Data is complex (has an imaginary component), but the io_mode is not set
             to "complex".
         """  # pylint: disable=line-too-long
         op_info = self.operation_info
@@ -139,7 +139,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
         _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
 
-        if np.any(np.iscomplex(waveform_data)) and not self.output_mode == "complex":
+        if np.any(np.iscomplex(waveform_data)) and not self.io_mode == "complex":
             raise ValueError(
                 f"Complex valued {str(op_info)} detected but the sequencer"
                 f" is not expecting complex input. This can be caused by "
@@ -147,7 +147,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 f" marked as real.\n\nException caused by {repr(op_info)}."
             )
 
-        if self.output_mode == "imag":
+        if self.io_mode == "imag":
             self.waveform_index0, self.waveform_index1 = idx_imag, idx_real
             self.amplitude_path0, self.amplitude_path1 = (
                 -amp_imag,  # Multiply by -1 to undo 90-degree shift
@@ -188,7 +188,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
     square pulses together.
     """
 
-    def __init__(self, operation_info: types.OpInfo, output_mode: str):
+    def __init__(self, operation_info: types.OpInfo, io_mode: str):
         """
         Constructor for StitchedSquarePulseStrategy.
 
@@ -196,11 +196,11 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         ----------
         operation_info
             The operation info that corresponds to this pulse.
-        output_mode
+        io_mode
             Either "real", "imag" or complex depending on whether the signal affects
             only path0, path1 or both.
         """
-        super().__init__(operation_info, output_mode)
+        super().__init__(operation_info, io_mode)
 
         self.amplitude_path0: Optional[float] = None
         self.amplitude_path1: Optional[float] = None
@@ -229,7 +229,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
         )
         _, _, idx_ones = helpers.add_to_wf_dict_if_unique(wf_dict, array_with_ones.real)
-        if self.output_mode == "complex":
+        if self.io_mode == "complex":
             _, _, idx_zeros = helpers.add_to_wf_dict_if_unique(
                 wf_dict, array_with_ones.imag
             )
@@ -238,7 +238,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         else:
             self.waveform_index0, self.waveform_index1 = idx_ones, idx_ones
 
-            if self.output_mode == "imag":
+            if self.io_mode == "imag":
                 self.amplitude_path0, self.amplitude_path1 = 0, amplitude
             else:
                 self.amplitude_path0, self.amplitude_path1 = amplitude, 0
@@ -335,7 +335,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this pulse.
 
-        Steps are generated using offset instructions. Using output_mode "real" or
+        Steps are generated using offset instructions. Using io_mode "real" or
         "complex" will cause the signal to appear on path0, "imag" on path1.
 
         Parameters
@@ -350,7 +350,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         step_duration_ns = helpers.to_grid_time(pulse.duration / num_steps)
 
         offset_param_label = (
-            "offset_awg_path1" if self.output_mode == "imag" else "offset_awg_path0"
+            "offset_awg_path1" if self.io_mode == "imag" else "offset_awg_path0"
         )
         start_amp_immediate = qasm_program.expand_from_normalised_range(
             start_amp / qasm_program.static_hw_properties.max_awg_output_voltage,
@@ -440,7 +440,7 @@ class StaircasePulseStrategy(PulseStrategyPartial):
         amp_step_immediate: int,
     ):
         """Generates the inner part of the loop."""
-        if self.output_mode == "imag":
+        if self.io_mode == "imag":
             qasm_program.emit(
                 q1asm_instructions.SET_AWG_OFFSET, offs_reg_zero, offs_reg
             )

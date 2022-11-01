@@ -365,6 +365,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables party-line synchronization."""
     connected_outputs: Union[Tuple[int], Tuple[int, int]]
     """Specifies which physical outputs this sequencer produces waveform data for."""
+    connected_inputs: Union[Tuple[int], Tuple[int, int]]
+    """Specifies which physical inputs this sequencer produces waveform data for."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
     mixer_corr_phase_offset_degree: float = 0.0
@@ -386,6 +388,7 @@ class SequencerSettings(DataClassJsonMixin):
         cls,
         seq_settings: Dict[str, Any],
         connected_outputs: Union[Tuple[int], Tuple[int, int]],
+        connected_inputs: Union[Tuple[int], Tuple[int, int]],
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
@@ -395,6 +398,10 @@ class SequencerSettings(DataClassJsonMixin):
         ----------
         seq_settings
             The sequencer configuration dict.
+        connected_outputs
+            The outputs connected to the sequencer.
+        connected_inputs
+            The inputs connected to the sequencer.
 
         Returns
         -------
@@ -442,6 +449,7 @@ class SequencerSettings(DataClassJsonMixin):
             sync_en=True,
             mix_lo=True,
             connected_outputs=connected_outputs,
+            connected_inputs=connected_inputs,
             modulation_freq=modulation_freq,
             mixer_corr_gain_ratio=mixer_amp_ratio,
             mixer_corr_phase_offset_degree=mixer_phase_error,
