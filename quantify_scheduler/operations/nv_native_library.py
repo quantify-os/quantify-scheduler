@@ -16,7 +16,7 @@ class ChargeReset(Operation):
         be described by a unitary.
     """
 
-    def __init__(self, *qubits: str, data: Optional[dict] = None):
+    def __init__(self, *qubits: str):
         """
         Create a new instance of ChargeReset operation that is used to initialize the
         charge state of an NV center.
@@ -26,10 +26,6 @@ class ChargeReset(Operation):
         qubit
             The qubit to reset. NB one or more qubits can be specified, e.g.,
             :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
-        data
-            The operation's dictionary, by default :code:`None`.
-            Note: if the data parameter is not :code:`None` all other parameters are
-            overwritten using the contents of data.
         """
 
         super().__init__(name=f"ChargeReset {', '.join(qubits)}")
