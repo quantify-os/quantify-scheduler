@@ -93,9 +93,8 @@ class ClockFrequencies(InstrumentModule):
         """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
 
-
-        self.green_laser_freq= ManualParameter(
-            name="green_laser_freq",
+        self.ionization = ManualParameter(
+            name="ionization",
             label="Frequency of green laser",
             unit="Hz",
             instrument=self,
@@ -160,6 +159,7 @@ class ResetSpinpump(InstrumentModule):
         )
         """Duration of reset pulse"""
 
+
 class ChargeReset(InstrumentModule):
     """
     Submodule containing parameters to run a green laser square pulse to reset the NV in
@@ -183,9 +183,10 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
+            vals=validators.Numbers(min_value=20e-9, max_value=1e-3),
         )
         """Duration of the charge set pulse."""
+
 
 class BasicElectronicNVElement(DeviceElement):
     """
@@ -240,7 +241,7 @@ class BasicElectronicNVElement(DeviceElement):
                         "duration": self.charge_reset.duration(),
                         "amp": self.charge_reset.amplitude(),
                         "port": self.ports.optical_control(),
-                        "clock": f"{self.name}.green_laser_freq",
+                        "clock": f"{self.name}.ionization",
                     },
                 ),
             }
@@ -266,7 +267,7 @@ class BasicElectronicNVElement(DeviceElement):
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.spec": self.clock_freqs.spec(),
                 f"{self.name}.ge1": self.clock_freqs.ge1(),
-                f"{self.name}.green_laser_freq": self.clock_freqs.green_laser_freq(),
+                f"{self.name}.ionization": self.clock_freqs.ionization(),
             },
             "edges": {},
         }

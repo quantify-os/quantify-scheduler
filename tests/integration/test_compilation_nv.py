@@ -4,7 +4,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.gate_library import Reset
-from quantify_scheduler.operations.nv_library import ChargeReset
+from quantify_scheduler.operations.nv_native_library import ChargeReset
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 

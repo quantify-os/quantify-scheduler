@@ -38,7 +38,7 @@
                 "portclock_configs": [
                     {
                         "port": "qe0:optical_control",
-                        "clock": "qe0.green_laser_freq",
+                        "clock": "qe0.ionization",
                         "interm_freq": 200e6,
                         "instruction_generated_pulses_enabled": true
                     }
