@@ -5,7 +5,6 @@
 from typing import Optional
 from .operation import Operation
 
-
 class ChargeReset(Operation):
     r"""
     Reset a NV to its negative charge state NV$^-$.
@@ -31,8 +30,10 @@ class ChargeReset(Operation):
             Note: if the data parameter is not :code:`None` all other parameters are
             overwritten using the contents of data.
         """
-        if data is None:
-            data = {
+
+        super().__init__(name=f"ChargeReset {', '.join(qubits)}")
+        self.data.update(
+            {
                 "name": f"ChargeReset {', '.join(qubits)}",
                 "gate_info": {
                     "unitary": None,
@@ -42,7 +43,8 @@ class ChargeReset(Operation):
                     "operation_type": "charge_reset",
                 },
             }
-        super().__init__(data["name"], data=data)
+        )
+        self.update()
 
     def __str__(self) -> str:
         qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
