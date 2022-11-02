@@ -2,12 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """NV center specific gateset for use with the quantify_scheduler."""
-from typing import Literal, Optional, Tuple, Union
-
-import numpy as np
-
+from typing import Optional
 from .operation import Operation
-from ..enums import BinMode
 
 
 class ChargeReset(Operation):
