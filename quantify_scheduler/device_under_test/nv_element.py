@@ -97,7 +97,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
 
@@ -107,7 +107,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
