@@ -297,7 +297,7 @@ class BasicElectronicNVElement(DeviceElement):
                         "acq_port": self.ports.optical_readout(),
                         "acq_clock": f"{self.name}.ge0",
                         "pulse_type": "SquarePulse",
-                        "acq_protocol_default": "Trace",
+                        "acq_protocol_default": "TriggerCount",
                     },
                     gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),
