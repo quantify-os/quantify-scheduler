@@ -143,23 +143,30 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     schedule = Schedule(name="Measure", repetitions=1)
     label = "measure pulse"
 
-    _ = schedule.add(Measure("qe0"), label=label)
-    measure_str = str(Measure("qe0"))
+    _ = schedule.add(Measure("qe0", acq_protocol="TriggerCount"), label=label)
+    measure_str = str(Measure("qe0", acq_protocol="TriggerCount"))
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    quantum_device.get_element("qe0").measure.acq_delay(1e-8)
     dev_cfg = quantum_device.generate_device_config()
     schedule_device = device_compile(schedule, dev_cfg)
 
-    # The gate_info remains unchanged, but the pulse info has been added
+    # The gate_info and acquisition_info remains unchanged, but the pulse info has been
+    # added
     assert measure_str in schedule_device.operations
     assert "gate_info" in schedule_device.operations[measure_str]
     assert (
         schedule_device.operations[measure_str]["gate_info"]
         == schedule.operations[measure_str]["gate_info"]
     )
+    assert "acquisition_info" in schedule_device.operations[measure_str]
+    acquisition_info = schedule_device.operations[measure_str]["acquisition_info"][0]
+    assert acquisition_info["t0"] == 1e-8
+    assert acquisition_info["protocol"] == "trigger_count"
+
     assert not schedule_device.operations[measure_str]["pulse_info"] == []
 
     # Timing info has been added

@@ -545,6 +545,7 @@ class Measure(Operation):
         acq_protocol: Literal[
             "SSBIntegrationComplex",
             "Trace",
+            "TriggerCount",
             None,
         ] = None,
         bin_mode: BinMode = None,
