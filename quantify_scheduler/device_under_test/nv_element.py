@@ -183,7 +183,7 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=20e-9, max_value=1e-3),
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         """Duration of the charge set pulse."""
 
