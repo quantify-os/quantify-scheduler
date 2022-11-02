@@ -75,7 +75,8 @@ def test_generate_config_measure(electronic_q0: BasicElectronicNVElement):
     electronic_q0.measure.acq_duration(287e-6)
     electronic_q0.measure.acq_delay(13e-6)
     electronic_q0.measure.acq_channel(7)
-    electronic_q0.clock_freqs.ge0(460e9)
+    electronic_q0.clock_freqs.ge0.set(470.4e12)  # 637 nm
+    electronic_q0.clock_freqs.ge1.set(470.4e12 - 5e9)  # slightly detuned
 
     # Get device config
     dev_cfg = electronic_q0.generate_device_config()
