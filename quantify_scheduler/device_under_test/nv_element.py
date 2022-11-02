@@ -95,13 +95,13 @@ class ClockFrequencies(InstrumentModule):
 
         self.ionization = ManualParameter(
             name="ionization",
-            label="Frequency of green laser",
+            label="Frequency of ionization laser",
             unit="Hz",
             instrument=self,
             initial_value=16e9,
             vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
         )
-        """Frequency of the green laser for manipulation of the NVs charge state."""
+        """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
 
 # pylint: disable=too-few-public-methods
@@ -162,7 +162,7 @@ class ResetSpinpump(InstrumentModule):
 
 class ChargeReset(InstrumentModule):
     """
-    Submodule containing parameters to run a green laser square pulse to reset the NV in
+    Submodule containing parameters to run an ionization laser square pulse to reset the NV in
     its negatively charged state.
     """
 
