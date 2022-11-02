@@ -5,6 +5,7 @@
 from typing import Optional
 from .operation import Operation
 
+
 class ChargeReset(Operation):
     r"""
     Reset a NV to its negative charge state NV$^-$.
@@ -37,7 +38,8 @@ class ChargeReset(Operation):
                 "name": f"ChargeReset {', '.join(qubits)}",
                 "gate_info": {
                     "unitary": None,
-                    "plot_func": "quantify_scheduler.visualization.circuit_diagram.reset",
+                    "plot_func": "quantify_scheduler.visualization."
+                    + "circuit_diagram.reset",
                     "tex": r"$NV^-$",
                     "qubits": list(qubits),
                     "operation_type": "charge_reset",
