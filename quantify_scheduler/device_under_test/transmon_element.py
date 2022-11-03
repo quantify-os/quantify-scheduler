@@ -27,29 +27,29 @@ class Ports(InstrumentChannel):
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.add_parameter(
+        self.microwave = Parameter(
             "microwave",
-            docstring=r"Name of the element's microwave port.",
+            instrument=self,
             initial_cache_value=f"{parent.name}:mw",
-            parameter_class=Parameter,
             set_cmd=False,
         )
+        """Name of the element's microwave port."""
 
-        self.add_parameter(
+        self.flux = Parameter(
             "flux",
-            docstring=r"Name of the element's flux port.",
+            instrument=self,
             initial_cache_value=f"{parent.name}:fl",
-            parameter_class=Parameter,
             set_cmd=False,
         )
+        """Name of the element's flux port."""
 
-        self.add_parameter(
+        self.readout = Parameter(
             "readout",
-            docstring=r"Name of the element's readout port.",
+            instrument=self,
             initial_cache_value=f"{parent.name}:res",
-            parameter_class=Parameter,
             set_cmd=False,
         )
+        """Name of the element's readout port."""
 
 
 class ClocksFrequencies(InstrumentChannel):
@@ -60,34 +60,35 @@ class ClocksFrequencies(InstrumentChannel):
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.add_parameter(
+        self.f01 = ManualParameter(
             "f01",
+            instrument=self,
             label="Qubit frequency",
             unit="Hz",
-            parameter_class=ManualParameter,
-            docstring=f"Frequency of the {parent.name}.01 clock",
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
-        self.add_parameter(
+        """Frequency of the 01 clock"""
+
+        self.f12 = ManualParameter(
             "f12",
+            instrument=self,
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
             initial_value=float("nan"),
-            docstring=f"Frequency of the {parent.name}.12 clock",
-            parameter_class=ManualParameter,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
+        """Frequency of the 12 clock"""
 
-        self.add_parameter(
+        self.readout = ManualParameter(
             "readout",
+            instrument=self,
             label="Readout frequency",
             unit="Hz",
-            parameter_class=ManualParameter,
-            docstring=f"Frequency of the {parent.name}.ro clock. ",
             initial_value=float("nan"),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
+        """Frequency of the ro clock. """
 
 
 class IdlingReset(InstrumentChannel):
@@ -98,15 +99,14 @@ class IdlingReset(InstrumentChannel):
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.add_parameter(
+        self.duration = ManualParameter(
             "duration",
-            docstring="""Duration of the passive qubit reset
-            (initialization by relaxation).""",
+            instrument=self,
             initial_value=200e-6,
             unit="s",
-            parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=0, max_value=1),
         )
+        """Duration of the passive qubit reset (initialization by relaxation)."""
 
 
 class RxyDRAG(InstrumentChannel):
@@ -117,32 +117,34 @@ class RxyDRAG(InstrumentChannel):
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
-        self.add_parameter(
+        self.amp180 = ManualParameter(
             "amp180",
-            docstring=r"""Amplitude required to perform a $\pi$ pulse.""",
+            instrument=self,
             label=r"$\pi-pulse amplitude$",
             initial_value=float("nan"),
             unit="V",
-            parameter_class=ManualParameter,
             vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
-        self.add_parameter(
+        r"""Amplitude required to perform a $\pi$ pulse."""
+
+        self.motzoi = ManualParameter(
             "motzoi",
-            docstring="""Ratio between the Gaussian Derivative (D) and Gaussian (G)
-            components of the DRAG pulse.""",
+            instrument=self,
             initial_value=0,
             unit="",
-            parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=-1, max_value=1),
         )
-        self.add_parameter(
+        """Ratio between the Gaussian Derivative (D) and Gaussian (G)
+        components of the DRAG pulse."""
+
+        self.duration = ManualParameter(
             "duration",
-            docstring="""Duration of the control pulse.""",
+            instrument=self,
             initial_value=20e-9,
             unit="s",
-            parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=0, max_value=1),
         )
+        """Duration of the control pulse."""
 
 
 class DispersiveMeasurement(InstrumentChannel):
@@ -155,81 +157,82 @@ class DispersiveMeasurement(InstrumentChannel):
         super().__init__(parent=parent, name=name)
 
         pulse_types = validators.Enum("SquarePulse")
-        self.add_parameter(
+        self.pulse_type = ManualParameter(
             "pulse_type",
-            docstring=(
-                "Envelope function that defines the shape of "
-                "the readout pulse prior to modulation."
-            ),
+            instrument=self,
             initial_value="SquarePulse",
-            parameter_class=ManualParameter,
             vals=pulse_types,
         )
+        """Envelope function that defines the shape of the readout pulse prior to
+        modulation."""
 
-        self.add_parameter(
+        self.pulse_amp = ManualParameter(
             "pulse_amp",
-            docstring="Amplitude of the readout pulse.",
+            instrument=self,
             initial_value=0.25,
             unit="V",
-            parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=0, max_value=2),
         )
-        self.add_parameter(
+        """Amplitude of the readout pulse."""
+
+        self.pulse_duration = ManualParameter(
             "pulse_duration",
-            docstring="Duration of the readout pulse.",
+            instrument=self,
             initial_value=300e-9,
             unit="s",
-            parameter_class=ManualParameter,
             vals=validators.Numbers(min_value=0, max_value=1),
         )
+        """Duration of the readout pulse."""
 
-        self.add_parameter(
+        self.acq_channel = ManualParameter(
             "acq_channel",
-            docstring="Acquisition channel of to this device element.",
+            instrument=self,
             initial_value=0,
             unit="#",
-            parameter_class=ManualParameter,
             vals=validators.Ints(min_value=0),
         )
+        """Acquisition channel of to this device element."""
 
-        self.add_parameter(
+        self.acq_delay = ManualParameter(
             "acq_delay",
-            docstring="Delay between the start of the readout pulse and the start of "
-            + "the acquisition. Note that some hardware backends do not support "
-            "starting a pulse and the acquisition in the same clock cycle making 0 "
-            "delay an invalid value.",
+            instrument=self,
             initial_value=0,  # float("nan"),
             unit="s",
-            parameter_class=ManualParameter,
             # in principle the values should be a few 100 ns but the validator is here
             # only to protect against silly typos that lead to out of memory errors.
             vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
-        self.add_parameter(
+        """Delay between the start of the readout pulse and the start of
+        the acquisition. Note that some hardware backends do not support
+        starting a pulse and the acquisition in the same clock cycle making 0
+        delay an invalid value."""
+
+        self.integration_time = ManualParameter(
             "integration_time",
-            docstring="Integration time for the readout acquisition.",
+            instrument=self,
             initial_value=1e-6,
             unit="s",
-            parameter_class=ManualParameter,
             # in principle the values should be a few us but the validator is here
             # only to protect against silly typos that lead to out of memory errors.
             vals=validators.Numbers(min_value=0, max_value=100e-6),
         )
-        self.add_parameter(
+        """Integration time for the readout acquisition."""
+
+        self.reset_clock_phase = ManualParameter(
             "reset_clock_phase",
-            docstring="The phase of the measurement clock will be reset by the "
-            "control hardware at the start of each measurement if "
-            "``reset_clock_phase=True``.",
+            instrument=self,
             initial_value=True,
-            parameter_class=ManualParameter,
             vals=validators.Bool(),
         )
+        """The phase of the measurement clock will be reset by the
+        control hardware at the start of each measurement if
+        ``reset_clock_phase=True``."""
 
         ro_acq_weight_type_validator = validators.Enum("SSB")
-        self.add_parameter(
+        self.acq_weight_type = ManualParameter(
             "acq_weight_type",
+            instrument=self,
             initial_value="SSB",
-            parameter_class=ManualParameter,
             vals=ro_acq_weight_type_validator,
         )
 
@@ -244,10 +247,20 @@ class BasicTransmonElement(DeviceElement):
         super().__init__(name, **kwargs)
 
         self.add_submodule("reset", IdlingReset(self, "reset"))
+        self.reset: IdlingReset
+        """Submodule :class:`~.IdlingReset`."""
         self.add_submodule("rxy", RxyDRAG(self, "rxy"))
+        self.rxy: RxyDRAG
+        """Submodule :class:`~.RxyDRAG`."""
         self.add_submodule("measure", DispersiveMeasurement(self, "measure"))
+        self.measure: DispersiveMeasurement
+        """Submodule :class:`~.DispersiveMeasurement`."""
         self.add_submodule("ports", Ports(self, "ports"))
+        self.ports: Ports
+        """Submodule :class:`~.Ports`."""
         self.add_submodule("clock_freqs", ClocksFrequencies(self, "clock_freqs"))
+        self.clock_freqs: ClocksFrequencies
+        """Submodule :class:`~.ClocksFrequencies`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
