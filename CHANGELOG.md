@@ -7,6 +7,7 @@
 
 ### Merged branches and closed issues
 
+- Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
