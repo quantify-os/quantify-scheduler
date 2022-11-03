@@ -338,6 +338,8 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         for seq_name in program:
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
+                if isinstance(self, QRMComponent):
+                    self.instrument.delete_acquisition_data(sequencer=seq_idx, all=True)
                 self.instrument.arm_sequencer(sequencer=seq_idx)
 
     @property
