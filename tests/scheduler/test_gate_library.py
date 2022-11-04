@@ -24,6 +24,7 @@ from quantify_scheduler.operations.gate_library import (
     Y,
 )
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
+from quantify_scheduler.operations.nv_native_library import ChargeReset
 
 
 def test_schedule_add_schedulables() -> None:
@@ -80,6 +81,7 @@ def test_rxy_angle_modulo() -> None:
         CNOT("q0", "q6"),
         Measure("q0", "q9"),
         SpectroscopyOperation("q0"),
+        ChargeReset("q0"),
     ],
 )
 def test_gate_is_valid(operation: Operation) -> None:
