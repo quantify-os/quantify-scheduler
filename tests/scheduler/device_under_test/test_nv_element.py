@@ -65,11 +65,8 @@ def test_generate_config(electronic_q0: BasicElectronicNVElement):
 def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
     """Setting values updates the correct values in the config."""
     # Set values for charge_reset
-    electronic_q0.charge_reset.pulse_amplitude(1.0)
-    electronic_q0.charge_reset.pulse_duration(300e-6)
-    electronic_q0.charge_reset.acq_duration(287e-6)
-    electronic_q0.charge_reset.acq_delay(13e-6)
-    electronic_q0.charge_reset.acq_channel(7)
+    electronic_q0.charge_reset.amplitude(1.0)
+    electronic_q0.charge_reset.duration(300e-6)
     electronic_q0.clock_freqs.ionization.set(564e12)  # 532 nm
 
     # Get device config
@@ -77,16 +74,10 @@ def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
     cfg_charge_reset = dev_cfg.elements["qe0"]["charge_reset"]
 
     # Assert values are in right place
-    assert cfg_charge_reset.factory_kwargs["pulse_amplitude"] == 1.0
-    assert cfg_charge_reset.factory_kwargs["pulse_duration"] == 300e-6
-    assert cfg_charge_reset.factory_kwargs["pulse_port"] == "qe0:optical_control"
-    assert cfg_charge_reset.factory_kwargs["pulse_clock"] == "qe0.ionization"
-    assert cfg_charge_reset.factory_kwargs["acq_duration"] == 287e-6
-    assert cfg_charge_reset.factory_kwargs["acq_delay"] == 13e-6
-    assert cfg_charge_reset.factory_kwargs["acq_channel"] == 7
-    assert cfg_charge_reset.factory_kwargs["acq_port"] == "qe0:optical_readout"
-    assert cfg_charge_reset.factory_kwargs["acq_clock"] == "qe0.ionization"
-    assert cfg_charge_reset.factory_kwargs["pulse_type"] == "SquarePulse"
+    assert cfg_charge_reset.factory_kwargs["amp"] == 1.0
+    assert cfg_charge_reset.factory_kwargs["duration"] == 300e-6
+    assert cfg_charge_reset.factory_kwargs["port"] == "qe0:optical_control"
+    assert cfg_charge_reset.factory_kwargs["clock"] == "qe0.ionization"
 
 
 def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
