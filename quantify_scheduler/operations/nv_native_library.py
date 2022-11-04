@@ -1,19 +1,13 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
-"""NV center specific gateset for use with the quantify_scheduler."""
-from typing import Optional
+"""NV-center-specific operations for use with the quantify_scheduler."""
 from .operation import Operation
 
 
 class ChargeReset(Operation):
     r"""
-    Reset a NV to its negative charge state NV$^-$.
-
-    .. note::
-
-        Strictly speaking this is not a gate as it can not
-        be described by a unitary.
+    Prepare a NV to its negative charge state NV$^-$.
     """
 
     def __init__(self, *qubits: str):

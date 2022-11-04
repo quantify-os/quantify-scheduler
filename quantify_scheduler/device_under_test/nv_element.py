@@ -98,8 +98,8 @@ class ClockFrequencies(InstrumentModule):
             label="Frequency of ionization laser",
             unit="Hz",
             instrument=self,
-            initial_value=16e9,
-            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+            initial_value=float("nan"),
+            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
