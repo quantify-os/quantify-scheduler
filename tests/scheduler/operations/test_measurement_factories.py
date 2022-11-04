@@ -25,6 +25,7 @@ def default_kwargs_optical_measurement():
         "acq_channel": 1,
         "acq_index": 0,
         "acq_protocol": "TriggerCount",
+        "bin_mode": None,
     }
 
 
