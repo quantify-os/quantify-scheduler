@@ -119,9 +119,9 @@ def optical_measurement(
     acq_clock: str,
     acq_channel: int,
     acq_index: int,
+    bin_mode: Union[BinMode, None],
     acq_protocol: Literal["Trace", "TriggerCount"],
     acq_protocol_default: Literal["Trace", "TriggerCount"] = "TriggerCount",
-    bin_mode: Union[BinMode, None] = BinMode.APPEND,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
 ) -> Operation:
     # pylint: disable=too-many-locals
@@ -155,16 +155,17 @@ def optical_measurement(
         Acquisition channel of the device element
     acq_index
         Acquisition index as defined in the Schedule
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list. "average" which stores the count value of the new result and the
+        old register value is not currently implemented. ``None`` internally
+        resolves to ``BinMode.APPEND``.
     acq_protocol
         Acquisition protocol. "Trace" returns a time trace of the collected signal.
         "TriggerCount" returns the number of times the trigger threshold is surpassed.
     acq_protocol_default, optional
         Acquisition protocol if ``acq_protocol`` is None, by default "TriggerCount"
-    bin_mode, optional
-        Describes what is done when data is written to a register that already
-        contains a value. Options are "append" which appends the result to the
-        list or "average" which stores the count value of the
-        new result and the old register value, by default BinMode.APPEND
     pulse_type, optional
         Shape of the pulse to be generated, by default "SquarePulse"
 
