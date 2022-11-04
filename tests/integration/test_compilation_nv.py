@@ -167,7 +167,7 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     assert acquisition_info["t0"] == 1e-8
     assert acquisition_info["protocol"] == "trigger_count"
 
-    assert not schedule_device.operations[measure_str]["pulse_info"] == []
+    assert len(schedule_device.operations[measure_str]["pulse_info"]) > 0
 
     # Timing info has been added
     assert "abs_time" in schedule_device.schedulables[label].data.keys()
