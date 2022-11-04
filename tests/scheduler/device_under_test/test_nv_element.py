@@ -74,6 +74,7 @@ def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
     cfg_charge_reset = dev_cfg.elements["qe0"]["charge_reset"]
 
     # Assert values are in right place
+    assert dev_cfg.clocks["qe0.ionization"] == 564e12
     assert cfg_charge_reset.factory_kwargs["amp"] == 1.0
     assert cfg_charge_reset.factory_kwargs["duration"] == 300e-6
     assert cfg_charge_reset.factory_kwargs["port"] == "qe0:optical_control"
