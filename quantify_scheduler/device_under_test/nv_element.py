@@ -173,10 +173,10 @@ class ResetSpinpump(InstrumentModule):
         """Duration of reset pulse"""
 
 
-class MeasureResonant(InstrumentModule):
+class Measure(InstrumentModule):
     """Submodule containing parameters to read out the spin state of the NV center.
 
-    Resonant excitation with a readout laser from the $\ket{0}$ to an excited state.
+    Excitation with a readout laser from the $\ket{0}$ to an excited state.
     Acquisition of photons when decaying back into the $\ket{0}$ state.
     """
 
