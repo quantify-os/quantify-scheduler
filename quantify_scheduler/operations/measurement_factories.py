@@ -121,8 +121,8 @@ def optical_measurement(
     acq_index: int,
     bin_mode: Union[BinMode, None],
     acq_protocol: Literal["Trace", "TriggerCount"],
-    acq_protocol_default: Literal["Trace", "TriggerCount"] = "TriggerCount",
-    pulse_type: Literal["SquarePulse"] = "SquarePulse",
+    acq_protocol_default: Literal["Trace", "TriggerCount"],
+    pulse_type: Literal["SquarePulse"],
 ) -> Operation:
     # pylint: disable=too-many-locals
     """Generator function for a standard optical measurement.
