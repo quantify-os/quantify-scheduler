@@ -34,14 +34,20 @@ def test_qubit_name(electronic_q0: BasicElectronicNVElement):
     assert electronic_q0.name == "qe0"
 
 
+def test_operation_configs_are_submodules(electronic_q0: BasicElectronicNVElement):
+    """Operation configuration is not only a class attribute, but also a submodule"""
+    assert "ports" in electronic_q0.submodules
+    assert "clock_freqs" in electronic_q0.submodules
+    assert "spectroscopy_operation" in electronic_q0.submodules
+    assert "reset" in electronic_q0.submodules
+    assert "measure" in electronic_q0.submodules
+
+
 def test_generate_config_spectroscopy(electronic_q0: BasicElectronicNVElement):
     """Setting values updates the correct values in the config."""
     # Set values for spectroscopy
     electronic_q0.spectroscopy_operation.amplitude(1.0)
     electronic_q0.spectroscopy_operation.duration(10e-6)
-    # set some values for reset
-    electronic_q0.reset.amplitude(1.0)
-    electronic_q0.reset.duration(10e-6)
 
     # Get device config
     dev_cfg = electronic_q0.generate_device_config()

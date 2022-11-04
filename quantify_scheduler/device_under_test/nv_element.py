@@ -115,11 +115,15 @@ class ClockFrequencies(InstrumentModule):
 
 # pylint: disable=too-few-public-methods
 class SpectroscopyOperationHermiteMW(InstrumentModule):
-    """Submodule with parameters to convert the SpectroscopyOperation into a microwave
-    pulse with a certain amplitude and duration for spin-state manipulation."""
+    """Submodule with parameters to convert the SpectroscopyOperation into a hermite
+    microwave pulse with a certain amplitude and duration for spin-state manipulation.
+
+    The modulation frequency of the pulse is determined by the clock ``spec`` in
+    :class:`~.ClockFrequencies`.
+    """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
-        super().__init__(parent=parent, name=name)
+        super().__init__(parent=parent, name=name, **kwargs)
 
         self.amplitude = ManualParameter(
             name="amplitude",
@@ -148,7 +152,7 @@ class ResetSpinpump(InstrumentModule):
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
-        super().__init__(parent=parent, name=name)
+        super().__init__(parent=parent, name=name, **kwargs)
 
         self.amplitude = ManualParameter(
             name="amplitude",
@@ -177,7 +181,7 @@ class MeasureResonant(InstrumentModule):
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
-        super().__init__(parent=parent, name=name)
+        super().__init__(parent=parent, name=name, **kwargs)
 
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
@@ -235,6 +239,9 @@ class MeasureResonant(InstrumentModule):
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
+
+    The submodules contain the necessary qubit parameters to translate higher-level
+    operations into pulses. Please see the documentation of these classes.
     """
 
     def __init__(self, name: str, **kwargs):
@@ -244,15 +251,20 @@ class BasicElectronicNVElement(DeviceElement):
             "spectroscopy_operation",
             SpectroscopyOperationHermiteMW(self, "spectroscopy_operation"),
         )
-        self.add_submodule("ports", Ports(self, "ports"))
-        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
-        self.add_submodule("reset", ResetSpinpump(self, "reset"))
-        self.add_submodule("measure", MeasureResonant(self, "measure"))
         self.spectroscopy_operation: SpectroscopyOperationHermiteMW
+        """Submodule :class:`~.SpectroscopyOperationHermiteMW`."""
+        self.add_submodule("ports", Ports(self, "ports"))
         self.ports: Ports
+        """Submodule :class:`~.Ports`."""
+        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
         self.clock_freqs: ClockFrequencies
+        """Submodule :class:`~.ClockFrequencies`."""
+        self.add_submodule("reset", ResetSpinpump(self, "reset"))
         self.reset: ResetSpinpump
+        """Submodule :class:`~.ResetSpinpump`."""
+        self.add_submodule("measure", MeasureResonant(self, "measure"))
         self.measure: MeasureResonant
+        """Submodule :class:`~.MeasureResonant`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """

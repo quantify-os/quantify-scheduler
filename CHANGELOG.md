@@ -7,12 +7,17 @@
 
 ### Merged branches and closed issues
 
+- Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 - QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
+- Gate Library - Added Deprecation Warning for `acq_channel` Keyword in Measure (!491)
+- QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
+- QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
+- Git - Changed git merge strategy to "union" for CHANGELOG.md and AUTHORS.md to reduce amount of merge conflicts (!495)
 
 ## 0.9.0 (2022-10-06)
 
@@ -50,6 +55,7 @@
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
+
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
