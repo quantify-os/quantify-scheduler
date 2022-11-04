@@ -262,9 +262,9 @@ class BasicElectronicNVElement(DeviceElement):
         self.add_submodule("reset", ResetSpinpump(self, "reset"))
         self.reset: ResetSpinpump
         """Submodule :class:`~.ResetSpinpump`."""
-        self.add_submodule("measure", MeasureResonant(self, "measure"))
-        self.measure: MeasureResonant
-        """Submodule :class:`~.MeasureResonant`."""
+        self.add_submodule("measure", Measure(self, "measure"))
+        self.measure: Measure
+        """Submodule :class:`~.Measure`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
