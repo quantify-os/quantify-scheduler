@@ -21,8 +21,10 @@ def closest_number_ceil(number: Union[int, float], multiple: Union[int, float]) 
     int
         The closest next number.
     """
-    assert number > 0
-    assert multiple > 0
+    if not number > 0:
+        raise ValueError(f"number must be positive. Got {number}.")
+    if not multiple > 0:
+        raise ValueError(f"multiple must be positive. Got {multiple}.")
 
     # Find the quotient
     quotient = int(number / multiple)

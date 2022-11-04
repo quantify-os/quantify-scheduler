@@ -18,6 +18,7 @@
 - QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
 - QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
 - Git - Changed git merge strategy to "union" for CHANGELOG.md and AUTHORS.md to reduce amount of merge conflicts (!495)
+- Validation - Replaced most of the asserts with exceptions when checking business logic (#342, !499)
 
 ## 0.9.0 (2022-10-06)
 
