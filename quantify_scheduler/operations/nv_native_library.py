@@ -19,7 +19,7 @@ class ChargeReset(Operation):
         ----------
         qubit
             The qubit to reset. NB one or more qubits can be specified, e.g.,
-            :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
+            :code:`ChargeReset("qe0")`, :code:`ChargeReset("qe0", "qe1", "qe2")`, etc..
         """
 
         super().__init__(name=f"ChargeReset {', '.join(qubits)}")

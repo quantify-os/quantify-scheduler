@@ -132,6 +132,7 @@ def is__str__equal(obj: Any) -> None:
         Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
         SpectroscopyOperation("q0"),
+        ChargeReset("q0"),
     ],
 )
 def test__repr__(operation: Operation) -> None:
@@ -155,6 +156,7 @@ def test__repr__(operation: Operation) -> None:
         Measure("q0", "q6", acq_channel=4),  # This operation should be invalid #262
         Measure("q0", "q6", acq_index=92),
         SpectroscopyOperation("q0"),
+        ChargeReset("q0"),
     ],
 )
 def test__str__(operation: Operation) -> None:
@@ -178,6 +180,7 @@ def test__str__(operation: Operation) -> None:
         Measure("q0", "q6", acq_channel=4),
         Measure("q0", "q6", acq_index=92),
         SpectroscopyOperation("q0"),
+        ChargeReset("q0"),
     ],
 )
 def test_deserialize(operation: Operation) -> None:
@@ -224,6 +227,7 @@ def test_deserialize(operation: Operation) -> None:
         Measure("q0", "q6", acq_channel=4),
         Measure("q0", "q6", acq_index=92),
         SpectroscopyOperation("q0"),
+        ChargeReset("q0"),
     ],
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
