@@ -124,4 +124,18 @@ class TestLazySet:
         utility.lazy_set(instr, "test_param", None)
 
         # assert
+        assert counter.count == 1
+        
+    def test_invalid(self, mocker, mock_instrument):
+        # arrange
+        instr = mock_instrument
+        counter = CallCounter(instr.test_param.set)
+        mocker.patch.object(instr.test_param, "set", counter)
+        
+        # act
+        utility.lazy_set(instr, "test_param", 10)
+        instr.test_param.cache.invalidate()
+        utility.lazy_set(instr, "test_param", 10)
+
+        # assert
         assert counter.count == 2
