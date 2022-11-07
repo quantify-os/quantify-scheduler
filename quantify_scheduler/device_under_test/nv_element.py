@@ -273,6 +273,76 @@ class ChargeReset(InstrumentModule):
         """Duration of the charge set pulse."""
 
 
+class CRCount(InstrumentModule):
+    """
+    Submodule containing parameters to run the ionization laser and the spin pump laser
+    with a photon count to perform a charge and resonance count.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.pulse_amplitude = ManualParameter(
+            name="pulse_amplitude",
+            instrument=self,
+            initial_value=1,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
+        """Amplitude of readout pulse"""
+
+        self.amplitude = ManualParameter(
+            name="amplitude",
+            instrument=self,
+            initial_value=0.5,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=2.5),
+        )
+        """Amplitude of spin-pump pulse"""
+
+        self.pulse_duration = ManualParameter(
+            name="pulse_duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-9, max_value=1),
+        )
+        """Readout pulse duration"""
+
+        self.acq_duration = ManualParameter(
+            name="acq_duration",
+            instrument=self,
+            initial_value=50e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-9, max_value=1),
+        )
+        """
+        Duration of the acquisition.
+        """
+
+        self.acq_delay = ManualParameter(
+            name="acq_delay",
+            instrument=self,
+            initial_value=0,
+            unit="s",
+            vals=validators.Numbers(min_value=-1, max_value=1),
+        )
+        """
+        Delay between the start of the readout pulse and the start of the acquisition.
+        """
+
+        self.acq_channel = ManualParameter(
+            name="acq_channel",
+            instrument=self,
+            initial_value=0,
+            unit="#",
+            vals=validators.Ints(min_value=0),
+        )
+        """
+        Acquisition channel of this device element.
+        """
+
+
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
@@ -305,6 +375,9 @@ class BasicElectronicNVElement(DeviceElement):
         self.add_submodule("measure", Measure(self, "measure"))
         self.measure: Measure
         """Submodule :class:`~.Measure`."""
+        self.add_submodule("cr_count", CRCount(self, "cr_count"))
+        self.cr_count: CRCount
+        """Submodule :class:`~.CRCount`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
