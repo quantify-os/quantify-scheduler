@@ -261,7 +261,7 @@ class ChargeReset(InstrumentModule):
             unit="V",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
-        """Amplitude of charge reset pulse"""
+        """Amplitude of charge reset pulse."""
 
         self.duration = ManualParameter(
             name="duration",
@@ -270,7 +270,7 @@ class ChargeReset(InstrumentModule):
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
-        """Duration of the charge set pulse."""
+        """Duration of the charge reset pulse."""
 
 
 class BasicElectronicNVElement(DeviceElement):

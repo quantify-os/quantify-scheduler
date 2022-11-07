@@ -18,7 +18,7 @@ class ChargeReset(Operation):
         Parameters
         ----------
         qubit
-            The qubit to reset. NB one or more qubits can be specified, e.g.,
+            The qubit to charge-reset. NB one or more qubits can be specified, e.g.,
             :code:`ChargeReset("qe0")`, :code:`ChargeReset("qe0", "qe1", "qe2")`, etc..
         """
 
