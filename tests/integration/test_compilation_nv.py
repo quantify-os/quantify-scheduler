@@ -3,7 +3,7 @@ import pytest
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
-from quantify_scheduler.operations.gate_library import Reset
+from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
@@ -132,6 +132,49 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
 
     assert schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
     assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
+
+
+def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
+    """Measure can be compiled to the device layer and to qblox
+    instructions.
+
+    Verify that the device representation and the hardware instructions contain
+    plausible content.
+    """
+    schedule = Schedule(name="Measure", repetitions=1)
+    label = "measure pulse"
+
+    _ = schedule.add(Measure("qe0"), label=label)
+    measure_str = str(Measure("qe0"))
+
+    # We can plot the circuit diagram
+    schedule.plot_circuit_diagram()
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    quantum_device.get_element("qe0").measure.acq_delay(1e-8)
+    dev_cfg = quantum_device.generate_device_config()
+    schedule_device = device_compile(schedule, dev_cfg)
+
+    # The gate_info and acquisition_info remains unchanged, but the pulse info has been
+    # added
+    assert measure_str in schedule_device.operations
+    assert "gate_info" in schedule_device.operations[measure_str]
+    assert (
+        schedule_device.operations[measure_str]["gate_info"]
+        == schedule.operations[measure_str]["gate_info"]
+    )
+    assert "acquisition_info" in schedule_device.operations[measure_str]
+    acquisition_info = schedule_device.operations[measure_str]["acquisition_info"][0]
+    assert acquisition_info["t0"] == 1e-8
+    assert acquisition_info["protocol"] == "trigger_count"
+
+    assert len(schedule_device.operations[measure_str]["pulse_info"]) > 0
+
+    # Timing info has been added
+    assert "abs_time" in schedule_device.schedulables[label].data.keys()
+    assert schedule_device.schedulables[label].data["abs_time"] == 0
+
+    # TODO: add hardware compilation once it is implemented
 
 
 def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):

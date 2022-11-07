@@ -48,6 +48,15 @@ class Ports(InstrumentModule):
         )
         """Port to control the device element with optical pulses."""
 
+        self.optical_readout = Parameter(
+            name="optical_readout",
+            label="Name of optical readout port",
+            instrument=self,
+            initial_cache_value=f"{parent.name}:optical_readout",
+            set_cmd=False,
+        )
+        """Port to readout photons from the device element."""
+
 
 # pylint: disable=too-few-public-methods
 class ClockFrequencies(InstrumentModule):
@@ -82,15 +91,25 @@ class ClockFrequencies(InstrumentModule):
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
 
+        self.ge0 = ManualParameter(
+            name="ge0",
+            label="f_{ge0}",
+            unit="Hz",
+            instrument=self,
+            initial_value=float("nan"),
+            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+        )
+        """Transition frequency from the m_s=0 state to the E_x,y state"""
+
         self.ge1 = ManualParameter(
             name="ge1",
             label="f_{ge1}",
             unit="Hz",
             instrument=self,
-            initial_value=15e9,  # float("nan"),
-            vals=Numbers(min_value=1e9, max_value=100e12, allow_nan=True),
+            initial_value=float("nan"),
+            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
         )
-        """Transistion frequency from the m_s=+-1 state to any of the A_1, A_2, or
+        """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
 
         self.ionization = ManualParameter(
@@ -164,6 +183,68 @@ class ResetSpinpump(InstrumentModule):
         """Duration of reset pulse"""
 
 
+class Measure(InstrumentModule):
+    """Submodule containing parameters to read out the spin state of the NV center.
+
+    Excitation with a readout laser from the $\ket{0}$ to an excited state.
+    Acquisition of photons when decaying back into the $\ket{0}$ state.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name, **kwargs)
+
+        self.pulse_amplitude = ManualParameter(
+            name="pulse_amplitude",
+            instrument=self,
+            initial_value=1,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
+        """Amplitude of readout pulse"""
+
+        self.pulse_duration = ManualParameter(
+            name="pulse_duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-9, max_value=1),
+        )
+        """Readout pulse duration"""
+
+        self.acq_duration = ManualParameter(
+            name="acq_duration",
+            instrument=self,
+            initial_value=50e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-9, max_value=1),
+        )
+        """
+        Duration of the acquisition.
+        """
+
+        self.acq_delay = ManualParameter(
+            name="acq_delay",
+            instrument=self,
+            initial_value=0,
+            unit="s",
+            vals=validators.Numbers(min_value=-1, max_value=1),
+        )
+        """
+        Delay between the start of the readout pulse and the start of the acquisition.
+        """
+
+        self.acq_channel = ManualParameter(
+            name="acq_channel",
+            instrument=self,
+            initial_value=0,
+            unit="#",
+            vals=validators.Ints(min_value=0),
+        )
+        """
+        Acquisition channel of this device element.
+        """
+
+
 class ChargeReset(InstrumentModule):
     """
     Submodule containing parameters to run an ionization laser square pulse to reset the NV in
@@ -220,6 +301,10 @@ class BasicElectronicNVElement(DeviceElement):
         """Submodule :class:`~.ResetSpinpump`."""
         self.add_submodule("charge_reset", ChargeReset(self, "charge_reset"))
         self.charge_reset: ChargeReset
+        """Submodule :class:`~.ChargeReset`."""
+        self.add_submodule("measure", Measure(self, "measure"))
+        self.measure: Measure
+        """Submodule :class:`~.Measure`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
@@ -260,6 +345,24 @@ class BasicElectronicNVElement(DeviceElement):
                         "clock": f"{self.name}.ionization",
                     },
                 ),
+                "measure": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "measurement_factories.optical_measurement",
+                    factory_kwargs={
+                        "pulse_amplitude": self.measure.pulse_amplitude(),
+                        "pulse_duration": self.measure.pulse_duration(),
+                        "pulse_port": self.ports.optical_control(),
+                        "pulse_clock": f"{self.name}.ge0",
+                        "acq_duration": self.measure.acq_duration(),
+                        "acq_delay": self.measure.acq_delay(),
+                        "acq_channel": self.measure.acq_channel(),
+                        "acq_port": self.ports.optical_readout(),
+                        "acq_clock": f"{self.name}.ge0",
+                        "pulse_type": "SquarePulse",
+                        "acq_protocol_default": "TriggerCount",
+                    },
+                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
+                ),
             }
         }
         return qubit_config
@@ -282,6 +385,7 @@ class BasicElectronicNVElement(DeviceElement):
             "clocks": {
                 f"{self.name}.f01": self.clock_freqs.f01(),
                 f"{self.name}.spec": self.clock_freqs.spec(),
+                f"{self.name}.ge0": self.clock_freqs.ge0(),
                 f"{self.name}.ge1": self.clock_freqs.ge1(),
                 f"{self.name}.ionization": self.clock_freqs.ionization(),
             },

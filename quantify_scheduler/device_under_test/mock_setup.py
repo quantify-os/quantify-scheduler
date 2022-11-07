@@ -197,3 +197,5 @@ def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
     qe0.clock_freqs.f01.set(3.592e9)
     qe0.clock_freqs.spec.set(2.2e9)
     qe0.clock_freqs.ionization.set(564e12)
+    qe0.clock_freqs.ge0.set(470.4e12)  # 637 nm
+    qe0.clock_freqs.ge1.set(470.4e12 - 5e9)  # slightly detuned

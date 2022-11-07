@@ -40,26 +40,65 @@ def test_operation_configs_are_submodules(electronic_q0: BasicElectronicNVElemen
     assert "clock_freqs" in electronic_q0.submodules
     assert "spectroscopy_operation" in electronic_q0.submodules
     assert "reset" in electronic_q0.submodules
+    assert "measure" in electronic_q0.submodules
 
 
-def test_generate_config(electronic_q0: BasicElectronicNVElement):
-    """Setting values updates the correct values in the configuration."""
-    # set some values for spectroscopy
+def test_generate_config_spectroscopy(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
+    # Set values for spectroscopy
     electronic_q0.spectroscopy_operation.amplitude(1.0)
     electronic_q0.spectroscopy_operation.duration(10e-6)
-    # set some values for reset
+
+    # Get device config
+    dev_cfg = electronic_q0.generate_device_config()
+    cfg_spec = dev_cfg.elements["qe0"]["spectroscopy_operation"]
+
+    # Assert values are in right place
+    assert cfg_spec.factory_kwargs["duration"] == 10e-6
+    assert cfg_spec.factory_kwargs["amplitude"] == 1.0
+
+
+def test_generate_config_reset(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
+    # Set values for reset
     electronic_q0.reset.amplitude(1.0)
     electronic_q0.reset.duration(10e-6)
 
+    # Get device config
     dev_cfg = electronic_q0.generate_device_config()
-
-    # assert values in right place in config.
-    cfg_spec = dev_cfg.elements["qe0"]["spectroscopy_operation"]
-    assert cfg_spec.factory_kwargs["duration"] == 10e-6
-    assert cfg_spec.factory_kwargs["amplitude"] == 1.0
     cfg_reset = dev_cfg.elements["qe0"]["reset"]
+
+    # Assert values are in right place
     assert cfg_reset.factory_kwargs["duration"] == 10e-6
     assert cfg_reset.factory_kwargs["amp"] == 1.0
+
+
+def test_generate_config_measure(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
+    # Set values for measure
+    electronic_q0.measure.pulse_amplitude(1.0)
+    electronic_q0.measure.pulse_duration(300e-6)
+    electronic_q0.measure.acq_duration(287e-6)
+    electronic_q0.measure.acq_delay(13e-6)
+    electronic_q0.measure.acq_channel(7)
+    electronic_q0.clock_freqs.ge0.set(470.4e12)  # 637 nm
+    electronic_q0.clock_freqs.ge1.set(470.4e12 - 5e9)  # slightly detuned
+
+    # Get device config
+    dev_cfg = electronic_q0.generate_device_config()
+    cfg_measure = dev_cfg.elements["qe0"]["measure"]
+
+    # Assert values are in right place
+    assert cfg_measure.factory_kwargs["pulse_amplitude"] == 1.0
+    assert cfg_measure.factory_kwargs["pulse_duration"] == 300e-6
+    assert cfg_measure.factory_kwargs["pulse_port"] == "qe0:optical_control"
+    assert cfg_measure.factory_kwargs["pulse_clock"] == "qe0.ge0"
+    assert cfg_measure.factory_kwargs["acq_duration"] == 287e-6
+    assert cfg_measure.factory_kwargs["acq_delay"] == 13e-6
+    assert cfg_measure.factory_kwargs["acq_channel"] == 7
+    assert cfg_measure.factory_kwargs["acq_port"] == "qe0:optical_readout"
+    assert cfg_measure.factory_kwargs["acq_clock"] == "qe0.ge0"
+    assert cfg_measure.factory_kwargs["pulse_type"] == "SquarePulse"
 
 
 def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
