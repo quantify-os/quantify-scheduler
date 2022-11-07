@@ -17,6 +17,7 @@ from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     Trace,
+    TriggerCount,
 )
 from quantify_scheduler.operations.gate_library import X90
 from quantify_scheduler.operations.pulse_library import DRAGPulse
@@ -95,11 +96,36 @@ def test_trace():
     assert trace.data["acquisition_info"][0]["acq_channel"] == 4815162342
 
 
+def test_trigger_count():
+    trigger_count = TriggerCount(
+        port="q0:res",
+        clock="q0.ro",
+        duration=0.001,
+        acq_channel=4815162342,
+        acq_index=4815162342,
+        bin_mode=BinMode.AVERAGE,
+        t0=12e-9,
+    )
+    assert Operation.is_valid(trigger_count)
+    assert trigger_count.data["acquisition_info"][0]["port"] == "q0:res"
+    assert trigger_count.data["acquisition_info"][0]["clock"] == "q0.ro"
+    assert trigger_count.data["acquisition_info"][0]["duration"] == 0.001
+    assert trigger_count.data["acquisition_info"][0]["acq_index"] == 4815162342
+    assert trigger_count.data["acquisition_info"][0]["acq_channel"] == 4815162342
+    assert trigger_count.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
+    assert trigger_count.data["acquisition_info"][0]["t0"] == 12e-9
+
+
 @pytest.mark.parametrize(
     "operation",
     [
         Trace(duration=16e-9, port="q0:res", clock="q0.ro"),
         SSBIntegrationComplex(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
+        TriggerCount(
             port="q0:res",
             clock="q0.ro",
             duration=100e-9,
@@ -135,6 +161,11 @@ def test__repr__(operation: Operation):
             port="q0:res",
             clock="q0.ro",
         ),
+        TriggerCount(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
     ],
 )
 def test__str__(operation: Operation):
@@ -160,6 +191,11 @@ def test__str__(operation: Operation):
             t=np.linspace(0, 3, 1),
             port="q0:res",
             clock="q0.ro",
+        ),
+        TriggerCount(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
         ),
     ],
 )
@@ -206,6 +242,11 @@ def test_deserialize(operation: Operation):
             clock="q0.ro",
         ),
         SSBIntegrationComplex(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
+        TriggerCount(
             port="q0:res",
             clock="q0.ro",
             duration=100e-9,
