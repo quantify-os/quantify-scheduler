@@ -282,8 +282,8 @@ class CRCount(InstrumentModule):
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.pulse_amplitude = ManualParameter(
-            name="pulse_amplitude",
+        self.readout_pulse_amplitude = ManualParameter(
+            name="readout_pulse_amplitude",
             instrument=self,
             initial_value=1,
             unit="V",
@@ -291,8 +291,8 @@ class CRCount(InstrumentModule):
         )
         """Amplitude of readout pulse"""
 
-        self.amplitude = ManualParameter(
-            name="amplitude",
+        self.spin_pump_pulse_amplitude = ManualParameter(
+            name="spin_pump_pulse_amplitude",
             instrument=self,
             initial_value=0.5,
             unit="V",
@@ -300,14 +300,41 @@ class CRCount(InstrumentModule):
         )
         """Amplitude of spin-pump pulse"""
 
-        self.pulse_duration = ManualParameter(
-            name="pulse_duration",
+        self.readout_pulse_duration = ManualParameter(
+            name="readout_pulse_duration",
             instrument=self,
             initial_value=20e-6,
             unit="s",
             vals=validators.Numbers(min_value=10e-9, max_value=1),
         )
         """Readout pulse duration"""
+
+        self.spin_pump_pulse_duration = ManualParameter(
+            name="spin_pump_pulse_duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=10e-9, max_value=1),
+        )
+        """Readout pulse duration"""
+
+        self.readout_pulse_delay = ManualParameter(
+            name="readout_pulse_delay",
+            instrument=self,
+            initial_value=0,
+            unit="s",
+            vals=validators.Numbers(min_value=-1, max_value=1),
+        )
+        """Pulse delay of readout pulse"""
+
+        self.spin_pump_pulse_delay = ManualParameter(
+            name="spin_pump_pulse_delay",
+            instrument=self,
+            initial_value=0,
+            unit="s",
+            vals=validators.Numbers(min_value=-1, max_value=1),
+        )
+        """Pulse delay of spin_pump pulse"""
 
         self.acq_duration = ManualParameter(
             name="acq_duration",
@@ -429,6 +456,40 @@ class BasicElectronicNVElement(DeviceElement):
                         "acq_duration": self.measure.acq_duration(),
                         "acq_delay": self.measure.acq_delay(),
                         "acq_channel": self.measure.acq_channel(),
+                        "acq_port": self.ports.optical_readout(),
+                        "acq_clock": f"{self.name}.ge0",
+                        "pulse_type": "SquarePulse",
+                        "acq_protocol_default": "TriggerCount",
+                    },
+                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
+                ),
+                "cr_count": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "measurement_factories.optical_measurement_multiple_pulses",
+                    factory_kwargs={
+                        "pulse_amplitude": [
+                            self.cr_count.readout_pulse_amplitude(),
+                            self.cr_count.spin_pump_pulse_amplitude(),
+                        ],
+                        "pulse_duration": [
+                            self.cr_count.readout_pulse_duration(),
+                            self.cr_count.spin_pump_pulse_duration(),
+                        ],
+                        "pulse_delay": [
+                            self.cr_count.readout_pulse_delay(),
+                            self.cr_count.spin_pump_pulse_delay(),
+                        ],
+                        "pulse_port": [
+                            self.ports.optical_control(),
+                            self.ports.optical_control(),
+                        ],
+                        "pulse_clock": [
+                            f"{self.name}.ge0",
+                            f"{self.name}.ionization",
+                        ],
+                        "acq_duration": self.cr_count.acq_duration(),
+                        "acq_delay": self.cr_count.acq_delay(),
+                        "acq_channel": self.cr_count.acq_channel(),
                         "acq_port": self.ports.optical_readout(),
                         "acq_clock": f"{self.name}.ge0",
                         "pulse_type": "SquarePulse",
