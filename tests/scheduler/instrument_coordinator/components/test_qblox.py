@@ -27,7 +27,7 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 
-from qcodes.instrument import Instrument, InstrumentModule
+from qcodes.instrument import Instrument, InstrumentModule, InstrumentChannel
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
@@ -1034,3 +1034,16 @@ def test_instrumentmodule():
     component = qblox.PulsarQCMComponent(instrument_module)
     # Assert
     assert component.instrument_channel == instrument_module
+
+
+def test_instrumentchannel():
+    """InstrumentChannel is added as self.instrument_channel"""
+    # Arrange
+    instrument = Instrument("test_instr")
+    instrument_channel = InstrumentChannel(instrument, "test_instr_channel")
+    instrument_channel.is_qcm_type = True
+    instrument_channel.is_rf_type = False
+    # Act
+    component = qblox.PulsarQCMComponent(instrument_channel)
+    # Assert
+    assert component.instrument_channel == instrument_channel
