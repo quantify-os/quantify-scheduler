@@ -1498,10 +1498,19 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
         Assigns frequencies for baseband modules.
         """
+
         if self.is_pulsar:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent)
+            if sequencer.associated_ext_lo is not None:
+                clock_freq = self.parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
+            else:
+                self.assign_frequency_with_ext_lo(sequencer, self.parent)
         else:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+            if sequencer.associated_ext_lo is not None:
+                clock_freq = self.parent.parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
+            else:
+                self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
     @staticmethod
     def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
@@ -1536,9 +1545,6 @@ class QbloxBasebandModule(QbloxBaseModule):
         lo_compiler = container.instrument_compilers.get(
             sequencer.associated_ext_lo, None
         )
-        if lo_compiler is None:
-            sequencer.frequency = clock_freq
-            return
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq
