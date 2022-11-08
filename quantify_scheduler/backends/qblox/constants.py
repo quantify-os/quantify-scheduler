@@ -14,7 +14,7 @@ REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""
 NCO_PHASE_STEPS_PER_DEG = 1e9 / 360
 """The number of steps per degree for nco phase instructions arguments."""
-NCO_FREQ_STEPS_PER_HZ = 4e6
+NCO_FREQ_STEPS_PER_HZ = 4.0
 """The number of steps for NCO frequency set per Hz."""
 NCO_FREQ_MIN_MAX_STEP = 2 * 10**9
 """The maximum step number and the minimum step number for NCO frequency set.

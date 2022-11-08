@@ -72,13 +72,13 @@ class ShiftClockPhase(Operation):
 class SetClockFrequency(Operation):
     """An operation that sets the frequency of a clock."""
 
-    def __init__(self, frequency: float, clock: str, t0: float = 0):
+    def __init__(self, clock_frequency: float, clock: str, t0: float = 0):
         """
         Create a new instance of SetClockFrequency.
 
         Parameters
         ----------
-        frequency
+        clock_frequency
             The frequency in Hz.
         clock
             The clock of which to frequency is set.
@@ -91,7 +91,7 @@ class SetClockFrequency(Operation):
                     {
                         "wf_func": None,
                         "t0": t0,
-                        "clock_frequency": frequency,
+                        "clock_frequency": clock_frequency,
                         "clock": clock,
                         "port": None,
                         "duration": 0,

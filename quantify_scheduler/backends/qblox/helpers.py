@@ -416,7 +416,7 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
         If the frequency_hz is out of range.
     """
 
-    frequency_steps = round(frequency * constants.NCO_FREQ_STEPS_PER_HZ)
+    frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
 
     if (
         frequency_steps < (-1) * constants.NCO_FREQ_MIN_MAX_STEP
