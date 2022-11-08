@@ -34,19 +34,22 @@ def test_get_nco_phase_arguments(phase_expected_steps):
 
 
 @pytest.mark.parametrize(
-    "frequency_expected_steps", [(-500e6, -2000000000), (-200e3, -800000), (0.0, 0), (200e3, 800000), (500e6, 2000000000)]
+    "frequency, expected_steps",
+    [
+        (-500e6, -2000000000),
+        (-200e3, -800000),
+        (0.0, 0),
+        (200e3, 800000),
+        (500e6, 2000000000),
+    ],
 )
-def test_get_nco_set_frequency(frequency_expected_steps: tuple):
-    frequency, expected_steps = frequency_expected_steps
+def test_get_nco_set_frequency(frequency: float, expected_steps: int):
     steps = helpers.get_nco_set_frequency_arguments(frequency)
 
     assert steps == expected_steps
 
 
-@pytest.mark.parametrize(
-    "frequency", [-500e6 - 1, 500e6 + 1]
-)
+@pytest.mark.parametrize("frequency", [-500e6 - 1, 500e6 + 1])
 def test_invalid_get_nco_set_frequency(frequency: float):
     with pytest.raises(ValueError):
         helpers.get_nco_set_frequency_arguments(frequency)
-
