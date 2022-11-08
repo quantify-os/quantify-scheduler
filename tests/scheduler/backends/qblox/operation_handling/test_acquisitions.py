@@ -498,11 +498,11 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
                     "lo_name": "laser_red",
                     "mix_lo": False,
                     "portclock_configs": [
-                        {"port": "qe0:optical_control", "clock": "qe0.ge0", "interm_freq": 200e6},
+                        {"port": "qe0:optical_control", "clock": "qe0.ge0", "interm_freq": 200e6,
+                         "instruction_generated_pulses_enabled": True},
                     ],
                 },
                 "real_input_0": {
-                    "mix_lo": False,
                     "portclock_configs": [
                         {"port": "qe0:optical_readout", "clock": "qe0.ge0", "interm_freq": 0},  # todo add TTL params
                     ],
@@ -524,15 +524,13 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     quantum_device.hardware_config(hardware_cfg)
 
     qe0 = mock_setup_basic_nv["qe0"]
+    qe0.measure.acq_delay(0)
+    qe0.measure.acq_duration(15e-6)
+    qe0.measure.pulse_duration(50e-6)
 
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
     schedule.add(Measure("qe0", acq_protocol="Trace")) # could be replaced by TriggerCount later.
-    #schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
-    #schedule.add_resource(ClockResource(name="q0.01", freq=50e6))
-
-    # Change acq delay
-    qe0.measure.acq_delay(0)
 
     # Generate compiled schedule
     compiled_sched = qcompile(
@@ -548,7 +546,7 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
 
     # Assert intended behaviour
     assert len(data) == 1
-    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
+    assert len(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0]) == 15000
 
     instr_coordinator.remove_component("ic_cluster0")
 

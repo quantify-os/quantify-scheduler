@@ -158,7 +158,7 @@ def set_up_basic_mock_nv_setup() -> Dict:
 
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
-        name="instrument_coordinator", add_default_generic_icc=False
+        name="instrument_coordinator", add_default_generic_icc=True
     )
 
     qe0 = BasicElectronicNVElement("qe0")
