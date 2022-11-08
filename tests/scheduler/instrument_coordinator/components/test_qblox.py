@@ -27,6 +27,8 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 
+from qcodes.instrument import Instrument, InstrumentModule
+
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 from quantify_scheduler.compilation import qcompile
@@ -1017,3 +1019,18 @@ def test_get_sequencer_index(make_qrm_component):
         qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
     assert acq_manager._get_sequencer_index(0, 0) == answer
+
+
+def test_instrumentmodule():
+    """InstrumentModule is treated like InstrumentChannel and added as
+    self.instrument_channel
+    """
+    # Arrange
+    instrument = Instrument("test_instr")
+    instrument_module = InstrumentModule(instrument, "test_instr_module")
+    instrument_module.is_qcm_type = True
+    instrument_module.is_rf_type = False
+    # Act
+    component = qblox.PulsarQCMComponent(instrument_module)
+    # Assert
+    assert component.instrument_channel == instrument_module
