@@ -1210,14 +1210,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
-        to each sequencer, or an LO frequency to each output (if applicable).
-        For each sequencer, the following relation is obeyed:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
+        to each sequencer, and or an LO frequency to each output (if applicable).
 
-        In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown. If the frequency
-        is overconstraint (i.e. multiple values are somehow specified) an error is
-        thrown during assignment.
+        What is executed depends on the mix_lo boolean.
 
         Raises
         ------
@@ -1521,10 +1516,21 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
         Assigns frequencies for baseband modules.
         """
+
         if self.is_pulsar:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent)
+            if sequencer.associated_ext_lo is None:
+                clock_freq = self.parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
+                sequencer.settings.nco_en = True
+            else:
+                self.assign_frequency_with_ext_lo(sequencer, self.parent)
         else:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+            if sequencer.associated_ext_lo is None:
+                clock_freq = self.parent.parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
+                sequencer.settings.nco_en = True
+            else:
+                self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
     @staticmethod
     def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
@@ -1559,9 +1565,8 @@ class QbloxBasebandModule(QbloxBaseModule):
         lo_compiler = container.instrument_compilers.get(
             sequencer.associated_ext_lo, None
         )
-        if lo_compiler is None:
-            sequencer.frequency = clock_freq
-            return
+
+        # todo check that the ext_lo is a instrument coordinator component.
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq
