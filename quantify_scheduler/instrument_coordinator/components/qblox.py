@@ -18,7 +18,7 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 from qcodes.instrument.base import Instrument
-from qcodes.instrument.channel import InstrumentChannel
+from qcodes.instrument import InstrumentModule
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
@@ -142,7 +142,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     """Qblox InstrumentCoordinator component base class."""
 
     def __init__(
-        self, instrument: Union[Instrument, InstrumentChannel], **kwargs
+        self, instrument: Union[Instrument, InstrumentModule], **kwargs
     ) -> None:
         """
         Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
@@ -150,7 +150,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         super().__init__(instrument, **kwargs)
 
         self.instrument_channel = (
-            instrument if isinstance(instrument, InstrumentChannel) else None
+            instrument if isinstance(instrument, InstrumentModule) else None
         )
 
         if instrument.is_rf_type is not self._hardware_properties.has_internal_lo:
@@ -167,9 +167,9 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         }
 
     @property
-    def instrument(self) -> Union[Instrument, InstrumentChannel]:
+    def instrument(self) -> Union[Instrument, InstrumentModule]:
         """
-        For Cluster modules we return a reference to its `InstrumentChannel` in the
+        For Cluster modules we return a reference to its `InstrumentModule` in the
         Cluster instrument; for Pulsar modules we return the `instrument` reference
         """
         if self.instrument_channel is not None:
@@ -179,7 +179,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
     def _set_parameter(
         self,
-        instrument: Union[Instrument, InstrumentChannel],
+        instrument: Union[Instrument, InstrumentModule],
         parameter_name: str,
         val: Any,
     ) -> None:
