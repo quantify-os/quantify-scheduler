@@ -42,6 +42,7 @@ class ChargeReset(Operation):
         qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
         return f'{self.__class__.__name__}({",".join(qubits)})'
 
+
 class CRCount(Operation):
     r"""
     run the ionization laser and the spin pump laser with a photon count to perform a
