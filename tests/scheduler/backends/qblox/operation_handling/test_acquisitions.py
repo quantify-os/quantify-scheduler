@@ -18,6 +18,7 @@ import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
+import quantify_scheduler.helpers.mock_instruments
 from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 
@@ -29,7 +30,9 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 from quantify_scheduler.operations.gate_library import Measure
+from quantify_scheduler.instrument_coordinator.components.generic import GenericInstrumentCoordinatorComponent
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     AcquisitionIndexing,
@@ -483,7 +486,7 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
+def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -492,37 +495,44 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_transm
             "cluster0_module3": {
                 "instrument_type": "QRM",
                 "real_output_0": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
                     "portclock_configs": [
-                        {"port": "q0:mw", "clock": "q0.01"},
+                        {"port": "qe0:optical_control", "clock": "qe0.ge0", "interm_freq": 200e6},
                     ],
                 },
                 "real_input_0": {
+                    "mix_lo": False,
                     "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro"},
+                        {"port": "qe0:optical_readout", "clock": "qe0.ge0", "interm_freq": 0},  # todo add TTL params
                     ],
                 },
             },
         },
+        "laser_red": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1}
     }
+
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent("laser_red")
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    q0 = mock_setup_basic_transmon["q0"]
+    qe0 = mock_setup_basic_nv["qe0"]
 
     # Define experiment schedule
-    schedule = Schedule("test multiple measurements")
-    schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
-    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
-    schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
-    schedule.add_resource(ClockResource(name="q0.01", freq=50e6))
+    schedule = Schedule("test NV measurement with real output and input")
+    schedule.add(Measure("qe0", acq_protocol="Trace")) # could be replaced by TriggerCount later.
+    #schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
+    #schedule.add_resource(ClockResource(name="q0.01", freq=50e6))
 
     # Change acq delay
-    q0.measure.acq_delay(4e-9)
+    qe0.measure.acq_delay(0)
 
     # Generate compiled schedule
     compiled_sched = qcompile(

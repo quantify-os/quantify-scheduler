@@ -186,7 +186,7 @@ class Measure(InstrumentModule):
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
             instrument=self,
-            initial_value=1,
+            initial_value=0.5,
             unit="V",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
