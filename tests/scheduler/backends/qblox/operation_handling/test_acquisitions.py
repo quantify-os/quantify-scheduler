@@ -20,8 +20,6 @@ from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox import constants
@@ -31,11 +29,6 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.generic import (
-    GenericInstrumentCoordinatorComponent,
-)
 from quantify_scheduler.operations.gate_library import Measure, X, Rxy
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
