@@ -75,8 +75,10 @@ def _get_pulse_strategy(
     if operation_info.data["port"] is None:
         if "phase_shift" in operation_info.data:
             return virtual.NcoPhaseShiftStrategy(operation_info)
-        if "reset_clock_phase" in operation_info.data:
+        elif "reset_clock_phase" in operation_info.data:
             return virtual.NcoResetClockPhaseStrategy(operation_info)
+        elif "clock_frequency" in operation_info.data:
+            return virtual.NcoSetClockFrequencyStrategy(operation_info)
         return virtual.IdleStrategy(operation_info)
 
     if instruction_generated_pulses_enabled:

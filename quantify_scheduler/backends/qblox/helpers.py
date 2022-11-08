@@ -396,6 +396,45 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
     return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
 
 
+def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
+    """
+    Converts a frequency in Hz to the int argument the NCO set_freq instruction expects.
+
+    Parameters
+    ----------
+    frequency_hz
+        The frequency in Hz.
+
+    Returns
+    -------
+    :
+        The int corresponding to the set_freq argument.
+
+    Raises
+    ------
+    ValueError
+        If the frequency_hz is out of range.
+    """
+
+    frequency_steps = round(frequency * constants.NCO_FREQ_STEPS_PER_HZ)
+
+    if (
+        frequency_steps < (-1) * constants.NCO_FREQ_MIN_MAX_STEP
+        or frequency_steps > constants.NCO_FREQ_MIN_MAX_STEP
+    ):
+        min_max_frequency_in_hz = (
+            constants.NCO_FREQ_MIN_MAX_STEP / constants.NCO_FREQ_STEPS_PER_HZ
+        )
+        raise ValueError(
+            f"Attempting to set NCO frequency. "
+            f"The frequency must be between and including "
+            f"-{min_max_frequency_in_hz} Hz and {min_max_frequency_in_hz} Hz. "
+            f"Got {frequency_hz} Hz."
+        )
+
+    return frequency_steps
+
+
 def generate_port_clock_to_device_map(
     hardware_cfg: Dict[str, Any]
 ) -> Dict[Tuple[str, str], str]:
