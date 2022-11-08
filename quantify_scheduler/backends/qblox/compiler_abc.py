@@ -1501,11 +1501,15 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         if self.is_pulsar:
             if sequencer.associated_ext_lo is None:
+                clock_freq = self.parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
                 sequencer.settings.nco_en = True
             else:
                 self.assign_frequency_with_ext_lo(sequencer, self.parent)
         else:
             if sequencer.associated_ext_lo is None:
+                clock_freq = self.parent.parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
                 sequencer.settings.nco_en = True
             else:
                 self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
@@ -1544,7 +1548,7 @@ class QbloxBasebandModule(QbloxBaseModule):
             sequencer.associated_ext_lo, None
         )
 
-        #todo check that the ext_lo is a instrument coordinator component.
+        # todo check that the ext_lo is a instrument coordinator component.
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq
