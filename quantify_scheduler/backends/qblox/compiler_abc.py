@@ -1519,16 +1519,22 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         if self.is_pulsar:
             if sequencer.associated_ext_lo is None:
-                clock_freq = self.parent.resources[sequencer.clock]["freq"]
-                sequencer.frequency = clock_freq
-                sequencer.settings.nco_en = True
+                if sequencer.frequency == 0:
+                    sequencer.settings.nco_en = False
+                else:
+                    clock_freq = self.parent.resources[sequencer.clock]["freq"]
+                    sequencer.frequency = clock_freq
+                    sequencer.settings.nco_en = True
             else:
                 self.assign_frequency_with_ext_lo(sequencer, self.parent)
         else:
             if sequencer.associated_ext_lo is None:
-                clock_freq = self.parent.parent.resources[sequencer.clock]["freq"]
-                sequencer.frequency = clock_freq
-                sequencer.settings.nco_en = True
+                if sequencer.frequency == 0:
+                    sequencer.settings.nco_en = False
+                else:
+                    clock_freq = self.parent.resources[sequencer.clock]["freq"]
+                    sequencer.frequency = clock_freq
+                    sequencer.settings.nco_en = True
             else:
                 self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
 
