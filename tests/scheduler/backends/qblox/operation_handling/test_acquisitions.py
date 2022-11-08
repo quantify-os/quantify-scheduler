@@ -29,7 +29,7 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.operations.gate_library import Measure, X, Rxy
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     AcquisitionIndexing,
