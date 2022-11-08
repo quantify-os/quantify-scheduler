@@ -80,6 +80,7 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
     parameter = search_settable_param(
         instrument=instrument, nested_parameter_name=parameter_name
     )
+    # parameter.cache() throws for non-gettable parameters if the cache is invalid. This order prevents the exception.
     if not parameter.cache.valid or parameter.cache() != val:
         parameter.set(val)
     else:
