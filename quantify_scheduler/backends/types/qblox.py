@@ -257,7 +257,7 @@ class PulsarSettings(BaseModuleSettings):
             override parts of the mapping dict.
         """
         ref: str = mapping["ref"]
-        if not (ref == "internal" or ref == "external"):
+        if ref != "internal" and ref != "external":
             raise ValueError(
                 f"Attempting to configure ref to {ref}. "
                 f"The only allowed values are 'internal' and 'external'."

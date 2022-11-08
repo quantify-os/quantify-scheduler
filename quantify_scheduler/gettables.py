@@ -303,7 +303,7 @@ class ScheduleGettable:
                 if len(vals) != 1:
                     raise ValueError(
                         f"For iterative mode, only one value is expected for each acquisition channel."
-                        f"Got {len(vals)} values for acquisition channel '{acq_channel}'."
+                        f"Got {len(vals)} values for acquisition channel '{acq_channel}' instead."
                     )
 
             if self.real_imag:

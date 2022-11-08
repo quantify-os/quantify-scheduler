@@ -141,8 +141,8 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             )
             raise ValueError(
                 f"Attempting to create a Schedule decoder class ScheduleJSONDecoder. "
-                f"The following modules provided are not an instance of the ModuleType. "
-                f"{invalid_modules}"
+                f"The following modules provided are not an instance of the ModuleType: "
+                f"{invalid_modules} ."
             )
 
         super().__init__(
