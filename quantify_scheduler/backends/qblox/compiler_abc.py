@@ -1532,7 +1532,7 @@ class QbloxBasebandModule(QbloxBaseModule):
                 if sequencer.frequency == 0:
                     sequencer.settings.nco_en = False
                 else:
-                    clock_freq = self.parent.resources[sequencer.clock]["freq"]
+                    clock_freq = self.parent.parent.resources[sequencer.clock]["freq"]
                     sequencer.frequency = clock_freq
                     sequencer.settings.nco_en = True
             else:
