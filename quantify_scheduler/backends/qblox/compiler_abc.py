@@ -597,7 +597,6 @@ class Sequencer:
         # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-
             # Some sanity checks on the input for easier debugging.
             if min(acq_indices) != 0:
                 raise ValueError(
@@ -1135,8 +1134,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                     # Check if the portclock was not multiply specified
                     if portclock in portclock_io_map:
+                        if "output" in io and "input" in portclock_io_map[portclock]:
+                            continue
+                        if "input" in io and "output" in portclock_io_map[portclock]:
+                            continue
                         raise ValueError(
-                            # TODO: output can share portclock with input
                             f"Portclock {portclock} was assigned to multiple "
                             f"portclock_configs of {self.name}. This portclock was "
                             f"used in output '{io}' despite being already previously "

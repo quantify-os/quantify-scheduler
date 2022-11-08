@@ -500,12 +500,12 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_transm
                 "instrument_type": "QRM",
                 "real_output_0": {
                     "portclock_configs": [
-                        {"port": "q0:mw", "clock": "q0.01"},
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
                     ],
                 },
                 "real_input_0": {
                     "portclock_configs": [
-                        {"port": "q1:res", "clock": "q1.ro"},
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
                     ],
                 },
             },
@@ -520,17 +520,14 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_transm
     quantum_device.hardware_config(hardware_cfg)
 
     q0 = mock_setup_basic_transmon["q0"]
-    q1 = mock_setup_basic_transmon["q1"]
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
-    schedule.add(Measure("q1", acq_protocol="SSBIntegrationComplex"))
-    schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
-    schedule.add_resource(ClockResource(name="q0.01", freq=50e6))
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
+    schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
 
     # Change acq delay
-    q0.measure.acq_delay(1e-6)
+    q0.measure.acq_delay(4e-9)
 
     # Generate compiled schedule
     compiled_sched = qcompile(
@@ -545,8 +542,8 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_transm
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    #TODO: assert stuff
-
+    assert len(data) == 1
+    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
 
     instr_coordinator.remove_component("ic_cluster0")
 
