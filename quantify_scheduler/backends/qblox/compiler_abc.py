@@ -1187,14 +1187,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
-        to each sequencer, or an LO frequency to each output (if applicable).
-        For each sequencer, the following relation is obeyed:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
+        to each sequencer, and or an LO frequency to each output (if applicable).
 
-        In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown. If the frequency
-        is overconstraint (i.e. multiple values are somehow specified) an error is
-        thrown during assignment.
+        What is executed depends on the mix_lo boolean.
 
         Raises
         ------
