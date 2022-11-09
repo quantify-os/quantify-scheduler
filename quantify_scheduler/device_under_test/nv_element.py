@@ -485,7 +485,7 @@ class BasicElectronicNVElement(DeviceElement):
                         ],
                         "pulse_clock": [
                             f"{self.name}.ge0",
-                            f"{self.name}.ionization",
+                            f"{self.name}.ge1",
                         ],
                         "acq_duration": self.cr_count.acq_duration(),
                         "acq_delay": self.cr_count.acq_delay(),

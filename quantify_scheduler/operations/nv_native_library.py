@@ -131,10 +131,10 @@ class CRCount(Operation):
                 )
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
-            super().__init__(f"Measure {', '.join(qubits)}")
+            super().__init__(f"CRCount {', '.join(qubits)}")
             self.data.update(
                 {
-                    "name": f"Measure {', '.join(qubits)}",
+                    "name": f"CRCount {', '.join(qubits)}",
                     "gate_info": {
                         "unitary": None,
                         "plot_func": plot_func,
