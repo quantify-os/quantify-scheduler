@@ -17,8 +17,7 @@ from qblox_instruments import (
     SequencerStatus,
     SequencerStatusFlags,
 )
-from qcodes.instrument.base import Instrument
-from qcodes.instrument import InstrumentModule
+from qcodes.instrument import Instrument, InstrumentModule
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
