@@ -343,10 +343,10 @@ def optical_measurement_multiple_pulses(
 
     if pulse_type == "SquarePulse":
         device_op = Operation("OpticalMeasurement")
-        for pulse_idx in range(len(pulse_clock)):
+        for pulse_idx, amplitude in enumerate(pulse_amplitude):
             device_op.add_pulse(
                 SquarePulse(
-                    amp=pulse_amplitude[pulse_idx],
+                    amp=amplitude,
                     duration=pulse_duration[pulse_idx],
                     port=pulse_port[pulse_idx],
                     clock=pulse_clock[pulse_idx],
