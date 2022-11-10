@@ -27,7 +27,7 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 
-from qcodes.instrument import Instrument, InstrumentModule, InstrumentChannel
+from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
