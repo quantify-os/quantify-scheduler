@@ -70,7 +70,7 @@ def make_cluster_component(mocker):
         mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
 
         for comp in cluster_component._cluster_modules.values():
-            instrument = comp.instrument_channel
+            instrument = comp._instrument_module
             mocker.patch.object(
                 instrument, "arm_sequencer", wraps=instrument.arm_sequencer
             )
@@ -1023,7 +1023,7 @@ def test_get_sequencer_index(make_qrm_component):
 
 def test_instrumentmodule():
     """InstrumentModule is treated like InstrumentChannel and added as
-    self.instrument_channel
+    self._instrument_module
     """
     # Arrange
     instrument = Instrument("test_instr")
@@ -1033,11 +1033,11 @@ def test_instrumentmodule():
     # Act
     component = qblox.PulsarQCMComponent(instrument_module)
     # Assert
-    assert component.instrument_channel == instrument_module
+    assert component._instrument_module == instrument_module
 
 
 def test_instrumentchannel():
-    """InstrumentChannel is added as self.instrument_channel"""
+    """InstrumentChannel is added as self._instrument_module"""
     # Arrange
     instrument = Instrument("test_instr")
     instrument_channel = InstrumentChannel(instrument, "test_instr_channel")
@@ -1046,4 +1046,4 @@ def test_instrumentchannel():
     # Act
     component = qblox.PulsarQCMComponent(instrument_channel)
     # Assert
-    assert component.instrument_channel == instrument_channel
+    assert component._instrument_module == instrument_channel

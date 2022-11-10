@@ -149,7 +149,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         super().__init__(instrument, **kwargs)
 
-        self.instrument_channel = (
+        self._instrument_module = (
             instrument if isinstance(instrument, InstrumentModule) else None
         )
 
@@ -172,8 +172,8 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         For Cluster modules we return a reference to its `InstrumentModule` in the
         Cluster instrument; for Pulsar modules we return the `instrument` reference
         """
-        if self.instrument_channel is not None:
-            return self.instrument_channel
+        if self._instrument_module is not None:
+            return self._instrument_module
 
         return super().instrument
 
