@@ -12,21 +12,8 @@ IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
 """Size of offset instruction immediates in Q1ASM programs."""
 REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""
-NCO_PHASE_DEG_STEP_COARSE = 0.9
-"""The phase (in deg) corresponding to an increase of 1 in the course argument of the
-q1asm instructions related to the NCO phases."""
-NCO_PHASE_NUM_STEP_COARSE = 400
-"""The maximum value of the course argument of the nco phase instructions."""
-NCO_PHASE_DEG_STEP_FINE = 2.25e-3
-"""The phase (in deg) corresponding to an increase of 1 in the fine argument of the
-q1asm instructions related to the NCO phases."""
-NCO_PHASE_NUM_STEP_FINE = 400
-"""The maximum value of the fine argument of the nco phase instructions."""
-NCO_PHASE_DEG_STEP_U_FINE = 3.6e-7
-"""The phase (in deg) corresponding to an increase of 1 in the ultra-fine argument of
-the q1asm instructions related to the NCO phases."""
-NCO_PHASE_NUM_STEP_U_FINE = 6250
-"""The maximum value of the ultra-fine argument of the nco phase instructions."""
+NCO_PHASE_STEPS_PER_DEG = 1e9 / 360
+"""The number of steps per degree for nco phase instructions arguments."""
 
 GRID_TIME = 4  # ns
 """

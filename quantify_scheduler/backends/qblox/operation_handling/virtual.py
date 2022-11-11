@@ -67,10 +67,10 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         """
         phase = self.operation_info.data.get("phase_shift")
         if phase != 0:
-            phase_args = helpers.get_nco_phase_arguments(phase)
+            phase_arg = helpers.get_nco_phase_arguments(phase)
             qasm_program.emit(
                 q1asm_instructions.INCR_NCO_PHASE_OFFSET,
-                *phase_args,
+                phase_arg,
                 comment=f"increment nco phase by {phase:.2f} deg",
             )
 
