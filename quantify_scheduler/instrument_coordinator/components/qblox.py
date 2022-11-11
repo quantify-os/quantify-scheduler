@@ -168,8 +168,11 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     @property
     def instrument(self) -> Union[Instrument, InstrumentModule]:
         """
-        For Cluster modules we return a reference to its `InstrumentModule` in the
-        Cluster instrument; for Pulsar modules we return the `instrument` reference
+        If the instrument behind this instance of
+        `QbloxInstrumentCoordinatorComponentBase` is an `InstrumentModule` (e.g. the
+        module within the `qblox_instrument.Cluster`), it is returned. Otherwise, the
+        reference to the `instrument` is returned (eg. for a stand-alone
+        `qblox_instruments.Pulsar`).
         """
         if self._instrument_module is not None:
             return self._instrument_module
