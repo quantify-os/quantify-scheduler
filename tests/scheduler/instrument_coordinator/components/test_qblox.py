@@ -1021,7 +1021,7 @@ def test_get_sequencer_index(make_qrm_component):
     assert acq_manager._get_sequencer_index(0, 0) == answer
 
 
-def test_instrumentmodule():
+def test_instrument_module():
     """InstrumentModule is treated like InstrumentChannel and added as
     self._instrument_module
     """
@@ -1036,7 +1036,7 @@ def test_instrumentmodule():
     assert component._instrument_module == instrument_module
 
 
-def test_instrumentchannel():
+def test_instrument_channel():
     """InstrumentChannel is added as self._instrument_module"""
     # Arrange
     instrument = Instrument("test_instr")
