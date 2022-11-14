@@ -1089,9 +1089,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             except KeyError:
                 continue
 
-            self._cluster_modules[instrument_module.name] = icc_class(
-                instrument_module
-            )
+            self._cluster_modules[instrument_module.name] = icc_class(instrument_module)
 
     @property
     def is_running(self) -> bool:
