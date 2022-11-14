@@ -1078,19 +1078,19 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
 
-        for instrument_channel in instrument.modules:
+        for instrument_module in instrument.modules:
             try:
                 icc_class: type = {
                     (True, False): QCMComponent,
                     (True, True): QCMRFComponent,
                     (False, False): QRMComponent,
                     (False, True): QRMRFComponent,
-                }[(instrument_channel.is_qcm_type, instrument_channel.is_rf_type)]
+                }[(instrument_module.is_qcm_type, instrument_module.is_rf_type)]
             except KeyError:
                 continue
 
-            self._cluster_modules[instrument_channel.name] = icc_class(
-                instrument_channel
+            self._cluster_modules[instrument_module.name] = icc_class(
+                instrument_module
             )
 
     @property
