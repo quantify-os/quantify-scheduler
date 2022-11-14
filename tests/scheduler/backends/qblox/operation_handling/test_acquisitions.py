@@ -556,6 +556,7 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
         device_cfg=quantum_device.generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
+    print(compiled_sched.compiled_instructions)
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
@@ -565,11 +566,22 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     # Assert intended behaviour
     assert len(data) == 1
     assert len(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0]) == 15000
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+        "connected_inputs"
+    ] == [0]
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+            "nco_en"
+        ]
+        == False
+    )
 
     instr_coordinator.remove_component("ic_cluster0")
 
 
 def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
+    # for a transmon measurement now both input and output can be used to run it.
+    # if we like to take these apart, dispersive_measurement should be adjusted.
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -605,12 +617,13 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     schedule = Schedule("test complex input")
     schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
     schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
-    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex", acq_channel=0))
-    schedule.add(Measure("q1", acq_protocol="SSBIntegrationComplex", acq_channel=1))
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q1", acq_protocol="SSBIntegrationComplex"))
 
     # Change acq delay
     q0.measure.acq_delay(4e-9)
     q1.measure.acq_delay(4e-9)
+    q1.measure.acq_channel(1)
 
     # Generate compiled schedule
     compiled_sched = qcompile(
@@ -618,6 +631,7 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
         device_cfg=quantum_device.generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
+    print(compiled_sched.compiled_instructions)
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
@@ -625,9 +639,12 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    # assert len(data) == 2
+    assert len(data) == 2
     assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
-    # todo does not work well yet.
+    assert math.isnan(data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0][0])
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+        "connected_inputs"
+    ] == [0, 1]
 
     instr_coordinator.remove_component("ic_cluster0")
 

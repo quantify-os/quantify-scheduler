@@ -294,7 +294,7 @@ def io_mode_from_ios(
         The amount of outputs is more than 2, which is impossible for one sequencer.
     """
     if len(io) > 2:
-        raise RuntimeError(f"Too many outputs specified for this channel. Given: {io}.")
+        raise RuntimeError(f"Too many io specified for this channel. Given: {io}.")
 
     if len(io) == 2:
         assert (
