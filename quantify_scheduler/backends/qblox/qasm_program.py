@@ -132,7 +132,7 @@ class QASMProgram:
             marker_binary = int(marker_setting, 2)
         else:
             if marker_setting > 0b1111:
-                raise ValueError("Invalid marker setting: {marker_setting=}.")
+                raise ValueError(f"Invalid marker setting: {marker_setting=}.")
             marker_binary = marker_setting
         self.emit(
             q1asm_instructions.SET_MARKER,

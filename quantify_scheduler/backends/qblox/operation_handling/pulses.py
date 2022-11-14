@@ -48,9 +48,9 @@ class PulseStrategyPartial(IOperationStrategy):
 
     def _check_amplitudes_set(self):
         if self.amplitude_path0 is None:
-            raise ValueError(f"Amplitude for path0 is None.")
+            raise ValueError("Amplitude for path0 is None.")
         if self.amplitude_path1 is None:
-            raise ValueError(f"Amplitude for path1 is None.")
+            raise ValueError("Amplitude for path1 is None.")
 
 
 class GenericPulseStrategy(PulseStrategyPartial):
