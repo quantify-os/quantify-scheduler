@@ -171,7 +171,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         If the instrument behind this instance of
         `QbloxInstrumentCoordinatorComponentBase` is an `InstrumentModule` (e.g. the
         module within the `qblox_instrument.Cluster`), it is returned. Otherwise, the
-        reference to the `instrument` is returned (eg. for a stand-alone
+        reference to the `instrument` is returned (e.g. for a stand-alone
         `qblox_instruments.Pulsar`).
         """
         if self._instrument_module is not None:
