@@ -18,7 +18,6 @@ import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
-import quantify_scheduler.helpers.mock_instruments
 from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 
@@ -530,7 +529,7 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
     laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)

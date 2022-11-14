@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from qcodes.instrument.base import InstrumentBase
 import quantify_scheduler.instrument_coordinator.utility as util
@@ -32,7 +32,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
-        cls, name: str = DEFAULT_NAME
+        cls, name: Union[str, InstrumentBase] = DEFAULT_NAME
     ) -> base.InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
@@ -44,7 +44,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def __init__(self, name: str = DEFAULT_NAME) -> None:
+    def __init__(self, name: Union[str, InstrumentBase] = DEFAULT_NAME) -> None:
 
         instrument = InstrumentBase(name=name)
         super().__init__(instrument)
