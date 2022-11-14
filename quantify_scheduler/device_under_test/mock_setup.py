@@ -148,7 +148,7 @@ def set_standard_params_transmon(mock_setup):
 def set_up_basic_mock_nv_setup() -> Dict:
     """Sets up a system containing 1 electronic qubit in an NV center.
 
-    After usage, close all instruments.
+    After usage, close all instruments
 
     Returns
     -------
@@ -158,7 +158,7 @@ def set_up_basic_mock_nv_setup() -> Dict:
 
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
-        name="instrument_coordinator", add_default_generic_icc=True
+        name="instrument_coordinator", add_default_generic_icc=False
     )
 
     qe0 = BasicElectronicNVElement("qe0")

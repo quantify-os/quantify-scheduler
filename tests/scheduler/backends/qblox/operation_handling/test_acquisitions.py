@@ -443,6 +443,7 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
     ic_cluster0 = make_cluster_component("cluster0")
     instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
+    print(instr_coordinator.components)
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
@@ -530,9 +531,11 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     ic_cluster0 = make_cluster_component("cluster0")
     laser_red = MockLocalOscillator("laser_red")
     ic_laser_red = GenericInstrumentCoordinatorComponent("laser_red")
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
     instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
