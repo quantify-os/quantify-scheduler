@@ -75,13 +75,13 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
     parameter_name:
         Name of the parameter to set.
     val:
-        Value to set it to. If the value is `None` this always gets set, due to it being
-        the same as the initial value of the cache.
+        Value to set it to.
     """
     parameter = search_settable_param(
         instrument=instrument, nested_parameter_name=parameter_name
     )
-    if parameter.cache() != val or val is None:
+    # parameter.cache() throws for non-gettable parameters if the cache is invalid. This order prevents the exception.
+    if not parameter.cache.valid or parameter.cache() != val:
         parameter.set(val)
     else:
         logger.info(
