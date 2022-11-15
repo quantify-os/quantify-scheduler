@@ -840,7 +840,7 @@ def create_dc_compensation_pulse(
     # Make sure that the list contains at least one element
     if len(pulses) == 0:
         raise ValueError(
-            "Attempting to create a DC compensated square pulse with no pulses. "
+            "Attempting to create a DC compensation SquarePulse with no pulses. "
             "At least one pulse is necessary."
         )
 
@@ -855,7 +855,7 @@ def create_dc_compensation_pulse(
     if amp is None and duration is not None:
         if not duration > 0:
             raise ValueError(
-                f"Attempting to create a DC compensated square pulse specified by {duration=}. "
+                f"Attempting to create a DC compensation SquarePulse specified by {duration=}. "
                 f"Duration must be a positive number."
             )
         c_duration = duration

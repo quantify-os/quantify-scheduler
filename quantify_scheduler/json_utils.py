@@ -136,8 +136,8 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         """
         extended_modules: List[ModuleType] = kwargs.pop("modules", list())
         if not all(isinstance(o, ModuleType) for o in extended_modules):
-            invalid_modules = filter(
-                lambda o: not isinstance(o, ModuleType), extended_modules
+            invalid_modules = list(
+                filter(lambda o: not isinstance(o, ModuleType), extended_modules)
             )
             raise ValueError(
                 f"Attempting to create a Schedule decoder class ScheduleJSONDecoder. "
