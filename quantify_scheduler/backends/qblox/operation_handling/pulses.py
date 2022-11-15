@@ -46,6 +46,12 @@ class PulseStrategyPartial(IOperationStrategy):
         """Property for retrieving the operation info."""
         return self._pulse_info
 
+    def _check_amplitudes_set(self):
+        if self.amplitude_path0 is None:
+            raise ValueError("Amplitude for path0 is None.")
+        if self.amplitude_path1 is None:
+            raise ValueError("Amplitude for path1 is None.")
+
 
 class GenericPulseStrategy(PulseStrategyPartial):
     """
@@ -167,8 +173,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        assert self.amplitude_path0 is not None
-        assert self.amplitude_path1 is not None
+        self._check_amplitudes_set()
         qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
         )
@@ -257,8 +262,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         duration = self.operation_info.duration
         repetitions = int(duration // constants.PULSE_STITCHING_DURATION)
 
-        assert self.amplitude_path0 is not None
-        assert self.amplitude_path1 is not None
+        self._check_amplitudes_set()
 
         qasm_program.set_gain_from_amplitude(
             self.amplitude_path0, self.amplitude_path1, self.operation_info
