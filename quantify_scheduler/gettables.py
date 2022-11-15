@@ -299,8 +299,11 @@ class ScheduleGettable:
                 )
 
             if self.batched is False:
-                # for iterative mode, we expect only a single value.
-                assert (len(vals)) == 1
+                if len(vals) != 1:
+                    raise ValueError(
+                        f"For iterative mode, only one value is expected for each acquisition channel."
+                        f"Got {len(vals)} values for acquisition channel '{acq_channel}' instead."
+                    )
 
             if self.real_imag:
                 return_data.append(vals.real)

@@ -19,6 +19,7 @@
 - QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
 - Git - Changed git merge strategy to "union" for CHANGELOG.md and AUTHORS.md to reduce amount of merge conflicts (!495)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
+- Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 
 ## 0.9.0 (2022-10-06)
 

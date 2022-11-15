@@ -267,11 +267,12 @@ def output_mode_from_outputs(
         )
 
     if len(outputs) == 2:
-        assert (
-            outputs[0] - outputs[1]
-        ) ** 2 == 1, "Attempting to use two outputs that are not next to each other."
-        if 1 in outputs:
-            assert 2 not in outputs, (
+        if abs(outputs[0] - outputs[1]) != 1:
+            raise ValueError(
+                "Attempting to use two outputs that are not next to each other."
+            )
+        if (1 in outputs) and (2 in outputs):
+            raise ValueError(
                 "Attempting to use output 1 and output 2 (2 and 3 on front panel) "
                 "together, but they belong to different pairs."
             )
