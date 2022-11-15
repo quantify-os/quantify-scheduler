@@ -1158,14 +1158,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         instruction_generated_pulses_enabled=instr_gen_pulses,
                         output_mode=seq.output_mode,
                     )
-                    pulses_strategy = map(
+                    strategies_for_pulses = map(
                         op_info_to_op_strategy_func,
                         pulse_data_list,
                     )
                     if seq.pulses is None:
                         seq.pulses = []
 
-                    for pulse_strategy in pulses_strategy:
+                    for pulse_strategy in strategies_for_pulses:
                         seq.pulses.append(pulse_strategy)
 
         for portclock, acq_data_list in self._acquisitions.items():

@@ -79,7 +79,8 @@ def _get_pulse_strategy(
             return virtual.NcoResetClockPhaseStrategy(operation_info)
         elif "clock_frequency" in operation_info.data:
             return virtual.NcoSetClockFrequencyStrategy(operation_info)
-        return virtual.IdleStrategy(operation_info)
+        else:
+            return virtual.IdleStrategy(operation_info)
 
     if instruction_generated_pulses_enabled:
         wf_func = operation_info.data["wf_func"]

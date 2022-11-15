@@ -408,7 +408,7 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
     Returns
     -------
     :
-        The int corresponding to the set_freq argument.
+        The frequency expressed in steps for the NCO set_freq instruction.
 
     Raises
     ------
@@ -419,11 +419,10 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
     frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
 
     if (
-        frequency_steps < (-1) * constants.NCO_FREQ_MIN_MAX_STEP
-        or frequency_steps > constants.NCO_FREQ_MIN_MAX_STEP
+        not -constants.NCO_FREQ_LIMIT_STEPS <= frequency_steps <= constants.NCO_FREQ_LIMIT_STEPS
     ):
         min_max_frequency_in_hz = (
-            constants.NCO_FREQ_MIN_MAX_STEP / constants.NCO_FREQ_STEPS_PER_HZ
+            constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ
         )
         raise ValueError(
             f"Attempting to set NCO frequency. "

@@ -20,7 +20,6 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling import virtual
-from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 
 @pytest.fixture(name="empty_qasm_program_qcm")
