@@ -517,7 +517,11 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
     :
         The area defined by the pulse
     """
-    assert sampling_rate > 0
+    if not sampling_rate > 0:
+        raise ValueError(
+            f"Attempting to calculate the area of a single pulse with "
+            f"{sampling_rate=}. Sampling rate should be a positive number."
+        )
 
     # Nice to have: Give the user the option to choose integration algorithm
 

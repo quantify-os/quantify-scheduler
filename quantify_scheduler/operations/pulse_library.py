@@ -838,7 +838,11 @@ def create_dc_compensation_pulse(
         Returns a SquarePulse object that compensates all pulses passed as argument.
     """
     # Make sure that the list contains at least one element
-    assert len(pulses) > 0
+    if len(pulses) == 0:
+        raise ValueError(
+            "Attempting to create a DC compensation SquarePulse with no pulses. "
+            "At least one pulse is necessary."
+        )
 
     pulse_info_list: List[Dict[str, Any]] = _extract_pulses(pulses, port)
 
@@ -849,7 +853,11 @@ def create_dc_compensation_pulse(
     c_duration: float
     c_amp: float
     if amp is None and duration is not None:
-        assert duration > 0
+        if not duration > 0:
+            raise ValueError(
+                f"Attempting to create a DC compensation SquarePulse specified by {duration=}. "
+                f"Duration must be a positive number."
+            )
         c_duration = duration
         c_amp = -area / c_duration
     elif amp is not None and duration is None:

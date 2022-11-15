@@ -351,8 +351,8 @@ dut = QuantumDevice("DUT")
 qubit = BasicTransmonElement("qubit")
 
 # Finally, add the transmon element to the QuantumDevice
-dut.add_component(qubit)
-dut, dut.components()
+dut.add_element(qubit)
+dut, dut.elements()
 
 
 ```
@@ -460,10 +460,10 @@ dut.close()
 dut = QuantumDevice("DUT")
 q0 = BasicTransmonElement("q0")
 q1 = BasicTransmonElement("q1")
-dut.add_component(q0)
-dut.add_component(q1)
-dut.get_component("q0").rxy.amp180(0.6)
-dut.get_component("q1").rxy.amp180(0.6)
+dut.add_element(q0)
+dut.add_element(q1)
+dut.get_element("q0").rxy.amp180(0.6)
+dut.get_element("q1").rxy.amp180(0.6)
 
 compiled_sched = qcompile(
     schedule=sched, device_cfg=dut.generate_device_config(), hardware_cfg=None

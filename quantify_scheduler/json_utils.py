@@ -135,7 +135,15 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             A list of custom modules containing serializable classes, by default []
         """
         extended_modules: List[ModuleType] = kwargs.pop("modules", list())
-        assert all(isinstance(o, ModuleType) for o in extended_modules)
+        invalid_modules = list(
+            filter(lambda o: not isinstance(o, ModuleType), extended_modules)
+        )
+        if invalid_modules:
+            raise ValueError(
+                f"Attempting to create a Schedule decoder class ScheduleJSONDecoder. "
+                f"The following modules provided are not an instance of the ModuleType: "
+                f"{invalid_modules} ."
+            )
 
         super().__init__(
             object_hook=self.custom_object_hook,
