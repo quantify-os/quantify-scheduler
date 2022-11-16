@@ -1576,7 +1576,10 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq
-            sequencer.settings.nco_en = True
+            if sequencer.frequency == 0:
+                sequencer.settings.nco_en = False
+            else:
+                sequencer.settings.nco_en = True
             return
 
         if_freq = sequencer.frequency
