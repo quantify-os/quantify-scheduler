@@ -75,8 +75,8 @@ from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
-    ShiftClockPhase,
     SetClockFrequency,
+    ShiftClockPhase,
     SquarePulse,
 )
 from quantify_scheduler.operations.operation import Operation

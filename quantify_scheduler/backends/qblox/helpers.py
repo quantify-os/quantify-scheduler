@@ -419,7 +419,8 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
     frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
 
     if (
-        not -constants.NCO_FREQ_LIMIT_STEPS <= frequency_steps <= constants.NCO_FREQ_LIMIT_STEPS
+        frequency_steps < -constants.NCO_FREQ_LIMIT_STEPS
+        or frequency_steps > constants.NCO_FREQ_LIMIT_STEPS
     ):
         min_max_frequency_in_hz = (
             constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ

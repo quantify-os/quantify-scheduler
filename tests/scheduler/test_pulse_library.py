@@ -14,14 +14,14 @@ from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
-    ShiftClockPhase,
-    SetClockFrequency,
+    NumericalPulse,
     RampPulse,
+    SetClockFrequency,
+    ShiftClockPhase,
     SkewedHermitePulse,
     SoftSquarePulse,
     SquarePulse,
     create_dc_compensation_pulse,
-    NumericalPulse,
     decompose_long_square_pulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource

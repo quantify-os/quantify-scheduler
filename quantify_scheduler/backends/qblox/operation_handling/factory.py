@@ -82,13 +82,13 @@ def _get_pulse_strategy(
         else:
             return virtual.IdleStrategy(operation_info)
 
-    if instruction_generated_pulses_enabled:
+    elif instruction_generated_pulses_enabled:
         wf_func = operation_info.data["wf_func"]
 
         if wf_func == "quantify_scheduler.waveforms.square":
             return pulses.StitchedSquarePulseStrategy(operation_info, output_mode)
 
-        if wf_func == "quantify_scheduler.waveforms.staircase":
+        elif wf_func == "quantify_scheduler.waveforms.staircase":
             return pulses.StaircasePulseStrategy(operation_info, output_mode)
 
     return pulses.GenericPulseStrategy(operation_info, output_mode)
