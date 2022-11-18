@@ -1153,19 +1153,19 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock or (
                     portclock[0] is None and portclock[1] == seq.clock
                 ):
-                    partial_func = partial(
+                    op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
                         instruction_generated_pulses_enabled=instr_gen_pulses,
                         output_mode=seq.output_mode,
                     )
-                    func_map = map(
-                        partial_func,
+                    strategies_for_pulses = map(
+                        op_info_to_op_strategy_func,
                         pulse_data_list,
                     )
                     if seq.pulses is None:
                         seq.pulses = []
 
-                    for pulse_strategy in func_map:
+                    for pulse_strategy in strategies_for_pulses:
                         seq.pulses.append(pulse_strategy)
 
         for portclock, acq_data_list in self._acquisitions.items():
