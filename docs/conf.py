@@ -339,6 +339,9 @@ import pydantic
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 
+# The following fails the build when one of the notebooks has an execution error.
+nb_execution_raise_on_error = True
+
 # Enable nitpicky mode - warns about all references where the target cannot be found
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
 
