@@ -22,7 +22,6 @@
 - Qblox backend - Minor adjustments to make compilation compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
-- Qblox backend - Minor adjustments to make compilation compatible with qblox-instruments==0.8.0 (!481)
 - QBlox backend - Introduce `SetClockFrequency` operation, made possible by qblox-instruments==0.8 (!509)
 
 ## 0.9.0 (2022-10-06)
