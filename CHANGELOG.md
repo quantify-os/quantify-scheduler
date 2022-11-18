@@ -4,6 +4,7 @@
 
 ### Breaking changes
 
+- Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
 
 ### Merged branches and closed issues
 
@@ -58,11 +59,6 @@
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
-
-<<<<<<< HEAD
-- JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
-- JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
-- QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
