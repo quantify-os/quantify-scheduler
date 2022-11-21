@@ -1139,9 +1139,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                             f"Portclock {portclock} was assigned to multiple "
                             f"portclock_configs of {self.name}. This portclock was "
                             f"used in io '{io}' despite being already previously "
-                            f"used in io '{portclock_io_map[portclock]}'. When using"
-                            f"the samse portclock for output and input, assigning the"
-                            f"output only suffices."
+                            f"used in io '{portclock_io_map[portclock]}'. When using "
+                            f"the same portclock for output and input, assigning only "
+                            f"the output suffices."
                         )
 
                     portclock_io_map[portclock] = io
