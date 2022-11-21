@@ -26,14 +26,12 @@ from qblox_instruments import (
     SequencerStatus,
     SequencerStatusFlags,
 )
+from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.device_under_test.mock_setup import (
-    set_standard_params_transmon,
-)
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
@@ -68,7 +66,7 @@ def make_cluster_component(mocker):
         mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
 
         for comp in cluster_component._cluster_modules.values():
-            instrument = comp.instrument_channel
+            instrument = comp._instrument_module
             mocker.patch.object(
                 instrument, "arm_sequencer", wraps=instrument.arm_sequencer
             )
@@ -1017,3 +1015,35 @@ def test_get_sequencer_index(make_qrm_component):
         qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
     )
     assert acq_manager._get_sequencer_index(0, 0) == answer
+
+
+def test_instrument_module():
+    """InstrumentModule is treated like InstrumentChannel and added as
+    self._instrument_module
+    """
+    # Arrange
+    instrument = Instrument("test_instr")
+    instrument_module = InstrumentModule(instrument, "test_instr_module")
+    instrument_module.is_qcm_type = True
+    instrument_module.is_rf_type = False
+
+    # Act
+    component = qblox.QCMComponent(instrument_module)
+
+    # Assert
+    assert component._instrument_module is instrument_module
+
+
+def test_instrument_channel():
+    """InstrumentChannel is added as self._instrument_module"""
+    # Arrange
+    instrument = Instrument("test_instr")
+    instrument_channel = InstrumentChannel(instrument, "test_instr_channel")
+    instrument_channel.is_qcm_type = True
+    instrument_channel.is_rf_type = False
+
+    # Act
+    component = qblox.QCMComponent(instrument_channel)
+
+    # Assert
+    assert component._instrument_module is instrument_channel

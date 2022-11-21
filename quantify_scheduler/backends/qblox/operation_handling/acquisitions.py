@@ -63,10 +63,18 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
         if self.bin_mode == BinMode.AVERAGE:
-            assert self.bin_idx_register is None
+            if self.bin_idx_register is not None:
+                raise ValueError(
+                    "Attempting to add acquisition with average binmode. "
+                    "bin_idx_register cannot be None."
+                )
             self.acquire_average(qasm_program)
         elif self.bin_mode == BinMode.APPEND:
-            assert self.bin_idx_register is not None
+            if self.bin_idx_register is None:
+                raise ValueError(
+                    "Attempting to add acquisition with append binmode. "
+                    "bin_idx_register cannot be None."
+                )
             self.acquire_append(qasm_program)
         else:
             raise RuntimeError(
@@ -124,7 +132,11 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
-        assert acq_bin_idx_reg is not None
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
         self._acquire_square(qasm_program, acq_bin_idx_reg)
 
         qasm_program.emit(

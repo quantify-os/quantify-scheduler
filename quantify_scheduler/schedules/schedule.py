@@ -89,7 +89,11 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     @repetitions.setter
     def repetitions(self, value: int):
-        assert value > 0
+        if value <= 0:
+            raise ValueError(
+                f"Attempting to set repetitions for the schedule. "
+                f"Must be a positive number. Got {value}."
+            )
         self.data["repetitions"] = int(value)
 
     @property
@@ -507,7 +511,11 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         """
         Add a resource such as a channel or qubit to the schedule.
         """
-        assert resources.Resource.is_valid(resource)
+        if not resources.Resource.is_valid(resource):
+            raise ValueError(
+                f"Attempting to add resource to schedule. "
+                f"Resource '{resource}' is not valid."
+            )
         if resource.name in self.data["resource_dict"]:
             raise ValueError(f"Key {resource.name} is already present")
 
@@ -552,7 +560,11 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         :
             returns the schedulable created on the schedule
         """
-        assert isinstance(operation, Operation)
+        if not isinstance(operation, Operation):
+            raise ValueError(
+                f"Attempting to add operation to schedule. "
+                f"The provided object '{operation}' is not an instance of Operation"
+            )
 
         if label is None:
             label = str(uuid4())

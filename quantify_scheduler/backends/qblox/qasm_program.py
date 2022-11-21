@@ -127,10 +127,12 @@ class QASMProgram:
             The string representing a binary number.
         """
         if isinstance(marker_setting, str):
-            assert len(marker_setting) == 4, "Maximum of 4 markers expected."
+            if len(marker_setting) != 4:
+                raise ValueError("4 marker values are expected.")
             marker_binary = int(marker_setting, 2)
         else:
-            assert marker_setting <= 0b1111
+            if marker_setting > 0b1111:
+                raise ValueError(f"Invalid marker setting: {marker_setting=}.")
             marker_binary = marker_setting
         self.emit(
             q1asm_instructions.SET_MARKER,

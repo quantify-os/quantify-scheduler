@@ -17,8 +17,7 @@ from qblox_instruments import (
     SequencerStatus,
     SequencerStatusFlags,
 )
-from qcodes.instrument.base import Instrument
-from qcodes.instrument.channel import InstrumentChannel
+from qcodes.instrument import Instrument, InstrumentModule
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
@@ -148,15 +147,15 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     """Qblox InstrumentCoordinator component base class."""
 
     def __init__(
-        self, instrument: Union[Instrument, InstrumentChannel], **kwargs
+        self, instrument: Union[Instrument, InstrumentModule], **kwargs
     ) -> None:
         """
         Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
         """
         super().__init__(instrument, **kwargs)
 
-        self.instrument_channel = (
-            instrument if isinstance(instrument, InstrumentChannel) else None
+        self._instrument_module = (
+            instrument if isinstance(instrument, InstrumentModule) else None
         )
 
         if instrument.is_rf_type is not self._hardware_properties.has_internal_lo:
@@ -173,19 +172,22 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         }
 
     @property
-    def instrument(self) -> Union[Instrument, InstrumentChannel]:
+    def instrument(self) -> Union[Instrument, InstrumentModule]:
         """
-        For Cluster modules we return a reference to its `InstrumentChannel` in the
-        Cluster instrument; for Pulsar modules we return the `instrument` reference
+        If the instrument behind this instance of
+        `QbloxInstrumentCoordinatorComponentBase` is an `InstrumentModule` (e.g. the
+        module within the `qblox_instrument.Cluster`), it is returned. Otherwise, the
+        reference to the `instrument` is returned (e.g. for a stand-alone
+        `qblox_instruments.Pulsar`).
         """
-        if self.instrument_channel is not None:
-            return self.instrument_channel
+        if self._instrument_module is not None:
+            return self._instrument_module
 
         return super().instrument
 
     def _set_parameter(
         self,
-        instrument: Union[Instrument, InstrumentChannel],
+        instrument: Union[Instrument, InstrumentModule],
         parameter_name: str,
         val: Any,
     ) -> None:
@@ -1085,20 +1087,18 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
 
-        for instrument_channel in instrument.modules:
+        for instrument_module in instrument.modules:
             try:
                 icc_class: type = {
                     (True, False): QCMComponent,
                     (True, True): QCMRFComponent,
                     (False, False): QRMComponent,
                     (False, True): QRMRFComponent,
-                }[(instrument_channel.is_qcm_type, instrument_channel.is_rf_type)]
+                }[(instrument_module.is_qcm_type, instrument_module.is_rf_type)]
             except KeyError:
                 continue
 
-            self._cluster_modules[instrument_channel.name] = icc_class(
-                instrument_channel
-            )
+            self._cluster_modules[instrument_module.name] = icc_class(instrument_module)
 
     @property
     def is_running(self) -> bool:
