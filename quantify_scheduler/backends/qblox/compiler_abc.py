@@ -368,13 +368,13 @@ class Sequencer:
     @property
     def connected_inputs(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
         """
-        The indices of the input paths that this sequencer is collecting awg
+        The indices of the input paths that this sequencer is collecting
         data for.
 
         For the baseband modules, these indices correspond directly to a physical input
         (e.g. index 0 corresponds to output 1 etc.).
 
-        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of input 1,
+        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of input 1.
         """
         return self._settings.connected_inputs
 
@@ -1132,16 +1132,15 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     )
                     sequencers[new_seq.name] = new_seq
 
-                    # Check if the portclock was not multiply specified
+                    # Check if the portclock was not multiply specified, which is not allowed
                     if portclock in portclock_io_map:
-                        # does not allow the same portclock ever.
                         raise ValueError(
                             f"Portclock {portclock} was assigned to multiple "
                             f"portclock_configs of {self.name}. This portclock was "
                             f"used in io '{io}' despite being already previously "
-                            f"used in io '{portclock_io_map[portclock]}'. When using"
-                            f"the samse portclock for output and input, assigning the"
-                            f"output only suffices."
+                            f"used in io '{portclock_io_map[portclock]}'. When using "
+                            f"the same portclock for output and input, assigning only "
+                            f"the output suffices."
                         )
 
                     portclock_io_map[portclock] = io
@@ -1210,7 +1209,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
-        to each sequencer, and or an LO frequency to each output (if applicable).
+        to each sequencer, and an LO frequency to each output (if applicable).
 
         What is executed depends on the mix_lo boolean.
 
@@ -1576,10 +1575,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq
-            if sequencer.frequency == 0:
-                sequencer.settings.nco_en = False
-            else:
-                sequencer.settings.nco_en = True
+            sequencer.settings.nco_en = sequencer.frequency != 0
             return
 
         if_freq = sequencer.frequency
