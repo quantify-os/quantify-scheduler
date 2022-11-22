@@ -21,6 +21,7 @@
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 - Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
+- Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 
 ## 0.9.0 (2022-10-06)
 
