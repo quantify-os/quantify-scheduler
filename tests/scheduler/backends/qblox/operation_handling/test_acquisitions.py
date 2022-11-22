@@ -26,7 +26,6 @@ from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.instrument_coordinator.components.qblox import (
@@ -347,7 +346,7 @@ class TestWeightedAcquisitionStrategy:
 
 
 def test_trace_acquisition_measurement_control(
-    mock_setup_basic_transmon, mocker, make_cluster_component
+    mock_setup_basic_transmon_with_standard_params, mocker, make_cluster_component
 ):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -365,17 +364,16 @@ def test_trace_acquisition_measurement_control(
         },
     }
 
-    set_standard_params_transmon(mock_setup_basic_transmon)
-
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
     acq_duration = 5e-6  # retrieve 5000 samples
-    q2 = mock_setup_basic_transmon["q2"]
+    q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(7404000000.0)
     q2.measure.integration_time(acq_duration)
@@ -415,7 +413,7 @@ def test_trace_acquisition_measurement_control(
 
 
 def test_multiple_measurements(
-    mock_setup_basic_transmon, make_cluster_component
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):  # pylint: disable=too-many-locals
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -439,17 +437,16 @@ def test_multiple_measurements(
     }
 
     # Setup objects needed for experiment
-    set_standard_params_transmon(mock_setup_basic_transmon)
-
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    q0 = mock_setup_basic_transmon["q0"]
-    q1 = mock_setup_basic_transmon["q1"]
+    q0 = mock_setup["q0"]
+    q1 = mock_setup["q1"]
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
@@ -495,7 +492,7 @@ def test_multiple_measurements(
 )
 def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-locals, too-many-statements
     mocker,
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
     make_qrm_component,
     module_under_test,
@@ -541,8 +538,8 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     }
     hardware_cfg = hardware_cfgs[module_under_test]
 
-    set_standard_params_transmon(mock_setup_basic_transmon)
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    instr_coordinator = mock_setup["instrument_coordinator"]
 
     if isinstance(module_under_test, ClusterType):
         name = "cluster0"
@@ -566,10 +563,10 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     except ValueError:
         ic_component.instrument.reset()
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    q2 = mock_setup_basic_transmon["q2"]
+    q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(
         7.404e9 if module_under_test is ClusterType.CLUSTER_QRM_RF else 3e8
@@ -620,7 +617,9 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     instr_coordinator.remove_component(ic_component.name)
 
 
-def test_mix_lo_flag(mock_setup_basic_transmon, make_cluster_component):
+def test_mix_lo_flag(
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -641,11 +640,11 @@ def test_mix_lo_flag(mock_setup_basic_transmon, make_cluster_component):
     }
 
     # Setup objects needed for experiment
-    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
     # Define experiment schedule
