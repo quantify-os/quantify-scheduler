@@ -4,6 +4,7 @@
 
 ### Breaking changes
 
+- Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
 
 ### Merged branches and closed issues
 
@@ -21,6 +22,7 @@
 - Qblox backend - Minor adjustments to make compilation compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
+- Qblox backend - Introduce `SetClockFrequency` operation, made possible by qblox-instruments==0.8 (!509)
 
 ## 0.9.0 (2022-10-06)
 
@@ -58,11 +60,6 @@
 - Qblox ICCs - Added input/output gain/attenuation configurable hardware parameter (!458)
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
-
-<<<<<<< HEAD
-- JSON utilities - Remove repr based serialization/deserialization methods (!445, #248)
-- JSON utilities - Extend the capabilities of the __getstate__/__setstate__ json serializer (!445, #248)
-- QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
 
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
