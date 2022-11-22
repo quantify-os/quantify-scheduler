@@ -22,6 +22,8 @@
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 - Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
 - Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
+- Instrument coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
+- QBlox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
 
 ## 0.9.0 (2022-10-06)
 
