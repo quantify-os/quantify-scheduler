@@ -417,8 +417,8 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             elif seq_name == "acq_metadata":
                 raise KeyError(
-                    f"Invalid program. Attempting to use QCM for readout. "
-                    f'Check your hardware config".'
+                    "Invalid program. Attempting to use QCM for readout. "
+                    "Check your hardware config."
                 )
             else:
                 raise KeyError(
