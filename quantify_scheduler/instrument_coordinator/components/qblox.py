@@ -415,6 +415,11 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
         for seq_name, seq_cfg in program.items():
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
+            elif seq_name == "acq_metadata":
+                raise KeyError(
+                    f"Invalid program. Attempting to use QCM for readout. "
+                    f'Check your hardware config".'
+                )
             else:
                 raise KeyError(
                     f"Invalid program. Attempting to access non-existing sequencer "
