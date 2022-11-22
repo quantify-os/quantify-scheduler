@@ -24,6 +24,7 @@
 - Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
 - Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
 - Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
+- Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 
 ## 0.9.0 (2022-10-06)
 
