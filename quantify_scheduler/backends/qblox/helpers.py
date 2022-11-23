@@ -4,7 +4,7 @@
 import re
 from copy import deepcopy
 from collections import UserDict
-from typing import Any, Dict, Iterable, List, Literal, Tuple, Union, Optional
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
@@ -224,6 +224,7 @@ def output_name_to_outputs(name: str) -> Optional[Union[Tuple[int], Tuple[int, i
     """
     if "output" not in name:
         return None
+
     return {
         "complex_output_0": (0, 1),
         "complex_output_1": (2, 3),
@@ -236,27 +237,27 @@ def output_name_to_outputs(name: str) -> Optional[Union[Tuple[int], Tuple[int, i
 
 def input_name_to_inputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     """
-    Finds the output path index associated with the output names specified in the
+    Finds the input path index associated with the input names specified in the
     config.
 
-    For the baseband modules, these indices correspond directly to a physical output (
+    For the baseband modules, these indices correspond directly to a physical input (
     e.g. index 0 corresponds to output 1 etc.).
 
-    For the RF modules, index 0 and 2 correspond to path0 of output 1 and output 2
-    respectively, and 1 and 3 to path1 of those outputs.
+    For the RF modules, index 0 corresponds to path0 of input 1 and path 1 of input 1.
 
     Parameters
     ----------
     name
-        name of the output channel. e.g. 'complex_output_0'.
+        name of the input channel. e.g. 'real_input_0'.
 
     Returns
     -------
     :
-        A tuple containing the indices of the physical (real) outputs.
+        A tuple containing the indices of the physical (real) inputs.
     """
     if "input" not in name:
         return None
+
     return {
         "complex_input_0": (0, 1),
         "real_input_0": (0,),
@@ -291,7 +292,7 @@ def io_mode_from_ios(
     Raises
     ------
     RuntimeError
-        The amount of outputs is more than 2, which is impossible for one sequencer.
+        The amount of ios is more than 2, which is impossible for one sequencer.
     """
     if len(io) > 2:
         raise RuntimeError(f"Too many io specified for this channel. Given: {io}.")

@@ -39,14 +39,21 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         NB This is done intentionally to prevent the instances from being garbage
         collected.
         """
-        instrument = InstrumentBase(name=name)
+        if isinstance(name,InstrumentBase):
+            instrument = name
+        else:
+            instrument = InstrumentBase(name=name)
+
         instance = super().__new__(cls, instrument)
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
     def __init__(self, name: Union[str, InstrumentBase] = DEFAULT_NAME) -> None:
+        if isinstance(name, InstrumentBase):
+            instrument = name
+        else:
+            instrument = InstrumentBase(name=name)
 
-        instrument = InstrumentBase(name=name)
         super().__init__(instrument)
 
     @property

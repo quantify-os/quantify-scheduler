@@ -370,7 +370,7 @@ class SequencerSettings(DataClassJsonMixin):
     connected_outputs: Union[Tuple[int], Tuple[int, int]]
     """Specifies which physical outputs this sequencer produces waveform data for."""
     connected_inputs: Union[Tuple[int], Tuple[int, int]]
-    """Specifies which physical inputs this sequencer produces waveform data for."""
+    """Specifies which physical inputs this sequencer collects data for."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
     mixer_corr_phase_offset_degree: float = 0.0

@@ -1515,27 +1515,20 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
         Assigns frequencies for baseband modules.
         """
-
         if self.is_pulsar:
-            if sequencer.associated_ext_lo is None:
-                if sequencer.frequency == 0:
-                    sequencer.settings.nco_en = False
-                else:
-                    clock_freq = self.parent.resources[sequencer.clock]["freq"]
-                    sequencer.frequency = clock_freq
-                    sequencer.settings.nco_en = True
-            else:
-                self.assign_frequency_with_ext_lo(sequencer, self.parent)
+            parent = self.parent
         else:
-            if sequencer.associated_ext_lo is None:
-                if sequencer.frequency == 0:
-                    sequencer.settings.nco_en = False
-                else:
-                    clock_freq = self.parent.parent.resources[sequencer.clock]["freq"]
-                    sequencer.frequency = clock_freq
-                    sequencer.settings.nco_en = True
+            parent = self.parent.parent
+
+        if sequencer.associated_ext_lo is None:
+            if sequencer.frequency == 0:
+                sequencer.settings.nco_en = False
             else:
-                self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+                clock_freq = parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
+                sequencer.settings.nco_en = True
+        else:
+            self.assign_frequency_with_ext_lo(sequencer, parent)
 
     @staticmethod
     def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
@@ -1570,8 +1563,6 @@ class QbloxBasebandModule(QbloxBaseModule):
         lo_compiler = container.instrument_compilers.get(
             sequencer.associated_ext_lo, None
         )
-
-        # todo check that the ext_lo is a instrument coordinator component.
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq

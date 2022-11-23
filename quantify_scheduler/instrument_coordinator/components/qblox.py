@@ -333,7 +333,6 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
                 self._get_channel_map_parameter_name(output_index=output_idx),
                 connected,
             )
-            # TODO add logic for 2 real inputs
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence

@@ -22,12 +22,12 @@ from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
 
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 from quantify_scheduler.operations.gate_library import Measure
@@ -442,7 +442,6 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
     ic_cluster0 = make_cluster_component("cluster0")
     instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    print(instr_coordinator.components)
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
@@ -469,10 +468,9 @@ def test_multiple_measurements(mock_setup_basic_transmon, make_cluster_component
     q1.measure.integration_time(3e-6)
 
     # Generate compiled schedule
-    compiled_sched = qcompile(
-        schedule=schedule,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
     )
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
@@ -548,15 +546,14 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     schedule = Schedule("test NV measurement with real output and input")
     schedule.add(
         Measure("qe0", acq_protocol="Trace")
-    )  # could be replaced by TriggerCount later.
+    )  # should be replaced by TriggerCount later.
 
     # Generate compiled schedule
-    compiled_sched = qcompile(
-        schedule=schedule,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
     )
-    print(compiled_sched.compiled_instructions)
+
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
@@ -626,12 +623,11 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     q1.measure.acq_channel(1)
 
     # Generate compiled schedule
-    compiled_sched = qcompile(
-        schedule=schedule,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
     )
-    print(compiled_sched.compiled_instructions)
+
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
@@ -648,6 +644,104 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
 
     instr_coordinator.remove_component("ic_cluster0")
 
+
+def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_output_0": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 200e6,
+                            "instruction_generated_pulses_enabled": True,
+                        },
+                    ],
+                },
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        },  # todo add TTL params
+                    ],
+                },
+                "real_input_1": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        },  # todo add TTL params
+                    ],
+                },
+            },
+        },
+        "laser_red": {
+            "instrument_type": "LocalOscillator",
+            "frequency": None,
+            "power": 1,
+        },
+    }
+
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    qe0 = mock_setup_basic_nv["qe0"]
+    qe0.measure.acq_delay(0)
+    qe0.measure.acq_duration(15e-6)
+    qe0.measure.pulse_duration(50e-6)
+
+    # Define experiment schedule
+    schedule = Schedule("test NV measurement with real output and input")
+    schedule.add(
+        Measure("qe0", acq_protocol="Trace")
+    )  # could be replaced by TriggerCount later.
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert len(data) == 1
+    assert len(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0]) == 15000
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+        "connected_inputs"
+    ] == [0]
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+            "nco_en"
+        ]
+        == False
+    )
+
+    instr_coordinator.remove_component("ic_cluster0")
 
 @pytest.mark.parametrize(
     "module_under_test",
@@ -736,10 +830,10 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
 
     schedule = trace_schedule_circuit_layer(qubit_name="q2")
 
-    compiled_sched = qcompile(
-        schedule=schedule,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
     wrappee = (
@@ -813,17 +907,15 @@ def test_mix_lo_flag(mock_setup_basic_transmon, make_cluster_component):
     schedule.add_resource(ClockResource(name="q0.ro", freq=70e6))
 
     # Generate compiled schedule where mix_lo is true
-    compiled_sched_mix_lo_true = qcompile(
-        schedule=schedule,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched_mix_lo_true = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
     )
+
     # Change mix_lo to false, set new LO freq and generate new compiled schedule
     hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"]["mix_lo"] = False
-    compiled_sched_mix_lo_false = qcompile(
-        schedule=schedule,
-        device_cfg=quantum_device.generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    compiled_sched_mix_lo_false = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
     # Assert LO freq got set to 20e6 if mix_lo is true.
