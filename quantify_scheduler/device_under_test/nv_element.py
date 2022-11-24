@@ -291,8 +291,8 @@ class CRCount(InstrumentModule):
         )
         """Amplitude of readout pulse"""
 
-        self.spin_pump_pulse_amplitude = ManualParameter(
-            name="spin_pump_pulse_amplitude",
+        self.spinpump_pulse_amplitude = ManualParameter(
+            name="spinpump_pulse_amplitude",
             instrument=self,
             initial_value=0.5,
             unit="V",
@@ -309,8 +309,8 @@ class CRCount(InstrumentModule):
         )
         """Readout pulse duration"""
 
-        self.spin_pump_pulse_duration = ManualParameter(
-            name="spin_pump_pulse_duration",
+        self.spinpump_pulse_duration = ManualParameter(
+            name="spinpump_pulse_duration",
             instrument=self,
             initial_value=20e-6,
             unit="s",
@@ -327,14 +327,14 @@ class CRCount(InstrumentModule):
         )
         """Pulse delay of readout pulse"""
 
-        self.spin_pump_pulse_delay = ManualParameter(
-            name="spin_pump_pulse_delay",
+        self.spinpump_pulse_delay = ManualParameter(
+            name="spinpump_pulse_delay",
             instrument=self,
             initial_value=0,
             unit="s",
             vals=validators.Numbers(min_value=-1, max_value=1),
         )
-        """Pulse delay of spin_pump pulse"""
+        """Pulse delay of spinpump pulse"""
 
         self.acq_duration = ManualParameter(
             name="acq_duration",
@@ -469,15 +469,15 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_kwargs={
                         "pulse_amplitude": [
                             self.cr_count.readout_pulse_amplitude(),
-                            self.cr_count.spin_pump_pulse_amplitude(),
+                            self.cr_count.spinpump_pulse_amplitude(),
                         ],
                         "pulse_duration": [
                             self.cr_count.readout_pulse_duration(),
-                            self.cr_count.spin_pump_pulse_duration(),
+                            self.cr_count.spinpump_pulse_duration(),
                         ],
                         "pulse_delay": [
                             self.cr_count.readout_pulse_delay(),
-                            self.cr_count.spin_pump_pulse_delay(),
+                            self.cr_count.spinpump_pulse_delay(),
                         ],
                         "pulse_port": [
                             self.ports.optical_control(),
