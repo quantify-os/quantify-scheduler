@@ -423,10 +423,10 @@ def _reshape_array_into_acq_return_type(
     return acquisitions
 
 
-def test_profiling(mock_setup_basic_transmon, tmp_test_data_dir):
-    set_standard_params_transmon(mock_setup_basic_transmon)
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
-    qubit = mock_setup_basic_transmon["q0"]
+def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data_dir):
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup["quantum_device"]
+    qubit = mock_setup["q0"]
 
     schedule_kwargs = {
         "pulse_amp": qubit.measure.pulse_amp(),
