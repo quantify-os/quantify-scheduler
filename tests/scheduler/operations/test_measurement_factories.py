@@ -25,7 +25,7 @@ def typical_kwargs_optical_measurement():
         "acq_clock": "acq_clock_name",
         "acq_channel": 1,
         "acq_index": 0,
-        "acq_protocol": "TriggerCount",
+        "acq_protocol": None,
         "bin_mode": None,
         "acq_protocol_default": "TriggerCount",
         "pulse_type": "SquarePulse",
