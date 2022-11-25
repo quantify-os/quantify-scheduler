@@ -318,24 +318,6 @@ class CRCount(InstrumentModule):
         )
         """Readout pulse duration"""
 
-        self.readout_pulse_delay = ManualParameter(
-            name="readout_pulse_delay",
-            instrument=self,
-            initial_value=0,
-            unit="s",
-            vals=validators.Numbers(min_value=-1, max_value=1),
-        )
-        """Pulse delay of readout pulse"""
-
-        self.spinpump_pulse_delay = ManualParameter(
-            name="spinpump_pulse_delay",
-            instrument=self,
-            initial_value=0,
-            unit="s",
-            vals=validators.Numbers(min_value=-1, max_value=1),
-        )
-        """Pulse delay of spinpump pulse"""
-
         self.acq_duration = ManualParameter(
             name="acq_duration",
             instrument=self,
@@ -474,10 +456,6 @@ class BasicElectronicNVElement(DeviceElement):
                         "pulse_durations": [
                             self.cr_count.readout_pulse_duration(),
                             self.cr_count.spinpump_pulse_duration(),
-                        ],
-                        "pulse_delays": [
-                            self.cr_count.readout_pulse_delay(),
-                            self.cr_count.spinpump_pulse_delay(),
                         ],
                         "pulse_ports": [
                             self.ports.optical_control(),
