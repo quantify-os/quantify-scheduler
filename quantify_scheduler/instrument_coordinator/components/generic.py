@@ -39,7 +39,7 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         NB This is done intentionally to prevent the instances from being garbage
         collected.
         """
-        if isinstance(name,InstrumentBase):
+        if isinstance(name, InstrumentBase):
             instrument = name
         else:
             instrument = InstrumentBase(name=name)

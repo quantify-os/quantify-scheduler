@@ -730,9 +730,9 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
         Measure("qe0", acq_protocol="Trace")
     )  # should be replaced by TriggerCount later.
     # TODO uncomment when triggercount available.
-    #schedule.add(
+    # schedule.add(
     #    Measure("qe1", acq_protocol="TriggerCount")
-    #)
+    # )
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
@@ -762,6 +762,7 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     # )
 
     instr_coordinator.remove_component("ic_cluster0")
+
 
 @pytest.mark.parametrize(
     "module_under_test",
