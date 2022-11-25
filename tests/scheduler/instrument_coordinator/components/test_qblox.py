@@ -31,7 +31,6 @@ from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
