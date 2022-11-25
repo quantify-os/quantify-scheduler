@@ -11,6 +11,7 @@
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
+- NV Centers - `ChargeReset` operation only device compilation so far (!496)
 - QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
@@ -21,6 +22,10 @@
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 - Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
+- Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
+- Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
+- Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
+- Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 
 ## 0.9.0 (2022-10-06)
 

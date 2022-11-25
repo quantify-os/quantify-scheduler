@@ -491,10 +491,10 @@ def pulse_diagram_matplotlib(
         _, ax = plt.subplots()
     for gate, data in pulses.items():
         ax.plot(times, data.real, label=gate)
-    set_xlabel(ax, "Time", unit="s")
+    set_xlabel(label="Time", unit="s", axis=ax)
     # N.B. we currently use unity gain in the hardware backends so strictly
     # speaking this is not the amplitude on the device, but the amplitude on the output.
-    set_ylabel(ax, "Amplitude", unit="V")
+    set_ylabel(label="Amplitude", unit="V", axis=ax)
     ax.legend()
 
     return ax.get_figure(), ax
