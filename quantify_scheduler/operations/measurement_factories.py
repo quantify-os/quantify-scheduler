@@ -244,7 +244,6 @@ def optical_measurement(
 def optical_measurement_multiple_pulses(
     pulse_amplitudes: List[float],
     pulse_durations: List[float],
-    pulse_delays: List[float],
     pulse_ports: List[str],
     pulse_clocks: List[str],
     acq_duration: float,
@@ -254,7 +253,7 @@ def optical_measurement_multiple_pulses(
     acq_channel: int,
     acq_index: int,
     bin_mode: Union[BinMode, None],
-    acq_protocol: Literal["Trace", "TriggerCount"],
+    acq_protocol: Literal["Trace", "TriggerCount", None],
     acq_protocol_default: Literal["Trace", "TriggerCount"],
     pulse_type: Literal["SquarePulse"],
 ) -> Operation:
@@ -262,21 +261,20 @@ def optical_measurement_multiple_pulses(
     """Generator function for an optical measurement with multiple excitation pulses.
 
     Generalization of :func:`optical_measurement` for multiple pulses. All pulses can
-    have different amplitudes, durations, delays, ports and clocks.
-
+    have different amplitudes, durations, ports and clocks. All pulses start
+    simultaneously at time 0. The acquisition can have an ``acq_delay`` with respect to
+    the pulses.
 
     Parameters
     ----------
     pulse_amplitudes
-        list of amplitudes of the corresponding generated pulses
+        list of amplitudes of the corresponding pulses
     pulse_durations
-        list of durations of the corresponding generated pulses
-    pulse_delays
-        delay for each corresponding pulse
+        list of durations of the corresponding pulses
     pulse_ports
         Port names, where the corresponding pulses are applied
     pulse_clocks
-        Clock names of the corresponding generated pulses
+        Clock names of the corresponding pulses
     acq_duration
         Duration of the acquisition
     acq_delay
@@ -299,17 +297,19 @@ def optical_measurement_multiple_pulses(
     acq_protocol
         Acquisition protocol. "Trace" returns a time trace of the collected signal.
         "TriggerCount" returns the number of times the trigger threshold is surpassed.
-    acq_protocol_default, optional
-        Acquisition protocol if ``acq_protocol`` is None, by default "TriggerCount"
-    pulse_type, optional
-        Shape of the pulse to be generated, by default "SquarePulse"
+    acq_protocol_default
+        Acquisition protocol if ``acq_protocol`` is None
+    pulse_type
+        Shape of the pulse to be generated
 
     Returns
     -------
-        Operation with the generated pulse and acquisition
+        Operation with the generated pulses and acquisition
 
     Raises
     ------
+    ValueError
+        If first four function arguments do not have the same length.
     NotImplementedError
         If an unknown ``pulse_type`` or ``acq_protocol`` are used.
     """
@@ -323,7 +323,6 @@ def optical_measurement_multiple_pulses(
     if (
         not len(pulse_amplitudes)
         == len(pulse_durations)
-        == len(pulse_delays)
         == len(pulse_ports)
         == len(pulse_clocks)
     ):
@@ -331,33 +330,35 @@ def optical_measurement_multiple_pulses(
             "For multiple optical excitations, lists must have same length:\n"
             + f"{len(pulse_amplitudes)=},\n"
             + f"{len(pulse_durations)=},\n"
-            + f"{len(pulse_delays)=},\n"
             + f"{len(pulse_ports)=},\n"
             + f"{len(pulse_clocks)=}"
         )
-    # If acq_delay >= 0, the first pulse starts at 0 and the acquisition at acq_delay
-    # If acq_delay < 0, the first pulse starts at -acq_delay and the acquisition at 0
+
+    # If acq_delay >= 0, the pulse starts at 0 and the acquisition at acq_delay
+    # If acq_delay < 0, the acquisition starts at 0 and the pulse at -acq_delay (which is positive)
     t0_pulse = max(0, -acq_delay)
     t0_acquisition = max(0, acq_delay)
 
+    # This operation will contain all pulses and the acquisition
+    device_op = Operation("OpticalMeasurement")
+
     if pulse_type == "SquarePulse":
-        device_op = Operation("OpticalMeasurement")
-        for pulse_idx, amplitude in enumerate(pulse_amplitudes):
+        settings = zip(pulse_amplitudes, pulse_durations, pulse_ports, pulse_clocks)
+        for amp, dur, port, clock in settings:
             device_op.add_pulse(
                 SquarePulse(
-                    amp=amplitude,
-                    duration=pulse_durations[pulse_idx],
-                    port=pulse_ports[pulse_idx],
-                    clock=pulse_clocks[pulse_idx],
-                    t0=t0_pulse + pulse_delays[pulse_idx],
+                    amp=amp,
+                    duration=dur,
+                    port=port,
+                    clock=clock,
+                    t0=t0_pulse,
                 )
             )
-
     else:
         raise NotImplementedError(
-            f'Invalid pulse_type "{pulse_type}" specified as argument to '
-            'optical_measurement. Currently, only "SquarePulse" is accepted. '
-            "Please correct your device config."
+            f"Invalid pulse_type '{pulse_type}'' specified as argument to "
+            f"optical_measurement. Currently, only 'SquarePulse' is accepted. "
+            f"Please correct your device config."
         )
 
     if acq_protocol is None:
@@ -388,8 +389,8 @@ def optical_measurement_multiple_pulses(
         )
     else:
         raise NotImplementedError(
-            f'Acquisition protocol "{acq_protocol}" is not supported. '
-            'Currently, only "TriggerCount" and "Trace" are accepted.'
+            f"Acquisition protocol '{acq_protocol}' is not supported. "
+            f"Currently, only 'TriggerCount' and 'Trace' are accepted."
         )
 
     return device_op
