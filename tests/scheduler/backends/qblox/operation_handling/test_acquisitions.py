@@ -20,6 +20,7 @@ from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
@@ -537,7 +538,7 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    qe0 = mock_setup_basic_nv["qe0"]
+    qe0 = quantum_device.get_element("qe0")
     qe0.measure.acq_delay(0)
     qe0.measure.acq_duration(15e-6)
     qe0.measure.pulse_duration(50e-6)
@@ -607,8 +608,8 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    q0 = mock_setup_basic_transmon["q0"]
-    q1 = mock_setup_basic_transmon["q1"]
+    q0 = quantum_device.get_element("q0")
+    q1 = quantum_device.get_element("q1")
 
     # Define experiment schedule
     schedule = Schedule("test complex input")
@@ -665,6 +666,18 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
                         },
                     ],
                 },
+                "real_output_1": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe1:optical_control",
+                            "clock": "qe1.ge0",
+                            "interm_freq": 200e6,
+                            "instruction_generated_pulses_enabled": True,
+                        },
+                    ],
+                },
                 "real_input_0": {
                     "portclock_configs": [
                         {
@@ -677,8 +690,8 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
                 "real_input_1": {
                     "portclock_configs": [
                         {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
+                            "port": "qe1:optical_readout",
+                            "clock": "qe1.ge0",
                             "interm_freq": 0,
                         },  # todo add TTL params
                     ],
@@ -703,18 +716,18 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
+    qe1 = BasicElectronicNVElement("qe1")
+    quantum_device.add_element(qe1)
     quantum_device.hardware_config(hardware_cfg)
-
-    qe0 = mock_setup_basic_nv["qe0"]
-    qe0.measure.acq_delay(0)
-    qe0.measure.acq_duration(15e-6)
-    qe0.measure.pulse_duration(50e-6)
-
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
     schedule.add(
         Measure("qe0", acq_protocol="Trace")
-    )  # could be replaced by TriggerCount later.
+    )  # should be replaced by TriggerCount later.
+    # TODO uncomment when triggercount available.
+    #schedule.add(
+    #    Measure("qe1", acq_protocol="TriggerCount")
+    #)
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
@@ -722,15 +735,7 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
-    # Upload schedule and run experiment
-    instr_coordinator.prepare(compiled_sched)
-    instr_coordinator.start()
-    data = instr_coordinator.retrieve_acquisition()
-    instr_coordinator.stop()
-
     # Assert intended behaviour
-    assert len(data) == 1
-    assert len(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0]) == 15000
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
         "connected_inputs"
     ] == [0]
@@ -740,6 +745,16 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
         ]
         == False
     )
+    # TODO uncomment when triggercount available
+    # assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
+    #    "connected_inputs"
+    # ] == [1]
+    # assert (
+    #    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
+    #        "nco_en"
+    #    ]
+    #    == False
+    # )
 
     instr_coordinator.remove_component("ic_cluster0")
 
