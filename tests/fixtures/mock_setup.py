@@ -147,7 +147,9 @@ def mock_setup_basic_nv_qblox_hardware(mock_setup_basic_nv):
 
 
 @pytest.fixture(scope="function", autouse=False)
-def device_compile_config_basic_transmon(mock_setup_basic_transmon_with_standard_params):
+def device_compile_config_basic_transmon(
+    mock_setup_basic_transmon_with_standard_params,
+):
     """
     A config generated from a quantum device with 5 transmon qubits
     connected in a star configuration.
@@ -162,7 +164,9 @@ def device_compile_config_basic_transmon(mock_setup_basic_transmon_with_standard
 
 
 @pytest.fixture(scope="function", autouse=False)
-def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon_with_standard_params):
+def compile_config_basic_transmon_zhinst_hardware(
+    mock_setup_basic_transmon_with_standard_params,
+):
     """
     A config for a quantum device with 5 transmon qubits connected in a star
     configuration controlled using Zurich Instruments Hardware.
@@ -178,7 +182,9 @@ def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon_with
 
 
 @pytest.fixture(scope="function", autouse=False)
-def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon_with_standard_params):
+def compile_config_basic_transmon_qblox_hardware(
+    mock_setup_basic_transmon_with_standard_params,
+):
     """
     A config for a quantum device with 5 transmon qubits connected in a star
     configuration controlled using Qblox Hardware.

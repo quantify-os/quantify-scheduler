@@ -990,7 +990,9 @@ def test_compile_clock_operations(
 
 
 def test_compile_cz_gate(
-    mock_setup_basic_transmon_with_standard_params, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_two_qubit_gate,
+    two_qubit_gate_schedule,
 ):
     # mock_setup_basic_transmon should arrange this but is not working here
     tmp_dir = tempfile.TemporaryDirectory()
@@ -1387,7 +1389,7 @@ def test_determine_scope_mode_acquisition_sequencer(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    mock_setup = mock_setup_basic_transmon_with_standard_params  
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("determine_scope_mode_acquisition_sequencer")
     sched.add(Measure("q0"))
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
