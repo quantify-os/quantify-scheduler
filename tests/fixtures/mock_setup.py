@@ -115,6 +115,12 @@ def mock_setup_basic_transmon(tmp_test_data_dir):
 
 
 @pytest.fixture(scope="function", autouse=False)
+def mock_setup_basic_transmon_with_standard_params(mock_setup_basic_transmon):
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    yield mock_setup_basic_transmon
+
+
+@pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_nv(tmp_test_data_dir):
     """
     Returns a mock setup for a basic 1-qubit NV-center device.
