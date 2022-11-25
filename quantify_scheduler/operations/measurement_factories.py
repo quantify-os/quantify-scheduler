@@ -177,67 +177,26 @@ def optical_measurement(
     NotImplementedError
         If an unknown ``pulse_type`` or ``acq_protocol`` are used.
     """
-    # ensures default argument is used if not specified at gate level.
-    # ideally, this input would not be accepted, but this is a workaround for #267
-    if bin_mode is None:
-        bin_mode = BinMode.APPEND
-
-    # If acq_delay >= 0, the pulse starts at 0 and the acquisition at acq_delay
-    # If acq_delay < 0, the pulse starts at -acq_delay and the acquisition at 0
-    t0_pulse = max(0, -acq_delay)
-    t0_acquisition = max(0, acq_delay)
-
-    device_op = Operation("OpticalMeasurement")
-    if pulse_type == "SquarePulse":
-        device_op.add_pulse(
-            SquarePulse(
-                amp=pulse_amplitude,
-                duration=pulse_duration,
-                port=pulse_port,
-                clock=pulse_clock,
-                t0=t0_pulse,
-            )
+    try:
+        retval = optical_measurement_multiple_pulses(
+            pulse_amplitudes=[pulse_amplitude],
+            pulse_durations=[pulse_duration],
+            pulse_ports=[pulse_port],
+            pulse_clocks=[pulse_clock],
+            acq_duration=acq_duration,
+            acq_delay=acq_delay,
+            acq_port=acq_port,
+            acq_clock=acq_clock,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
+            bin_mode=bin_mode,
+            acq_protocol=acq_protocol,
+            acq_protocol_default=acq_protocol_default,
+            pulse_type=pulse_type,
         )
-    else:
-        raise NotImplementedError(
-            f'Invalid pulse_type "{pulse_type}" specified as argument to '
-            'optical_measurement. Currently, only "SquarePulse" is accepted. '
-            "Please correct your device config."
-        )
-
-    if acq_protocol is None:
-        acq_protocol = acq_protocol_default
-
-    if acq_protocol == "TriggerCount":
-        device_op.add_acquisition(
-            TriggerCount(
-                port=acq_port,
-                clock=acq_clock,
-                duration=acq_duration,
-                t0=t0_acquisition,
-                acq_channel=acq_channel,
-                acq_index=acq_index,
-                bin_mode=bin_mode,
-            )
-        )
-    elif acq_protocol == "Trace":
-        device_op.add_acquisition(
-            Trace(
-                port=acq_port,
-                clock=acq_clock,
-                duration=acq_duration,
-                t0=t0_acquisition,
-                acq_channel=acq_channel,
-                acq_index=acq_index,
-            )
-        )
-    else:
-        raise NotImplementedError(
-            f'Acquisition protocol "{acq_protocol}" is not supported. '
-            'Currently, only "TriggerCount" and "Trace" are accepted.'
-        )
-
-    return device_op
+    except (ValueError):
+        raise RuntimeError("Internal error in quantify-scheduler. Please report.")
+    return retval
 
 
 def optical_measurement_multiple_pulses(
