@@ -242,11 +242,11 @@ def optical_measurement(
 
 
 def optical_measurement_multiple_pulses(
-    pulse_amplitude: List[float],
-    pulse_duration: List[float],
-    pulse_delay: List[float],
-    pulse_port: List[str],
-    pulse_clock: List[str],
+    pulse_amplitudes: List[float],
+    pulse_durations: List[float],
+    pulse_delays: List[float],
+    pulse_ports: List[str],
+    pulse_clocks: List[str],
     acq_duration: float,
     acq_delay: float,
     acq_port: str,
@@ -259,24 +259,23 @@ def optical_measurement_multiple_pulses(
     pulse_type: Literal["SquarePulse"],
 ) -> Operation:
     # pylint: disable=too-many-locals
-    """Generator function for a standard optical measurement.
+    """Generator function for an optical measurement with multiple excitation pulses.
 
-    An optical measurement generates a square pulse in the optical range and uses the
-    Trace acquisition to return the output of a photon detector as a function of time.
-    Alternatively, the TriggerCount counts the number of photons that are collected.
+    Generalization of :func:`optical_measurement` for multiple pulses. All pulses can
+    have different amplitudes, durations, delays, ports and clocks.
 
 
     Parameters
     ----------
-    pulse_amplitude
+    pulse_amplitudes
         list of amplitudes of the corresponding generated pulses
-    pulse_duration
+    pulse_durations
         list of durations of the corresponding generated pulses
-    pulse_delay
+    pulse_delays
         delay for each corresponding pulse
-    pulse_port
+    pulse_ports
         Port names, where the corresponding pulses are applied
-    pulse_clock
+    pulse_clocks
         Clock names of the corresponding generated pulses
     acq_duration
         Duration of the acquisition
@@ -322,19 +321,19 @@ def optical_measurement_multiple_pulses(
 
     # All lists should be of equal length so this should be ensured
     if (
-        not len(pulse_amplitude)
-        == len(pulse_duration)
-        == len(pulse_delay)
-        == len(pulse_port)
-        == len(pulse_clock)
+        not len(pulse_amplitudes)
+        == len(pulse_durations)
+        == len(pulse_delays)
+        == len(pulse_ports)
+        == len(pulse_clocks)
     ):
         raise ValueError(
-            "For multiple optical excitations lists must have same length.\n"
-            + f"len(pulse_amplitude) = {len(pulse_amplitude)},\n"
-            + f"len(pulse_duration) = {len(pulse_duration)},\n"
-            + f"len(pulse_delay) = {len(pulse_delay)},\n"
-            + f"len(pulse_port) = {len(pulse_port)},\n"
-            + f"len(pulse_clock) = {len(pulse_clock)}"
+            "For multiple optical excitations, lists must have same length:\n"
+            + f"{len(pulse_amplitudes)=},\n"
+            + f"{len(pulse_durations)=},\n"
+            + f"{len(pulse_delays)=},\n"
+            + f"{len(pulse_ports)=},\n"
+            + f"{len(pulse_clocks)=}"
         )
     # If acq_delay >= 0, the first pulse starts at 0 and the acquisition at acq_delay
     # If acq_delay < 0, the first pulse starts at -acq_delay and the acquisition at 0
@@ -343,14 +342,14 @@ def optical_measurement_multiple_pulses(
 
     if pulse_type == "SquarePulse":
         device_op = Operation("OpticalMeasurement")
-        for pulse_idx, amplitude in enumerate(pulse_amplitude):
+        for pulse_idx, amplitude in enumerate(pulse_amplitudes):
             device_op.add_pulse(
                 SquarePulse(
                     amp=amplitude,
-                    duration=pulse_duration[pulse_idx],
-                    port=pulse_port[pulse_idx],
-                    clock=pulse_clock[pulse_idx],
-                    t0=t0_pulse + pulse_delay[pulse_idx],
+                    duration=pulse_durations[pulse_idx],
+                    port=pulse_ports[pulse_idx],
+                    clock=pulse_clocks[pulse_idx],
+                    t0=t0_pulse + pulse_delays[pulse_idx],
                 )
             )
 

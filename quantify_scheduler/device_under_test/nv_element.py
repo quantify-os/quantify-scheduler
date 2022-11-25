@@ -467,23 +467,23 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_func="quantify_scheduler.operations."
                     + "measurement_factories.optical_measurement_multiple_pulses",
                     factory_kwargs={
-                        "pulse_amplitude": [
+                        "pulse_amplitudes": [
                             self.cr_count.readout_pulse_amplitude(),
                             self.cr_count.spinpump_pulse_amplitude(),
                         ],
-                        "pulse_duration": [
+                        "pulse_durations": [
                             self.cr_count.readout_pulse_duration(),
                             self.cr_count.spinpump_pulse_duration(),
                         ],
-                        "pulse_delay": [
+                        "pulse_delays": [
                             self.cr_count.readout_pulse_delay(),
                             self.cr_count.spinpump_pulse_delay(),
                         ],
-                        "pulse_port": [
+                        "pulse_ports": [
                             self.ports.optical_control(),
                             self.ports.optical_control(),
                         ],
-                        "pulse_clock": [
+                        "pulse_clocks": [
                             f"{self.name}.ge0",
                             f"{self.name}.ge1",
                         ],
