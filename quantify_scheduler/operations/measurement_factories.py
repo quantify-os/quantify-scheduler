@@ -131,7 +131,6 @@ def optical_measurement(
     Trace acquisition to return the output of a photon detector as a function of time.
     Alternatively, the TriggerCount counts the number of photons that are collected.
 
-
     Parameters
     ----------
     pulse_amplitude
@@ -164,9 +163,9 @@ def optical_measurement(
     acq_protocol
         Acquisition protocol. "Trace" returns a time trace of the collected signal.
         "TriggerCount" returns the number of times the trigger threshold is surpassed.
-    acq_protocol_default, optional
+    acq_protocol_default
         Acquisition protocol if ``acq_protocol`` is None, by default "TriggerCount"
-    pulse_type, optional
+    pulse_type
         Shape of the pulse to be generated, by default "SquarePulse"
 
     Returns
