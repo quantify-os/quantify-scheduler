@@ -6,7 +6,7 @@
 
 
 ### Merged branches and closed issues
-
+- Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
