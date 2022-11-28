@@ -19,6 +19,7 @@ from matplotlib.axes import Axes
 # For type hints, import modules to avoid circular dependencies
 from matplotlib.figure import Figure
 
+from quantify_core.utilities import deprecated
 from quantify_scheduler.visualization import constants, pulse_diagram
 
 logger = logging.getLogger(__name__)

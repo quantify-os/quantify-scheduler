@@ -206,7 +206,8 @@ def qcompile(
 
         compilation_passes = []
 
-        if isinstance(device_config, DeviceCompilationConfig):
+        # this is to support compiling when no device config is supplied
+        if device_cfg is not None:
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="circuit_to_device",
@@ -214,18 +215,6 @@ def qcompile(
                     compilation_options=device_config,
                 )
             )
-        elif isinstance(device_config, dict):
-            # this is a deprecated config format. only legacy support here.
-            compilation_passes.append(
-                SimpleNodeConfig(
-                    name="add_pulse_information_transmon",
-                    compilation_func=device_config["backend"],
-                    compilation_options=device_config,
-                )
-            )
-        else:
-            # this is to support compiling when no device config is supplied
-            pass
 
         compilation_passes.append(
             SimpleNodeConfig(

@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
 
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.enums import BinMode
@@ -370,9 +371,13 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
         == 0.0002
     )
     assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
-    assert gettable._compiled_schedule == qcompile(
-        sched, device_cfg=dev_cfg, hardware_cfg=hw_cfg
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
     )
+
+    assert gettable._compiled_schedule == compiled_sched
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the

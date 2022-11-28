@@ -42,11 +42,11 @@ def hardware_compile(
         The compiled schedule.
     """
 
-    if "latency_corrections" in converted_hw_config.keys():
+    if "latency_corrections" in hardware_cfg.keys():
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(latencies=converted_hw_config["latency_corrections"])
+        LatencyCorrections(latencies=hardware_cfg["latency_corrections"])
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 

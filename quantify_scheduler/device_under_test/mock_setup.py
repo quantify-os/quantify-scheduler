@@ -9,10 +9,8 @@ from typing import Any, Dict
 
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import (
-    TransmonElement,
-    BasicTransmonElement,
-)
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+
 from quantify_scheduler.device_under_test.nv_element import (
     BasicElectronicNVElement,
 )
