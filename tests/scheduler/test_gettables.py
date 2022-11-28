@@ -20,7 +20,6 @@ import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable

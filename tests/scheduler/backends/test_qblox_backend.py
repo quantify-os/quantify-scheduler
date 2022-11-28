@@ -68,7 +68,6 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
