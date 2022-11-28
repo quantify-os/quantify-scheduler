@@ -314,7 +314,7 @@ def optical_measurement_multiple_pulses(
             )
     else:
         raise NotImplementedError(
-            f"Invalid pulse_type '{pulse_type}'' specified as argument to "
+            f"Invalid pulse_type '{pulse_type}' specified as argument to "
             f"optical_measurement. Currently, only 'SquarePulse' is accepted. "
             f"Please correct your device config."
         )
