@@ -484,16 +484,10 @@ def box_text(
     ).set_clip_on(True)
 
 
+@deprecated(
+    "0.13.0",
+    "pulse_diagram_plotly has moved to a new module, please import from"
+    "quantify_scheduler.visualization.pulse_diagram instead.",
+)
 def pulse_diagram_plotly(*args, **kwargs):
-    """
-    Deprecated import use
-    :func:`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_plotly`
-    """
-    warnings.warn(
-        "`pulse_diagram_plotly` will be removed from this module in quantify 1.0.0.\n"
-        "Import as follows instead:\n"
-        "",
-        ImportWarning,
-    )
-
     return pulse_diagram.pulse_diagram_plotly(*args, **kwargs)
