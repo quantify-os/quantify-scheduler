@@ -59,7 +59,6 @@ class CRCount(Operation):
         acq_index: Union[Tuple[int, ...], int] = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
-            "SSBIntegrationComplex",
             "Trace",
             "TriggerCount",
             None,
