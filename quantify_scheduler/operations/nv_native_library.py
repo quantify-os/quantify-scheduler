@@ -82,7 +82,7 @@ class CRCount(Operation):
             Index of the register where the measurement is stored.
             If None specified, it will default to a list of zeros of len(qubits)
         acq_protocol
-            Acquisition protocol (currently ``"SSBIntegrationComplex"`` and ``"Trace"``)
+            Acquisition protocol (currently ``"TriggerCount"`` and ``"Trace"``)
             are supported. If ``None`` is specified, the default protocol is chosen
             based on the device and backend configuration.
         bin_mode
