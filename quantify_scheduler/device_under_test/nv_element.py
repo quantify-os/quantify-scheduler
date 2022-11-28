@@ -431,10 +431,10 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_func="quantify_scheduler.operations."
                     + "measurement_factories.optical_measurement",
                     factory_kwargs={
-                        "pulse_amplitude": self.measure.pulse_amplitude(),
-                        "pulse_duration": self.measure.pulse_duration(),
-                        "pulse_port": self.ports.optical_control(),
-                        "pulse_clock": f"{self.name}.ge0",
+                        "pulse_amplitudes": [self.measure.pulse_amplitude()],
+                        "pulse_durations": [self.measure.pulse_duration()],
+                        "pulse_ports": [self.ports.optical_control()],
+                        "pulse_clocks": [f"{self.name}.ge0"],
                         "acq_duration": self.measure.acq_duration(),
                         "acq_delay": self.measure.acq_delay(),
                         "acq_channel": self.measure.acq_channel(),
@@ -447,7 +447,7 @@ class BasicElectronicNVElement(DeviceElement):
                 ),
                 "cr_count": OperationCompilationConfig(
                     factory_func="quantify_scheduler.operations."
-                    + "measurement_factories.optical_measurement_multiple_pulses",
+                    + "measurement_factories.optical_measurement",
                     factory_kwargs={
                         "pulse_amplitudes": [
                             self.cr_count.readout_pulse_amplitude(),

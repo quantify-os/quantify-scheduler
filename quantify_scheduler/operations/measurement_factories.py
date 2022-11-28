@@ -109,97 +109,6 @@ def dispersive_measurement(
 
 
 def optical_measurement(
-    pulse_amplitude: float,
-    pulse_duration: float,
-    pulse_port: str,
-    pulse_clock: str,
-    acq_duration: float,
-    acq_delay: float,
-    acq_port: str,
-    acq_clock: str,
-    acq_channel: int,
-    acq_index: int,
-    bin_mode: Union[BinMode, None],
-    acq_protocol: Literal["Trace", "TriggerCount"],
-    acq_protocol_default: Literal["Trace", "TriggerCount"],
-    pulse_type: Literal["SquarePulse"],
-) -> Operation:
-    # pylint: disable=too-many-locals
-    """Generator function for a standard optical measurement.
-
-    An optical measurement generates a square pulse in the optical range and uses the
-    Trace acquisition to return the output of a photon detector as a function of time.
-    Alternatively, the TriggerCount counts the number of photons that are collected.
-
-    Parameters
-    ----------
-    pulse_amplitude
-        Amplitude of the generated pulse
-    pulse_duration
-        Duration of the generated pulse
-    pulse_port
-        Port name, where the pulse is applied
-    pulse_clock
-        Clock name of the generated pulse
-    acq_duration
-        Duration of the acquisition
-    acq_delay
-        Delay between the start of the readout pulse and the start of the acquisition:
-        acq_delay = t0_pulse - t0_acquisition.
-    acq_port
-        Port name of the acquisition
-    acq_clock
-        Clock name of the acquisition
-    acq_channel
-        Acquisition channel of the device element
-    acq_index
-        Acquisition index as defined in the Schedule
-    bin_mode
-        Describes what is done when data is written to a register that already
-        contains a value. Options are "append" which appends the result to the
-        list. "average" which stores the count value of the new result and the
-        old register value is not currently implemented. ``None`` internally
-        resolves to ``BinMode.APPEND``.
-    acq_protocol
-        Acquisition protocol. "Trace" returns a time trace of the collected signal.
-        "TriggerCount" returns the number of times the trigger threshold is surpassed.
-    acq_protocol_default
-        Acquisition protocol if ``acq_protocol`` is None, by default "TriggerCount"
-    pulse_type
-        Shape of the pulse to be generated, by default "SquarePulse"
-
-    Returns
-    -------
-        Operation with the generated pulse and acquisition
-
-    Raises
-    ------
-    NotImplementedError
-        If an unknown ``pulse_type`` or ``acq_protocol`` are used.
-    """
-    try:
-        retval = optical_measurement_multiple_pulses(
-            pulse_amplitudes=[pulse_amplitude],
-            pulse_durations=[pulse_duration],
-            pulse_ports=[pulse_port],
-            pulse_clocks=[pulse_clock],
-            acq_duration=acq_duration,
-            acq_delay=acq_delay,
-            acq_port=acq_port,
-            acq_clock=acq_clock,
-            acq_channel=acq_channel,
-            acq_index=acq_index,
-            bin_mode=bin_mode,
-            acq_protocol=acq_protocol,
-            acq_protocol_default=acq_protocol_default,
-            pulse_type=pulse_type,
-        )
-    except (ValueError):
-        raise RuntimeError("Internal error in quantify-scheduler. Please report.")
-    return retval
-
-
-def optical_measurement_multiple_pulses(
     pulse_amplitudes: List[float],
     pulse_durations: List[float],
     pulse_ports: List[str],
@@ -218,10 +127,15 @@ def optical_measurement_multiple_pulses(
     # pylint: disable=too-many-locals
     """Generator function for an optical measurement with multiple excitation pulses.
 
-    Generalization of :func:`optical_measurement` for multiple pulses. All pulses can
-    have different amplitudes, durations, ports and clocks. All pulses start
-    simultaneously at time 0. The acquisition can have an ``acq_delay`` with respect to
-    the pulses.
+    An optical measurement generates a square pulse in the optical range and uses
+    either the Trace acquisition to return the output of a photon detector as a
+    function of time or the TriggerCount acquisition to return the number of photons
+    that are collected.
+
+    All pulses can have different amplitudes, durations, ports and clocks. All pulses
+    start simultaneously. The acquisition can have an ``acq_delay`` with respect to the
+    pulses. A negative ``acq_delay`` causes the acquisition to be scheduled at time 0
+    and the pulses at the positive time ``-acq_delay``.
 
     Parameters
     ----------

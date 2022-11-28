@@ -5,23 +5,22 @@ import numpy as np
 
 from quantify_scheduler.operations.measurement_factories import (
     optical_measurement,
-    optical_measurement_multiple_pulses,
 )
 
 # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
-def typical_kwargs_optical_measurement():
+def typical_kwargs_optical_measurement_single_pulse():
     """Default keyword arguments for optical_measurement function.
 
     Missing are the optional arguments.
     """
     return {
-        "pulse_amplitude": 0.23,
-        "pulse_duration": 100e-6,
-        "pulse_port": "pulse_port_name",
-        "pulse_clock": "pulse_clock_name",
+        "pulse_amplitudes": [0.23],
+        "pulse_durations": [100e-6],
+        "pulse_ports": ["pulse_port_name"],
+        "pulse_clocks": ["pulse_clock_name"],
         "acq_duration": 200e-6,
         "acq_delay": 0,
         "acq_port": "acq_port_name",
@@ -35,15 +34,39 @@ def typical_kwargs_optical_measurement():
     }
 
 
-def assert_pulse_equal(pulse_info: Dict, optical_meas_kwargs: Dict):
+@pytest.fixture
+def typical_kwargs_optical_measurement_multiple_pulses():
+    """Default keyword arguments for optical_measurement function.
+
+    Missing are the optional arguments.
+    """
+    return {
+        "pulse_amplitudes": [1, 2],
+        "pulse_durations": [50e-9, 70e-9],
+        "pulse_ports": ["pulse1_port", "pulse2_port"],
+        "pulse_clocks": ["pulse1_clock", "pulse2_clock"],
+        "acq_duration": 200e-6,
+        "acq_delay": 0,
+        "acq_port": "acq_port_name",
+        "acq_clock": "acq_clock_name",
+        "acq_channel": 1,
+        "acq_index": 0,
+        "acq_protocol": None,
+        "bin_mode": None,
+        "acq_protocol_default": "TriggerCount",
+        "pulse_type": "SquarePulse",
+    }
+
+
+def assert_pulse_equal(pulse_info: Dict, optical_meas_kwargs: Dict, index: int):
     """Assert that info of pulse is equal to arguments used as input to
     optical_meas_kwargs."""
     assert isinstance(pulse_info, dict)
-    assert pulse_info["amp"] == optical_meas_kwargs["pulse_amplitude"]
-    assert pulse_info["duration"] == optical_meas_kwargs["pulse_duration"]
+    assert pulse_info["amp"] == optical_meas_kwargs["pulse_amplitudes"][index]
+    assert pulse_info["duration"] == optical_meas_kwargs["pulse_durations"][index]
     assert pulse_info["phase"] == 0
-    assert pulse_info["port"] == optical_meas_kwargs["pulse_port"]
-    assert pulse_info["clock"] == optical_meas_kwargs["pulse_clock"]
+    assert pulse_info["port"] == optical_meas_kwargs["pulse_ports"][index]
+    assert pulse_info["clock"] == optical_meas_kwargs["pulse_clocks"][index]
     if optical_meas_kwargs["acq_delay"] >= 0:
         assert pulse_info["t0"] == 0
     else:
@@ -64,9 +87,9 @@ def assert_acquisition_equal(acq_info: Dict, optical_meas_kwargs: Dict):
         assert acq_info["t0"] == 0
 
 
-def test_optical_measurement(typical_kwargs_optical_measurement):
+def test_optical_measurement(typical_kwargs_optical_measurement_single_pulse):
     # Arrange
-    kwargs = typical_kwargs_optical_measurement
+    kwargs = typical_kwargs_optical_measurement_single_pulse
 
     # Act
     operation = optical_measurement(**kwargs)
@@ -77,16 +100,16 @@ def test_optical_measurement(typical_kwargs_optical_measurement):
     assert len(operation.data["pulse_info"]) == 1
     assert len(operation.data["acquisition_info"]) == 1
     square_pulse_info = operation.data["pulse_info"][0]
-    assert_pulse_equal(square_pulse_info, kwargs)
+    assert_pulse_equal(square_pulse_info, kwargs, 0)
 
 
 @pytest.mark.parametrize("acq_delay", [-50e-6, 0, 52e-5])
 def test_optical_measurement_trigger_count(
-    typical_kwargs_optical_measurement, acq_delay
+    typical_kwargs_optical_measurement_single_pulse, acq_delay
 ):
     """optical_measurement factory works well with TriggerCount protocol"""
     # Arrange
-    kwargs = typical_kwargs_optical_measurement
+    kwargs = typical_kwargs_optical_measurement_single_pulse
     kwargs["acq_delay"] = acq_delay
     kwargs["acq_protocol"] = "TriggerCount"
 
@@ -102,10 +125,12 @@ def test_optical_measurement_trigger_count(
 
 
 @pytest.mark.parametrize("acq_delay", [-50e-6, 0, 52e-5])
-def test_optical_measurement_trace(typical_kwargs_optical_measurement, acq_delay):
+def test_optical_measurement_trace(
+    typical_kwargs_optical_measurement_single_pulse, acq_delay
+):
     """optical_measurement factory works well with Trace protocol"""
     # Arrange
-    kwargs = typical_kwargs_optical_measurement
+    kwargs = typical_kwargs_optical_measurement_single_pulse
     kwargs["acq_delay"] = acq_delay
     kwargs["acq_protocol"] = "Trace"
 
@@ -120,38 +145,18 @@ def test_optical_measurement_trace(typical_kwargs_optical_measurement, acq_delay
     assert_acquisition_equal(acq_info, kwargs)
 
 
-@pytest.fixture
-def typical_kwargs_optical_measurement_multiple_pulses():
-    return {
-        "pulse_amplitudes": [1, 2],
-        "pulse_durations": [50e-9, 70e-9],
-        "pulse_ports": ["pulse1_port", "pulse2_port"],
-        "pulse_clocks": ["pulse1_clock", "pulse2_clock"],
-        "acq_duration": 200e-6,
-        "acq_delay": 0,
-        "acq_port": "acq_port_name",
-        "acq_clock": "acq_clock_name",
-        "acq_channel": 1,
-        "acq_index": 0,
-        "acq_protocol": None,
-        "bin_mode": None,
-        "acq_protocol_default": "TriggerCount",
-        "pulse_type": "SquarePulse",
-    }
-
-
 @pytest.mark.parametrize("acq_delay", [-50e-6, 0, 52e-5])
 def test_optical_measurement_multiple_pulses(
     typical_kwargs_optical_measurement_multiple_pulses,
     acq_delay,
 ):
-    """``optical_measurement_multiple_pulses`` returns correct pulses."""
+    """``optical_measurement`` returns correct pulses."""
     # Arrange
     kwargs = typical_kwargs_optical_measurement_multiple_pulses
     kwargs["acq_delay"] = acq_delay
 
     # Act
-    operation = optical_measurement_multiple_pulses(**kwargs)
+    operation = optical_measurement(**kwargs)
 
     # Assert
     assert operation.valid_acquisition
@@ -160,14 +165,7 @@ def test_optical_measurement_multiple_pulses(
     assert len(operation.data["pulse_info"]) == len(kwargs["pulse_amplitudes"])
     for index, pulse_info in enumerate(operation.data["pulse_info"]):
         assert isinstance(pulse_info, dict)
-        # Convert dict into a dict compatible with optical_measurement
-        kwargs_single_pulse = {
-            (key[:-1] if key.startswith("pulse_") else key): (
-                val[index] if key.startswith("pulse_") else val
-            )
-            for key, val in kwargs.items()
-        }
-        assert_pulse_equal(pulse_info, kwargs_single_pulse)
+        assert_pulse_equal(pulse_info, kwargs, index)
 
     assert len(operation.data["acquisition_info"]) == 1
     acq_info = operation.data["acquisition_info"][0]
