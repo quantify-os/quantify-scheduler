@@ -410,9 +410,6 @@ def test_prepare_qcm_qrm(
     qrm0.force_set_parameters(force_set_parameters)
     qrm2.force_set_parameters(force_set_parameters)
 
-    # Act
-    set_datadir(tmp_test_data_dir)
-
     compiled_schedule = qcompile(
         schedule_with_measurement,
         load_example_transmon_config,
@@ -504,10 +501,6 @@ def test_prepare_cluster_rf(
     q5.measure.acq_delay(100e-9)
 
     sched = make_basic_schedule("q5")
-
-    # Act
-    set_datadir(tmp_test_data_dir)
-
     hardware_cfg = load_example_qblox_hardware_config
     compiled_schedule = qcompile(
         sched, quantum_device.generate_device_config(), hardware_cfg
