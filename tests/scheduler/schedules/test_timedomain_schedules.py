@@ -18,7 +18,7 @@ from .compiles_all_backends import _CompilesAllBackends
 # FIXME to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
 tmp_dir = tempfile.TemporaryDirectory()
 
-
+# FIXME classmethods cannot use fixtures, these test are mixing testing style # pylint: disable=fixme
 class TestRabiPulse(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
