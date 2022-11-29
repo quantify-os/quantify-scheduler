@@ -10,6 +10,9 @@ from typing import Optional
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
+from quantify_scheduler.operations.gate_library import Reset, Measure
+from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.resources import ClockResource
 
 
@@ -189,4 +192,35 @@ def two_tone_spec_sched(
         label="acquisition",
     )
 
+    return sched
+
+
+def nv_dark_esr_sched(
+    qubit: str,
+    repetitions: int = 1,
+) -> Schedule:
+    """Generates a schedule for a dark ESR experiment on an NV-center.
+
+    The frequency is determined during the compilation of
+    :class:`~quantify_scheduler.operations.shared_native_library.SpectroscopyOperation`.
+
+    Parameters
+    ----------
+    qubit
+        Name of the 'DeviceElement' representing the NV-center.
+    repetitions, optional
+        Number of schedule repetitions.
+
+    Returns
+    -------
+        Schedule with a single frequency
+    """
+    sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
+
+    sched.add(ChargeReset(qubit))
+    sched.add(CRCount(qubit, acq_index=0), label="CRCount pre")
+    sched.add(Reset(qubit))
+    sched.add(SpectroscopyOperation(qubit))
+    sched.add(Measure(qubit, acq_index=1), label="Measure")
+    sched.add(CRCount(qubit, acq_index=2), label="CRCount post")
     return sched
