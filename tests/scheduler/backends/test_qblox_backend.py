@@ -963,10 +963,8 @@ def test_compile_clock_operations(
     hardware_cfg_baseband,
     operation: Operation,
     instruction_to_check: str,
+    tmp_test_data_dir,
 ):
-    # mock_setup_basic_transmon should arrange this but is not working here
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("shift_clock_phase_only")
     sched.add(operation)
@@ -992,10 +990,8 @@ def test_compile_cz_gate(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_two_qubit_gate,
     two_qubit_gate_schedule,
+    tmp_test_data_dir,
 ):
-    # mock_setup_basic_transmon should arrange this but is not working here
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
 
@@ -2161,9 +2157,6 @@ def test_apply_latency_corrections_invalid_raises(
     Providing an invalid latency correction specification raises an exception
     when compiling.
     """
-    # mock_setup should arrange this but is not working here
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("Single Gate Experiment on Two Qubits")
     sched.add(X("q0"))
@@ -2194,9 +2187,6 @@ def test_apply_latency_corrections_valid(
     Latency correction is set for the correct portclock key
     by checking against the value set in QASM instructions.
     """
-    # mock_setup_basic_transmon should arrange this but is not working here
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("Single Gate Experiment on Two Qubits")
@@ -2245,9 +2235,6 @@ def test_apply_latency_corrections_warning(
     Checks if warning is raised for a latency correction
     that is not a multiple of 4ns
     """
-    # mock_setup_basic_transmon should arrange this but is not working here
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("Single Gate Experiment")
     sched.add(
