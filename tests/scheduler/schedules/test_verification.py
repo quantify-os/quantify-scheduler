@@ -17,9 +17,7 @@ from quantify_scheduler.schedules.verification import (
 
 
 @pytest.fixture(scope="module", autouse=False)
-def gen_acquisition_staircase_sched(tmp_test_data_dir):
-
-    set_datadir(tmp_test_data_dir)
+def gen_acquisition_staircase_sched():
     sched_kwargs = {
         "readout_pulse_amps": np.linspace(0, 0.5, 11),
         "readout_pulse_duration": 1e-6,
@@ -98,8 +96,7 @@ def test_acq_staircase_comp_zhinst(
 
 
 @pytest.fixture(scope="module", autouse=False)
-def gen_awg_staircase_sched(tmp_test_data_dir):
-    set_datadir(tmp_test_data_dir)
+def gen_awg_staircase_sched():
 
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
@@ -167,9 +164,7 @@ def test_awg_staircase_comp_zhinst(
 
 
 @pytest.fixture(scope="module", autouse=False)
-def gen_multiplexing_staircase_sched(tmp_test_data_dir):
-    set_datadir(tmp_test_data_dir)
-
+def gen_multiplexing_staircase_sched():
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,
