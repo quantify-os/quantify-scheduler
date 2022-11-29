@@ -67,6 +67,7 @@ def tmp_test_data_dir(tmp_path_factory):
     use_temp_dir = True
     if use_temp_dir:
         temp_data_dir = tmp_path_factory.mktemp("temp_data")
+        set_datadir(temp_data_dir)
         yield temp_data_dir
         shutil.rmtree(temp_data_dir, ignore_errors=True)
     else:
