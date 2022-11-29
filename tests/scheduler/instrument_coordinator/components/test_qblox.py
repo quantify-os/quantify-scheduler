@@ -27,7 +27,7 @@ from qblox_instruments import (
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
-from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
+# pylint: disable=no-name-in-module
 
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement

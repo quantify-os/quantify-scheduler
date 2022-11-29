@@ -16,7 +16,6 @@ from typing import Union
 
 import pytest
 
-from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler

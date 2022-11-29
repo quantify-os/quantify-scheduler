@@ -13,7 +13,6 @@ import json
 import logging
 import os
 import re
-import tempfile
 
 from typing import Dict, Generator
 
@@ -23,7 +22,6 @@ import pytest
 from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
 
-from quantify_core.data.handling import set_datadir  # pylint: disable=no-name-in-module
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
@@ -856,8 +854,6 @@ def test_compile_simple(
     load_example_qblox_hardware_config,
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
     qcompile(
         pulse_only_schedule,
         load_example_transmon_config,
@@ -870,8 +866,7 @@ def test_compile_cluster(
     cluster_only_schedule,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     qcompile(
         cluster_only_schedule,
         mock_setup_basic_transmon["quantum_device"].generate_device_config(),
@@ -880,8 +875,6 @@ def test_compile_cluster(
 
 
 def test_compile_no_device_cfg(load_example_qblox_hardware_config):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
@@ -901,8 +894,7 @@ def test_compile_simple_multiplexing(
     hardware_cfg_multiplexing,
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     qcompile(
         pulse_only_schedule_multiplexed,
         load_example_transmon_config,
@@ -916,8 +908,6 @@ def test_compile_identical_pulses(
     load_example_qblox_hardware_config,
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     compiled_schedule = qcompile(
         identical_pulses_schedule,
@@ -934,8 +924,6 @@ def test_compile_measure(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     full_program = qcompile(
         duplicate_measure_schedule,
@@ -963,7 +951,6 @@ def test_compile_clock_operations(
     hardware_cfg_baseband,
     operation: Operation,
     instruction_to_check: str,
-    tmp_test_data_dir,
 ):
 
     sched = Schedule("shift_clock_phase_only")
@@ -990,7 +977,6 @@ def test_compile_cz_gate(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_two_qubit_gate,
     two_qubit_gate_schedule,
-    tmp_test_data_dir,
 ):
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -1033,8 +1019,7 @@ def test_compile_simple_with_acq(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     full_program = qcompile(
         mixed_schedule_with_acquisition,
         load_example_transmon_config,
@@ -1060,8 +1045,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     reset_clock_phase,
 ):
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     schedule = Schedule("Test schedule")
 
     q0, q1 = "q0", "q1"
@@ -1100,8 +1084,7 @@ def test_acquisitions_back_to_back(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     sched = copy.deepcopy(mixed_schedule_with_acquisition)
     meas_op = sched.add(Measure("q0"))
     # add another one too quickly
@@ -1118,8 +1101,7 @@ def test_compile_with_rel_time(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     full_program = qcompile(
         pulse_only_schedule_with_operation_timing,
         load_example_transmon_config,
@@ -1137,8 +1119,7 @@ def test_compile_with_repetitions(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     mixed_schedule_with_acquisition.repetitions = 10
 
     full_program = qcompile(
@@ -1181,8 +1162,7 @@ def test_qasm_hook(pulse_only_schedule, load_example_transmon_config):
         },
     }
     sched = pulse_only_schedule
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     sched.repetitions = 11
 
     full_program = qcompile(sched, load_example_transmon_config, hw_config)
@@ -1214,8 +1194,6 @@ def test_real_mode_pulses(
     hardware_cfg_real_mode,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     real_square_pulse_schedule.repetitions = 10
     full_program = qcompile(
@@ -1381,8 +1359,6 @@ def test_determine_scope_mode_acquisition_sequencer(
     mock_setup_basic_transmon_with_standard_params, load_example_qblox_hardware_config
 ):
     # mock_setup_basic_transmon should arrange this but is not working here
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("determine_scope_mode_acquisition_sequencer")
@@ -1531,8 +1507,6 @@ def test_real_mode_container(
 def test_assign_frequencies_baseband(
     load_example_transmon_config, load_example_qblox_hardware_config
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
@@ -1580,9 +1554,6 @@ def test_assign_frequencies_baseband_downconverter(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
@@ -1656,8 +1627,6 @@ def test_assign_frequencies_baseband_downconverter(
 def test_assign_frequencies_rf(
     mock_setup_basic_transmon, load_example_qblox_hardware_config
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
@@ -1714,8 +1683,6 @@ def test_assign_frequencies_rf_downconverter(
     mock_setup_basic_transmon,
     load_example_qblox_hardware_config,
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
@@ -1795,8 +1762,6 @@ def test_assign_frequencies_rf_downconverter(
 
 
 def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     # Test for baseband
     sched = Schedule("gate_experiment")
@@ -1908,8 +1873,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 def test_acq_protocol_append_mode_valid_assembly_ssro(
     dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
@@ -1948,8 +1912,7 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
 def test_acq_protocol_average_mode_valid_assembly_allxy(
     dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
+
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
     compiled_allxy_sched = qcompile(
@@ -1989,8 +1952,6 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
 def test_acq_declaration_dict_append_mode(
     load_example_transmon_config, load_example_qblox_hardware_config
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     repetitions = 256
 
@@ -2012,8 +1973,6 @@ def test_acq_declaration_dict_append_mode(
 def test_acq_declaration_dict_bin_avg_mode(
     load_example_transmon_config, load_example_qblox_hardware_config
 ):
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     allxy = allxy_sched("q0")
     compiled_allxy_sched = qcompile(
@@ -2137,8 +2096,6 @@ def test_convert_hw_config_to_portclock_configs_spec(
     assert migrated_config == expected_config
 
     # Test that hardware_compile is converting automatically
-    tmp_dir = tempfile.TemporaryDirectory()
-    set_datadir(tmp_dir.name)
 
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
     sched = device_compile(sched, load_example_transmon_config)

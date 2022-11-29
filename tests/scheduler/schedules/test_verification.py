@@ -6,8 +6,6 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
-from quantify_core.data.handling import set_datadir
-
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,

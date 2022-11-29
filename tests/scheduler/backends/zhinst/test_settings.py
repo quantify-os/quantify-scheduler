@@ -10,7 +10,6 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
-from quantify_core.data.handling import set_datadir
 from zhinst.qcodes import base
 
 from quantify_scheduler import waveforms
