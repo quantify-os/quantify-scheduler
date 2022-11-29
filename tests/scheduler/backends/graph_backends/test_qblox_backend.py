@@ -64,12 +64,11 @@ def test_compiles_standard_schedules(
     assert isinstance(compiled_sched, CompiledSchedule)
 
 
-def test_compile_empty_device(tmp_test_data_dir, load_example_qblox_hardware_config):
+def test_compile_empty_device(load_example_qblox_hardware_config):
     """
     Test if compilation works for a pulse only schedule on a freshly initialized
     quantum device object to which only a hardware config has been provided.
     """
-    set_datadir(tmp_test_data_dir)
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
     quantum_device.hardware_config(load_example_qblox_hardware_config)
@@ -96,10 +95,9 @@ def test_compile_empty_device(tmp_test_data_dir, load_example_qblox_hardware_con
     ],
 )
 def test_compile_sequence_to_file(
-    tmp_test_data_dir, instrument: Union[str, tuple], sequence_to_file: bool
+    instrument: Union[str, tuple], sequence_to_file: bool
 ):
     # Arrange
-    set_datadir(tmp_test_data_dir)
 
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"

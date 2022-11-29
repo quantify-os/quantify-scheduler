@@ -1003,8 +1003,7 @@ def test_compile_backend_with_duplicate_local_oscillator(
     )
 
 
-def test_acquisition_staircase_unique_acquisitions(tmp_test_data_dir):
-    set_datadir(tmp_test_data_dir)
+def test_acquisition_staircase_unique_acquisitions():
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),
         readout_pulse_duration=1e-6,
@@ -1081,8 +1080,7 @@ def test_acquisition_staircase_unique_acquisitions(tmp_test_data_dir):
         )
 
 
-def test_acquisition_staircase_right_acq_channel(tmp_test_data_dir):
-    set_datadir(tmp_test_data_dir)
+def test_acquisition_staircase_right_acq_channel():
 
     acq_channel = 2
     schedule = acquisition_staircase_sched(
