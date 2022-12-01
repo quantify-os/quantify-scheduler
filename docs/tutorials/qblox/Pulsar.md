@@ -89,7 +89,10 @@ hardware_compile(test_sched, mapping_config)
 
 Here we specify a setup containing only a [Pulsar QCM](https://www.qblox.com/pulsar), with both outputs connected to a local oscillator sources.
 
-The first few entries in the dictionary contain settings and information for the entire device.
+The first entry specifies the backend, the function that will compile a schedule using the information specified in this hardware config.
+All other entries at the highest level are instruments ({code}`"qcm0"`, {code}`"lo0"`, {code}`"lo1"`).
+These names need to match the names of the corresponding QCoDeS instruments.
+The first few entries of the QCM contain settings and information for the entire device.
 {code}`"type": "Pulsar_QCM"` specifies that this device is a [Pulsar QCM](https://www.qblox.com/pulsar),
 and {code}`"ref": "internal"` sets the reference source to internal (as opposed to {code}`"external"`). Under the entries
 {code}`complex_output_0` (corresponding to O{sup}`1/2`) and {code}`complex_output_1` (corresponding to O{sup}`3/4`),
