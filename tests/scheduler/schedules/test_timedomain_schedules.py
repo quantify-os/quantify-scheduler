@@ -8,8 +8,7 @@ import tempfile
 import numpy as np
 import pytest
 from quantify_core.data.handling import set_datadir
-
-from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules import timedomain_schedules as ts
 from quantify_scheduler.schemas.examples import utils
 
@@ -50,10 +49,11 @@ class TestRabiPulse(_CompilesAllBackends):
     def test_repetitions(self):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
-    def test_timing(self, load_example_transmon_config):
+    def test_timing(self, device_compile_config_basic_transmon):
         # This will determine the timing
-        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config)
-
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        sched = compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
         # test that the right operations are added and timing is as expected.
         labels = ["qubit reset", "Rabi_pulse", "readout_pulse", "acquisition"]
         t2 = (
@@ -68,9 +68,11 @@ class TestRabiPulse(_CompilesAllBackends):
             assert schedulable["label"] == labels[i]
             assert schedulable["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self, load_example_transmon_config):
+    def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
 
 
 class TestRabiSched(_CompilesAllBackends):
@@ -92,9 +94,11 @@ class TestRabiSched(_CompilesAllBackends):
     def test_repetitions(self):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
-    def test_timing(self, load_example_transmon_config):
+    def test_timing(self, device_compile_config_basic_transmon):
         # This will determine the timing
-        sched = qcompile(self.uncomp_sched, device_cfg=load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        sched = compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
@@ -115,7 +119,7 @@ class TestRabiSched(_CompilesAllBackends):
         assert rabi_pulse["duration"] == 20e-9
         assert self.uncomp_sched.resources["q0.01"]["freq"] == 5.442e9
 
-    def test_batched_variant_single_val(self, load_example_transmon_config):
+    def test_batched_variant_single_val(self, device_compile_config_basic_transmon):
         sched = ts.rabi_sched(
             pulse_amp=[0.5],
             pulse_duration=20e-9,
@@ -124,7 +128,9 @@ class TestRabiSched(_CompilesAllBackends):
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
@@ -138,7 +144,7 @@ class TestRabiSched(_CompilesAllBackends):
         assert rabi_pulse["D_amp"] == 0
         assert rabi_pulse["duration"] == 20e-9
 
-    def test_batched_variant_amps(self, load_example_transmon_config):
+    def test_batched_variant_amps(self, device_compile_config_basic_transmon):
 
         amps = np.linspace(-0.5, 0.5, 5)
         sched = ts.rabi_sched(
@@ -149,7 +155,9 @@ class TestRabiSched(_CompilesAllBackends):
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -168,7 +176,7 @@ class TestRabiSched(_CompilesAllBackends):
             assert rabi_pulse["D_amp"] == 0
             assert rabi_pulse["duration"] == 20e-9
 
-    def test_batched_variant_durations(self, load_example_transmon_config):
+    def test_batched_variant_durations(self, device_compile_config_basic_transmon):
 
         durations = np.linspace(3e-9, 30e-9, 6)
         sched = ts.rabi_sched(
@@ -179,7 +187,9 @@ class TestRabiSched(_CompilesAllBackends):
             port=None,
             clock=None,
         )
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -240,14 +250,16 @@ class TestT1Sched(_CompilesAllBackends):
                 )
 
     # pylint: disable=no-self-use
-    def test_sched_float_times(self, load_example_transmon_config):
+    def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
             "qubit": "q0",
         }
 
         sched = ts.t1_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
 
     def test_operations(self):
         assert len(self.uncomp_sched.operations) == 2 + 21  # init, pi and 21*measure
@@ -284,7 +296,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
                 assert schedulable["label"][:11] == "Measurement"
 
     # pylint: disable=no-self-use
-    def test_sched_float_times(self, load_example_transmon_config):
+    def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
             "qubit": "q0",
@@ -292,7 +304,9 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
         assert any(
             op["timing_constraints"][0]["rel_time"] == 3e-6
             for op in sched.schedulables.values()
@@ -332,14 +346,16 @@ class TestRamseySched(_CompilesAllBackends):
                 assert schedulable["label"][:11] == "Measurement"
 
     # pylint: disable=no-self-use
-    def test_sched_float_times(self, load_example_transmon_config):
+    def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
             "qubit": "q0",
         }
 
         sched = ts.ramsey_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
 
     def test_operations(self):
         assert (
@@ -363,14 +379,16 @@ class TestEchoSched(_CompilesAllBackends):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     # pylint: disable=no-self-use
-    def test_sched_float_times(self, load_example_transmon_config):
+    def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
             "qubit": "q0",
         }
 
         sched = ts.echo_sched(**sched_kwargs)
-        sched = qcompile(sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(schedule=sched, config=compilation_config)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.

@@ -7,6 +7,7 @@ import tempfile
 from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 
 from .compiles_all_backends import _CompilesAllBackends
@@ -50,9 +51,11 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
             assert schedulable["label"] == labels[i]
             assert schedulable["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self, load_example_transmon_config):
+    def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
 
 
 class TestPulsedSpecSchedule(_CompilesAllBackends):
@@ -100,6 +103,8 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
             assert schedulable["label"] == labels[i]
             assert schedulable["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self, load_example_transmon_config):
+    def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config)
+        compilation_config = device_compile_config_basic_transmon
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
