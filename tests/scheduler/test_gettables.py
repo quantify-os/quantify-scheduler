@@ -20,6 +20,7 @@ import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
@@ -136,7 +137,10 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
 
 
 # test a batched case
-def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, mocker):
+def test_ScheduleGettableSingleChannel_batched_allxy(
+    mock_setup_basic_transmon_with_standard_params, mocker
+):
+    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
@@ -152,7 +156,12 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
     sched = allxy_sched("q0", element_select_idx=indices, repetitions=256)
-    comp_allxy_sched = qcompile(sched, quantum_device.generate_device_config())
+    compiler = SerialCompiler(name="compiler")
+    comp_allxy_sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),  # pylint: disable=no-member
+    )
+
     data = np.concatenate(
         (
             0 * np.ones(5 * 2),
@@ -195,8 +204,9 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
 
 # test a batched case
 def test_ScheduleGettableSingleChannel_append_readout_cal(
-    mock_setup_basic_transmon, mocker
+    mock_setup_basic_transmon_with_standard_params, mocker
 ):
+    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
@@ -219,7 +229,12 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
 
     # Prepare the mock data the ideal SSRO data
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(ssro_sched, quantum_device.generate_device_config())
+
+    compiler = SerialCompiler(name="compiler")
+    comp_ssro_sched = compiler.compile(
+        schedule=ssro_sched,
+        config=quantum_device.generate_compilation_config(),  # pylint: disable=no-member
+    )
 
     data = np.tile(np.arange(2), repetitions) * np.exp(1j)
 
@@ -316,7 +331,10 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
-def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker):
+def test_ScheduleGettable_generate_diagnostic(
+    mock_setup_basic_transmon_with_standard_params, mocker
+):
+    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
