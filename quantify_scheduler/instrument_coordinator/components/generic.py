@@ -48,7 +48,9 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def __init__(self, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME) -> None:
+    def __init__(
+        self, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME
+    ) -> None:
         if isinstance(instrument_reference, InstrumentBase):
             instrument = instrument_reference
         else:
