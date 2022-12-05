@@ -18,6 +18,7 @@ from quantify_scheduler.schedules.schedule import (
     Schedule,
 )
 from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -294,15 +295,17 @@ def test_t1_sched_circuit_diagram(t1_schedule):
     _ = t1_schedule.plot_circuit_diagram()
 
 
-def test_t1_sched_pulse_diagram(t1_schedule):
+def test_t1_sched_pulse_diagram(t1_schedule, device_compile_config_basic_transmon):
     """
     Tests that the test schedule can be visualized
     """
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
-
+    config = device_compile_config_basic_transmon
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=t1_schedule, config=config  # pylint: disable=no-member
+    )
     # will only test that a figure is created and runs without errors
-    _ = comp_sched.plot_pulse_diagram()
+    _ = compiled_schedule.plot_pulse_diagram()
 
 
 @pytest.mark.parametrize("reset_clock_phase", (True, False))
@@ -331,6 +334,7 @@ def test_sched_timing_table(
         "reset_clock_phase"
     ] = reset_clock_phase
     comp_sched = qcompile(schedule, device_cfg=device_cfg)
+
     # will only test that a figure is created and runs without errors
     timing_table = comp_sched.timing_table
 
@@ -393,16 +397,16 @@ def test_sched_timing_table(
 
 
 def test_sched_hardware_timing_table(
-    t1_schedule,
-    load_example_transmon_config,
-    load_example_zhinst_hardware_config,
+    t1_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
-    # assert that files properly compile
-    compiled_schedule = qcompile(
-        t1_schedule,  # pylint: disable=no-member
-        load_example_transmon_config,
-        load_example_zhinst_hardware_config,
+
+    config = compile_config_basic_transmon_zhinst_hardware
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=t1_schedule, config=config  # pylint: disable=no-member
     )
+    hardware_timing_table = compiled_schedule.hardware_timing_table
+
     hardware_timing_table = compiled_schedule.hardware_timing_table
     columns_of_hw_timing_table = hardware_timing_table.columns
 
@@ -414,16 +418,11 @@ def test_sched_hardware_timing_table(
 
 
 def test_sched_hardware_waveform_dict(
-    t1_schedule,
-    load_example_transmon_config,
-    load_example_zhinst_hardware_config,
+    t1_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
-    # assert that files properly compile
-    compiled_schedule = qcompile(
-        t1_schedule,  # pylint: disable=no-member
-        load_example_transmon_config,
-        load_example_zhinst_hardware_config,
-    )
+    config = compile_config_basic_transmon_zhinst_hardware
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(schedule=t1_schedule, config=config)
     hardware_timing_table = compiled_schedule.hardware_timing_table
 
     # filter out operations that are not waveforms such as Reset and ClockPhaseReset,
