@@ -6,7 +6,7 @@
 
 
 ### Merged branches and closed issues
- -Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
+ - Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
