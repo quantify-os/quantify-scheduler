@@ -724,7 +724,7 @@ def test_construct_sequencers(
         device_compilers={"qcm0": test_module},
     )
 
-    test_module.sequencers = test_module._construct_sequencers()
+    test_module._construct_sequencers()
     seq_keys = list(test_module.sequencers.keys())
 
     assert len(seq_keys) == 2

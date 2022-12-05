@@ -653,3 +653,60 @@ def convert_hw_config_to_portclock_configs_spec(
     _update_hw_config(hw_config)
 
     return hw_config
+
+
+def calc_from_units_volt(
+    voltage_range, name: str, param_name: str, cfg: Dict[str, Any]
+) -> Optional[float]:
+    """
+    Helper method to
+
+    Parameters
+    ----------
+    voltage_range
+        The range of the voltage levels of the device used.
+    name
+        The name of the device used.
+    param_name
+        The name of the current parameter the method is used for.
+    cfg
+        The hardware config of the device used.
+
+    Returns
+    -------
+        The normalized offsets.
+
+    Raises
+    ------
+    RuntimeError
+        When a unit range is given that is not supported, or a value is given that falls
+        outside the allowed range.
+
+    """
+    offset_in_config = cfg.get(param_name, None)  # Always in volts
+    if offset_in_config is None:
+        return None
+
+    conversion_factor = 1
+    if voltage_range.units == "mV":
+        conversion_factor = 1e3
+    elif voltage_range.units != "V":
+        raise RuntimeError(
+            f"Parameter {param_name} of {name} specifies "
+            f"the units {voltage_range.units}, but this is not "
+            f"supported by the Qblox backend."
+        )
+
+    calculated_offset = offset_in_config * conversion_factor
+    if (
+        calculated_offset < voltage_range.min_val
+        or calculated_offset > voltage_range.max_val
+    ):
+        raise ValueError(
+            f"Attempting to set {param_name} of {name} to "
+            f"{offset_in_config} V. {param_name} has to be between "
+            f"{voltage_range.min_val / conversion_factor} and "
+            f"{voltage_range.max_val / conversion_factor} V!"
+        )
+
+    return calculated_offset
