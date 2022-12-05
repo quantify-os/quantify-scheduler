@@ -26,6 +26,8 @@
 - Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
 - Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
 - Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
+- Qblox backend - renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
+- Instrument coordinator - changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`.
 
 ## 0.9.0 (2022-10-06)
 
