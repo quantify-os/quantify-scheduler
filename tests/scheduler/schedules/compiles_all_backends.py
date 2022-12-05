@@ -2,8 +2,6 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.backends import SerialCompiler
 
 
