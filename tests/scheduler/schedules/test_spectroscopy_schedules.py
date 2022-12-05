@@ -6,7 +6,7 @@ import tempfile
 
 from quantify_core.data.handling import set_datadir
 
-from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 
