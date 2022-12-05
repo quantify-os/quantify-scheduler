@@ -7,7 +7,8 @@
 - Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
 
 ### Merged branches and closed issues
-
+- Documentation - Instrument naming requirements in qblox hardware config (!531)
+- Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)

@@ -147,7 +147,9 @@ def mock_setup_basic_nv_qblox_hardware(mock_setup_basic_nv):
 
 
 @pytest.fixture(scope="function", autouse=False)
-def device_compile_config_basic_transmon(mock_setup_basic_transmon):
+def device_compile_config_basic_transmon(
+    mock_setup_basic_transmon_with_standard_params,
+):
     """
     A config generated from a quantum device with 5 transmon qubits
     connected in a star configuration.
@@ -157,12 +159,14 @@ def device_compile_config_basic_transmon(mock_setup_basic_transmon):
     # N.B. how this fixture produces the hardware config can change in the future
     # as long as it keeps doing what is described in this docstring.
 
-    set_standard_params_transmon(mock_setup_basic_transmon)
-    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    yield mock_setup["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function", autouse=False)
-def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon):
+def compile_config_basic_transmon_zhinst_hardware(
+    mock_setup_basic_transmon_with_standard_params,
+):
     """
     A config for a quantum device with 5 transmon qubits connected in a star
     configuration controlled using Zurich Instruments Hardware.
@@ -170,15 +174,17 @@ def compile_config_basic_transmon_zhinst_hardware(mock_setup_basic_transmon):
     # N.B. how this fixture produces the hardware config will change in the future
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
-    set_standard_params_transmon(mock_setup_basic_transmon)
-    mock_setup_basic_transmon["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
 
     # add the hardware config here
-    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    yield mock_setup["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function", autouse=False)
-def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon):
+def compile_config_basic_transmon_qblox_hardware(
+    mock_setup_basic_transmon_with_standard_params,
+):
     """
     A config for a quantum device with 5 transmon qubits connected in a star
     configuration controlled using Qblox Hardware.
@@ -186,10 +192,10 @@ def compile_config_basic_transmon_qblox_hardware(mock_setup_basic_transmon):
     # N.B. how this fixture produces the hardware config will change in the future
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
-    set_standard_params_transmon(mock_setup_basic_transmon)
-    mock_setup_basic_transmon["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
 
-    yield mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    yield mock_setup["quantum_device"].generate_compilation_config()
 
 
 @pytest.fixture(scope="function")

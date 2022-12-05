@@ -68,7 +68,6 @@ from quantify_scheduler.compilation import (
     qcompile,
 )
 
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import (
@@ -992,19 +991,21 @@ def test_compile_clock_operations(
 
 
 def test_compile_cz_gate(
-    mock_setup_basic_transmon, hardware_cfg_two_qubit_gate, two_qubit_gate_schedule
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_two_qubit_gate,
+    two_qubit_gate_schedule,
 ):
     # mock_setup_basic_transmon should arrange this but is not working here
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
 
-    edge_q2_q3 = mock_setup_basic_transmon["q2_q3"]
+    edge_q2_q3 = mock_setup["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup["quantum_device"]
     device_cfg = quantum_device.generate_device_config()
 
     compiled_sched = qcompile(
@@ -1060,11 +1061,11 @@ def test_compile_simple_with_acq(
     [True, False],
 )
 def test_compile_acq_measurement_with_clock_phase_reset(
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
     load_example_qblox_hardware_config,
     reset_clock_phase,
 ):
-    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
     schedule = Schedule("Test schedule")
@@ -1083,8 +1084,8 @@ def test_compile_acq_measurement_with_clock_phase_reset(
             label=f"Measurement {q0}{i}",
         )
 
-    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
-    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+    mock_setup["q0"].measure.reset_clock_phase(reset_clock_phase)
+    device_cfg = mock_setup["quantum_device"].generate_device_config()
 
     compiled_schedule = qcompile(
         schedule, device_cfg, load_example_qblox_hardware_config
@@ -1383,13 +1384,13 @@ def test_container_prepare(
 
 
 def test_determine_scope_mode_acquisition_sequencer(
-    mock_setup_basic_transmon, load_example_qblox_hardware_config
+    mock_setup_basic_transmon_with_standard_params, load_example_qblox_hardware_config
 ):
     # mock_setup_basic_transmon should arrange this but is not working here
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("determine_scope_mode_acquisition_sequencer")
     sched.add(Measure("q0"))
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
@@ -1398,7 +1399,7 @@ def test_determine_scope_mode_acquisition_sequencer(
     hardware_cfg = load_example_qblox_hardware_config
     sched = qcompile(
         sched,
-        mock_setup_basic_transmon["quantum_device"].generate_device_config(),
+        mock_setup["quantum_device"].generate_device_config(),
         hardware_cfg,
     )
 
@@ -2188,7 +2189,7 @@ def test_apply_latency_corrections_invalid_raises(
 
 
 def test_apply_latency_corrections_valid(
-    mock_setup_basic_transmon, hardware_cfg_latency_corrections
+    mock_setup_basic_transmon_with_standard_params, hardware_cfg_latency_corrections
 ):
     """
     This test function checks that:
@@ -2199,7 +2200,7 @@ def test_apply_latency_corrections_valid(
     tmp_dir = tempfile.TemporaryDirectory()
     set_datadir(tmp_dir.name)
 
-    set_standard_params_transmon(mock_setup_basic_transmon)
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("Single Gate Experiment on Two Qubits")
     sched.add(X("q0"))
     sched.add(
@@ -2212,7 +2213,7 @@ def test_apply_latency_corrections_valid(
     hardware_cfg = hardware_cfg_latency_corrections
     compiled_sched = qcompile(
         schedule=sched,
-        device_cfg=mock_setup_basic_transmon["quantum_device"].generate_device_config(),
+        device_cfg=mock_setup["quantum_device"].generate_device_config(),
         hardware_cfg=hardware_cfg,
     )
 
