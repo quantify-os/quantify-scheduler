@@ -1189,7 +1189,6 @@ def test_too_long_acquisition_raises_readable_exception(load_example_transmon_co
     )
 
     device_cfg = load_example_transmon_config
-    load_json_example_scheme("transmon_test_config.json")
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
