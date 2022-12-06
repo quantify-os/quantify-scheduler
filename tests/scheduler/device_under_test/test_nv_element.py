@@ -126,7 +126,7 @@ def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
     assert isinstance(dev_cfg, DeviceCompilationConfig)
 
 
-def test_mock_mv_setup():
+def test_mock_nv_setup():
     """Can use mock setup multiple times after closing it."""
     # test that everything works once
     mock_nv_setup = set_up_basic_mock_nv_setup()

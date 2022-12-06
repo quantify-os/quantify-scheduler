@@ -16,7 +16,7 @@ from quantify_scheduler.backends.qblox.operation_handling import (
 
 
 def get_operation_strategy(
-    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
+    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, io_mode: str
 ) -> base.IOperationStrategy:
     """
     Determines and instantiates the correct strategy object.
@@ -28,7 +28,7 @@ def get_operation_strategy(
     instruction_generated_pulses_enabled
         Specifies if instruction generated pulses (e.g. staircase through offsets) are
         allowed. If set to False, only generically treated pulses are allowed.
-    output_mode
+    io_mode
         Either "real", "imag" or complex depending on whether the signal affects only
         path0, path1 or both.
 
@@ -41,7 +41,7 @@ def get_operation_strategy(
         return _get_acquisition_strategy(operation_info)
 
     return _get_pulse_strategy(
-        operation_info, instruction_generated_pulses_enabled, output_mode
+        operation_info, instruction_generated_pulses_enabled, io_mode
     )
 
 
@@ -69,7 +69,7 @@ def _get_acquisition_strategy(
 
 
 def _get_pulse_strategy(
-    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, output_mode: str
+    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, io_mode: str
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
     if operation_info.data["port"] is None:
@@ -83,9 +83,9 @@ def _get_pulse_strategy(
         wf_func = operation_info.data["wf_func"]
 
         if wf_func == "quantify_scheduler.waveforms.square":
-            return pulses.StitchedSquarePulseStrategy(operation_info, output_mode)
+            return pulses.StitchedSquarePulseStrategy(operation_info, io_mode)
 
         if wf_func == "quantify_scheduler.waveforms.staircase":
-            return pulses.StaircasePulseStrategy(operation_info, output_mode)
+            return pulses.StaircasePulseStrategy(operation_info, io_mode)
 
-    return pulses.GenericPulseStrategy(operation_info, output_mode)
+    return pulses.GenericPulseStrategy(operation_info, io_mode)
