@@ -118,43 +118,6 @@ class ResetClockPhase(Operation):
         return self._get_signature(pulse_info)
 
 
-class SetClockFrequency(Operation):
-    """An operation that sets the frequency of a clock."""
-
-    def __init__(self, clock_frequency: float, clock: str, t0: float = 0):
-        """
-        Create a new instance of SetClockFrequency.
-
-        Parameters
-        ----------
-        clock_frequency
-            The frequency in Hz.
-        clock
-            The clock of which to frequency is set.
-        """
-        super().__init__(name="SetClockFrequency")
-        self.data.update(
-            {
-                "name": "SetClockFrequency",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "t0": t0,
-                        "clock_frequency": clock_frequency,
-                        "clock": clock,
-                        "port": None,
-                        "duration": 0,
-                    }
-                ],
-            }
-        )
-        self._update()
-
-    def __str__(self) -> str:
-        pulse_info = self.data["pulse_info"][0]
-        return self._get_signature(pulse_info)
-
-
 class IdlePulse(Operation):
     """
     The IdlePulse Operation is a placeholder for a specified duration of time.
