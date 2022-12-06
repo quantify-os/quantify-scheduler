@@ -207,7 +207,7 @@ def qcompile(
         compilation_passes = []
 
         # this is to support compiling when no device config is supplied
-        if device_cfg is not None:
+        if device_config is not None:
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="circuit_to_device",
