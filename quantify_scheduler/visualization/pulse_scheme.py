@@ -487,8 +487,8 @@ def box_text(
 
 @deprecated(
     "0.13.0",
-    "pulse_diagram_plotly has moved to a new module, please import from"
-    "quantify_scheduler.visualization.pulse_diagram instead.",
+    "`pulse_diagram_plotly` has moved to a new module, please import from "
+    "`quantify_scheduler.visualization.pulse_diagram` instead.",
 )
 def pulse_diagram_plotly(*args, **kwargs):
     return pulse_diagram.pulse_diagram_plotly(*args, **kwargs)
