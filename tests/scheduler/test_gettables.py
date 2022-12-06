@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
 
+from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
@@ -40,6 +41,8 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
+
+QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -273,8 +276,9 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
 
 
 def test_ScheduleGettableSingleChannel_trace_acquisition(
-    mock_setup_basic_transmon, mocker
+    mock_setup_basic_transmon_with_standard_params, mocker
 ):
+    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     # q0 is a  device element from the test setup has all the right params
