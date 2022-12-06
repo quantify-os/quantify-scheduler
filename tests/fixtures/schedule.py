@@ -26,7 +26,6 @@ from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X9
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples import utils
 
-# load here to avoid loading every time a fixture is used
 
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
