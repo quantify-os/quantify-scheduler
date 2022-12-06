@@ -32,13 +32,13 @@ def fixture_empty_qasm_program():
 class TestGenericPulseStrategy:
     def test_constructor(self):
         pulses.GenericPulseStrategy(
-            types.OpInfo(name="", data={}, timing=0), output_mode="real"
+            types.OpInfo(name="", data={}, timing=0), io_mode="real"
         )
 
     def test_operation_info_property(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode="real")
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode="real")
 
         # act
         from_property = strategy.operation_info
@@ -72,7 +72,7 @@ class TestGenericPulseStrategy:
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
 
         op_info = types.OpInfo(name="", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode="real")
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode="real")
         wf_dict = {}
         t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
 
@@ -104,7 +104,7 @@ class TestGenericPulseStrategy:
         }
 
         op_info = types.OpInfo(name="", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode="complex")
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode="complex")
         wf_dict = {}
         t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
 
@@ -152,7 +152,7 @@ class TestGenericPulseStrategy:
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
 
         op_info = types.OpInfo(name="", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode="imag")
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode="imag")
         wf_dict = {}
         t_test = np.arange(0, duration, step=1e-9)
 
@@ -172,10 +172,10 @@ class TestGenericPulseStrategy:
         assert strategy.amplitude_path1 == amp_real
 
     @pytest.mark.parametrize(
-        "output_mode",
+        "io_mode",
         ["real", "imag"],
     )
-    def test_exception_wrong_mode(self, output_mode):
+    def test_exception_wrong_mode(self, io_mode):
         # arrange
         duration = 24e-9
         data = {
@@ -188,7 +188,7 @@ class TestGenericPulseStrategy:
         }
 
         op_info = types.OpInfo(name="test_pulse_name", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode=output_mode)
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode=io_mode)
         wf_dict = {}
 
         # act
@@ -215,7 +215,7 @@ class TestGenericPulseStrategy:
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
 
         op_info = types.OpInfo(name="test_pulse", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, output_mode="real")
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode="real")
         strategy.generate_data(wf_dict={})
 
         # act
@@ -231,13 +231,13 @@ class TestGenericPulseStrategy:
 class TestStitchedSquarePulseStrategy:
     def test_constructor(self):
         pulses.StitchedSquarePulseStrategy(
-            types.OpInfo(name="", data={}, timing=0), output_mode="real"
+            types.OpInfo(name="", data={}, timing=0), io_mode="real"
         )
 
     def test_operation_info_property(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
-        strategy = pulses.StitchedSquarePulseStrategy(op_info, output_mode="real")
+        strategy = pulses.StitchedSquarePulseStrategy(op_info, io_mode="real")
 
         # act
         from_property = strategy.operation_info
@@ -250,7 +250,7 @@ class TestStitchedSquarePulseStrategy:
         # arrange
         num_samples = int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
         op_info = types.OpInfo(name="", data={"amp": 0.4}, timing=0)
-        strategy = pulses.StitchedSquarePulseStrategy(op_info, output_mode="complex")
+        strategy = pulses.StitchedSquarePulseStrategy(op_info, io_mode="complex")
 
         wf_dict = {}
 
@@ -268,7 +268,7 @@ class TestStitchedSquarePulseStrategy:
         assert waveform1_data == answer_path1
 
     @pytest.mark.parametrize(
-        "duration, output_mode",
+        "duration, io_mode",
         [
             (400e-9, "real"),
             (1e-6, "real"),
@@ -278,11 +278,11 @@ class TestStitchedSquarePulseStrategy:
             (1e-3, "imag"),
         ],
     )
-    def test_generate_data_real_or_imag(self, duration, output_mode):
+    def test_generate_data_real_or_imag(self, duration, io_mode):
         # arrange
         num_samples = int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
         op_info = types.OpInfo(name="", data={"amp": 0.4}, timing=0)
-        strategy = pulses.StitchedSquarePulseStrategy(op_info, output_mode=output_mode)
+        strategy = pulses.StitchedSquarePulseStrategy(op_info, io_mode=io_mode)
 
         wf_dict = {}
 
@@ -366,7 +366,7 @@ class TestStitchedSquarePulseStrategy:
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
 
         op_info = types.OpInfo(name="test_pulse", data=data, timing=0)
-        strategy = pulses.StitchedSquarePulseStrategy(op_info, output_mode="complex")
+        strategy = pulses.StitchedSquarePulseStrategy(op_info, io_mode="complex")
         strategy.generate_data(wf_dict={})
 
         # act
@@ -380,13 +380,13 @@ class TestStitchedSquarePulseStrategy:
 class TestStaircasePulseStrategy:
     def test_constructor(self):
         pulses.StaircasePulseStrategy(
-            types.OpInfo(name="", data={}, timing=0), output_mode="complex"
+            types.OpInfo(name="", data={}, timing=0), io_mode="complex"
         )
 
     def test_operation_info_property(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
-        strategy = pulses.StaircasePulseStrategy(op_info, output_mode="real")
+        strategy = pulses.StaircasePulseStrategy(op_info, io_mode="real")
 
         # act
         from_property = strategy.operation_info
@@ -397,7 +397,7 @@ class TestStaircasePulseStrategy:
     def test_generate_data(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
-        strategy = pulses.StaircasePulseStrategy(op_info, output_mode="real")
+        strategy = pulses.StaircasePulseStrategy(op_info, io_mode="real")
 
         # act
         # pylint: disable=assignment-from-none
@@ -408,7 +408,7 @@ class TestStaircasePulseStrategy:
         assert data is None
 
     @pytest.mark.parametrize(
-        "start_amp, final_amp, num_steps, output_mode, answer",
+        "start_amp, final_amp, num_steps, io_mode, answer",
         [
             (
                 0,
@@ -523,7 +523,7 @@ class TestStaircasePulseStrategy:
         start_amp,
         final_amp,
         num_steps,
-        output_mode,
+        io_mode,
         answer,
     ):
         # arrange
@@ -535,7 +535,7 @@ class TestStaircasePulseStrategy:
 
         data = {"wf_func": wf_func_path, "duration": 1.2e-6, **wf_kwargs}
         op_info = types.OpInfo(name="", data=data, timing=0)
-        strategy = pulses.StaircasePulseStrategy(op_info, output_mode=output_mode)
+        strategy = pulses.StaircasePulseStrategy(op_info, io_mode=io_mode)
 
         strategy.generate_data({})
 

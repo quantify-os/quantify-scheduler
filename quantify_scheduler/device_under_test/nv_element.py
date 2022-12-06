@@ -112,6 +112,16 @@ class ClockFrequencies(InstrumentModule):
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
 
+        self.ionization = ManualParameter(
+            name="ionization",
+            label="Frequency of ionization laser",
+            unit="Hz",
+            instrument=self,
+            initial_value=float("nan"),
+            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+        )
+        """Frequency of the green ionization laser for manipulation of the NVs charge state."""
+
 
 # pylint: disable=too-few-public-methods
 class SpectroscopyOperationHermiteMW(InstrumentModule):
@@ -186,7 +196,7 @@ class Measure(InstrumentModule):
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
             instrument=self,
-            initial_value=1,
+            initial_value=0.5,
             unit="V",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -235,7 +245,34 @@ class Measure(InstrumentModule):
         """
 
 
-# pylint: disable=too-few-public-methods
+class ChargeReset(InstrumentModule):
+    """
+    Submodule containing parameters to run an ionization laser square pulse to reset the NV in
+    its negatively charged state.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.amplitude = ManualParameter(
+            name="amplitude",
+            instrument=self,
+            initial_value=0.1,
+            unit="V",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
+        """Amplitude of charge reset pulse."""
+
+        self.duration = ManualParameter(
+            name="duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
+        """Duration of the charge reset pulse."""
+
+
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
@@ -262,6 +299,9 @@ class BasicElectronicNVElement(DeviceElement):
         self.add_submodule("reset", ResetSpinpump(self, "reset"))
         self.reset: ResetSpinpump
         """Submodule :class:`~.ResetSpinpump`."""
+        self.add_submodule("charge_reset", ChargeReset(self, "charge_reset"))
+        self.charge_reset: ChargeReset
+        """Submodule :class:`~.ChargeReset`."""
         self.add_submodule("measure", Measure(self, "measure"))
         self.measure: Measure
         """Submodule :class:`~.Measure`."""
@@ -293,6 +333,16 @@ class BasicElectronicNVElement(DeviceElement):
                         "amp": self.reset.amplitude(),
                         "port": self.ports.optical_control(),
                         "clock": f"{self.name}.ge1",
+                    },
+                ),
+                "charge_reset": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "pulse_library.SquarePulse",
+                    factory_kwargs={
+                        "duration": self.charge_reset.duration(),
+                        "amp": self.charge_reset.amplitude(),
+                        "port": self.ports.optical_control(),
+                        "clock": f"{self.name}.ionization",
                     },
                 ),
                 "measure": OperationCompilationConfig(
@@ -337,6 +387,7 @@ class BasicElectronicNVElement(DeviceElement):
                 f"{self.name}.spec": self.clock_freqs.spec(),
                 f"{self.name}.ge0": self.clock_freqs.ge0(),
                 f"{self.name}.ge1": self.clock_freqs.ge1(),
+                f"{self.name}.ionization": self.clock_freqs.ionization(),
             },
             "edges": {},
         }

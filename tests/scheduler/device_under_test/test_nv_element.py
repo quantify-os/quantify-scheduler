@@ -101,13 +101,32 @@ def test_generate_config_measure(electronic_q0: BasicElectronicNVElement):
     assert cfg_measure.factory_kwargs["pulse_type"] == "SquarePulse"
 
 
+def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
+    # Set values for charge_reset
+    electronic_q0.charge_reset.amplitude(1.0)
+    electronic_q0.charge_reset.duration(300e-6)
+    electronic_q0.clock_freqs.ionization.set(564e12)  # 532 nm
+
+    # Get device config
+    dev_cfg = electronic_q0.generate_device_config()
+    cfg_charge_reset = dev_cfg.elements["qe0"]["charge_reset"]
+
+    # Assert values are in right place
+    assert dev_cfg.clocks["qe0.ionization"] == 564e12
+    assert cfg_charge_reset.factory_kwargs["amp"] == 1.0
+    assert cfg_charge_reset.factory_kwargs["duration"] == 300e-6
+    assert cfg_charge_reset.factory_kwargs["port"] == "qe0:optical_control"
+    assert cfg_charge_reset.factory_kwargs["clock"] == "qe0.ionization"
+
+
 def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
     """Generating device config returns DeviceCompilationConfig."""
     dev_cfg = electronic_q0.generate_device_config()
     assert isinstance(dev_cfg, DeviceCompilationConfig)
 
 
-def test_mock_mv_setup():
+def test_mock_nv_setup():
     """Can use mock setup multiple times after closing it."""
     # test that everything works once
     mock_nv_setup = set_up_basic_mock_nv_setup()
