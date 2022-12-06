@@ -276,6 +276,11 @@ def qcompile(
     return compiled_schedule
 
 
+@deprecated(
+    "0.9.0",
+    "Use the `QuantifyCompiler.compile` method instead. "
+    "See the user guide section on compilers for details.",
+)
 def device_compile(schedule: Schedule, device_cfg: DeviceCompilationConfig) -> Schedule:
     """
     Add pulse information to operations based on device config file.
