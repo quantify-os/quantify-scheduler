@@ -294,11 +294,12 @@ def test_t1_sched_circuit_diagram(t1_schedule):
     _ = t1_schedule.plot_circuit_diagram()
 
 
-def test_t1_sched_pulse_diagram(t1_schedule):
+def test_t1_sched_pulse_diagram(load_example_transmon_config, t1_schedule):
     """
     Tests that the test schedule can be visualized
     """
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+
+    device_cfg = load_example_transmon_config
     comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
 
     # will only test that a figure is created and runs without errors

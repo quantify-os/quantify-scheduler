@@ -29,7 +29,9 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_settings_equality():
+def test_zi_settings_equality(load_example_transmon_config):
+    # Arrange
+
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,
@@ -44,7 +46,7 @@ def test_zi_settings_equality():
         "repetitions": 10,
     }
     sched = awg_staircase_sched(**sched_kwargs)
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6

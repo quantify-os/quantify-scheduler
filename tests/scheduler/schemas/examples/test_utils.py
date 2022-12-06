@@ -11,7 +11,6 @@ from quantify_scheduler.schemas.examples import utils
     "filename",
     [
         "qblox_test_mapping.json",
-        "transmon_test_config.json",
         "zhinst_test_mapping.json",
     ],
 )

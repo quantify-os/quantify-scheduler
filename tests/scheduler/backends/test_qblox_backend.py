@@ -35,8 +35,8 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
-    convert_hw_config_to_portclock_configs_spec,
     assign_pulse_and_acq_info_to_devices,
+    convert_hw_config_to_portclock_configs_spec,
     generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,

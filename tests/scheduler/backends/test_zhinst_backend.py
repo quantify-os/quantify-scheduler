@@ -889,7 +889,7 @@ def test__add_wave_nodes_with_vector(
 
 
 def test_compile_backend_with_undefined_local_oscillator(
-    make_schedule,
+    make_schedule, load_example_transmon_config
 ):
     # Arrange
     q0 = "q0"
@@ -898,7 +898,7 @@ def test_compile_backend_with_undefined_local_oscillator(
     schedule.add(X90(q0))
     # no measure to keep it simple
 
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
 
     hardware_cfg_str = """
     {
@@ -940,14 +940,14 @@ def test_compile_backend_with_undefined_local_oscillator(
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
-    make_schedule,
+    make_schedule, load_example_transmon_config
 ):
     # Arrange
     q0 = "q0"
     schedule = Schedule("test")
     schedule.add(Reset(q0))
     schedule.add(X90(q0))
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
 
     hardware_cfg_str = """
     {
@@ -1002,7 +1002,8 @@ def test_compile_backend_with_duplicate_local_oscillator(
     )
 
 
-def test_acquisition_staircase_unique_acquisitions():
+def test_acquisition_staircase_unique_acquisitions(load_example_transmon_config):
+
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),
         readout_pulse_duration=1e-6,
@@ -1013,7 +1014,7 @@ def test_acquisition_staircase_unique_acquisitions():
         clock="q0.ro",
         repetitions=1024,
     )
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
@@ -1079,7 +1080,7 @@ def test_acquisition_staircase_unique_acquisitions():
         )
 
 
-def test_acquisition_staircase_right_acq_channel():
+def test_acquisition_staircase_right_acq_channel(load_example_transmon_config):
 
     acq_channel = 2
     schedule = acquisition_staircase_sched(
@@ -1093,7 +1094,7 @@ def test_acquisition_staircase_right_acq_channel():
         repetitions=1024,
         acq_channel=acq_channel,
     )
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
@@ -1161,7 +1162,7 @@ def test_acquisition_staircase_right_acq_channel():
         )
 
 
-def test_too_long_acquisition_raises_readable_exception():
+def test_too_long_acquisition_raises_readable_exception(load_example_transmon_config):
     sched = Schedule(name="Too long acquisition schedule", repetitions=1024)
 
     # these are kind of magic names that are known to exist in the default config.
@@ -1181,7 +1182,7 @@ def test_too_long_acquisition_raises_readable_exception():
         ),
     )
 
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    device_cfg = load_example_transmon_config
     hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
