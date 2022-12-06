@@ -3,7 +3,6 @@
 """Schedule helper functions."""
 from __future__ import annotations
 
-import warnings
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
