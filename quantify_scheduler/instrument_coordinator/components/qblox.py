@@ -326,7 +326,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
         for output_idx in range(self._hardware_properties.number_of_output_paths):
             if settings.connected_outputs is None:
-                continue
+                break
             connected: bool = output_idx in settings.connected_outputs
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
