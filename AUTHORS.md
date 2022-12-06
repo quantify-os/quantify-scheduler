@@ -10,6 +10,7 @@
 - Damaz de Jong \<<mailto:ddejong@qblox.com>>
 - Damien Crielaard \<<mailto:dcrielaard@qblox.com>>
 - Daniel Jonathan Weigand \<<mailto:dweigand@qblox.com>>
+- David Quinn \<<mailto:dquinn@qblox.com>>
 - David Vos \<<mailto:dvos@qblox.com>>
 - Diogo Valada \<<mailto:dvalada@qblox.com>>
 - Edgar Reehuis \<<mailto:ereehuis@qblox.com>>

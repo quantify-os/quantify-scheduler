@@ -18,6 +18,8 @@ from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
@@ -27,7 +29,11 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 from quantify_scheduler.operations.gate_library import Measure
+from quantify_scheduler.instrument_coordinator.components.generic import (
+    GenericInstrumentCoordinatorComponent,
+)
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     AcquisitionIndexing,
@@ -486,6 +492,278 @@ def test_multiple_measurements(
     instr_coordinator.remove_component("ic_cluster0")
 
 
+def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_output_0": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 200e6,
+                            "instruction_generated_pulses_enabled": True,
+                        },
+                    ],
+                },
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        },  # todo add TTL params
+                    ],
+                },
+            },
+        },
+        "laser_red": {
+            "instrument_type": "LocalOscillator",
+            "frequency": None,
+            "power": 1,
+        },
+    }
+
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    qe0 = quantum_device.get_element("qe0")
+    qe0.measure.acq_delay(0)
+    qe0.measure.acq_duration(15e-6)
+    qe0.measure.pulse_duration(50e-6)
+
+    # Define experiment schedule
+    schedule = Schedule("test NV measurement with real output and input")
+    schedule.add(
+        Measure("qe0", acq_protocol="Trace")
+    )  # should be replaced by TriggerCount later.
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert len(data) == 1
+    assert len(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0]) == 15000
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+        "connected_inputs"
+    ] == [0]
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+            "nco_en"
+        ]
+        == False
+    )
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
+    # for a transmon measurement now both input and output can be used to run it.
+    # if we like to take these apart, dispersive_measurement should be adjusted.
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+                "complex_input_0": {
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = quantum_device.get_element("q0")
+    q1 = quantum_device.get_element("q1")
+
+    # Define experiment schedule
+    schedule = Schedule("test complex input")
+    schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
+    schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q1", acq_protocol="SSBIntegrationComplex"))
+
+    # Change acq delay
+    q0.measure.acq_delay(4e-9)
+    q1.measure.acq_delay(4e-9)
+    q1.measure.acq_channel(1)
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert len(data) == 2
+    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
+    assert math.isnan(data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0][0])
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+        "connected_inputs"
+    ] == [0, 1]
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_output_0": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 200e6,
+                            "instruction_generated_pulses_enabled": True,
+                        },
+                    ],
+                },
+                "real_output_1": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe1:optical_control",
+                            "clock": "qe1.ge0",
+                            "interm_freq": 200e6,
+                            "instruction_generated_pulses_enabled": True,
+                        },
+                    ],
+                },
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        },  # todo add TTL params
+                    ],
+                },
+                "real_input_1": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe1:optical_readout",
+                            "clock": "qe1.ge0",
+                            "interm_freq": 0,
+                        },  # todo add TTL params
+                    ],
+                },
+            },
+        },
+        "laser_red": {
+            "instrument_type": "LocalOscillator",
+            "frequency": None,
+            "power": 1,
+        },
+    }
+
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    qe1 = BasicElectronicNVElement("qe1")
+    quantum_device.add_element(qe1)
+    quantum_device.hardware_config(hardware_cfg)
+    # Define experiment schedule
+    schedule = Schedule("test NV measurement with real output and input")
+    schedule.add(
+        Measure("qe0", acq_protocol="Trace")
+    )  # should be replaced by TriggerCount later.
+    # TODO uncomment when triggercount available.
+    # schedule.add(
+    #    Measure("qe1", acq_protocol="TriggerCount")
+    # )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Assert intended behaviour
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+        "connected_inputs"
+    ] == [0]
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
+            "nco_en"
+        ]
+        == False
+    )
+    # TODO uncomment when triggercount available
+    # assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
+    #    "connected_inputs"
+    # ] == [1]
+    # assert (
+    #    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
+    #        "nco_en"
+    #    ]
+    #    == False
+    # )
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
 @pytest.mark.parametrize(
     "module_under_test",
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, PulsarType.PULSAR_QRM],
@@ -574,6 +852,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
 
     schedule = trace_schedule_circuit_layer(qubit_name="q2")
 
+    # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
