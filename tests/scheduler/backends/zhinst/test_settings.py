@@ -10,7 +10,6 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
-from quantify_core.data.handling import set_datadir
 from zhinst.qcodes import base
 
 from quantify_scheduler import waveforms
@@ -30,9 +29,7 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_settings_equality(tmp_test_data_dir):
-    # Arrange
-    set_datadir(tmp_test_data_dir)
+def test_zi_settings_equality():
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,

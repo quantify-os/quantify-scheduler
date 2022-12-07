@@ -9,7 +9,6 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler import enums, json_utils, Operation
 from quantify_scheduler.json_utils import ScheduleJSONDecoder
@@ -295,12 +294,10 @@ def test_t1_sched_circuit_diagram(t1_schedule):
     _ = t1_schedule.plot_circuit_diagram()
 
 
-def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
+def test_t1_sched_pulse_diagram(t1_schedule):
     """
     Tests that the test schedule can be visualized
     """
-
-    set_datadir(tmp_test_data_dir)
     device_cfg = load_json_example_scheme("transmon_test_config.json")
     comp_sched = qcompile(t1_schedule, device_cfg=device_cfg)
 
@@ -310,7 +307,6 @@ def test_t1_sched_pulse_diagram(t1_schedule, tmp_test_data_dir):
 
 @pytest.mark.parametrize("reset_clock_phase", (True, False))
 def test_sched_timing_table(
-    tmp_test_data_dir,
     reset_clock_phase,
     load_example_transmon_config,
 ):
@@ -330,8 +326,6 @@ def test_sched_timing_table(
 
     with pytest.raises(ValueError):
         _ = schedule.timing_table
-
-    set_datadir(tmp_test_data_dir)
     device_cfg = load_example_transmon_config
     device_cfg.elements.get("q0").get("measure").factory_kwargs[
         "reset_clock_phase"

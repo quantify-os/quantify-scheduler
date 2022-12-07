@@ -67,6 +67,7 @@ def tmp_test_data_dir(tmp_path_factory):
     use_temp_dir = True
     if use_temp_dir:
         temp_data_dir = tmp_path_factory.mktemp("temp_data")
+        set_datadir(temp_data_dir)
         yield temp_data_dir
         shutil.rmtree(temp_data_dir, ignore_errors=True)
     else:
@@ -77,15 +78,13 @@ def tmp_test_data_dir(tmp_path_factory):
 
 # pylint: disable=redefined-outer-name
 @pytest.fixture(scope="function", autouse=False)
-def mock_setup_basic_transmon(tmp_test_data_dir):
+def mock_setup_basic_transmon():
     """
     Returns a mock setup for a basic 5-qubit transmon device.
 
     This mock setup is created using the :code:`set_up_mock_transmon_setup`
     function from the .device_under_test.mock_setup module.
     """
-
-    set_datadir(tmp_test_data_dir)
 
     # moved to a separate module to allow using the mock_setup in tutorials.
     mock_setup = set_up_mock_transmon_setup()
@@ -121,11 +120,10 @@ def mock_setup_basic_transmon_with_standard_params(mock_setup_basic_transmon):
 
 
 @pytest.fixture(scope="function", autouse=False)
-def mock_setup_basic_nv(tmp_test_data_dir):
+def mock_setup_basic_nv():
     """
     Returns a mock setup for a basic 1-qubit NV-center device.
     """
-    set_datadir(tmp_test_data_dir)
     mock_setup = set_up_basic_mock_nv_setup()
     set_standard_params_basic_nv(mock_setup)
     yield mock_setup

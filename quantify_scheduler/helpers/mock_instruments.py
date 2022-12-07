@@ -40,7 +40,7 @@ class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
             unit="Hz",
             initial_value=7e9,
             docstring="The RF Frequency in Hz",
-            vals=validators.Numbers(min_value=250e3, max_value=20e9),
+            vals=validators.Numbers(),
             parameter_class=ManualParameter,
         )
         self.add_parameter(
