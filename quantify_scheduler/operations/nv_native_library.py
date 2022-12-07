@@ -129,7 +129,9 @@ class CRCount(Operation):
                     DeprecationWarning,
                 )
         if data is None:
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
+            plot_func = (
+                "quantify_scheduler.visualization.circuit_diagram.acq_meter_text"
+            )
             super().__init__(f"CRCount {', '.join(qubits)}")
             self.data.update(
                 {
@@ -137,7 +139,7 @@ class CRCount(Operation):
                     "gate_info": {
                         "unitary": None,
                         "plot_func": plot_func,
-                        "tex": r"$\langle0|$",
+                        "tex": r"CR",
                         "qubits": list(qubits),
                         "acq_channel": acq_channel,
                         "acq_index": acq_index,
