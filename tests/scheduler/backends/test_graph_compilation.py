@@ -11,8 +11,8 @@ import pytest
 import networkx as nx
 from matplotlib.axes import Axes
 
-from quantify_scheduler import Schedule
-from quantify_scheduler.backends.graph_compilation import QuantifyCompiler, SimpleNode
+from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler.backends.graph_compilation import QuantifyCompiler, SimpleNode, SerialCompiler
 from quantify_scheduler.operations.gate_library import Reset
 
 
@@ -71,3 +71,18 @@ def test_draw_backend():
 
     ax = quantify_compilation.draw()
     assert isinstance(ax, Axes)
+
+
+def test_compile_quantum_device(basic_schedule, mock_setup_basic_transmon):
+    """
+    Test if compilation works for a pulse only schedule on a freshly initialized
+    quantum device object to which only a hardware config has been provided.
+    """
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    backend = SerialCompiler("test")
+    compiled_sched = backend.compile(schedule=basic_schedule, config=quantum_device)
+
+    # Assert that no exception was raised and output is the right type
+    assert isinstance(compiled_sched, CompiledSchedule)
+
+    quantum_device.close()

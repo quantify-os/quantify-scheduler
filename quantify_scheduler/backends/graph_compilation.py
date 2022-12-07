@@ -9,7 +9,6 @@ from quantify_scheduler.structure.model import DataStructure
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
-
 class CompilationError(RuntimeError):
     """
     Custom exception class for failures in compilation of quantify schedules.
@@ -197,7 +196,7 @@ class QuantifyCompiler(CompilationNode):
         self._ouput_node = None
 
     def compile(
-        self, schedule: Schedule, config: CompilationConfig
+        self, schedule: Schedule, config: Union[CompilationConfig, "QuantumDevice"]
     ) -> CompiledSchedule:
         """
         Compile a :class:`~.Schedule` using the information provided in the config.
@@ -223,6 +222,10 @@ class QuantifyCompiler(CompilationNode):
 
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.
+        if hasattr(config, "generate_compilation_config"):
+            config = config.generate_compilation_config()
+        if not isinstance(config, CompilationConfig):
+            raise TypeError
         return self._compilation_func(schedule=schedule, config=config)
 
     @property
