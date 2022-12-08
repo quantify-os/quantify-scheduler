@@ -9,6 +9,7 @@ from quantify_scheduler.structure.model import DataStructure
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
+
 class CompilationError(RuntimeError):
     """
     Custom exception class for failures in compilation of quantify schedules.

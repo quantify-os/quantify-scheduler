@@ -12,7 +12,11 @@ import networkx as nx
 from matplotlib.axes import Axes
 
 from quantify_scheduler import Schedule, CompiledSchedule
-from quantify_scheduler.backends.graph_compilation import QuantifyCompiler, SimpleNode, SerialCompiler
+from quantify_scheduler.backends.graph_compilation import (
+    QuantifyCompiler,
+    SimpleNode,
+    SerialCompiler,
+)
 from quantify_scheduler.operations.gate_library import Reset
 
 
