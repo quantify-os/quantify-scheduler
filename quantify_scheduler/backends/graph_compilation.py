@@ -1,13 +1,18 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 
-from typing import Callable, Dict, List, Optional, Union, Tuple
-import networkx as nx
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
+
 import matplotlib.pyplot as plt
+import networkx as nx
 from matplotlib.axes import Axes
-from quantify_scheduler.structure.model import DataStructure
-from quantify_scheduler import Schedule, CompiledSchedule
+
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.structure.model import DataStructure
+
+if TYPE_CHECKING:
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 class CompilationError(RuntimeError):
