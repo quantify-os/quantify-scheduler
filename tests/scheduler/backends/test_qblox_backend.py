@@ -2100,7 +2100,7 @@ def test_convert_hw_config_to_portclock_configs_spec(
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
     sched = device_compile(sched, load_example_transmon_config)
     with pytest.warns(
-        DeprecationWarning,
+        FutureWarning,
         match=r"hardware config adheres to a specification that is deprecated",
     ):
         hardware_compile(sched, old_config)

@@ -126,7 +126,7 @@ class CRCount(Operation):
                     "and should be set in the device layer. See `BasicTransmonElement.measure.acq_channel`"
                     "for more info on how to set it. This keyword argument will be removed in "
                     "quantify-scheduler >= 0.12.0.",
-                    DeprecationWarning,
+                    FutureWarning,
                 )
         if data is None:
             plot_func = (
@@ -156,7 +156,7 @@ class CRCount(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 

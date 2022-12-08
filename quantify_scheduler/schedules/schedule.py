@@ -623,7 +623,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             self.data = data
             return
