@@ -228,11 +228,29 @@ class QuantifyCompiler(CompilationNode):
 
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.
+        config = self._generate_config(config)
+        return self._compilation_func(schedule=schedule, config=config)
+
+    def _generate_config(self, config) -> CompilationConfig:
+        """
+        Generate a `CompilationConfig`
+
+        Parameters
+        ----------
+        config
+            Information required to compile the schedule. Either `CompilationConfig`
+            or a class that implements `generate_compilation_config`.
+
+        Returns
+        -------
+        CompilationConfig:
+            information required to compile the schedule, in a format suitable for the compiler
+        """
         if hasattr(config, "generate_compilation_config"):
             config = config.generate_compilation_config()
         if not isinstance(config, CompilationConfig):
             raise TypeError
-        return self._compilation_func(schedule=schedule, config=config)
+        return config
 
     @property
     def input_node(self):
