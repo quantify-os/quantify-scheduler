@@ -32,6 +32,7 @@
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
+- Deprecation - Replaced DeprecationWarnings with FutureWarnings so that they are visible by default (!536)
 
 ## 0.9.0 (2022-10-06)
 
