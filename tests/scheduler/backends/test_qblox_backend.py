@@ -1719,9 +1719,12 @@ def test_assign_frequencies_rf_downconverter(
     q2.rxy.amp180(0.213)
     q3.rxy.amp180(0.215)
 
+    quantum_device.hardware_config(hardware_cfg)
     device_cfg = quantum_device.generate_device_config()
-
-    compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, quantum_device.generate_compilation_config()
+    )
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
