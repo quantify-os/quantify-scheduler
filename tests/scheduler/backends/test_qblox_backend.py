@@ -898,32 +898,24 @@ def test_compile_simple_multiplexing(
 
 
 def test_compile_identical_pulses(
-    identical_pulses_schedule,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    identical_pulses_schedule, compile_config_basic_transmon_qblox_hardware
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
-
-    compiled_schedule = qcompile(
-        identical_pulses_schedule,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        identical_pulses_schedule, config=compile_config_basic_transmon_qblox_hardware
     )
-
     prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
     assert len(prog["waveforms"]) == 2
 
 
 def test_compile_measure(
-    duplicate_measure_schedule,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    duplicate_measure_schedule, compile_config_basic_transmon_qblox_hardware
 ):
 
-    full_program = qcompile(
-        duplicate_measure_schedule,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+    compiler = SerialCompiler(name="compiler")
+    full_program = compiler.compile(
+        duplicate_measure_schedule, config=compile_config_basic_transmon_qblox_hardware
     )
     qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"]
 
