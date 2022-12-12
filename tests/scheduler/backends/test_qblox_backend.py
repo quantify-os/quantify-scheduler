@@ -1003,14 +1003,13 @@ def test_compile_cz_gate(
 def test_compile_simple_with_acq(
     dummy_pulsars,
     mixed_schedule_with_acquisition,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
 
-    full_program = qcompile(
+    compiler = SerialCompiler(name="compiler")
+    full_program = compiler.compile(
         mixed_schedule_with_acquisition,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+        config=compile_config_basic_transmon_qblox_hardware,
     )
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
@@ -1032,7 +1031,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     reset_clock_phase,
 ):
     mock_setup = mock_setup_basic_transmon_with_standard_params
-
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     schedule = Schedule("Test schedule")
 
     q0, q1 = "q0", "q1"
@@ -1050,11 +1049,11 @@ def test_compile_acq_measurement_with_clock_phase_reset(
         )
 
     mock_setup["q0"].measure.reset_clock_phase(reset_clock_phase)
-    device_cfg = mock_setup["quantum_device"].generate_device_config()
 
-    compiled_schedule = qcompile(
-        schedule, device_cfg, load_example_qblox_hardware_config
-    )
+    config = mock_setup["quantum_device"].generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(schedule, config=config)
+
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
     with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
@@ -1085,16 +1084,14 @@ def test_acquisitions_back_to_back(
 def test_compile_with_rel_time(
     dummy_pulsars,
     pulse_only_schedule_with_operation_timing,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
 
-    full_program = qcompile(
+    compiler = SerialCompiler(name="compiler")
+    full_program = compiler.compile(
         pulse_only_schedule_with_operation_timing,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+        config=compile_config_basic_transmon_qblox_hardware,
     )
-
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
@@ -1103,16 +1100,15 @@ def test_compile_with_rel_time(
 
 def test_compile_with_repetitions(
     mixed_schedule_with_acquisition,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
 
     mixed_schedule_with_acquisition.repetitions = 10
 
-    full_program = qcompile(
+    compiler = SerialCompiler(name="compiler")
+    full_program = compiler.compile(
         mixed_schedule_with_acquisition,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+        config=compile_config_basic_transmon_qblox_hardware,
     )
 
     program_from_json = full_program["compiled_instructions"]["qcm0"]["seq0"][
@@ -1131,7 +1127,7 @@ def _func_for_hook_test(qasm: QASMProgram):
     )
 
 
-def test_qasm_hook(pulse_only_schedule, load_example_transmon_config):
+def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon):
     hw_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qrm0": {
@@ -1151,8 +1147,16 @@ def test_qasm_hook(pulse_only_schedule, load_example_transmon_config):
     sched = pulse_only_schedule
 
     sched.repetitions = 11
+    mock_setup_basic_transmon["quantum_device"].hardware_config(hw_config)
 
-    full_program = qcompile(sched, load_example_transmon_config, hw_config)
+    compiler = SerialCompiler(name="compiler")
+    full_program = compiler.compile(
+        sched,
+        config=mock_setup_basic_transmon[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
+    # full_program = qcompile(sched, load_example_transmon_config, hw_config)
     program = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"][
         "program"
     ]
@@ -1177,14 +1181,19 @@ def test_qcm_acquisition_error(load_example_qblox_hardware_config):
 @pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
 def test_real_mode_pulses(
     real_square_pulse_schedule,
-    load_example_transmon_config,
     hardware_cfg_real_mode,
+    mock_setup_basic_transmon,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
 
     real_square_pulse_schedule.repetitions = 10
-    full_program = qcompile(
-        real_square_pulse_schedule, load_example_transmon_config, hardware_cfg_real_mode
+    mock_setup_basic_transmon["quantum_device"].hardware_config(hardware_cfg_real_mode)
+    compiler = SerialCompiler(name="compiler")
+    full_program = compiler.compile(
+        real_square_pulse_schedule,
+        config=mock_setup_basic_transmon[
+            "quantum_device"
+        ].generate_compilation_config(),
     )
 
     for output in range(4):
