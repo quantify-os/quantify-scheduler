@@ -10,7 +10,7 @@ from quantify_scheduler.backends.qblox.operation_handling.base import IOperation
 
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import helpers, q1asm_instructions
+from quantify_scheduler.backends.qblox import helpers, q1asm_instructions, constants
 
 
 class IdleStrategy(IOperationStrategy):
@@ -116,4 +116,9 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
             q1asm_instructions.SET_FREQUENCY,
             frequency_args,
             comment=f"set NCO frequency to {frequency:.2f} Hz",
+        )
+        qasm_program.emit(
+            q1asm_instructions.UPDATE_PARAMETERS,
+            constants.GRID_TIME,
+            comment=f"updating to apply NCO frequency change",
         )
