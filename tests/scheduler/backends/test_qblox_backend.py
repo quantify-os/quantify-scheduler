@@ -27,6 +27,7 @@ import quantify_scheduler
 from quantify_scheduler import Schedule
 
 from quantify_scheduler.backends.qblox_backend import hardware_compile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -849,28 +850,22 @@ def test_portclocks(
 
 
 def test_compile_simple(
-    pulse_only_schedule,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
-    qcompile(
-        pulse_only_schedule,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        pulse_only_schedule, config=compile_config_basic_transmon_qblox_hardware
     )
 
 
 def test_compile_cluster(
-    mock_setup_basic_transmon,
-    cluster_only_schedule,
-    load_example_qblox_hardware_config,
+    cluster_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
-
-    qcompile(
-        cluster_only_schedule,
-        mock_setup_basic_transmon["quantum_device"].generate_device_config(),
-        load_example_qblox_hardware_config,
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        cluster_only_schedule, config=compile_config_basic_transmon_qblox_hardware
     )
 
 
