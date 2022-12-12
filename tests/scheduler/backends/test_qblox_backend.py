@@ -1784,9 +1784,11 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
     q2.clock_freqs.readout(8.0e9)
     q2.measure.acq_delay(100e-9)
 
-    device_cfg = quantum_device.generate_device_config()
-
-    compiled_schedule = qcompile(sched, device_cfg, load_example_qblox_hardware_config)
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, quantum_device.generate_compilation_config()
+    )
     program = compiled_schedule["compiled_instructions"]
 
     def _confirm_correct_markers(device_program, mrk_config, is_rf=False):
@@ -1869,7 +1871,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 def test_acq_protocol_append_mode_valid_assembly_ssro(
     dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
 ):
-
+    # noteasy
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
@@ -1906,14 +1908,21 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
 
 
 def test_acq_protocol_average_mode_valid_assembly_allxy(
-    dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
+    dummy_pulsars,
+    compile_config_basic_transmon_qblox_hardware,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
 ):
-
+    # noteasy
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
     compiled_allxy_sched = qcompile(
         sched, load_example_transmon_config, load_example_qblox_hardware_config
     )
+    # compiler = SerialCompiler(name="compiler")
+    # compiled_allxy_sched = compiler.compile(
+    #     sched, compile_config_basic_transmon_qblox_hardware
+    # )
 
     assembly_valid(
         compiled_schedule=compiled_allxy_sched,
@@ -1945,15 +1954,14 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     assert list(program) == list(exp_program)
 
 
-def test_acq_declaration_dict_append_mode(
-    load_example_transmon_config, load_example_qblox_hardware_config
-):
+def test_acq_declaration_dict_append_mode(compile_config_basic_transmon_qblox_hardware):
 
     repetitions = 256
 
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    compiled_ssro_sched = qcompile(
-        ssro_sched, load_example_transmon_config, load_example_qblox_hardware_config
+    compiler = SerialCompiler(name="compiler")
+    compiled_ssro_sched = compiler.compile(
+        ssro_sched, compile_config_basic_transmon_qblox_hardware
     )
 
     qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
@@ -1967,14 +1975,14 @@ def test_acq_declaration_dict_append_mode(
 
 
 def test_acq_declaration_dict_bin_avg_mode(
-    load_example_transmon_config, load_example_qblox_hardware_config
+    compile_config_basic_transmon_qblox_hardware,
 ):
 
     allxy = allxy_sched("q0")
-    compiled_allxy_sched = qcompile(
-        allxy, load_example_transmon_config, load_example_qblox_hardware_config
+    compiler = SerialCompiler(name="compiler")
+    compiled_allxy_sched = compiler.compile(
+        allxy, config=compile_config_basic_transmon_qblox_hardware
     )
-
     qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
         "seq0"
     ]["sequence"]
@@ -2122,13 +2130,14 @@ def test_apply_latency_corrections_invalid_raises(
 
     hardware_cfg = copy.deepcopy(hardware_cfg_latency_corrections_invalid)
     hardware_cfg["latency_corrections"]["q1:mw-q1.01"] = None
+    mock_setup_basic_transmon["quantum_device"].hardware_config(hardware_cfg)
     with pytest.raises(ValidationError):
-        _ = qcompile(
-            schedule=sched,
-            device_cfg=mock_setup_basic_transmon[
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=mock_setup_basic_transmon[
                 "quantum_device"
-            ].generate_device_config(),
-            hardware_cfg=hardware_cfg,
+            ].generate_compilation_config(),
         )
 
 
@@ -2142,6 +2151,8 @@ def test_apply_latency_corrections_valid(
     """
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
+    hardware_cfg = hardware_cfg_latency_corrections
+    mock_setup["quantum_device"].hardware_config(hardware_cfg)
     sched = Schedule("Single Gate Experiment on Two Qubits")
     sched.add(X("q0"))
     sched.add(
@@ -2151,11 +2162,10 @@ def test_apply_latency_corrections_valid(
     sched.add_resources([ClockResource("q0.01", freq=5e9)])
     sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
-    hardware_cfg = hardware_cfg_latency_corrections
-    compiled_sched = qcompile(
-        schedule=sched,
-        device_cfg=mock_setup["quantum_device"].generate_device_config(),
-        hardware_cfg=hardware_cfg,
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched,
+        config=mock_setup["quantum_device"].generate_compilation_config(),
     )
 
     for instrument in ["qcm0", ("cluster0", "cluster0_module1")]:
