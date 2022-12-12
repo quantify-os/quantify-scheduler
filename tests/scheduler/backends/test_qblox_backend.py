@@ -887,13 +887,16 @@ def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed,
     load_example_transmon_config,
     hardware_cfg_multiplexing,
+    mock_setup_basic_transmon,
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
 
-    qcompile(
-        pulse_only_schedule_multiplexed,
-        load_example_transmon_config,
-        hardware_cfg_multiplexing,
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_multiplexing)
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        schedule=pulse_only_schedule_multiplexed,
+        config=quantum_device.generate_compilation_config(),
     )
 
 
@@ -939,17 +942,18 @@ def test_compile_clock_operations(
     operation: Operation,
     instruction_to_check: str,
 ):
-
     sched = Schedule("shift_clock_phase_only")
     sched.add(operation)
     sched.add_resources(
         [ClockResource("q1.01", freq=5e9)]
     )  # Clocks need to be manually added at this stage.
 
-    compiled_sched = qcompile(
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_baseband)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
         schedule=sched,
-        device_cfg=mock_setup_basic_transmon["quantum_device"].generate_device_config(),
-        hardware_cfg=hardware_cfg_baseband,
+        config=quantum_device.generate_compilation_config(),
     )
 
     program_lines = compiled_sched.compiled_instructions["qcm0"]["seq0"]["sequence"][
@@ -973,12 +977,11 @@ def test_compile_cz_gate(
     edge_q2_q3.cz.q3_phase_correction(63)
 
     quantum_device = mock_setup["quantum_device"]
-    device_cfg = quantum_device.generate_device_config()
-
-    compiled_sched = qcompile(
+    quantum_device.hardware_config(hardware_cfg_two_qubit_gate)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
         schedule=two_qubit_gate_schedule,
-        device_cfg=device_cfg,
-        hardware_cfg=hardware_cfg_two_qubit_gate,
+        config=quantum_device.generate_compilation_config(),
     )
 
     program_lines = {}
@@ -1156,7 +1159,6 @@ def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon):
             "quantum_device"
         ].generate_compilation_config(),
     )
-    # full_program = qcompile(sched, load_example_transmon_config, hw_config)
     program = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"][
         "program"
     ]
@@ -1501,18 +1503,21 @@ def test_real_mode_container(
 
 
 def test_assign_frequencies_baseband(
-    load_example_transmon_config, load_example_qblox_hardware_config
+    mock_setup_basic_transmon_with_standard_params,
+    # load_example_transmon_config,
+    load_example_qblox_hardware_config,
 ):
-
+    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q1"))
-
-    device_cfg = load_example_transmon_config
+    hardware_cfg = load_example_qblox_hardware_config
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    device_cfg = quantum_device.generate_device_config()
+    quantum_device.hardware_config(hardware_cfg)
     q0_clock_freq = device_cfg.clocks["q0.01"]
     q1_clock_freq = device_cfg.clocks["q1.01"]
 
-    hardware_cfg = load_example_qblox_hardware_config
     if0 = hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
         "interm_freq"
     )
@@ -1531,8 +1536,10 @@ def test_assign_frequencies_baseband(
 
     lo0 = q0_clock_freq - if0
     if1 = q1_clock_freq - lo1
-
-    compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, config=quantum_device.generate_compilation_config()
+    )
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
@@ -1587,7 +1594,7 @@ def test_assign_frequencies_baseband_downconverter(
     hw_mapping_downconverter["qcm0"]["complex_output_1"][
         "downconverter_freq"
     ] = downconverter_freq_1
-
+    # TODO - qcompile
     compiled_schedule = qcompile(sched, device_cfg, hw_mapping_downconverter)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     generic_ic_program = compiled_instructions[constants.GENERIC_IC_COMPONENT_NAME]
@@ -1879,7 +1886,7 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 def test_acq_protocol_append_mode_valid_assembly_ssro(
     dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
 ):
-    # noteasy
+    # TODO - qcompile
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
     compiled_ssro_sched = qcompile(
@@ -1921,7 +1928,7 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    # noteasy
+    # TODO - qcompile
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
     compiled_allxy_sched = qcompile(
