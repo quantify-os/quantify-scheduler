@@ -1661,7 +1661,12 @@ def test_assign_frequencies_rf(
     lo0 = q2_clock_freq - if0
     if1 = q3_clock_freq - lo1
 
-    compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
+    quantum_device.hardware_config(hardware_cfg)
+    device_cfg = quantum_device.generate_device_config()
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, quantum_device.generate_compilation_config()
+    )
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["qcm_rf0"]
 
