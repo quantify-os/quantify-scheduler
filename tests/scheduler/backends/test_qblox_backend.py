@@ -1354,19 +1354,19 @@ def test_container_prepare(
 def test_determine_scope_mode_acquisition_sequencer(
     mock_setup_basic_transmon_with_standard_params, load_example_qblox_hardware_config
 ):
-    # mock_setup_basic_transmon should arrange this but is not working here
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("determine_scope_mode_acquisition_sequencer")
     sched.add(Measure("q0"))
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
     sched.add(Trace(duration=100e-9, port="q5:res", clock="q5.ro"))
-
     hardware_cfg = load_example_qblox_hardware_config
-    sched = qcompile(
+    mock_setup["quantum_device"].hardware_config(hardware_cfg)
+
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
         sched,
-        mock_setup["quantum_device"].generate_device_config(),
-        hardware_cfg,
+        config=mock_setup["quantum_device"].generate_compilation_config(),
     )
 
     assert hardware_cfg["qrm0"]["instrument_type"] == "Pulsar_QRM"
@@ -2188,7 +2188,9 @@ def test_apply_latency_corrections_warning(
     Checks if warning is raised for a latency correction
     that is not a multiple of 4ns
     """
-
+    mock_setup_basic_transmon["quantum_device"].hardware_config(
+        hardware_cfg_latency_corrections
+    )
     sched = Schedule("Single Gate Experiment")
     sched.add(
         SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
@@ -2200,12 +2202,12 @@ def test_apply_latency_corrections_warning(
     with caplog.at_level(
         logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
-        qcompile(
-            schedule=sched,
-            device_cfg=mock_setup_basic_transmon[
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            sched,
+            config=mock_setup_basic_transmon[
                 "quantum_device"
-            ].generate_device_config(),
-            hardware_cfg=hardware_cfg_latency_corrections,
+            ].generate_compilation_config(),
         )
     assert any(warning in mssg for mssg in caplog.messages)
 
