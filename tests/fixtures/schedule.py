@@ -26,8 +26,6 @@ from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X9
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples import utils
 
-# load here to avoid loading every time a fixture is used
-DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
 
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
@@ -40,15 +38,6 @@ def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, N
     backend.
     """
     yield DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-
-
-@pytest.fixture
-def load_legacy_transmon_config() -> Generator[Dict[str, Any], None, None]:
-    """
-    Loads the configuration for `add_pulse_information_transmon`.
-    To be removed after 0.7.0 when this functionality is phased out.
-    """
-    yield dict(DEVICE_CONFIG)
 
 
 @pytest.fixture
