@@ -77,6 +77,8 @@ def _get_pulse_strategy(
             return virtual.NcoPhaseShiftStrategy(operation_info)
         elif "reset_clock_phase" in operation_info.data:
             return virtual.NcoResetClockPhaseStrategy(operation_info)
+        elif "clock_frequency" in operation_info.data:
+            return virtual.NcoSetClockFrequencyStrategy(operation_info)
         else:
             return virtual.IdleStrategy(operation_info)
 
