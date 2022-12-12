@@ -60,7 +60,7 @@ class ShiftClockPhase(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -109,7 +109,7 @@ class ResetClockPhase(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -162,7 +162,7 @@ class IdlePulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -247,7 +247,7 @@ class RampPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -325,7 +325,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -403,7 +403,7 @@ class SquarePulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -494,7 +494,7 @@ class SuddenNetZeroPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -613,7 +613,7 @@ class SoftSquarePulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -685,7 +685,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -771,7 +771,7 @@ class DRAGPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -878,7 +878,7 @@ def create_dc_compensation_pulse(
             "quantify-scheduler >= 0.13.0.\n"
             "Please consider updating the data "
             "dictionary after initialization.",
-            DeprecationWarning,
+            FutureWarning,
         )
 
     return SquarePulse(
@@ -948,7 +948,7 @@ class WindowOperation(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -1044,7 +1044,7 @@ class NumericalPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 

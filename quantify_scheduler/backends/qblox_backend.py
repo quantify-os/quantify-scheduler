@@ -77,7 +77,7 @@ def hardware_compile(
             "The provided hardware config adheres to a specification that is deprecated"
             ". See https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.8.0/"
             "tutorials/qblox/recent.html",
-            DeprecationWarning,
+            FutureWarning,
         )
         hardware_cfg = converted_hw_config
 

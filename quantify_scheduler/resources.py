@@ -43,7 +43,7 @@ class Resource(UserDict):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             self.data.update(data)
 
@@ -149,7 +149,7 @@ class ClockResource(Resource):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(data["name"], data=data)
 
@@ -192,6 +192,6 @@ class BasebandClockResource(Resource):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(data["name"], data=data)
