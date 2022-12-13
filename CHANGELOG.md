@@ -25,6 +25,7 @@
 - Qblox backend - Minor adjustments to `NcoPhaseShiftStrategy` to make compilation of `ShiftClockPhase` compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
+- Qblox backend - Introduce `SetClockFrequency` operation, made possible by qblox-instruments==0.8 (!539)
 - Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
 - Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
 - Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
