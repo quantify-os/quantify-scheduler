@@ -32,7 +32,10 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
-from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
+from quantify_scheduler.schedules.spectroscopy_schedules import (
+    heterodyne_spec_sched,
+    nco_heterodyne_spec_sched,
+)
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     rabi_sched,
@@ -122,6 +125,74 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     assert spec_gettable.is_initialized is False
 
     freqs = np.linspace(5e9, 6e9, 11)
+    meas_ctrl.settables(ro_freq)
+    meas_ctrl.setpoints(freqs)
+    meas_ctrl.gettables(spec_gettable)
+    label = f"Heterodyne spectroscopy {qubit.name}"
+    dset = meas_ctrl.run(label)
+    assert spec_gettable.is_initialized is True
+
+    exp_data = np.ones(len(freqs)) * data
+    # Assert that the data is coming out correctly.
+    np.testing.assert_array_equal(dset.x0, freqs)
+    np.testing.assert_array_equal(dset.y0, abs(exp_data))
+    np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
+
+
+def test_ScheduleGettableSingleChannel_iterative_nco_heterodyne_spec(
+    mock_setup_basic_transmon, mocker
+):
+    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+
+    qubit = quantum_device.get_element("q0")
+
+    # manual parameter for testing purposes
+    ro_freq = ManualParameter("ro_freq", unit="Hz")
+    ro_freq.batched = True
+
+    freqs = np.linspace(5e9, 6e9, 11)
+
+    schedule_kwargs = {
+        "pulse_amp": qubit.measure.pulse_amp(),
+        "pulse_duration": qubit.measure.pulse_duration(),
+        "frequencies": freqs,
+        "acquisition_delay": qubit.measure.acq_delay(),
+        "integration_time": qubit.measure.integration_time(),
+        "port": qubit.ports.readout(),
+        "clock": qubit.name + ".ro",
+        "init_duration": qubit.reset.duration(),
+    }
+
+    # Prepare the mock data the spectroscopy schedule
+
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="ssb_integration_complex",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=complex,
+        acq_indices={0: [0]},
+    )
+
+    data = 1 * np.exp(1j * np.deg2rad(45))
+
+    acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
+
+    mocker.patch.object(
+        mock_setup_basic_transmon["instrument_coordinator"],
+        "retrieve_acquisition",
+        return_value=acq_indices_data,
+    )
+
+    # Configure the gettable
+    spec_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=nco_heterodyne_spec_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=False,
+        batched=True,
+    )
+    assert spec_gettable.is_initialized is False
+
     meas_ctrl.settables(ro_freq)
     meas_ctrl.setpoints(freqs)
     meas_ctrl.gettables(spec_gettable)

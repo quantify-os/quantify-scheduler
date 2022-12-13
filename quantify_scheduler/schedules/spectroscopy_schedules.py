@@ -7,9 +7,15 @@ from __future__ import annotations
 
 from typing import Optional
 
+import numpy as np
+
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    SetClockFrequency,
+    SquarePulse,
+)
 from quantify_scheduler.resources import ClockResource
 
 
@@ -84,6 +90,80 @@ def heterodyne_spec_sched(
         rel_time=acquisition_delay,
         label="acquisition",
     )
+
+    return sched
+
+
+def nco_heterodyne_spec_sched(
+    pulse_amp: float,
+    pulse_duration: float,
+    frequencies: np.ndarray,
+    acquisition_delay: float,
+    integration_time: float,
+    port: str,
+    clock: str,
+    init_duration: float = 10e-6,
+    repetitions: int = 1,
+    port_out: Optional[str] = None,
+) -> Schedule:
+    """
+
+    Parameters
+    ----------
+    pulse_amp
+    pulse_duration
+    frequencies
+    acquisition_delay
+    integration_time
+    port
+    clock
+    init_duration
+    repetitions
+    port_out
+
+    Returns
+    -------
+
+    """
+
+    sched = Schedule("NCO heterodyne spectroscopy", repetitions)
+    sched.add_resource(ClockResource(name=clock, freq=frequencies.flat[0]))
+
+    sched.add(IdlePulse(duration=init_duration), label="buffer")
+
+    if port_out is None:
+        port_out = port
+
+    for acq_idx, freq in enumerate(frequencies):
+        sched.add(
+            SetClockFrequency(clock=clock, clock_frequency=freq),
+            label=f"set_clock_freq {acq_idx} ({freq} Hz)",
+        )
+
+        spec_pulse = sched.add(
+            SquarePulse(
+                duration=pulse_duration,
+                amp=pulse_amp,
+                port=port_out,
+                clock=clock,
+            ),
+            label=f"spec_pulse {acq_idx}",
+        )
+
+        # acquisition_delay: "front" of the pulse should arrive before we start measuring (minimum 144ns ):  make sure that acq delay is longer than time of flight
+        sched.add(
+            SSBIntegrationComplex(
+                duration=integration_time,
+                port=port,
+                clock=clock,
+                acq_index=acq_idx,
+                acq_channel=0,
+            ),
+            ref_op=spec_pulse,
+            ref_pt="start",
+            rel_time=acquisition_delay,
+            label=f"acquisition {acq_idx}",
+        )
 
     return sched
 
