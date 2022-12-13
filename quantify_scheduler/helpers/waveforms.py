@@ -120,8 +120,9 @@ def shift_waveform(
     to compensate for rounding errors that cause misalignment
     of the waveform in the clock time domain.
 
-    Note: when using this method be sure that the pulse starts
-    at a `round(start_in_sequencer_count)`.
+    .. Note::
+        when using this method be sure that the pulse starts
+        at a `round(start_in_sequencer_count)`.
 
     .. code-block::
 

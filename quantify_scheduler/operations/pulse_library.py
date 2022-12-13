@@ -27,14 +27,21 @@ class ShiftClockPhase(Operation):
 
         Parameters
         ----------
-        phase
+        phase_shift
             The phase shift in degrees.
         clock
             The clock of which to shift the phase.
+        t0
+            Time in seconds when to start the pulses relative
+            to the start time
+            of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="ShiftClockPhase")

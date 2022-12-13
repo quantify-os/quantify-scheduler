@@ -234,6 +234,7 @@ texinfo_documents = [
 ]
 
 # -- Other Options -----------------------------------------------------
+# see https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
 
 autoapi_type = "python"
 autoapi_generate_api_docs = True
@@ -246,12 +247,14 @@ autoapi_options = [
     "private-members",
     "show-inheritance",
     "show-module-summary",
-    "special-members",
+    # "special-members",
     # Including `important-members` displays the description of class aliases in the
     # docs, however, it causes sphinx to raise multiple warnings about finding
     # multiple targets for cross-references.
     # "imported-members",
 ]
+# displays docstrings inside __init__
+autoapi_python_class_content = "both"
 
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
