@@ -119,9 +119,12 @@ class ResetClockPhase(Operation):
 
 
 class SetClockFrequency(Operation):
-    """An operation that sets the frequency of a clock.
-    This is a low-level operation and therefore depends on the backend.
-    Refer to `NcoSetClockFrequencyStrategy` for more details."""
+    """
+    An operation that sets the frequency of a clock. This is a low-level operation
+    and therefore depends on the backend. Refer to
+    :class:`~quantify_scheduler.backends.qblox.operation_handling.virtual.NcoSetClockFrequencyStrategy`
+    for more details.
+    """
 
     def __init__(self, clock: str, clock_frequency: float, t0: float = 0):
         """
