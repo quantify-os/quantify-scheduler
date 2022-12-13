@@ -100,13 +100,13 @@ class TestNcoPhaseShiftStrategy:
     @pytest.mark.parametrize(
         "phase_shift, answer",
         [
-            (0.0, ("set_ph_delta", "0,0,0")),
-            (360, ("set_ph_delta", "0,0,0")),
-            (360.0, ("set_ph_delta", "0,0,0")),
-            (359.99999999999999, ("set_ph_delta", "0,0,0")),
-            (359.999, ("set_ph_delta", "399,399,3472")),
-            (123.123, ("set_ph_delta", "136,321,2083")),
-            (483.123, ("set_ph_delta", "136,321,2083")),
+            (0.0, ("set_ph_delta", "0")),
+            (360, ("set_ph_delta", "0")),
+            (360.0, ("set_ph_delta", "0")),
+            (359.99999999999999, ("set_ph_delta", "0")),
+            (359.999, ("set_ph_delta", "999997222")),
+            (123.123, ("set_ph_delta", "342008333")),
+            (483.123, ("set_ph_delta", "342008333")),
         ],
     )
     def test_generate_qasm_program(
@@ -131,3 +131,56 @@ class TestNcoPhaseShiftStrategy:
             assert qasm.instructions == []
         else:
             assert extract_instruction_and_args(qasm) == answer
+
+
+class TestNcoSetClockFrequencyStrategy:
+    def test_constructor(self):
+        op_info = types.OpInfo(name="", data={"clock_frequency": 123456789}, timing=0)
+        virtual.NcoSetClockFrequencyStrategy(op_info)
+
+    def test_generate_data(self):
+        # arrange
+        op_info = types.OpInfo(name="", data={"clock_frequency": 123456789}, timing=0)
+        strategy = virtual.NcoSetClockFrequencyStrategy(op_info)
+
+        # act and assert
+        _assert_none_data(strategy)
+
+    @pytest.mark.parametrize(
+        "frequency, expected_instruction",
+        [
+            (-400e6, ("set_freq", "-1600000000", "upd_param", "8")),
+            (-123.456e6, ("set_freq", "-493824000", "upd_param", "8")),
+            (-987.0, ("set_freq", "-3948", "upd_param", "8")),
+            (0, ("set_freq", "0", "upd_param", "8")),
+            (987.0, ("set_freq", "3948", "upd_param", "8")),
+            (123.456e6, ("set_freq", "493824000", "upd_param", "8")),
+            (400e6, ("set_freq", "1600000000", "upd_param", "8")),
+        ],
+    )
+    def test_generate_qasm_program(
+        self,
+        frequency: float,
+        expected_instruction: Tuple[str, str, str, str],
+        empty_qasm_program_qcm: QASMProgram,
+    ):
+        def extract_instruction_and_args(
+            qasm_prog: QASMProgram,
+        ) -> Tuple[str, str, str, str]:
+            return (
+                qasm_prog.instructions[0][1],
+                qasm_prog.instructions[0][2],
+                qasm_prog.instructions[1][1],
+                qasm_prog.instructions[1][2],
+            )
+
+        # arrange
+        qasm = empty_qasm_program_qcm
+        op_info = types.OpInfo(name="", data={"clock_frequency": frequency}, timing=0)
+        strategy = virtual.NcoSetClockFrequencyStrategy(op_info)
+
+        # act
+        strategy.insert_qasm(qasm)
+
+        # assert
+        assert extract_instruction_and_args(qasm) == expected_instruction
