@@ -351,6 +351,101 @@ class TestWeightedAcquisitionStrategy:
         ]
 
 
+class TestTriggerCountStrategy:
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_constructor(self, bin_mode):
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+
+    def test_generate_data(self):
+        # arrange
+        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        assert len(wf_dict) == 0
+
+    def test_acquire_average(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_average(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_ttl",
+                "0,0,1,4",
+                "# Enable TTL acquisition of acq_channel:0, bin_mode:average",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
+            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            [
+                "",
+                "acquire_ttl",
+                "0,0,0,4",
+                "# Disable TTL acquisition of acq_channel:0, bin_mode:average",
+            ],
+        ]
+
+    def test_acquire_append(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": BinMode.APPEND,
+            "acq_channel": 0,
+            "acq_index": 5,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_append(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_ttl",
+                "0,R0,1,4",
+                "# Enable TTL acquisition of acq_channel:0, bin_mode:append",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
+            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            [
+                "",
+                "acquire_ttl",
+                "0,R0,0,4",
+                "# Disable TTL acquisition of acq_channel:0, bin_mode:append",
+            ],
+            ['', 'add', 'R0,1,R0', '# Increment bin_idx for ch0'],
+        ]
+
+
 def test_trace_acquisition_measurement_control(
     mock_setup_basic_transmon_with_standard_params, mocker, make_cluster_component
 ):
