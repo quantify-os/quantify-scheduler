@@ -19,10 +19,9 @@ from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
 from zhinst.toolkit.control import drivers
 
 from quantify_scheduler import Schedule, enums
-from quantify_scheduler.backends import zhinst_backend
+from quantify_scheduler.backends import zhinst_backend, SerialCompiler
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
@@ -889,7 +888,7 @@ def test__add_wave_nodes_with_vector(
 
 
 def test_compile_backend_with_undefined_local_oscillator(
-    make_schedule,
+    make_schedule, mock_setup_basic_transmon
 ):
     # Arrange
     q0 = "q0"
@@ -898,7 +897,7 @@ def test_compile_backend_with_undefined_local_oscillator(
     schedule.add(X90(q0))
     # no measure to keep it simple
 
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    # device_cfg = load_json_example_scheme("transmon_test_config.json")
 
     hardware_cfg_str = """
     {
@@ -931,23 +930,26 @@ def test_compile_backend_with_undefined_local_oscillator(
     }
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
-
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(zhinst_hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
     # Act
     with pytest.raises(
         KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
     ):
-        qcompile(schedule, device_cfg, zhinst_hardware_cfg)
+        compiler.compile(schedule, config=config)
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
-    make_schedule,
+    make_schedule, mock_setup_basic_transmon
 ):
     # Arrange
     q0 = "q0"
     schedule = Schedule("test")
     schedule.add(Reset(q0))
     schedule.add(X90(q0))
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
+    # device_cfg = load_json_example_scheme("transmon_test_config.json")
 
     hardware_cfg_str = """
     {
@@ -990,10 +992,13 @@ def test_compile_backend_with_duplicate_local_oscillator(
     }
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
-
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(zhinst_hardware_cfg)
+    config = quantum_device.generate_compilation_config()
     # Act
+    compiler = SerialCompiler(name="compiler")
     with pytest.raises(RuntimeError) as execinfo:
-        qcompile(schedule, device_cfg, zhinst_hardware_cfg)
+        compiler.compile(schedule, config=config)
 
     # Assert
     assert (
@@ -1002,7 +1007,9 @@ def test_compile_backend_with_duplicate_local_oscillator(
     )
 
 
-def test_acquisition_staircase_unique_acquisitions():
+def test_acquisition_staircase_unique_acquisitions(
+    compile_config_basic_transmon_zhinst_hardware,
+):
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),
         readout_pulse_duration=1e-6,
@@ -1013,11 +1020,12 @@ def test_acquisition_staircase_unique_acquisitions():
         clock="q0.ro",
         repetitions=1024,
     )
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        schedule, config=compile_config_basic_transmon_zhinst_hardware
+    )
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1079,7 +1087,9 @@ def test_acquisition_staircase_unique_acquisitions():
         )
 
 
-def test_acquisition_staircase_right_acq_channel():
+def test_acquisition_staircase_right_acq_channel(
+    compile_config_basic_transmon_zhinst_hardware,
+):
 
     acq_channel = 2
     schedule = acquisition_staircase_sched(
@@ -1093,12 +1103,12 @@ def test_acquisition_staircase_right_acq_channel():
         repetitions=1024,
         acq_channel=acq_channel,
     )
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
-
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        schedule, config=compile_config_basic_transmon_zhinst_hardware
+    )
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
     assert uhfqa_setts.acq_config.n_acquisitions == 20
@@ -1161,7 +1171,9 @@ def test_acquisition_staircase_right_acq_channel():
         )
 
 
-def test_too_long_acquisition_raises_readable_exception():
+def test_too_long_acquisition_raises_readable_exception(
+    compile_config_basic_transmon_zhinst_hardware,
+):
     sched = Schedule(name="Too long acquisition schedule", repetitions=1024)
 
     # these are kind of magic names that are known to exist in the default config.
@@ -1180,13 +1192,12 @@ def test_too_long_acquisition_raises_readable_exception():
             acq_channel=0,
         ),
     )
-
-    device_cfg = load_json_example_scheme("transmon_test_config.json")
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
-
+    compiler = SerialCompiler(name="compiler")
     # Act
     with pytest.raises(ValueError) as exc_info:
-        _ = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+        _ = compiler.compile(
+            sched, config=compile_config_basic_transmon_zhinst_hardware
+        )
 
     # assert that the name of the offending operation is in the exception message.
     assert "SSBIntegrationComplex(" in str(exc_info.value)
