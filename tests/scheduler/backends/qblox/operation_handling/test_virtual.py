@@ -149,13 +149,13 @@ class TestNcoSetClockFrequencyStrategy:
     @pytest.mark.parametrize(
         "frequency, expected_instruction",
         [
-            (-400e6, ("set_freq", "-1600000000")),
-            (-123.456e6, ("set_freq", "-493824000")),
-            (-987.0, ("set_freq", "-3948")),
-            (0, ("set_freq", "0")),
-            (987.0, ("set_freq", "3948")),
-            (123.456e6, ("set_freq", "493824000")),
-            (400e6, ("set_freq", "1600000000")),
+            (-400e6, ("set_freq", "-1600000000", "upd_param", "8")),
+            (-123.456e6, ("set_freq", "-493824000", "upd_param", "8")),
+            (-987.0, ("set_freq", "-3948", "upd_param", "8")),
+            (0, ("set_freq", "0", "upd_param", "8")),
+            (987.0, ("set_freq", "3948", "upd_param", "8")),
+            (123.456e6, ("set_freq", "493824000", "upd_param", "8")),
+            (400e6, ("set_freq", "1600000000", "upd_param", "8")),
         ],
     )
     def test_generate_qasm_program(
@@ -165,7 +165,12 @@ class TestNcoSetClockFrequencyStrategy:
         empty_qasm_program_qcm: QASMProgram,
     ):
         def extract_instruction_and_args(qasm_prog: QASMProgram) -> Tuple[str, str]:
-            return qasm_prog.instructions[0][1], qasm_prog.instructions[0][2]
+            return (
+                qasm_prog.instructions[0][1],
+                qasm_prog.instructions[0][2],
+                qasm_prog.instructions[1][1],
+                qasm_prog.instructions[1][2],
+            )
 
         # arrange
         qasm = empty_qasm_program_qcm

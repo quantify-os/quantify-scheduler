@@ -99,7 +99,8 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
 
 class NcoSetClockFrequencyStrategy(IdleStrategy):
     """Strategy for operation that does not produce any output, but rather sets
-    the frequency of the NCO."""
+    the frequency of the NCO.
+    Currently implemented as `set_freq` which is followed by an 8 ns `upd_param`."""
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
@@ -119,6 +120,6 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         )
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
-            constants.GRID_TIME,
+            8,
             comment=f"updating to apply NCO frequency change",
         )

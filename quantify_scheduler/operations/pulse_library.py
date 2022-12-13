@@ -119,18 +119,23 @@ class ResetClockPhase(Operation):
 
 
 class SetClockFrequency(Operation):
-    """An operation that sets the frequency of a clock."""
+    """An operation that sets the frequency of a clock.
+    This is a low-level operation and therefore depends on the backend.
+    Refer to `NcoSetClockFrequencyStrategy` for more details."""
 
-    def __init__(self, clock_frequency: float, clock: str, t0: float = 0):
+    def __init__(self, clock: str, clock_frequency: float, t0: float = 0):
         """
         Create a new instance of SetClockFrequency.
 
         Parameters
         ----------
-        clock_frequency
-            The frequency in Hz.
         clock
             The clock of which to frequency is set.
+        clock_frequency
+            The frequency in Hz.
+        t0
+            Time in seconds when to execute the command relative
+            to the start time of the Operation in the Schedule.
         """
         super().__init__(name="SetClockFrequency")
         self.data.update(

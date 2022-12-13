@@ -15,7 +15,7 @@ from typing import Dict, Any
 import pytest
 import numpy as np
 from qcodes.instrument.parameter import ManualParameter
-from qblox_instruments import ClusterType, PulsarType, DummyScopeAcquisitionData
+from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
@@ -472,9 +472,6 @@ def test_multiple_measurements(
     q0.measure.integration_time(5e-6)
     q1.measure.integration_time(3e-6)
 
-    # Add dummy scope acquisition data
-    add_dummy_scope_data(ic_cluster0.instrument, [(0, 1)] * 3000)
-
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -550,9 +547,6 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     qe0.measure.acq_delay(0)
     qe0.measure.acq_duration(15e-6)
     qe0.measure.pulse_duration(50e-6)
-
-    # Add dummy scope acquisition data
-    add_dummy_scope_data(ic_cluster0.instrument, [(0, 1)] * 15000)
 
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
@@ -960,12 +954,3 @@ def test_mix_lo_flag(
         == 70e6
     )
     instr_coordinator.remove_component("ic_cluster0")
-
-
-def add_dummy_scope_data(instrument, data):
-    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
-        data, (False, False), (0, 0)
-    )
-    instrument.set_dummy_scope_acquisition_data(
-        slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
-    )
