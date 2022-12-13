@@ -15,15 +15,12 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from pydantic import ValidationError
-from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
-from zhinst.toolkit.control import drivers
 
 from quantify_scheduler import Schedule, enums
 from quantify_scheduler.backends import zhinst_backend
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
