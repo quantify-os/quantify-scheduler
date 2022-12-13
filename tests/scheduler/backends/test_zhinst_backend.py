@@ -425,8 +425,6 @@ def test__program_hdawg4_channelgrouping(
     hdawg_device.channelgrouping = channelgrouping
     hdawg_device.clock_rate = int(2.4e9)
 
-    settings_builder = settings.ZISettingsBuilder()
-
     mocker.patch.object(zhinst_backend, "_add_wave_nodes")
     with_sigouts = mocker.patch.object(settings.ZISettingsBuilder, "with_sigouts")
     with_system_channelgrouping = mocker.patch.object(
