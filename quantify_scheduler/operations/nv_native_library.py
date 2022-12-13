@@ -90,9 +90,12 @@ class CRCount(Operation):
             the binning mode used for Measurements in the quantum-circuit to
             quantum-device compilation step.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
 
         # this if else statement a workaround to support multiplexed measurements (#262)
