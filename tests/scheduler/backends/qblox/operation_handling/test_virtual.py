@@ -161,10 +161,12 @@ class TestNcoSetClockFrequencyStrategy:
     def test_generate_qasm_program(
         self,
         frequency: float,
-        expected_instruction: Tuple[str, str],
+        expected_instruction: Tuple[str, str, str, str],
         empty_qasm_program_qcm: QASMProgram,
     ):
-        def extract_instruction_and_args(qasm_prog: QASMProgram) -> Tuple[str, str]:
+        def extract_instruction_and_args(
+            qasm_prog: QASMProgram,
+        ) -> Tuple[str, str, str, str]:
             return (
                 qasm_prog.instructions[0][1],
                 qasm_prog.instructions[0][2],
