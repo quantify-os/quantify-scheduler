@@ -107,7 +107,7 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -236,7 +236,7 @@ class WeightedIntegratedComplex(
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             if "acq_return_type" not in data["acquisition_info"][0]:
                 data["acquisition_info"][0]["acq_return_type"] = complex
@@ -363,7 +363,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             if "acq_return_type" not in data["acquisition_info"][0]:
                 data["acquisition_info"][0]["acq_return_type"] = complex
@@ -482,7 +482,7 @@ class NumericalWeightedIntegrationComplex(
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(
             waveforms_a,

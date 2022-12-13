@@ -6,8 +6,6 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
-from quantify_core.data.handling import set_datadir
-
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,
@@ -17,9 +15,7 @@ from quantify_scheduler.schedules.verification import (
 
 
 @pytest.fixture(scope="module", autouse=False)
-def gen_acquisition_staircase_sched(tmp_test_data_dir):
-
-    set_datadir(tmp_test_data_dir)
+def gen_acquisition_staircase_sched():
     sched_kwargs = {
         "readout_pulse_amps": np.linspace(0, 0.5, 11),
         "readout_pulse_duration": 1e-6,
@@ -98,8 +94,7 @@ def test_acq_staircase_comp_zhinst(
 
 
 @pytest.fixture(scope="module", autouse=False)
-def gen_awg_staircase_sched(tmp_test_data_dir):
-    set_datadir(tmp_test_data_dir)
+def gen_awg_staircase_sched():
 
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
@@ -167,9 +162,7 @@ def test_awg_staircase_comp_zhinst(
 
 
 @pytest.fixture(scope="module", autouse=False)
-def gen_multiplexing_staircase_sched(tmp_test_data_dir):
-    set_datadir(tmp_test_data_dir)
-
+def gen_multiplexing_staircase_sched():
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,

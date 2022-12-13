@@ -1484,6 +1484,7 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
         Assigns frequencies for baseband modules.
         """
+        # ensure to select the top level parent object of the sequencer (pulsar or cluster)
         if self.is_pulsar:
             parent = self.parent
         else:
@@ -1491,8 +1492,10 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         if sequencer.associated_ext_lo is None:
             if sequencer.frequency == 0:
+                # disable the numerically controlled oscillator (nco)
                 sequencer.settings.nco_en = False
             else:
+                # set the nco frequency to the clock frequency, and enable the nco.
                 clock_freq = parent.resources[sequencer.clock]["freq"]
                 sequencer.frequency = clock_freq
                 sequencer.settings.nco_en = True

@@ -241,7 +241,7 @@ def input_name_to_inputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     config.
 
     For the baseband modules, these indices correspond directly to a physical input (
-    e.g. index 0 corresponds to output 1 etc.).
+    e.g. index 0 corresponds to input 1 etc.).
 
     For the RF modules, index 0 corresponds to path0 of input 1 and path 1 of input 1.
 

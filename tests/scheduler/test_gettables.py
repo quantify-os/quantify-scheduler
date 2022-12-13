@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
 
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.device_under_test.mock_setup import set_standard_params_transmon
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
@@ -370,9 +370,13 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
         == 0.0002
     )
     assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
-    assert gettable._compiled_schedule == qcompile(
-        sched, device_cfg=dev_cfg, hardware_cfg=hw_cfg
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
     )
+
+    assert gettable._compiled_schedule == compiled_sched
 
 
 # this is probably useful somewhere, it illustrates the reshaping in the
@@ -423,10 +427,10 @@ def _reshape_array_into_acq_return_type(
     return acquisitions
 
 
-def test_profiling(mock_setup_basic_transmon, tmp_test_data_dir):
-    set_standard_params_transmon(mock_setup_basic_transmon)
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
-    qubit = mock_setup_basic_transmon["q0"]
+def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data_dir):
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup["quantum_device"]
+    qubit = mock_setup["q0"]
 
     schedule_kwargs = {
         "pulse_amp": qubit.measure.pulse_amp(),

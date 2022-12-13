@@ -324,15 +324,14 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             settings.mixer_corr_gain_ratio,
         )
 
-        for output_idx in range(self._hardware_properties.number_of_output_paths):
-            if settings.connected_outputs is None:
-                continue
-            connected: bool = output_idx in settings.connected_outputs
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
-                self._get_channel_map_parameter_name(output_index=output_idx),
-                connected,
-            )
+        if settings.connected_outputs is not None:
+            for output_idx in range(self._hardware_properties.number_of_output_paths):
+                connected: bool = output_idx in settings.connected_outputs
+                self._set_parameter(
+                    self.instrument[f"sequencer{seq_idx}"],
+                    self._get_channel_map_parameter_name(output_index=output_idx),
+                    connected,
+                )
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence

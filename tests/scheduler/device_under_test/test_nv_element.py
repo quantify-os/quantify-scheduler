@@ -89,10 +89,10 @@ def test_generate_config_measure(electronic_q0: BasicElectronicNVElement):
     cfg_measure = dev_cfg.elements["qe0"]["measure"]
 
     # Assert values are in right place
-    assert cfg_measure.factory_kwargs["pulse_amplitude"] == 1.0
-    assert cfg_measure.factory_kwargs["pulse_duration"] == 300e-6
-    assert cfg_measure.factory_kwargs["pulse_port"] == "qe0:optical_control"
-    assert cfg_measure.factory_kwargs["pulse_clock"] == "qe0.ge0"
+    assert cfg_measure.factory_kwargs["pulse_amplitudes"] == [1.0]
+    assert cfg_measure.factory_kwargs["pulse_durations"] == [300e-6]
+    assert cfg_measure.factory_kwargs["pulse_ports"] == ["qe0:optical_control"]
+    assert cfg_measure.factory_kwargs["pulse_clocks"] == ["qe0.ge0"]
     assert cfg_measure.factory_kwargs["acq_duration"] == 287e-6
     assert cfg_measure.factory_kwargs["acq_delay"] == 13e-6
     assert cfg_measure.factory_kwargs["acq_channel"] == 7
@@ -118,6 +118,32 @@ def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
     assert cfg_charge_reset.factory_kwargs["duration"] == 300e-6
     assert cfg_charge_reset.factory_kwargs["port"] == "qe0:optical_control"
     assert cfg_charge_reset.factory_kwargs["clock"] == "qe0.ionization"
+
+
+def test_generate_config_crcount(electronic_q0: BasicElectronicNVElement):
+    """Setting values updates the correct values in the config."""
+    # Set values for CRCount
+    electronic_q0.cr_count.readout_pulse_amplitude(0.2)
+    electronic_q0.cr_count.spinpump_pulse_amplitude(1.6)
+    electronic_q0.cr_count.readout_pulse_duration(10e-9)
+    electronic_q0.cr_count.spinpump_pulse_duration(40e-9)
+    electronic_q0.cr_count.acq_duration(39e-9)
+    electronic_q0.cr_count.acq_delay(1e-9)
+    electronic_q0.cr_count.acq_channel(3)
+
+    # Get device config
+    dev_cfg = electronic_q0.generate_device_config()
+    cfg_crcount = dev_cfg.elements["qe0"]["cr_count"]
+
+    # Assert values are in right place
+    assert cfg_crcount.factory_kwargs["pulse_amplitudes"] == [0.2, 1.6]
+    assert cfg_crcount.factory_kwargs["pulse_durations"] == [10e-9, 40e-9]
+    assert cfg_crcount.factory_kwargs["pulse_ports"] == [
+        "qe0:optical_control" for _ in range(2)
+    ]
+    assert cfg_crcount.factory_kwargs["acq_duration"] == 39e-9
+    assert cfg_crcount.factory_kwargs["acq_delay"] == 1e-9
+    assert cfg_crcount.factory_kwargs["acq_channel"] == 3
 
 
 def test_generate_device_config(electronic_q0: BasicElectronicNVElement):

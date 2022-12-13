@@ -1,7 +1,7 @@
 ## Checklist for a new release
 
 1. [ ] Review `CHANGELOG.md` and `AUTHORS.md` have been updated.  
-1. [ ] Review `@deprecated` and `DeprecationWarnings` that can be cleaned up now.
+1. [ ] Review `@deprecated` and `FutureWarning`s that can be cleaned up now.
 
 1. CI pipeline:
     - [ ] Automated pipeline passes.

@@ -32,27 +32,29 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
-        cls, name: Union[str, InstrumentBase] = DEFAULT_NAME
+        cls, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME
     ) -> base.InstrumentCoordinatorComponentBase:
         """Keeps track of the instances of this class.
 
         NB This is done intentionally to prevent the instances from being garbage
         collected.
         """
-        if isinstance(name, InstrumentBase):
-            instrument = name
+        if isinstance(instrument_reference, InstrumentBase):
+            instrument = instrument_reference
         else:
-            instrument = InstrumentBase(name=name)
+            instrument = InstrumentBase(name=instrument_reference)
 
         instance = super().__new__(cls, instrument)
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def __init__(self, name: Union[str, InstrumentBase] = DEFAULT_NAME) -> None:
-        if isinstance(name, InstrumentBase):
-            instrument = name
+    def __init__(
+        self, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME
+    ) -> None:
+        if isinstance(instrument_reference, InstrumentBase):
+            instrument = instrument_reference
         else:
-            instrument = InstrumentBase(name=name)
+            instrument = InstrumentBase(name=instrument_reference)
 
         super().__init__(instrument)
 

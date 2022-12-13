@@ -6,12 +6,15 @@
 
 
 ### Merged branches and closed issues
-
+- Documentation - Instrument naming requirements in qblox hardware config (!531)
+- Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
+- Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 - NV Centers - `ChargeReset` operation only device compilation so far (!496)
+- NV centers - `CRCount` operation using TriggerCount acquisition; only device compilation so far (!502)
 - QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
@@ -26,6 +29,10 @@
 - Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
 - Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
 - Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
+- Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
+- Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
+- Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
+- Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
 
 ## 0.9.0 (2022-10-06)
 
