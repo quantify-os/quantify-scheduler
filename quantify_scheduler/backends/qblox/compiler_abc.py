@@ -1283,9 +1283,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def _configure_input_gains(self):
         """
-        Configures the input gain of module. Will write a warning to the logger if a value is overwritten.
+        Configures the input gain of module. Will throw ValueError if a value is overwritten.
         """
-        gain_set_flag = False
         in0_gain, in1_gain = None, None
         for io_name in self.static_hw_properties.valid_ios:
             io_mapping = self.hw_mapping.get(io_name, None)
@@ -1300,22 +1299,28 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 in0_gain = io_mapping.get("input_gain0", None)
                 in1_gain = io_mapping.get("input_gain1", None)
 
-            if gain_set_flag and (
-                (in0_gain != self._settings.in0_gain)
-                or (in1_gain != self._settings.in1_gain)
-            ):
-                raise ValueError(
-                    f"Overwriting gain of {io_name} of module {self.name} from in0_gain: {in0_gain} and in1_gain: {in1_gain}."
-                    f"It was previously set to in0_gain: {self._settings.in0_gain} and in1_gain: {self._settings.in1_gain}"
-                )
-
             if in0_gain is not None:
-                gain_set_flag = True
-                self._settings.in0_gain = in0_gain
+                if (
+                    self._settings.in0_gain is None
+                    or in0_gain == self._settings.in0_gain
+                ):
+                    self._settings.in0_gain = in0_gain
+                else:
+                    raise ValueError(
+                        f"Overwriting gain of {io_name} of module {self.name} to in0_gain: {in0_gain} .\n"
+                        f"It was previously set to in0_gain: {self._settings.in0_gain}"
+                    )
             if in1_gain is not None:
-                gain_set_flag = True
-                self._settings.in1_gain = in1_gain
-
+                if (
+                    self._settings.in1_gain is None
+                    or in1_gain == self._settings.in1_gain
+                ):
+                    self._settings.in1_gain = in1_gain
+                else:
+                    raise ValueError(
+                        f"Overwriting gain of {io_name} of module {self.name} to in1_gain: {in1_gain} .\n"
+                        f"It was previously set to in1_gain: {self._settings.in1_gain}"
+                    )
 
     def _configure_mixer_offsets(self):
         """
