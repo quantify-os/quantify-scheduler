@@ -1931,15 +1931,10 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
 def test_acq_protocol_average_mode_valid_assembly_allxy(
     dummy_pulsars,
     compile_config_basic_transmon_qblox_hardware,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
 ):
-    # TODO - qcompile
+
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
-    # compiled_allxy_sched = qcompile(
-    #     sched, load_example_transmon_config, load_example_qblox_hardware_config
-    # )
     compiler = SerialCompiler(name="compiler")
     compiled_allxy_sched = compiler.compile(
         sched, compile_config_basic_transmon_qblox_hardware

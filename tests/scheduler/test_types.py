@@ -311,34 +311,42 @@ def test_t1_sched_pulse_diagram(t1_schedule, device_compile_config_basic_transmo
 @pytest.mark.parametrize("reset_clock_phase", (True, False))
 def test_sched_timing_table(
     reset_clock_phase,
-    load_example_transmon_config,
+    mock_setup_basic_transmon_with_standard_params,
 ):
 
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
     times = [0, 10e-6, 30e-6]
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(X(qubit), label=f"pi {i}")
+        schedule.add(Reset(qubit), label=f"Reset {i}")  # 200e-6
+        schedule.add(X(qubit), label=f"pi {i}")  # 0
+        # wait tau
         schedule.add(
             Measure(qubit),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",
-        )
+        )  # 0.1e-6
 
     with pytest.raises(ValueError):
         _ = schedule.timing_table
-    device_cfg = load_example_transmon_config
-    device_cfg.elements.get("q0").get("measure").factory_kwargs[
-        "reset_clock_phase"
-    ] = reset_clock_phase
-    comp_sched = qcompile(schedule, device_cfg=device_cfg)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    q0 = mock_setup_basic_transmon_with_standard_params["q0"]
+    q0.measure.reset_clock_phase(reset_clock_phase)
+    q0.measure.acq_delay(120e-9)
+    q0.reset.duration(200e-6)
+
+    compilation_config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(schedule=schedule, config=compilation_config)
+
+    # comp_sched = qcompile(schedule, device_cfg=device_cfg)
 
     # will only test that a figure is created and runs without errors
     timing_table = comp_sched.timing_table
+    timing_table = timing_table.data
 
-    assert set(timing_table.data.keys()) == {
+    assert set(timing_table.keys()) == {
         "abs_time",
         "clock",
         "duration",
@@ -350,7 +358,7 @@ def test_sched_timing_table(
     }
 
     expected_len_timing_table_data = 15 if reset_clock_phase else 12
-    assert len(timing_table.data) == expected_len_timing_table_data
+    assert len(timing_table) == expected_len_timing_table_data
 
     if reset_clock_phase:
         desired_timing = np.array(
@@ -360,18 +368,19 @@ def test_sched_timing_table(
                 200e-6,
                 200e-6,
                 200e-6 + 120e-9,  # acq delay
-                200e-6 + 420e-9,
-                400e-6 + 420e-9,
-                410e-6 + 420e-9,
-                410e-6 + 420e-9,
-                410e-6 + 540e-9,
-                410e-6 + 840e-9,
-                610e-6 + 840e-9,
-                640e-6 + 840e-9,
-                640e-6 + 840e-9,
-                640e-6 + 960e-9,
+                200e-6 + 1120e-9,
+                400e-6 + 1120e-9,
+                410e-6 + 1120e-9,
+                410e-6 + 1120e-9,
+                410e-6 + 1240e-9,
+                410e-6 + 2240e-9,
+                610e-6 + 2240e-9,
+                640e-6 + 2240e-9,
+                640e-6 + 2240e-9,
+                640e-6 + 2360e-9,
             ]
         )
+
     else:
         desired_timing = np.array(
             [
@@ -379,18 +388,19 @@ def test_sched_timing_table(
                 200e-6,
                 200e-6,
                 200e-6 + 120e-9,  # acq delay
-                200e-6 + 420e-9,
-                400e-6 + 420e-9,
-                410e-6 + 420e-9,
-                410e-6 + 540e-9,
-                410e-6 + 840e-9,
-                610e-6 + 840e-9,
-                640e-6 + 840e-9,
-                640e-6 + 960e-9,
+                200e-6 + 1120e-9,
+                400e-6 + 1120e-9,
+                410e-6 + 1120e-9,
+                410e-6 + 1240e-9,
+                410e-6 + 2240e-9,
+                610e-6 + 2240e-9,
+                640e-6 + 2240e-9,
+                640e-6 + 2360e-9,
             ]
         )
+
     np.testing.assert_almost_equal(
-        actual=np.array(timing_table.data["abs_time"]),
+        actual=np.array(timing_table["abs_time"]),
         desired=desired_timing,
         decimal=10,
     )
