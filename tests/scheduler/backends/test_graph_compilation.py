@@ -79,12 +79,15 @@ def test_draw_backend():
 
 def test_compile_quantum_device(basic_schedule, mock_setup_basic_transmon):
     """
-    Test if compilation works for a pulse only schedule on a freshly initialized
-    quantum device object to which only a hardware config has been provided.
+    Test if compilation works with a default quantum device
     """
+    backend = SerialCompiler("test_None")
+    with pytest.raises(RuntimeError):
+        backend.compile(schedule=basic_schedule)
+
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    backend = SerialCompiler("test")
-    compiled_sched = backend.compile(schedule=basic_schedule, config=quantum_device)
+    backend = SerialCompiler("test_default", quantum_device=quantum_device)
+    compiled_sched = backend.compile(schedule=basic_schedule)
 
     # Assert that no exception was raised and output is the right type
     assert isinstance(compiled_sched, CompiledSchedule)

@@ -189,7 +189,16 @@ class QuantifyCompiler(CompilationNode):
     compilation passes.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, quantum_device: Optional["QuantumDevice"] = None) -> None:
+        """
+        Parameters
+        ----------
+        name
+            name of the compiler instance
+        quantum_device
+            quantum_device from which a :class:`~.CompilationConfig` will be generated
+            if None is provided for the compile step
+        """
         super().__init__(name=name)
 
         # current implementations use networkx directed graph to store the task graph
@@ -200,9 +209,10 @@ class QuantifyCompiler(CompilationNode):
 
         self._input_node = None
         self._ouput_node = None
+        self.quantum_device = quantum_device
 
     def compile(
-        self, schedule: Schedule, config: Union[CompilationConfig, "QuantumDevice"]
+        self, schedule: Schedule, config: Optional[CompilationConfig] = None
     ) -> CompiledSchedule:
         """
         Compile a :class:`~.Schedule` using the information provided in the config.
@@ -212,7 +222,8 @@ class QuantifyCompiler(CompilationNode):
         schedule
             the schedule to compile.
         config
-            describing the information required to compile the schedule.
+            describing the information required to compile the schedule. If not specified,
+            self.quantum_device will be used to generate the config.
 
         Returns
         -------
@@ -228,29 +239,11 @@ class QuantifyCompiler(CompilationNode):
 
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.
-        config = self._generate_config(config)
+        if config is None:
+            if self.quantum_device is None:
+                raise RuntimeError("Either quantum_device or config must be specified")
+            config = self.quantum_device.generate_compilation_config()
         return self._compilation_func(schedule=schedule, config=config)
-
-    def _generate_config(self, config) -> CompilationConfig:
-        """
-        Generate a `CompilationConfig`
-
-        Parameters
-        ----------
-        config
-            Information required to compile the schedule. Either `CompilationConfig`
-            or a class that implements `generate_compilation_config`.
-
-        Returns
-        -------
-        CompilationConfig:
-            information required to compile the schedule, in a format suitable for the compiler
-        """
-        if hasattr(config, "generate_compilation_config"):
-            config = config.generate_compilation_config()
-        if not isinstance(config, CompilationConfig):
-            raise TypeError
-        return config
 
     @property
     def input_node(self):
