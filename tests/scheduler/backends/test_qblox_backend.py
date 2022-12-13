@@ -1558,6 +1558,7 @@ def test_assign_frequencies_baseband_downconverter(
     downconverter_freq_1,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
+    mock_setup_basic_transmon,
 ):
 
     sched = Schedule("two_gate_experiment")
@@ -1597,6 +1598,7 @@ def test_assign_frequencies_baseband_downconverter(
         "downconverter_freq"
     ] = downconverter_freq_1
     # TODO - qcompile
+
     compiled_schedule = qcompile(sched, device_cfg, hw_mapping_downconverter)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     generic_ic_program = compiled_instructions[constants.GENERIC_IC_COMPONENT_NAME]
@@ -1886,13 +1888,15 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
 
 
 def test_acq_protocol_append_mode_valid_assembly_ssro(
-    dummy_pulsars, load_example_transmon_config, load_example_qblox_hardware_config
+    dummy_pulsars,
+    #  load_example_transmon_config, load_example_qblox_hardware_config
+    compile_config_basic_transmon_qblox_hardware,
 ):
-    # TODO - qcompile
     repetitions = 256
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    compiled_ssro_sched = qcompile(
-        ssro_sched, load_example_transmon_config, load_example_qblox_hardware_config
+    compiler = SerialCompiler(name="compiler")
+    compiled_ssro_sched = compiler.compile(
+        ssro_sched, compile_config_basic_transmon_qblox_hardware
     )
     assembly_valid(
         compiled_schedule=compiled_ssro_sched,
@@ -1933,13 +1937,13 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     # TODO - qcompile
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
-    compiled_allxy_sched = qcompile(
-        sched, load_example_transmon_config, load_example_qblox_hardware_config
-    )
-    # compiler = SerialCompiler(name="compiler")
-    # compiled_allxy_sched = compiler.compile(
-    #     sched, compile_config_basic_transmon_qblox_hardware
+    # compiled_allxy_sched = qcompile(
+    #     sched, load_example_transmon_config, load_example_qblox_hardware_config
     # )
+    compiler = SerialCompiler(name="compiler")
+    compiled_allxy_sched = compiler.compile(
+        sched, compile_config_basic_transmon_qblox_hardware
+    )
 
     assembly_valid(
         compiled_schedule=compiled_allxy_sched,

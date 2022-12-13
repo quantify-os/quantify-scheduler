@@ -387,7 +387,11 @@ def test_dccompensation_pulse_both_params() -> None:
 
 # --------- Test pulse compilation ---------
 def test_dragpulse_motzoi(device_DRAG_pulse):
+    # q0 = mock_setup_basic_transmon['q0']
     q0, device_cfg = device_DRAG_pulse
+    # mock_setup_basic_transmon["quantum_device"].elements["q0"]["Rxy"].factory_kwargs[
+    #     "amp180"
+    # ] = 0.2
     device_cfg.elements["q0"]["Rxy"].factory_kwargs["amp180"] = 0.2
     device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"] = 0.02
 
