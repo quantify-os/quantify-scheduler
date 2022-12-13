@@ -442,7 +442,7 @@ class TestTriggerCountStrategy:
                 "0,R0,0,4",
                 "# Disable TTL acquisition of acq_channel:0, bin_mode:append",
             ],
-            ['', 'add', 'R0,1,R0', '# Increment bin_idx for ch0'],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0"],
         ]
 
 
