@@ -33,7 +33,7 @@
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
-- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, including tests and Q1ASM command.
+- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, including tests and Q1ASM command. (!540)
 
 ## 0.9.0 (2022-10-06)
 

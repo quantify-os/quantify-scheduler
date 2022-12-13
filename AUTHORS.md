@@ -14,6 +14,7 @@
 - David Vos \<<mailto:dvos@qblox.com>>
 - Diogo Valada \<<mailto:dvalada@qblox.com>>
 - Edgar Reehuis \<<mailto:ereehuis@qblox.com>>
+- Fokko de Vries \<<mailto:fdvries@qblox.com>>
 - Gabor Oszkar Denes \<<mailto:gdenes@qblox.com>>
 - Gijs Vermarien \<<mailto:gijs@orangeqs.com>>
 - Jordy Gloudemans \<<mailto:jgloudemans@qblox.com>>
