@@ -10,7 +10,7 @@ from quantify_scheduler.backends.qblox.operation_handling.base import IOperation
 
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import helpers, q1asm_instructions, constants
+from quantify_scheduler.backends.qblox import helpers, q1asm_instructions
 
 
 class IdleStrategy(IOperationStrategy):
