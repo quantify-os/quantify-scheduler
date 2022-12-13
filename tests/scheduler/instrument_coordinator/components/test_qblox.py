@@ -30,8 +30,6 @@ from qblox_instruments import (
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
-ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 # pylint: disable=no-name-in-module
 
 from quantify_scheduler.compilation import qcompile
@@ -730,12 +728,13 @@ def test_retrieve_acquisition_qrm_rf(
     mock_setup_basic_transmon_with_standard_params,
     schedule_with_measurement_q2,
     make_qrm_rf,
+    load_example_qblox_hardware_config,
 ):
     # Arrange
     qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
     compilation_config = mock_setup["quantum_device"].generate_compilation_config()
 
@@ -758,10 +757,11 @@ def test_retrieve_acquisition_cluster(
     make_schedule_with_measurement,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
+    load_example_qblox_hardware_config,
 ):
     mock_setup = mock_setup_basic_transmon_with_standard_params
     q4 = mock_setup["q4"]
-    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     q4.clock_freqs.f01.set(5040000000)
     q4.rxy.amp180(0.2)
     q4.clock_freqs.f12(5.41e9)
