@@ -9,7 +9,7 @@
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
-- Improve parameter documentation for DeviceElements (!493)
+- Documentation - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
