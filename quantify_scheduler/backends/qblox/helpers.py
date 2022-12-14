@@ -406,7 +406,7 @@ def is_multiple_of_grid_time(
     return time_ns % grid_time_ns == 0
 
 
-def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
+def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.
     We take `phase_deg` modulo 360 to account for negative phase and phase larger than
@@ -420,19 +420,49 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     Returns
     -------
     :
-        The three ints corresponding to the phase arguments (coarse, fine, ultra-fine).
+        The int corresponding to the phase argument.
     """
     phase_deg %= 360
+    return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
 
-    phase_coarse = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
 
-    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COARSE
-    phase_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
+def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
+    """
+    Converts a frequency in Hz to the int argument the NCO set_freq instruction expects.
 
-    remaining_phase = remaining_phase % constants.NCO_PHASE_DEG_STEP_FINE
-    phase_ultra_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
+    Parameters
+    ----------
+    frequency_hz
+        The frequency in Hz.
 
-    return phase_coarse, phase_fine, phase_ultra_fine
+    Returns
+    -------
+    :
+        The frequency expressed in steps for the NCO set_freq instruction.
+
+    Raises
+    ------
+    ValueError
+        If the frequency_hz is out of range.
+    """
+
+    frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
+
+    if (
+        frequency_steps < -constants.NCO_FREQ_LIMIT_STEPS
+        or frequency_steps > constants.NCO_FREQ_LIMIT_STEPS
+    ):
+        min_max_frequency_in_hz = (
+            constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ
+        )
+        raise ValueError(
+            f"Attempting to set NCO frequency. "
+            f"The frequency must be between and including "
+            f"-{min_max_frequency_in_hz} Hz and {min_max_frequency_in_hz} Hz. "
+            f"Got {frequency_hz} Hz."
+        )
+
+    return frequency_steps
 
 
 def generate_port_clock_to_device_map(
