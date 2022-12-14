@@ -96,7 +96,7 @@
 - Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 - Docs - Clarify port and clock concepts (!431)
 - Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
-- Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
+- Gettables - Added `generate_diagnostics_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 - Helpers - Moved `MockLocalOscillator` definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 - JSON utilities - Add JSON serialization/deserialization methods based on `__getstate__`/`__setstate__` (!444)
 - Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)
