@@ -10,7 +10,7 @@
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
-- Improve parameter documentation for DeviceElements (!493)
+- Documentation - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
@@ -36,6 +36,7 @@
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 
 ## 0.9.0 (2022-10-06)
 
@@ -97,7 +98,7 @@
 - Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 - Docs - Clarify port and clock concepts (!431)
 - Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
-- Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
+- Gettables - Added `generate_diagnostics_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 - Helpers - Moved `MockLocalOscillator` definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 - JSON utilities - Add JSON serialization/deserialization methods based on `__getstate__`/`__setstate__` (!444)
 - Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)

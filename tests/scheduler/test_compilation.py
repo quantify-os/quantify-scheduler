@@ -12,7 +12,6 @@ from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
     qcompile,
-    validate_config,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy

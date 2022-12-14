@@ -9,9 +9,8 @@ import numpy as np
 import pytest
 from quantify_core.data.handling import set_datadir
 
-from quantify_scheduler.compilation import determine_absolute_timing, qcompile
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules import timedomain_schedules as ts
-from quantify_scheduler.schemas.examples import utils
 
 from .compiles_all_backends import _CompilesAllBackends
 

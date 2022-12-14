@@ -2,30 +2,17 @@
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
 import logging
-import warnings
 from copy import deepcopy
 from typing import Literal, Optional, Union
+
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
     SerialCompilationConfig,
 )
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.json_utils import load_json_schema, validate_json
-from quantify_scheduler.operations.acquisition_library import (
-    SSBIntegrationComplex,
-    Trace,
-)
-from quantify_scheduler.operations.pulse_library import (
-    DRAGPulse,
-    IdlePulse,
-    SoftSquarePulse,
-    SquarePulse,
-    ResetClockPhase,
-)
-from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)

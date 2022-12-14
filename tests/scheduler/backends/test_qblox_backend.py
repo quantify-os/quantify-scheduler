@@ -45,13 +45,9 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 
-# from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
-    QrmModule,
-    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
