@@ -247,7 +247,6 @@ autoapi_options = [
     "private-members",
     "show-inheritance",
     "show-module-summary",
-    # "special-members",
     # Including `important-members` displays the description of class aliases in the
     # docs, however, it causes sphinx to raise multiple warnings about finding
     # multiple targets for cross-references.
