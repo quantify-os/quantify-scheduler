@@ -11,7 +11,6 @@ from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
-    qcompile,
     validate_config,
 )
 from quantify_scheduler.backends import SerialCompiler
@@ -103,32 +102,40 @@ def test_missing_ref_op():
         sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
 
 
-def test_compile_transmon_program(load_example_transmon_config):
+def test_compile_transmon_program(
+    load_example_transmon_config, mock_setup_basic_transmon
+):
     sched = Schedule("Test schedule")
 
     # define the resources
     # q0, q1 = Qubits(n=2) # assumes all to all connectivity
-    q0, q1 = ("q0", "q1")
-    sched.add(Reset(q0, q1))
+    q0, q2 = ("q0", "q2")
+    sched.add(Reset(q0, q2))
     sched.add(Rxy(90, 0, qubit=q0))
-    sched.add(operation=CZ(qC=q0, qT=q1))
+    sched.add(operation=CZ(qC=q0, qT=q2))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
-    sched.add(Measure(q0, q1), label="M0")
-    qcompile(sched, device_cfg=load_example_transmon_config)
+    sched.add(Measure(q0, q2), label="M0")
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    )
 
 
-def test_missing_edge(load_example_transmon_config):
+def test_missing_edge(load_example_transmon_config, mock_setup_basic_transmon):
     sched = Schedule("Bad edge")
-    bad_cfg = load_example_transmon_config
-    bad_cfg.edges = {}
-
-    q0, q1 = ("q0", "q1")
-    sched.add(operation=CZ(qC=q0, qT=q1))
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.remove_edge("q0_q2")
+    q0, q2 = ("q0", "q2")
+    sched.add(operation=CZ(qC=q0, qT=q2))
     with pytest.raises(
         ConfigKeyError,
-        match=('edge "q0_q1" is not present in the configuration file'),
+        match=('edge "q0_q2" is not present in the configuration file'),
     ):
-        qcompile(sched, device_cfg=bad_cfg)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            sched,
+            quantum_device.generate_compilation_config(),
+        )
 
 
 def test_empty_sched():
