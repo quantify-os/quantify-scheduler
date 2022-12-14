@@ -64,7 +64,6 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
-    qcompile,
 )
 
 from quantify_scheduler.operations.acquisition_library import Trace
@@ -1551,24 +1550,26 @@ def test_assign_frequencies_baseband(
 
 
 @pytest.mark.parametrize(
-    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (9e9, 6e9)]
+    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (9e9, 9e9)]
 )
 def test_assign_frequencies_baseband_downconverter(
     downconverter_freq_0,
     downconverter_freq_1,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
 ):
 
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q1"))
 
-    device_cfg = load_example_transmon_config
-    q0_clock_freq = device_cfg.clocks["q0.01"]
-    q1_clock_freq = device_cfg.clocks["q1.01"]
-
+    q0_clock_freq = mock_setup_basic_transmon_with_standard_params[
+        "q0"
+    ].clock_freqs.f01()
+    a = q0_clock_freq
+    q1_clock_freq = mock_setup_basic_transmon_with_standard_params[
+        "q1"
+    ].clock_freqs.f01()
     hardware_cfg = load_example_qblox_hardware_config
     if0 = hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0].get(
         "interm_freq"
@@ -1597,9 +1598,12 @@ def test_assign_frequencies_baseband_downconverter(
     hw_mapping_downconverter["qcm0"]["complex_output_1"][
         "downconverter_freq"
     ] = downconverter_freq_1
-    # TODO - qcompile
 
-    compiled_schedule = qcompile(sched, device_cfg, hw_mapping_downconverter)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hw_mapping_downconverter)
+    config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(sched, config=config)
     compiled_instructions = compiled_schedule["compiled_instructions"]
     generic_ic_program = compiled_instructions[constants.GENERIC_IC_COMPONENT_NAME]
     qcm_program = compiled_instructions["qcm0"]
