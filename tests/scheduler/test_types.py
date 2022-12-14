@@ -17,7 +17,6 @@ from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
     Schedule,
 )
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
@@ -339,8 +338,6 @@ def test_sched_timing_table(
     compilation_config = quantum_device.generate_compilation_config()
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(schedule=schedule, config=compilation_config)
-
-    # comp_sched = qcompile(schedule, device_cfg=device_cfg)
 
     # will only test that a figure is created and runs without errors
     timing_table = comp_sched.timing_table
