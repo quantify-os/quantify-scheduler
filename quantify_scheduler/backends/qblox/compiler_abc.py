@@ -1283,7 +1283,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def _configure_input_gains(self):
         """
-        Configures the input gain of module. Will throw ValueError if a value is overwritten.
+        Configures input gain of module settings.
+        Loops through all valid ios and checks for gain values in hw config.
+        Throws a ValueError if a gain value gets overriden.
         """
         in0_gain, in1_gain = None, None
         for io_name in self.static_hw_properties.valid_ios:
@@ -1324,7 +1326,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def _configure_mixer_offsets(self):
         """
-        Configures offset of input, uses calc_from_units_volt.
+        Configures offset of input, uses calc_from_units_volt found in helper file.
         Raises an exception if a value outside the accepted voltage range is given.
         """
         supported_outputs = ("complex_output_0", "complex_output_1")

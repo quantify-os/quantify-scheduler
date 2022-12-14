@@ -659,7 +659,8 @@ def calc_from_units_volt(
     voltage_range, name: str, param_name: str, cfg: Dict[str, Any]
 ) -> Optional[float]:
     """
-    Helper method to
+    Helper method to calculate the offset from mV or V.
+    Then compares to given voltage range, and throws a ValueError if out of bounds.
 
     Parameters
     ----------
