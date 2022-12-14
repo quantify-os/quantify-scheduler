@@ -23,11 +23,11 @@ from quantify_scheduler.operations.pulse_library import (
     NumericalPulse,
     decompose_long_square_pulse,
 )
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.device_under_test.transmon_element import (
     BasicTransmonElement,
 )
-from quantify_scheduler.compilation import qcompile
 
 
 # --------- Test fixtures ---------
@@ -386,22 +386,20 @@ def test_dccompensation_pulse_both_params() -> None:
 
 
 # --------- Test pulse compilation ---------
-def test_dragpulse_motzoi(device_DRAG_pulse):
-    # q0 = mock_setup_basic_transmon['q0']
-    q0, device_cfg = device_DRAG_pulse
-    # mock_setup_basic_transmon["quantum_device"].elements["q0"]["Rxy"].factory_kwargs[
-    #     "amp180"
-    # ] = 0.2
-    device_cfg.elements["q0"]["Rxy"].factory_kwargs["amp180"] = 0.2
-    device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"] = 0.02
+def test_dragpulse_motzoi(mock_setup_basic_transmon):
+
+    mock_setup_basic_transmon["q0"].rxy.amp180(0.2)
+    mock_setup_basic_transmon["q0"].rxy.motzoi(0.02)
 
     sched = Schedule("Test DRAG Pulse")
     sched.add(X("q0"))
-
-    compiled_sched = qcompile(sched, device_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    )
     for op, op_info in compiled_sched.operations.items():
         D_amp = op_info.data["pulse_info"][0].get("D_amp")
 
     assert (
-        D_amp == device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"]
+        D_amp == mock_setup_basic_transmon["q0"].rxy.motzoi()
     ), "The amplification of the derivative DRAG pulse is not equal to the motzoi parameter"
