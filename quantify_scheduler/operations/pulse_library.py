@@ -32,9 +32,8 @@ class ShiftClockPhase(Operation):
         clock
             The clock of which to shift the phase.
         t0
-            Time in seconds when to start the pulses relative
-            to the start time
-            of the Operation in the Schedule.
+            Time in seconds when to execute the command relative
+            to the start time of the Operation in the Schedule.
         data
             The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
