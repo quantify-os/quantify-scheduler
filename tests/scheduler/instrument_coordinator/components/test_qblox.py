@@ -31,8 +31,6 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 # pylint: disable=no-name-in-module
-
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
@@ -412,16 +410,12 @@ def test_prepare_qcm_qrm(
     qrm0.force_set_parameters(force_set_parameters)
     qrm2.force_set_parameters(force_set_parameters)
 
-    # quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    # quantum_device.hardware_config(hardware_cfg)
-    # config = quantum_device.generate_compilation_config()
-    # compiler = SerialCompiler(name="compiler")
-    # compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
-    compiled_schedule = qcompile(
-        schedule_with_measurement,
-        load_example_transmon_config,
-        hardware_cfg,
-    )
+    mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
     prog = compiled_schedule["compiled_instructions"]
 
     qcm0.prepare(prog[qcm0.instrument.name])
@@ -694,19 +688,22 @@ def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm_component):
 
 def test_retrieve_acquisition_qrm(
     schedule_with_measurement,
-    load_example_transmon_config,
+    # load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qrm_component,
+    mock_setup_basic_transmon_with_standard_params,
 ):
     # Arrange
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
 
     # Act
-    compiled_schedule = qcompile(
-        schedule_with_measurement,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
-    )
+    mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
+    hardware_cfg = load_example_qblox_hardware_config
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
 
@@ -793,6 +790,7 @@ def test_start_qcm_qrm(
     schedule_with_measurement,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
+    mock_setup_basic_transmon_with_standard_params,
     make_qcm_component,
     make_qrm_component,
 ):
@@ -800,12 +798,13 @@ def test_start_qcm_qrm(
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
 
-    compiled_schedule = qcompile(
-        schedule_with_measurement,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
-    )
-
+    mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
+    hardware_cfg = load_example_qblox_hardware_config
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
     prog = compiled_schedule["compiled_instructions"]
 
     qcm.prepare(prog["qcm0"])
