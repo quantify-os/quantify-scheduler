@@ -99,7 +99,7 @@ class Rxy(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -143,7 +143,7 @@ class X(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=180, phi=0, qubit=qubit, data=data)
         self.data["name"] = f"X {qubit}"
@@ -188,7 +188,7 @@ class X90(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=90.0, phi=0.0, qubit=qubit, data=data)
         self.qubit = qubit
@@ -237,7 +237,7 @@ class Y(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=180.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y {qubit}"
@@ -286,7 +286,7 @@ class Y90(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=90.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y_90 {qubit}"
@@ -368,7 +368,7 @@ class CNOT(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -441,7 +441,7 @@ class CZ(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -516,7 +516,7 @@ class Reset(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -611,7 +611,7 @@ class Measure(Operation):
                     "and should be set in the device layer. See `BasicTransmonElement.measure.acq_channel`"
                     "for more info on how to set it. This keyword argument will be removed in "
                     "quantify-scheduler >= 0.12.0.",
-                    DeprecationWarning,
+                    FutureWarning,
                 )
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
@@ -639,7 +639,7 @@ class Measure(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 

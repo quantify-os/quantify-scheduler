@@ -19,9 +19,6 @@ from .compiles_all_backends import _CompilesAllBackends
 tmp_dir = tempfile.TemporaryDirectory()
 
 # FIXME classmethods cannot use fixtures, these test are mixing testing style # pylint: disable=fixme
-DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
-
-
 class TestRabiPulse(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):

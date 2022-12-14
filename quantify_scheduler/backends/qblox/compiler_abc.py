@@ -283,7 +283,8 @@ class Sequencer:
         index: int,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
-        connected_outputs: Union[Tuple[int], Tuple[int, int]],
+        connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
+        connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         seq_settings: Dict[str, Any],
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
@@ -335,7 +336,9 @@ class Sequencer:
         )
 
         self._settings = SequencerSettings.initialize_from_config_dict(
-            seq_settings=seq_settings, connected_outputs=connected_outputs
+            seq_settings=seq_settings,
+            connected_outputs=connected_outputs,
+            connected_inputs=connected_inputs,
         )
 
         self.qasm_hook_func: Optional[Callable] = seq_settings.get(
@@ -349,7 +352,7 @@ class Sequencer:
         """Latency correction accounted for by delaying the start of the program."""
 
     @property
-    def connected_outputs(self) -> Union[Tuple[int], Tuple[int, int]]:
+    def connected_outputs(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
         """
         The indices of the output paths that this sequencer is producing awg
         data for.
@@ -363,14 +366,30 @@ class Sequencer:
         return self._settings.connected_outputs
 
     @property
-    def output_mode(self) -> Literal["complex", "real", "imag"]:
+    def connected_inputs(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
+        """
+        The indices of the input paths that this sequencer is collecting
+        data for.
+
+        For the baseband modules, these indices correspond directly to a physical input
+        (e.g. index 0 corresponds to output 1 etc.).
+
+        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of input 1.
+        """
+        return self._settings.connected_inputs
+
+    @property
+    def io_mode(self) -> Literal["complex", "real", "imag"]:
         """
         Specifies whether the sequencer is using only path0 (real), path1 (imag) or
         both (complex).
 
         If real or imag, the sequencer is restricted to only using real valued data.
         """
-        return helpers.output_mode_from_outputs(self._settings.connected_outputs)
+        if self._settings.connected_outputs is not None:
+            return helpers.io_mode_from_ios(self._settings.connected_outputs)
+        else:
+            return helpers.io_mode_from_ios(self._settings.connected_inputs)
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -578,7 +597,6 @@ class Sequencer:
         # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-
             # Some sanity checks on the input for easier debugging.
             if min(acq_indices) != 0:
                 raise ValueError(
@@ -1067,7 +1085,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
-        portclock_output_map: Dict[Tuple, str] = {}
+        portclock_io_map: Dict[Tuple, str] = {}
 
         for io, io_cfg in self.hw_mapping.items():
             if not isinstance(io_cfg, dict):
@@ -1097,6 +1115,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                 if portclock in self._portclocks_with_data:
                     connected_outputs = helpers.output_name_to_outputs(io)
+                    connected_inputs = helpers.input_name_to_inputs(io)
                     seq_idx = len(sequencers)
                     new_seq = Sequencer(
                         parent=self,
@@ -1104,6 +1123,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         portclock=portclock,
                         static_hw_properties=updated_static_hw_properties,
                         connected_outputs=connected_outputs,
+                        connected_inputs=connected_inputs,
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
@@ -1112,16 +1132,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     )
                     sequencers[new_seq.name] = new_seq
 
-                    # Check if the portclock was not multiply specified
-                    if portclock in portclock_output_map:
+                    # Check if the portclock was not multiply specified, which is not allowed
+                    if portclock in portclock_io_map:
                         raise ValueError(
                             f"Portclock {portclock} was assigned to multiple "
                             f"portclock_configs of {self.name}. This portclock was "
-                            f"used in output '{io}' despite being already previously "
-                            f"used in output '{portclock_output_map[portclock]}'."
+                            f"used in io '{io}' despite being already previously "
+                            f"used in io '{portclock_io_map[portclock]}'. When using "
+                            f"the same portclock for output and input, assigning only "
+                            f"the output suffices."
                         )
 
-                    portclock_output_map[portclock] = io
+                    portclock_io_map[portclock] = io
 
         # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
@@ -1153,19 +1175,19 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock or (
                     portclock[0] is None and portclock[1] == seq.clock
                 ):
-                    partial_func = partial(
+                    op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
                         instruction_generated_pulses_enabled=instr_gen_pulses,
-                        output_mode=seq.output_mode,
+                        io_mode=seq.io_mode,
                     )
-                    func_map = map(
-                        partial_func,
+                    strategies_for_pulses = map(
+                        op_info_to_op_strategy_func,
                         pulse_data_list,
                     )
                     if seq.pulses is None:
                         seq.pulses = []
 
-                    for pulse_strategy in func_map:
+                    for pulse_strategy in strategies_for_pulses:
                         seq.pulses.append(pulse_strategy)
 
         for portclock, acq_data_list in self._acquisitions.items():
@@ -1175,7 +1197,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     partial_func = partial(
                         get_operation_strategy,
                         instruction_generated_pulses_enabled=instr_gen_pulses,
-                        output_mode=seq.output_mode,
+                        io_mode=seq.io_mode,
                     )
                     func_map = map(
                         partial_func,
@@ -1187,14 +1209,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def assign_frequencies(self, sequencer: Sequencer):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
-        to each sequencer, or an LO frequency to each output (if applicable).
-        For each sequencer, the following relation is obeyed:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
+        to each sequencer, and an LO frequency to each output (if applicable).
 
-        In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown. If the frequency
-        is overconstraint (i.e. multiple values are somehow specified) an error is
-        thrown during assignment.
+        What is executed depends on the mix_lo boolean.
 
         Raises
         ------
@@ -1498,10 +1515,23 @@ class QbloxBasebandModule(QbloxBaseModule):
         """
         Assigns frequencies for baseband modules.
         """
+        # ensure to select the top level parent object of the sequencer (pulsar or cluster)
         if self.is_pulsar:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent)
+            parent = self.parent
         else:
-            self.assign_frequency_with_ext_lo(sequencer, self.parent.parent)
+            parent = self.parent.parent
+
+        if sequencer.associated_ext_lo is None:
+            if sequencer.frequency == 0:
+                # disable the numerically controlled oscillator (nco)
+                sequencer.settings.nco_en = False
+            else:
+                # set the nco frequency to the clock frequency, and enable the nco.
+                clock_freq = parent.resources[sequencer.clock]["freq"]
+                sequencer.frequency = clock_freq
+                sequencer.settings.nco_en = True
+        else:
+            self.assign_frequency_with_ext_lo(sequencer, parent)
 
     @staticmethod
     def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
@@ -1536,13 +1566,10 @@ class QbloxBasebandModule(QbloxBaseModule):
         lo_compiler = container.instrument_compilers.get(
             sequencer.associated_ext_lo, None
         )
-        if lo_compiler is None:
-            sequencer.frequency = clock_freq
-            return
 
         if not sequencer.mix_lo:
             lo_compiler.frequency = clock_freq
-            sequencer.settings.nco_en = True
+            sequencer.settings.nco_en = sequencer.frequency != 0
             return
 
         if_freq = sequencer.frequency
@@ -1619,7 +1646,7 @@ class QbloxRFModule(QbloxBaseModule):
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        self._validate_output_mode(sequencer)
+        self._validate_io_mode(sequencer)
         for real_output in sequencer.connected_outputs:
             if real_output % 2 != 0:
                 # We will only use real output 0 and 2,
@@ -1677,8 +1704,8 @@ class QbloxRFModule(QbloxBaseModule):
         )
 
     @classmethod
-    def _validate_output_mode(cls, sequencer: Sequencer):
-        if sequencer.output_mode != "complex":
+    def _validate_io_mode(cls, sequencer: Sequencer):
+        if sequencer.io_mode != "complex":
             raise ValueError(
                 f"Attempting to use {cls.__name__} in real "
                 f"mode, but this is not supported for Qblox RF modules."

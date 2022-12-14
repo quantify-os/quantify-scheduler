@@ -109,6 +109,8 @@ class _StaticHardwareProperties:
     """The number of sequencers the hardware has available."""
     number_of_output_paths: int
     """The number of output paths that can be used."""
+    number_of_input_paths: int
+    """"The number of input paths that can be used."""
 
 
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
@@ -116,24 +118,28 @@ _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
+    number_of_input_paths=0,
 )
 _QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
+    number_of_input_paths=2,
 )
 _QCM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_paths=4,
+    number_of_input_paths=0,
 )
 _QRM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_paths=2,
+    number_of_input_paths=2,
 )
 
 
@@ -318,13 +324,14 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             settings.mixer_corr_gain_ratio,
         )
 
-        for output_idx in range(self._hardware_properties.number_of_output_paths):
-            connected: bool = output_idx in settings.connected_outputs
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
-                self._get_channel_map_parameter_name(output_index=output_idx),
-                connected,
-            )
+        if settings.connected_outputs is not None:
+            for output_idx in range(self._hardware_properties.number_of_output_paths):
+                connected: bool = output_idx in settings.connected_outputs
+                self._set_parameter(
+                    self.instrument[f"sequencer{seq_idx}"],
+                    self._get_channel_map_parameter_name(output_index=output_idx),
+                    connected,
+                )
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
