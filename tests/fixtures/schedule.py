@@ -20,7 +20,6 @@ from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfi
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import (
     device_compile,
-    qcompile,
 )
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
