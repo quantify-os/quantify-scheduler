@@ -25,7 +25,7 @@ from qblox_instruments import Pulsar, PulsarType
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
-
+from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import (
@@ -881,6 +881,15 @@ def test_compile_no_device_cfg(
     assert "play" in wf_and_prog["program"]
 
 
+def test_qcompile_no_device_cfg(load_example_qblox_hardware_config):
+    sched = Schedule("One pulse schedule")
+    sched.add_resources([ClockResource("q0.01", 3.1e9)])
+    sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
+    compiled_schedule = qcompile(sched, hardware_cfg=load_example_qblox_hardware_config)
+    wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
+    assert "play" in wf_and_prog["program"]
+
+
 def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed,
     hardware_cfg_multiplexing,
@@ -1007,6 +1016,28 @@ def test_compile_simple_with_acq(
     full_program = compiler.compile(
         mixed_schedule_with_acquisition,
         config=compile_config_basic_transmon_qblox_hardware,
+    )
+
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
+
+    qcm0 = dummy_pulsars["qcm0"]
+    qcm0.sequencer0.sequence(qcm0_seq0_json)
+    qcm0.arm_sequencer(0)
+    uploaded_waveforms = qcm0.get_waveforms(0)
+    assert uploaded_waveforms is not None
+
+
+def test_qcompile_simple_with_acq(
+    dummy_pulsars,
+    mixed_schedule_with_acquisition,
+    load_example_transmon_config,
+    load_example_qblox_hardware_config,
+):
+
+    full_program = qcompile(
+        schedule=mixed_schedule_with_acquisition,
+        device_cfg=load_example_transmon_config,
+        hardware_cfg=load_example_qblox_hardware_config,
     )
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
