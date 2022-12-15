@@ -140,7 +140,7 @@ def test__repr__(operation: Operation) -> None:
 
 def test_deprecated__repr__() -> None:
     """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.12.0."""
+    quantify-scheduler >= 0.13.0."""
     with pytest.warns(FutureWarning):
         is__repr__equal(Measure("q0", "q6", acq_channel=4))
 
@@ -170,7 +170,7 @@ def test__str__(operation: Operation) -> None:
 
 def test_deprecated__str__() -> None:
     """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.12.0."""
+    quantify-scheduler >= 0.13.0."""
     with pytest.warns(FutureWarning):
         is__str__equal(Measure("q0", "q6", acq_channel=4))
 
@@ -223,7 +223,7 @@ def test_deserialize(operation: Operation) -> None:
 
 def test_deprecated_deserialize() -> None:
     """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.12.0."""
+    quantify-scheduler >= 0.13.0."""
     # Arrange
     with pytest.warns(FutureWarning):
         operation = Measure("q0", "q6", acq_channel=4)
@@ -288,7 +288,7 @@ def test__repr__modify_not_equal(operation: Operation) -> None:
 
 def test_deprecated__repr__modify_not_equal() -> None:
     """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.12.0."""
+    quantify-scheduler >= 0.13.0."""
     # Arrange
     with pytest.warns(FutureWarning):
         operation = Measure("q0", "q6", acq_channel=4)
