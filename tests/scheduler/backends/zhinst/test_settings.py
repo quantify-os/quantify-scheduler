@@ -18,7 +18,6 @@ from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.schedules.verification import awg_staircase_sched
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:
