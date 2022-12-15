@@ -4,7 +4,7 @@
 
 ### Breaking changes
 
-- Deprecation - `add_pulse_information_transmon` is removed and `device_config` must now be of type `DeviceCompilationConfig` 
+- Deprecation - `add_pulse_information_transmon` is removed and `device_config` must now be of type `DeviceCompilationConfig` (!526)
 - Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
 - Qblox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Qblox backend - `QRMAcquisitionManager` now truncates returned acquisitions to actual lengths (!478)
