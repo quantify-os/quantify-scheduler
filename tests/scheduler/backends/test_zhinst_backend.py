@@ -18,6 +18,7 @@ from pydantic import ValidationError
 
 from quantify_scheduler import Schedule, enums
 from quantify_scheduler.backends import zhinst_backend, SerialCompiler
+from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
@@ -27,6 +28,18 @@ from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
+from .graph_backends.standard_schedules import (
+    single_qubit_schedule_circuit_level,
+    two_qubit_t1_schedule,
+    two_qubit_schedule_with_edge,
+    pulse_only_schedule,
+    parametrized_operation_schedule,
+    hybrid_schedule_rabi,
+)
+
 
 ARRAY_DECIMAL_PRECISION = 16
 
@@ -1196,3 +1209,55 @@ def test_too_long_acquisition_raises_readable_exception(
 
     # assert that the number of samples we are trying to set is in the exception message
     assert "4320 samples" in str(exc_info.value)
+
+
+def test_qcompile_empty_device(load_example_zhinst_hardware_config):
+    """
+    Test if compilation works for a pulse only schedule on a freshly initialized
+    quantum device object to which only a hardware config has been provided.
+    """
+
+    sched = pulse_only_schedule()
+
+    quantum_device = QuantumDevice(name="empty_quantum_device")
+
+    comp_sched = qcompile(
+        schedule=sched, hardware_cfg=load_example_zhinst_hardware_config
+    )
+
+    # Assert that no exception was raised and output is the right type.
+    assert isinstance(comp_sched, CompiledSchedule)
+
+    # this will fail if no hardware_config was specified
+    assert len(comp_sched.compiled_instructions) > 0
+
+    quantum_device.close()  # need to clean up nicely after the test
+
+
+@pytest.mark.parametrize(
+    "schedule",
+    [
+        single_qubit_schedule_circuit_level(),
+        # two_qubit_t1_schedule(),
+        # two_qubit_schedule_with_edge(),
+        pulse_only_schedule(),
+        parametrized_operation_schedule(),
+        hybrid_schedule_rabi(),
+    ],
+)
+def test_compiles_standard_schedules(
+    schedule: Schedule,
+    load_example_transmon_config,
+    load_example_zhinst_hardware_config,
+):
+    """
+    Test if a set of standard schedules compile correctly on this backend.
+    """
+    comp_sched = qcompile(
+        schedule=schedule,
+        device_cfg=load_example_transmon_config,
+        hardware_cfg=load_example_zhinst_hardware_config,
+    )
+
+    # Assert that no exception was raised and output is the right type.
+    assert isinstance(comp_sched, CompiledSchedule)
