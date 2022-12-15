@@ -1566,7 +1566,6 @@ def test_assign_frequencies_baseband_downconverter(
     q0_clock_freq = mock_setup_basic_transmon_with_standard_params[
         "q0"
     ].clock_freqs.f01()
-    a = q0_clock_freq
     q1_clock_freq = mock_setup_basic_transmon_with_standard_params[
         "q1"
     ].clock_freqs.f01()
