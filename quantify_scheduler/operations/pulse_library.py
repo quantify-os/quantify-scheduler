@@ -1136,22 +1136,33 @@ class SkewedHermitePulse(Operation):
         """
 
         if data is None:
-            data = {
-                "name": "hermite",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
-                        "duration": duration,
-                        "amplitude": amplitude,
-                        "skewness": skewness,
-                        "phase": phase,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="hermite")
+            self.data.update(
+                {
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
+                            "duration": duration,
+                            "amplitude": amplitude,
+                            "skewness": skewness,
+                            "phase": phase,
+                            "clock": clock,
+                            "port": port,
+                            "t0": t0,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]

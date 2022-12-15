@@ -36,7 +36,7 @@
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
-
+- Deprecation - Remove code and test dependencies on deprecated `data` keyword in `Operations` (!545, #381)
 ## 0.9.0 (2022-10-06)
 
 ### Breaking changes

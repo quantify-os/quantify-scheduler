@@ -673,12 +673,11 @@ class Measure(Operation):
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
         qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
-        acq_channel = gate_info["acq_channel"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
-            f"acq_channel={acq_channel}, acq_index={acq_index}, "
-            f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)})'
+            f'acq_index={acq_index}, acq_protocol="{acq_protocol}", '
+            f"bin_mode={str(bin_mode)})"
         )
