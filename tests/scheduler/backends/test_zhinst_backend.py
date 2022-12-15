@@ -27,7 +27,6 @@ from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.resources import ClockResource
 
@@ -897,8 +896,6 @@ def test_compile_backend_with_undefined_local_oscillator(
     schedule.add(X90(q0))
     # no measure to keep it simple
 
-    # device_cfg = load_json_example_scheme("transmon_test_config.json")
-
     hardware_cfg_str = """
     {
         "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
@@ -949,7 +946,6 @@ def test_compile_backend_with_duplicate_local_oscillator(
     schedule = Schedule("test")
     schedule.add(Reset(q0))
     schedule.add(X90(q0))
-    # device_cfg = load_json_example_scheme("transmon_test_config.json")
 
     hardware_cfg_str = """
     {

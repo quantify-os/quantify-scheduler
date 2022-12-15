@@ -12,7 +12,6 @@
 import logging
 from copy import deepcopy
 from operator import countOf
-from quantify_scheduler.schemas.examples import utils
 from typing import List, Optional
 from quantify_scheduler.backends import SerialCompiler
 

@@ -34,7 +34,6 @@ from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 @pytest.fixture(scope="module", autouse=False)
