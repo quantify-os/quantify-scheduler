@@ -79,6 +79,8 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
 
 from tests.fixtures.mock_setup import close_instruments
 
@@ -871,7 +873,7 @@ def test_compile_no_device_cfg(
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = QuantumDevice(name="Empty Device")
     quantum_device.hardware_config(load_example_qblox_hardware_config)
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(

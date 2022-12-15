@@ -16,12 +16,10 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from quantify_scheduler import Schedule, enums
+from quantify_scheduler import Schedule, enums, CompiledSchedule
 from quantify_scheduler.backends import zhinst_backend, SerialCompiler
-from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
-from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
@@ -33,8 +31,6 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 from .graph_backends.standard_schedules import (
     single_qubit_schedule_circuit_level,
-    two_qubit_t1_schedule,
-    two_qubit_schedule_with_edge,
     pulse_only_schedule,
     parametrized_operation_schedule,
     hybrid_schedule_rabi,
