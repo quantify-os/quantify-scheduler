@@ -4,15 +4,14 @@
 
 ### Breaking changes
 
-- Deprecated methods removed:
-
+- Deprecation - `add_pulse_information_transmon` is removed and `device_config` must now be of type `DeviceCompilationConfig` 
 - Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
 - Qblox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Qblox backend - `QRMAcquisitionManager` now truncates returned acquisitions to actual lengths (!478)
 - Qblox backend - `mix_lo` flag now specifies if IQ mixing should be applied to LO (!482)
+- Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 
 ### Merged branches and closed issues
-- Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
@@ -28,7 +27,6 @@
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 - NV centers - `ChargeReset` operation only device compilation so far (!496)
 - NV centers - `CRCount` operation using TriggerCount acquisition; only device compilation so far (!502)
-- Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
 - Qblox backend - Minor adjustments to `NcoPhaseShiftStrategy` to make compilation of `ShiftClockPhase` compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
@@ -36,6 +34,7 @@
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
 - Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
+- Tests - Tests refactoring, move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 - Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517) 
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 
