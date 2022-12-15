@@ -3,7 +3,6 @@
 """Schedule helper functions."""
 from __future__ import annotations
 
-import warnings
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
@@ -34,12 +33,7 @@ def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> in
     :
         The uuid hash.
     """
-    warnings.warn(
-        "`get_pulse_uuid` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     if excludes is None:
         excludes = ["t0"]
 
@@ -60,12 +54,7 @@ def get_acq_uuid(acq_info: Dict[str, Any]) -> int:
     :
         The uuid hash.
     """
-    warnings.warn(
-        "`get_acq_uuid` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     return make_hash(without(acq_info, ["t0", "waveforms"]))
 
 
@@ -83,12 +72,7 @@ def get_total_duration(schedule: CompiledSchedule) -> float:
     :
         Duration in seconds.
     """
-    warnings.warn(
-        "`get_total_duration` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     if len(schedule.schedulables) == 0:
         return 0.0
 
@@ -128,12 +112,7 @@ def get_operation_start(
     :
         The Operation start time in Seconds.
     """
-    warnings.warn(
-        "`get_operation_start` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     if len(schedule.schedulables) == 0:
         return 0.0
 
@@ -178,12 +157,7 @@ def get_operation_end(
     :
         The Operation end time in Seconds.
     """
-    warnings.warn(
-        "`get_operation_end` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     if len(schedule.schedulables) == 0:
         return 0.0
 
@@ -217,12 +191,7 @@ def get_port_timeline(
     schedule
         The schedule.
     """
-    warnings.warn(
-        "`get_port_timeline` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     port_timeline_dict: Dict[str, Dict[int, List[int]]] = {}
 
     # Sort timing constraints based on abs_time and keep the original index.
@@ -286,12 +255,7 @@ def get_schedule_time_offset(
     :
         The operation t0 in seconds.
     """
-    warnings.warn(
-        "`get_schedule_time_offset` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     return min(
         map(
             lambda port: get_operation_start(
@@ -318,12 +282,7 @@ def get_pulse_info_by_uuid(
     schedule
         The schedule.
     """
-    warnings.warn(
-        "`get_pulse_info_by_uuid` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]] = {}
     for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_repr"]]
@@ -357,12 +316,7 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> Dict[int, Dict[str, Any]
     schedule
         The schedule.
     """
-    warnings.warn(
-        "`get_acq_info_by_uuid` will be removed from this module in "
-        "quantify-scheduler >= 0.6.0.\n"
-        "It is currently being replaced by the timing_table property of a `Schedule`",
-        DeprecationWarning,
-    )
+
     acqid_acqinfo_dict: Dict[int, Dict[str, Any]] = {}
     for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_repr"]]

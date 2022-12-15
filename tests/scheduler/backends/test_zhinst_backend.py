@@ -15,8 +15,6 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from pydantic import ValidationError
-from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
-from zhinst.toolkit.control import drivers
 
 from quantify_scheduler import Schedule, enums
 from quantify_scheduler.backends import zhinst_backend, SerialCompiler
@@ -422,8 +420,6 @@ def test__program_hdawg4_channelgrouping(
     hdawg_device = devices[0]
     hdawg_device.channelgrouping = channelgrouping
     hdawg_device.clock_rate = int(2.4e9)
-
-    settings_builder = settings.ZISettingsBuilder()
 
     mocker.patch.object(zhinst_backend, "_add_wave_nodes")
     with_sigouts = mocker.patch.object(settings.ZISettingsBuilder, "with_sigouts")

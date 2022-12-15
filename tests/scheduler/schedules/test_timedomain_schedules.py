@@ -10,7 +10,6 @@ import pytest
 from quantify_core.data.handling import set_datadir
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules import timedomain_schedules as ts
-from quantify_scheduler.schemas.examples import utils
 
 from .compiles_all_backends import _CompilesAllBackends
 
@@ -18,9 +17,6 @@ from .compiles_all_backends import _CompilesAllBackends
 tmp_dir = tempfile.TemporaryDirectory()
 
 # FIXME classmethods cannot use fixtures, these test are mixing testing style # pylint: disable=fixme
-DEVICE_CONFIG = utils.load_json_example_scheme("transmon_test_config.json")
-
-
 class TestRabiPulse(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):

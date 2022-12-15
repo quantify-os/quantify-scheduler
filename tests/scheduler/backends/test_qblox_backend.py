@@ -36,8 +36,8 @@ from quantify_scheduler.backends.qblox import (
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
-    convert_hw_config_to_portclock_configs_spec,
     assign_pulse_and_acq_info_to_devices,
+    convert_hw_config_to_portclock_configs_spec,
     generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -46,13 +46,9 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 
-# from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
-    QrmModule,
-    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
@@ -931,10 +927,7 @@ def test_compile_measure(
     [
         (IdlePulse(duration=64e-9), "wait       64"),
         (Reset("q1"), "wait       65532"),
-        (
-            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
-            "set_ph_delta  199,399,6249",
-        ),
+        (ShiftClockPhase(clock="q1.01", phase_shift=180.0), "set_ph_delta  500000000"),
     ],
 )
 def test_compile_clock_operations(
@@ -996,11 +989,11 @@ def test_compile_cz_gate(
     ), "\n".join(line for line in program_lines["seq0"])
 
     assert any(
-        "set_ph_delta  48,355,3472" in line for line in program_lines["seq1"]
+        "set_ph_delta  122222222" in line for line in program_lines["seq1"]
     ), "\n".join(line for line in program_lines["seq1"])
 
     assert any(
-        "set_ph_delta  69,399,6249" in line for line in program_lines["seq2"]
+        "set_ph_delta  175000000" in line for line in program_lines["seq2"]
     ), "\n".join(line for line in program_lines["seq2"])
 
 
@@ -2123,7 +2116,7 @@ def test_convert_hw_config_to_portclock_configs_spec(
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
     sched = device_compile(sched, load_example_transmon_config)
     with pytest.warns(
-        DeprecationWarning,
+        FutureWarning,
         match=r"hardware config adheres to a specification that is deprecated",
     ):
         hardware_compile(sched, old_config)

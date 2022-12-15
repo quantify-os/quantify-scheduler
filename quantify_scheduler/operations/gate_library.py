@@ -43,9 +43,12 @@ class Rxy(Operation):
         qubit
             the target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if not isinstance(theta, float):
             theta = float(theta)
@@ -99,7 +102,7 @@ class Rxy(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -133,9 +136,12 @@ class X(Rxy):
         qubit
             the target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -143,7 +149,7 @@ class X(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=180, phi=0, qubit=qubit, data=data)
         self.data["name"] = f"X {qubit}"
@@ -178,9 +184,12 @@ class X90(Rxy):
         qubit
             The target qubit.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -188,7 +197,7 @@ class X90(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=90.0, phi=0.0, qubit=qubit, data=data)
         self.qubit = qubit
@@ -227,9 +236,12 @@ class Y(Rxy):
         qubit
             The target qubit.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -237,7 +249,7 @@ class Y(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=180.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y {qubit}"
@@ -276,9 +288,12 @@ class Y90(Rxy):
         qubit
             The target qubit.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -286,7 +301,7 @@ class Y90(Rxy):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(theta=90.0, phi=90.0, qubit=qubit, data=data)
         self.data["name"] = f"Y_90 {qubit}"
@@ -339,9 +354,12 @@ class CNOT(Operation):
         qT
             The target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
@@ -368,7 +386,7 @@ class CNOT(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -412,9 +430,12 @@ class CZ(Operation):
         qT
             The target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cz"
@@ -441,7 +462,7 @@ class CZ(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -490,9 +511,12 @@ class Reset(Operation):
             The qubit(s) to reset. NB one or more qubits can be specified, e.g.,
             :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
         data
-            The operation's dictionary, by default :code:`None`.
-            Note: if the data parameter is not :code:`None` all other parameters are
-            overwritten using the contents of data.
+            The operation's dictionary, by default None\n
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(f"Reset {', '.join(qubits)}")
@@ -516,7 +540,7 @@ class Reset(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -575,9 +599,12 @@ class Measure(Operation):
             the binning mode used for Measurements in the quantum-circuit to
             quantum-device compilation step.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
 
         # this if else statement a workaround to support multiplexed measurements (#262)
@@ -611,7 +638,7 @@ class Measure(Operation):
                     "and should be set in the device layer. See `BasicTransmonElement.measure.acq_channel`"
                     "for more info on how to set it. This keyword argument will be removed in "
                     "quantify-scheduler >= 0.12.0.",
-                    DeprecationWarning,
+                    FutureWarning,
                 )
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
@@ -639,7 +666,7 @@ class Measure(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 

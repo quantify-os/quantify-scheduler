@@ -128,6 +128,21 @@ def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
         )
 
 
+def acq_meter_text(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
+    """
+    Same as acq_meter, but also displays text.
+
+    Parameters
+    ----------
+    ax
+    time
+    qubit_idxs
+    text
+    """
+    acq_meter(ax, time, qubit_idxs, text, **kw)
+    ax.text(time, max(qubit_idxs) + 0.45, text, ha="center", va="center", zorder=6)
+
+
 # pylint: disable=unused-argument
 def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """

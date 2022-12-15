@@ -4,17 +4,19 @@
 
 ### Breaking changes
 
+- Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
 
 ### Merged branches and closed issues
 - Tests - Refactored tests to remove deprecated compiler, refactored to SerialCompiler (#368,  !731)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
-- Improve parameter documentation for DeviceElements (!493)
+- Documentation - Improve parameter documentation for DeviceElements (!493)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 - NV Centers - `ChargeReset` operation only device compilation so far (!496)
+- NV centers - `CRCount` operation using TriggerCount acquisition; only device compilation so far (!502)
 - QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
@@ -22,6 +24,7 @@
 - QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
 - QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
 - Git - Changed git merge strategy to "union" for CHANGELOG.md and AUTHORS.md to reduce amount of merge conflicts (!495)
+- Qblox backend - Minor adjustments to `NcoPhaseShiftStrategy` to make compilation of `ShiftClockPhase` compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 - Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
@@ -31,6 +34,9 @@
 - Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
+- Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
+- Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 
 ## 0.9.0 (2022-10-06)
 
@@ -69,7 +75,6 @@
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 
-
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
 ### Breaking changes
@@ -93,7 +98,7 @@
 - Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 - Docs - Clarify port and clock concepts (!431)
 - Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
-- Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
+- Gettables - Added `generate_diagnostics_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 - Helpers - Moved `MockLocalOscillator` definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 - JSON utilities - Add JSON serialization/deserialization methods based on `__getstate__`/`__setstate__` (!444)
 - Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)

@@ -26,6 +26,7 @@ from qblox_instruments import (
     SequencerState,
     SequencerStatus,
     SequencerStatusFlags,
+    DummyScopeAcquisitionData,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
@@ -58,6 +59,13 @@ def make_cluster_component(mocker):
                 "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
         )
+        dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+            [(0, 1)] * 15000, (False, False), (0, 0)
+        )
+        cluster.set_dummy_scope_acquisition_data(
+            slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
+        )
+
         nonlocal cluster_component
         cluster_component = qblox.ClusterComponent(cluster)
 
