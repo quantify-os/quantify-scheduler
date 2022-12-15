@@ -391,10 +391,6 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=sched, config=quantum_device.generate_compilation_config()
-
-    compiler = SerialCompiler(name="compiler")
-    compiled_sched = compiler.compile(
-        schedule=sched, config=quantum_device.generate_compilation_config()
     )
 
     assert gettable._compiled_schedule == compiled_sched
