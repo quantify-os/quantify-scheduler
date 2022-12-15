@@ -204,6 +204,8 @@ def nv_dark_esr_sched(
     The frequency is determined during the compilation of
     :class:`~quantify_scheduler.operations.shared_native_library.SpectroscopyOperation`.
 
+    This schedule can currently not be compiled with the Zurich Instruments backend.
+
     Parameters
     ----------
     qubit
@@ -217,10 +219,10 @@ def nv_dark_esr_sched(
     """
     sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
 
-    sched.add(ChargeReset(qubit))
+    sched.add(ChargeReset(qubit), label="Charge reset")
     sched.add(CRCount(qubit, acq_index=0), label="CRCount pre")
-    sched.add(Reset(qubit))
-    sched.add(SpectroscopyOperation(qubit))
+    sched.add(Reset(qubit), label="Reset")
+    sched.add(SpectroscopyOperation(qubit), label="Spectroscopy")
     sched.add(Measure(qubit, acq_index=1), label="Measure")
     sched.add(CRCount(qubit, acq_index=2), label="CRCount post")
     return sched
