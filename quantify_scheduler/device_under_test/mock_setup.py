@@ -186,14 +186,20 @@ def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
     In normal use, unknown parameters are set as 'nan' values, forcing the user to
     set these. However for testing purposes it can be useful to set some semi-random
     values. The values here are chosen to reflect typical values as used in practical
-    experiments.
+    experiments. All amplitudes for pulses are set to 1.
     """
 
     quantum_device = mock_nv_device["quantum_device"]
-    qe0 = quantum_device.get_element("qe0")
+    qe0: BasicElectronicNVElement = quantum_device.get_element("qe0")
     qe0.spectroscopy_operation.amplitude.set(0.1)
     qe0.clock_freqs.f01.set(3.592e9)
     qe0.clock_freqs.spec.set(2.2e9)
     qe0.clock_freqs.ionization.set(564e12)  # 532 nm
     qe0.clock_freqs.ge0.set(470.4e12)  # 637 nm
     qe0.clock_freqs.ge1.set(470.4e12 - 5e9)  # slightly detuned
+
+    qe0.charge_reset.amplitude(1)
+    qe0.reset.amplitude(1)
+    qe0.cr_count.readout_pulse_amplitude(1)
+    qe0.cr_count.spinpump_pulse_amplitude(1)
+    qe0.measure.pulse_amplitude(1)

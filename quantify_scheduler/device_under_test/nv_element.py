@@ -205,7 +205,7 @@ class Measure(InstrumentModule):
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
             instrument=self,
-            initial_value=0.5,
+            initial_value=float("nan"),
             unit="V",
             vals=_Amplitudes(),
         )
@@ -266,7 +266,7 @@ class ChargeReset(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=0.1,
+            initial_value=float("nan"),
             unit="V",
             vals=_Amplitudes(),
         )
@@ -294,7 +294,7 @@ class CRCount(InstrumentModule):
         self.readout_pulse_amplitude = ManualParameter(
             name="readout_pulse_amplitude",
             instrument=self,
-            initial_value=1,
+            initial_value=float("nan"),
             unit="V",
             vals=_Amplitudes(),
         )
@@ -303,7 +303,7 @@ class CRCount(InstrumentModule):
         self.spinpump_pulse_amplitude = ManualParameter(
             name="spinpump_pulse_amplitude",
             instrument=self,
-            initial_value=0.5,
+            initial_value=float("nan"),
             unit="V",
             vals=_Amplitudes(),
         )
