@@ -41,6 +41,7 @@ class Ports(InstrumentModule):
             instrument=self,
             initial_cache_value=f"{parent.name}:mw",
             set_cmd=False,
+            vals=validators.Strings(),
         )
         """Name of the element's microwave port."""
 
@@ -50,6 +51,7 @@ class Ports(InstrumentModule):
             instrument=self,
             initial_cache_value=f"{parent.name}:optical_control",
             set_cmd=False,
+            vals=validators.Strings(),
         )
         """Port to control the device element with optical pulses."""
 
@@ -59,6 +61,7 @@ class Ports(InstrumentModule):
             instrument=self,
             initial_cache_value=f"{parent.name}:optical_readout",
             set_cmd=False,
+            vals=validators.Strings(),
         )
         """Port to readout photons from the device element."""
 
