@@ -315,6 +315,9 @@ import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
 
+# qcodes0.36.0 lazyloads h5py which causes build failures
+import h5py
+
 # Prevents a circular import warning
 import tenacity
 
