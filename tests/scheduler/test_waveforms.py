@@ -103,7 +103,7 @@ def test_drag_ns() -> None:
 def test_sudden_net_zero() -> None:
     times = np.arange(0, 40e-9, 1e-9)
     amp_A = 0.4
-    amp_B = 0.5
+    amp_B = 0.2
     net_zero_A_scale = 0.95
 
     waveform = sudden_net_zero(
