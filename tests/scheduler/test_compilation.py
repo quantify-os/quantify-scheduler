@@ -305,14 +305,17 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
 
 
-def test_compile_trace_acquisition(load_example_transmon_config):
+def test_compile_trace_acquisition(device_compile_config_basic_transmon):
     sched = Schedule("Test schedule")
     q0 = "q0"
     sched.add(Reset(q0))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(Measure(q0, acq_protocol="Trace"), label="M0")
 
-    sched = device_compile(sched, device_cfg=load_example_transmon_config)
+    compiler = SerialCompiler(name="compile")
+    sched = compiler.compile(
+        schedule=sched, config=device_compile_config_basic_transmon
+    )
 
     measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"
