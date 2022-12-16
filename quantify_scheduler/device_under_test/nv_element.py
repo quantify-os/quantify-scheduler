@@ -18,10 +18,10 @@ from quantify_scheduler.backends.circuit_to_device import (
     OperationCompilationConfig,
 )
 from quantify_scheduler.helpers.validators import (
-    Durations,
-    Amplitudes,
-    Frequencies,
-    Delays,
+    _Durations,
+    _Amplitudes,
+    _Frequencies,
+    _Delays,
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 
@@ -81,7 +81,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Frequencies(),
+            vals=_Frequencies(),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
         negatively charged diamond NV center from the 0-state to 1-state
@@ -94,7 +94,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Frequencies(),
+            vals=_Frequencies(),
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
@@ -105,7 +105,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Frequencies(),
+            vals=_Frequencies(),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
 
@@ -115,7 +115,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Frequencies(),
+            vals=_Frequencies(),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
@@ -126,7 +126,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Frequencies(),
+            vals=_Frequencies(),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
@@ -149,7 +149,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             instrument=self,
             initial_value=float("nan"),
             unit="W",
-            vals=Amplitudes(),
+            vals=_Amplitudes(),
         )
         """Amplitude of spectroscopy pulse"""
 
@@ -159,7 +159,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             instrument=self,
             initial_value=15e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """Duration of the MW pulse."""
 
@@ -178,7 +178,7 @@ class ResetSpinpump(InstrumentModule):
             instrument=self,
             initial_value=float("nan"),
             unit="V",
-            vals=Amplitudes(),
+            vals=_Amplitudes(),
         )
         """Amplitude of reset pulse"""
 
@@ -187,7 +187,7 @@ class ResetSpinpump(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """Duration of reset pulse"""
 
@@ -207,7 +207,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=0.5,
             unit="V",
-            vals=Amplitudes(),
+            vals=_Amplitudes(),
         )
         """Amplitude of readout pulse"""
 
@@ -216,7 +216,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """Readout pulse duration"""
 
@@ -225,7 +225,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """
         Duration of the acquisition.
@@ -236,7 +236,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=0,
             unit="s",
-            vals=Delays(),
+            vals=_Delays(),
         )
         """
         Delay between the start of the readout pulse and the start of the acquisition.
@@ -268,7 +268,7 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=0.1,
             unit="V",
-            vals=Amplitudes(),
+            vals=_Amplitudes(),
         )
         """Amplitude of charge reset pulse."""
 
@@ -277,7 +277,7 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """Duration of the charge reset pulse."""
 
@@ -296,7 +296,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=1,
             unit="V",
-            vals=Amplitudes(),
+            vals=_Amplitudes(),
         )
         """Amplitude of readout pulse"""
 
@@ -305,7 +305,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=0.5,
             unit="V",
-            vals=Amplitudes(),
+            vals=_Amplitudes(),
         )
         """Amplitude of spin-pump pulse"""
 
@@ -314,7 +314,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """Readout pulse duration"""
 
@@ -323,7 +323,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """Readout pulse duration"""
 
@@ -332,7 +332,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=Durations(),
+            vals=_Durations(),
         )
         """
         Duration of the acquisition.
@@ -343,7 +343,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=0,
             unit="s",
-            vals=Delays(),
+            vals=_Delays(),
         )
         """
         Delay between the start of the readout pulse and the start of the acquisition.

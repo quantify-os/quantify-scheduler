@@ -14,10 +14,10 @@ from quantify_scheduler.device_under_test.mock_setup import (
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers.validators import (
-    Durations,
-    Amplitudes,
-    Frequencies,
-    Delays,
+    _Durations,
+    _Amplitudes,
+    _Frequencies,
+    _Delays,
 )
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
@@ -214,9 +214,9 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
     +-----------+--------------+
     | X         | Y            |
     +===========+==============+
-    | duration  | Durations    |
-    | amplitude | Amplitudes   |
-    | delay     | Delays       |
+    | duration  | _Durations   |
+    | amplitude | _Amplitudes  |
+    | delay     | _Delays      |
     +-----------+--------------+
 
     Capitalization is ignored.
@@ -226,9 +226,9 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
     ]
 
     mapping_pattern_val = {
-        "duration": Durations,
-        "amplitude": Amplitudes,
-        "delay": Delays,
+        "duration": _Durations,
+        "amplitude": _Amplitudes,
+        "delay": _Delays,
     }
 
     for submodule_name in electronic_q0.submodules:
@@ -265,7 +265,7 @@ def test_frequency_validators(electronic_q0: BasicElectronicNVElement):
         parameter: Parameter = getattr(submodule, parameter_name)
         if parameter_name in whitelist_submodule:
             continue
-        validator = Frequencies
+        validator = _Frequencies
         assert isinstance(parameter.vals, validator), (
             f"Expected that the parameter '{submodule.name}.{parameter_name}' uses "
             f"the validator {validator}. If this is not done on purpose, please "
