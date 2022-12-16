@@ -17,7 +17,12 @@ from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-from quantify_scheduler.helpers.validators import Numbers
+from quantify_scheduler.helpers.validators import (
+    Durations,
+    Amplitudes,
+    Frequencies,
+    Delays,
+)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
@@ -141,6 +146,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             instrument=self,
             initial_value=float("nan"),
             unit="W",
+            vals=Amplitudes(),
         )
         """Amplitude of spectroscopy pulse"""
 
@@ -150,7 +156,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             instrument=self,
             initial_value=15e-6,
             unit="s",
-            vals=validators.Numbers(min_value=0, max_value=100e-6),
+            vals=Durations(),
         )
         """Duration of the MW pulse."""
 
@@ -167,9 +173,9 @@ class ResetSpinpump(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=0.5,
+            initial_value=float("nan"),
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=2.5),
+            vals=Amplitudes(),
         )
         """Amplitude of reset pulse"""
 
@@ -178,7 +184,7 @@ class ResetSpinpump(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
+            vals=Durations(),
         )
         """Duration of reset pulse"""
 
@@ -198,7 +204,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=0.5,
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=Amplitudes(),
         )
         """Amplitude of readout pulse"""
 
@@ -207,7 +213,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=Durations(),
         )
         """Readout pulse duration"""
 
@@ -216,7 +222,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=Durations(),
         )
         """
         Duration of the acquisition.
@@ -227,7 +233,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=0,
             unit="s",
-            vals=validators.Numbers(min_value=-1, max_value=1),
+            vals=Delays(),
         )
         """
         Delay between the start of the readout pulse and the start of the acquisition.
@@ -259,7 +265,7 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=0.1,
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=Amplitudes(),
         )
         """Amplitude of charge reset pulse."""
 
@@ -268,7 +274,7 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=Durations(),
         )
         """Duration of the charge reset pulse."""
 
@@ -287,7 +293,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=1,
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=Amplitudes(),
         )
         """Amplitude of readout pulse"""
 
@@ -296,7 +302,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=0.5,
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=2.5),
+            vals=Amplitudes(),
         )
         """Amplitude of spin-pump pulse"""
 
@@ -305,7 +311,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=Durations(),
         )
         """Readout pulse duration"""
 
@@ -314,7 +320,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=Durations(),
         )
         """Readout pulse duration"""
 
@@ -323,7 +329,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=Durations(),
         )
         """
         Duration of the acquisition.
@@ -334,7 +340,7 @@ class CRCount(InstrumentModule):
             instrument=self,
             initial_value=0,
             unit="s",
-            vals=validators.Numbers(min_value=-1, max_value=1),
+            vals=Delays(),
         )
         """
         Delay between the start of the readout pulse and the start of the acquisition.
