@@ -1,6 +1,8 @@
 # pylint: disable=redefined-outer-name
 import pytest
 from qcodes import Instrument
+from qcodes.instrument.channel import InstrumentModule
+from qcodes.instrument.parameter import Parameter
 
 from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
@@ -11,6 +13,12 @@ from quantify_scheduler.device_under_test.mock_setup import (
 )
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.helpers.validators import (
+    Durations,
+    Amplitudes,
+    Frequencies,
+    Delays,
+)
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
@@ -193,3 +201,55 @@ def test_generate_device_config_part_of_device(
     dev.add_element(electronic_q0)
     dev_cfg = dev.generate_device_config()
     assert "qe0" in dev_cfg.elements
+
+
+def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
+    """Validate that element parameters have the correct validators.
+
+    This is a slightly error-prone test. It looks at the name of parameters and infers
+    the validator they should have. If they contain X, they should have validator Y. To
+    allow for manual intervention, parameter names can be whitelisted. In this case,
+    they will not be checked.
+
+    +-----------+--------------+
+    | X         | Y            |
+    +===========+==============+
+    | duration  | Durations    |
+    | amplitude | Amplitudes   |
+    | delay     | Delays       |
+    +-----------+--------------+
+
+    Capitalization is ignored.
+    """
+    whitelist = [
+        ["example_submodule_name", "example_parameter_name_whitelisted"],
+    ]
+
+    mapping_pattern_val = {
+        "duration": Durations,
+        "amplitude": Amplitudes,
+        "delay": Delays,
+    }
+
+    for submodule_name in electronic_q0.submodules:
+        submodule: InstrumentModule = getattr(electronic_q0, submodule_name)
+        whitelist_submodule = [x[1] for x in whitelist if x[0] == submodule_name]
+        for parameter_name in submodule.parameters:
+            parameter: Parameter = getattr(submodule, parameter_name)
+            if parameter_name in whitelist_submodule:
+                continue
+            patterns = []
+            for pattern in mapping_pattern_val.keys():
+                if pattern in str.lower(parameter_name):
+                    patterns.append(pattern)
+            if len(patterns) != 1:
+                # If none of the patterns match, we can't do any validation.
+                # If more than one pattern match, validation is likely unwanted.
+                continue
+            pattern = patterns[0]
+            validator = mapping_pattern_val[pattern]
+            assert isinstance(parameter.vals, validator), (
+                f"Expected that the parameter '{submodule.name}.{parameter_name}' uses "
+                f"the validator {validator}. If this is not done on purpose, please "
+                f"whitelist this parameter."
+            )
