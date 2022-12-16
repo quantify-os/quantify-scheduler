@@ -5,7 +5,7 @@
 ### Breaking changes
 
 ### Merged branches and closed issues
-Documentation - documentation build now compatible with qcodes==0.36.0 ()
+Documentation - Documentation build now compatible with qcodes==0.36.0 (!552)
 
 ## 0.10.0 (2022-12-15)
 
