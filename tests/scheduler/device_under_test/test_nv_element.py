@@ -253,3 +253,21 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
                 f"the validator {validator}. If this is not done on purpose, please "
                 f"whitelist this parameter."
             )
+
+
+def test_frequency_validators(electronic_q0: BasicElectronicNVElement):
+    """All parameters in ClockFrequencies use the Frequency validator."""
+    whitelist_submodule = [
+        "example_parameter_name_whitelisted",
+    ]
+    submodule = electronic_q0.clock_freqs
+    for parameter_name in submodule.parameters:
+        parameter: Parameter = getattr(submodule, parameter_name)
+        if parameter_name in whitelist_submodule:
+            continue
+        validator = Frequencies
+        assert isinstance(parameter.vals, validator), (
+            f"Expected that the parameter '{submodule.name}.{parameter_name}' uses "
+            f"the validator {validator}. If this is not done on purpose, please "
+            f"whitelist this parameter."
+        )
