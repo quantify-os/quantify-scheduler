@@ -78,7 +78,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+            vals=Frequencies(),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
         negatively charged diamond NV center from the 0-state to 1-state
@@ -91,7 +91,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=1e9, max_value=1e10, allow_nan=True),
+            vals=Frequencies(),
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
@@ -102,7 +102,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+            vals=Frequencies(),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
 
@@ -112,7 +112,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+            vals=Frequencies(),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
@@ -123,7 +123,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+            vals=Frequencies(),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
