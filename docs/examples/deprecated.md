@@ -10,7 +10,6 @@ kernelspec:
 Download the notebook: {nb-download}`deprecated.ipynb`
 ```
 
-- {ref}`Compilation Setup`
 - {ref}`1. Qcompile => SerialCompiler`
 - {ref}`2. Qblox Hardware Configuration`
 - {ref}`3. TransmonElement => BasicTransmonElement`
