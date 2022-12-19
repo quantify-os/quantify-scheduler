@@ -7,6 +7,12 @@
 ### Merged branches and closed issues
 
 - Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+## 0.10.1 (2022-12-19)
+
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+
+### Merged branches and closed issues
+
 
 ## 0.10.0 (2022-12-15)
 
