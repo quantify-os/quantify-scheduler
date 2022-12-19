@@ -4,6 +4,7 @@
 import logging
 from copy import deepcopy
 from typing import Literal, Optional, Union
+
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
