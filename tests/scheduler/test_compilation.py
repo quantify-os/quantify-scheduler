@@ -127,7 +127,7 @@ def test_qcompile_add_pulse_information_transmon():
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label="M0")
 
-    compiled_sched = qcompile(
+    qcompile(
         sched,
         device_cfg=utils.load_json_example_scheme("transmon_test_config.json"),
     )
