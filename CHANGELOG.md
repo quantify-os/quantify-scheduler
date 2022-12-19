@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+### Merged branches and closed issues
+
+- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+
 ## 0.10.0 (2022-12-15)
 
 ### Breaking changes
@@ -12,6 +20,7 @@
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 
 ### Merged branches and closed issues
+
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
