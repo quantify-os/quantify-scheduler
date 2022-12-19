@@ -1111,6 +1111,7 @@ def test_acquisitions_back_to_back(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
+    # Tests both device_compile and hardware_compile, keep for coverage
 
     sched = copy.deepcopy(mixed_schedule_with_acquisition)
     meas_op = sched.add(Measure("q0"))
@@ -1341,10 +1342,10 @@ def test_assign_pulse_and_acq_info_to_devices(
     sched = mixed_schedule_with_acquisition
 
     mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
-    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
+    config = mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
 
-    sched_with_pulse_info = device_compile(sched, device_cfg)
-
+    compiler = SerialCompiler(name="compiler")
+    sched_with_pulse_info = compiler.compile(schedule=sched, config=config)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, load_example_qblox_hardware_config
     )
