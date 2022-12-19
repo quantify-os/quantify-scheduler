@@ -17,7 +17,7 @@
         },
         "edges": {
             "type": "object",
-            "description": "A dictionary with pairs of qubit names separated by an underscore (str) as keys e.g., 'q0_q1'. \nThe items contain the informatation to compile gates on pairs of qubits to pulses acting on ports and clocks using the specified backend."
+            "description": "A dictionary with pairs of qubit names separated by an underscore (str) as keys e.g., 'q0_q1'. \nThe items contain the information to compile gates on pairs of qubits to pulses acting on ports and clocks using the specified backend."
         }
     }
 }

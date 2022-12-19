@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
 import logging
-import warnings
 from copy import deepcopy
 from typing import Literal, Optional, Union
 from quantify_core.utilities import deprecated
@@ -137,6 +136,14 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
     return edge_cfg
 
 
+@deprecated(
+    "0.9.0",
+    "Please specify a `DeviceCompilationConfig` for "
+    "`backends.circuits_to_device.compile_circuit_to_device` instead. "
+    "See `DeviceCompilationConfig.parse_obj(example_transmon_cfg)`, "
+    "`example_transmon_cfg` is defined in "
+    "`quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py`.",
+)
 def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
     # pylint: disable=line-too-long
     """
@@ -174,15 +181,6 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     """
     # pylint: enable=line-too-long
-
-    warnings.warn(
-        "Support for this compilation backend will be be removed in"
-        "quantify-scheduler >= 0.7.0.\n"
-        "Please consider specifying the device config using the "
-        "`DeviceCompilationConfig` DataStructure to make use of the "
-        "`backends.circuits_to_device.compile_circuit_to_device` instead.",
-        DeprecationWarning,
-    )
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
