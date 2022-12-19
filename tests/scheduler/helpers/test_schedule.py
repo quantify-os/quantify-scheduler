@@ -24,6 +24,7 @@ from quantify_scheduler.helpers.schedule import (
 )
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.compilation import device_compile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
@@ -453,21 +454,24 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
 
 
 def test_schedule_timing_table(
-    load_example_transmon_config,
-    create_schedule_with_pulse_info,
+    mock_setup_basic_transmon,
 ):
-    device_cfg = load_example_transmon_config
-
+    q0 = mock_setup_basic_transmon["q0"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     schedule = Schedule("test_schedule_timing_table")
     schedule.add(Reset("q0"))
     schedule.add(X90("q0"))
     schedule.add(Measure("q0"))
-    schedule = device_compile(schedule, device_cfg)
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
-    q0 = device_cfg.elements["q0"]
-    X90_duration = q0["Rxy"].factory_kwargs["duration"]
-    measure_acq_delay = q0["measure"].factory_kwargs["acq_delay"]
-    reset_duration = q0["reset"].factory_kwargs["duration"]
+    q0 = mock_setup_basic_transmon["q0"]
+
+    X90_duration = q0.rxy.duration()
+    measure_acq_delay = q0.measure.acq_delay()
+    reset_duration = q0.reset.duration()
 
     expected_abs_timing = [
         0.0,
@@ -476,9 +480,9 @@ def test_schedule_timing_table(
         reset_duration + X90_duration,
         reset_duration + X90_duration + measure_acq_delay,
     ]
-
+    data = schedule.timing_table.data.abs_time
     actual_abs_timing = schedule.timing_table.data.abs_time
-
+    new = expected_abs_timing
     assert all(expected_abs_timing == actual_abs_timing)
 
 
