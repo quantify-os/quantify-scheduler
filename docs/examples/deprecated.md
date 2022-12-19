@@ -4,18 +4,16 @@ kernelspec:
     name: python3
 ---
 
-
-
 # Quantify Deprecated Code Suggestions
-
-- [Compilation Setup](#Compilation-Setup)
-- [1. Qcompile => SerialCompiler](#1.-Qcompile-=>-SerialCompiler)
-- [2. Qblox Hardware Configuration](2.-Qblox-Hardware-Configuration)
-- [3. TransmonElement => BasicTransmonElement](#3.-TransmonElement-=>-BasicTransmonElement)
 
 ```{seealso}
 Download the notebook: {nb-download}`deprecated.ipynb`
 ```
+
+- {ref}`Compilation Setup`
+- {ref}`1. Qcompile => SerialCompiler`
+- {ref}`2. Qblox Hardware Configuration`
+- {ref}`3. TransmonElement => BasicTransmonElement`
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
@@ -153,7 +151,7 @@ sched = simple_trace_sched(repetitions=1)
 
 ## 1. Qcompile => SerialCompiler
 
-First, run [Compilation Setup](#Compilation-Setup).
+First, run {ref}`Compilation Setup`.
 
 ```{code-cell} ipython3
 from quantify_scheduler.compilation import qcompile
