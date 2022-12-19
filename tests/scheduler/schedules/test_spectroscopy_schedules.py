@@ -126,11 +126,13 @@ class TestNVDarkESRSched:
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_timing(self, mock_setup_basic_nv):
+        # Arrange
         quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
         qe0: BasicElectronicNVElement = mock_setup_basic_nv["qe0"]
 
-        # Ensure that everything has the same length so we can predict the duration
-        # of the operations.
+        # For operations, whose duration is not trivial to calculate, use values that
+        # allow to easily predict the duration of the operations (used below when
+        # constructing abs_times).
         qe0.cr_count.acq_delay(0)
         qe0.cr_count.acq_duration(1e-6)
         qe0.cr_count.readout_pulse_duration(1e-6)
@@ -138,10 +140,12 @@ class TestNVDarkESRSched:
         qe0.measure.pulse_duration(2e-6)
         qe0.measure.acq_duration(2e-6)
 
+        # Act
         sched = device_compile(
             self.uncomp_sched, quantum_device.generate_device_config()
         )
 
+        # Assert
         abs_times = [0]
         abs_times.append(abs_times[-1] + qe0.charge_reset.duration())
         abs_times.append(abs_times[-1] + qe0.cr_count.acq_duration())
