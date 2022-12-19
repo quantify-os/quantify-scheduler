@@ -1374,8 +1374,14 @@ def test_container_prepare(
     pulse_only_schedule,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
-    sched = device_compile(pulse_only_schedule, load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=pulse_only_schedule,
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
+
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, load_example_qblox_hardware_config
     )
@@ -1424,9 +1430,17 @@ def test_determine_scope_mode_acquisition_sequencer(
 
 
 def test_container_prepare_baseband(
-    baseband_square_pulse_schedule, load_example_transmon_config, hardware_cfg_baseband
+    baseband_square_pulse_schedule,
+    hardware_cfg_baseband,
+    mock_setup_basic_transmon_with_standard_params,
 ):
-    sched = device_compile(baseband_square_pulse_schedule, load_example_transmon_config)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_baseband)
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=baseband_square_pulse_schedule,
+        config=quantum_device.generate_compilation_config(),
+    )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, hardware_cfg_baseband
     )
@@ -1445,8 +1459,14 @@ def test_container_prepare_no_lo(
     pulse_only_schedule_no_lo,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
-    sched = device_compile(pulse_only_schedule_no_lo, load_example_transmon_config)
+
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=pulse_only_schedule_no_lo,
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, load_example_qblox_hardware_config
     )
@@ -1523,15 +1543,21 @@ def test_generate_uuid_from_wf_data():
 @pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
 def test_real_mode_container(
     real_square_pulse_schedule,
-    load_example_transmon_config,
     hardware_cfg_real_mode,
+    mock_setup_basic_transmon,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
     determine_absolute_timing(real_square_pulse_schedule)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_real_mode
     )
-    sched = device_compile(real_square_pulse_schedule, load_example_transmon_config)
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_real_mode)
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=real_square_pulse_schedule,
+        config=quantum_device.generate_compilation_config(),
+    )
     assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, hardware_cfg_real_mode
     )
@@ -2053,7 +2079,10 @@ def test_acq_declaration_dict_bin_avg_mode(
 
 
 def test_convert_hw_config_to_portclock_configs_spec(
-    make_basic_multi_qubit_schedule, load_example_transmon_config
+    make_basic_multi_qubit_schedule,
+    load_example_transmon_config,
+    compile_config_basic_transmon_qblox_hardware,
+    mock_setup_basic_transmon,
 ):
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -2160,12 +2189,21 @@ def test_convert_hw_config_to_portclock_configs_spec(
     # Test that hardware_compile is converting automatically
 
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
-    sched = device_compile(sched, load_example_transmon_config)
+
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    )
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(old_config)
+
     with pytest.warns(
         FutureWarning,
         match=r"hardware config adheres to a specification that is deprecated",
     ):
-        hardware_compile(sched, old_config)
+        compiler.compile(
+            schedule=sched, config=quantum_device.generate_compilation_config()
+        )
 
 
 def test_apply_latency_corrections_invalid_raises(
