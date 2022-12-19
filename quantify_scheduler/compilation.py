@@ -542,7 +542,9 @@ def qcompile(
     "Use the `QuantifyCompiler.compile` method instead. "
     "See the user guide section on compilers for details.",
 )
-def device_compile(schedule: Schedule, device_cfg: DeviceCompilationConfig) -> Schedule:
+def device_compile(
+    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
+) -> Schedule:
     """
     Add pulse information to operations based on device config file.
 
@@ -560,7 +562,10 @@ def device_compile(schedule: Schedule, device_cfg: DeviceCompilationConfig) -> S
         The updated schedule.
     """
 
-    device_compilation_bck = import_python_object_from_string(device_cfg.backend)
+    try:
+        device_compilation_bck = import_python_object_from_string(device_cfg.backend)
+    except AttributeError:  # legacy support for add_pulse_information_transmon
+        device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")

@@ -4,9 +4,9 @@
 
 ### Breaking changes
 
-- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
-
 ### Merged branches and closed issues
+
+- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
 
 ## 0.10.0 (2022-12-15)
 

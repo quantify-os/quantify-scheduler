@@ -9,6 +9,7 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.compilation import (
+    add_pulse_information_transmon,
     determine_absolute_timing,
     device_compile,
     qcompile,
@@ -117,7 +118,10 @@ def test_compile_transmon_program(load_example_transmon_config):
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
-def test_qcompile_add_pulse_information_transmon():
+@pytest.mark.parametrize(
+    "compile_func", [add_pulse_information_transmon, device_compile, qcompile]
+)
+def test_deprecated_add_pulse_information_transmon(compile_func):
     sched = Schedule("Test schedule")
 
     q0, q1 = ("q0", "q1")
@@ -127,7 +131,7 @@ def test_qcompile_add_pulse_information_transmon():
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label="M0")
 
-    qcompile(
+    compile_func(
         sched,
         device_cfg=utils.load_json_example_scheme("transmon_test_config.json"),
     )
