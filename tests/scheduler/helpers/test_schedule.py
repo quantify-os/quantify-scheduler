@@ -20,7 +20,6 @@ from quantify_scheduler.helpers.schedule import (
     get_port_timeline,
     get_pulse_info_by_uuid,
     get_pulse_uuid,
-    get_schedule_time_offset,
     get_total_duration,
 )
 from quantify_scheduler.helpers.collections import make_hash

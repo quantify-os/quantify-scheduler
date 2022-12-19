@@ -4,7 +4,6 @@
 # pylint: disable=redefined-outer-name
 import pytest
 
-from quantify_scheduler.compilation import validate_config
 from quantify_scheduler.device_under_test.transmon_element import (
     BasicTransmonElement,
 )
@@ -13,7 +12,6 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
 from quantify_scheduler.backends.circuit_to_device import (
-    OperationCompilationConfig,
     DeviceCompilationConfig,
 )
 
