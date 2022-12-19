@@ -701,7 +701,7 @@ def test_generate_port_clock_to_device_map(load_example_qblox_hardware_config):
 
 def test_construct_sequencers(
     make_basic_multi_qubit_schedule,
-    load_example_transmon_config,
+    compile_config_basic_transmon_qblox_hardware,
     load_example_qblox_hardware_config,
 ):
     test_module = QcmModule(
@@ -711,7 +711,11 @@ def test_construct_sequencers(
         hw_mapping=load_example_qblox_hardware_config["qcm0"],
     )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
-    sched = device_compile(sched, load_example_transmon_config)
+
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    )
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -728,8 +732,8 @@ def test_construct_sequencers(
 
 def test_construct_sequencers_repeated_portclocks_error(
     make_basic_multi_qubit_schedule,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     hardware_cfg = copy.deepcopy(load_example_qblox_hardware_config)
 
@@ -753,8 +757,11 @@ def test_construct_sequencers_repeated_portclocks_error(
         hw_mapping=hardware_cfg["qcm0"],
     )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
-    sched = device_compile(sched, load_example_transmon_config)
 
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         hardware_cfg=hardware_cfg,
@@ -795,11 +802,14 @@ def test_construct_sequencers_excess_error(
     )
 
     sched = make_basic_multi_qubit_schedule(element_names)
-    sched = device_compile(
-        sched,
-        mock_setup_basic_transmon_elements["quantum_device"].generate_device_config(),
-    )
 
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=sched,
+        config=mock_setup_basic_transmon_elements[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         hardware_cfg=hardware_cfg,
@@ -816,16 +826,17 @@ def test_construct_sequencers_excess_error(
 
 
 def test_portclocks(
-    mock_setup_basic_transmon,
     make_basic_multi_qubit_schedule,
     load_example_qblox_hardware_config,
+    compile_config_basic_transmon_qblox_hardware,
 ):
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
-    device_config = quantum_device.generate_device_config()
-
     sched = make_basic_multi_qubit_schedule(["q3", "q4"])
-    sched = device_compile(sched, device_config)
+
+    compiler = SerialCompiler(name="compiler")
+    sched = compiler.compile(
+        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    )
 
     hardware_cfg = load_example_qblox_hardware_config
     container = compiler_container.CompilerContainer.from_hardware_cfg(
@@ -1107,6 +1118,7 @@ def test_acquisitions_back_to_back(
     sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
 
     sched_with_pulse_info = device_compile(sched, load_example_transmon_config)
+
     with pytest.raises(ValueError):
         hardware_compile(sched_with_pulse_info, load_example_qblox_hardware_config)
 
