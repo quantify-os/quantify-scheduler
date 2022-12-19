@@ -1106,6 +1106,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     )
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_acquisitions_back_to_back(
     mixed_schedule_with_acquisition,
     load_example_transmon_config,
@@ -1457,7 +1458,6 @@ def test_container_prepare_baseband(
 
 def test_container_prepare_no_lo(
     pulse_only_schedule_no_lo,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
     compile_config_basic_transmon_qblox_hardware,
 ):
