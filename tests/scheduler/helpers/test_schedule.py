@@ -226,7 +226,7 @@ def test_get_port_timeline_empty(empty_schedule: Schedule):
 
 
 def test_get_port_timeline_are_unique(
-    load_example_transmon_config,
+    device_compile_config_basic_transmon,
 ):
     # Arrange
     schedule = Schedule("my-schedule")
@@ -234,7 +234,10 @@ def test_get_port_timeline_are_unique(
     schedule.add(X90("q0"))
     schedule.add(X90("q1"))
 
-    schedule = device_compile(schedule, load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule, config=device_compile_config_basic_transmon
+    )
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info_q0 = schedule.operations[reset_operation_id]["pulse_info"][0]
