@@ -7,6 +7,7 @@
 ### Merged branches and closed issues
 
 - Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+- Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
 
 ## 0.10.0 (2022-12-15)
 
