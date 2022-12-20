@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.10.1 (2022-12-20)
 
-### Breaking changes
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
 
 ### Merged branches and closed issues
 
