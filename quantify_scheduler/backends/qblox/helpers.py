@@ -326,11 +326,12 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
 
     Returns
     -------
-    :
+    dict[str, dict]
         A dictionary with as key the unique name for that waveform, as value another
         dictionary containing the real-valued data (list) as well as a unique index.
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
+
 
     .. admonition:: Examples
 
