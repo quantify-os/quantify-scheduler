@@ -590,24 +590,26 @@ class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
             The acquisition start time in seconds, by default 0
         """
 
-        data = {
-            "name": "TriggerCount",
-            "acquisition_info": [
-                {
-                    "waveforms": [],
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                    "duration": duration,
-                    "acq_channel": acq_channel,
-                    "acq_index": acq_index,
-                    "bin_mode": bin_mode,
-                    "acq_return_type": int,
-                    "protocol": "trigger_count",
-                }
-            ],
-        }
-        super().__init__(name=data["name"], data=data)
+        super().__init__(name="TriggerCount")
+        self.data.update(
+            {
+                "name": "TriggerCount",
+                "acquisition_info": [
+                    {
+                        "waveforms": [],
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                        "duration": duration,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "acq_return_type": int,
+                        "protocol": "trigger_count",
+                    }
+                ],
+            }
+        )
         self._update()
 
     def __str__(self) -> str:
