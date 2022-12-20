@@ -2,6 +2,7 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.compilation import device_compile, hardware_compile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
@@ -52,6 +53,9 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     ).spectroscopy_operation.duration.get()
 
     dev_cfg = quantum_device.generate_device_config()
+    config = quantum_device.generate_compilation_config()
+    compiler = SerialCompiler(name="compiler")
+    # schedule_device = compiler.compile(schedule=schedule, config=config)
     schedule_device = device_compile(schedule, dev_cfg)
 
     # The gate_info remains unchanged, but the pulse info has been added
