@@ -488,9 +488,7 @@ def test_schedule_timing_table(
         reset_duration + X90_duration,
         reset_duration + X90_duration + measure_acq_delay,
     ]
-    data = schedule.timing_table.data.abs_time
     actual_abs_timing = schedule.timing_table.data.abs_time
-    new = expected_abs_timing
     assert all(expected_abs_timing == actual_abs_timing)
 
 

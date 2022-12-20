@@ -53,9 +53,6 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     ).spectroscopy_operation.duration.get()
 
     dev_cfg = quantum_device.generate_device_config()
-    config = quantum_device.generate_compilation_config()
-    compiler = SerialCompiler(name="compiler")
-    # schedule_device = compiler.compile(schedule=schedule, config=config)
     schedule_device = device_compile(schedule, dev_cfg)
 
     # The gate_info remains unchanged, but the pulse info has been added
