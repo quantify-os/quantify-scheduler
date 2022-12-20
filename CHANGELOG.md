@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.1 (2022-12-19)
+## 0.10.1 (2022-12-20)
 
 For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
 
