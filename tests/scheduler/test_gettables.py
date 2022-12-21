@@ -503,7 +503,7 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     acquired_data = {
         AcquisitionIndexing(acq_channel=0, acq_index=i): (
             return_data[i],
-            np.asarray([0]),
+            [1],
         )
         for i in range(3)
     }
