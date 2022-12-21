@@ -234,9 +234,12 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
         "Hz": _NonNegativeFrequencies,
     }
 
+    # Search all submodules
     for submodule_name in electronic_q0.submodules:
         submodule: InstrumentModule = getattr(electronic_q0, submodule_name)
         skip_list_submodule = [x[1] for x in skip_list if x[0] == submodule_name]
+
+        # Try to find matching validator for each parameter
         for parameter_name in submodule.parameters:
             parameter: Parameter = getattr(submodule, parameter_name)
             if parameter_name in skip_list_submodule:
@@ -249,6 +252,8 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
                 # If none of the patterns match, we can't do any validation.
                 # If more than one pattern match, validation is likely unwanted.
                 continue
+
+            # We have identified a desired validator. Check that it's actually used.
             pattern = patterns[0]
             validator = mapping_pattern_val[pattern]
             assert isinstance(parameter.vals, validator), (
