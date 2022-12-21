@@ -317,10 +317,6 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
         """
 
-        qasm_program.verify_square_acquisition_duration(
-            self.operation_info, self.operation_info.duration
-        )
-
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
             self.acq_channel,
@@ -358,10 +354,6 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-
-        qasm_program.verify_square_acquisition_duration(
-            self.operation_info, self.operation_info.duration
-        )
 
         if self.bin_idx_register is None:
             raise ValueError(
