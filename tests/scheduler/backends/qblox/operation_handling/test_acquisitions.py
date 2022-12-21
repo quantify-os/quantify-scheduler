@@ -152,7 +152,7 @@ class TestAcquisitionStrategyPartial:
         )
 
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
-    def test_bin_index_register_invalid(self, empty_qasm_program_qrm,bin_mode):
+    def test_bin_index_register_invalid(self, empty_qasm_program_qrm, bin_mode):
         # arrange
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
         op_info = types.OpInfo(name="", data=data, timing=0)
@@ -166,19 +166,16 @@ class TestAcquisitionStrategyPartial:
         # assert
         if bin_mode == BinMode.APPEND:
             assert (
-                    exc.value.args[0]
-                    == "Attempting to add acquisition with append binmode. "
-                    "bin_idx_register cannot be None."
+                exc.value.args[0]
+                == "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
             )
         else:
             assert (
-                    exc.value.args[0]
-                    == "Attempting to add acquisition with average binmode. "
-                    "bin_idx_register must be None."
+                exc.value.args[0]
+                == "Attempting to add acquisition with average binmode. "
+                "bin_idx_register must be None."
             )
-
-
-
 
 
 class TestSquareAcquisitionStrategy:
@@ -461,7 +458,7 @@ class TestTriggerCountStrategy:
                 "",
                 "acquire_ttl",
                 "0,R0,1,4",
-                "# Enable TTL acquisition of acq_channel:0, bin_mode:append",
+                "# Enable TTL acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "wait", "65532", "# auto generated wait (99996 ns)"],
             ["", "wait", "34464", "# auto generated wait (99996 ns)"],
@@ -469,9 +466,9 @@ class TestTriggerCountStrategy:
                 "",
                 "acquire_ttl",
                 "0,R0,0,4",
-                "# Disable TTL acquisition of acq_channel:0, bin_mode:append",
+                "# Disable TTL acquisition of acq_channel:0, store in bin:R0",
             ],
-            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0"],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
         ]
 
 
