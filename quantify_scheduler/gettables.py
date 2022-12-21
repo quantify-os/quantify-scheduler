@@ -252,6 +252,46 @@ class ScheduleGettable:
             f" mode {acq_metadata.bin_mode} is not supported."
         )
 
+    def _process_acquired_data_trigger_count(
+        self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
+    ) -> Dict[int, np.ndarray]:
+        """Reformat acquired data in a dictionary. Used by process_acquired_data.
+
+        Parameters
+        ----------
+        acquired_data
+            Acquired data as returned by instrument coordinator
+        acq_metadata
+            Acquisition metadata from schedule
+        repetitions
+            Number of repetitions of the schedule
+
+        Returns
+        -------
+            Dictionary with reformatted data. Keys correspond to the acquisition
+            channel. Values are 1d numpy arrays with trigger counts.
+
+        Raises
+        ------
+        NotImplementedError
+            If acquisition protocol other than BinMode.APPEND is used.
+        """
+        dataset = {}
+        if acq_metadata.bin_mode == BinMode.APPEND:
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(
+                    len(acq_indices) * repetitions, dtype=int
+                )
+                acq_stride = len(acq_indices)
+                for acq_idx in acq_indices:
+                    vals = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel][acq_idx::acq_stride] = vals[0]
+            return dataset
+        raise NotImplementedError(
+            f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+            f" mode {acq_metadata.bin_mode} is not supported."
+        )
+
     def process_acquired_data(
         self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
     ) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
@@ -265,8 +305,12 @@ class ScheduleGettable:
 
         # retrieve the acquisition results
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
+        if acq_metadata.acq_protocol == "trigger_count":
+            dataset = self._process_acquired_data_trigger_count(
+                acquired_data, acq_metadata, repetitions
+            )
 
-        if (
+        elif (
             acq_metadata.bin_mode == BinMode.AVERAGE
             and acq_metadata.acq_protocol == "trace"
         ):
