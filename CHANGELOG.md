@@ -38,6 +38,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 - NV centers - `ChargeReset` operation only device compilation so far (!496)
 - NV centers - `CRCount` operation using TriggerCount acquisition; only device compilation so far (!502)
+- NV centers - Dark ESR schedule combining all prior operations (!527)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
 - Qblox backend - Minor adjustments to `NcoPhaseShiftStrategy` to make compilation of `ShiftClockPhase` compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
