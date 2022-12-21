@@ -4,6 +4,7 @@
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
+- NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 
 ## 0.10.1 (2022-12-20)
 
