@@ -317,11 +317,13 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
         """
 
+        bin_idx = self.operation_info.data["acq_index"]
+
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
             self.acq_channel,
-            0,
-            1,
+            bin_idx,
+            1,  # enable ttl acquisition
             constants.GRID_TIME,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
@@ -337,8 +339,8 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
             self.acq_channel,
-            0,
-            0,
+            bin_idx,
+            0,  # disable ttl acquisition
             constants.GRID_TIME,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
@@ -367,7 +369,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             q1asm_instructions.ACQUIRE_TTL,
             self.acq_channel,
             acq_bin_idx_reg,
-            1,
+            1,  # enable ttl acquisition
             constants.GRID_TIME,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
@@ -384,7 +386,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             q1asm_instructions.ACQUIRE_TTL,
             self.acq_channel,
             acq_bin_idx_reg,
-            0,
+            0,  # disable ttl acquisition
             constants.GRID_TIME,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
@@ -393,7 +395,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.emit(
             q1asm_instructions.ADD,
             acq_bin_idx_reg,
-            1,
+            1,  # increment
             acq_bin_idx_reg,
-            comment=f"Increment bin_idx for ch{self.acq_channel}",
+            comment=f"Increment bin_idx for ch{self.acq_channel} by 1",
         )
