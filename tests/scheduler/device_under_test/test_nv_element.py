@@ -240,7 +240,7 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
                 continue
             patterns = []
             for pattern in mapping_pattern_val.keys():
-                if pattern in str.lower(parameter_name):
+                if pattern in str.lower(parameter_name) or pattern == parameter.unit:
                     patterns.append(pattern)
             if len(patterns) != 1:
                 # If none of the patterns match, we can't do any validation.
