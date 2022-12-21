@@ -3,6 +3,15 @@
 ### Merged branches and closed issues
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 
+## 0.10.1 (2022-12-20)
+
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+
+### Merged branches and closed issues
+
+- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+- Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
+
 ## 0.10.0 (2022-12-15)
 
 ### Breaking changes
@@ -15,8 +24,10 @@
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 
 ### Merged branches and closed issues
+
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Visualization - Show clock name in plotly pulse diagram (!547)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 - Documentation - Improve parameter documentation for DeviceElements (!493)
@@ -30,6 +41,7 @@
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
 - NV centers - `ChargeReset` operation only device compilation so far (!496)
 - NV centers - `CRCount` operation using TriggerCount acquisition; only device compilation so far (!502)
+- NV centers - Dark ESR schedule combining all prior operations (!527)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
 - Qblox backend - Minor adjustments to `NcoPhaseShiftStrategy` to make compilation of `ShiftClockPhase` compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
