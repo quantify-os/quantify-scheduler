@@ -378,7 +378,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             1,
             constants.GRID_TIME,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
-            f"store in :{acq_bin_idx_reg}",
+            f"store in bin:{acq_bin_idx_reg}",
         )
         qasm_program.elapsed_time += constants.GRID_TIME
 
@@ -395,7 +395,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             0,
             constants.GRID_TIME,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
-            f"store in :{acq_bin_idx_reg}",
+            f"store in bin:{acq_bin_idx_reg}",
         )
 
         qasm_program.emit(
