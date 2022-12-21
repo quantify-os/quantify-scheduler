@@ -151,6 +151,35 @@ class TestAcquisitionStrategyPartial:
             "'acq_channel': 0, 'acq_index': 0, 'duration': 1e-06}."
         )
 
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_bin_index_register_invalid(self, empty_qasm_program_qrm,bin_mode):
+        # arrange
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+        strategy.bin_idx_register = None if bin_mode == BinMode.APPEND else "R0"
+
+        # act
+        with pytest.raises(ValueError) as exc:
+            strategy.insert_qasm(empty_qasm_program_qrm)
+
+        # assert
+        if bin_mode == BinMode.APPEND:
+            assert (
+                    exc.value.args[0]
+                    == "Attempting to add acquisition with append binmode. "
+                    "bin_idx_register cannot be None."
+            )
+        else:
+            assert (
+                    exc.value.args[0]
+                    == "Attempting to add acquisition with average binmode. "
+                    "bin_idx_register must be None."
+            )
+
+
+
+
 
 class TestSquareAcquisitionStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
