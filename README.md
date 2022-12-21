@@ -22,8 +22,6 @@ Quantify-scheduler is a python module for writing quantum programs featuring a h
 The control model allows quantum gate- and pulse-level descriptions to be combined in a clearly defined and hardware-agnostic way.
 Quantify-scheduler is designed to allow experimentalists to easily define complex experiments, and produces synchronized pulse schedules to be distributed to control hardware.
 
-⚠️**Caution!**
-This is a pre-release **alpha version**, major changes are expected. Use for testing & development purposes only.
 
 ## About
 

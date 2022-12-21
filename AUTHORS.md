@@ -24,6 +24,7 @@
 - Michiel Dubbelman \<<mailto:michiel@orangeqs.com>>
 - Pieter Eendebak \<<mailto:pieter.eendebak@tno.nl>>
 - Robert Sokolewicz \<<mailto:rsokolewicz@qblox.com>>
+- Thomas Middelburg \<<mailto:tmiddelburg@qblox.com>>
 - Thomas Reynders \<<mailto:thomas@orangeqs.com>>
 - Viacheslav Ostroukh \<<mailto:viacheslav@orangeqs.com>>
 - Victor Negirneac \<<mailto:vnegirneac@qblox.com>>
