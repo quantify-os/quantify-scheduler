@@ -201,8 +201,8 @@ def nv_dark_esr_sched(
 ) -> Schedule:
     """Generates a schedule for a dark ESR experiment on an NV-center.
 
-    The frequency is determined during the compilation of
-    :class:`~quantify_scheduler.operations.shared_native_library.SpectroscopyOperation`.
+    The spectroscopy frequency is taken from the device element. Please use the clock
+    specified in the "spectroscopy_operation" entry of the device config.
 
     This schedule can currently not be compiled with the Zurich Instruments backend.
 
