@@ -2,6 +2,7 @@
 
 ### Merged branches and closed issues
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
+- Acquisition - Follow-up for !530: Fix wrong assumption in input format (!564).
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 
