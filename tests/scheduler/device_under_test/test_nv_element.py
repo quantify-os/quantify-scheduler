@@ -207,22 +207,24 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
     """Validate that element parameters have the correct validators.
 
     This is a slightly error-prone test. It looks at the name of parameters and infers
-    the validator they should have. If they contain X, they should have validator Y. To
-    allow for manual intervention, parameter names can be whitelisted. In this case,
-    they will not be checked.
+    the validator they should have. If they contain X, they should have validator Y. If
+    X is equal to the unit, then they should also have validator Y. To allow for manual
+    intervention, parameter names can be skipped. In this case, they will not be
+    checked.
 
-    +-----------+--------------+
-    | X         | Y            |
-    +===========+==============+
-    | duration  | _Durations   |
-    | amplitude | _Amplitudes  |
-    | delay     | _Delays      |
-    +-----------+--------------+
+    +-----------+-------------------------+
+    | X         | Y                       |
+    +===========+=========================+
+    | duration  | _Durations              |
+    | amplitude | _Amplitudes             |
+    | delay     | _Delays                 |
+    | Hz        | _NonNegativeFrequencies |
+    +-----------+-------------------------+
 
     Capitalization is ignored.
     """
-    whitelist = [
-        ["example_submodule_name", "example_parameter_name_whitelisted"],
+    skip_list = [
+        ["example_submodule_name", "example_parameter_name_skiped"],
     ]
 
     mapping_pattern_val = {
@@ -234,10 +236,10 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
 
     for submodule_name in electronic_q0.submodules:
         submodule: InstrumentModule = getattr(electronic_q0, submodule_name)
-        whitelist_submodule = [x[1] for x in whitelist if x[0] == submodule_name]
+        skip_list_submodule = [x[1] for x in skip_list if x[0] == submodule_name]
         for parameter_name in submodule.parameters:
             parameter: Parameter = getattr(submodule, parameter_name)
-            if parameter_name in whitelist_submodule:
+            if parameter_name in skip_list_submodule:
                 continue
             patterns = []
             for pattern in mapping_pattern_val.keys():
@@ -252,5 +254,6 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
             assert isinstance(parameter.vals, validator), (
                 f"Expected that the parameter '{submodule.name}.{parameter_name}' uses "
                 f"the validator {validator}. If this is not done on purpose, please "
-                f"whitelist this parameter."
+                f"skip this parameter by adding it explitly to the skip_list in this "
+                f"test."
             )
