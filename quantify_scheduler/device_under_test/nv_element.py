@@ -20,7 +20,7 @@ from quantify_scheduler.backends.circuit_to_device import (
 from quantify_scheduler.helpers.validators import (
     _Durations,
     _Amplitudes,
-    _Frequencies,
+    _NonNegativeFrequencies,
     _Delays,
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
@@ -81,7 +81,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=_Frequencies(),
+            vals=_NonNegativeFrequencies(),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
         negatively charged diamond NV center from the 0-state to 1-state
@@ -94,7 +94,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=_Frequencies(),
+            vals=_NonNegativeFrequencies(),
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
@@ -105,7 +105,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=_Frequencies(),
+            vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
 
@@ -115,7 +115,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=_Frequencies(),
+            vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
@@ -126,7 +126,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=_Frequencies(),
+            vals=_NonNegativeFrequencies(),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 

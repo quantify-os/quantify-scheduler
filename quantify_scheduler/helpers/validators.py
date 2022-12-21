@@ -86,7 +86,7 @@ class _Amplitudes(Numbers):
         super().__init__(allow_nan=True)
 
 
-class _Frequencies(Numbers):
+class _NonNegativeFrequencies(Numbers):
     """Validator used for frequencies. It allows positive numbers and nan."""
 
     def __init__(
