@@ -105,14 +105,6 @@ class ScheduleGettable:
             False, then only initialize the first invocation of `get`.
         """
         self._data_labels_specified = data_labels is not None
-        if data_labels and len(data_labels) != 2 * num_channels:
-            raise ValueError(
-                f"Specified {num_channels} acquisition channels for "
-                f"{self.__class__.__name__}, but {len(data_labels)} data labels were "
-                f"specified. Please give precisely {2 * num_channels} labels, "
-                f"corresponding to "
-                f"num_channels*{'I and Q' if real_imag else 'magnitude and phase'}."
-            )
 
         self.always_initialize = always_initialize
         self.is_initialized = False
@@ -235,6 +227,31 @@ class ScheduleGettable:
         )
         return result
 
+    def _reshape_data(self, acq_metadata, vals):
+
+        if acq_metadata.acq_protocol == "trigger_count":
+            return [vals.real.astype(np.uint64)]
+
+        if (
+            acq_metadata.acq_protocol == "trace"
+            or acq_metadata.acq_protocol == "ssb_integration_complex"
+            or acq_metadata.acq_protocol == "weighted_integrated_complex"
+        ):
+            ret_val = []
+            if self.real_imag:
+                ret_val.append(vals.real)
+                ret_val.append(vals.imag)
+                return ret_val
+            else:
+                ret_val.append(np.abs(vals))
+                ret_val.append(np.angle(vals, deg=True))
+                return ret_val
+
+        raise NotImplementedError(
+            f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+            f" mode {acq_metadata.bin_mode} is not supported."
+        )
+
     def process_acquired_data(
         self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
     ) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
@@ -305,12 +322,8 @@ class ScheduleGettable:
                         f"Got {len(vals)} values for acquisition channel '{acq_channel}' instead."
                     )
 
-            if self.real_imag:
-                return_data.append(vals.real)
-                return_data.append(vals.imag)
-            else:
-                return_data.append(np.abs(vals))
-                return_data.append(np.angle(vals, deg=True))
+            return_data.extend(self._reshape_data(acq_metadata, vals))
+
         logger.debug(f"Returning {len(return_data)} values.")
         return tuple(return_data)
 
