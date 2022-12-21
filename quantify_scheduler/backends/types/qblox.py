@@ -367,9 +367,9 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies whether IQ mixing will be used or not."""
     sync_en: bool
     """Enables party-line synchronization."""
-    connected_outputs: Union[Tuple[int], Tuple[int, int]]
+    connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]]
     """Specifies which physical outputs this sequencer produces waveform data for."""
-    connected_inputs: Union[Tuple[int], Tuple[int, int]]
+    connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]]
     """Specifies which physical inputs this sequencer collects data for."""
     modulation_freq: float = None
     """Specifies the frequency of the modulation."""
@@ -391,8 +391,8 @@ class SequencerSettings(DataClassJsonMixin):
     def initialize_from_config_dict(
         cls,
         seq_settings: Dict[str, Any],
-        connected_outputs: Union[Tuple[int], Tuple[int, int]],
-        connected_inputs: Union[Tuple[int], Tuple[int, int]],
+        connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
+        connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
