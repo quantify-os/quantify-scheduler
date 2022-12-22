@@ -66,3 +66,39 @@ class Numbers(validators.Numbers):
                     repr(value), self._min_value, self._max_value, context
                 )
             )
+
+
+class _Durations(Numbers):
+    """Validator used for durations. It allows all numbers greater than or equal to 0."""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(min_value=0, allow_nan=False)
+
+
+class _Amplitudes(Numbers):
+    """Validator used for amplitudes. It allows all numbers and nan."""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(allow_nan=True)
+
+
+class _NonNegativeFrequencies(Numbers):
+    """Validator used for frequencies. It allows positive numbers and nan."""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(min_value=0, allow_nan=True)
+
+
+class _Delays(Numbers):
+    """Validator used for delays. It allows all numbers."""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(allow_nan=False)

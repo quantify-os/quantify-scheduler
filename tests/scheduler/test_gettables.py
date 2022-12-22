@@ -10,6 +10,7 @@
 
 from typing import Any, Dict, Tuple
 from unittest import TestCase
+from unittest.mock import Mock
 
 import json
 import os
@@ -32,7 +33,10 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
-from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
+from quantify_scheduler.schedules.spectroscopy_schedules import (
+    heterodyne_spec_sched,
+    nv_dark_esr_sched,
+)
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     rabi_sched,
@@ -504,3 +508,50 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     prof_gettable.plot_profile(path=path)
     assert prof_gettable.plot is not None
     assert os.path.getsize(os.path.join(path, filename)) > 0
+
+
+def test_formatting_trigger_count(mock_setup_basic_nv):
+    """ScheduleGettable formats data in trigger_acquisition mode correctly"""
+    # Arrange
+    instrument_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    nv_center = mock_setup_basic_nv["quantum_device"]
+    nv_center.cfg_sched_repetitions(1)
+
+    # data returned by the instrument coordinator
+    return_data = np.asarray([101, 35, 2])
+    acquired_data = {
+        AcquisitionIndexing(acq_channel=0, acq_index=i): (
+            return_data[i],
+            np.asarray([0]),
+        )
+        for i in range(3)
+    }
+
+    # Make instrument coordinator a dummy that only returns data
+    instrument_coordinator.retrieve_acquisition = Mock(return_value=acquired_data)
+    instrument_coordinator.prepare = Mock()
+    instrument_coordinator.stop = Mock()
+    instrument_coordinator.start = Mock()
+    instrument_coordinator.get = Mock()
+
+    sched_kwargs = {
+        "qubit": "qe0",
+    }
+    dark_esr_gettable = ScheduleGettable(
+        quantum_device=nv_center,
+        schedule_function=nv_dark_esr_sched,
+        schedule_kwargs=sched_kwargs,
+        batched=True,
+        data_labels=["Trigger Count"],
+    )
+    dark_esr_gettable.unit = [""]
+
+    # Act
+    data = dark_esr_gettable.get()
+
+    # Assert
+    assert isinstance(data, tuple)
+    assert len(data) == 1
+    assert len(data[0]) == 3
+    for count in data[0]:
+        assert isinstance(count, np.uint64)

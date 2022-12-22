@@ -8,6 +8,13 @@ from quantify_core.data.handling import set_datadir
 
 from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.compilation import (
+    determine_absolute_timing,
+    qcompile,
+    device_compile,
+)
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 
 from .compiles_all_backends import _CompilesAllBackends
@@ -108,3 +115,125 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
         compilation_config = device_compile_config_basic_transmon
         compiler = SerialCompiler(name="compiler")
         compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
+
+
+class TestNVDarkESRSched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "qubit": "qe0",
+            "repetitions": 10,
+        }
+
+        cls.uncomp_sched = sps.nv_dark_esr_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
+
+    def test_timing(self, mock_setup_basic_nv):
+        # Arrange
+        quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
+        qe0: BasicElectronicNVElement = mock_setup_basic_nv["qe0"]
+
+        # For operations, whose duration is not trivial to calculate, use values that
+        # allow to easily predict the duration of the operations (used below when
+        # constructing abs_times).
+        qe0.cr_count.acq_delay(0)
+        qe0.cr_count.acq_duration(1e-6)
+        qe0.cr_count.readout_pulse_duration(1e-6)
+        qe0.cr_count.spinpump_pulse_duration(1e-6)
+        qe0.measure.pulse_duration(2e-6)
+        qe0.measure.acq_duration(2e-6)
+
+        # Act
+        sched = device_compile(
+            self.uncomp_sched, quantum_device.generate_device_config()
+        )
+
+        # Assert
+        abs_times = [0]
+        abs_times.append(abs_times[-1] + qe0.charge_reset.duration())
+        abs_times.append(abs_times[-1] + qe0.cr_count.acq_duration())
+        abs_times.append(abs_times[-1] + qe0.reset.duration())
+        abs_times.append(abs_times[-1] + qe0.spectroscopy_operation.duration())
+        abs_times.append(abs_times[-1] + qe0.measure.acq_duration())
+        abs_times.append(abs_times[-1] + qe0.cr_count.acq_duration())
+
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["abs_time"] == abs_times[i]
+
+    def test_compiles_device_cfg_only(self, mock_setup_basic_nv):
+        # assert that files properly compile
+        device_config = mock_setup_basic_nv["quantum_device"].generate_device_config()
+        qcompile(self.uncomp_sched, device_config)
+
+    def test_compiles_qblox_backend(self, mock_setup_basic_nv) -> None:
+        # assert that files properly compile
+        quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
+        qcompile(
+            self.uncomp_sched,  # pylint: disable=no-member
+            quantum_device.generate_device_config(),
+            quantum_device.generate_hardware_config(),
+        )
+
+
+class TestNVDarkESRSched:
+    @classmethod
+    def setup_class(cls):
+        set_datadir(tmp_dir.name)
+        cls.sched_kwargs = {
+            "qubit": "qe0",
+            "repetitions": 10,
+        }
+
+        cls.uncomp_sched = sps.nv_dark_esr_sched(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
+
+    def test_timing(self, mock_setup_basic_nv):
+        # Arrange
+        quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
+        qe0: BasicElectronicNVElement = mock_setup_basic_nv["qe0"]
+
+        # For operations, whose duration is not trivial to calculate, use values that
+        # allow to easily predict the duration of the operations (used below when
+        # constructing abs_times).
+        qe0.cr_count.acq_delay(0)
+        qe0.cr_count.acq_duration(1e-6)
+        qe0.cr_count.readout_pulse_duration(1e-6)
+        qe0.cr_count.spinpump_pulse_duration(1e-6)
+        qe0.measure.pulse_duration(2e-6)
+        qe0.measure.acq_duration(2e-6)
+
+        # Act
+        sched = device_compile(
+            self.uncomp_sched, quantum_device.generate_device_config()
+        )
+
+        # Assert
+        abs_times = [0]
+        abs_times.append(abs_times[-1] + qe0.charge_reset.duration())
+        abs_times.append(abs_times[-1] + qe0.cr_count.acq_duration())
+        abs_times.append(abs_times[-1] + qe0.reset.duration())
+        abs_times.append(abs_times[-1] + qe0.spectroscopy_operation.duration())
+        abs_times.append(abs_times[-1] + qe0.measure.acq_duration())
+        abs_times.append(abs_times[-1] + qe0.cr_count.acq_duration())
+
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert schedulable["abs_time"] == abs_times[i]
+
+    def test_compiles_device_cfg_only(self, mock_setup_basic_nv):
+        # assert that files properly compile
+        device_config = mock_setup_basic_nv["quantum_device"].generate_device_config()
+        qcompile(self.uncomp_sched, device_config)
+
+    def test_compiles_qblox_backend(self, mock_setup_basic_nv) -> None:
+        # assert that files properly compile
+        quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
+        qcompile(
+            self.uncomp_sched,  # pylint: disable=no-member
+            quantum_device.generate_device_config(),
+            quantum_device.generate_hardware_config(),
+        )
