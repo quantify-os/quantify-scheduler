@@ -31,7 +31,7 @@
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
-- Compilation - `QuantifyCompiler` can optionally use `QuantumDevice` instead of `CompilationConfig` (!535)
+- Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
 
 ## 0.9.0 (2022-10-06)
 
