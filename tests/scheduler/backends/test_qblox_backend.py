@@ -79,7 +79,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 from tests.fixtures.mock_setup import close_instruments
