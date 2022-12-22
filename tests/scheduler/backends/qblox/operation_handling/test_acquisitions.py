@@ -471,9 +471,15 @@ class TestTriggerCountStrategy:
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
         ]
 
-@pytest.mark.parametrize("acquisition_strategy", [acquisitions.SquareAcquisitionStrategy,
-                                                  acquisitions.WeightedAcquisitionStrategy,
-                                                  acquisitions.TriggerCountAcquisitionStrategy])
+
+@pytest.mark.parametrize(
+    "acquisition_strategy",
+    [
+        acquisitions.SquareAcquisitionStrategy,
+        acquisitions.WeightedAcquisitionStrategy,
+        acquisitions.TriggerCountAcquisitionStrategy,
+    ],
+)
 def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program_qrm):
     # arrange
     data = {
@@ -482,18 +488,15 @@ def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program
         "acq_index": 5,
         "duration": 100e-6,
     }
-    strategy = acquisition_strategy(
-        types.OpInfo(name="", data=data, timing=0)
-    )
+    strategy = acquisition_strategy(types.OpInfo(name="", data=data, timing=0))
 
     # act
     with pytest.raises(ValueError) as exc:
         strategy.insert_qasm(empty_qasm_program_qrm)
 
     assert (
-            exc.value.args[0]
-            == "Attempting to add acquisition with append binmode. "
-            "bin_idx_register cannot be None."
+        exc.value.args[0] == "Attempting to add acquisition with append binmode. "
+        "bin_idx_register cannot be None."
     )
 
 
